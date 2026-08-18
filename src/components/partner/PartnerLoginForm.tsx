@@ -6,7 +6,7 @@ import { useState } from "react";
 
 import { assertPartnerEmailAllowed } from "@/app/actions/assert-partner-email-allowed";
 import { PortalAuthBusy } from "@/components/portal/auth/PortalAuthBusy";
-import { PortalSignupOtpStep } from "@/components/portal/PortalSignupOtpStep";
+import { PortalResendConfirmation } from "@/components/portal/PortalResendConfirmation";
 import { PartnerAuthFlowHint } from "@/components/partner/PartnerAuthFlowHint";
 import { PARTNER_AUTH_COPY } from "@/lib/partner/partner-auth-copy";
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
@@ -22,8 +22,6 @@ export function PartnerLoginForm() {
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [awaitingOtp, setAwaitingOtp] = useState(false);
-  const [otpConfirmed, setOtpConfirmed] = useState(false);
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -44,9 +42,9 @@ export function PartnerLoginForm() {
       if (signInError) {
         const msg = signInError.message.toLowerCase();
         if (msg.includes("email not confirmed")) {
-          setAwaitingOtp(true);
-          setLoading(false);
-          return;
+          setError(
+            "Bitte bestätige zuerst deine E-Mail — wir haben dir einen Link geschickt."
+          );
         } else if (msg.includes("banned") || msg.includes("user is banned")) {
           setError(PARTNER_AUTH_COPY.errors.portalGesperrt);
         } else {
@@ -72,72 +70,21 @@ export function PartnerLoginForm() {
     );
   }
 
-  if (awaitingOtp || (hint === "confirm" && !otpConfirmed)) {
-    return (
-      <div className="space-y-4">
-        <PortalSignupOtpStep
-          email={email.trim()}
-          brand="partner"
-          informal
-          onVerified={async () => {
-            if (password.length >= 8) {
-              const supabase = getSupabaseBrowserClient();
-              const { error: signErr } = await supabase.auth.signInWithPassword({
-                email: email.trim(),
-                password,
-              });
-              if (signErr) {
-                setAwaitingOtp(false);
-                setOtpConfirmed(true);
-                throw new Error(
-                  "Konto bestätigt — bitte erneut mit Passwort anmelden."
-                );
-              }
-              router.replace(next);
-              router.refresh();
-              return;
-            }
-            setAwaitingOtp(false);
-            setOtpConfirmed(true);
-          }}
-        />
-      </div>
-    );
-  }
-
   return (
     <form onSubmit={onSubmit} className="space-y-4">
       <PartnerAuthFlowHint variant="login" />
-      {otpConfirmed ? (
-        <p className="rounded-lg bg-accent-light/60 px-3 py-3 portal-text-body text-accent">
-          E-Mail bestätigt. Du kannst dich jetzt anmelden.
-        </p>
+      {hint === "confirm" ? (
+        <div className="space-y-3 rounded-lg bg-amber-50 px-3 py-3 portal-text-body text-amber-900">
+          <p>
+            Bitte bestätige deine E-Mail über den Link in unserer Nachricht, danach
+            kannst du dich anmelden.
+          </p>
+          <PortalResendConfirmation defaultEmail={email} className="text-left" />
+        </div>
       ) : null}
       {hint === "password-updated" ? (
         <p className="rounded-lg bg-accent-light/60 px-3 py-3 portal-text-body text-accent">
           Dein Passwort wurde gespeichert. Du kannst dich jetzt anmelden.
-        </p>
-      ) : null}
-      {hint === "crm_enter_invalid" ? (
-        <p className="rounded-lg bg-red-50 px-3 py-3 portal-text-body text-red-800">
-          Der CRM-Portal-Link ist ungültig oder abgelaufen. Bitte im CRM erneut
-          „Login“ klicken. Lokal muss PARTNER_INTERNAL_API_SECRET in CRM und
-          Portal identisch sein.
-        </p>
-      ) : null}
-      {hint === "crm_enter_failed" ? (
-        <p className="rounded-lg bg-red-50 px-3 py-3 portal-text-body text-red-800">
-          Automatische Anmeldung aus dem CRM ist fehlgeschlagen
-          {searchParams.get("msg")
-            ? `: ${decodeURIComponent(searchParams.get("msg") || "")}`
-            : "."}{" "}
-          Bitte erneut versuchen oder manuell anmelden.
-        </p>
-      ) : null}
-      {hint === "session_mismatch" ? (
-        <p className="rounded-lg bg-amber-50 px-3 py-3 portal-text-body text-amber-900">
-          Die Sitzung passt nicht zu einem Partner-Konto. Bitte mit der im CRM
-          hinterlegten Betriebs-E-Mail anmelden.
         </p>
       ) : null}
       {authError ? (
@@ -157,7 +104,7 @@ export function PartnerLoginForm() {
           required
           value={email}
           onChange={(e) => setEmail(e.target.value)}
-          className="portal-field w-full"
+          className="portal-input w-full rounded-xl border border-border-default bg-surface-card px-3 py-3 focus:border-accent"
         />
       </label>
 
@@ -170,7 +117,7 @@ export function PartnerLoginForm() {
           minLength={8}
           value={password}
           onChange={(e) => setPassword(e.target.value)}
-          className="portal-field w-full"
+          className="portal-input w-full rounded-xl border border-border-default bg-surface-card px-3 py-3 focus:border-accent"
         />
       </label>
 

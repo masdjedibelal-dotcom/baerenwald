@@ -56,8 +56,7 @@ export function isVorgangPortalErledigt(input: {
   }
 
   if (normalizeStatus(input.leadVorgangPhase) === "abgeschlossen") return true;
-  const hv = normalizeStatus(input.hv_meldung_status);
-  if (hv === "abgeschlossen" || hv === "hm_erledigt") return true;
+  if (normalizeStatus(input.hv_meldung_status) === "abgeschlossen") return true;
 
   return isPortalAuftragAbgeschlossenRecord({
     status: input.auftragStatus,

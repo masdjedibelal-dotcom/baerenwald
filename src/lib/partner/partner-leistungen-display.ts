@@ -22,8 +22,13 @@ function resolveMwstSatz(raw: Record<string, unknown>, fallback = 19): number {
 function positionPartnerNettoZeile(raw: Record<string, unknown>): number {
   const menge = Math.max(num(raw.menge) || 1, 0.0001);
   const ek = num(raw.einkaufspreis);
-  // Nur EK — Lohn/Material sind Kunden-VK und dürfen nicht als HW-Preis dienen.
   if (ek > 0) return Math.round(ek * menge * 100) / 100;
+
+  const lohn = num(raw.lohn_netto);
+  const mat = num(raw.material_netto);
+  const fromParts = (lohn + mat) * menge;
+  if (fromParts > 0) return Math.round(fromParts * 100) / 100;
+
   return 0;
 }
 
@@ -138,7 +143,9 @@ export function buildPartnerAuftragKonditionZeilen(
     const partnerNetto =
       pos.preis_partner != null && pos.preis_partner > 0
         ? pos.preis_partner
-        : null;
+        : (pos.lohn_fix ?? 0) + (pos.material_fix ?? 0) > 0
+          ? Math.round(((pos.lohn_fix ?? 0) + (pos.material_fix ?? 0)) * 100) / 100
+          : null;
     const typ = pos.aenderung_typ ?? null;
     const isEntfernt = typ === "entfernt";
     const isGeaendert = typ === "geaendert";
@@ -179,8 +186,14 @@ export function buildPartnerAuftragKonditionZeilen(
 }
 
 function auftragPositionPartnerBrutto(pos: PartnerAuftragPosition, defaultMwst = 19): number {
-  if (pos.preis_partner == null || pos.preis_partner <= 0) return 0;
-  const netto = Math.round(pos.preis_partner * 100) / 100;
+  let netto = 0;
+  if (pos.preis_partner != null && pos.preis_partner > 0) {
+    netto = pos.preis_partner;
+  } else {
+    netto = (pos.lohn_fix ?? 0) + (pos.material_fix ?? 0);
+  }
+  netto = Math.round(netto * 100) / 100;
+  if (netto <= 0) return 0;
   return Math.round(netto * (1 + defaultMwst / 100) * 100) / 100;
 }
 

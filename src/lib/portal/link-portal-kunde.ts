@@ -9,11 +9,6 @@ import {
   KUNDE_PORTAL_GESPERRT_MESSAGE,
 } from "@/lib/kunden/kunde-portal-gesperrt";
 import { mapKundenPortalError } from "@/lib/kunden/kunde-portal-errors";
-import {
-  normalizePortalRegisterKundeTyp,
-  portalModusForRegisterKundeTyp,
-  type PortalRegisterKundeTyp,
-} from "@/lib/portal/portal-register-kunde-typ";
 import { supabaseAdmin } from "@/lib/supabase";
 
 function fail(
@@ -32,7 +27,7 @@ function fail(
 }
 
 const PORTAL_ACCOUNT_CONFLICT =
-  "Diese E-Mail ist bereits mit einem anderen Portal-Konto verknüpft. Bitte wenden Sie sich an uns.";
+  "Diese E-Mail ist bereits mit einem anderen Portal-Konto verknüpft. Bitte wende dich an uns.";
 
 export type LinkPortalKundeResult =
   | { ok: true; kundeId: string }
@@ -115,80 +110,6 @@ async function detachAuthFromKunde(
     .eq("auth_user_id", userId);
 }
 
-type HvPortalRolleMatch = {
-  portalModus: "hausmeister" | "eigentuemer" | "mieter";
-  name: string | null;
-  telefon: string | null;
-  hausmeisterId?: string;
-  bewohnerIds?: string[];
-};
-
-/** E-Mail gehört zu HV-Objektakte (HM / Eigentümer / Mieter) — kein CRM-Privatkunde. */
-async function resolveHvPortalRolleByEmail(
-  email: string
-): Promise<HvPortalRolleMatch | null> {
-  const { data: hm } = await supabaseAdmin
-    .from("org_hausmeister")
-    .select("id, name, email")
-    .ilike("email", email)
-    .limit(1)
-    .maybeSingle();
-
-  if (hm?.id) {
-    return {
-      portalModus: "hausmeister",
-      name: (hm.name as string | null)?.trim() || null,
-      telefon: null,
-      hausmeisterId: String(hm.id),
-    };
-  }
-
-  const { data: bewohner } = await supabaseAdmin
-    .from("einheit_bewohner")
-    .select("id, name, telefon, rolle")
-    .ilike("email", email)
-    .eq("aktiv", true)
-    .is("anonymisiert_am", null)
-    .limit(20);
-
-  const rows = bewohner ?? [];
-  if (!rows.length) return null;
-
-  const isEigentuemer = rows.some(
-    (r) => String(r.rolle ?? "").toLowerCase() === "eigentuemer"
-  );
-  const first = rows[0];
-  return {
-    portalModus: isEigentuemer ? "eigentuemer" : "mieter",
-    name: (first?.name as string | null)?.trim() || null,
-    telefon: (first?.telefon as string | null)?.trim() || null,
-    bewohnerIds: rows.map((r) => String(r.id)).filter(Boolean),
-  };
-}
-
-async function linkHvPortalRolleToKunde(
-  portalKundeId: string,
-  role: HvPortalRolleMatch
-): Promise<void> {
-  if (role.portalModus === "hausmeister" && role.hausmeisterId) {
-    await supabaseAdmin
-      .from("org_hausmeister")
-      .update({
-        portal_kunde_id: portalKundeId,
-        portal_zugang: true,
-        updated_at: new Date().toISOString(),
-      })
-      .eq("id", role.hausmeisterId);
-    return;
-  }
-  if (role.bewohnerIds?.length) {
-    await supabaseAdmin
-      .from("einheit_bewohner")
-      .update({ portal_kunde_id: portalKundeId })
-      .in("id", role.bewohnerIds);
-  }
-}
-
 /**
  * Verknüpft Auth-User mit kunden.auth_user_id.
  * Die Login-E-Mail ist führend — Name dient nur zur Anzeige, nie zur Zuordnung.
@@ -198,14 +119,11 @@ export async function linkPortalKundeToAuthUser(opts: {
   email: string;
   name?: string | null;
   telefon?: string | null;
-  /** Selbstregistrierung: privat | gewerbe | hausverwaltung → CRM `kunden.typ` */
-  typ?: PortalRegisterKundeTyp | string | null;
 }): Promise<LinkPortalKundeResult> {
   const email = normalizeKundenEmail(opts.email);
   if (!email) {
     return { ok: false, error: "Keine E-Mail-Adresse im Konto." };
   }
-  const registerTyp = normalizePortalRegisterKundeTyp(opts.typ);
 
   try {
     const gesperrt = await isKundePortalGesperrt({ email });
@@ -262,20 +180,15 @@ export async function linkPortalKundeToAuthUser(opts: {
       await detachAuthFromKunde(String(linkedByAuth.id), opts.userId);
     }
 
-    const hvRole = await resolveHvPortalRolleByEmail(email);
     const { error: upErr } = await supabaseAdmin
       .from("kunden")
       .update({
         auth_user_id: opts.userId,
         email,
-        ...(hvRole ? { portal_modus: hvRole.portalModus } : {}),
       })
       .eq("id", canonical.id);
 
     if (upErr) return fail(upErr);
-    if (hvRole) {
-      await linkHvPortalRolleToKunde(String(canonical.id), hvRole);
-    }
     return { ok: true, kundeId: String(canonical.id) };
   }
 
@@ -288,22 +201,13 @@ export async function linkPortalKundeToAuthUser(opts: {
     email.split("@")[0]?.replace(/[._]/g, " ") ||
     "Kunde";
 
-  // HV-Objektakte: E-Mail gehört zu Bewohner/Hausmeister → Portal-Stub, kein CRM-Stammtyp
-  const hvRole = await resolveHvPortalRolleByEmail(email);
-  const crmTyp: PortalRegisterKundeTyp = hvRole
-    ? "privat"
-    : registerTyp ?? "privat";
-  const portalModus =
-    hvRole?.portalModus ?? portalModusForRegisterKundeTyp(crmTyp);
-
   const { data: neu, error: insErr } = await supabaseAdmin
     .from("kunden")
     .insert({
-      name: hvRole?.name || name,
+      name,
       email,
-      telefon: opts.telefon?.trim() || hvRole?.telefon || null,
-      typ: crmTyp,
-      portal_modus: portalModus,
+      telefon: opts.telefon?.trim() || null,
+      typ: "privat",
       auth_user_id: opts.userId,
     })
     .select("id")
@@ -331,16 +235,9 @@ export async function linkPortalKundeToAuthUser(opts: {
         }
         const { error: upErr } = await supabaseAdmin
           .from("kunden")
-          .update({
-            auth_user_id: opts.userId,
-            email,
-            ...(hvRole ? { portal_modus: hvRole.portalModus } : {}),
-          })
+          .update({ auth_user_id: opts.userId, email })
           .eq("id", existingId);
         if (upErr) return fail(upErr);
-        if (hvRole) {
-          await linkHvPortalRolleToKunde(existingId, hvRole);
-        }
         return { ok: true, kundeId: existingId };
       }
       if (isKundenEmailUniqueViolation(insErr)) {
@@ -354,12 +251,7 @@ export async function linkPortalKundeToAuthUser(opts: {
     return fail("Kundenstamm konnte nicht angelegt werden.");
   }
 
-  const newId = String(neu.id);
-  if (hvRole) {
-    await linkHvPortalRolleToKunde(newId, hvRole);
-  }
-
-  return { ok: true, kundeId: newId };
+  return { ok: true, kundeId: String(neu.id) };
 }
 
 /**

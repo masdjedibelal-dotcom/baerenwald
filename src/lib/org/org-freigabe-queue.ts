@@ -1,15 +1,8 @@
-import { hvFreigabeEntfaellt, funnelDirektauftragFromDaten, resolveAngebotZugestelltForHvFreigabe } from "@/lib/org/freigabe-bypass";
 import type { OrganisationLead } from "@/lib/org/types";
 
 type FreigabeLead = Pick<
   OrganisationLead,
-  | "id"
-  | "org_freigabe_status"
-  | "hv_meldung_status"
-  | "vorgang_phase"
-  | "freigabe_bypass_grund"
-  | "funnel_daten"
-  | "erfassung_von"
+  "id" | "org_freigabe_status" | "hv_meldung_status" | "vorgang_phase"
 >;
 
 /** Lead hat bereits einen CRM-Auftrag — gehört unter „Aktiv“, nicht „Zur Freigabe“. */
@@ -20,48 +13,15 @@ export function leadHasOrgAuftrag(
   return Boolean(auftragByLeadId[leadId]?.trim());
 }
 
-function funnelDirektauftragFlag(
-  funnel: FreigabeLead["funnel_daten"]
-): boolean {
-  return funnelDirektauftragFromDaten(funnel);
-}
-
 /** Wartet auf HV-Aktion (neue Meldung oder Angebotsfreigabe), ohne laufenden Auftrag. */
 export function isInOrgFreigabeQueue(
   lead: FreigabeLead,
-  auftragByLeadId: Record<string, string>,
-  /** Lead-IDs mit zugestelltem Angebot (optional). */
-  angebotByLeadId?: Record<string, string>
+  auftragByLeadId: Record<string, string>
 ): boolean {
   if (leadHasOrgAuftrag(lead.id, auftragByLeadId)) return false;
 
-  const angebotZugestellt = resolveAngebotZugestelltForHvFreigabe({
-    orgFreigabeStatus: lead.org_freigabe_status,
-    bypassGrund: lead.freigabe_bypass_grund,
-    hasAngebot: Boolean(angebotByLeadId?.[lead.id]?.trim()),
-  });
-
-  // Akut: nie in Freigabe-Queue. Schwelle: erst nach Angebotszustellung.
-  if (
-    hvFreigabeEntfaellt({
-      orgFreigabeStatus: lead.org_freigabe_status,
-      bypassGrund: lead.freigabe_bypass_grund,
-      funnelDirektauftrag: funnelDirektauftragFlag(lead.funnel_daten),
-      hvMeldungStatus: lead.hv_meldung_status,
-      angebotZugestellt,
-    })
-  ) {
-    return false;
-  }
-
   const freigabe = (lead.org_freigabe_status ?? "").trim();
-  if (
-    freigabe === "freigegeben" ||
-    freigabe === "abgelehnt" ||
-    freigabe === "nicht_noetig"
-  ) {
-    return false;
-  }
+  if (freigabe === "freigegeben" || freigabe === "abgelehnt") return false;
 
   const phase = (lead.vorgang_phase ?? "").trim();
   if (
@@ -73,14 +33,7 @@ export function isInOrgFreigabeQueue(
     return false;
   }
 
-  // HV-Selbstanlage: nie Start-Freigabe-Queue (auch Legacy mit status=neu)
-  const erfassung = String(lead.erfassung_von ?? "").toLowerCase();
-  if (
-    (lead.hv_meldung_status ?? "neu") === "neu" &&
-    erfassung !== "organisation"
-  ) {
-    return true;
-  }
+  if ((lead.hv_meldung_status ?? "neu") === "neu") return true;
   if (freigabe === "ausstehend" || freigabe === "angefordert") return true;
 
   return false;

@@ -128,7 +128,6 @@ export function schimmelSchadenKurz(answers: MeldeAnswers | undefined): string {
       kueche: "Küche",
       schlafzimmer: "Schlafzimmer",
       wohnzimmer: "Wohnzimmer",
-      wohnraum: "Wohn- / Schlafzimmer",
       keller: "Keller",
       treppenhaus: "Treppenhaus",
       aussenfassade: "Außenfassade",
@@ -146,15 +145,9 @@ export function schimmelSchadenKurz(answers: MeldeAnswers | undefined): string {
 
   let core = problemLabel;
   if (ortLabel) {
-    const im = [
-      "Bad",
-      "WC",
-      "Keller",
-      "Treppenhaus",
-      "Schlafzimmer",
-      "Wohnzimmer",
-      "Wohn- / Schlafzimmer",
-    ].includes(ortLabel);
+    const im = ["Bad", "WC", "Keller", "Treppenhaus", "Schlafzimmer", "Wohnzimmer"].includes(
+      ortLabel
+    );
     const inDer = ortLabel === "Küche" || ortLabel === "Garage";
     if (im) core = `${problemLabel} im ${ortLabel}`;
     else if (inDer) core = `${problemLabel} in der ${ortLabel}`;

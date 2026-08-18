@@ -72,10 +72,6 @@ export function buildPartnerAuftragDokumentZeilen(
       : item.hw_angebot_pdf_signed_url
         ? [item.hw_angebot_pdf_signed_url]
         : [];
-  const kannHwDocsLoeschen =
-    String(item.status ?? "").toLowerCase() !== "storniert" &&
-    String(item.angebotHwStatus ?? "").toLowerCase() !== "abgelehnt";
-
   anhangSigned.forEach((href, i) => {
     rows.push({
       id: `hw-unterlage-${i}`,
@@ -85,7 +81,6 @@ export function buildPartnerAuftragDokumentZeilen(
         total: anhangSigned.length,
       }),
       href,
-      canDelete: kannHwDocsLoeschen,
     });
   });
 
@@ -95,7 +90,6 @@ export function buildPartnerAuftragDokumentZeilen(
       datum: item.hw_rechnung_eingereicht_at,
       name: partnerHwDokumentListenName("rechnung"),
       href: item.hw_rechnung_pdf_signed_url,
-      canDelete: kannHwDocsLoeschen,
     });
   }
 
@@ -110,65 +104,22 @@ export function buildPartnerAuftragDokumentZeilen(
   return sortPartnerDokumentZeilen(rows);
 }
 
-export function partnerAuftragHatAbschluss(
-  item: Pick<
-    PartnerAuftragItem,
-    | "hw_abschluss_signiert_am"
-    | "abnahme_freigabe_status"
-    | "abnahme_protokoll_id"
-    | "abnahme_protokoll_url"
-  >
-): boolean {
-  if (item.hw_abschluss_signiert_am?.trim()) return true;
-  if (item.abnahme_protokoll_id?.trim() || item.abnahme_protokoll_url?.trim()) {
-    return true;
-  }
-  const freigabe = String(item.abnahme_freigabe_status ?? "")
-    .trim()
-    .toLowerCase();
-  // Eigener Abschluss eingereicht (warte auf Freigabe oder freigegeben)
-  return Boolean(freigabe) && freigabe !== "abgelehnt";
-}
-
-/**
- * CRM hat die Zuweisung freigegeben / angenommen —
- * unabhängig vom Projektvertrag.
- */
-export function partnerHwRechnungCrmFreigegeben(
-  item: Pick<
-    PartnerAuftragItem,
-    "angebotHwStatus" | "hwStatus" | "handwerker_bestaetigt_at"
-  >
-): boolean {
-  const ah = (item.angebotHwStatus ?? "").toLowerCase();
-  if (ah === "uebernommen" || ah === "bestaetigt") return true;
-
-  const zuweisung = (item.hwStatus ?? "").toLowerCase();
-  if (zuweisung === "akzeptiert" || zuweisung === "uebernommen") return true;
-
-  return Boolean(item.handwerker_bestaetigt_at?.trim());
-}
-
-/**
- * Auto-Rechnung / Upload nach Abschluss + CRM-Freigabe/Annahme.
- * Kein Projektvertrag nötig. Optional: `abschlussDoneLocal` direkt nach Signatur.
- */
-export function partnerAuftragKannRechnungHochladen(
-  item: PartnerAuftragItem,
-  opts?: { abschlussDoneLocal?: boolean }
-): boolean {
-  // Direktauftrag braucht keine angebot_handwerker-Zeile in der UI —
-  // Server legt sie intern an und rechnet aus Auftrags-Leistungen.
+export function partnerAuftragKannRechnungHochladen(item: PartnerAuftragItem): boolean {
+  if (!item.angebotHandwerkerId) return false;
   if (item.status.toLowerCase() === "storniert") return false;
-  if (item.hw_rechnung_eingereicht_at) return false;
-  if (!partnerHwRechnungCrmFreigegeben(item)) return false;
-  if (!opts?.abschlussDoneLocal && !partnerAuftragHatAbschluss(item)) {
+  // F4: Rechnung erst nach Abnahme-Signatur
+  if (!item.hw_abschluss_signiert_am?.trim() && !item.abnahme_protokoll_url?.trim()) {
     return false;
   }
-  return true;
+  const hwSt = (item.angebotHwStatus ?? "").toLowerCase();
+  return (
+    hwSt === "uebernommen" &&
+    Boolean(item.projektvertrag_bestaetigt_am) &&
+    !item.hw_rechnung_eingereicht_at
+  );
 }
 
-/** @deprecated Sticky-CTA nutzt `partnerAuftragKannRechnungHochladen`. */
+/** Auto-Rechnung-Prompt erneut, solange nicht eingereicht. */
 export function partnerNeedsAutoRechnungPrompt(item: PartnerAuftragItem): boolean {
   return partnerAuftragKannRechnungHochladen(item);
 }
@@ -184,11 +135,10 @@ export function partnerAuftragKannUnterlagenHochladen(item: PartnerAuftragItem):
 }
 
 export function partnerAuftragZeigtDokumenteUpload(
-  item: PartnerAuftragItem,
-  opts?: { abschlussDoneLocal?: boolean }
+  item: PartnerAuftragItem
 ): boolean {
   return (
     partnerAuftragKannUnterlagenHochladen(item) ||
-    partnerAuftragKannRechnungHochladen(item, opts)
+    partnerAuftragKannRechnungHochladen(item)
   );
 }

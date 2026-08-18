@@ -66,15 +66,6 @@ export type KundePortalDetailItem = {
   angebotPositionen?: PortalAngebotPositionDisplay[];
   auftragPositionen?: PortalAuftragPositionDisplay[];
   gesamtBrutto?: number;
-  /** Rechnungen (Brutto/Status) für Abschlagsplan im Abschluss-Tab. */
-  rechnungen?: Array<{
-    id: string;
-    status?: string | null;
-    brutto?: number | null;
-    rechnung_art?: string | null;
-    abschlag_index?: number | null;
-    bezahlt_at?: string | null;
-  }>;
   /** D11: `angebote.herkunft` (z. B. handwerker → Empfohlenes Angebot). */
   angebotHerkunft?: string | null;
   isAuftragDetail?: boolean;
@@ -127,8 +118,6 @@ export type KundePortalDetailItem = {
   orgFreigabeStatus?: string | null;
   /** CRM: schwelle | akut — Auto-Auftrag ohne HV-Annahme */
   freigabeBypassGrund?: string | null;
-  /** Funnel Sofortmaßnahme (direktauftrag) */
-  funnelDirektauftrag?: boolean | null;
   hvMeldungStatus?: string | null;
   /** Melde-Adresse (Lead / Objekt) */
   meldeStrasse?: string | null;
@@ -151,8 +140,6 @@ export type KundePortalDetailItem = {
   meldePreisIndikation?: string | null;
   /** C4 — HV Meta „Wartet auf HW · …“ */
   wartetAufHwLabel?: string | null;
-  /** Ausführung: zugewiesene Handwerker-Firma (nicht Betreuer/Ansprechpartner). */
-  handwerkerName?: string | null;
 };
 
 export function objektPlzOrt(

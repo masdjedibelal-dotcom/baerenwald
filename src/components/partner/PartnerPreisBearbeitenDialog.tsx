@@ -119,11 +119,11 @@ export function PartnerPreisBearbeitenDialog({
         />
       </label>
 
-      <div className="portal-action-row mt-6">
+      <div className="mt-6 flex flex-wrap justify-end gap-2">
         <button
           type="button"
           onClick={onCancel}
-          className="portal-action-btn portal-action-btn--secondary"
+          className="btn-pill-outline portal-btn"
         >
           Abbrechen
         </button>
@@ -131,7 +131,7 @@ export function PartnerPreisBearbeitenDialog({
           type="button"
           disabled={parsed == null}
           onClick={onConfirm}
-          className="portal-action-btn portal-action-btn--primary disabled:opacity-50"
+          className="btn-pill-primary portal-btn disabled:opacity-50"
         >
           Übernehmen
         </button>

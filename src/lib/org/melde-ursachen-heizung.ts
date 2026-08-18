@@ -5,7 +5,6 @@
  */
 
 import type { MeldeAnswers } from "@/lib/funnel/melde-dynamic-questions";
-import { normalizeMeldeHeizungProblem } from "@/lib/funnel/melde-dynamic-questions";
 
 export type HeizungUrsacheId =
   | "thermostat"
@@ -50,7 +49,9 @@ function ans(a: MeldeAnswers, id: string): string {
 }
 
 function normalizeProblem(raw: string): string {
-  return normalizeMeldeHeizungProblem(raw);
+  if (raw === "nicht_warm") return "kalt";
+  if (raw === "wasser_aus" || raw === "tropft") return "tropft_hk";
+  return raw;
 }
 
 function orderIds(ids: HeizungUrsacheId[]): HeizungUrsacheOption[] {
@@ -68,11 +69,23 @@ export function heizungUrsachenForAnswers(
   const a = answers ?? {};
   const problem = normalizeProblem(ans(a, "melde_problem"));
   const kalt = ans(a, "melde_heizung_kalt");
+  const ww = ans(a, "melde_warmwasser");
 
   switch (problem) {
-    case "wohnung_kalt":
-      if (kalt === "einzelne" || kalt === "teilweise") {
+    case "kalt":
+      if (kalt === "einzelne") {
         return orderIds(["thermostat", "entlueften"]);
+      }
+      if (ww === "nein") {
+        return orderIds([
+          "ww_aus",
+          "anlage_aus",
+          "druck_niedrig",
+          "entlueften",
+          "stoerung_sichtbar",
+          "ww_trotz_heizung",
+          "hebeanlage",
+        ]);
       }
       return orderIds([
         "entlueften",
@@ -83,7 +96,7 @@ export function heizungUrsachenForAnswers(
         "hebeanlage",
       ]);
 
-    case "kein_warmwasser":
+    case "kein_ww":
       return orderIds([
         "ww_aus",
         "anlage_aus",
@@ -101,7 +114,7 @@ export function heizungUrsachenForAnswers(
         "hebeanlage",
       ]);
 
-    case "wasser_am_hk":
+    case "tropft_hk":
       return orderIds([
         "druck_niedrig",
         "stoerung_sichtbar",
@@ -140,35 +153,24 @@ export const HEIZUNG_MATERIAL_OPTIONS = [
 export function heizungSchadenKurz(answers: MeldeAnswers | undefined): string {
   const a = answers ?? {};
   const problem = normalizeProblem(ans(a, "melde_problem"));
-  const kalt = ans(a, "melde_heizung_kalt");
+  const betrifft = ans(a, "melde_betrifft");
   const problemLabel =
     {
-      wohnung_kalt: "Wohnung / Heizung bleibt kalt",
-      kein_warmwasser: "Kein Warmwasser",
-      geraeusche: "Geräusche an der Heizung",
-      wasser_am_hk: "Wasser am Heizkörper",
       kalt: "Heizung / Wohnung bleibt kalt",
       kein_ww: "Kein Warmwasser",
+      geraeusche: "Heizkörper machen Geräusche",
       tropft_hk: "Wasser am Heizkörper",
       sonstiges: "Heizung / Warmwasser",
     }[problem] ?? "Heizung / Warmwasser";
-  if (problem === "wohnung_kalt" && kalt === "einzelne") {
-    return "Nur einzelne Heizkörper kalt";
-  }
-  if (problem === "wohnung_kalt" && kalt === "ja") {
-    return "Wohnung komplett kalt";
-  }
+  if (betrifft === "mehrere") return `${problemLabel} — mehrere Wohnungen`;
   return problemLabel;
 }
 
 const HEIZUNG_PROBLEM_IDS = new Set([
-  "wohnung_kalt",
-  "kein_warmwasser",
-  "wasser_am_hk",
-  "geraeusche",
   "kalt",
   "nicht_warm",
   "kein_ww",
+  "geraeusche",
   "tropft_hk",
   "wasser_aus",
 ]);
@@ -180,12 +182,8 @@ export function isHeizungMeldeContext(opts: {
   ursachenBereich?: string | null;
 }): boolean {
   if (opts.ursachenBereich === "heizung") return true;
-  const raw = ans(opts.answers ?? {}, "melde_problem");
-  const problem = normalizeProblem(raw);
-  if (problem && problem !== "sonstiges" && HEIZUNG_PROBLEM_IDS.has(problem)) {
-    return true;
-  }
-  if (raw && HEIZUNG_PROBLEM_IDS.has(raw)) return true;
+  const problem = normalizeProblem(ans(opts.answers ?? {}, "melde_problem"));
+  if (problem && HEIZUNG_PROBLEM_IDS.has(problem)) return true;
   const hay = [
     ...(opts.bereiche ?? []),
     opts.bereichLabel ?? "",

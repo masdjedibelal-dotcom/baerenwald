@@ -172,25 +172,13 @@ export async function uploadPartnerAngebotPdfs(opts: {
 
   const paths: string[] = [];
   for (const file of list) {
-    const mimeRaw = (file.type || "").toLowerCase();
-    const isPdf =
-      mimeRaw === "application/pdf" || file.name.toLowerCase().endsWith(".pdf");
-    const mime = isPdf
-      ? "application/pdf"
-      : mimeRaw ||
-        (/\.png$/i.test(file.name)
-          ? "image/png"
-          : /\.webp$/i.test(file.name)
-            ? "image/webp"
-            : "image/jpeg");
-    const ext = extFromMime(mime);
-    const path = `${opts.handwerkerId}/angebote/${opts.anfrageId}/angebot-${randomUUID()}.${ext}`;
-    const buf = Buffer.from(await file.arrayBuffer());
-    const { error } = await supabaseAdmin.storage
-      .from(PARTNER_UPLOAD_BUCKET)
-      .upload(path, buf, { contentType: mime, upsert: false });
-    if (error) return { ok: false, error: error.message };
-    paths.push(path);
+    const up = await uploadPartnerPdf({
+      handwerkerId: opts.handwerkerId,
+      anfrageId: opts.anfrageId,
+      file,
+    });
+    if (!up.ok) return up;
+    paths.push(up.path);
   }
 
   return { ok: true, paths };

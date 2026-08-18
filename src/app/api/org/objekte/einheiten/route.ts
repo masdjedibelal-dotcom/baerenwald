@@ -2,7 +2,6 @@ import { NextResponse } from "next/server";
 
 import { assertOrgEinheit } from "@/lib/org/assert-org-objekt";
 import { requireOrganisationSession } from "@/lib/org/require-org-session";
-import { ensureDefaultObjektEinheitenFromHinweis } from "@/lib/org/seed-objekt-einheiten";
 import { supabaseAdmin } from "@/lib/supabase";
 
 export const runtime = "nodejs";
@@ -16,30 +15,6 @@ export async function GET(req: Request) {
   const objektId = new URL(req.url).searchParams.get("objektId")?.trim();
   if (!objektId) {
     return NextResponse.json({ error: "objektId fehlt." }, { status: 400 });
-  }
-
-  const { data: objekt } = await supabaseAdmin
-    .from("kunden_objekte")
-    .select("id, einheiten_hinweis")
-    .eq("id", objektId)
-    .eq("kunde_id", session.kunde.id)
-    .maybeSingle();
-
-  if (!objekt) {
-    return NextResponse.json({ error: "Objekt nicht gefunden." }, { status: 404 });
-  }
-
-  const { count: activeCount } = await supabaseAdmin
-    .from("objekt_einheiten")
-    .select("id", { count: "exact", head: true })
-    .eq("kunde_objekt_id", objektId)
-    .eq("aktiv", true);
-
-  if ((activeCount ?? 0) === 0) {
-    await ensureDefaultObjektEinheitenFromHinweis(
-      objektId,
-      objekt.einheiten_hinweis
-    );
   }
 
   const { data, error } = await supabaseAdmin

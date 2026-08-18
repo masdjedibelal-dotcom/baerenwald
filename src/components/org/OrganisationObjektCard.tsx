@@ -16,7 +16,7 @@ type Props = {
 };
 
 /**
- * Objekt-Listenkarte — immer Card (auch Desktop mit Rand).
+ * Objekt-Listenkarte — gleiche Shell wie Vorgänge (PortalListCard + Cover).
  */
 export function OrganisationObjektCard({
   card,
@@ -28,7 +28,7 @@ export function OrganisationObjektCard({
 }: Props) {
   return (
     <PortalListCard
-      variant="card"
+      variant="responsive"
       accent="auftrag"
       showLeftAccent={false}
       selected={selected}

@@ -2,6 +2,8 @@
 
 import { revalidatePath } from "next/cache";
 
+import { notifyHvPartnerErledigt } from "@/lib/org/notify-hv-partner-erledigt";
+import { allePositionenPortalErledigt } from "@/lib/portal/vorgang-erledigt";
 import { linkPortalHandwerkerToAuthUser } from "@/lib/partner/link-portal-handwerker";
 import {
   positionHandwerkerAbgeschlossen,
@@ -129,6 +131,15 @@ export async function markPartnerAuftragErledigt(
     return { ok: false, error: "Leistungen konnten nicht aktualisiert werden." };
   }
 
+  const { data: allePositionen } = await supabaseAdmin
+    .from("auftrag_positionen")
+    .select("handwerker_id, handwerker_status, leistung_status, aenderung_typ")
+    .eq("auftrag_id", id);
+
+  const auftragVollstaendigErledigt = allePositionenPortalErledigt(
+    allePositionen ?? []
+  );
+
   const { data: hw } = await supabaseAdmin
     .from("handwerker")
     .select("name, firma")
@@ -148,7 +159,15 @@ export async function markPartnerAuftragErledigt(
     leistungen,
   });
 
-  // HV-Notify erst nach CRM-Freigabe des Abnahmeprotokolls.
+  if (auftrag.lead_id) {
+    await notifyHvPartnerErledigt({
+      auftragId: id,
+      leadId: String(auftrag.lead_id),
+      handwerkerName,
+      leistungen,
+      vollstaendig: auftragVollstaendigErledigt,
+    });
+  }
 
   revalidatePath("/partner");
   return { ok: true };

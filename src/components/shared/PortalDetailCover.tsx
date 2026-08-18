@@ -9,8 +9,7 @@ import { cn } from "@/lib/utils";
 
 export type PortalDetailCoverProps = {
   coverUrl?: string | null;
-  /** Ohne `onBack`: Cover ohne Zurück-Button (z. B. HV-Detail eingebettet). */
-  onBack?: () => void;
+  onBack: () => void;
   backLabel?: string;
   onEdit?: () => void;
   /** Optional title/content overlay (z. B. unter den Buttons). */
@@ -74,19 +73,17 @@ export function PortalDetailCover({
         aria-hidden
       />
 
-      {onBack ? (
-        <button
-          type="button"
-          onClick={onBack}
-          className="portal-text-meta absolute left-3.5 top-3 z-10 inline-flex h-9 items-center gap-1 rounded-full border border-black/10 px-3 font-semibold shadow-md backdrop-blur-[2px]"
-          style={{
-            background: "rgba(240, 242, 240, 0.95)",
-            color: PORTAL_VAR.sub,
-          }}
-        >
-          {backLabel}
-        </button>
-      ) : null}
+      <button
+        type="button"
+        onClick={onBack}
+        className="absolute left-3.5 top-3 z-10 inline-flex h-9 items-center gap-1 rounded-full border border-black/10 px-3 text-[13px] font-semibold shadow-md backdrop-blur-[2px]"
+        style={{
+          background: "rgba(240, 242, 240, 0.95)",
+          color: PORTAL_VAR.sub,
+        }}
+      >
+        {backLabel}
+      </button>
 
       {onEdit ? (
         <button

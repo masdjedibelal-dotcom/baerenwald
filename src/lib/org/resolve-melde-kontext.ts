@@ -3,7 +3,6 @@ import { ensureMeldeSlugsForKunde } from "@/lib/org/ensure-melde-slug";
 import { MELDE_ALLGEMEIN_SLUG } from "@/lib/org/melde-url";
 import { toMeldeObjektDisplay } from "@/lib/portal2/melde-objekte";
 import type { MeldeObjektDisplay } from "@/lib/portal2/basisdaten-types";
-import { normalizeAkutFallIds } from "@/lib/org/sofortmassnahme-faelle";
 
 export type MeldeKontext = {
   org: {
@@ -22,8 +21,6 @@ export type MeldeKontext = {
     mieter_kontakt_hinweis?: string | null;
     impressum_url?: string | null;
     datenschutz_url?: string | null;
-    /** Whitelist Sofortmaßnahme; leer = nichts geht direkt. */
-    akut_fall_ids?: string[];
   };
   objekt: {
     id: string;
@@ -67,11 +64,10 @@ type OrgRow = {
   mieter_kontakt_hinweis?: string | null;
   impressum_url?: string | null;
   datenschutz_url?: string | null;
-  akut_fall_ids?: unknown;
 };
 
 const ORG_SELECT_WL =
-  "id, name, org_kennung, org_anzeigename, org_logo_url, portal_modus, org_primary_color, org_primary_color_dk, org_primary_color_soft, org_logo_kuerzel, org_sub, mieter_kontakt_telefon, mieter_kontakt_email, mieter_kontakt_hinweis, impressum_url, datenschutz_url, akut_fall_ids";
+  "id, name, org_kennung, org_anzeigename, org_logo_url, portal_modus, org_primary_color, org_primary_color_dk, org_primary_color_soft, org_logo_kuerzel, org_sub, mieter_kontakt_telefon, mieter_kontakt_email, mieter_kontakt_hinweis, impressum_url, datenschutz_url";
 const ORG_SELECT_WL_LEGACY =
   "id, name, org_kennung, org_anzeigename, org_logo_url, portal_modus, org_primary_color, mieter_kontakt_telefon, mieter_kontakt_email, mieter_kontakt_hinweis, impressum_url, datenschutz_url";
 const ORG_SELECT_BASE =
@@ -268,7 +264,6 @@ export async function resolveMeldeKontext(
         mieter_kontakt_hinweis: org.mieter_kontakt_hinweis ?? null,
         impressum_url: org.impressum_url ?? null,
         datenschutz_url: org.datenschutz_url ?? null,
-        akut_fall_ids: normalizeAkutFallIds(org.akut_fall_ids),
       },
       objekt,
       objekte,

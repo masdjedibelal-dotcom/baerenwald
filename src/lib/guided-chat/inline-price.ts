@@ -52,14 +52,14 @@ export function tryGuidedInlinePrice(draft: GuidedFunnelDraft): GuidedPriceOutco
       kind: "beratung",
       reason:
         result.komplexReason ??
-        "Für Ihr Vorhaben brauchen wir eine kurze persönliche Einschätzung — ich helfe Ihnen gern bei der Anfrage.",
+        "Für dein Vorhaben brauchen wir eine kurze persönliche Einschätzung — ich helfe dir gern bei der Anfrage.",
     };
   }
 
   if (result.min <= 0 && result.max <= 0) {
     return {
       kind: "beratung",
-      reason: "Dafür können wir Ihnen hier keinen verlässlichen Rahmen geben — lassen Sie uns Ihr Projekt direkt anfragen.",
+      reason: "Dafür können wir dir hier keinen verlässlichen Rahmen geben — lass uns dein Projekt direkt anfragen.",
     };
   }
 

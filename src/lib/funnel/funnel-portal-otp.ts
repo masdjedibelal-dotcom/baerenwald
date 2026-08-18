@@ -132,13 +132,10 @@ export async function verifyFunnelOtp(opts: {
   return { ok: true, userId };
 }
 
-export type PortalOtpBrand = "meinbaerenwald" | "partner";
-
 export async function sendFunnelOtpEmail(opts: {
   email: string;
   code: string;
   vorname?: string;
-  brand?: PortalOtpBrand;
 }): Promise<{ ok: true } | { ok: false; error: string }> {
   const resendKey = process.env.RESEND_API_KEY?.trim();
   if (!resendKey) {
@@ -149,31 +146,20 @@ export async function sendFunnelOtpEmail(opts: {
     };
   }
 
-  const brand = opts.brand ?? "meinbaerenwald";
-  const productLabel =
-    brand === "partner" ? "Partner-Portal" : "MeinBärenwald";
   const from =
     process.env.RESEND_FROM_SYSTEM ??
     "MeinBärenwald <system@baerenwaldmuenchen.de>";
-  const vorname = (opts.vorname ?? "").trim();
-  const greeting =
-    brand === "partner"
-      ? vorname
-        ? `Hallo ${escapeHtml(vorname)}`
-        : "Hallo"
-      : vorname
-        ? `Hallo ${escapeHtml(vorname)}`
-        : "Guten Tag";
+  const name = (opts.vorname ?? "").trim() || "du";
   const resend = new Resend(resendKey);
 
   try {
     const { error } = await resend.emails.send({
       from,
       to: opts.email.trim().toLowerCase(),
-      subject: `${opts.code} — ${productLabel} Bestätigungscode`,
+      subject: `${opts.code} — dein MeinBärenwald Bestätigungscode`,
       html: `
-        <p>${greeting},</p>
-        <p>Dein Bestätigungscode für ${escapeHtml(productLabel)}:</p>
+        <p>Hallo ${escapeHtml(name)},</p>
+        <p>dein Bestätigungscode für MeinBärenwald:</p>
         <p style="font-size:28px;font-weight:700;letter-spacing:6px;color:#2E7D52;">${escapeHtml(opts.code)}</p>
         <p>Der Code ist 15 Minuten gültig.</p>
         <p style="color:#6b7280;font-size:13px;">${escapeHtml(SITE_CONFIG.companyName)} · ${escapeHtml(SITE_CONFIG.addressLine)}</p>
@@ -188,39 +174,6 @@ export async function sendFunnelOtpEmail(opts: {
     console.error("[sendFunnelOtpEmail]", e);
     return { ok: false, error: "Code-Mail konnte nicht gesendet werden." };
   }
-}
-
-/** Speichert OTP und sendet Mail; bei Mail-Fehler User + OTP aufräumen. */
-export async function issueSignupOtp(opts: {
-  email: string;
-  userId: string;
-  vorname?: string;
-  brand?: PortalOtpBrand;
-}): Promise<{ ok: true } | { ok: false; error: string }> {
-  const email = normalizeKundenEmail(opts.email);
-  if (!email) return { ok: false, error: "Ungültige E-Mail." };
-
-  const code = generateFunnelOtpCode();
-  try {
-    await storeFunnelOtp({ email, code, userId: opts.userId });
-  } catch (e) {
-    console.error("[issueSignupOtp] store", e);
-    await supabaseAdmin.auth.admin.deleteUser(opts.userId);
-    return { ok: false, error: "Code konnte nicht erzeugt werden." };
-  }
-
-  const mail = await sendFunnelOtpEmail({
-    email,
-    code,
-    vorname: opts.vorname,
-    brand: opts.brand,
-  });
-  if (!mail.ok) {
-    await supabaseAdmin.auth.admin.deleteUser(opts.userId);
-    await supabaseAdmin.from("funnel_portal_otp").delete().eq("email", email);
-    return mail;
-  }
-  return { ok: true };
 }
 
 function escapeHtml(s: string): string {

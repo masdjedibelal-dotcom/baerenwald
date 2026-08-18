@@ -1325,10 +1325,6 @@ export function getBwResultModus(state: FunnelState): "normal" | "zu_komplex" {
   if (state.situation === "gewerbe") {
     return "zu_komplex";
   }
-  // Anbau/Garage: Website-Beratungspfad, kein Fake-Preisrahmen
-  if (state.situation === "erneuern" && state.bereiche.includes("anbau")) {
-    return "zu_komplex";
-  }
   if (state.situation === "erneuern" && isErneuernProjektBereich(state.bereiche)) {
     const pr = state.fachdetails?.projekt;
     if (
@@ -1593,34 +1589,8 @@ function computePriceCore(state: FunnelState): {
     }
   }
 
-  const groesseRaw = state.groesse;
+  const groesse = state.groesse ?? 1;
   const einheit = basis.einheit;
-  const needsExplicitGroesse =
-    !reparaturPauschal &&
-    ((einheit.includes("m²") &&
-      !einheit.includes("Monat") &&
-      !einheit.includes("Besuch")) ||
-      (einheit.includes("Stück") && state.groesseEinheit === "stueck") ||
-      (service === "dach" &&
-        type === "regenrinne" &&
-        state.groesseEinheit === "meter") ||
-      (service === "projekt" &&
-        type !== "garten_neu" &&
-        type !== "baum" &&
-        type !== "baum_betreuung" &&
-        type !== "obstbaum_betreuung" &&
-        type !== "durchbruch_tragend" &&
-        type !== "durchbruch_nicht_tragend"));
-
-  // Kein stilles Fallback auf 1 m² / 1 Stück — sonst Portal-Mini-Preise
-  if (
-    needsExplicitGroesse &&
-    (groesseRaw == null || !Number.isFinite(groesseRaw) || groesseRaw <= 0)
-  ) {
-    return null;
-  }
-
-  const groesse = groesseRaw ?? 1;
   let multiplier = 1;
   if (!reparaturPauschal) {
     if (service === "projekt") {

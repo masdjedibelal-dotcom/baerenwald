@@ -59,7 +59,7 @@ export function BwBeratungLead({
           <h1 className="step-question">Baum / Sturmschaden</h1>
           <p className="step-sub whitespace-pre-line">
             Baumnotfälle sind sehr individuell — Größe, Lage und Zugänglichkeit
-            bestimmen den Aufwand. Wir kommen schnell vorbei und nennen Ihnen
+            bestimmen den Aufwand. Wir kommen schnell vorbei und nennen dir
             einen festen Preis vor Ort.
           </p>
           <p className="mt-4 text-sm text-text-secondary">
@@ -129,10 +129,10 @@ export function BwBeratungLead({
       : kind === "garten_planung"
         ? "Gartenplanung ist individuell — wir kommen vorbei und schauen uns gemeinsam an was möglich ist und was es kostet."
         : kind === "garten_terrasse"
-          ? "Wir melden uns für einen Beratungstermin — dann stimmen wir Fläche, Unterbau und Belag mit Ihnen ab."
+          ? "Wir melden uns für einen Beratungstermin — dann stimmen wir Fläche, Unterbau und Belag mit dir ab."
           : kind === "allgemein"
-            ? `Für Ihr Vorhaben gibt es zu viele individuelle Faktoren für einen festen Online-Preis. Hinterlassen Sie kurz Ihre Kontaktdaten — wir melden uns ${SITE_CONFIG.responseSlaWithin}.`
-            : `Ob Büro, Praxis, Laden oder Gastronomie — wir planen individuell mit Ihnen. Melden Sie sich kurz und wir melden uns ${SITE_CONFIG.responseSlaWithin}.`;
+            ? `Für dein Vorhaben gibt es zu viele individuelle Faktoren für einen festen Online-Preis. Hinterlasse kurz deine Kontaktdaten — wir melden uns ${SITE_CONFIG.responseSlaWithin}.`
+            : `Ob Büro, Praxis, Laden oder Gastronomie — wir planen individuell mit dir. Melde dich kurz und wir melden uns ${SITE_CONFIG.responseSlaWithin}.`;
 
   return (
     <StepWrapper
@@ -189,7 +189,7 @@ export function BwBeratungLead({
           />
 
           <textarea
-            placeholder="Kurze Beschreibung — was planen Sie?"
+            placeholder="Kurze Beschreibung — was planst du?"
             className="funnel-textarea"
             rows={3}
             value={beschreibung}

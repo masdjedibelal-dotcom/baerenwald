@@ -1,11 +1,4 @@
 import { calculatePrice } from "@/lib/funnel/price-calc";
-import {
-  normalizeMeldeDachProblem,
-  normalizeMeldeFensterProblem,
-  normalizeMeldeHeizungProblem,
-  normalizeMeldeStromProblem,
-  normalizeMeldeWasserProblem,
-} from "@/lib/funnel/melde-dynamic-questions";
 import type { FunnelState, FachdetailsState } from "@/lib/funnel/types";
 import {
   meldeKategorieToZeitraum,
@@ -102,79 +95,37 @@ function buildFachdetails(
     fd.dach = { vorhaben: a.dach_kaputt_q1 };
   }
 
-  // Dynamische Melde-Probleme → price-calc Fachfelder (sanitaer.lage)
+  // Dynamische Melde-Probleme → Legacy-Felder für price-calc
   if (bereichId === "wasser") {
-    const wasserProblem = normalizeMeldeWasserProblem(problem);
-    const laeuft = ansVal(a, "melde_laeuft_noch");
-    if (wasserProblem === "verstopfung") {
-      fd.sanitaer = { ...(fd.sanitaer ?? {}), lage: "verstopfung" };
-    } else if (wasserProblem === "von_decke_wand") {
-      fd.sanitaer = { ...(fd.sanitaer ?? {}), lage: "wand" };
-    } else if (wasserProblem === "wasser_austritt") {
-      // Aktiv laufend / unklar → Leck-Band; ohne aktives Wasser → Armatur
-      if (laeuft === "ja" || laeuft === "weiss_nicht") {
-        fd.sanitaer = { ...(fd.sanitaer ?? {}), lage: "wand" };
-      } else {
-        fd.sanitaer = { ...(fd.sanitaer ?? {}), lage: "armatur" };
-      }
+    if (problem === "tropft" || problem === "laeuft_stark") {
+      fd.sanitaer = { ...(fd.sanitaer ?? {}), badWas: "leck_rohr" };
+    } else if (problem === "wc_verstopft") {
+      fd.sanitaer = { ...(fd.sanitaer ?? {}), badWas: "verstopfung" };
+    } else if (problem === "von_oben" || ansJa(a, "melde_laeuft_noch")) {
+      fd.sanitaer = { ...(fd.sanitaer ?? {}), badWas: "leck_rohr" };
     }
-    // feucht_ohne_lauf / sonstiges → kein lage → unsicheres Band in mapMeldeToPrice
   }
   if (bereichId === "heizung") {
-    const heizungProblem = normalizeMeldeHeizungProblem(problem);
-    const kaltUmfang = ansVal(a, "melde_heizung_kalt");
-    if (heizungProblem === "kein_warmwasser") {
-      fd.heizung = { ...(fd.heizung ?? {}), typ: "kein_warmwasser" };
-    } else if (heizungProblem === "wasser_am_hk") {
-      fd.heizung = { ...(fd.heizung ?? {}), typ: "druckverlust_wasser" };
-    } else if (heizungProblem === "geraeusche") {
-      fd.heizung = { ...(fd.heizung ?? {}), typ: "geraeusche" };
-    } else if (heizungProblem === "wohnung_kalt") {
-      if (kaltUmfang === "einzelne" || kaltUmfang === "teilweise") {
-        fd.heizung = { ...(fd.heizung ?? {}), typ: "geraeusche" };
-      } else {
-        // alles kalt / weiss_nicht / Legacy
-        fd.heizung = { ...(fd.heizung ?? {}), typ: "heizung_kalt" };
-      }
-    } else if (
-      // Legacy Rohwerte ohne Normalize-Treffer
+    if (
       problem === "nicht_warm" ||
       problem === "kalt" ||
-      kaltUmfang === "ja" ||
+      ansVal(a, "melde_heizung_kalt") === "ja" ||
       ansJa(a, "melde_wohnung_kalt")
     ) {
-      fd.heizung = { ...(fd.heizung ?? {}), typ: "heizung_kalt" };
+      fd.heizung = { ...(fd.heizung ?? {}), typ: "heizkoerper_kalt" };
     } else if (problem === "kein_ww" || ansVal(a, "melde_warmwasser") === "nein") {
       fd.heizung = { ...(fd.heizung ?? {}), typ: "kein_warmwasser" };
     } else if (problem === "tropft_hk") {
       fd.heizung = { ...(fd.heizung ?? {}), typ: "druckverlust_wasser" };
+    } else if (problem === "geraeusche") {
+      fd.heizung = { ...(fd.heizung ?? {}), typ: "heizkoerper_kalt" };
     }
-    // sonstiges → kein typ → Band + unsicher in mapMeldeToPrice
   }
   if (bereichId === "strom") {
-    const stromProblem = normalizeMeldeStromProblem(problem);
-    const sicherung = ansVal(a, "melde_sicherung_raus");
-    const wieder = ansVal(a, "melde_wieder_raus");
-
-    if (stromProblem === "kein_strom") {
-      fd.elektro = { ...(fd.elektro ?? {}), problem: "strom_weg" };
-    } else if (stromProblem === "fi_sicherung") {
-      if (wieder === "ja" || wieder === "weiss_nicht") {
-        fd.elektro = { ...(fd.elektro ?? {}), problem: "strom_weg" };
-      } else if (sicherung === "ja") {
-        fd.elektro = { ...(fd.elektro ?? {}), problem: "sicherung" };
-      } else {
-        fd.elektro = { ...(fd.elektro ?? {}), problem: "sicherung" };
-      }
-    } else if (stromProblem === "einzelner_punkt" || stromProblem === "klingel") {
-      fd.elektro = { ...(fd.elektro ?? {}), problem: "steckdose" };
-    } else if (stromProblem === "garagentor") {
-      fd.elektro = { ...(fd.elektro ?? {}), problem: "fehlersuche" };
-    } else if (
-      // Legacy Rohwerte
+    if (
       problem === "kein_strom" ||
       problem === "fi_sicherung" ||
-      sicherung === "ja" ||
+      ansVal(a, "melde_sicherung_raus") === "ja" ||
       ansJa(a, "melde_fi")
     ) {
       fd.elektro = { ...(fd.elektro ?? {}), problem: "strom_weg" };
@@ -183,39 +134,31 @@ function buildFachdetails(
       problem === "licht" ||
       problem === "schalter"
     ) {
-      fd.elektro = { ...(fd.elektro ?? {}), problem: "steckdose" };
+      fd.elektro = { ...(fd.elektro ?? {}), problem: "steckdose_defekt" };
+    } else if (problem === "garagentor") {
+      fd.elektro = { ...(fd.elektro ?? {}), problem: "strom_weg" };
+    } else if (problem === "klingel") {
+      fd.elektro = { ...(fd.elektro ?? {}), problem: "steckdose_defekt" };
     }
-    // sonstiges → kein problem → Band + unsicher
   }
   if (bereichId === "dach") {
-    const dachProblem = normalizeMeldeDachProblem(problem);
     if (
-      dachProblem === "regenrinne_ueber" ||
+      problem === "regenrinne_ueber" ||
+      problem === "wasser_fassade" ||
       problem === "rinne" ||
-      problem === "dachrinne"
-    ) {
-      fd.dach = { ...(fd.dach ?? {}), vorhaben: "regenrinne" };
-    } else if (
-      dachProblem === "wasser_fassade" ||
       problem === "fallrohr" ||
       problem === "dach_undicht" ||
       ansJa(a, "melde_wasser_ein")
     ) {
-      fd.dach = { ...(fd.dach ?? {}), vorhaben: "undichtigkeit" };
-    } else if (dachProblem === "ziegel_boden" || problem === "ziegel") {
-      fd.dach = { ...(fd.dach ?? {}), vorhaben: "ziegel_wenige" };
+      fd.dach = { ...(fd.dach ?? {}), vorhaben: "undicht" };
+    } else if (problem === "ziegel_boden" || problem === "ziegel") {
+      fd.dach = { ...(fd.dach ?? {}), vorhaben: "ziegel" };
     }
   }
   if (bereichId === "fenster_tuer") {
-    const fensterProblem = normalizeMeldeFensterProblem(problem);
-    if (
-      fensterProblem === "scheibe_kaputt" ||
-      problem === "scheibe_kaputt" ||
-      problem === "glas"
-    ) {
+    if (problem === "scheibe_kaputt" || problem === "glas") {
       fd.fenster = { ...(fd.fenster ?? {}), defekt: "glas" };
     } else if (
-      fensterProblem === "tuer_schloss" ||
       problem === "tuer_problem" ||
       problem === "schloss" ||
       ansVal(a, "melde_tuer_detail") === "schluessel" ||
@@ -223,18 +166,17 @@ function buildFachdetails(
     ) {
       fd.fenster = { ...(fd.fenster ?? {}), defekt: "schloss" };
     } else if (
-      fensterProblem === "fenster_klemmt_undicht" ||
-      problem === "fenster_klemmt" ||
-      problem === "tuer_klemmt" ||
-      ansVal(a, "melde_tuer_detail") === "schließt"
-    ) {
-      fd.fenster = { ...(fd.fenster ?? {}), defekt: "mechanik" };
-    } else if (
       problem === "fenster_geht_nicht" ||
       problem === "fenster_undicht" ||
       problem === "dichtung"
     ) {
       fd.fenster = { ...(fd.fenster ?? {}), defekt: "dichtung" };
+    } else if (
+      problem === "fenster_klemmt" ||
+      problem === "tuer_klemmt" ||
+      ansVal(a, "melde_tuer_detail") === "schließt"
+    ) {
+      fd.fenster = { ...(fd.fenster ?? {}), defekt: "mechanik" };
     }
   }
 
@@ -280,16 +222,13 @@ function bandPrice(input: MeldePriceInput): MeldePriceResult {
   // Akute Symptome
   if (
     ansJa(a, "melde_laeuft_noch") ||
-    ansVal(a, "melde_laeuft_noch") === "weiss_nicht" ||
     ansJa(a, "melde_wasser_ein") ||
     ansJa(a, "melde_fi") ||
     ansVal(a, "melde_abschliessbar") === "nein" ||
     problem === "kein_strom" ||
     problem === "laeuft" ||
     problem === "laeuft_stark" ||
-    problem === "ueberschwemmt" ||
-    problem === "wasser_austritt" ||
-    problem === "von_decke_wand"
+    problem === "ueberschwemmt"
   ) {
     min = Math.round(min * 1.15);
     max = Math.round(max * 1.25);
@@ -305,9 +244,7 @@ function bandPrice(input: MeldePriceInput): MeldePriceResult {
     problem === "schalter" ||
     problem === "klingel" ||
     problem === "dichtung" ||
-    problem === "tropft" ||
-    problem === "feucht_ohne_lauf" ||
-    problem === "einzelner_punkt"
+    problem === "tropft"
   ) {
     min = Math.round(min * 0.75);
     max = Math.round(max * 0.85);
@@ -326,62 +263,6 @@ export function mapMeldeToPrice(input: MeldePriceInput): MeldePriceResult {
   }
   if (!isMeldeBereichId(input.bereichId)) {
     return { preis_min: null, preis_max: null, preis_unsicher: true };
-  }
-
-  if (input.bereichId === "wasser") {
-    const wasserProblem = normalizeMeldeWasserProblem(
-      ansVal(input.fachdetailAnswers, "melde_problem")
-    );
-    if (wasserProblem === "feucht_ohne_lauf" || wasserProblem === "sonstiges") {
-      const band = bandPrice(input);
-      return { ...band, preis_unsicher: true };
-    }
-  }
-
-  if (input.bereichId === "heizung") {
-    const heizungProblem = normalizeMeldeHeizungProblem(
-      ansVal(input.fachdetailAnswers, "melde_problem")
-    );
-    if (heizungProblem === "sonstiges") {
-      const band = bandPrice(input);
-      return { ...band, preis_unsicher: true };
-    }
-  }
-
-  if (input.bereichId === "strom") {
-    const stromProblem = normalizeMeldeStromProblem(
-      ansVal(input.fachdetailAnswers, "melde_problem")
-    );
-    if (stromProblem === "sonstiges") {
-      const band = bandPrice(input);
-      return { ...band, preis_unsicher: true };
-    }
-  }
-
-  if (input.bereichId === "fenster_tuer") {
-    const fensterProblem = normalizeMeldeFensterProblem(
-      ansVal(input.fachdetailAnswers, "melde_problem")
-    );
-    if (fensterProblem === "sonstiges") {
-      const band = bandPrice(input);
-      return { ...band, preis_unsicher: true };
-    }
-  }
-
-  if (input.bereichId === "dach") {
-    const dachProblem = normalizeMeldeDachProblem(
-      ansVal(input.fachdetailAnswers, "melde_problem")
-    );
-    if (dachProblem === "sonstiges") {
-      const band = bandPrice(input);
-      return { ...band, preis_unsicher: true };
-    }
-  }
-
-  // Schimmel: selten klar kalkulierbar → Band + unsicher
-  if (input.bereichId === "schimmel") {
-    const band = bandPrice(input);
-    return { ...band, preis_unsicher: true };
   }
 
   const state = buildMeldeFunnelState(input);

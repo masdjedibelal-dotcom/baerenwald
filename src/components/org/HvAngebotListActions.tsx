@@ -13,9 +13,8 @@ type Props = {
 };
 
 /**
- * Listen-Aktionen Angebots-Freigabe: Ablehnen · Freigeben
- * (links negativ, rechts positiv)
- * → POST /api/org/freigabe
+ * Mock Listen-Aktionen Angebots-Freigabe: Freigeben · Ablehnen
+ * → POST /api/org/freigabe (`actAngebotAnnehmen` / Ablehnen)
  */
 export function HvAngebotListActions({ leadId, onUpdated }: Props) {
   const [busy, setBusy] = useState(false);

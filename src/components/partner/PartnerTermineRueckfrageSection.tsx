@@ -98,13 +98,8 @@ export function PartnerTermineRueckfrageSection({
         variant="edit"
         dirty={rueckfrage.trim().length > 0}
         closeOnBackdrop={!busy}
-        busy={busy}
       >
-        <form
-          id="partner-rueckfrage-form"
-          onSubmit={sendFrage}
-          className="space-y-3"
-        >
+        <form onSubmit={sendFrage} className="space-y-3">
           <textarea
             className="portal-input w-full min-h-[100px] rounded-xl border border-border-default px-3 py-2.5"
             placeholder="Frage zum Auftrag…"
@@ -133,13 +128,8 @@ export function PartnerTermineRueckfrageSection({
         variant="edit"
         dirty={Boolean(slotBeginn || slotEnde)}
         closeOnBackdrop={!busy}
-        busy={busy}
       >
-        <form
-          id="partner-termin-form"
-          onSubmit={sendTermin}
-          className="space-y-3"
-        >
+        <form onSubmit={sendTermin} className="space-y-3">
           <label className="block space-y-1.5">
             <span className="portal-form-label">Beginn</span>
             <input

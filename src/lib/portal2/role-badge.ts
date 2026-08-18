@@ -7,7 +7,6 @@ export type PortalRoleBadgeRole =
   | "mieter"
   | "kunde"
   | "eigentuemer"
-  | "hausmeister"
   | "handwerker";
 
 export type PortalRoleBadgeStyle = {
@@ -24,7 +23,6 @@ export const PORTAL_ROLE_BADGE: Record<
   mieter: { label: "Mieter", bg: "#E4ECF7", color: "#1F4FA8" },
   kunde: { label: "Kunde", bg: "#E7F1E9", color: "#2E7D52" },
   eigentuemer: { label: "Eigentümer", bg: "#EDE7F6", color: "#5B3FA8" },
-  hausmeister: { label: "Hausmeister", bg: "#E8F5E9", color: "#2E7D32" },
   handwerker: { label: "Handwerker", bg: "#FBF1D6", color: "#8A5A06" },
 };
 
@@ -34,7 +32,6 @@ export function toPortalRoleBadgeRole(
 ): PortalRoleBadgeRole {
   if (role === "mieter") return "mieter";
   if (role === "eigentuemer") return "eigentuemer";
-  if (role === "hausmeister") return "hausmeister";
   if (role === "handwerker") return "handwerker";
   if (role === "kunde_hv" || role === "kunde_privat" || role === "kunde") {
     return "kunde";

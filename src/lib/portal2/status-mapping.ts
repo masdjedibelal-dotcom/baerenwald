@@ -137,15 +137,6 @@ export const PORTAL_FLOW_MAPPING: Record<
     ],
     notes: "Mock-Label „Abgeschlossen“; intern Key bezahlt.",
   },
-  abgelehnt: {
-    label: PORTAL_STATUS.abgelehnt.label,
-    realFields: [
-      "angebote.status_einfach/status = abgelehnt (oder ersetzt/abgelaufen)",
-      "kein aktiver Auftrag",
-    ],
-    notes:
-      "Terminal nach Ablehnung im Portal/CRM. Listen-Chip „Erledigt“, keine Annehmen/Ablehnen-CTAs.",
-  },
 };
 
 function norm(s: string | null | undefined): string {
@@ -163,13 +154,6 @@ export function resolvePortalFlowStatus(
   const freigabe = norm(extra.org_freigabe_status);
   const hv = norm(extra.hv_meldung_status);
   const u = norm(resolved.unterstatus);
-
-  if (hv === "hm_erledigt") {
-    return "abschluss";
-  }
-  if (hv === "hm_pruefung") {
-    return "gemeldet";
-  }
 
   if (resolved.phase === "rechnung" && u === "bezahlt") {
     return "bezahlt";
@@ -243,8 +227,8 @@ export function portalFlowTimeline(
 }
 
 /**
- * Mieter-Detail-Timeline: kein Angebots-Schritt, „Auftrag“ → „Beauftragt“.
- * Schritte = MIETER_STG (Eingegangen · In Bearbeitung · Beauftragt · Vor Ort · Erledigt).
+ * Mieter-Detail-Timeline: kein Angebots-Schritt, „Auftrag“ → „Bestätigung“.
+ * Schritte = MIETER_STG (Eingegangen · In Bearbeitung · Bestätigung · Erledigt).
  */
 export function portalMieterFlowTimeline(
   current: PortalMockStatusId

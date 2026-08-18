@@ -1,8 +1,6 @@
 import { NextResponse } from "next/server";
 
 import { createClient } from "@/lib/supabase/server";
-import { limitReadNotifications } from "@/lib/portal2/notif-types";
-import { filterActiveVorgangEntityIds, normalizeVorgangRef } from "@/lib/portal/lead-not-deleted";
 import { isSupabaseConfigured, supabaseAdmin } from "@/lib/supabase";
 
 /**
@@ -29,7 +27,7 @@ export async function GET() {
     )
     .eq("empfaenger_user_id", user.id)
     .order("created_at", { ascending: false })
-    .limit(120);
+    .limit(40);
 
   if (error) {
     // Relation fehlt vor Migration
@@ -39,61 +37,7 @@ export async function GET() {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
-  let rows = data ?? [];
-
-  const notifRefs = rows.flatMap((n) => {
-    const fromRef = normalizeVorgangRef(n.vorgang_ref);
-    const fromLink = String(n.link ?? "").match(
-      /[?&]id=([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})/i
-    );
-    return [fromRef, fromLink?.[1] ?? null].filter(Boolean) as string[];
-  });
-  if (notifRefs.length) {
-    const active = await filterActiveVorgangEntityIds(notifRefs);
-    rows = rows.filter((n) => {
-      const fromRef = normalizeVorgangRef(n.vorgang_ref);
-      const fromLink = String(n.link ?? "").match(
-        /[?&]id=([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})/i
-      )?.[1];
-      const ref = fromRef || fromLink || null;
-      if (!ref) return true;
-      return active.has(ref);
-    });
-  }
-
-  // Mieter: keine Angebots-Glocken (auch Alt-Einträge ausblenden)
-  const angebotRefs = Array.from(
-    new Set(
-      rows
-        .filter((n) => String(n.typ ?? "").toLowerCase() === "angebot")
-        .map((n) => String(n.vorgang_ref ?? "").trim())
-        .filter(Boolean)
-    )
-  );
-  if (angebotRefs.length) {
-    const { data: leads } = await supabaseAdmin
-      .from("leads")
-      .select("id, auftraggeber_kunde_id")
-      .in("id", angebotRefs);
-    const mieterLeadIds = new Set(
-      (leads ?? [])
-        .filter((l) =>
-          String(
-            (l as { auftraggeber_kunde_id?: string | null }).auftraggeber_kunde_id ??
-              ""
-          ).trim()
-        )
-        .map((l) => String((l as { id: string }).id))
-    );
-    rows = rows.filter((n) => {
-      if (String(n.typ ?? "").toLowerCase() !== "angebot") return true;
-      const ref = String(n.vorgang_ref ?? "").trim();
-      if (ref && mieterLeadIds.has(ref)) return false;
-      return true;
-    });
-  }
-
-  rows = limitReadNotifications(rows, (n) => !n.gelesen);
+  const rows = data ?? [];
   const unread = rows.filter((n) => !n.gelesen).length;
   return NextResponse.json({ notifications: rows, unread });
 }

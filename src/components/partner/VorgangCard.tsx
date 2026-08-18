@@ -4,28 +4,11 @@ import { PartnerAuftragAnfrageDetail } from "@/components/partner/PartnerAuftrag
 import { PartnerAuftragDetail } from "@/components/partner/PartnerAuftragDetail";
 import { PartnerOffenDetail } from "@/components/partner/PartnerOffenDetail";
 import type { PartnerVorgangItem } from "@/lib/partner/build-partner-vorgaenge";
-import type { PartnerHandwerkerProfil } from "@/lib/partner/get-partner-data";
 import {
   enrichPartnerOffenAngebot,
   type PartnerOffenAngebotItem,
 } from "@/lib/partner/partner-offen-status";
 import type { VorgangState } from "@/lib/partner/vorgang-state";
-
-type VorgangCardHandwerker = Pick<
-  PartnerHandwerkerProfil,
-  | "firma"
-  | "name"
-  | "strasse"
-  | "hausnummer"
-  | "plz"
-  | "ort"
-  | "adresse"
-  | "telefon"
-  | "steuernummer"
-  | "ustid"
-  | "iban"
-  | "kleinunternehmer"
->;
 
 function toOffenAngebotItem(vorgang: PartnerVorgangItem): PartnerOffenAngebotItem {
   const anfrage = vorgang.anfrage!;
@@ -79,7 +62,6 @@ function resolveOffenDetailItem(
 
 export function VorgangCard({
   vorgang,
-  handwerker,
   onUpdated,
   onBack,
   focusBautagebuch,
@@ -88,7 +70,6 @@ export function VorgangCard({
   protokollId,
 }: {
   vorgang: PartnerVorgangItem;
-  handwerker?: VorgangCardHandwerker | null;
   onUpdated?: (id: string) => void;
   onBack?: () => void;
   focusBautagebuch?: boolean;
@@ -99,19 +80,25 @@ export function VorgangCard({
   const { state, auftrag } = vorgang;
   const vorgangState = state as VorgangState;
 
-  // Direktauftrag / Notmaßnahme: HV braucht keine Freigabe — Handwerker muss
-  // trotzdem annehmen/ablehnen (wie jeder andere Vorgang).
+  if (auftrag.lead?.hv_meldung_status === "notmassnahme") {
+    return (
+      <PartnerAuftragDetail
+        item={auftrag}
+        vorgangState="in_bearbeitung"
+        onBack={onBack}
+        focusBautagebuch={focusBautagebuch}
+        deepLinkAnfrageId={anfrageId}
+        focusAbnahme={focusAbnahme}
+        deepLinkProtokollId={protokollId}
+      />
+    );
+  }
 
-  if (
-    state === "in_bearbeitung" ||
-    state === "erledigt" ||
-    state === "abgelehnt"
-  ) {
+  if (state === "in_bearbeitung" || state === "erledigt") {
     return (
       <PartnerAuftragDetail
         item={auftrag}
         vorgangState={vorgangState}
-        handwerker={handwerker}
         onBack={onBack}
         focusBautagebuch={focusBautagebuch}
         deepLinkAnfrageId={anfrageId}

@@ -3,7 +3,7 @@ import type {
   PartnerAuftragItem,
 } from "@/lib/partner/get-partner-data";
 import {
-  isPartnerAntwortfristAbgelaufen,
+  isProjektStartDatumErreicht,
   resolvePartnerAnfrageProjektStartIso,
 } from "@/lib/partner/partner-anfrage-projekt-start";
 import {
@@ -41,10 +41,7 @@ export function isPartnerAnfrageAntwortAbgelaufen(
     zeitraum: item.zeitraum,
     lead: item.lead,
   });
-  return isPartnerAntwortfristAbgelaufen({
-    projektStartIso: start,
-    zugewiesenAmIso: item.gesendet_at,
-  });
+  return isProjektStartDatumErreicht(start);
 }
 
 /** Erstzuweisung — noch keine verbindliche Annahme. */
@@ -117,14 +114,9 @@ export function partnerAnfrageStatusLabel(
 
 type PartnerAuftragAnfrageTiming = Pick<
   PartnerAuftragItem,
-  "hwStatus" | "start_datum" | "created_at" | "updated_at"
+  "hwStatus" | "start_datum"
 > & {
-  positionen: Array<{
-    start_datum?: string | null;
-    handwerker_status?: string | null;
-    handwerker_id?: string | null;
-    handwerker_angefragt_at?: string | null;
-  }>;
+  positionen: Array<{ start_datum?: string | null }>;
 };
 
 export function isPartnerAuftragAnfrageAntwortAbgelaufen(
@@ -137,53 +129,10 @@ export function isPartnerAuftragAnfrageAntwortAbgelaufen(
     start_datum: item.start_datum,
     position_start_daten: item.positionen.map((p) => p.start_datum),
   });
-  const zugewiesenAm =
-    item.positionen
-      .map((p) => p.handwerker_angefragt_at?.trim())
-      .filter((d): d is string => Boolean(d))
-      .sort()
-      .at(-1) ??
-    item.updated_at ??
-    item.created_at ??
-    null;
-  return isPartnerAntwortfristAbgelaufen({
-    projektStartIso: start,
-    zugewiesenAmIso: zugewiesenAm,
-  });
+  return isProjektStartDatumErreicht(start);
 }
 
-/** Noch keine HW-Antwort — trotz verstrichenem Startdatum in der Liste behalten. */
-function partnerZuweisungNochAusstehend(input: {
-  anfrage?: PartnerAnfrageTimingFields | null;
-  auftrag: PartnerAuftragAnfrageTiming & { hwStatus: string };
-}): boolean {
-  const hw = input.auftrag.hwStatus.toLowerCase();
-  if (PENDING_STATUS.has(hw) || hw === "zugewiesen") return true;
-
-  if (
-    input.auftrag.positionen.some((p) => positionBrauchtHandwerkerAktion(p))
-  ) {
-    return true;
-  }
-
-  const anfrage = input.anfrage;
-  if (!anfrage) return false;
-  if (anfrage.antwort_at || anfrage.bestaetigt_at) return false;
-  const st = anfrage.status.toLowerCase();
-  if (st === "angenommen" || st === "abgelehnt" || st === "akzeptiert") {
-    return false;
-  }
-  return (
-    Boolean(anfrage.gesendet_at) ||
-    PENDING_STATUS.has(st) ||
-    (anfrage.hw_status ?? "").toLowerCase() === "angefragt"
-  );
-}
-
-/**
- * Abgelaufene Zuweisung ohne HW-Antwort — nicht in Vorgängen listen.
- * Ausnahme: noch `angefragt` / ausstehend → trotzdem anzeigen (Startdatum egal).
- */
+/** Abgelaufene Zuweisung ohne HW-Antwort — nicht in Vorgängen listen. */
 export function isPartnerVorgangAusgeblendet(input: {
   handwerker_bestaetigt_at: string | null;
   anfrage?: PartnerAnfrageTimingFields | null;
@@ -197,8 +146,6 @@ export function isPartnerVorgangAusgeblendet(input: {
   const hw = input.auftrag.hwStatus.toLowerCase();
   const anfrageSt = (input.anfrage?.status ?? "").toLowerCase();
   if (hw === "abgelehnt" || anfrageSt === "abgelehnt") return false;
-
-  if (partnerZuweisungNochAusstehend(input)) return false;
 
   if (input.anfrage && isPartnerAnfrageAntwortAbgelaufen(input.anfrage)) {
     return true;
@@ -217,18 +164,11 @@ export function isPartnerVorgangAusgeblendet(input: {
 export function isPartnerAuftragAnfrageOffen(
   item: Pick<
     PartnerAuftragItem,
-    | "status"
-    | "hwStatus"
-    | "start_datum"
-    | "handwerker_bestaetigt_at"
-    | "created_at"
-    | "updated_at"
+    "status" | "hwStatus" | "start_datum"
   > & {
     positionen: Array<{
       start_datum?: string | null;
       handwerker_status?: string | null;
-      handwerker_id?: string | null;
-      handwerker_angefragt_at?: string | null;
     }>;
   }
 ): boolean {
@@ -242,18 +182,6 @@ export function isPartnerAuftragAnfrageOffen(
   /** Noch offene Leistungen — immer in Offen, auch nach Projektstart. */
   if (hatOffenePosition) return true;
 
-  /** Portal-Annahme fehlt — auch bei CRM-Status „bestaetigt“ (Direktauftrag). */
-  if (!item.handwerker_bestaetigt_at?.trim()) {
-    const hatZuweisung = item.positionen.some(
-      (p) =>
-        Boolean(p.handwerker_id?.trim()) ||
-        Boolean((p.handwerker_status ?? "").trim())
-    );
-    if (hatZuweisung || PENDING_STATUS.has(hw) || hw === "zugewiesen") {
-      return !isPartnerAuftragAnfrageAntwortAbgelaufen(item);
-    }
-  }
-
   if (hw === "akzeptiert") return false;
   if (isPartnerAuftragAnfrageAntwortAbgelaufen(item)) return false;
 
@@ -266,19 +194,11 @@ export function isPartnerAuftragAnfrageOffen(
 
 type PartnerAuftragAnfrageAktionFields = Pick<
   PartnerAuftragItem,
-  | "status"
-  | "hwStatus"
-  | "start_datum"
-  | "angebotHandwerkerId"
-  | "handwerker_bestaetigt_at"
-  | "created_at"
-  | "updated_at"
+  "status" | "hwStatus" | "start_datum" | "angebotHandwerkerId"
 > & {
   positionen: Array<{
     start_datum?: string | null;
     handwerker_status?: string | null;
-    handwerker_id?: string | null;
-    handwerker_angefragt_at?: string | null;
   }>;
 };
 
@@ -291,20 +211,10 @@ export function isPartnerAuftragAnfrageAktionErforderlich(
 }
 
 export function partnerAuftragAnfrageStatusLabel(
-  item: Pick<
-    PartnerAuftragItem,
-    | "hwStatus"
-    | "start_datum"
-    | "status"
-    | "handwerker_bestaetigt_at"
-    | "created_at"
-    | "updated_at"
-  > & {
+  item: Pick<PartnerAuftragItem, "hwStatus" | "start_datum" | "status"> & {
     positionen: Array<{
       start_datum?: string | null;
       handwerker_status?: string | null;
-      handwerker_id?: string | null;
-      handwerker_angefragt_at?: string | null;
     }>;
   }
 ): string {

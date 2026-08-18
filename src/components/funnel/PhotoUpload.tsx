@@ -130,7 +130,7 @@ export function PhotoUpload({
   uploadHasError = false,
   buttonTitle = "Fotos oder Vergleichsangebote hochladen",
   buttonHint =
-    "Projektfotos, Skizzen oder bestehende Angebote — damit wir Ihr Vorhaben vorab gut einordnen und uns vorbereiten können",
+    "Projektfotos, Skizzen oder bestehende Angebote — damit wir dein Vorhaben vorab gut einordnen und uns vorbereiten können",
   showCompareOfferHint = false,
   examples = null,
   example = null,
@@ -324,6 +324,48 @@ export function PhotoUpload({
           es uns an.
         </p>
       ) : null}
+      {(() => {
+        const list =
+          examples && examples.length > 0
+            ? examples
+            : example
+              ? [example]
+              : [];
+        if (!list.length) return null;
+        return (
+          <div
+            className={cn(
+              "mt-3 grid gap-2",
+              list.length > 1 ? "grid-cols-1 sm:grid-cols-2" : "grid-cols-1"
+            )}
+          >
+            {list.map((ex) => (
+              <figure
+                key={`${ex.src}-${ex.label ?? ""}`}
+                className="photo-upload-example overflow-hidden rounded-xl border border-border-default bg-muted/40"
+              >
+                <div className="relative aspect-[4/3] w-full bg-muted">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={ex.src}
+                    alt={ex.alt}
+                    className="size-full object-cover"
+                    loading="lazy"
+                    decoding="async"
+                  />
+                  <span className="absolute left-2.5 top-2.5 rounded-md bg-black/55 px-2 py-0.5 text-[11px] font-semibold tracking-wide text-white">
+                    So fotografieren
+                    {ex.label ? ` · ${ex.label}` : ""}
+                  </span>
+                </div>
+                <figcaption className="px-3 py-2.5 text-[12.5px] leading-snug text-text-secondary">
+                  {ex.tip}
+                </figcaption>
+              </figure>
+            ))}
+          </div>
+        );
+      })()}
       {isCompressing ? (
         <p className="photo-compressing">
           <span className="btn-spinner btn-spinner--dark" aria-hidden />
@@ -374,48 +416,6 @@ export function PhotoUpload({
           })}
         </ul>
       ) : null}
-      {(() => {
-        const list =
-          examples && examples.length > 0
-            ? examples
-            : example
-              ? [example]
-              : [];
-        if (!list.length) return null;
-        return (
-          <div
-            className={cn(
-              "mt-3 grid gap-2",
-              list.length > 1 ? "grid-cols-1 sm:grid-cols-2" : "grid-cols-1"
-            )}
-          >
-            {list.map((ex) => (
-              <figure
-                key={`${ex.src}-${ex.label ?? ""}`}
-                className="photo-upload-example overflow-hidden rounded-xl border border-border-default bg-muted/40"
-              >
-                <div className="relative aspect-[4/3] w-full bg-muted">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src={ex.src}
-                    alt={ex.alt}
-                    className="size-full object-cover"
-                    loading="lazy"
-                    decoding="async"
-                  />
-                  <span className="absolute left-2.5 top-2.5 rounded-md bg-black/55 px-2 py-0.5 text-[11px] font-semibold tracking-wide text-white">
-                    So fotografieren
-                    {ex.label ? ` · ${ex.label}` : ""}
-                  </span>
-                </div>
-                <figcaption className="px-3 py-2.5 text-[12.5px] leading-snug text-text-secondary">
-                  {ex.tip}
-                </figcaption>
-              </figure>
-            ))}
-          </div>
-        );
-      })()}
     </div>
   );
 }

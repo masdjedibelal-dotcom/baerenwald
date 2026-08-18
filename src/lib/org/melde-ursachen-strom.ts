@@ -4,7 +4,6 @@
  */
 
 import type { MeldeAnswers } from "@/lib/funnel/melde-dynamic-questions";
-import { normalizeMeldeStromProblem } from "@/lib/funnel/melde-dynamic-questions";
 
 export type StromUrsacheId =
   | "fi_automat"
@@ -53,7 +52,10 @@ function ans(a: MeldeAnswers, id: string): string {
 }
 
 function normalizeProblem(raw: string): string {
-  return normalizeMeldeStromProblem(raw);
+  if (raw === "fi_sicherung") return "kein_strom";
+  if (raw === "schalter") return "licht";
+  if (raw === "garagentor_fb") return "garagentor";
+  return raw;
 }
 
 function orderIds(ids: StromUrsacheId[]): StromUrsacheOption[] {
@@ -70,23 +72,25 @@ export function stromUrsachenForAnswers(
   const problem = normalizeProblem(ans(a, "melde_problem"));
   const sicherung = ans(a, "melde_sicherung_raus");
   const wieder = ans(a, "melde_wieder_raus");
+  const nachbarn = ans(a, "melde_nachbarn_strom");
 
   switch (problem) {
     case "kein_strom":
-    case "fi_sicherung":
-      if (wieder === "ja" || wieder === "weiss_nicht") {
+      if (wieder === "ja") {
         return orderIds(["fi_automat", "sonstiges"]);
       }
-      if (sicherung === "ja") {
+      if (sicherung === "ja" || nachbarn === "ja") {
         return orderIds(["fi_automat", "sonstiges"]);
       }
       return orderIds(["fi_automat", "sonstiges"]);
 
-    case "einzelner_punkt":
+    case "steckdose":
+      return orderIds(["steckdose", "fi_automat", "sonstiges"]);
+
+    case "licht":
       return orderIds([
         "leuchtmittel",
         "licht_schalter",
-        "steckdose",
         "fi_automat",
         "sonstiges",
       ]);
@@ -131,30 +135,30 @@ export const STROM_MATERIAL_OPTIONS = [
 export function stromSchadenKurz(answers: MeldeAnswers | undefined): string {
   const a = answers ?? {};
   const problem = normalizeProblem(ans(a, "melde_problem"));
+  const betrifft = ans(a, "melde_betrifft");
   const problemLabel =
     {
-      kein_strom: "Kein Strom",
-      fi_sicherung: "Sicherung / FI fliegt raus",
-      einzelner_punkt: "Steckdose, Licht oder Schalter defekt",
-      klingel: "Klingel / Türsprecher",
-      garagentor: "Garagentor öffnet oder schließt nicht",
+      kein_strom: "Kein Strom in der Wohnung",
       steckdose: "Steckdose funktioniert nicht",
       licht: "Licht funktioniert nicht",
-      schalter: "Schalter defekt",
+      klingel: "Klingel / Türsprecher",
+      garagentor: "Garagentor öffnet oder schließt nicht",
       sonstiges: "Strom / Elektrik",
     }[problem] ?? "Strom / Elektrik";
+  if (betrifft === "treppenhaus") return `${problemLabel} im Treppenhaus`;
+  if (betrifft === "tiefgarage") return `${problemLabel} in der Tiefgarage`;
+  if (betrifft === "aussen") return `${problemLabel} im Außenbereich`;
   return problemLabel;
 }
 
 const STROM_PROBLEM_IDS = new Set([
   "kein_strom",
   "fi_sicherung",
-  "einzelner_punkt",
-  "klingel",
-  "garagentor",
   "steckdose",
   "licht",
   "schalter",
+  "klingel",
+  "garagentor",
 ]);
 
 export function isStromMeldeContext(opts: {
@@ -164,12 +168,8 @@ export function isStromMeldeContext(opts: {
   ursachenBereich?: string | null;
 }): boolean {
   if (opts.ursachenBereich === "strom") return true;
-  const raw = ans(opts.answers ?? {}, "melde_problem");
-  const problem = normalizeProblem(raw);
-  if (problem && problem !== "sonstiges" && STROM_PROBLEM_IDS.has(problem)) {
-    return true;
-  }
-  if (raw && STROM_PROBLEM_IDS.has(raw)) return true;
+  const problem = normalizeProblem(ans(opts.answers ?? {}, "melde_problem"));
+  if (problem && STROM_PROBLEM_IDS.has(problem)) return true;
   const hay = [
     ...(opts.bereiche ?? []),
     opts.bereichLabel ?? "",

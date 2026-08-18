@@ -83,9 +83,6 @@ export function partnerNotificationSubject(
     case "entfernt":
       return `${l || "Leistung"} wurde aus ${p} entfernt`;
     case "erinnerung":
-      if (l && /rechnung\s+wurde\s+überwiesen/i.test(l)) {
-        return `${p} — Rechnung wurde überwiesen`;
-      }
       return l
         ? `${p} — ${l}`
         : `Erinnerung: Offene Bestätigung für ${p}`;

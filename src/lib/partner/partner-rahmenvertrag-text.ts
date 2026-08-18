@@ -43,4 +43,4 @@ Der Partner sichert den Zugang zu seinem Portal-Konto (starkes Passwort, keine W
 
 ———
 
-Mit der Bestätigung akzeptierst du den Rahmenvertrag inklusive Anlage 1 (AVV) und Anlage 2.`;
+Hinweis: Der vollständige Vertragstext mit euren Firmendaten steht im PDF-Download (sofern bereits von Bärenwald erzeugt). Mit der Bestätigung akzeptierst du den Rahmenvertrag inklusive Anlage 1 (AVV) und Anlage 2.`;

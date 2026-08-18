@@ -51,7 +51,7 @@ function mieterListLabel(step: RoleTimelineStep): string {
     case "in_bearbeitung":
       return "In Bearbeitung";
     case "beauftragt":
-      return "Beauftragt";
+      return "Bestätigung";
     case "erledigt":
       return "Erledigt";
     default:
@@ -212,7 +212,7 @@ export function buildMieterTimelineFromResolver(resolved: ResolvedVorgang) {
   const labels: Record<(typeof MIETER_TIMELINE_ORDER)[number], string> = {
     eingegangen: "Eingegangen",
     in_bearbeitung: "In Bearbeitung",
-    beauftragt: "Beauftragt",
+    beauftragt: "Bestätigung",
     erledigt: "Erledigt",
   };
   const idx = MIETER_TIMELINE_ORDER.indexOf(

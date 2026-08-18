@@ -1,27 +1,17 @@
 "use client";
 
-import { useEffect, useState, type CSSProperties } from "react";
+import { useState, type CSSProperties } from "react";
 
-import { isHvDirektauftragInfoOnly } from "@/lib/org/org-direktauftrag";
-import { fetchObjektHmDelegierbar } from "@/lib/org/fetch-objekt-hm-delegierbar";
+import { HV_MELDUNG_ACTIONS } from "@/lib/portal2/hv-liste";
 import { orgPortalToast } from "@/lib/shared/portal-toast";
 import { PORTAL_VAR } from "@/lib/portal2/tokens";
-import type {
-  OrganisationKunde,
-  OrganisationLead,
-  OrganisationObjekt,
-} from "@/lib/org/types";
+import type { OrganisationKunde, OrganisationLead } from "@/lib/org/types";
 
-type Aktion =
-  | "ablehnen"
-  | "hm_begutachten"
-  | "direkt_baerenwald"
-  | "angebot_einfordern";
+type Aktion = (typeof HV_MELDUNG_ACTIONS)[number]["id"];
 
 type Props = {
   lead: OrganisationLead;
   kunde: OrganisationKunde;
-  objekte?: OrganisationObjekt[];
   onUpdated: () => void;
 };
 
@@ -48,43 +38,15 @@ function btnStyle(variant: "primary" | "ghost" | "danger"): CSSProperties {
 }
 
 /**
- * Listen-Aktionen Meldungen · Eingang
+ * Listen-Aktionen Meldungen · Eingang: Vorgang freigeben · Ablehnen
  * → POST /api/org/meldung-aktion
  */
-export function HvMeldungListActions({
-  lead,
-  kunde,
-  objekte,
-  onUpdated,
-}: Props) {
+export function HvMeldungListActions({ lead, kunde: _kunde, onUpdated }: Props) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [hasHm, setHasHm] = useState(false);
 
-  const status = (lead.hv_meldung_status ?? "neu").trim().toLowerCase();
-  const isNeu = status === "neu";
-  const isHmPruefung = status === "hm_pruefung";
-
-  useEffect(() => {
-    let cancelled = false;
-    void (async () => {
-      const st = await fetchObjektHmDelegierbar(lead.kunde_objekt_id);
-      if (!cancelled) setHasHm(st.canDelegate);
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [lead.kunde_objekt_id, isNeu]);
-
+  if ((lead.hv_meldung_status ?? "neu") !== "neu") return null;
   if (lead.einladung_status === "offen") return null;
-  if (isHvDirektauftragInfoOnly(lead, kunde, objekte)) return null;
-
-  if (isHmPruefung) {
-    // Auftrag liegt beim HM — keine HV-Override-Buttons
-    return null;
-  }
-
-  if (!isNeu) return null;
 
   const act = async (aktion: Aktion) => {
     setBusy(true);
@@ -100,9 +62,8 @@ export function HvMeldungListActions({
         setError(json.error ?? "Aktion fehlgeschlagen.");
         return;
       }
-      if (aktion === "hm_begutachten") orgPortalToast.hmBegutachten();
-      else if (aktion === "ablehnen") orgPortalToast.meldungAbgelehnt();
-      else orgPortalToast.angebotEingefordert();
+      if (aktion === "angebot_einfordern") orgPortalToast.angebotEingefordert();
+      else orgPortalToast.meldungAbgelehnt();
       onUpdated();
     } finally {
       setBusy(false);
@@ -112,44 +73,21 @@ export function HvMeldungListActions({
   return (
     <div className="space-y-1.5">
       <div className="flex flex-wrap gap-2">
-        <button
-          type="button"
-          disabled={busy}
-          onClick={(e) => {
-            e.stopPropagation();
-            void act("ablehnen");
-          }}
-          className="rounded-lg px-3.5 py-2 text-[12.5px] font-semibold disabled:opacity-60"
-          style={btnStyle("danger")}
-        >
-          Ablehnen
-        </button>
-        {hasHm ? (
+        {HV_MELDUNG_ACTIONS.map((a) => (
           <button
+            key={a.id}
             type="button"
             disabled={busy}
             onClick={(e) => {
               e.stopPropagation();
-              void act("hm_begutachten");
+              void act(a.id);
             }}
             className="rounded-lg px-3.5 py-2 text-[12.5px] font-semibold disabled:opacity-60"
-            style={btnStyle("ghost")}
+            style={btnStyle(a.variant)}
           >
-            Hausmeister
+            {a.label}
           </button>
-        ) : null}
-        <button
-          type="button"
-          disabled={busy}
-          onClick={(e) => {
-            e.stopPropagation();
-            void act("direkt_baerenwald");
-          }}
-          className="rounded-lg px-3.5 py-2 text-[12.5px] font-semibold disabled:opacity-60"
-          style={btnStyle("primary")}
-        >
-          Direkt Bärenwald
-        </button>
+        ))}
       </div>
       {error ? (
         <p className="text-xs font-semibold text-red-700">{error}</p>

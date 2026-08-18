@@ -2,17 +2,14 @@
 
 import { useState } from "react";
 
-import { resendPortalSignupCode } from "@/app/actions/portal-signup-otp";
-import type { PortalOtpBrand } from "@/lib/funnel/funnel-portal-otp";
+import { getSupabaseBrowserClient } from "@/lib/supabase/client";
 import { cn } from "@/lib/utils";
 
 export function PortalResendConfirmation({
   defaultEmail = "",
-  brand = "meinbaerenwald",
   className,
 }: {
   defaultEmail?: string;
-  brand?: PortalOtpBrand;
   className?: string;
 }) {
   const [email, setEmail] = useState(defaultEmail);
@@ -23,15 +20,19 @@ export function PortalResendConfirmation({
   async function resend() {
     const trimmed = email.trim();
     if (!trimmed.includes("@")) {
-      setError("Bitte geben Sie Ihre E-Mail ein.");
+      setError("Bitte gib deine E-Mail ein.");
       return;
     }
     setLoading(true);
     setError(null);
-    const result = await resendPortalSignupCode(trimmed, brand);
+    const supabase = getSupabaseBrowserClient();
+    const { error: resendError } = await supabase.auth.resend({
+      type: "signup",
+      email: trimmed,
+    });
     setLoading(false);
-    if (!result.ok) {
-      setError(result.error);
+    if (resendError) {
+      setError("Link konnte nicht gesendet werden. Bitte später erneut versuchen.");
       return;
     }
     setSent(true);
@@ -40,7 +41,7 @@ export function PortalResendConfirmation({
   if (sent) {
     return (
       <p className={cn("portal-text-body text-emerald-800", className)}>
-        Neuer Bestätigungscode wurde gesendet.
+        Bestätigungslink wurde erneut gesendet.
       </p>
     );
   }
@@ -48,7 +49,7 @@ export function PortalResendConfirmation({
   return (
     <div className={cn("space-y-2", className)}>
       <label className="block space-y-1">
-        <span className="portal-form-label">E-Mail für neuen Code</span>
+        <span className="portal-form-label">E-Mail für erneuten Link</span>
         <input
           type="email"
           value={email}
@@ -62,10 +63,10 @@ export function PortalResendConfirmation({
       <button
         type="button"
         disabled={loading}
-        onClick={() => void resend()}
+        onClick={resend}
         className="btn-pill-outline w-full !py-2.5 disabled:opacity-60"
       >
-        {loading ? "Wird gesendet…" : "Code erneut senden"}
+        {loading ? "Wird gesendet…" : "Bestätigungslink erneut senden"}
       </button>
     </div>
   );

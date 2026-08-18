@@ -5,8 +5,8 @@ import { useState } from "react";
 import {
   EinstellungenCard,
   EinstellungenEuroSlider,
+  EinstellungenInfoBox,
 } from "@/components/shared/PortalEinstellungenUi";
-import { usePortalBusy } from "@/components/shared/PortalBusyContext";
 import {
   EINSTELLUNGEN_SCHWELLE_SLIDER_MAX,
   EINSTELLUNGEN_SCHWELLE_SLIDER_MIN,
@@ -17,6 +17,8 @@ import {
 import { PORTAL_VAR } from "@/lib/portal2/tokens";
 import {
   formatObjRegelnReview,
+  OBJ_SCHWELLE_INFO,
+  OBJ_SCHWELLE_WIZARD_DESC,
   OBJ_SCHWELLE_WIZARD_TITLE,
   OBJ_TYP_OPTIONS,
   OBJ_WIZ_STEPS,
@@ -34,18 +36,10 @@ type Props = {
   existingNotizen?: string | null;
   editMode?: boolean;
   defaultHv?: string;
-  /** Hausmeister der Org für Select */
-  hausmeisterOptions?: Array<{ id: string; name: string; email?: string | null }>;
   /** `modal` = Fullscreen wie Neuer Vorgang (PortalModalShell funnel). */
   variant?: "page" | "modal";
   onCancel: () => void;
-  onDone: (payload: ObjWizPayload & {
-    hmId?: string | null;
-    hmName?: string;
-    hmEmail?: string;
-    hmPortalZugang?: boolean;
-    hmMode?: "existing" | "new";
-  }) => Promise<void>;
+  onDone: (payload: ObjWizPayload) => Promise<void>;
 };
 
 function OptRow({
@@ -88,7 +82,6 @@ export function OrganisationObjektWizard({
   existingNotizen,
   editMode,
   defaultHv,
-  hausmeisterOptions = [],
   variant = "page",
   onCancel,
   onDone,
@@ -104,13 +97,9 @@ export function OrganisationObjektWizard({
   }));
   const [err, setErr] = useState("");
   const [busy, setBusy] = useState(false);
-  const { runBusy } = usePortalBusy();
 
   const step = OBJ_WIZ_STEPS[stepIndex]?.[0] ?? "stamm";
-  const set = (
-    k: keyof ObjWizDraft,
-    val: string | number | boolean | null
-  ) => {
+  const set = (k: keyof ObjWizDraft, val: string | number | boolean) => {
     setDraft((d) => ({ ...d, [k]: val }));
     setErr("");
   };
@@ -148,16 +137,7 @@ export function OrganisationObjektWizard({
     }
     setBusy(true);
     try {
-      await runBusy(async () => {
-        await onDone({
-          ...result.payload,
-          hmId: draft.hmId,
-          hmName: draft.hmName ?? draft.kontakt,
-          hmEmail: draft.hmEmail ?? draft.email,
-          hmPortalZugang: draft.hmPortalZugang,
-          hmMode: draft.hmMode,
-        });
-      });
+      await onDone(result.payload);
     } finally {
       setBusy(false);
     }
@@ -173,7 +153,7 @@ export function OrganisationObjektWizard({
             Bezeichnung
           </span>
           <input
-            className="portal-field w-full"
+            className="portal-input w-full rounded-[10px] border border-border-default px-3 py-3 text-sm"
             placeholder="WEG Mustermannstraße 1"
             value={draft.name ?? ""}
             onChange={(e) => set("name", e.target.value)}
@@ -200,7 +180,7 @@ export function OrganisationObjektWizard({
               Straße
             </span>
             <input
-              className="portal-field w-full"
+              className="portal-input w-full rounded-[10px] border border-border-default px-3 py-3 text-sm"
               placeholder="Mustermannstraße"
               value={draft.strasse ?? ""}
               onChange={(e) => set("strasse", e.target.value)}
@@ -211,7 +191,7 @@ export function OrganisationObjektWizard({
               Nr.
             </span>
             <input
-              className="portal-field w-full"
+              className="portal-input w-full rounded-[10px] border border-border-default px-3 py-3 text-sm"
               placeholder="1"
               value={draft.hausnummer ?? ""}
               onChange={(e) => set("hausnummer", e.target.value)}
@@ -224,7 +204,7 @@ export function OrganisationObjektWizard({
               PLZ
             </span>
             <input
-              className="portal-field w-full"
+              className="portal-input w-full rounded-[10px] border border-border-default px-3 py-3 text-sm"
               placeholder="80331"
               inputMode="numeric"
               autoComplete="postal-code"
@@ -237,7 +217,7 @@ export function OrganisationObjektWizard({
               Ort
             </span>
             <input
-              className="portal-field w-full"
+              className="portal-input w-full rounded-[10px] border border-border-default px-3 py-3 text-sm"
               placeholder="München"
               autoComplete="address-level2"
               value={draft.ort ?? ""}
@@ -285,8 +265,8 @@ export function OrganisationObjektWizard({
           ) : null}
         </div>
         <p className="rounded-[10px] bg-muted px-3.5 py-2.5 text-[12.5px] leading-relaxed text-text-secondary">
-          Beim Anlegen entstehen automatisch WE 1, WE 2, … — danach unter
-          „Einheiten“ nur noch bearbeiten und Mieter/Eigentümer zuordnen.
+          Wohneinheiten und Mieter können nach dem Anlegen im Objekt-Detail
+          ergänzt werden.
         </p>
       </div>
     );
@@ -294,89 +274,47 @@ export function OrganisationObjektWizard({
     content = (
       <div className="flex flex-col gap-3.5">
         <p className="rounded-[10px] bg-muted px-3.5 py-2.5 text-[12.5px] leading-relaxed text-text-secondary">
-          Pflicht — jeder Objekt braucht einen Hausmeister. Bestehenden wählen
-          oder neu anlegen.
+          Optional — nur wenn für dieses Objekt ein eigener Ansprechpartner
+          hinterlegt werden soll.
         </p>
         <label className="block">
           <span className="portal-text-label mb-1.5 block text-text-secondary">
-            Hausmeister
+            Ansprechpartner
           </span>
-          <select
-            className="portal-field w-full"
-            value={
-              draft.hmMode === "new"
-                ? "__new__"
-                : draft.hmId?.trim() || ""
-            }
-            onChange={(e) => {
-              const v = e.target.value;
-              if (v === "__new__") {
-                set("hmMode", "new");
-                set("hmId", null);
-              } else {
-                set("hmMode", "existing");
-                set("hmId", v);
-              }
-            }}
-          >
-            <option value="">Bitte wählen…</option>
-            {(hausmeisterOptions ?? []).map((h) => (
-                <option key={h.id} value={h.id}>
-                  {h.name}
-                </option>
-              ))}
-            <option value="__new__">＋ Neu anlegen</option>
-          </select>
+          <input
+            className="portal-input w-full rounded-[10px] border border-border-default px-3 py-3 text-sm"
+            placeholder="Name"
+            value={draft.kontakt ?? ""}
+            onChange={(e) => set("kontakt", e.target.value)}
+            autoComplete="name"
+          />
         </label>
-        {draft.hmMode === "new" ||
-        (!draft.hmId && Boolean(draft.hmName?.trim())) ? (
-          <>
-            <label className="block">
-              <span className="portal-text-label mb-1.5 block text-text-secondary">
-                Name
-              </span>
-              <input
-                className="portal-field w-full"
-                placeholder="Name"
-                value={draft.hmName ?? draft.kontakt ?? ""}
-                onChange={(e) => {
-                  set("hmName", e.target.value);
-                  set("hmMode", "new");
-                }}
-                required
-                autoComplete="name"
-              />
-            </label>
-            <label className="flex items-start gap-3 rounded-[10px] border border-border-light bg-white p-3">
-              <input
-                type="checkbox"
-                className="mt-0.5"
-                checked={Boolean(draft.hmPortalZugang)}
-                onChange={(e) => set("hmPortalZugang", e.target.checked)}
-              />
-              <span className="text-[13px] text-text-secondary">
-                Portal einladen — Konto erst nach Registrierung über den Link
-                aktiv; sieht dann nur eigene Objekte
-              </span>
-            </label>
-            {draft.hmPortalZugang ? (
-              <label className="block">
-                <span className="portal-text-label mb-1.5 block text-text-secondary">
-                  E-Mail
-                </span>
-                <input
-                  type="email"
-                  className="portal-field w-full"
-                  placeholder="name@firma.de"
-                  value={draft.hmEmail ?? draft.email ?? ""}
-                  onChange={(e) => set("hmEmail", e.target.value)}
-                  required
-                  autoComplete="email"
-                />
-              </label>
-            ) : null}
-          </>
-        ) : null}
+        <label className="block">
+          <span className="portal-text-label mb-1.5 block text-text-secondary">
+            E-Mail
+          </span>
+          <input
+            type="email"
+            className="portal-input w-full rounded-[10px] border border-border-default px-3 py-3 text-sm"
+            placeholder="name@firma.de"
+            value={draft.email ?? ""}
+            onChange={(e) => set("email", e.target.value)}
+            autoComplete="email"
+          />
+        </label>
+        <label className="block">
+          <span className="portal-text-label mb-1.5 block text-text-secondary">
+            Telefon
+          </span>
+          <input
+            type="tel"
+            className="portal-input w-full rounded-[10px] border border-border-default px-3 py-3 text-sm"
+            placeholder="089 / …"
+            value={draft.tel ?? ""}
+            onChange={(e) => set("tel", e.target.value)}
+            autoComplete="tel"
+          />
+        </label>
       </div>
     );
   } else if (step === "regeln") {
@@ -393,6 +331,11 @@ export function OrganisationObjektWizard({
             formatValue={formatEinstellungenSchwelle}
             onChange={(v) => set("schwelle", snapEinstellungenSchwelle(v))}
           />
+          <EinstellungenInfoBox>
+            {OBJ_SCHWELLE_INFO(
+              snapEinstellungenSchwelle(Number.isFinite(schwelle) ? schwelle : 500)
+            )}
+          </EinstellungenInfoBox>
         </div>
       </EinstellungenCard>
     );
@@ -427,17 +370,9 @@ export function OrganisationObjektWizard({
             "Einheiten",
             draft.typ === "Einfamilienhaus (B2C)" ? 1 : we
           )}
-          {row(
-            "Hausmeister",
-            draft.hmMode === "existing" && draft.hmId
-              ? hausmeisterOptions.find((h) => h.id === draft.hmId)?.name ??
-                  "Gewählt"
-              : draft.hmName || draft.kontakt || "—"
-          )}
-          {row(
-            "Portal",
-            draft.hmPortalZugang ? "Einladung geplant" : "Nein"
-          )}
+          {row("Ansprechpartner", draft.kontakt)}
+          {row("E-Mail", draft.email)}
+          {row("Telefon", draft.tel)}
           {row(
             "Regeln",
             formatObjRegelnReview(!!draft.autopass, schwelle)
@@ -513,7 +448,7 @@ export function OrganisationObjektWizard({
         className={cn(
           "border-t border-border-default",
           isModal
-            ? "shrink-0 bg-[var(--p2-bg-content,#f6f5f3)] px-1 pb-[var(--portal-safe-pad-bottom)] pt-3"
+            ? "shrink-0 bg-white px-1 pb-[max(1rem,env(safe-area-inset-bottom))] pt-3"
             : "mt-6 pt-4"
         )}
       >

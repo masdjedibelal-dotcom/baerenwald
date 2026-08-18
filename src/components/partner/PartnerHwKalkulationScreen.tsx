@@ -7,7 +7,6 @@ import {
   PartnerDetailError,
   PartnerDetailSection,
 } from "@/components/partner/PartnerDetailUi";
-import { usePortalBusy } from "@/components/shared/PortalBusyContext";
 import {
   DEFAULT_HW_POSITIONEN,
   formatHwMoney,
@@ -49,7 +48,6 @@ export function PartnerHwKalkulationScreen({
   const [dauer, setDauer] = useState("2–3 Werktage");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const { runBusy } = usePortalBusy();
 
   const sum = useMemo(() => hwKalkSumme(positionen), [positionen]);
   const unterSchwelle = sum.brutto <= schwelleEur;
@@ -58,25 +56,20 @@ export function PartnerHwKalkulationScreen({
   async function onSubmit() {
     setBusy(true);
     setError(null);
-    try {
-      await runBusy(async () => {
-        const res = await submitPartnerHwKalkulation({
-          anfrageId,
-          positionen:
-            modus === "upload" ? DEFAULT_HW_POSITIONEN : positionen,
-          dauerHinweis: dauer,
-        });
-        if (!res.ok) {
-          setError(res.error);
-          portalToastError("Kalkulation fehlgeschlagen", res.error);
-          return;
-        }
-        partnerPortalToast.hwAngebotEingereicht();
-        onDone();
-      });
-    } finally {
-      setBusy(false);
+    const res = await submitPartnerHwKalkulation({
+      anfrageId,
+      positionen:
+        modus === "upload" ? DEFAULT_HW_POSITIONEN : positionen,
+      dauerHinweis: dauer,
+    });
+    setBusy(false);
+    if (!res.ok) {
+      setError(res.error);
+      portalToastError("Kalkulation fehlgeschlagen", res.error);
+      return;
     }
+    partnerPortalToast.hwAngebotEingereicht();
+    onDone();
   }
 
   return (

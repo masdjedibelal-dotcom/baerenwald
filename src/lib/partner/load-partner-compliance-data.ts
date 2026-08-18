@@ -100,9 +100,7 @@ async function loadPartnerDokumente(
   }
 
   const { data } = await query;
-  return ((data ?? []) as PartnerDokumentRow[]).filter(
-    (d) => String(d.status ?? "").toLowerCase() !== "geloescht"
-  );
+  return (data ?? []) as PartnerDokumentRow[];
 }
 
 async function loadProjektGewerkSlugs(

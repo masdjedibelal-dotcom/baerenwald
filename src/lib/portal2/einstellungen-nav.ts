@@ -9,7 +9,6 @@ export type EinstellungenTabId =
   | "profil"
   | "branding"
   | "freigabe"
-  | "benachrichtigungen"
   | "anschrift"
   | "steuer"
   | "bank"
@@ -21,28 +20,26 @@ export type EinstellungenNavItem = {
   label: string;
 };
 
-/** HV: kein Branding-/Farben-Tab — Logo & Portal-Angaben liegen unter Profil. */
 export const EINSTELLUNGEN_NAV_HV: EinstellungenNavItem[] = [
   { id: "profil", label: "Profil" },
+  { id: "branding", label: "Branding & White-Label" },
   { id: "freigabe", label: "Freigabe-Regeln" },
-  { id: "benachrichtigungen", label: "Benachrichtigungen" },
 ];
 
 export const EINSTELLUNGEN_NAV_HW: EinstellungenNavItem[] = [
-  { id: "anschrift", label: "Daten" },
+  { id: "anschrift", label: "Anschrift & Kontakt" },
+  { id: "steuer", label: "Steuer & Register" },
+  { id: "bank", label: "Bankverbindung" },
   { id: "stamm", label: "Stammunterlagen" },
-  { id: "benachrichtigungen", label: "Benachrichtigungen" },
 ];
 
 export const EINSTELLUNGEN_NAV_MIETER: EinstellungenNavItem[] = [
   { id: "profil", label: "Profil" },
   { id: "zugang", label: "Zugang" },
-  { id: "benachrichtigungen", label: "Benachrichtigungen" },
 ];
 
 export const EINSTELLUNGEN_NAV_PRIVAT: EinstellungenNavItem[] = [
   { id: "profil", label: "Profil" },
-  { id: "benachrichtigungen", label: "Benachrichtigungen" },
 ];
 
 export function einstellungenNavFor(
@@ -64,20 +61,6 @@ export function einstellungenDefaultTab(
   variant: EinstellungenVariant
 ): EinstellungenTabId {
   return einstellungenNavFor(variant)[0]?.id ?? "profil";
-}
-
-/** Alte HW-Tabs Steuer/Bank → Daten (anschrift). */
-export function normalizeEinstellungenTabId(
-  variant: EinstellungenVariant,
-  raw: string | null | undefined
-): EinstellungenTabId | null {
-  const id = raw?.trim();
-  if (!id) return null;
-  if (variant === "handwerker" && (id === "steuer" || id === "bank")) {
-    return "anschrift";
-  }
-  const nav = einstellungenNavFor(variant);
-  return nav.some((n) => n.id === id) ? (id as EinstellungenTabId) : null;
 }
 
 export function einstellungenNavStorageKey(

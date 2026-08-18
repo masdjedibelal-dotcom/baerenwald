@@ -1,25 +1,25 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { useCallback, useState } from "react";
 
+import { acceptPartnerRahmenvertragForEmail } from "@/app/actions/partner-vertrag";
 import { verifyPartnerRegistrationEmail } from "@/app/actions/partner-registration";
 import { assertPartnerEmailAllowed } from "@/app/actions/assert-partner-email-allowed";
 import { getPartnerRahmenvertragPreview } from "@/app/actions/partner-rahmenvertrag-preview";
-import { registerPartnerWithOtp } from "@/app/actions/portal-signup-otp";
 import { PartnerRahmenvertragAcceptBlock } from "@/components/partner/PartnerRahmenvertragAcceptBlock";
+import { PartnerAuthFlowHint } from "@/components/partner/PartnerAuthFlowHint";
 import { PartnerRegisterStepNav } from "@/components/partner/PartnerRegisterStepNav";
 import { PortalAuthBusy } from "@/components/portal/auth/PortalAuthBusy";
-import { PortalSignupOtpStep } from "@/components/portal/PortalSignupOtpStep";
+import { PortalResendConfirmation } from "@/components/portal/PortalResendConfirmation";
 import { PARTNER_AUTH_COPY } from "@/lib/partner/partner-auth-copy";
+import { partnerAuthCallbackUrl } from "@/lib/partner/partner-auth-url";
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
 
 const BEDINGUNGEN_ERROR =
   "Bitte die Geschäftsbedingungen durchlesen und die Annahme bestätigen.";
 
 export function PartnerRegisterForm() {
-  const router = useRouter();
   const [step, setStep] = useState<1 | 2 | 3>(1);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -32,7 +32,7 @@ export function PartnerRegisterForm() {
   const [previewLoading, setPreviewLoading] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [awaitingOtp, setAwaitingOtp] = useState(false);
+  const [success, setSuccess] = useState(false);
 
   const loadPreview = useCallback(async (value: string) => {
     const trimmed = value.trim();
@@ -99,31 +99,39 @@ export function PartnerRegisterForm() {
       return;
     }
 
-    const result = await registerPartnerWithOtp({
+    const rvRes = await acceptPartnerRahmenvertragForEmail({
       email: trimmedEmail,
-      password,
-      rahmenAkzeptiert,
+      akzeptiert: rahmenAkzeptiert,
     });
-    setLoading(false);
-    if (!result.ok) {
-      setError(result.error);
+    if (!rvRes.ok) {
+      setLoading(false);
+      setError(rvRes.error);
       return;
     }
-    setAwaitingOtp(true);
-  }
 
-  async function afterOtpVerified() {
     const supabase = getSupabaseBrowserClient();
-    const { error: signErr } = await supabase.auth.signInWithPassword({
-      email: email.trim(),
+    const { data, error: signUpError } = await supabase.auth.signUp({
+      email: trimmedEmail,
       password,
+      options: {
+        emailRedirectTo: partnerAuthCallbackUrl(),
+        data: {
+          portal_role: "handwerker",
+          rv_akzeptiert_at: new Date().toISOString(),
+        },
+      },
     });
-    if (signErr) {
-      throw new Error(
-        "Konto bestätigt — bitte mit Passwort im Partner-Login anmelden."
-      );
+    setLoading(false);
+    if (signUpError) {
+      setError(signUpError.message);
+      return;
     }
-    router.replace("/partner");
+    const identities = data.user?.identities ?? [];
+    if (identities.length === 0) {
+      setError(PARTNER_AUTH_COPY.errors.bereitsRegistriert);
+      return;
+    }
+    setSuccess(true);
   }
 
   if (loading || previewLoading) {
@@ -133,32 +141,31 @@ export function PartnerRegisterForm() {
         body={
           previewLoading
             ? "Einen Moment — wir prüfen deinen Partner-Zugang."
-            : "Einen Moment — Vertrag und Konto werden eingerichtet, danach kommt der Code."
+            : "Einen Moment — Vertrag und Konto werden eingerichtet."
         }
       />
     );
   }
 
-  if (awaitingOtp) {
+  if (success) {
     return (
-      <div className="space-y-4">
-        <PortalSignupOtpStep
-          email={email.trim()}
-          brand="partner"
-          informal
-          onVerified={afterOtpVerified}
-        />
-        <p className="text-center portal-text-body text-text-secondary">
-          <Link href="/partner/login" className="font-semibold text-accent hover:underline">
-            Zum Login
-          </Link>
-        </p>
+      <div className="space-y-3 text-center portal-text-body text-text-secondary">
+        <p>{PARTNER_AUTH_COPY.confirmEmailSuccess}</p>
+        <PortalResendConfirmation defaultEmail={email} />
+        <Link href="/partner/login" className="font-semibold text-accent hover:underline">
+          Zum Login
+        </Link>
       </div>
     );
   }
 
   return (
     <div className="space-y-5">
+      <PartnerAuthFlowHint variant="register" />
+      <p className="portal-text-meta text-text-tertiary">
+        {PARTNER_AUTH_COPY.registerIntro}
+      </p>
+
       <PartnerRegisterStepNav current={step} />
 
       {error ? (
@@ -209,6 +216,9 @@ export function PartnerRegisterForm() {
             }}
             error={rahmenError ? BEDINGUNGEN_ERROR : null}
           />
+          {previewLoading ? (
+            <p className="portal-text-meta text-text-tertiary">PDF-Status wird geprüft…</p>
+          ) : null}
           <div className="flex gap-2">
             <button
               type="button"

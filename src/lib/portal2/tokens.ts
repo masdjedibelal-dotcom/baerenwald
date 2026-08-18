@@ -4,9 +4,9 @@
  */
 
 export const PORTAL_C = {
-  /** Seitenhintergrund — klar abgesetzt von weißen Panels/Cards */
-  bg: "#F6F5F3",
-  bgContent: "#F6F5F3",
+  /** Seitenhintergrund — leicht abgesetzt für Ruhe vs. weiße Panels */
+  bg: "#F3F5F4",
+  bgContent: "#F3F5F4",
   panel: "#ffffff",
   line: "rgba(0,0,0,0.09)",
   line2: "rgba(0,0,0,0.06)",
@@ -30,13 +30,11 @@ export const PORTAL_C = {
   radiusMd: "12px",
   radiusLg: "16px",
   radiusSheet: "20px",
-  /** Overlay hinter Modals / Slide-overs */
-  scrim: "rgba(16,25,20,0.58)",
-  /** Lesbare Skala — identisch zu --p2-type-* in globals.css */
-  typeMeta: "15.5px",
-  typeBody: "18px",
-  typeTitle: "20px",
-  typeLabel: "13.75px",
+  /** Lesbare Skala — Body ≥16px, Meta ≥14px */
+  typeMeta: "14px",
+  typeBody: "16.5px",
+  typeTitle: "18px",
+  typeLabel: "12.5px",
   head: "-apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI', system-ui, Roboto, sans-serif",
   body: "-apple-system, BlinkMacSystemFont, 'SF Pro Text', 'SF Pro Display', 'Segoe UI', system-ui, Roboto, 'Helvetica Neue', Arial, sans-serif",
 } as const;
@@ -72,7 +70,6 @@ export const PORTAL_VAR = {
   radiusMd: "var(--p2-radius-md)",
   radiusLg: "var(--p2-radius-lg)",
   radiusSheet: "var(--p2-radius-sheet)",
-  scrim: "var(--p2-scrim)",
   head: "var(--p2-font-head)",
   body: "var(--p2-font-body)",
 } as const;
@@ -103,7 +100,6 @@ export const PORTAL_CSS_VARS = {
   radiusMd: "--p2-radius-md",
   radiusLg: "--p2-radius-lg",
   radiusSheet: "--p2-radius-sheet",
-  scrim: "--p2-scrim",
   head: "--p2-font-head",
   body: "--p2-font-body",
   brandPrimary: "--org-primary",
@@ -138,7 +134,6 @@ export function portalTokenStyle(): Record<string, string> {
     [PORTAL_CSS_VARS.radiusMd]: PORTAL_C.radiusMd,
     [PORTAL_CSS_VARS.radiusLg]: PORTAL_C.radiusLg,
     [PORTAL_CSS_VARS.radiusSheet]: PORTAL_C.radiusSheet,
-    [PORTAL_CSS_VARS.scrim]: PORTAL_C.scrim,
     [PORTAL_CSS_VARS.head]: PORTAL_C.head,
     [PORTAL_CSS_VARS.body]: PORTAL_C.body,
   };

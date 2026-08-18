@@ -19,7 +19,7 @@ export function GptVizWunschEditor({
 }: GptVizWunschEditorProps) {
   return (
     <div className="gpt-viz-field">
-      <label htmlFor="gpt-wunsch-edit">Ihr Wunsch (jederzeit änderbar)</label>
+      <label htmlFor="gpt-wunsch-edit">Dein Wunsch (jederzeit änderbar)</label>
       <textarea
         id="gpt-wunsch-edit"
         value={wunschText}

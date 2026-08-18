@@ -5,11 +5,9 @@ import { useEffect, useState } from "react";
 
 import { PortalKontoSicherheitPanel } from "@/components/shared/PortalKontoSicherheitPanel";
 import { PortalEinstellungenShell } from "@/components/shared/PortalEinstellungenShell";
-import { PortalPushSettingsPanel } from "@/components/shared/PortalPushSettingsPanel";
 import {
   EinstellungenEdField,
   EinstellungenEditModal,
-  EinstellungenPfList,
   EinstellungenPfRow,
   EinstellungenSectionHeader,
 } from "@/components/shared/PortalEinstellungenUi";
@@ -86,10 +84,7 @@ export function PortalEinstellungenPrivat({
         variant="privat"
         eyebrow={portalKundeTypRoleLabel(kundeTyp)}
       >
-        {(tab) =>
-          tab === "benachrichtigungen" ? (
-            <PortalPushSettingsPanel portal="portal" />
-          ) : (
+        {() => (
           <div className="space-y-4">
             <div className="space-y-2.5">
               <EinstellungenSectionHeader
@@ -97,20 +92,17 @@ export function PortalEinstellungenPrivat({
                 onEdit={openEdit}
                 editLabel="Profil bearbeiten"
               />
-              <EinstellungenPfList>
-                <EinstellungenPfRow label="Name" value={savedName || "—"} />
-                <EinstellungenPfRow label="E-Mail" value={email?.trim() || "—"} />
-                <EinstellungenPfRow label="Telefon" value={savedTel || "—"} />
-              </EinstellungenPfList>
-              <p className="portal-text-label normal-case tracking-normal text-text-tertiary">
+              <EinstellungenPfRow label="Name" value={savedName || "—"} />
+              <EinstellungenPfRow label="E-Mail" value={email?.trim() || "—"} />
+              <EinstellungenPfRow label="Telefon" value={savedTel || "—"} />
+              <p className="text-[11.5px] text-text-tertiary">
                 E-Mail-Änderung nur über Support (Verifizierung).
               </p>
             </div>
 
             <PortalKontoSicherheitPanel signOutHref="/portal/login" />
           </div>
-          )
-        }
+        )}
       </PortalEinstellungenShell>
 
       <EinstellungenEditModal

@@ -7,7 +7,6 @@ import { buildAngebotPortalDisplay } from "@/lib/portal/portal-display";
 import { resolvePrivatPortalTitel } from "@/lib/portal/portal-titel";
 import { splitKundePortalPipeline } from "@/lib/portal/portal-pipeline";
 import {
-  dokumentFromVersicherungsakte,
   dokumenteFromAngebot,
   dokumenteFromAuftrag,
   dokumenteFromUrls,
@@ -18,13 +17,11 @@ import {
   type PortalObjekt,
 } from "@/lib/portal/portal-objekt";
 import { isHvPortalLead } from "@/lib/portal/hv-portal-lead";
-import { loadMieterHvBrand } from "@/lib/portal/load-mieter-hv-brand";
 import { resolvePartnerFileUrl, resolvePartnerFileUrls } from "@/lib/partner/partner-storage";
 import {
   PORTAL_LIST_AUFTRAG_LIMIT,
   PORTAL_LIST_LEAD_LIMIT,
 } from "@/lib/portal/portal-list-limits";
-import { handwerkerFirmenLabel } from "@/lib/portal2/handwerker-display";
 import { isSupabaseConfigured, supabaseAdmin } from "@/lib/supabase";
 
 type PortalPositionRow = {
@@ -62,7 +59,6 @@ type PortalKundenObjektRow = {
   hausnummer: string | null;
   plz: string | null;
   ort: string | null;
-  cover_url?: string | null;
 };
 
 type PortalAngebotRow = {
@@ -72,7 +68,6 @@ type PortalAngebotRow = {
   kunde_objekt_id: string | null;
   status_einfach: string | null;
   status?: string | null;
-  /** DB-Spalte `gesamt_fix` — im Mapper als gesamt_preis. */
   gesamt_preis: number | null;
   gesamt_min: number | null;
   gesamt_max: number | null;
@@ -132,22 +127,6 @@ function extractUrlsFromUnknown(value: unknown): string[] {
   };
   visit(value);
   return Array.from(out);
-}
-
-/** Lead-Anhänge für Dokumente — ohne Melde-Funnel-Fotos (die gehören in Details). */
-function extractLeadDokumentUrls(lead: {
-  funnel_daten?: unknown;
-  kontakt_nachricht?: unknown;
-}): string[] {
-  const urls: string[] = [
-    ...extractUrlsFromUnknown(lead.kontakt_nachricht),
-  ];
-  const fd = lead.funnel_daten;
-  if (fd && typeof fd === "object" && !Array.isArray(fd)) {
-    const { fotos: _fotos, ...rest } = fd as Record<string, unknown>;
-    urls.push(...extractUrlsFromUnknown(rest));
-  }
-  return urls;
 }
 
 export type PortalDataLoadMode = "list" | "full";
@@ -223,28 +202,15 @@ export async function getPortalDataForKunde(
 
   const kunde = kundeRow;
 
-  let objekteRows: PortalKundenObjektRow[] | null = null;
-  {
-    const primary = await supabaseAdmin
-      .from("kunden_objekte")
-      .select("id, titel, strasse, hausnummer, plz, ort, cover_url")
-      .eq("kunde_id", kundeRow.id)
-      .order("titel", { ascending: true });
-    if (primary.error && /cover_url/i.test(primary.error.message)) {
-      const fallback = await supabaseAdmin
-        .from("kunden_objekte")
-        .select("id, titel, strasse, hausnummer, plz, ort")
-        .eq("kunde_id", kundeRow.id)
-        .order("titel", { ascending: true });
-      objekteRows = (fallback.data ?? []) as PortalKundenObjektRow[];
-    } else {
-      objekteRows = (primary.data ?? []) as PortalKundenObjektRow[];
-    }
-  }
+  const { data: objekteRows } = await supabaseAdmin
+    .from("kunden_objekte")
+    .select("id, titel, strasse, hausnummer, plz, ort")
+    .eq("kunde_id", kundeRow.id)
+    .order("titel", { ascending: true });
 
   const objektById = new Map<string, PortalKundenObjektRow>();
   for (const o of objekteRows ?? []) {
-    objektById.set(String(o.id), o);
+    objektById.set(String((o as { id: string }).id), o as PortalKundenObjektRow);
   }
 
   const resolveObj = (
@@ -259,12 +225,11 @@ export async function getPortalDataForKunde(
     });
 
   const leadSelectList =
-    "id, situation, bereiche, status, vorgang_phase, created_at, plz, strasse, hausnummer, zeitraum, kontakt_name, preis_min, preis_max, budget_ca, kontakt_nachricht, funnel_daten, kunde_objekt_id, anlass, kanal, auftraggeber_kunde_id, hv_meldung_status, org_freigabe_status, freigabe_bypass_grund, melde_tracking_token, melder_name, melder_einheit, melder_telefon, melder_email, kostentraeger, kostentraeger_vorgeschlagen, versicherungs_nr, versicherungsakte_pdf_url";
+    "id, situation, bereiche, status, vorgang_phase, created_at, plz, strasse, hausnummer, zeitraum, kontakt_name, preis_min, preis_max, budget_ca, kontakt_nachricht, funnel_daten, kunde_objekt_id, anlass, kanal, auftraggeber_kunde_id, hv_meldung_status, org_freigabe_status, freigabe_bypass_grund, melde_tracking_token, melder_name, melder_einheit, melder_telefon, melder_email, kostentraeger, kostentraeger_vorgeschlagen, versicherungs_nr";
 
   let leadsQuery = supabaseAdmin
     .from("leads")
     .select(leadSelectList)
-    .is("geloescht_am", null)
     .order("created_at", { ascending: false });
   if (onlyLeadIds.length) {
     // Detail: Lead-IDs sind bereits zugriffsprüft (kunde oder Auftraggeber).
@@ -273,52 +238,7 @@ export async function getPortalDataForKunde(
     leadsQuery = leadsQuery.eq("kunde_id", kunde.id);
     if (listMode) leadsQuery = leadsQuery.limit(PORTAL_LIST_LEAD_LIMIT);
   }
-  let { data: leads, error: leadsErr } = await leadsQuery;
-  if (leadsErr && /geloescht_am/i.test(leadsErr.message)) {
-    let fb = supabaseAdmin
-      .from("leads")
-      .select(leadSelectList)
-      .order("created_at", { ascending: false });
-    if (onlyLeadIds.length) fb = fb.in("id", onlyLeadIds);
-    else {
-      fb = fb.eq("kunde_id", kunde.id);
-      if (listMode) fb = fb.limit(PORTAL_LIST_LEAD_LIMIT);
-    }
-    const retry = await fb;
-    leads = retry.data;
-    leadsErr = retry.error;
-  }
-  if (leadsErr && /versicherungsakte_pdf_url/i.test(leadsErr.message)) {
-    const leadSelectWithoutVers = leadSelectList.replace(
-      ", versicherungsakte_pdf_url",
-      ""
-    );
-    let fb = supabaseAdmin
-      .from("leads")
-      .select(leadSelectWithoutVers)
-      .is("geloescht_am", null)
-      .order("created_at", { ascending: false });
-    if (onlyLeadIds.length) fb = fb.in("id", onlyLeadIds);
-    else {
-      fb = fb.eq("kunde_id", kunde.id);
-      if (listMode) fb = fb.limit(PORTAL_LIST_LEAD_LIMIT);
-    }
-    const retry = await fb;
-    leads = retry.data as typeof leads;
-    leadsErr = retry.error;
-  }
-  if (leadsErr) console.warn("[portal] leads:", leadsErr.message);
-
-  const hausverwaltungBrandPromise =
-    (kunde.portal_modus ?? "") === "organisation"
-      ? Promise.resolve(null)
-      : loadMieterHvBrand({
-          portalKundeId: kunde.id,
-          portalKundeEmail: kunde.email,
-          leads: (leads ?? []) as Array<{
-            auftraggeber_kunde_id?: string | null;
-          }>,
-        });
+  const { data: leads } = await leadsQuery;
 
   const leadIds = (leads ?? []).map((l) => l.id);
 
@@ -386,10 +306,9 @@ export async function getPortalDataForKunde(
 
   const angeboteByIdEarly = new Map<string, PortalAngebotRow>();
 
-  // Positionen liegen als JSONB auf der Zeile — auch in der Liste laden,
-  // damit HV Details/Leistungen + Preisindikation-Ablösung ohne Detail-Race greifen.
-  const angebotSelectBase =
-    "id, angebotsnr, lead_id, kunde_id, kunde_objekt_id, status_einfach, status, gesamt_fix, gesamt_min, gesamt_max, gueltig_bis, leistungsumfang, notizen, positionen, created_at, gesendet_am, gesendet_kunde_at, pdf_url";
+  const angebotSelectBase = listMode
+    ? "id, angebotsnr, lead_id, kunde_id, kunde_objekt_id, status_einfach, status, gesamt_preis, gesamt_min, gesamt_max, gueltig_bis, leistungsumfang, notizen, created_at, gesendet_am, gesendet_kunde_at, pdf_url"
+    : "id, angebotsnr, lead_id, kunde_id, kunde_objekt_id, status_einfach, status, gesamt_preis, gesamt_min, gesamt_max, gueltig_bis, leistungsumfang, notizen, positionen, created_at, gesendet_am, gesendet_kunde_at, pdf_url";
   const angebotSelectWithHerkunft = `${angebotSelectBase}, herkunft`;
 
   async function loadAngeboteRows(filter: {
@@ -411,31 +330,18 @@ export async function getPortalDataForKunde(
     }
     if (
       error &&
-      /gesamt_fix|gesamt_preis|gesendet_kunde_at|column.*status/i.test(
-        error.message
-      )
+      /gesendet_kunde_at|column.*status/i.test(error.message)
     ) {
-      const legacy =
-        "id, angebotsnr, lead_id, kunde_id, kunde_objekt_id, status_einfach, gesamt_min, gesamt_max, gueltig_bis, leistungsumfang, notizen, positionen, created_at, gesendet_am, pdf_url";
+      const legacy = listMode
+        ? "id, angebotsnr, lead_id, kunde_id, kunde_objekt_id, status_einfach, gesamt_preis, gesamt_min, gesamt_max, gueltig_bis, leistungsumfang, notizen, created_at, gesendet_am, pdf_url"
+        : "id, angebotsnr, lead_id, kunde_id, kunde_objekt_id, status_einfach, gesamt_preis, gesamt_min, gesamt_max, gueltig_bis, leistungsumfang, notizen, positionen, created_at, gesendet_am, pdf_url";
       ({ data, error } = await run(legacy));
     }
     if (error) {
       console.warn("[portal] angebote:", error.message);
       return [];
     }
-    return ((data ?? []) as unknown as Array<Record<string, unknown>>).map(
-      (row) => {
-        const summe =
-          row.gesamt_fix ?? row.gesamt_preis ?? null;
-        return {
-          ...(row as unknown as PortalAngebotRow),
-          gesamt_preis:
-            summe == null || summe === ""
-              ? null
-              : Number(summe),
-        };
-      }
-    );
+    return (data ?? []) as unknown as PortalAngebotRow[];
   }
 
   if (leadIds.length > 0) {
@@ -466,29 +372,6 @@ export async function getPortalDataForKunde(
       .order("created_at", { ascending: false });
     if (aufAngErr) console.warn("[portal] auftraege angebot_id:", aufAngErr.message);
     mergeAuftraege(auftraegeByAngebot as Record<string, unknown>[] | null);
-  }
-
-  // Soft-gelöschte CRM-Vorgänge: Aufträge/Angebote mit gelöschtem Lead ausblenden
-  {
-    const { filterActiveLeadIds } = await import("@/lib/portal/lead-not-deleted");
-    const childLeadIds: string[] = [];
-    for (const row of Array.from(auftraegeById.values())) {
-      const lid = String(row.lead_id ?? "").trim();
-      if (lid) childLeadIds.push(lid);
-    }
-    for (const row of Array.from(angeboteByIdEarly.values())) {
-      const lid = String((row as { lead_id?: string | null }).lead_id ?? "").trim();
-      if (lid) childLeadIds.push(lid);
-    }
-    const activeChild = await filterActiveLeadIds(childLeadIds);
-    for (const [aid, row] of Array.from(auftraegeById.entries())) {
-      const lid = String(row.lead_id ?? "").trim();
-      if (!lid || !activeChild.has(lid)) auftraegeById.delete(aid);
-    }
-    for (const [aid, row] of Array.from(angeboteByIdEarly.entries())) {
-      const lid = String((row as { lead_id?: string | null }).lead_id ?? "").trim();
-      if (!lid || !activeChild.has(lid)) angeboteByIdEarly.delete(aid);
-    }
   }
 
   const auftraege = Array.from(auftraegeById.values()).sort((a, b) => {
@@ -555,7 +438,7 @@ export async function getPortalDataForKunde(
           : supabaseAdmin
               .from("rechnungen")
               .select(
-                "id, auftrag_id, rechnungsnummer, pdf_url, status, rechnungsdatum, gesendet_at, faellig_am, created_at, updated_at, brutto, netto, rechnung_art, abschlag_index, bezahlt_at, richtung"
+                "id, auftrag_id, rechnungsnummer, pdf_url, status, rechnungsdatum, gesendet_at, faellig_am, created_at, updated_at"
               )
               .in("auftrag_id", auftragIds),
         listMode
@@ -581,50 +464,6 @@ export async function getPortalDataForKunde(
   if (posErr) console.warn("[portal] positionen:", posErr.message);
   if (btErr) console.warn("[portal] bautagebuch:", btErr.message);
   if (abnahmeErr) console.warn("[portal] auftrag_abnahmeprotokolle:", abnahmeErr.message);
-
-  const handwerkerIds = Array.from(
-    new Set(
-      (positionen ?? [])
-        .map((p) => String((p as { handwerker_id?: string | null }).handwerker_id ?? "").trim())
-        .filter(Boolean)
-    )
-  );
-  const handwerkerLabelById = new Map<string, string>();
-  if (handwerkerIds.length > 0) {
-    const { data: hwRows, error: hwErr } = await supabaseAdmin
-      .from("handwerker")
-      .select("id, firma, name")
-      .in("id", handwerkerIds);
-    if (hwErr) {
-      console.warn("[portal] handwerker labels:", hwErr.message);
-    } else {
-      for (const row of hwRows ?? []) {
-        const id = String((row as { id: string }).id);
-        const label = handwerkerFirmenLabel({
-          firma: (row as { firma?: string | null }).firma,
-          name: (row as { name?: string | null }).name,
-        });
-        if (label) handwerkerLabelById.set(id, label);
-      }
-    }
-  }
-
-  function handwerkerLabelForAuftrag(auftragId: string): string | null {
-    const labels: string[] = [];
-    const seen = new Set<string>();
-    for (const p of positionen ?? []) {
-      if (String((p as { auftrag_id: string }).auftrag_id) !== auftragId) continue;
-      const hid = String(
-        (p as { handwerker_id?: string | null }).handwerker_id ?? ""
-      ).trim();
-      if (!hid) continue;
-      const label = handwerkerLabelById.get(hid);
-      if (!label || seen.has(label)) continue;
-      seen.add(label);
-      labels.push(label);
-    }
-    return labels.length ? labels.join(" · ") : null;
-  }
 
   const abnahmeByAuftrag = new Map<
     string,
@@ -761,24 +600,6 @@ export async function getPortalDataForKunde(
     bautagebuchByAuftrag.set(aid, list);
   }
 
-  // Partner-Dokumentation (Positions-Lebenszyklus) → Accordion für HV/Kunde
-  if (!listMode && auftragIds.length > 0) {
-    const {
-      loadPartnerDokumentationByAuftragIds,
-      mergePortalBautagebuchEntries,
-    } = await import("@/lib/portal/load-partner-dokumentation");
-    const partnerDoku = await loadPartnerDokumentationByAuftragIds(auftragIds);
-    for (const aid of auftragIds) {
-      const legacy = bautagebuchByAuftrag.get(aid) ?? [];
-      const partner = partnerDoku.get(aid) ?? [];
-      if (!legacy.length && !partner.length) continue;
-      bautagebuchByAuftrag.set(
-        aid,
-        mergePortalBautagebuchEntries(legacy, partner)
-      );
-    }
-  }
-
   const betreuerIds = Array.from(
     new Set(
       auftraege
@@ -858,42 +679,7 @@ export async function getPortalDataForKunde(
 
       const auftragRechnungen = (rechnungen ?? [])
         .filter((r) => String(r.auftrag_id) === auftragId)
-        .filter(
-          (r) =>
-            String((r as { richtung?: string | null }).richtung ?? "") !==
-            "eingehend"
-        )
-        .map((r) => {
-          const base = mapPortalRechnungForResolver(r);
-          const bruttoRaw = (r as { brutto?: number | null }).brutto;
-          const brutto =
-            typeof bruttoRaw === "number"
-              ? bruttoRaw
-              : Number(bruttoRaw);
-          return {
-            ...base,
-            brutto: Number.isFinite(brutto) ? brutto : undefined,
-            rechnung_art:
-              typeof (r as { rechnung_art?: string | null }).rechnung_art ===
-              "string"
-                ? (r as { rechnung_art: string }).rechnung_art
-                : null,
-            abschlag_index:
-              typeof (r as { abschlag_index?: number | null }).abschlag_index ===
-              "number"
-                ? (r as { abschlag_index: number }).abschlag_index
-                : null,
-            bezahlt_at:
-              typeof (r as { bezahlt_at?: string | null }).bezahlt_at ===
-              "string"
-                ? (r as { bezahlt_at: string }).bezahlt_at
-                : null,
-            richtung:
-              typeof (r as { richtung?: string | null }).richtung === "string"
-                ? (r as { richtung: string }).richtung
-                : null,
-          };
-        });
+        .map((r) => mapPortalRechnungForResolver(r));
       const linkedLead = leadId ? leadPortalById.get(leadId) ?? null : null;
       const betreuerId =
         typeof a.betreuer_id === "string" ? a.betreuer_id.trim() : "";
@@ -914,7 +700,6 @@ export async function getPortalDataForKunde(
         angebot_id: angebotId,
         linkedLead,
         ansprechpartner: resolvePortalAnsprechpartner(betreuer),
-        handwerkerLabel: handwerkerLabelForAuftrag(auftragId),
         titel,
         status: typeof a.status === "string" ? a.status : undefined,
         fortschritt:
@@ -950,10 +735,7 @@ export async function getPortalDataForKunde(
           {
             angebot: angebot ?? null,
             rechnungen: (rechnungen ?? []).filter(
-              (r) =>
-                String(r.auftrag_id) === auftragId &&
-                String((r as { richtung?: string | null }).richtung ?? "") !==
-                  "eingehend"
+              (r) => String(r.auftrag_id) === auftragId
             ),
             timeline: (timeline ?? []).filter(
               (t) => String(t.auftrag_id) === auftragId
@@ -1000,9 +782,11 @@ export async function getPortalDataForKunde(
         a.kunde_objekt_id ??
         (leadId ? leadObjektIdByLeadId.get(leadId) : null);
       const leadPlz = leadId ? leadPlzByLeadId.get(leadId) : null;
-      const positionenDisplay = parseAngebotPositionenMitPreis(a.positionen);
+      const positionenDisplay = listMode
+        ? []
+        : parseAngebotPositionenMitPreis(a.positionen);
       const gesamtBrutto = resolveAngebotGesamtBrutto({
-        positionen: a.positionen,
+        positionen: listMode ? null : a.positionen,
         gesamt_fix: a.gesamt_preis,
         gesamt_min: a.gesamt_min,
         gesamt_max: a.gesamt_max,
@@ -1039,35 +823,22 @@ export async function getPortalDataForKunde(
 
   const mappedLeads = (leads ?? []).map((lead) => {
       const raw = lead as {
-        id?: string;
         kunde_objekt_id?: string | null;
         plz?: string | null;
-        created_at?: string | null;
-        versicherungsakte_pdf_url?: string | null;
-        funnel_daten?: unknown;
-        kontakt_nachricht?: unknown;
       };
-      const leadId = String(raw.id ?? "");
-      const baseDocs = listMode
-        ? []
-        : dokumenteFromUrls(
-            extractLeadDokumentUrls({
-              funnel_daten: raw.funnel_daten,
-              kontakt_nachricht: raw.kontakt_nachricht,
-            })
-          );
-      const versDoc =
-        !listMode && leadId
-          ? dokumentFromVersicherungsakte({
-              leadId,
-              url: raw.versicherungsakte_pdf_url,
-              datum: raw.created_at,
-            })
-          : null;
       return {
         ...lead,
         objekt: resolveObj(raw.kunde_objekt_id, raw.plz),
-        dokumente: versDoc ? [versDoc, ...baseDocs] : baseDocs,
+        dokumente: listMode
+          ? []
+          : dokumenteFromUrls([
+              ...extractUrlsFromUnknown(
+                (lead as { funnel_daten?: unknown }).funnel_daten
+              ),
+              ...extractUrlsFromUnknown(
+                (lead as { kontakt_nachricht?: unknown }).kontakt_nachricht
+              ),
+            ]),
       };
     });
 
@@ -1111,15 +882,12 @@ export async function getPortalDataForKunde(
     }
   }
 
-  const hausverwaltungBrand = await hausverwaltungBrandPromise;
-
   return {
     kunde,
     leads: mappedLeads,
     angebote: mappedAngebote,
     auftraege: mappedAuftraege,
     mieterFeedbackByLeadId,
-    hausverwaltungBrand,
     /** @deprecated Nur für Abwärtskompatibilität — Pipeline-Split clientseitig. */
     splitPipeline: split,
   };

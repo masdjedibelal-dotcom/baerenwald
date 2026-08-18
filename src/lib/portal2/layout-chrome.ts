@@ -101,7 +101,6 @@ export function portalDetailSectionBorderStyle(
 export const PORTAL_DETAIL_SECTION_IDS = [
   "uebersicht",
   "angebot",
-  "hm_pruefung",
   "bautagebuch",
   "dokumente",
   "verlauf",
@@ -116,8 +115,7 @@ export const PORTAL_DETAIL_SECTION_LABELS: Record<
   /** Nicht „Übersicht“ — Shell-Nav nutzt das schon. */
   uebersicht: "Details",
   angebot: "Angebot",
-  hm_pruefung: "Befund",
-  bautagebuch: "Updates",
+  bautagebuch: "Bautagebuch",
   dokumente: "Dokumente",
   verlauf: "Verlauf",
 };

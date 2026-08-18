@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
 
 import { requireOrganisationSession } from "@/lib/org/require-org-session";
-import { limitReadNotifications } from "@/lib/portal2/notif-types";
 import { supabaseAdmin } from "@/lib/supabase";
 
 export const runtime = "nodejs";
@@ -32,14 +31,10 @@ function leadIdFromLink(link: string | null | undefined): string | null {
 
 function angebotWirklichGesendet(row: {
   gesendet_am?: string | null;
-  gesendet_kunde_at?: string | null;
   status_einfach?: string | null;
   status?: string | null;
-  pdf_url?: string | null;
 }): boolean {
   if (row.gesendet_am && String(row.gesendet_am).trim()) return true;
-  if (row.gesendet_kunde_at && String(row.gesendet_kunde_at).trim()) return true;
-  if (row.pdf_url && String(row.pdf_url).trim()) return true;
   const s = `${row.status_einfach ?? ""} ${row.status ?? ""}`.toLowerCase();
   return s.includes("gesendet");
 }
@@ -56,7 +51,7 @@ export async function GET() {
     .select("id, typ, titel, body, link, gelesen_am, created_at")
     .eq("kunde_id", session.kunde.id)
     .order("created_at", { ascending: false })
-    .limit(120);
+    .limit(40);
 
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
@@ -68,20 +63,15 @@ export async function GET() {
   const leadsWithGesendetAngebot = new Set<string>();
 
   if (leadIds.length) {
-    let { data: leads, error: leadSelErr } = await supabaseAdmin
+    const { data: leads } = await supabaseAdmin
       .from("leads")
       .select("id")
-      .in("id", leadIds)
-      .is("geloescht_am", null);
-    if (leadSelErr && /geloescht_am/i.test(leadSelErr.message)) {
-      const fb = await supabaseAdmin.from("leads").select("id").in("id", leadIds);
-      leads = fb.data;
-    }
+      .in("id", leadIds);
     for (const l of leads ?? []) valid.add(String(l.id).toLowerCase());
 
     const { data: angebote } = await supabaseAdmin
       .from("angebote")
-      .select("lead_id, gesendet_am, gesendet_kunde_at, status_einfach, status, pdf_url")
+      .select("lead_id, gesendet_am, status_einfach, status")
       .in("lead_id", leadIds);
     for (const a of angebote ?? []) {
       const lid = String(a.lead_id ?? "").toLowerCase();
@@ -112,23 +102,20 @@ export async function GET() {
     }
   }
 
-  const notifications = limitReadNotifications(
-    rows.filter((r) => {
-      const typ = String(r.typ ?? "").toLowerCase();
-      if (SELF_ACTION_TYPS.has(typ)) return false;
-      const lid = leadIdFromLink(r.link);
-      if (lid && !valid.has(lid)) return false;
-      if (
-        (typ === "angebot" || /neues\s+angebot/i.test(String(r.titel ?? ""))) &&
-        lid &&
-        !leadsWithGesendetAngebot.has(lid)
-      ) {
-        return false;
-      }
-      return true;
-    }),
-    (r) => !r.gelesen_am
-  );
+  const notifications = rows.filter((r) => {
+    const typ = String(r.typ ?? "").toLowerCase();
+    if (SELF_ACTION_TYPS.has(typ)) return false;
+    const lid = leadIdFromLink(r.link);
+    if (lid && !valid.has(lid)) return false;
+    if (
+      (typ === "angebot" || /neues\s+angebot/i.test(String(r.titel ?? ""))) &&
+      lid &&
+      !leadsWithGesendetAngebot.has(lid)
+    ) {
+      return false;
+    }
+    return true;
+  });
   const unread = notifications.filter((r) => !r.gelesen_am).length;
 
   return NextResponse.json({ notifications, unread });
