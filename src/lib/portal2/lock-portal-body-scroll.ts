@@ -67,4 +67,5 @@ export function unlockPortalBodyScroll(): void {
   body.style.paddingRight = savedBody.paddingRight;
   html.classList.remove("portal-modal-open");
   window.scrollTo(0, savedScrollY);
+  window.dispatchEvent(new Event("bw:scroll-chrome-sync"));
 }
