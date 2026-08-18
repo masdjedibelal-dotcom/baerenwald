@@ -46,13 +46,22 @@ export function KostentraegerSelector({
               : undefined,
         }),
       });
-      const data = (await res.json()) as { error?: string };
+      const data = (await res.json()) as {
+        error?: string;
+        schadenakteWarning?: string;
+      };
       if (!res.ok) throw new Error(data.error ?? "Speichern fehlgeschlagen");
-      portalToastSuccess(
-        chosen === "versicherung"
-          ? "Versicherung gesetzt — Schadenakte wird aktualisiert."
-          : "Kostenträger gespeichert."
-      );
+      if (data.schadenakteWarning) {
+        portalToastSuccess(
+          "Kostenträger gespeichert. " + data.schadenakteWarning
+        );
+      } else {
+        portalToastSuccess(
+          chosen === "versicherung"
+            ? "Versicherung gesetzt — Schadenakte wird aktualisiert."
+            : "Kostenträger gespeichert."
+        );
+      }
       onSaved?.();
     } catch (e) {
       portalToastError(e instanceof Error ? e.message : "Fehler");

@@ -1,4 +1,5 @@
 import type { PortalAuftragKontext } from "@/lib/portal/vorgang-erledigt";
+import { handwerkerFirmenLabel } from "@/lib/portal2/handwerker-display";
 import { supabaseAdmin } from "@/lib/supabase";
 
 export type PortalAuftragByLeadSnapshot = PortalAuftragKontext & {
@@ -8,6 +9,8 @@ export type PortalAuftragByLeadSnapshot = PortalAuftragKontext & {
   created_at?: string | null;
   start_datum?: string | null;
   end_datum?: string | null;
+  /** Zugewiesene Handwerker-Firma(n), nicht CRM-Betreuer. */
+  handwerkerLabel?: string | null;
 };
 
 /** Aufträge + Positionen für Meldungs-Leads (HV-Portal). */
@@ -73,6 +76,45 @@ export async function loadPortalAuftraegeByLeadIds(
 
     for (const auftrag of Array.from(latestByLead.values())) {
       auftrag.positionen = posByAuftrag.get(auftrag.id) ?? [];
+    }
+
+    const handwerkerIds = Array.from(
+      new Set(
+        (positionen ?? [])
+          .map((p) =>
+            String((p as { handwerker_id?: string | null }).handwerker_id ?? "").trim()
+          )
+          .filter(Boolean)
+      )
+    );
+    const handwerkerLabelById = new Map<string, string>();
+    if (handwerkerIds.length > 0) {
+      const { data: hwRows } = await supabaseAdmin
+        .from("handwerker")
+        .select("id, firma, name")
+        .in("id", handwerkerIds);
+      for (const row of hwRows ?? []) {
+        const id = String((row as { id: string }).id);
+        const label = handwerkerFirmenLabel({
+          firma: (row as { firma?: string | null }).firma,
+          name: (row as { name?: string | null }).name,
+        });
+        if (label) handwerkerLabelById.set(id, label);
+      }
+    }
+
+    for (const auftrag of Array.from(latestByLead.values())) {
+      const labels: string[] = [];
+      const seen = new Set<string>();
+      for (const p of auftrag.positionen ?? []) {
+        const hid = String(p.handwerker_id ?? "").trim();
+        if (!hid) continue;
+        const label = handwerkerLabelById.get(hid);
+        if (!label || seen.has(label)) continue;
+        seen.add(label);
+        labels.push(label);
+      }
+      auftrag.handwerkerLabel = labels.length ? labels.join(" · ") : null;
     }
   }
 

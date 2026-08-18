@@ -5,6 +5,9 @@ import { MELDE_ALLGEMEIN_SLUG } from "@/lib/org/melde-url";
 import { resolveMeldeLegalUrls } from "@/lib/org/melde-legal-urls";
 import { resolveMeldeKontext } from "@/lib/org/resolve-melde-kontext";
 
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 export const metadata = {
   title: "Schaden melden",
   robots: { index: false, follow: false },
@@ -69,6 +72,7 @@ export default async function MeldenObjektPage({ params }: Props) {
       objektLocked={Boolean(obj)}
       datenschutzHref={legal.datenschutz}
       impressumHref={legal.impressum}
+      akutFallIds={kontext.org.akut_fall_ids ?? []}
     />
   );
 }

@@ -24,7 +24,7 @@ export type MieterStatusStufe =
 const MIETER_LABELS: Record<MieterStatusStufe, string> = {
   eingegangen: "Eingegangen",
   in_bearbeitung: "In Bearbeitung",
-  beauftragt: "Bestätigung",
+  beauftragt: "Beauftragt",
   vor_ort: "Handwerker vor Ort",
   erledigt: "Erledigt",
 };
@@ -47,12 +47,17 @@ export function resolveMieterStatusStufe(
   if (phase === "beauftragt" || phase === "abnahme") return "beauftragt";
   if (phase === "abgelehnt") return "erledigt";
 
+  // Auftrag existiert → für Mieter mind. „Beauftragt“ (auch wenn Lead-Phase noch hinterherhinkt)
+  if (auftrag) return "beauftragt";
+
   const hv = (lead.hv_meldung_status ?? "").trim();
   if (hv === "abgelehnt") return "erledigt";
+  if (hv === "hm_erledigt") return "erledigt";
   if (
     hv === "notmassnahme" ||
     hv === "kleinreparatur" ||
-    hv === "angebot_eingefordert"
+    hv === "angebot_eingefordert" ||
+    hv === "hm_pruefung"
   ) {
     return "in_bearbeitung";
   }
@@ -90,6 +95,8 @@ export function resolveHvVorgangFilter(
 
   const hv = (lead.hv_meldung_status ?? "").trim();
   if (hv === "abgelehnt") return "erledigt";
+  if (hv === "hm_erledigt") return "erledigt";
+  if (hv === "neu") return "zur_freigabe";
 
   return "aktiv";
 }
@@ -108,14 +115,19 @@ export function resolveVorgangPhase(lead: {
 
   const hv = (lead.hv_meldung_status ?? "").trim();
   if (hv === "abgelehnt") return "abgelehnt";
-  if (hv === "abgeschlossen") return "abgeschlossen";
+  if (hv === "abgeschlossen" || hv === "hm_erledigt") return "abgeschlossen";
 
   const freigabe = (lead.org_freigabe_status ?? "").trim();
   if (freigabe === "ausstehend" || freigabe === "angefordert") {
     return "eingegangen";
   }
 
-  if (hv === "notmassnahme" || hv === "kleinreparatur" || hv === "angebot_eingefordert") {
+  if (
+    hv === "notmassnahme" ||
+    hv === "kleinreparatur" ||
+    hv === "angebot_eingefordert" ||
+    hv === "hm_pruefung"
+  ) {
     return "in_bearbeitung";
   }
 

@@ -3,12 +3,30 @@
 import { PartnerAuftragAnfrageDetail } from "@/components/partner/PartnerAuftragAnfrageDetail";
 import { PartnerAuftragDetail } from "@/components/partner/PartnerAuftragDetail";
 import { PartnerOffenDetail } from "@/components/partner/PartnerOffenDetail";
+import { PartnerEinholungDetail } from "@/components/partner/PartnerEinholungDetail";
 import type { PartnerVorgangItem } from "@/lib/partner/build-partner-vorgaenge";
+import type { PartnerHandwerkerProfil } from "@/lib/partner/get-partner-data";
 import {
   enrichPartnerOffenAngebot,
   type PartnerOffenAngebotItem,
 } from "@/lib/partner/partner-offen-status";
 import type { VorgangState } from "@/lib/partner/vorgang-state";
+
+type VorgangCardHandwerker = Pick<
+  PartnerHandwerkerProfil,
+  | "firma"
+  | "name"
+  | "strasse"
+  | "hausnummer"
+  | "plz"
+  | "ort"
+  | "adresse"
+  | "telefon"
+  | "steuernummer"
+  | "ustid"
+  | "iban"
+  | "kleinunternehmer"
+>;
 
 function toOffenAngebotItem(vorgang: PartnerVorgangItem): PartnerOffenAngebotItem {
   const anfrage = vorgang.anfrage!;
@@ -62,6 +80,7 @@ function resolveOffenDetailItem(
 
 export function VorgangCard({
   vorgang,
+  handwerker,
   onUpdated,
   onBack,
   focusBautagebuch,
@@ -70,6 +89,7 @@ export function VorgangCard({
   protokollId,
 }: {
   vorgang: PartnerVorgangItem;
+  handwerker?: VorgangCardHandwerker | null;
   onUpdated?: (id: string) => void;
   onBack?: () => void;
   focusBautagebuch?: boolean;
@@ -80,25 +100,19 @@ export function VorgangCard({
   const { state, auftrag } = vorgang;
   const vorgangState = state as VorgangState;
 
-  if (auftrag.lead?.hv_meldung_status === "notmassnahme") {
-    return (
-      <PartnerAuftragDetail
-        item={auftrag}
-        vorgangState="in_bearbeitung"
-        onBack={onBack}
-        focusBautagebuch={focusBautagebuch}
-        deepLinkAnfrageId={anfrageId}
-        focusAbnahme={focusAbnahme}
-        deepLinkProtokollId={protokollId}
-      />
-    );
-  }
+  // Direktauftrag / Notmaßnahme: HV braucht keine Freigabe — Handwerker muss
+  // trotzdem annehmen/ablehnen (wie jeder andere Vorgang).
 
-  if (state === "in_bearbeitung" || state === "erledigt") {
+  if (
+    state === "in_bearbeitung" ||
+    state === "erledigt" ||
+    state === "abgelehnt"
+  ) {
     return (
       <PartnerAuftragDetail
         item={auftrag}
         vorgangState={vorgangState}
+        handwerker={handwerker}
         onBack={onBack}
         focusBautagebuch={focusBautagebuch}
         deepLinkAnfrageId={anfrageId}
@@ -110,6 +124,15 @@ export function VorgangCard({
 
   const offenItem = resolveOffenDetailItem(vorgang);
   if (offenItem && (state === "geaendert" || state === "neu")) {
+    if (offenItem.ohne_lv) {
+      return (
+        <PartnerEinholungDetail
+          item={offenItem}
+          onBack={onBack}
+          onConfirmed={onUpdated}
+        />
+      );
+    }
     return (
       <PartnerOffenDetail
         item={offenItem}

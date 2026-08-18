@@ -6,6 +6,7 @@
 export type AuthPortalRole =
   | "mieter"
   | "eigentuemer"
+  | "hausmeister"
   | "kunde"
   | "handwerker";
 
@@ -16,9 +17,11 @@ export type AuthScreenId =
   | "invite"
   | "inviteDone";
 
-/** Mock `authWL()` — Mieter/Eigentümer → HV-Whitelabel. */
+/** Mock `authWL()` — Mieter/Eigentümer/Hausmeister → HV-Whitelabel. */
 export function authWL(role: AuthPortalRole): boolean {
-  return role === "mieter" || role === "eigentuemer";
+  return (
+    role === "mieter" || role === "eigentuemer" || role === "hausmeister"
+  );
 }
 
 /** Mock `authBrandName()` */
@@ -46,6 +49,79 @@ export const AUTH_BRAND_BODY_WL =
 
 export const AUTH_BRAND_BODY_BW =
   "Anfragen melden, Angebote freigeben, Termine bestätigen und den Fortschritt in Echtzeit verfolgen — an einem Ort.";
+
+/** Vorteile — Mieter (Einladung / WL-Login). */
+export const AUTH_BRAND_TAGLINE_MIETER =
+  "Ihr Portal für Wohnung und Anliegen.";
+export const AUTH_BRAND_BODY_MIETER =
+  "Schäden melden, den Bearbeitungsstand verfolgen und Infos Ihrer Verwaltung einsehen — klar und ohne Umwege.";
+export const AUTH_BRAND_BULLETS_MIETER = [
+  ["✓", "Schäden direkt melden und Status sehen"],
+  ["✓", "Termine und Infos der Verwaltung"],
+  ["✓", "DSGVO-konform, Server in DE"],
+] as const;
+
+/** Vorteile — Eigentümer (Einladung / WL-Login). */
+export const AUTH_BRAND_TAGLINE_EIGENTUEMER =
+  "Ihr Portal für Objekt und Vorgänge.";
+export const AUTH_BRAND_BODY_EIGENTUEMER =
+  "Vorgänge und Freigaben im Blick behalten, den Stand der Bearbeitung sehen und entscheiden, wo Ihre Zustimmung nötig ist.";
+export const AUTH_BRAND_BULLETS_EIGENTUEMER = [
+  ["✓", "Vorgänge transparent nachverfolgen"],
+  ["✓", "Freigaben und Status an einem Ort"],
+  ["✓", "DSGVO-konform, Server in DE"],
+] as const;
+
+/** Vorteile — Hausmeister. */
+export const AUTH_BRAND_TAGLINE_HAUSMEISTER =
+  "Ihr Portal für Prüfungen vor Ort.";
+export const AUTH_BRAND_BODY_HAUSMEISTER =
+  "Vorgänge Ihrer Objekte einsehen und Hausmeister-Prüfungen mit Checkliste durchführen — klar und mobil.";
+export const AUTH_BRAND_BULLETS_HAUSMEISTER = [
+  ["✓", "Checklisten für Ihre Objekte"],
+  ["✓", "Alle Vorgänge der zugewiesenen Gebäude"],
+  ["✓", "DSGVO-konform, Server in DE"],
+] as const;
+
+export function authBrandCopy(role: AuthPortalRole): {
+  tagline: string;
+  body: string;
+  bullets: readonly (readonly [string, string])[];
+} {
+  if (role === "mieter") {
+    return {
+      tagline: AUTH_BRAND_TAGLINE_MIETER,
+      body: AUTH_BRAND_BODY_MIETER,
+      bullets: AUTH_BRAND_BULLETS_MIETER,
+    };
+  }
+  if (role === "eigentuemer") {
+    return {
+      tagline: AUTH_BRAND_TAGLINE_EIGENTUEMER,
+      body: AUTH_BRAND_BODY_EIGENTUEMER,
+      bullets: AUTH_BRAND_BULLETS_EIGENTUEMER,
+    };
+  }
+  if (role === "hausmeister") {
+    return {
+      tagline: AUTH_BRAND_TAGLINE_HAUSMEISTER,
+      body: AUTH_BRAND_BODY_HAUSMEISTER,
+      bullets: AUTH_BRAND_BULLETS_HAUSMEISTER,
+    };
+  }
+  if (authWL(role)) {
+    return {
+      tagline: AUTH_BRAND_TAGLINE_WL,
+      body: AUTH_BRAND_BODY_WL,
+      bullets: AUTH_BRAND_BULLETS,
+    };
+  }
+  return {
+    tagline: AUTH_BRAND_TAGLINE_BW,
+    body: AUTH_BRAND_BODY_BW,
+    bullets: AUTH_BRAND_BULLETS,
+  };
+}
 
 export const AUTH_BRAND_POWERED = "Betrieben mit Bärenwald";
 
@@ -79,12 +155,20 @@ export const AUTH_INVITE = {
   title: "Konto aktivieren",
   subtitle:
     "Sie wurden eingeladen. Vergeben Sie ein Passwort, um Ihr Portal zu aktivieren.",
+  subtitleMieter:
+    "Ihre Verwaltung hat Sie eingeladen. Angaben sind vorausgefüllt — bitte Passwort setzen und zustimmen.",
+  subtitleEigentuemer:
+    "Ihre Verwaltung hat Sie als Eigentümer eingeladen. Angaben sind vorausgefüllt — bitte Passwort setzen und zustimmen.",
+  subtitleHausmeister:
+    "Ihre Verwaltung hat Sie als Hausmeister eingeladen. Angaben sind vorausgefüllt — bitte Passwort setzen und zustimmen.",
   nameLabel: "Ihr Name",
   emailLabel: "E-Mail",
   passwordLabel: "Passwort festlegen",
   passwordRepeatLabel: "Passwort wiederholen",
   passwordPh: "Mind. 8 Zeichen",
   submit: "Konto aktivieren",
+  lockedHint:
+    "Ihre Angaben von der Verwaltung sind übernommen. Bitte nur noch ein Passwort vergeben und die Zustimmung erteilen.",
 } as const;
 
 /** Mock `authConfirm` Screens. */
@@ -116,6 +200,7 @@ export function resolveAuthRoleFromPath(
   if (
     q === "mieter" ||
     q === "eigentuemer" ||
+    q === "hausmeister" ||
     q === "kunde" ||
     q === "handwerker"
   ) {

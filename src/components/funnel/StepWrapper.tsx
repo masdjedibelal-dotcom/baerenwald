@@ -58,7 +58,7 @@ export function StepWrapper({
       className={cn(
         isModal
           ? "funnel-step-embed w-full"
-          : "mx-auto max-w-xl px-6 pb-6 pt-8",
+          : "funnel-step-page mx-auto w-full max-w-xl px-4 pb-6 pt-6 sm:px-6 sm:pt-8",
         show && "animate-fade-in",
         className
       )}

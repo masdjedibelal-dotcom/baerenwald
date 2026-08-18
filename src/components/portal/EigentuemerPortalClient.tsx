@@ -2,13 +2,18 @@
 
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
+import { flushSync } from "react-dom";
 
-import { PortalCreateFunnelModal } from "@/components/portal/PortalCreateFunnelModal";
 import { PortalUserNotificationBell } from "@/components/portal/PortalUserNotificationBell";
 import { PortalVorgangDetail } from "@/components/portal/PortalVorgangDetail";
 import { PortalKundePrivatDashboard } from "@/components/portal/PortalKundePrivatDashboard";
-import { PORTAL_HEADER_HERO_SRC } from "@/lib/portal2/portal-media";
+import { portalHeaderHeroSrc } from "@/lib/portal2/portal-media";
 import { emitPortalNotificationsChanged } from "@/lib/portal2/notif-refresh";
+import {
+  paintPortalBusyNow,
+  PORTAL_BUSY_MIN_MS,
+  usePortalBusy,
+} from "@/components/shared/PortalBusyContext";
 import { PortalContentBusy } from "@/components/shared/PortalContentBusy";
 import { PortalListCard } from "@/components/shared/PortalListCard";
 import { PortalEntityDetailLayout } from "@/components/shared/PortalEntityDetailLayout";
@@ -27,18 +32,20 @@ import { PortalHeaderSearch } from "@/components/shared/PortalHeaderSearch";
 import { PortalEmptyState } from "@/components/shared/PortalStateView";
 import { buildKundeVorgaenge } from "@/lib/portal/build-kunde-vorgaenge";
 import { findKundeVorgangByQueryId } from "@/lib/portal/portal-detail-item";
-import {
-  countKundeVorgaengeNeedsAction,
-} from "@/lib/portal/kunde-vorgang-filter";
 import { buildKundeVorgangCardRows } from "@/lib/portal/portal-list-mappers";
 import {
+  compareByNewestCreated,
   compareVorgangListOrder,
+  PORTAL_DASHBOARD_RECENT_LIMIT,
   portalFlowSortRank,
 } from "@/lib/portal/portal-vorgang-sort";
 import { portalListStackClass } from "@/lib/portal2/layout-chrome";
-import type { EigentuemerPortalObjekt } from "@/lib/portal/get-eigentuemer-portal-data";
-import { resolveEigentuemerVorgangBetrag } from "@/lib/portal/get-eigentuemer-portal-data";
-import { portalCreateLabel } from "@/lib/portal2/create";
+import type {
+  EigentuemerPortalEinheit,
+  EigentuemerPortalMieter,
+  EigentuemerPortalObjekt,
+} from "@/lib/portal/get-eigentuemer-portal-data";
+import type { MieterHvBrand } from "@/lib/portal/load-mieter-hv-brand";
 import {
   countLeadsByPortalFlow,
   resolveLeadPortalFlowStatus,
@@ -52,23 +59,11 @@ import {
 } from "@/lib/portal2/kunde-dashboard";
 import {
   EIGENTUEMER_DASHBOARD_ROLE,
-  EIGENTUEMER_KOSTENFREIGABE_ABLEHNEN,
-  EIGENTUEMER_KOSTENFREIGABE_BTN,
-  EIGENTUEMER_KOSTENFREIGABE_TITLE,
   EIGENTUEMER_PAGE_HEAD,
-  eigentuemerNeedsKostenfreigabe,
-  formatEigentuemerSchwelle,
 } from "@/lib/portal2/eigentuemer";
 import { buildPortalShellNav } from "@/lib/portal2/nav-items";
 import type { PortalMockStatusId } from "@/lib/portal2/status";
-import {
-  formatObjektPlzOrt,
-  formatObjektStrasse,
-  formatObjektTypLine,
-  parseEinheitenCount,
-} from "@/lib/portal2/objekte";
 import { portalDetailStatusPillStyle } from "@/lib/shared/portal-detail-format";
-import { portalToastError, portalToastSuccess } from "@/lib/shared/portal-toast";
 
 type SectionId = "uebersicht" | "vorgaenge" | "objekte";
 
@@ -79,8 +74,13 @@ type Props = {
     freigabe_schwelle_eur?: number | null;
     eigentuemer_freigabe_schwelle_eur?: number | null;
   };
-  schwelleEur: number;
+  /** @deprecated Freigabe-Schwelle — Eigentümer gibt nichts mehr frei. */
+  schwelleEur?: number;
   objekte: EigentuemerPortalObjekt[];
+  /** Zugeordnete Einheiten — primäre Liste unter „Objekte“. */
+  einheiten?: EigentuemerPortalEinheit[];
+  mieterByObjektId?: Record<string, EigentuemerPortalMieter[]>;
+  hausverwaltungBrand?: MieterHvBrand | null;
   leads: Parameters<typeof buildKundeVorgaenge>[0]["leads"];
   angebote: Parameters<typeof buildKundeVorgaenge>[0]["angebote"];
   auftraege: Parameters<typeof buildKundeVorgaenge>[0]["auftraege"];
@@ -95,42 +95,15 @@ function normalizeSection(raw: string | null | undefined): SectionId | null {
   return null;
 }
 
-function leadBetrag(
-  leadId: string,
-  leads: Props["leads"],
-  angebote: Props["angebote"]
-): number | null {
-  const ang = angebote.find(
-    (a) => String((a as { lead_id?: string | null }).lead_id ?? "") === leadId
-  ) as { gesamtBrutto?: number } | undefined;
-  const lead = leads.find((l) => String(l.id) === leadId) as
-    | { preis_max?: number | null; budget_ca?: number | null }
-    | undefined;
-  return resolveEigentuemerVorgangBetrag({
-    angebotBrutto: ang?.gesamtBrutto,
-    preisMax: lead?.preis_max,
-    budgetCa: lead?.budget_ca,
-  });
-}
-
-function freigabeStatusOf(
-  leadId: string,
-  leads: Props["leads"]
-): string | null {
-  const lead = leads.find((l) => String(l.id) === leadId) as
-    | { eigentuemer_freigabe_status?: string | null }
-    | undefined;
-  return lead?.eigentuemer_freigabe_status ?? null;
-}
-
 /**
- * D8 Eigentümer-Portal — Dashboard · Vorgänge · Objekte (Lesesicht).
- * Create: „Anfrage erstellen“ → eingebetteter Portal-Funnel (Preis + Objekte).
+ * D8 Eigentümer-Portal — Dashboard · Vorgänge · Objekte.
  */
 export function EigentuemerPortalClient({
   kunde,
-  schwelleEur,
   objekte,
+  einheiten = [],
+  mieterByObjektId = {},
+  hausverwaltungBrand = null,
   leads,
   angebote,
   auftraege,
@@ -146,16 +119,45 @@ export function EigentuemerPortalClient({
     searchParams.get("id")?.trim() || null
   );
   const [listPage, setListPage] = useState(1);
-  const [objektDetailId, setObjektDetailId] = useState<string | null>(null);
-  const [freigabeBusy, setFreigabeBusy] = useState(false);
+  const [einheitDetailId, setEinheitDetailId] = useState<string | null>(null);
   const [pageBusy, setPageBusy] = useState(false);
-  const [createOpen, setCreateOpen] = useState(false);
+  const [detailOpening, setDetailOpening] = useState(() =>
+    Boolean(searchParams.get("id")?.trim())
+  );
+  const detailOpeningTimerRef = useRef<ReturnType<typeof setTimeout> | null>(
+    null
+  );
   const ignoreUrlDetailRef = useRef(false);
   const pendingDetailIdRef = useRef<string | null>(null);
 
-  function flashPageBusy(ms = 280) {
-    setPageBusy(true);
+  const { hold, release, flash } = usePortalBusy();
+  const detailHoldRef = useRef(false);
+
+  function flashPageBusy(ms = PORTAL_BUSY_MIN_MS) {
+    flash(ms);
+    paintPortalBusyNow(setPageBusy);
     window.setTimeout(() => setPageBusy(false), ms);
+  }
+
+  function beginDetailOpening() {
+    if (!detailHoldRef.current) {
+      detailHoldRef.current = true;
+      hold();
+    }
+    paintPortalBusyNow(setDetailOpening, setPageBusy);
+    if (detailOpeningTimerRef.current) {
+      clearTimeout(detailOpeningTimerRef.current);
+      detailOpeningTimerRef.current = null;
+    }
+  }
+
+  function endDetailOpening() {
+    setDetailOpening(false);
+    setPageBusy(false);
+    if (detailHoldRef.current) {
+      detailHoldRef.current = false;
+      release();
+    }
   }
 
   useEffect(() => {
@@ -166,9 +168,12 @@ export function EigentuemerPortalClient({
   const switchSection = (id: SectionId) => {
     ignoreUrlDetailRef.current = true;
     pendingDetailIdRef.current = null;
-    setSection(id);
-    setObjektDetailId(null);
-    setSelectedId(null);
+    setDetailOpening(false);
+    flushSync(() => {
+      setSection(id);
+      setEinheitDetailId(null);
+      setSelectedId(null);
+    });
     flashPageBusy();
     router.replace(`/portal?section=${id}`, { scroll: false });
   };
@@ -186,6 +191,23 @@ export function EigentuemerPortalClient({
     [leads, angebote, auftraege]
   );
 
+  function openVorgangById(id: string) {
+    const matched = findKundeVorgangByQueryId(vorgaengeItems, id);
+    const nextId = matched?.id ?? id.trim();
+    if (!nextId) return;
+    ignoreUrlDetailRef.current = false;
+    pendingDetailIdRef.current = nextId;
+    beginDetailOpening();
+    flushSync(() => {
+      setSection("vorgaenge");
+      setSelectedId(nextId);
+    });
+    router.replace(
+      `/portal?section=vorgaenge&id=${encodeURIComponent(nextId)}`,
+      { scroll: false }
+    );
+  }
+
   useEffect(() => {
     const id = searchParams.get("id")?.trim() || null;
     if (ignoreUrlDetailRef.current) {
@@ -197,7 +219,8 @@ export function EigentuemerPortalClient({
       return;
     }
     if (!id) {
-      pendingDetailIdRef.current = null;
+      // Klick schon unterwegs, URL noch ohne id — Selection behalten.
+      if (pendingDetailIdRef.current) return;
       setSelectedId(null);
       return;
     }
@@ -232,11 +255,6 @@ export function EigentuemerPortalClient({
       body: JSON.stringify({ vorgangRef: refs }),
     }).then(() => emitPortalNotificationsChanged());
   }, [selectedId, vorgaengeItems]);
-
-  const needsActionCount = useMemo(
-    () => countKundeVorgaengeNeedsAction(vorgaengeItems),
-    [vorgaengeItems]
-  );
 
   const flowByItemId = useMemo(() => {
     type Lead = (typeof leads)[number];
@@ -325,12 +343,11 @@ export function EigentuemerPortalClient({
           return {
             item,
             flow,
-            statusRank: portalFlowSortRank(flow),
             sortDate: item.date ? new Date(item.date).getTime() : 0,
           };
         })
-        .sort(compareVorgangListOrder)
-        .slice(0, 4)
+        .sort(compareByNewestCreated)
+        .slice(0, PORTAL_DASHBOARD_RECENT_LIMIT)
         .map(({ item, flow }) => ({
           id: item.id,
           titel: item.title,
@@ -341,17 +358,6 @@ export function EigentuemerPortalClient({
     [vorgaengeItems, flowByItemId]
   );
 
-  const pendingFreigabe = useMemo(() => {
-    return vorgaengeItems.filter((item) => {
-      const lid = item.leadId ?? item.id;
-      return eigentuemerNeedsKostenfreigabe({
-        betragEur: leadBetrag(lid, leads, angebote),
-        schwelleEur,
-        freigabeStatus: freigabeStatusOf(lid, leads),
-      });
-    });
-  }, [vorgaengeItems, leads, angebote, schwelleEur]);
-
   const selectedItem = selectedId
     ? findKundeVorgangByQueryId(vorgaengeItems, selectedId)
     : null;
@@ -359,70 +365,70 @@ export function EigentuemerPortalClient({
     ? selectedItem.leadId ?? selectedItem.id
     : null;
 
-  const selectedNeedsFreigabe =
-    selectedLeadId != null &&
-    eigentuemerNeedsKostenfreigabe({
-      betragEur: leadBetrag(selectedLeadId, leads, angebote),
-      schwelleEur,
-      freigabeStatus: freigabeStatusOf(selectedLeadId, leads),
-    });
+  useEffect(() => {
+    if (!detailOpening || !selectedId || !selectedItem) return;
+    const t = window.setTimeout(() => {
+      endDetailOpening();
+    }, PORTAL_BUSY_MIN_MS);
+    return () => window.clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [detailOpening, selectedId, selectedItem]);
 
   const helloName =
     kunde.name?.trim().split(/\s+/)[0] ||
     kunde.email?.split("@")[0] ||
     "dort";
 
-  const submitFreigabe = async (aktion: "freigegeben" | "abgelehnt") => {
-    if (!selectedLeadId) return;
-    setFreigabeBusy(true);
-    try {
-      const res = await fetch("/api/portal/eigentuemer/freigabe", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ leadId: selectedLeadId, aktion }),
-      });
-      const json = (await res.json()) as { error?: string };
-      if (!res.ok) {
-        portalToastError(json.error || "Freigabe fehlgeschlagen.");
-        return;
-      }
-      portalToastSuccess(
-        aktion === "freigegeben"
-          ? "Kosten freigegeben."
-          : "Kostenfreigabe abgelehnt."
-      );
-      flashPageBusy();
-      router.refresh();
-    } finally {
-      setFreigabeBusy(false);
-    }
-  };
-
-  const activeObjekt = objektDetailId
-    ? objekte.find((o) => o.id === objektDetailId) ?? null
+  const activeEinheit = einheitDetailId
+    ? einheiten.find((e) => e.id === einheitDetailId) ?? null
     : null;
+  const activeObjekt = activeEinheit
+    ? objekte.find((o) => o.id === activeEinheit.kunde_objekt_id) ?? null
+    : null;
+  const mieterAnEinheit = activeEinheit
+    ? (mieterByObjektId[activeEinheit.kunde_objekt_id] ?? []).filter(
+        (m) =>
+          !m.einheitBezeichnung ||
+          m.einheitBezeichnung === activeEinheit.bezeichnung
+      )
+    : [];
+
+  const hvBrand = hausverwaltungBrand;
+  const brandTitle = hvBrand?.name?.trim() || "Verwaltung";
+  const brandSubtitle =
+    hvBrand?.sub?.trim() || kunde.name?.trim() || EIGENTUEMER_PAGE_HEAD;
 
   return (
     <>
     <PortalShell
       variant="kunde"
-      brandTitle="MeinBärenwald"
-      brandSubtitle={kunde.name?.trim() || EIGENTUEMER_PAGE_HEAD}
-      brandKuerzel="B"
-      sidebarOwner={kunde.name?.trim() || EIGENTUEMER_DASHBOARD_ROLE}
+      brandTitle={brandTitle}
+      brandSubtitle={brandSubtitle}
+      brandLogoUrl={hvBrand?.logoUrl}
+      brandKuerzel={hvBrand?.logoKuerzel ?? null}
+      brandPrimary={hvBrand?.primary}
+      brandPrimaryDk={hvBrand?.primaryDk}
+      brandSoft={hvBrand?.soft}
+      sidebarOwner={brandTitle}
       hideMobileChrome={false}
-      activeNavId={section}
-      contentKey={`${section}:${objektDetailId ?? ""}`}
-      contentBusy={pageBusy || freigabeBusy}
+        contentFullBleed={
+          section === "uebersicht" ||
+          Boolean(selectedId) ||
+          Boolean(einheitDetailId)
+        }
+        activeNavId={section}
+        contentKey={`${section}:${einheitDetailId ?? ""}`}
+      contentBusy={pageBusy || detailOpening}
+      contentBusyTitle={
+        detailOpening ? "Vorgang wird geladen…" : undefined
+      }
+      contentBusyBody={
+        detailOpening
+          ? "Einen Moment — wir öffnen die Details."
+          : undefined
+      }
       onNavChange={(id) => switchSection(id as SectionId)}
-      nav={buildPortalShellNav("eigentuemer", "eigentuemer", {
-        liste: needsActionCount + pendingFreigabe.length,
-      })}
-      createAction={{
-        label: portalCreateLabel("eigentuemer"),
-        onClick: () => setCreateOpen(true),
-      }}
-      headerUser={{ name: kunde.name?.trim() || EIGENTUEMER_DASHBOARD_ROLE }}
+      nav={buildPortalShellNav("eigentuemer", "eigentuemer")}
       headerSearch={
         <PortalHeaderSearch
           onSubmit={() => {
@@ -431,28 +437,34 @@ export function EigentuemerPortalClient({
         />
       }
       headerRoleBadge={
-        <span className="rounded-full bg-muted px-2 py-0.5 portal-text-meta font-semibold text-text-secondary">
-          {EIGENTUEMER_DASHBOARD_ROLE}
-        </span>
-      }
-      notifications={
         <>
-          <PortalUserNotificationBell
-            role="eigentuemer"
-            allHref="/portal?section=vorgaenge"
-            onOpenVorgang={(id, href) => {
-              setSection("vorgaenge");
-              const matched = findKundeVorgangByQueryId(vorgaengeItems, id);
-              setSelectedId(matched?.id ?? id);
-              router.push(href);
-            }}
-          />
+          <span className="rounded-full bg-muted px-2 py-0.5 portal-text-meta font-semibold text-text-secondary">
+            {EIGENTUEMER_DASHBOARD_ROLE}
+          </span>
           <form action="/portal/auth/signout" method="post">
             <button type="submit" className="btn-pill-outline portal-btn-compact">
               Abmelden
             </button>
           </form>
         </>
+      }
+      notifications={
+        <PortalUserNotificationBell
+          role="eigentuemer"
+          allHref="/portal?section=vorgaenge"
+          onOpenVorgang={(id, href) => {
+            const matched = findKundeVorgangByQueryId(vorgaengeItems, id);
+            const nextId = matched?.id ?? id;
+            ignoreUrlDetailRef.current = false;
+            pendingDetailIdRef.current = nextId;
+            beginDetailOpening();
+            flushSync(() => {
+              setSection("vorgaenge");
+              setSelectedId(nextId);
+            });
+            router.push(href);
+          }}
+        />
       }
     >
       {section === "uebersicht" ? (
@@ -463,72 +475,49 @@ export function EigentuemerPortalClient({
           roleLabel={EIGENTUEMER_DASHBOARD_ROLE}
           kpis={privatKpis}
           recent={recentItems}
-          heroImageUrl={PORTAL_HEADER_HERO_SRC}
+          heroImageUrl={portalHeaderHeroSrc("eigentuemer")}
           onOpenAll={() => {
             setListeChip("alle");
-            switchSection("vorgaenge");
+            flushSync(() => {
+              setSection("vorgaenge");
+              setSelectedId(null);
+            });
+            flashPageBusy();
+            router.replace("/portal?section=vorgaenge&filter=alle", {
+              scroll: false,
+            });
           }}
           onKpiClick={(id) => {
             setListeChip(privatKpiToListeChip(id));
             switchSection("vorgaenge");
           }}
-          onOpenItem={(id) => {
-            setSelectedId(id);
-            switchSection("vorgaenge");
-            router.replace(
-              `/portal?section=vorgaenge&id=${encodeURIComponent(id)}`,
-              { scroll: false }
-            );
-          }}
+          onOpenItem={(id) => openVorgangById(id)}
         />
       ) : null}
 
       {section === "vorgaenge" ? (
-        selectedItem && selectedLeadId ? (
+        selectedId && (detailOpening || !selectedItem) ? (
+          <PortalContentBusy
+            title="Vorgang wird geladen…"
+            body="Einen Moment — wir öffnen die Details."
+          />
+        ) : selectedItem && selectedLeadId ? (
           <div className="-mx-4 -mt-4 min-w-0 space-y-4 lg:-mx-6 lg:-mt-5">
-            {selectedNeedsFreigabe ? (
-              <div className="portal-danger-soft mx-4 rounded-xl border p-4 lg:mx-6">
-                <p className="portal-text-body portal-danger font-semibold">
-                  {EIGENTUEMER_KOSTENFREIGABE_TITLE}
-                </p>
-                <p className="portal-text-meta mt-1 text-text-secondary">
-                  {selectedItem.title} überschreitet Ihren Schwellenwert (
-                  {formatEigentuemerSchwelle(schwelleEur)}).
-                </p>
-                <div className="mt-3 flex flex-wrap gap-2">
-                  <button
-                    type="button"
-                    disabled={freigabeBusy}
-                    className="btn-pill-primary !text-sm"
-                    onClick={() => void submitFreigabe("freigegeben")}
-                  >
-                    {EIGENTUEMER_KOSTENFREIGABE_BTN}
-                  </button>
-                  <button
-                    type="button"
-                    disabled={freigabeBusy}
-                    className="btn-pill-outline !text-sm"
-                    onClick={() => void submitFreigabe("abgelehnt")}
-                  >
-                    {EIGENTUEMER_KOSTENFREIGABE_ABLEHNEN}
-                  </button>
-                </div>
-              </div>
-            ) : null}
-
             <PortalVorgangDetail
               item={selectedItem}
               privatkunde
               showHvAbnahme
+              mieterStatusMode
               flowStatusOverride={
                 flowByItemId.get(selectedItem.id) ?? "gemeldet"
               }
-              orgFreigabeStatus={freigabeStatusOf(selectedLeadId, leads)}
-              schwelleEur={schwelleEur}
               onBack={() => {
                 ignoreUrlDetailRef.current = true;
                 pendingDetailIdRef.current = null;
-                setSelectedId(null);
+                setDetailOpening(false);
+                flushSync(() => {
+                  setSelectedId(null);
+                });
                 flashPageBusy();
                 router.replace("/portal?section=vorgaenge", {
                   scroll: false,
@@ -536,20 +525,11 @@ export function EigentuemerPortalClient({
               }}
             />
           </div>
-        ) : selectedId ? (
-          <PortalContentBusy
-            title="Vorgang wird geladen…"
-            body="Einen Moment — wir öffnen die Details."
-          />
         ) : (
           <div className="flex min-w-0 flex-col">
             <div className="px-0.5 pb-1">
               <PortalListeEyebrow>Eigentümer</PortalListeEyebrow>
               <PortalListeTitle>Meine Wohnung</PortalListeTitle>
-              <p className="portal-text-body mt-1 text-text-secondary">
-                Nur Vorgänge Ihrer zugeordneten Objekte · Schwelle{" "}
-                {formatEigentuemerSchwelle(schwelleEur)}
-              </p>
             </div>
 
             <PortalListeFilterBar
@@ -566,13 +546,7 @@ export function EigentuemerPortalClient({
             />
 
             {pageRows.length === 0 ? (
-              <PortalEmptyState
-                role="eigentuemer"
-                compact
-                createLabel={portalCreateLabel("eigentuemer")}
-                canCreate
-                onPrimary={() => setCreateOpen(true)}
-              />
+              <PortalEmptyState role="eigentuemer" compact canCreate={false} />
             ) : (
               <div className={portalListStackClass("responsive")}>
                 {pageRows.map((row) => (
@@ -588,16 +562,7 @@ export function EigentuemerPortalClient({
                     accent={row.accent}
                     meta={row.meta}
                     showChevron
-                    onClick={() => {
-                      ignoreUrlDetailRef.current = false;
-                      pendingDetailIdRef.current = row.id;
-                      setSelectedId(row.id);
-                      flashPageBusy();
-                      router.replace(
-                        `/portal?section=vorgaenge&id=${encodeURIComponent(row.id)}`,
-                        { scroll: false }
-                      );
-                    }}
+                    onClick={() => openVorgangById(row.id)}
                   />
                 ))}
                 <PortalListPagination
@@ -615,83 +580,106 @@ export function EigentuemerPortalClient({
 
       {section === "objekte" ? (
         <div className="space-y-4">
-          {activeObjekt ? (
+          {activeEinheit ? (
             <div className="-mx-4 -mt-4 min-w-0 pb-4 lg:-mx-6 lg:-mt-5">
               <PortalEntityDetailLayout
-                coverUrl={activeObjekt.cover_url}
-                onBack={() => setObjektDetailId(null)}
-                backLabel="← Objekte"
-                title={activeObjekt.titel}
+                coverUrl={activeObjekt?.cover_url}
+                onBack={() => setEinheitDetailId(null)}
+                backLabel="← Einheiten"
+                title={activeEinheit.bezeichnung}
                 metaLine={[
-                  formatObjektTypLine(activeObjekt),
-                  formatObjektPlzOrt(activeObjekt) || null,
+                  activeEinheit.objektTitel,
+                  activeEinheit.etage ? `Etage ${activeEinheit.etage}` : null,
+                  activeEinheit.wohnflaeche_m2 != null
+                    ? `${activeEinheit.wohnflaeche_m2} m²`
+                    : null,
                 ]
                   .filter(Boolean)
                   .join(" · ")}
                 tabs={[{ id: "stammdaten", label: "Stammdaten" }]}
                 activeTab="stammdaten"
                 onTabChange={() => {}}
-                tabsNavLabel="Objekt-Abschnitte"
+                tabsNavLabel="Einheit-Abschnitte"
               >
                 <dl className="portal-surface space-y-3 p-4">
                   <div>
-                    <dt className="portal-text-meta text-text-tertiary">Adresse</dt>
+                    <dt className="portal-text-meta text-text-tertiary">
+                      Objekt / Adresse
+                    </dt>
                     <dd className="portal-text-body font-medium">
-                      {formatObjektStrasse(activeObjekt) || "—"}
+                      {activeEinheit.objektTitel}
+                      {activeEinheit.objektStrasse
+                        ? ` · ${activeEinheit.objektStrasse}`
+                        : ""}
+                      {activeEinheit.objektPlzOrt
+                        ? `, ${activeEinheit.objektPlzOrt}`
+                        : ""}
                     </dd>
                   </div>
                   <div>
                     <dt className="portal-text-meta text-text-tertiary">
-                      Einheiten
+                      Mieter
                     </dt>
                     <dd className="portal-text-body font-medium">
-                      {parseEinheitenCount(activeObjekt.einheiten_hinweis) || "—"}
-                    </dd>
-                  </div>
-                  <div>
-                    <dt className="portal-text-meta text-text-tertiary">
-                      Ihre Kostenfreigabe-Schwelle
-                    </dt>
-                    <dd className="portal-text-body font-medium">
-                      {formatEigentuemerSchwelle(schwelleEur)}
+                      {mieterAnEinheit.length === 0 ? (
+                        <span className="font-normal text-text-secondary">
+                          Keine Mieter hinterlegt
+                        </span>
+                      ) : (
+                        <ul className="mt-1 space-y-3 font-normal">
+                          {mieterAnEinheit.map((m) => (
+                            <li key={m.id} className="space-y-0.5">
+                              <p className="font-medium text-text-primary">
+                                {m.name}
+                              </p>
+                              {m.email ? (
+                                <p className="portal-text-meta text-text-secondary">
+                                  {m.email}
+                                </p>
+                              ) : null}
+                              {m.telefon ? (
+                                <p className="portal-text-meta text-text-secondary">
+                                  {m.telefon}
+                                </p>
+                              ) : null}
+                            </li>
+                          ))}
+                        </ul>
+                      )}
                     </dd>
                   </div>
                 </dl>
-                <p className="portal-text-meta mt-3 text-text-tertiary">
-                  Lesesicht — Änderungen nimmt die Verwaltung vor.
-                </p>
               </PortalEntityDetailLayout>
             </div>
           ) : (
             <>
               <div className="space-y-0.5">
-                <PortalListeTitle>Objekte</PortalListeTitle>
-                <p className="portal-text-body text-text-secondary">
-                  Ihre zugeordneten Gebäude (nur Lesen).
-                </p>
+                <PortalListeTitle>Meine Einheiten</PortalListeTitle>
               </div>
-              {objekte.length === 0 ? (
+              {einheiten.length === 0 ? (
                 <div className="portal-surface p-6 text-center portal-text-body text-text-secondary">
-                  Noch keine Objekte zugeordnet. Die Verwaltung legt die
-                  Zuordnung fest.
+                  Noch keine Einheiten zugeordnet.
                 </div>
               ) : (
                 <div className="portal-list-panel portal-list-rows">
-                  {objekte.map((o) => (
+                  {einheiten.map((e) => (
                     <button
-                      key={o.id}
+                      key={e.id}
                       type="button"
                       className="w-full px-4 py-3.5 text-left transition-colors hover:bg-[#f7f8fa]"
-                      onClick={() => setObjektDetailId(o.id)}
+                      onClick={() => setEinheitDetailId(e.id)}
                     >
                       <p className="portal-text-body font-semibold text-text-primary">
-                        {o.titel}
+                        {e.bezeichnung}
                       </p>
                       <p className="portal-text-meta mt-1 text-text-secondary">
-                        {formatObjektStrasse(o) || "—"}
-                        {formatObjektPlzOrt(o) !== "—"
-                          ? ` · ${formatObjektPlzOrt(o)}`
-                          : ""}
+                        {[
+                          e.objektTitel,
+                          e.objektStrasse || null,
+                          e.objektPlzOrt || null,
+                        ]
+                          .filter(Boolean)
+                          .join(" · ")}
                       </p>
                     </button>
                   ))}
@@ -701,35 +689,9 @@ export function EigentuemerPortalClient({
           )}
         </div>
       ) : null}
+
+      <PortalLegalFooter variant="kunde" showServiceBy />
     </PortalShell>
-
-      <PortalCreateFunnelModal
-        open={createOpen}
-        channel="portal_eigentuemer"
-        title={portalCreateLabel("eigentuemer")}
-        objekte={objekte.map((o) => ({
-          id: o.id,
-          titel: o.titel,
-          strasse: o.strasse,
-          hausnummer: o.hausnummer,
-          plz: o.plz,
-          ort: o.ort,
-        }))}
-        prefill={{
-          name: kunde.name?.trim() || undefined,
-          email: kunde.email?.trim() || undefined,
-        }}
-        onClose={() => setCreateOpen(false)}
-        onDone={() => {
-          setCreateOpen(false);
-          flashPageBusy();
-          router.refresh();
-        }}
-      />
-
-      <div className="mx-auto hidden max-w-[1200px] px-6 lg:block">
-        <PortalLegalFooter variant="kunde" className="mt-8" />
-      </div>
     </>
   );
 }

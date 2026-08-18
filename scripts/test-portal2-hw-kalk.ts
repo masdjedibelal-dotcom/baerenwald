@@ -11,7 +11,9 @@ import {
   hwKalkPatch,
   hwKalkSumme,
   hwKalkValid,
+  joinHwMenge,
   parseHwMengeFaktor,
+  splitHwMenge,
 } from "../src/lib/portal2/hw-kalkulation";
 import { pickEmpfohlenesAngebot, type HvOfferCard } from "../src/lib/portal2/hv-detail";
 
@@ -34,6 +36,10 @@ assert("checks 4", HW_ABSCHLUSS_CHECKS.length === 4);
 
 assert("menge 1,5", Math.abs(parseHwMengeFaktor("1,5 Std.") - 1.5) < 0.001);
 assert("menge psch", parseHwMengeFaktor("1 Psch.") === 1);
+assert("split stk", splitHwMenge("1 Stk.").einheit === "Stk." && splitHwMenge("1 Stk.").faktor === "1");
+assert("split m2", splitHwMenge("12,5 m²").einheit === "m²");
+assert("join lfm", joinHwMenge("3", "lfm") === "3 lfm");
+assert("norm stueck", splitHwMenge("2 Stück").einheit === "Stk.");
 
 const sum = hwKalkSumme(DEFAULT_HW_POSITIONEN);
 const expectedNet =

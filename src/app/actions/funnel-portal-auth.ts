@@ -4,6 +4,7 @@ import { assertPortalEmailAllowed } from "@/app/actions/assert-portal-email-allo
 import {
   generateFunnelOtpCode,
   isPortalAuthEmailRegistered,
+  issueSignupOtp,
   sendFunnelOtpEmail,
   storeFunnelOtp,
   verifyFunnelOtp,
@@ -100,7 +101,7 @@ export async function registerFunnelPortalAccount(
   if (already) {
     return {
       ok: false,
-      error: "Diese E-Mail ist bereits registriert. Bitte melde dich an.",
+      error: "Diese E-Mail ist bereits registriert. Bitte melden Sie sich an.",
     };
   }
 
@@ -133,7 +134,7 @@ export async function registerFunnelPortalAccount(
     if (msg.includes("already") || msg.includes("registered")) {
       return {
         ok: false,
-        error: "Diese E-Mail ist bereits registriert. Bitte melde dich an.",
+        error: "Diese E-Mail ist bereits registriert. Bitte melden Sie sich an.",
       };
     }
     console.error("[registerFunnelPortalAccount]", createErr);
@@ -144,24 +145,13 @@ export async function registerFunnelPortalAccount(
   }
 
   const userId = created.user.id;
-  const code = generateFunnelOtpCode();
 
-  try {
-    await storeFunnelOtp({ email, code, userId });
-  } catch (e) {
-    console.error("[registerFunnelPortalAccount] store otp", e);
-    await supabaseAdmin.auth.admin.deleteUser(userId);
-    return { ok: false, error: "Code konnte nicht erzeugt werden." };
-  }
-
-  const mail = await sendFunnelOtpEmail({ email, code, vorname });
-  if (!mail.ok) {
-    await supabaseAdmin.auth.admin.deleteUser(userId);
-    await supabaseAdmin.from("funnel_portal_otp").delete().eq("email", email);
-    return mail;
-  }
-
-  return { ok: true };
+  return issueSignupOtp({
+    email,
+    userId,
+    vorname,
+    brand: "meinbaerenwald",
+  });
 }
 
 export async function resendFunnelPortalCode(

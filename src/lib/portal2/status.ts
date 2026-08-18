@@ -13,7 +13,9 @@ export type PortalMockStatusId =
   | "auftrag"
   | "abschluss"
   | "rechnung"
-  | "bezahlt";
+  | "bezahlt"
+  /** Terminal: Angebot/Freigabe abgelehnt — zählt zu Erledigt, nicht in FLOW-Timeline. */
+  | "abgelehnt";
 
 export type PortalMockStatusMeta = {
   id: PortalMockStatusId;
@@ -29,8 +31,9 @@ export const PORTAL_STATUS: Record<PortalMockStatusId, PortalMockStatusMeta> = {
   gemeldet: {
     id: "gemeldet",
     label: "Neu",
-    color: "#1F4FA8",
-    bg: "#E4ECF7",
+    /** Offen/Eingang — Orange, damit nicht wie Angebot/Auftrag (Blau) wirkt. */
+    color: "#C2410C",
+    bg: "#FFF7ED",
   },
   freigegeben: {
     id: "freigegeben",
@@ -53,8 +56,8 @@ export const PORTAL_STATUS: Record<PortalMockStatusId, PortalMockStatusMeta> = {
   auftrag: {
     id: "auftrag",
     label: "Auftrag",
-    color: "#1F6A3F",
-    bg: "#DDEEDF",
+    color: "#1F4FA8",
+    bg: "#E4ECF7",
   },
   abschluss: {
     id: "abschluss",
@@ -73,6 +76,12 @@ export const PORTAL_STATUS: Record<PortalMockStatusId, PortalMockStatusMeta> = {
     label: "Abgeschlossen",
     color: "#4B5563",
     bg: "#EAEDEC",
+  },
+  abgelehnt: {
+    id: "abgelehnt",
+    label: "Abgelehnt",
+    color: "#B91C1C",
+    bg: "#FEE2E2",
   },
 };
 
@@ -124,7 +133,8 @@ export function portalFlowTimelineIndex(id: PortalMockStatusId): number {
     case "rechnung":
       return 4;
     case "bezahlt":
-      return 5; // alle Schritte erledigt
+    case "abgelehnt":
+      return 5; // alle Schritte erledigt / terminal
   }
 }
 
@@ -153,22 +163,24 @@ export const MIETER_STG = [
     id: "in_bearbeitung",
     title_de: "In Bearbeitung",
     title_en: "In progress",
-    subtitle_de: "Ihre Verwaltung bearbeitet Ihre Meldung.",
-    subtitle_en: "Your property manager is handling your report.",
+    subtitle_de:
+      "Ihre Verwaltung prüft die Meldung und organisiert die nächsten Schritte.",
+    subtitle_en:
+      "Your property manager is reviewing the report and arranging next steps.",
   },
   {
     id: "beauftragt",
-    title_de: "Bestätigung",
-    title_en: "Confirmation",
-    subtitle_de: "Ihre Verwaltung hat die Ausführung bestätigt.",
-    subtitle_en: "Your property manager confirmed the work will be carried out.",
+    title_de: "Beauftragt",
+    title_en: "Assigned",
+    subtitle_de: "Ein Handwerksbetrieb wurde beauftragt — Termin folgt.",
+    subtitle_en: "A craftsperson has been assigned — a visit will follow.",
   },
   {
     id: "vor_ort",
     title_de: "Handwerker vor Ort",
     title_en: "Craftsperson on site",
-    subtitle_de: "Der Handwerker hat die Ankunft bestätigt und arbeitet vor Ort.",
-    subtitle_en: "The craftsperson confirmed arrival and is working on site.",
+    subtitle_de: "Der Handwerker ist vor Ort und arbeitet am Schaden.",
+    subtitle_en: "The craftsperson is on site and working on the issue.",
   },
   {
     id: "erledigt",
@@ -197,6 +209,7 @@ export function portalFlowToMieterStg(
     case "rechnung":
       return "beauftragt";
     case "bezahlt":
+    case "abgelehnt":
       return "erledigt";
   }
 }

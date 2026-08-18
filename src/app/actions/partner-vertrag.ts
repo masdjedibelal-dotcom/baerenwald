@@ -160,6 +160,8 @@ export async function acceptPartnerRahmenvertragForEmail(opts: {
   const persisted = await persistPortalRahmenvertragAkzeptanz({
     handwerkerId: String(hw.id),
     akzeptiertAt: new Date().toISOString(),
+    vertragsNr: crm.ok ? crm.vertrags_nr : null,
+    pdfUrl: crm.ok ? crm.pdf_url : null,
   });
   if (!persisted.ok) {
     return { ok: false, error: persisted.error };
@@ -203,6 +205,8 @@ export async function acceptPartnerRahmenvertrag(opts: {
   const persisted = await persistPortalRahmenvertragAkzeptanz({
     handwerkerId: link.handwerkerId,
     authUserId: user.id,
+    vertragsNr: crm.ok ? crm.vertrags_nr : null,
+    pdfUrl: crm.ok ? crm.pdf_url : null,
   });
   if (!persisted.ok) return { ok: false, error: persisted.error };
 

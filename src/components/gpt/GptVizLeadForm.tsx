@@ -51,7 +51,7 @@ export function GptVizLeadForm({ sessionId, onSuccess }: GptVizLeadFormProps) {
   if (done) {
     return (
       <div className="gpt-viz-success">
-        Danke! Dein Projekt ist bei Bärenwald eingegangen. Wir melden uns zeitnah.
+        Danke! Ihr Projekt ist bei Bärenwald eingegangen. Wir melden uns zeitnah.
       </div>
     );
   }

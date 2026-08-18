@@ -1,15 +1,37 @@
-/** Kleine Zähler-Badge oben rechts am Nav-Icon (nur wenn count &gt; 0). */
-export function PortalNavCountBadge({ count }: { count: number }) {
+import { cn } from "@/lib/utils";
+
+/**
+ * Einheitlicher Zähler (Glocke, Nav, Listen, Tabs) — Mock-Badge `#D93B3B`.
+ * `corner` = oben rechts am Icon; sonst inline neben dem Label.
+ */
+export function PortalCountBadge({
+  count,
+  variant = "inline",
+  className,
+}: {
+  count: number;
+  variant?: "inline" | "corner";
+  className?: string;
+}) {
   if (count <= 0) return null;
   const label = count > 99 ? "99+" : String(count);
   return (
     <span
-      className="pointer-events-none absolute -right-2 -top-1.5 flex h-[15px] min-w-[15px] items-center justify-center rounded-full bg-red-500 px-0.5 text-[9px] font-bold leading-none text-white ring-2 ring-surface-card"
+      className={cn(
+        "portal-count-badge",
+        variant === "corner" && "portal-count-badge--corner",
+        className
+      )}
       aria-hidden
     >
       {label}
     </span>
   );
+}
+
+/** Kleine Zähler-Badge oben rechts am Nav-Icon (nur wenn count &gt; 0). */
+export function PortalNavCountBadge({ count }: { count: number }) {
+  return <PortalCountBadge count={count} variant="corner" />;
 }
 
 export type PortalNavBadgeCounts = {

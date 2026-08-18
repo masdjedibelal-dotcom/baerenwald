@@ -98,10 +98,20 @@ export async function PATCH(
   });
 
   if (kt === "versicherung") {
-    await ensureVersicherungsakteForLead(id, {
+    const result = await ensureVersicherungsakteForLead(id, {
       actorId: session.userId,
       actorRolle: session.rolle,
     });
+    if (!result.ok) {
+      return NextResponse.json(
+        {
+          ok: true,
+          kostentraeger: kt,
+          schadenakteWarning: result.message,
+        },
+        { status: 200 }
+      );
+    }
   }
 
   return NextResponse.json({ ok: true, kostentraeger: kt });

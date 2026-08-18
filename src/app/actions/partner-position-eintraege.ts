@@ -192,7 +192,23 @@ function parseFotoFromForm(formData: FormData): {
   return { file: photo, captureAt, nachgereicht, nachreichGrund };
 }
 
-/** OFFEN → Start (bei Regie: Ankunftsfoto + Beschreibung Pflicht). */
+/** Bis zu 5 Ergebnis-Fotos: `fotos` (mehrfach) + Legacy `foto`. */
+function parseFotosFromForm(formData: FormData): File[] {
+  const out: File[] = [];
+  for (const entry of formData.getAll("fotos")) {
+    if (entry instanceof File && entry.size > 0) out.push(entry);
+  }
+  const single = formData.get("foto");
+  if (single instanceof File && single.size > 0) {
+    const already = out.some(
+      (f) => f.name === single.name && f.size === single.size
+    );
+    if (!already) out.unshift(single);
+  }
+  return out.slice(0, 5);
+}
+
+/** OFFEN → Start (bei Regie: Start-Foto + Beschreibung Pflicht). */
 export async function startPartnerPosition(
   formData: FormData
 ): Promise<PartnerPositionEintragResult> {
@@ -218,6 +234,15 @@ export async function startPartnerPosition(
   if (status === "in_arbeit" || pos.gestartet_am) {
     return { ok: false, error: "Position wurde bereits gestartet." };
   }
+  if (String(pos.anerkennung_status ?? "") === "in_pruefung") {
+    return {
+      ok: false,
+      error: "Noch zur Prüfung — erst nach Freigabe starten.",
+    };
+  }
+  if (String(pos.anerkennung_status ?? "") === "abgelehnt") {
+    return { ok: false, error: "Diese Position wurde abgelehnt." };
+  }
 
   const foto = parseFotoFromForm(formData);
   const isRegie =
@@ -226,10 +251,10 @@ export async function startPartnerPosition(
 
   if (isRegie) {
     if (!foto.file) {
-      return { ok: false, error: "Bei Regie ist das Ankunftsfoto Pflicht." };
+      return { ok: false, error: "Bei Regie ist das Start-Foto Pflicht." };
     }
     if (!beschreibung?.trim()) {
-      return { ok: false, error: "Bei Regie bitte die Ausgangslage beschreiben." };
+      return { ok: false, error: "Bitte eine kurze Beschreibung angeben." };
     }
   }
   if (foto.nachgereicht && !foto.nachreichGrund) {
@@ -302,7 +327,7 @@ export async function startPartnerPosition(
   return { ok: true, eintragId: eintrag.id, positionId };
 }
 
-/** IN_ARBEIT → Fortschritt (Foto/Text optional). */
+/** IN_ARBEIT → Update/Fortschritt (Foto/Text optional). */
 export async function addPartnerPositionFortschritt(
   formData: FormData
 ): Promise<PartnerPositionEintragResult> {
@@ -327,7 +352,7 @@ export async function addPartnerPositionFortschritt(
   if (status !== "in_arbeit") {
     return {
       ok: false,
-      error: "Fortschritt erst nach Start möglich.",
+      error: "Fortschritt erst nach dem ersten Update möglich.",
       status: 403,
     };
   }
@@ -343,8 +368,8 @@ export async function addPartnerPositionFortschritt(
     };
   }
 
-  const isAufwand = String(pos.verguetung ?? "") === "aufwand";
-  const zeitMinuten = isAufwand ? zeitMinutenFromStdMin(std, min) : null;
+  /* Zeit speichern wenn Partner sie angibt — auch bei Festpreis (interne Info) */
+  const zeitMinuten = zeitMinutenFromStdMin(std, min);
 
   const eintrag = await insertEintrag({
     positionId,
@@ -414,6 +439,15 @@ export async function completePartnerPosition(
   if (!(await assertAuftragNochOffen(String(pos.auftrag_id)))) {
     return { ok: false, error: "Auftrag ist abgeschlossen (read-only)." };
   }
+  if (String(pos.anerkennung_status ?? "") === "in_pruefung") {
+    return {
+      ok: false,
+      error: "Noch zur Prüfung — erst nach Freigabe abschließen.",
+    };
+  }
+  if (String(pos.anerkennung_status ?? "") === "abgelehnt") {
+    return { ok: false, error: "Diese Position wurde abgelehnt." };
+  }
 
   const status = String(pos.leistung_status ?? "offen");
   const isRegie =
@@ -435,19 +469,20 @@ export async function completePartnerPosition(
     return { ok: false, error: "Position kann nicht abgeschlossen werden." };
   }
 
-  const foto = parseFotoFromForm(formData);
+  const fotos = parseFotosFromForm(formData);
+  const fotoMeta = parseFotoFromForm(formData);
   if (isRegie) {
-    if (!foto.file) {
-      return { ok: false, error: "Bei Regie ist das Ergebnis-Foto Pflicht." };
+    if (fotos.length === 0) {
+      return { ok: false, error: "Bei Regie ist das Ende-Foto Pflicht." };
     }
     if (!beschreibung?.trim()) {
       return {
         ok: false,
-        error: "Bei Regie bitte Ergebnis / Schlussbemerkung beschreiben.",
+        error: "Bitte eine kurze Beschreibung angeben.",
       };
     }
   }
-  if (foto.nachgereicht && !foto.nachreichGrund) {
+  if (fotoMeta.nachgereicht && !fotoMeta.nachreichGrund) {
     return { ok: false, error: "Bitte Grund für nachgereichtes Foto angeben." };
   }
 
@@ -465,12 +500,9 @@ export async function completePartnerPosition(
   }
 
   const isAufwand = String(pos.verguetung ?? "").toLowerCase() === "aufwand";
-  let zeitMinuten: number | null = null;
+  let zeitMinuten: number | null = zeitMinutenFromStdMin(std, min);
   if (isAufwand) {
-    const fromForm = zeitMinutenFromStdMin(std, min);
-    if (fromForm != null) {
-      zeitMinuten = fromForm;
-    } else {
+    if (zeitMinuten == null) {
       const { data: rows } = await supabaseAdmin
         .from("position_eintraege")
         .select("zeit_minuten")
@@ -503,16 +535,16 @@ export async function completePartnerPosition(
   });
   if (!eintrag.ok) return eintrag;
 
-  if (foto.file) {
+  for (const file of fotos) {
     const attached = await attachFoto({
       eintragId: eintrag.id,
       handwerkerId: auth.handwerkerId,
       auftragId: String(pos.auftrag_id),
       positionId,
-      file: foto.file,
-      captureAt: foto.captureAt,
-      nachgereicht: foto.nachgereicht,
-      nachreichGrund: foto.nachreichGrund,
+      file,
+      captureAt: fotoMeta.captureAt,
+      nachgereicht: fotoMeta.nachgereicht,
+      nachreichGrund: fotoMeta.nachreichGrund,
     });
     if (!attached.ok) return attached;
   }
@@ -528,11 +560,16 @@ export async function completePartnerPosition(
 
   const now = new Date().toISOString();
   // F1: Nur Dokumentation (leistung_status) — handwerker_status=erledigt erst nach Abnahme-Signatur
+  const mengeUpdate =
+    isRegie && zeitMinuten != null && zeitMinuten > 0
+      ? { menge: Math.round((zeitMinuten / 60) * 100) / 100, einheit: "Std" }
+      : {};
   await supabaseAdmin
     .from("auftrag_positionen")
     .update({
       leistung_status: "erledigt",
       erledigt_am: now,
+      ...mengeUpdate,
     })
     .eq("id", positionId);
 
@@ -548,7 +585,7 @@ export async function completePartnerPosition(
   return { ok: true, eintragId: eintrag.id, positionId };
 }
 
-/** Neue Regie-Position „Weitere Arbeit“ (in Prüfung). */
+/** Neue Regie-/Nachtrag-Position — sichtbar, aber erst nach Freigabe ausführbar. */
 export async function createPartnerWeitereArbeit(
   formData: FormData
 ): Promise<PartnerPositionEintragResult> {
@@ -557,6 +594,12 @@ export async function createPartnerWeitereArbeit(
 
   const auftragId = String(formData.get("auftragId") ?? "").trim();
   const titel = String(formData.get("titel") ?? "").trim();
+  const begruendung = String(formData.get("begruendung") ?? "").trim();
+  // Stundensatz (€/h) — Legacy-Feld schaetzungEur weiterhin akzeptieren
+  const stundensatzRaw = String(
+    formData.get("stundensatz") ?? formData.get("schaetzungEur") ?? ""
+  ).trim();
+  const schaetzungMinRaw = String(formData.get("schaetzungMinuten") ?? "").trim();
   if (!auftragId) return { ok: false, error: "Auftrag fehlt." };
   if (titel.length < 4) {
     return { ok: false, error: "Titel fehlt (mind. 4 Zeichen)." };
@@ -576,6 +619,34 @@ export async function createPartnerWeitereArbeit(
     return { ok: false, error: "Auftrag ist abgeschlossen (read-only)." };
   }
 
+  const stundensatzParsed = stundensatzRaw
+    ? Number(stundensatzRaw.replace(",", "."))
+    : null;
+  const schaetzungMinuten = schaetzungMinRaw ? Number(schaetzungMinRaw) : null;
+  const stundensatz =
+    stundensatzParsed != null &&
+    Number.isFinite(stundensatzParsed) &&
+    stundensatzParsed > 0
+      ? Math.round(stundensatzParsed * 100) / 100
+      : null;
+  const mengeStd =
+    schaetzungMinuten != null &&
+    Number.isFinite(schaetzungMinuten) &&
+    schaetzungMinuten > 0
+      ? Math.round((schaetzungMinuten / 60) * 100) / 100
+      : 1;
+  const zeitMinuten =
+    schaetzungMinuten != null &&
+    Number.isFinite(schaetzungMinuten) &&
+    schaetzungMinuten > 0
+      ? Math.round(schaetzungMinuten)
+      : null;
+
+  const beschreibungParts = [
+    begruendung || null,
+    "Nachtrag / Regie — wartet auf Freigabe durch Bärenwald.",
+  ].filter(Boolean);
+
   const { data: maxSort } = await supabaseAdmin
     .from("auftrag_positionen")
     .select("sort_order")
@@ -591,15 +662,17 @@ export async function createPartnerWeitereArbeit(
       handwerker_id: auth.handwerkerId,
       gewerk_name: "Regie",
       leistung_name: titel,
-      beschreibung:
-        "Weitere Arbeit durch Partner dokumentiert. Bis ca. 30 Min direkt, größere vorher als Nachtrag melden.",
+      beschreibung: beschreibungParts.join("\n\n"),
       einheit: "Std",
-      menge: 1,
+      menge: mengeStd,
       typ: "regie",
       verguetung: "aufwand",
       leistung_status: "offen",
       anerkennung_status: "in_pruefung",
       handwerker_status: "bestaetigt",
+      ...(stundensatz != null
+        ? { stundensatz, preis_partner: stundensatz }
+        : {}),
       sort_order: Number(maxSort?.sort_order ?? 0) + 1,
     })
     .select("id")
@@ -609,10 +682,40 @@ export async function createPartnerWeitereArbeit(
     return {
       ok: false,
       error:
-        /typ|verguetung|anerkennung/i.test(error.message)
+        /typ|verguetung|anerkennung|stundensatz/i.test(error.message)
           ? "Migration Positions-Lebenszyklus fehlt noch — bitte DB aktualisieren."
           : error.message,
     };
+  }
+
+  const positionId = String(inserted.id);
+  const fotos = parseFotosFromForm(formData);
+  let eintragId = "";
+  if (fotos.length > 0 || begruendung) {
+    const eintrag = await insertEintrag({
+      positionId,
+      typ: "weitere_arbeit",
+      beschreibung: begruendung || titel,
+      zeitMinuten,
+      handwerkerId: auth.handwerkerId,
+      auftragId,
+      leistungName: titel,
+    });
+    if (!eintrag.ok) return eintrag;
+    eintragId = eintrag.id;
+    for (const file of fotos) {
+      const attached = await attachFoto({
+        eintragId,
+        handwerkerId: auth.handwerkerId,
+        auftragId,
+        positionId,
+        file,
+        captureAt: null,
+        nachgereicht: false,
+        nachreichGrund: null,
+      });
+      if (!attached.ok) return attached;
+    }
   }
 
   await writeAuditEvent({
@@ -620,7 +723,14 @@ export async function createPartnerWeitereArbeit(
     entityId: auftragId,
     aktion: "weitere_arbeit_angelegt",
     actorRolle: "partner",
-    payload: { position_id: inserted.id, titel },
+    payload: {
+      position_id: positionId,
+      titel,
+      stundensatz,
+      schaetzung_minuten: zeitMinuten,
+      foto_count: fotos.length,
+      eintrag_id: eintragId || null,
+    },
   });
 
   // CRM-Glocke (Staff) — gleiche Pipeline wie Positions-Anfrage
@@ -640,7 +750,7 @@ export async function createPartnerWeitereArbeit(
         },
         body: JSON.stringify({
           auftragId,
-          positionId: String(inserted.id),
+          positionId,
           typ: "weitere_arbeit",
           titel,
         }),
@@ -652,5 +762,5 @@ export async function createPartnerWeitereArbeit(
   }
 
   revalidatePath("/partner");
-  return { ok: true, eintragId: "", positionId: String(inserted.id) };
+  return { ok: true, eintragId, positionId };
 }

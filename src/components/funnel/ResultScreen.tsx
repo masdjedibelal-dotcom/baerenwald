@@ -27,7 +27,7 @@ export function LeadAvailabilityHint({
       }}
       role="note"
     >
-      Wir prüfen nach deiner Anfrage die Verfügbarkeit unserer Handwerker und
+      Wir prüfen nach Ihrer Anfrage die Verfügbarkeit unserer Handwerker und
       melden uns {SITE_CONFIG.responseSlaWithin} zur Terminbestätigung.
     </div>
   );
@@ -127,7 +127,7 @@ function storyNote(
   zeitwert: number
 ): string | null {
   if (situation === "renovierung" || situation === "neubau") {
-    return `Für ${flaeche} m² investierst du selbst ca. ${hours} Stunden pro Jahr — Zeitwert ~${formatCurrencyEUR(zeitwert)}.`;
+    return `Für ${flaeche} m² investieren Sie selbst ca. ${hours} Stunden pro Jahr — Zeitwert ~${formatCurrencyEUR(zeitwert)}.`;
   }
   if (situation === "pflege") {
     return "Regelmäßige Pflege kostet weniger als ein einmaliger Notfalleinsatz.";
@@ -235,7 +235,7 @@ export function ResultScreen({
           </div>
         ) : null}
         <p className="text-[11px] font-medium uppercase tracking-widest text-[#777]">
-          Dein Preisrahmen
+          Ihr Preisrahmen
         </p>
         <div className="mt-2 flex flex-wrap items-baseline gap-1">
           <span className="text-[38px] font-extrabold leading-none tracking-tight text-white">
@@ -280,7 +280,7 @@ export function ResultScreen({
               <span className="mt-0.5 block">
                 {state.situation === "b2b" && state.b2bPrio
                   ? `Euer Fokus: ${B2bPrioLabel(state.b2bPrio)} — wir spiegeln das in der Betreuung.`
-                  : "Koordination aus einer Hand — weniger Stress für dich."}
+                  : "Koordination aus einer Hand — weniger Stress für Sie."}
               </span>
             </p>
           </div>
@@ -296,8 +296,8 @@ export function ResultScreen({
 
       {!state.entscheider ? (
         <div className="rounded-xl border border-[#DCE6FF] bg-[#F6F8FE] p-3 text-[12px] leading-relaxed text-[#315AA8]">
-          Ergebnis per Mail schicken zum Weiterleiten — du kannst trotzdem
-          direkt anfragen, wenn du möchtest.
+          Ergebnis per Mail schicken zum Weiterleiten — Sie können trotzdem
+          direkt anfragen, wenn Sie möchten.
         </div>
       ) : null}
 
@@ -316,7 +316,7 @@ export function ResultScreen({
 
       <div>
         <p className="mb-3 mt-5 text-sm font-medium text-text-primary">
-          Passt dieser Rahmen zu deinem Budget?
+          Passt dieser Rahmen zu Ihrem Budget?
         </p>
         <div className="flex flex-wrap gap-2">
           <button
@@ -346,7 +346,7 @@ export function ResultScreen({
         </div>
         {budgetChoice === "hoch" ? (
           <p className="mt-3 rounded-xl border border-border-default bg-muted p-3 text-sm leading-relaxed text-text-secondary">
-            Kein Problem — beim Termin besprechen wir Optionen die in dein
+            Kein Problem — beim Termin besprechen wir Optionen, die in Ihr
             Budget passen.
           </p>
         ) : null}

@@ -3,7 +3,8 @@
 export type PortalKiAssistScope =
   | "funnel_beschreibung"
   | "bautagebuch"
-  | "abnahmeprotokoll";
+  | "abnahmeprotokoll"
+  | "hm_befund_notiz";
 
 export type PortalKiAssistMessage = {
   role: "user" | "assistant";
@@ -46,11 +47,11 @@ export const PORTAL_KI_ASSIST_SCOPES: Record<
     id: "funnel_beschreibung",
     label: "Beschreibung",
     intro:
-      "Ich helfe dir, dein Anliegen klar zu beschreiben — sag mir, was passiert ist oder was du ändern willst.",
+      "Ich helfe Ihnen, Ihr Anliegen klar zu beschreiben — sagen Sie mir, was passiert ist oder was Sie ändern möchten.",
     placeholder: "z. B. „Kürzer und klarer“ oder „Wasser tropft unter der Spüle“…",
     systemHint: `Modus: Schaden-/Anliegen-Beschreibung im Melde-Funnel (Mieter oder Kunde).
 Schreib einen verständlichen, sachlichen Freitext für die Hausverwaltung / Bärenwald.
-Keine erfundenen Fakten. Du/Sie: du, wenn der Nutzer duzt, sonst klar und höflich.
+Keine erfundenen Fakten. Immer höfliche Sie-Form.
 ${BW_APPLY_HINT}`,
     quickPrompts: [
       {
@@ -73,7 +74,7 @@ ${BW_APPLY_HINT}`,
     id: "bautagebuch",
     label: "Bautagebuch",
     intro:
-      "Ich formuliere den **Tagebuch-Eintrag**. Beschreib kurz, was gemacht wurde — danach kannst du den Text übernehmen.",
+      "Ich formuliere den Tagebuch-Eintrag. Beschreiben Sie kurz, was gemacht wurde — danach können Sie den Text übernehmen.",
     placeholder: "z. B. „Sauberer, kundensichtbar“ oder Stichworte zum Tag…",
     systemHint: `Modus: Bautagebuch-Eintrag (Handwerker-Dokumentation, kundensichtbar möglich).
 Klar, sachlich, deutsch, kurz. Keine erfundenen Fakten oder Mengen.
@@ -98,7 +99,7 @@ ${BW_APPLY_HINT}`,
     id: "abnahmeprotokoll",
     label: "Abnahme",
     intro:
-      "Ich helfe bei **Protokoll- oder Mängeltext**. Sag, was rein soll — danach Übernehmen.",
+      "Ich helfe bei Protokoll- oder Mängeltext. Sagen Sie, was rein soll — danach übernehmen.",
     placeholder: "z. B. „Arbeiten zusammenfassen“ oder „Mängel klarer“…",
     systemHint: `Modus: Abnahmeprotokoll / Vorbehalte / Mängelbeschreibung (Handwerker).
 Sachlich, konkret, deutsch. Keine erfundenen Mängel.
@@ -118,6 +119,33 @@ ${BW_APPLY_HINT}`,
       },
     ],
     requiresPartnerAuth: true,
+  },
+  hm_befund_notiz: {
+    id: "hm_befund_notiz",
+    label: "Befund-Notiz",
+    intro:
+      "Ich formuliere die Prüfpunkt-Notiz. Stichworte reichen — danach übernehmen.",
+    placeholder: "z. B. „Klarer und kürzer“ oder Stichworte zum Befund…",
+    systemHint: `Modus: Notiz zu einem Hausmeister-Prüfpunkt (Vorbefund).
+Klar, sachlich, deutsch, kurz. Für Verwaltung und ggf. Handwerker lesbar.
+Keine erfundenen Befunde. Du-Form vermeiden — neutral oder Sie.
+${BW_APPLY_HINT}`,
+    quickPrompts: [
+      {
+        label: "Ausformulieren",
+        prompt:
+          "Formuliere meine Stichworte als klare Befund-Notiz zum Übernehmen.",
+      },
+      {
+        label: "Kürzer",
+        prompt: "Kürze die Notiz, behalte die Kernaussage.",
+      },
+      {
+        label: "Sachlicher",
+        prompt: "Formuliere die Notiz sachlicher und prüfbar.",
+      },
+    ],
+    requiresPartnerAuth: false,
   },
 };
 

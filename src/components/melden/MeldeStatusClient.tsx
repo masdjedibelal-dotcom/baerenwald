@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { DokumenteTabelle } from "@/components/shared/DokumenteTabelle";
 import { VorgangDetailBlocks } from "@/components/shared/vorgang-detail";
@@ -14,7 +14,7 @@ import {
   mieterStgActiveCopy,
   type MieterWlBrand,
 } from "@/lib/portal2/mieter-wl";
-import { buildMieterVorgangDetailVm } from "@/lib/vorgang/build-vorgang-detail-vm";
+import { buildMeldeStatusVorgangDetailVm } from "@/lib/vorgang/build-org-lead-detail-vm";
 import type { MieterStatusStufe } from "@/lib/vorgang/vorgang-phase";
 import { cn } from "@/lib/utils";
 import "./melden.css";
@@ -26,6 +26,19 @@ type Slot = {
   status: string;
 };
 
+type Anhang = { id: string; name: string; datum?: string; href: string };
+
+type MeldeDetailExtras = {
+  meldeStrasse?: string | null;
+  meldePlz?: string | null;
+  meldeOrt?: string | null;
+  meldeSituation?: string | null;
+  meldeBereich?: string | null;
+  meldeZeitraum?: string | null;
+  meldeFachdetails?: Array<{ label: string; value: string }>;
+  fotos?: string[];
+};
+
 type Props = {
   brand: MieterWlBrand;
   token: string;
@@ -35,11 +48,14 @@ type Props = {
   referenz: string;
   initialStufe: MieterStatusStufe;
   erledigt: boolean;
-  anhaenge?: Array<{ id: string; name: string; datum?: string; href: string }>;
+  anhaenge?: Anhang[];
   /** Kurzbeschreibung der Meldung (ohne Preise) */
   beschreibung?: string | null;
   statusLabel?: string;
+  meldeDetail?: MeldeDetailExtras;
 };
+
+const STATUS_POLL_MS = 20_000;
 
 function fmtSlot(iso: string) {
   return new Intl.DateTimeFormat("de-DE", {
@@ -53,7 +69,7 @@ function fmtSlot(iso: string) {
 
 /**
  * D9 `wlStatus` — STG-Timeline (de+en) im HV-Branding.
- * Termin-/Feedback-APIs unverändert.
+ * Phase wird live gepollt (ohne Portal-Login).
  */
 export function MeldeStatusClient({
   brand,
@@ -63,13 +79,17 @@ export function MeldeStatusClient({
   einheit,
   referenz,
   initialStufe,
-  erledigt,
-  anhaenge = [],
+  erledigt: initialErledigt,
+  anhaenge: initialAnhaenge = [],
   beschreibung = null,
-  statusLabel,
+  statusLabel: initialStatusLabel,
+  meldeDetail,
 }: Props) {
   const lang = "de" as const;
-  const [stufe] = useState(initialStufe);
+  const [stufe, setStufe] = useState(initialStufe);
+  const [erledigt, setErledigt] = useState(initialErledigt);
+  const [anhaenge, setAnhaenge] = useState(initialAnhaenge);
+  const [statusLabel, setStatusLabel] = useState(initialStatusLabel);
   const [slots, setSlots] = useState<Slot[]>([]);
   const [bestaetigt, setBestaetigt] = useState<Slot | null>(null);
   const [sterne, setSterne] = useState(0);
@@ -85,14 +105,21 @@ export function MeldeStatusClient({
 
   const detailVm = useMemo(
     () =>
-      buildMieterVorgangDetailVm({
+      buildMeldeStatusVorgangDetailVm({
         idLabel: referenz,
         titel: active.title,
         statusLabel: statusLabel ?? active.subtitle,
         objektTitel,
         einheit,
-        melderName,
-        beschreibungPlain: beschreibung,
+        beschreibung,
+        meldeStrasse: meldeDetail?.meldeStrasse,
+        meldePlz: meldeDetail?.meldePlz,
+        meldeOrt: meldeDetail?.meldeOrt,
+        meldeSituation: meldeDetail?.meldeSituation,
+        meldeBereich: meldeDetail?.meldeBereich,
+        meldeZeitraum: meldeDetail?.meldeZeitraum,
+        meldeFachdetails: meldeDetail?.meldeFachdetails,
+        fotos: meldeDetail?.fotos,
       }),
     [
       referenz,
@@ -101,14 +128,14 @@ export function MeldeStatusClient({
       statusLabel,
       objektTitel,
       einheit,
-      melderName,
       beschreibung,
+      meldeDetail,
     ]
   );
 
   const metaLine = [objektTitel, einheit].filter(Boolean).join(" · ");
 
-  async function loadSlots() {
+  const loadSlots = useCallback(async () => {
     const res = await fetch(
       `/api/melden/terminslots?token=${encodeURIComponent(token)}`
     );
@@ -118,11 +145,56 @@ export function MeldeStatusClient({
     };
     setSlots(json.slots ?? []);
     setBestaetigt(json.bestaetigt ?? null);
-  }
+  }, [token]);
+
+  const refreshStatus = useCallback(async () => {
+    try {
+      const res = await fetch(
+        `/api/melden/status?token=${encodeURIComponent(token)}`,
+        { cache: "no-store" }
+      );
+      if (!res.ok) return;
+      const json = (await res.json()) as {
+        stufe?: MieterStatusStufe;
+        erledigt?: boolean;
+        statusLabel?: string;
+        anhaenge?: Anhang[];
+      };
+      if (json.stufe) setStufe(json.stufe);
+      if (typeof json.erledigt === "boolean") setErledigt(json.erledigt);
+      if (json.statusLabel) setStatusLabel(json.statusLabel);
+      if (Array.isArray(json.anhaenge)) setAnhaenge(json.anhaenge);
+    } catch {
+      /* offline / kurzzeitig — nächster Poll */
+    }
+  }, [token]);
 
   useEffect(() => {
     void loadSlots();
-  }, [token]);
+  }, [loadSlots]);
+
+  useEffect(() => {
+    void refreshStatus();
+    const id = window.setInterval(() => {
+      void refreshStatus();
+      void loadSlots();
+    }, STATUS_POLL_MS);
+
+    const onVis = () => {
+      if (document.visibilityState === "visible") {
+        void refreshStatus();
+        void loadSlots();
+      }
+    };
+    document.addEventListener("visibilitychange", onVis);
+    window.addEventListener("focus", onVis);
+
+    return () => {
+      window.clearInterval(id);
+      document.removeEventListener("visibilitychange", onVis);
+      window.removeEventListener("focus", onVis);
+    };
+  }, [refreshStatus, loadSlots]);
 
   async function confirmSlot(slotId: string) {
     setBusy(true);
@@ -140,6 +212,7 @@ export function MeldeStatusClient({
       }
       setMsg("Termin bestätigt.");
       await loadSlots();
+      await refreshStatus();
     } finally {
       setBusy(false);
     }
@@ -292,9 +365,7 @@ export function MeldeStatusClient({
                 </div>
                 <textarea
                   className="input-field w-full min-h-[72px]"
-                  placeholder={
-                    "Optional: Anmerkung"
-                  }
+                  placeholder={"Optional: Anmerkung"}
                   value={freitext}
                   onChange={(e) => setFreitext(e.target.value)}
                 />

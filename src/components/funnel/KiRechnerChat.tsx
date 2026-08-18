@@ -2,8 +2,9 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
+import { renderChatMarkdown } from "@/components/gpt/gpt-chat-markdown";
 import { useMobileComposerInset } from "@/hooks/use-mobile-composer-inset";
 import {
   countUserMessages,
@@ -51,14 +52,14 @@ export interface KiRechnerChatProps {
   onRaumVisualisieren?: () => void;
 }
 
-const INITIAL_MESSAGE = `Hi! Ich bin dein Handwerks-Assistent von Bärenwald — für Renovierung, Reparatur und Umbau in München.
+const INITIAL_MESSAGE = `Hi! Ich bin Ihr Handwerks-Assistent von Bärenwald — für Renovierung, Reparatur und Umbau in München.
 
-Ob erste Idee oder konkretes Projekt: Hier klärst du alles Handwerkliche. Ich helfe dir z. B.:
-• zu verstehen, **was du wirklich brauchst** (Gewerke, Ablauf, Stolpersteine)
-• bei **Fragen zu deinem Vorhaben** — auch wenn noch vieles offen ist
+Ob erste Idee oder konkretes Projekt: Hier klären Sie alles Handwerkliche. Ich helfe Ihnen z. B.:
+• zu verstehen, **was Sie wirklich brauchen** (Gewerke, Ablauf, Stolpersteine)
+• bei **Fragen zu Ihrem Vorhaben** — auch wenn noch vieles offen ist
 • zu sehen, **was als Nächstes Sinn macht**
 
-Sind die wichtigsten Punkte da, tippst du unten auf **Zum Preis** für einen unverbindlichen Rahmen. Nicht alles musst du sofort wissen.
+Sind die wichtigsten Punkte da, tippen Sie unten auf **Zum Preis** für einen unverbindlichen Rahmen. Nicht alles müssen Sie sofort wissen.
 
 Womit sollen wir starten?`;
 
@@ -88,83 +89,6 @@ function SendMessageIcon() {
       />
     </svg>
   );
-}
-
-/** Einfaches Inline-Markdown (**fett**, *kursiv*) — kein vollständiger Rich-Text-Editor. */
-function formatInlineMarkdown(text: string, keyPrefix: string): ReactNode {
-  const parts: ReactNode[] = [];
-  const re = /(\*\*[^*]+?\*\*|\*[^*]+?\*)/g;
-  let last = 0;
-  let match: RegExpExecArray | null;
-  let i = 0;
-
-  while ((match = re.exec(text)) !== null) {
-    if (match.index > last) {
-      parts.push(text.slice(last, match.index));
-    }
-    const token = match[0];
-    if (token.startsWith("**")) {
-      parts.push(
-        <strong key={`${keyPrefix}-b-${i++}`}>{token.slice(2, -2)}</strong>
-      );
-    } else {
-      parts.push(<em key={`${keyPrefix}-i-${i++}`}>{token.slice(1, -1)}</em>);
-    }
-    last = match.index + token.length;
-  }
-
-  if (last < text.length) parts.push(text.slice(last));
-  return parts.length > 0 ? parts : text;
-}
-
-function isBulletLine(line: string): boolean {
-  return /^([•*\-]|\d+\.)\s+/.test(line);
-}
-
-function bulletItemText(line: string): string {
-  return line.replace(/^([•*\-]|\d+\.)\s+/, "");
-}
-
-function renderChatContent(content: string): ReactNode {
-  const lines = content.split("\n");
-  const nodes: ReactNode[] = [];
-  let bullets: string[] = [];
-  let key = 0;
-
-  const flushBullets = () => {
-    if (bullets.length === 0) return;
-    nodes.push(
-      <ul key={`ul-${key++}`} className="ki-rechner-chat-list">
-        {bullets.map((item) => (
-          <li key={`li-${key++}`}>
-            {formatInlineMarkdown(item, `li-${key}`)}
-          </li>
-        ))}
-      </ul>
-    );
-    bullets = [];
-  };
-
-  for (const line of lines) {
-    const trimmed = line.trim();
-    if (!trimmed) {
-      flushBullets();
-      continue;
-    }
-    if (isBulletLine(trimmed)) {
-      bullets.push(bulletItemText(trimmed));
-      continue;
-    }
-    flushBullets();
-    nodes.push(
-      <p key={`p-${key++}`} className="ki-rechner-chat-para">
-        {formatInlineMarkdown(trimmed, `p-${key}`)}
-      </p>
-    );
-  }
-  flushBullets();
-
-  return nodes.length > 0 ? nodes : content;
 }
 
 export function KiRechnerChat({
@@ -319,11 +243,11 @@ export function KiRechnerChat({
         if (res.status === 429) {
           if (data.typ === "limit_reached") {
             appendAssistant(
-              `Du hast die maximale Anzahl von **${KI_MAX_USER_MESSAGES} Nachrichten** erreicht. Bitte nutze **Zum Preis** oder **Zur Beratung** unten.`
+              `Sie haben die maximale Anzahl von **${KI_MAX_USER_MESSAGES} Nachrichten** erreicht. Bitte nutzen Sie **Zum Preis** oder **Zur Beratung** unten.`
             );
           } else {
             appendAssistant(
-              "Gerade sind viele Anfragen unterwegs. Bitte versuche es in etwa einer Stunde erneut — oder nutze **Option für Option** auf der Auswahlseite."
+              "Gerade sind viele Anfragen unterwegs. Bitte versuchen Sie es in etwa einer Stunde erneut — oder nutzen Sie **Option für Option** auf der Auswahlseite."
             );
           }
           setError(null);
@@ -336,7 +260,7 @@ export function KiRechnerChat({
 
       const displayText =
         data.displayText?.trim() ||
-        "Antwort konnte nicht geladen werden. Bitte noch einmal versuchen.";
+        "Antwort konnte nicht geladen werden. Bitte versuchen Sie es noch einmal.";
 
       if (data.typ === "off_topic") {
         appendAssistant(displayText);
@@ -351,7 +275,7 @@ export function KiRechnerChat({
           {
             role: "assistant",
             content:
-              "Super — ich habe ein klares Bild von deinem Vorhaben.\n\nTippe unten auf **Zum Preis**, dann siehst du deinen unverbindlichen Preisrahmen.",
+              "Super — ich habe ein klares Bild von Ihrem Vorhaben.\n\nTippen Sie unten auf **Zum Preis**, dann sehen Sie Ihren unverbindlichen Preisrahmen.",
           },
         ]);
         setLoading(false);
@@ -377,7 +301,7 @@ export function KiRechnerChat({
           ...prev,
           {
             role: "assistant",
-            content: `${displayText}\n\nTippe unten auf **Zur Beratung**, dann kannst du uns deine Kontaktdaten hinterlassen.`,
+            content: `${displayText}\n\nTippen Sie unten auf **Zur Beratung**, dann können Sie uns Ihre Kontaktdaten hinterlassen.`,
           },
         ]);
         setLoading(false);
@@ -387,7 +311,7 @@ export function KiRechnerChat({
 
       appendAssistant(displayText);
     } catch {
-      setError("Verbindungsfehler — bitte erneut versuchen.");
+      setError("Verbindungsfehler — bitte versuchen Sie es erneut.");
     } finally {
       setLoading(false);
     }
@@ -454,7 +378,7 @@ export function KiRechnerChat({
                   : "ki-rechner-chat-bubble ki-rechner-chat-bubble--assistant"
               }
             >
-              {renderChatContent(msg.content)}
+              {renderChatMarkdown(msg.content)}
             </div>
           </div>
         ))}
@@ -487,7 +411,7 @@ export function KiRechnerChat({
 
       {onRaumVisualisieren && countUserMessages(messages) >= 1 ? (
         <div className="portal-gpt-viz-cta" style={{ margin: "0 0.75rem" }}>
-          <span>Zeig uns deinen Raum — für eine Visualisierung.</span>
+          <span>Zeigen Sie uns Ihren Raum — für eine Visualisierung.</span>
           <button type="button" onClick={onRaumVisualisieren}>
             Raum zeigen
           </button>
@@ -518,7 +442,7 @@ export function KiRechnerChat({
             placeholder={
               limitReached
                 ? "Nachrichtenlimit erreicht"
-                : "Beschreib kurz, was gemacht werden soll …"
+                : "Nachricht schreiben…"
             }
             className="ki-rechner-chat-input ki-rechner-chat-textarea"
             disabled={inputDisabled}

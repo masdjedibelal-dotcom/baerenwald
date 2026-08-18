@@ -1,5 +1,7 @@
 import { Resend } from "resend";
 
+import { sendBrandedMail } from "@/lib/email/send-branded-mail";
+
 import {
   buildStandardMailHtml,
   mailBegruessungHtml,
@@ -35,6 +37,42 @@ function systemFrom(): string {
   );
 }
 
+function schedulePartnerPush(input: {
+  handwerkerId: string;
+  typ: PartnerNotificationTyp;
+  projektName: string;
+  leistungName?: string | null;
+  link: string;
+}): void {
+  void import("@/lib/push/resolve-recipients")
+    .then(async ({ resolveHandwerkerAuthUserId }) => {
+      const { buildPushPayloadFromNotif } = await import("@/lib/push/payload");
+      const { scheduleWebPushToUsers } = await import(
+        "@/lib/push/send-web-push"
+      );
+      const uid = await resolveHandwerkerAuthUserId(input.handwerkerId);
+      if (!uid) return;
+      const subject = partnerNotificationSubject(
+        input.typ,
+        input.projektName,
+        input.leistungName
+      );
+      scheduleWebPushToUsers(
+        [uid],
+        buildPushPayloadFromNotif({
+          typ: input.typ,
+          titel: subject,
+          body: /rechnung\s+wurde\s+überwiesen/i.test(String(input.leistungName ?? ""))
+            ? "Deine Rechnung wurde überwiesen."
+            : "Bitte im Partner-Portal prüfen.",
+          link: input.link,
+          defaultUrl: "/partner",
+        })
+      );
+    })
+    .catch((e) => console.error("[createPartnerNotification] push:", e));
+}
+
 export type PartnerNotifyInput = {
   handwerkerId: string;
   typ: PartnerNotificationTyp;
@@ -53,17 +91,33 @@ function partnerNotifyBodyHtml(opts: {
   subjectLine: string;
   portalUrl: string;
   bautagebuch?: boolean;
+  rechnungUeberwiesen?: boolean;
 }): string {
-  const ctaHint = opts.bautagebuch
-    ? "Bitte im Partner-Portal einen Bautagebuch-Eintrag erstellen — am Auftrag hat sich nichts geändert."
-    : "Bitte im Partner-Portal prüfen und bestätigen.";
+  const ctaHint = opts.rechnungUeberwiesen
+    ? "Deine eingereichte Rechnung wurde von Bärenwald überwiesen."
+    : opts.bautagebuch
+      ? "Bitte im Partner-Portal einen Bautagebuch-Eintrag erstellen — am Auftrag hat sich nichts geändert."
+      : "Bitte im Partner-Portal prüfen und bestätigen.";
+  const ctaLabel = opts.rechnungUeberwiesen
+    ? "Zum Vorgang im Partner-Portal →"
+    : "Zum Partner-Portal →";
   return `
     <p style="margin:0 0 12px;font-size:15px;color:#374151;line-height:1.6;">${mailBegruessungHtml("du", opts.handwerkerName)}</p>
     <p style="margin:0 0 16px;font-size:15px;color:#374151;line-height:1.6;"><strong>${escapeHtml(opts.subjectLine)}</strong></p>
     <p style="margin:0 0 8px;font-size:14px;color:#374151;line-height:1.6;">${ctaHint}</p>
-    ${mailPrimaryButtonHtml("Zum Partner-Portal →", opts.portalUrl)}
+    ${mailPrimaryButtonHtml(ctaLabel, opts.portalUrl)}
     <p style="margin:24px 0 0;font-size:15px;color:#374151;line-height:1.6;">${mailTeamGrussHtml("du")}</p>
   `;
+}
+
+function isRechnungUeberwiesenNotify(
+  typ: PartnerNotificationTyp,
+  leistungName?: string | null
+): boolean {
+  return (
+    typ === "erinnerung" &&
+    /rechnung\s+wurde\s+überwiesen/i.test(String(leistungName ?? ""))
+  );
 }
 
 /** INSERT notification + optional Resend-Mail an Handwerker. */
@@ -91,44 +145,42 @@ export async function createPartnerNotification(
     ? "bautagebuch"
     : input.typ;
 
-  if (vorgangKey) {
-    const { data: existingRows } = await supabaseAdmin
+  const rechnungUeberwiesen = isRechnungUeberwiesenNotify(
+    notifyTyp,
+    input.leistungName
+  );
+
+  /**
+   * Partner-Glocke/Push: neue Zuweisung (Annehmen/Ablehnen) +
+   * Zahlungsmeldung „Rechnung wurde überwiesen“.
+   * Andere Typen (geaendert, bautagebuch, …) erzeugen keine Notification mehr.
+   */
+  if (notifyTyp !== "neu" && !rechnungUeberwiesen) {
+    return { ok: true, deduplicated: true };
+  }
+
+  if (vorgangKey && notifyTyp === "neu") {
+    // Einmalig je Vorgang — auch wenn bereits gelesen (kein Spam bei erneutem Login)
+    const { data: existingAny } = await supabaseAdmin
       .from("notifications")
       .select("id, link, typ")
       .eq("handwerker_id", handwerkerId)
-      .eq("gelesen", false)
+      .eq("typ", "neu")
       .ilike("link", `%id=${vorgangKey}%`)
       .order("created_at", { ascending: false })
       .limit(20);
 
-    // Bautagebuch nie mit neu/geaendert vermischen — sonst wirkt Update wie Auftragsänderung.
-    const existing = (existingRows ?? []).find((row) => {
-      if (partnerNotificationVorgangKey(String(row.link ?? "")) !== vorgangKey) {
-        return false;
-      }
-      const rowTyp = String(row.typ ?? "");
-      const rowIsBt =
-        rowTyp === "bautagebuch" ||
-        (rowTyp === "erinnerung" &&
-          /focus=bautagebuch|bitte\s+update/i.test(String(row.link ?? "")));
-      if (isBautagebuchNotify) return rowIsBt;
-      return !rowIsBt;
-    });
+    const existingNeu = (existingAny ?? []).find(
+      (row) =>
+        partnerNotificationVorgangKey(String(row.link ?? "")) === vorgangKey
+    );
 
-    if (existing?.id) {
-      const { error: updErr } = await supabaseAdmin
-        .from("notifications")
-        .update({
-          typ: notifyTyp,
-          projekt_name: input.projektName.trim() || "Projekt",
-          leistung_name: input.leistungName?.trim() || null,
-          link,
-          created_at: new Date().toISOString(),
-        })
-        .eq("id", existing.id);
-
-      if (updErr) return { ok: false, error: updErr.message };
-      return { ok: true, notificationId: String(existing.id), deduplicated: true };
+    if (existingNeu?.id) {
+      return {
+        ok: true,
+        notificationId: String(existingNeu.id),
+        deduplicated: true,
+      };
     }
   }
 
@@ -146,6 +198,14 @@ export async function createPartnerNotification(
     .single();
 
   if (insErr) return { ok: false, error: insErr.message };
+
+  void schedulePartnerPush({
+    handwerkerId,
+    typ: notifyTyp,
+    projektName: input.projektName,
+    leistungName: input.leistungName,
+    link,
+  });
 
   const { data: hw } = await supabaseAdmin
     .from("handwerker")
@@ -172,16 +232,14 @@ export async function createPartnerNotification(
         handwerkerName,
         subjectLine: subject,
         portalUrl: portalUrl || partnerLoginUrl(),
-        bautagebuch: notifyTyp === "bautagebuch",
+        rechnungUeberwiesen,
       }),
       disclaimer:
-        notifyTyp === "bautagebuch"
-          ? "Du erhältst diese Mail, weil Bärenwald dich um einen Bautagebuch-Eintrag gebeten hat."
-          : "Du erhältst diese Mail, weil dir im Partner-Portal ein Vorgang zugewiesen wurde.",
+        "Du erhältst diese Mail, weil dir im Partner-Portal ein Vorgang zugewiesen wurde.",
       footerNote: "Bärenwald München · Partner-Portal",
     });
 
-    await resend.emails.send({
+    await sendBrandedMail(resend, {
       from: systemFrom(),
       to,
       subject,

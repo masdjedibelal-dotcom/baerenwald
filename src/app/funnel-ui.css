@@ -118,12 +118,31 @@
   white-space: pre-line;
 }
 
+/* Text-only wie Bereich-Cards: gleiche Präsenz, volle Breite */
+.funnel-tile--text-only {
+  min-height: 64px;
+  justify-content: center;
+  padding-top: 18px;
+  padding-bottom: 18px;
+}
+
 .funnel-step-tiles-card {
   background: transparent;
   border-radius: 0;
   padding: 2px; /* Platz für Schatten der Kacheln */
   border: none;
   overflow-anchor: none;
+  width: 100%;
+}
+
+/* Melde/Page: Step-Padding = Footer (16px), Cards nicht schmaler als Zurück/Weiter */
+.portal-funnel-host--page .funnel-step-page {
+  box-sizing: border-box;
+}
+
+.portal-funnel-host--page .funnel-footer {
+  padding-left: 16px;
+  padding-right: 16px;
 }
 
 .funnel-input {
@@ -166,21 +185,48 @@
   box-sizing: border-box;
 }
 
-/* Modal: Funnel füllt die Fläche — alles weiß, Kacheln schweben */
+/* Modal: Funnel füllt die Fläche — getönter Grund, Kacheln/Inputs weiß */
 .portal-funnel-host {
   display: flex;
   flex-direction: column;
   flex: 1;
   min-height: 0;
   width: 100%;
-  background: #fff;
+  background: var(--p2-bg-content, #f6f5f3);
 }
 
 .portal-funnel-host--modal {
+  position: relative;
   flex: 1;
   min-height: 0;
   height: 100%;
-  background: #fff;
+  background: var(--p2-bg-content, #f6f5f3);
+  --fl-bg: var(--p2-bg-content, #f6f5f3);
+  --fl-bg-card: #ffffff;
+}
+
+/* FAB: neues Objekt am Objekt-Schritt (unten rechts über Footer) */
+.portal-funnel-objekt-fab {
+  position: absolute;
+  z-index: 5;
+  right: max(16px, env(safe-area-inset-right, 0px));
+  bottom: calc(5.75rem + env(safe-area-inset-bottom, 0px));
+  display: flex;
+  height: 52px;
+  width: 52px;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  border-radius: 9999px;
+  background: var(--org-primary, var(--p2-primary, #2e7d52));
+  color: #fff;
+  box-shadow: 0 6px 18px rgba(46, 125, 82, 0.4);
+  cursor: pointer;
+  transition: transform 0.15s ease;
+}
+
+.portal-funnel-objekt-fab:active {
+  transform: scale(0.96);
 }
 
 .portal-funnel-host--modal .funnel-input,
@@ -205,6 +251,8 @@
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
   padding-bottom: 1.25rem;
+  display: flex;
+  flex-direction: column;
 }
 
 .portal-funnel-host--modal .portal-funnel-host__actions {
@@ -213,7 +261,7 @@
   margin-top: auto;
   padding-top: 12px;
   padding-bottom: max(8px, env(safe-area-inset-bottom, 0px));
-  background: #fff;
+  background: var(--p2-bg-content, #f6f5f3);
   border-top: 1px solid rgba(30, 28, 26, 0.06);
 }
 
@@ -281,7 +329,10 @@
 
 /* Page-Layout (Melde): Website-Funnel-Footer (sticky) */
 .portal-funnel-host--page {
-  min-height: 50vh;
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  height: 100%;
   background: #fff;
   display: flex;
   flex-direction: column;
@@ -293,7 +344,55 @@
  */
 .portal-funnel-host--page .portal-funnel-host__body {
   flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
   padding-bottom: calc(8.5rem + env(safe-area-inset-bottom, 0px));
+}
+
+/* Beschreibungsschritt: volle Breite (absolute Textarea schrumpft sonst auf Label-Breite) */
+.funnel-step--fill {
+  flex: 1 1 auto;
+  align-self: stretch;
+  width: 100%;
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+}
+
+.funnel-step--fill .funnel-ki-fill {
+  flex: 1 1 auto;
+  width: 100%;
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+}
+
+.funnel-step--fill .funnel-ki-fill.space-y-1\.5 > :not([hidden]) ~ :not([hidden]) {
+  margin-top: 0;
+}
+
+.funnel-textarea-fill-wrap {
+  position: relative;
+  flex: 1 1 auto;
+  width: 100%;
+  min-width: 0;
+  min-height: 12rem;
+}
+
+.funnel-textarea-fill-wrap > textarea.funnel-input,
+.funnel-textarea-fill-wrap > textarea {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  min-height: 0 !important;
+  resize: none;
+  box-sizing: border-box;
 }
 
 .funnel-footer {
@@ -421,12 +520,11 @@
   display: flex;
   flex-direction: column;
   width: min(100%, var(--portal-funnel-modal-max, 1360px));
-  background: #fff;
+  background: var(--p2-bg-content, #f6f5f3);
 }
 
-.portal-modal-shell-panel--funnel .portal-modal-shell-header,
-.portal-modal-shell-panel--funnel .portal-modal-shell-body {
-  background: #fff;
+.portal-modal-shell-panel--funnel .portal-modal-shell-header {
+  background: var(--p2-bg-content, #f6f5f3);
 }
 
 .portal-modal-shell-panel--funnel .portal-modal-shell-body {
@@ -437,6 +535,7 @@
   flex-direction: column;
   padding-top: 8px;
   padding-bottom: 8px;
+  background: transparent;
 }
 
 /* Mobil: Funnel-Create (Neuer Vorgang) = Vollbild */
@@ -445,7 +544,7 @@
     align-items: stretch;
     justify-content: stretch;
     padding: 0;
-    background: #fff;
+    background: var(--p2-bg, #f6f5f3);
   }
 
   .portal-modal-shell--funnel .portal-modal-shell-panel--funnel {

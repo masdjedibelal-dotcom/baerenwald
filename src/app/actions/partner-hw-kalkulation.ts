@@ -58,17 +58,36 @@ export async function submitPartnerHwKalkulation(input: {
 
   const sum = hwKalkSumme(cleaned);
 
-  const { data: ah, error: ahErr } = await supabaseAdmin
-    .from("angebot_handwerker")
-    .select("id, handwerker_id, angebot_id, status, hw_status")
-    .eq("id", anfrageId)
-    .maybeSingle();
+  let ah = (
+    await supabaseAdmin
+      .from("angebot_handwerker")
+      .select("id, handwerker_id, angebot_id, status, hw_status, ohne_lv")
+      .eq("id", anfrageId)
+      .maybeSingle()
+  ).data as {
+    id: string;
+    handwerker_id: string;
+    angebot_id: string;
+    status: string;
+    hw_status: string | null;
+    ohne_lv?: boolean | null;
+  } | null;
 
-  if (ahErr || !ah) return { ok: false, error: "Anfrage nicht gefunden." };
+  if (!ah) {
+    const retry = await supabaseAdmin
+      .from("angebot_handwerker")
+      .select("id, handwerker_id, angebot_id, status, hw_status")
+      .eq("id", anfrageId)
+      .maybeSingle();
+    ah = retry.data as typeof ah;
+  }
+
+  if (!ah) return { ok: false, error: "Anfrage nicht gefunden." };
   if (String(ah.handwerker_id) !== link.handwerkerId) {
     return { ok: false, error: "Keine Berechtigung." };
   }
 
+  const ohneLv = Boolean(ah.ohne_lv);
   const angebotId = String(ah.angebot_id ?? "").trim();
   if (!angebotId) {
     return { ok: false, error: "Kein verknüpftes Angebot." };
@@ -82,52 +101,54 @@ export async function submitPartnerHwKalkulation(input: {
 
   if (!angebot) return { ok: false, error: "Angebot nicht gefunden." };
 
-  const positionenJson = cleaned.map((p, i) => ({
-    pos: i + 1,
-    titel: p.pos,
-    beschreibung: p.pos,
-    menge: p.menge,
-    einzelpreis: p.einzel,
-    gewerk: p.gewerk,
-    einheit: p.menge.replace(/^\d+(?:[.,]\d+)?\s*/, "").trim() || "Stk.",
-  }));
-
   const now = new Date().toISOString();
-  const patch: Record<string, unknown> = {
-    positionen: positionenJson,
-    gesamt_preis: Math.round(sum.brutto * 100) / 100,
-    gesamt_min: Math.round(sum.net * 100) / 100,
-    gesamt_max: Math.round(sum.brutto * 100) / 100,
-    status_einfach: "gesendet",
-    gesendet_am: now,
-    herkunft: ANGEBOT_HERKUNFT_HANDWERKER,
-    leistungsumfang: cleaned.map((p) => p.pos).join("; "),
-  };
-  if (input.dauerHinweis?.trim()) {
-    patch.notizen = [
-      String((angebot as { notizen?: string }).notizen ?? "").trim(),
-      `HW-Dauer: ${input.dauerHinweis.trim()}`,
-    ]
-      .filter(Boolean)
-      .join("\n");
-  }
 
-  const { error: updAng } = await supabaseAdmin
-    .from("angebote")
-    .update(patch)
-    .eq("id", angebotId);
+  if (!ohneLv) {
+    const positionenJson = cleaned.map((p, i) => ({
+      pos: i + 1,
+      titel: p.pos,
+      beschreibung: p.pos,
+      menge: p.menge,
+      einzelpreis: p.einzel,
+      gewerk: p.gewerk,
+      einheit: p.menge.replace(/^\d+(?:[.,]\d+)?\s*/, "").trim() || "Stk.",
+    }));
 
-  if (updAng) {
-    // Migration noch nicht applied: ohne herkunft erneut versuchen
-    if (/herkunft/i.test(updAng.message)) {
-      const { herkunft: _h, ...withoutHerkunft } = patch;
-      const { error: retry } = await supabaseAdmin
-        .from("angebote")
-        .update(withoutHerkunft)
-        .eq("id", angebotId);
-      if (retry) return { ok: false, error: retry.message };
-    } else {
-      return { ok: false, error: updAng.message };
+    const patch: Record<string, unknown> = {
+      positionen: positionenJson,
+      gesamt_preis: Math.round(sum.brutto * 100) / 100,
+      gesamt_min: Math.round(sum.net * 100) / 100,
+      gesamt_max: Math.round(sum.brutto * 100) / 100,
+      status_einfach: "gesendet",
+      gesendet_am: now,
+      herkunft: ANGEBOT_HERKUNFT_HANDWERKER,
+      leistungsumfang: cleaned.map((p) => p.pos).join("; "),
+    };
+    if (input.dauerHinweis?.trim()) {
+      patch.notizen = [
+        String((angebot as { notizen?: string }).notizen ?? "").trim(),
+        `HW-Dauer: ${input.dauerHinweis.trim()}`,
+      ]
+        .filter(Boolean)
+        .join("\n");
+    }
+
+    const { error: updAng } = await supabaseAdmin
+      .from("angebote")
+      .update(patch)
+      .eq("id", angebotId);
+
+    if (updAng) {
+      if (/herkunft/i.test(updAng.message)) {
+        const { herkunft: _h, ...withoutHerkunft } = patch;
+        const { error: retry } = await supabaseAdmin
+          .from("angebote")
+          .update(withoutHerkunft)
+          .eq("id", angebotId);
+        if (retry) return { ok: false, error: retry.message };
+      } else {
+        return { ok: false, error: updAng.message };
+      }
     }
   }
 
@@ -153,8 +174,11 @@ export async function submitPartnerHwKalkulation(input: {
       hw_preis_netto: Math.round(sum.net * 100) / 100,
       hw_preis_brutto: Math.round(sum.brutto * 100) / 100,
       hw_konditionen: konditionen,
-      status: String(ah.status).toLowerCase() === "offen" ? "akzeptiert" : ah.status,
-      antwort_at: now,
+      status:
+        ohneLv || String(ah.status).toLowerCase() === "offen"
+          ? "akzeptiert"
+          : ah.status,
+      ...(ohneLv ? {} : { antwort_at: now }),
     })
     .eq("id", anfrageId)
     .eq("handwerker_id", link.handwerkerId);

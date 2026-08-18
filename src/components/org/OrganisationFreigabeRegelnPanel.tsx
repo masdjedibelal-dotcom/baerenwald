@@ -5,17 +5,28 @@ import { useEffect, useState } from "react";
 import {
   EinstellungenEditModal,
   EinstellungenEuroSlider,
+  EinstellungenPfList,
   EinstellungenPfRow,
   EinstellungenSectionHeader,
+  EinstellungenSheetCard,
   EinstellungenToggle,
 } from "@/components/shared/PortalEinstellungenUi";
+import {
+  SofortmassnahmeAkutTitle,
+  SofortmassnahmeFaelleEditor,
+} from "@/components/org/SofortmassnahmeFaelleLink";
+import { normalizeAkutFallIds } from "@/lib/org/sofortmassnahme-faelle";
 import type { OrganisationKunde } from "@/lib/org/types";
 import {
-  EINSTELLUNGEN_AKUT_TITLE,
+  EINSTELLUNGEN_AKUT_INTRO,
+  EINSTELLUNGEN_SCHWELLE_BETRAG_INTRO,
+  EINSTELLUNGEN_SCHWELLE_BETRAG_TITLE,
   EINSTELLUNGEN_SCHWELLE_SLIDER_MAX,
   EINSTELLUNGEN_SCHWELLE_SLIDER_MIN,
   EINSTELLUNGEN_SCHWELLE_SLIDER_STEP,
   EINSTELLUNGEN_SCHWELLE_TITLE,
+  EINSTELLUNGEN_UNTER_SCHWELLE_INTRO,
+  EINSTELLUNGEN_UNTER_SCHWELLE_TITLE,
   formatEinstellungenSchwelle,
   snapEinstellungenSchwelle,
 } from "@/lib/portal2/einstellungen";
@@ -28,9 +39,14 @@ type Props = {
   isAdmin?: boolean;
 };
 
+function schwelleAktivFromKunde(
+  schwelleEur: number | null | undefined
+): boolean {
+  return schwelleEur != null && Number(schwelleEur) > 0;
+}
+
 /**
- * Freigabe-Regeln: Schwelle + Akut. Kein Kleinreparatur-Pfad.
- * Beim Speichern wird kleinreparatur_aktiv immer false gesetzt.
+ * Freigabe-Regeln: Sofortmaßnahme (Fälle) → unter Schwelle → optional Betrag.
  */
 export function OrganisationFreigabeRegelnPanel({
   kunde,
@@ -39,29 +55,49 @@ export function OrganisationFreigabeRegelnPanel({
 }: Props) {
   const [schwelle, setSchwelle] = useState(() =>
     snapEinstellungenSchwelle(
-      kunde.freigabe_schwelle_eur != null
+      kunde.freigabe_schwelle_eur != null &&
+        Number(kunde.freigabe_schwelle_eur) > 0
         ? Number(kunde.freigabe_schwelle_eur)
         : 500
     )
   );
+  const [schwelleAktiv, setSchwelleAktiv] = useState(() =>
+    schwelleAktivFromKunde(kunde.freigabe_schwelle_eur)
+  );
   const [akutDirekt, setAkutDirekt] = useState(kunde.notfall_direkt !== false);
+  const [akutFaelle, setAkutFaelle] = useState(() =>
+    normalizeAkutFallIds(kunde.akut_fall_ids)
+  );
+  const [hmAuto, setHmAuto] = useState(Boolean(kunde.hm_auto_zuweisen));
 
   const [editOpen, setEditOpen] = useState(false);
   const [editSchwelle, setEditSchwelle] = useState(schwelle);
+  const [editSchwelleAktiv, setEditSchwelleAktiv] = useState(schwelleAktiv);
   const [editAkut, setEditAkut] = useState(akutDirekt);
+  const [editAkutFaelle, setEditAkutFaelle] = useState(akutFaelle);
+  const [editHmAuto, setEditHmAuto] = useState(hmAuto);
   const [saving, setSaving] = useState(false);
   const [migratedModus, setMigratedModus] = useState(false);
 
   useEffect(() => {
+    const aktiv = schwelleAktivFromKunde(kunde.freigabe_schwelle_eur);
+    setSchwelleAktiv(aktiv);
     setSchwelle(
       snapEinstellungenSchwelle(
-        kunde.freigabe_schwelle_eur != null
+        aktiv && kunde.freigabe_schwelle_eur != null
           ? Number(kunde.freigabe_schwelle_eur)
           : 500
       )
     );
     setAkutDirekt(kunde.notfall_direkt !== false);
-  }, [kunde.freigabe_schwelle_eur, kunde.notfall_direkt]);
+    setAkutFaelle(normalizeAkutFallIds(kunde.akut_fall_ids));
+    setHmAuto(Boolean(kunde.hm_auto_zuweisen));
+  }, [
+    kunde.freigabe_schwelle_eur,
+    kunde.notfall_direkt,
+    kunde.akut_fall_ids,
+    kunde.hm_auto_zuweisen,
+  ]);
 
   useEffect(() => {
     if (!isAdmin || migratedModus) return;
@@ -104,13 +140,23 @@ export function OrganisationFreigabeRegelnPanel({
 
   function openEdit() {
     setEditSchwelle(schwelle);
+    setEditSchwelleAktiv(schwelleAktiv);
     setEditAkut(akutDirekt);
+    setEditAkutFaelle(akutFaelle);
+    setEditHmAuto(hmAuto);
     setEditOpen(true);
   }
 
   function closeEdit() {
     if (saving) return;
     setEditOpen(false);
+  }
+
+  function onToggleUnterSchwelle(next: boolean) {
+    setEditSchwelleAktiv(next);
+    if (next && editSchwelle <= 0) {
+      setEditSchwelle(500);
+    }
   }
 
   async function saveEdit() {
@@ -122,9 +168,13 @@ export function OrganisationFreigabeRegelnPanel({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           freigabe_modus: "freigabe",
-          freigabe_schwelle_eur: editSchwelle,
+          freigabe_schwelle_eur: editSchwelleAktiv
+            ? snapEinstellungenSchwelle(Math.max(editSchwelle, 500))
+            : null,
           kleinreparatur_aktiv: false,
           notfall_direkt: editAkut,
+          akut_fall_ids: editAkutFaelle,
+          hm_auto_zuweisen: editHmAuto,
         }),
       });
       const json = (await res.json()) as { error?: string };
@@ -132,8 +182,14 @@ export function OrganisationFreigabeRegelnPanel({
         portalToastError("Nicht gespeichert", json.error);
         return;
       }
-      setSchwelle(editSchwelle);
+      const nextSchwelle = editSchwelleAktiv
+        ? snapEinstellungenSchwelle(Math.max(editSchwelle, 500))
+        : schwelle;
+      setSchwelle(nextSchwelle);
+      setSchwelleAktiv(editSchwelleAktiv);
       setAkutDirekt(editAkut);
+      setAkutFaelle(editAkutFaelle);
+      setHmAuto(editHmAuto);
       setEditOpen(false);
       orgPortalToast.einstellungenGespeichert();
       onSaved();
@@ -143,6 +199,13 @@ export function OrganisationFreigabeRegelnPanel({
       setSaving(false);
     }
   }
+
+  const faelleValue =
+    akutFaelle.length === 0
+      ? "Keine (nichts geht direkt)"
+      : akutFaelle.length === 1
+        ? "1 Fall"
+        : `${akutFaelle.length} Fälle`;
 
   return (
     <div className="space-y-3">
@@ -159,40 +222,90 @@ export function OrganisationFreigabeRegelnPanel({
         title={EINSTELLUNGEN_SCHWELLE_TITLE}
         onEdit={isAdmin ? openEdit : undefined}
       />
-      <div className="flex flex-col gap-[11px]">
+      <EinstellungenPfList>
         <EinstellungenPfRow
-          label="Freigabeschwelle"
-          value={formatEinstellungenSchwelle(schwelle)}
-        />
-        <EinstellungenPfRow
-          label={EINSTELLUNGEN_AKUT_TITLE}
+          label={<SofortmassnahmeAkutTitle />}
           value={akutDirekt ? "Ja" : "Nein"}
         />
-      </div>
+        <EinstellungenPfRow label="Sofortmaßnahme-Fälle" value={faelleValue} />
+        <EinstellungenPfRow
+          label={EINSTELLUNGEN_UNTER_SCHWELLE_TITLE}
+          value={schwelleAktiv ? "Ja" : "Nein"}
+        />
+        {schwelleAktiv ? (
+          <EinstellungenPfRow
+            label={EINSTELLUNGEN_SCHWELLE_BETRAG_TITLE}
+            value={formatEinstellungenSchwelle(schwelle)}
+          />
+        ) : null}
+        <EinstellungenPfRow
+          label="Automatisch an Hausmeister"
+          value={hmAuto ? "Ja" : "Nein"}
+        />
+      </EinstellungenPfList>
 
       <EinstellungenEditModal
         open={editOpen}
-        title="Freigabe-Regeln"
+        title={EINSTELLUNGEN_SCHWELLE_TITLE}
         onClose={closeEdit}
         onSave={() => void saveEdit()}
         saving={saving}
       >
-        <EinstellungenEuroSlider
-          value={editSchwelle}
-          min={EINSTELLUNGEN_SCHWELLE_SLIDER_MIN}
-          max={EINSTELLUNGEN_SCHWELLE_SLIDER_MAX}
-          step={EINSTELLUNGEN_SCHWELLE_SLIDER_STEP}
-          formatValue={formatEinstellungenSchwelle}
-          onChange={(v) => setEditSchwelle(snapEinstellungenSchwelle(v))}
-        />
         <EinstellungenToggle
           checked={editAkut}
           onChange={setEditAkut}
-          title={EINSTELLUNGEN_AKUT_TITLE}
+          title={<SofortmassnahmeAkutTitle />}
           description={
             editAkut
-              ? "Ja — bei akuten Schäden Direktauftrag ohne Angebot möglich."
-              : "Nein — auch akute Schäden laufen über Angebot und Freigabe."
+              ? `${EINSTELLUNGEN_AKUT_INTRO} Aktiv: Nur die ausgewählten Fälle ohne Ihre Freigabe, nur Info.`
+              : "Aus: Auch Sofortmaßnahmen laufen über Angebot und Freigabe."
+          }
+        />
+        <EinstellungenSheetCard
+          title="Sofortmaßnahme-Fälle"
+          description="Leer = nichts geht direkt — unabhängig vom Schalter oben."
+        >
+          <SofortmassnahmeFaelleEditor
+            selected={editAkutFaelle}
+            onChange={setEditAkutFaelle}
+            disabled={saving}
+          />
+        </EinstellungenSheetCard>
+        <EinstellungenToggle
+          checked={editSchwelleAktiv}
+          onChange={onToggleUnterSchwelle}
+          title={EINSTELLUNGEN_UNTER_SCHWELLE_TITLE}
+          description={
+            editSchwelleAktiv
+              ? EINSTELLUNGEN_UNTER_SCHWELLE_INTRO
+              : "Aus: Jedes Angebot braucht Ihre Freigabe, unabhängig vom Betrag."
+          }
+        />
+        {editSchwelleAktiv ? (
+          <EinstellungenSheetCard
+            title={EINSTELLUNGEN_SCHWELLE_BETRAG_TITLE}
+            description={EINSTELLUNGEN_SCHWELLE_BETRAG_INTRO}
+          >
+            <EinstellungenEuroSlider
+              value={editSchwelle}
+              min={Math.max(EINSTELLUNGEN_SCHWELLE_SLIDER_MIN, 500)}
+              max={EINSTELLUNGEN_SCHWELLE_SLIDER_MAX}
+              step={EINSTELLUNGEN_SCHWELLE_SLIDER_STEP}
+              formatValue={formatEinstellungenSchwelle}
+              onChange={(v) =>
+                setEditSchwelle(snapEinstellungenSchwelle(Math.max(v, 500)))
+              }
+            />
+          </EinstellungenSheetCard>
+        ) : null}
+        <EinstellungenToggle
+          checked={editHmAuto}
+          onChange={setEditHmAuto}
+          title="Automatisch an Hausmeister"
+          description={
+            editHmAuto
+              ? "Aktiv: Neue Meldungen (nicht Sofortmaßnahme) gehen direkt in die Hausmeister-Prüfung."
+              : "Aus: Sie starten den Hausmeister-Pfad manuell am Vorgang."
           }
         />
       </EinstellungenEditModal>

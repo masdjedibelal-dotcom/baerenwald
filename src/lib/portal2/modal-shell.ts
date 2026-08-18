@@ -25,11 +25,15 @@ export const PORTAL_MODAL_FUNNEL_MAX_W = 1360;
 /** Confirm kompakt. */
 export const PORTAL_MODAL_CONFIRM_MAX_W = 420;
 
-/** Overlay z-index (unter docViewer 220). */
+/**
+ * Overlay z-index (unter docViewer 220).
+ * Nesting: PortalModalShell addiert +10 pro Ebene (KI im Sheet → 210).
+ * GPT-Overlay liegt bei 210 — über WhatsApp-Float (150) und Bottom-Nav (50).
+ */
 export const PORTAL_MODAL_Z_INDEX = 200;
 
-/** Scrim-Farbe Mock. */
-export const PORTAL_MODAL_SCRIM = "rgba(16,25,20,.42)";
+/** Scrim hinter Modal / Slide-over — klarer Kontrast zur Seite. */
+export const PORTAL_MODAL_SCRIM = "rgba(16,25,20,.58)";
 
 export function resolvePortalModalVariant(
   variant: PortalModalVariant | undefined,
