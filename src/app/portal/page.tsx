@@ -28,7 +28,11 @@ export const metadata = {
   robots: { index: false, follow: false },
 };
 
-export default async function PortalDashboardPage() {
+export default async function PortalDashboardPage({
+  searchParams,
+}: {
+  searchParams?: Promise<{ view?: string }>;
+}) {
   if (!isSupabaseConfigured()) {
     return (
       <PortalAuthShell title="Portal nicht verfügbar">
@@ -38,6 +42,12 @@ export default async function PortalDashboardPage() {
       </PortalAuthShell>
     );
   }
+
+  const sp = searchParams ? await searchParams : {};
+  const forceHausmeisterView =
+    String(sp.view ?? "")
+      .trim()
+      .toLowerCase() === "hausmeister";
 
   const supabase = await createClient();
   const {
@@ -108,8 +118,42 @@ export default async function PortalDashboardPage() {
         name: meta?.name,
         telefon: meta?.telefon,
       });
-  const portalKundeId =
+  let portalKundeId =
     hmRedeem.portalKundeId ?? bewRedeem.portalKundeId ?? link.kundeId;
+
+  const { isBaerenwaldPrimaryStaffEmail } = await import(
+    "@/lib/auth/baerenwald-primary-staff"
+  );
+  const { ensureHausmeisterPortalActivation } = await import(
+    "@/lib/org/ensure-hausmeister-portal"
+  );
+
+  // Team-Mail: bei ?view=hausmeister (CRM-Login) HM-Stub auflösen / aktivieren
+  if (forceHausmeisterView && isBaerenwaldPrimaryStaffEmail(user.email)) {
+    const { data: hmRows } = await supabaseAdmin
+      .from("org_hausmeister")
+      .select("id, org_kunde_id, portal_kunde_id, portal_zugang")
+      .ilike("email", user.email.trim().toLowerCase())
+      .eq("portal_zugang", true)
+      .limit(5);
+    for (const row of hmRows ?? []) {
+      const hmId = String(row.id ?? "");
+      const orgId = String(row.org_kunde_id ?? "");
+      if (!hmId || !orgId) continue;
+      if (row.portal_kunde_id) {
+        portalKundeId = String(row.portal_kunde_id);
+        break;
+      }
+      const act = await ensureHausmeisterPortalActivation({
+        orgHausmeisterId: hmId,
+        orgKundeId: orgId,
+      });
+      if (act.ok) {
+        portalKundeId = act.portalKundeId;
+        break;
+      }
+    }
+  }
 
   const { data: kundeMeta } = await supabaseAdmin
     .from("kunden")
@@ -130,6 +174,10 @@ export default async function PortalDashboardPage() {
       .maybeSingle();
     portalModus = (fallback?.portal_modus as string | undefined) ?? "privat";
     kundeTypField = null;
+  }
+
+  if (forceHausmeisterView) {
+    portalModus = "hausmeister";
   }
 
   /** D8 — eigene Rolle / Client */

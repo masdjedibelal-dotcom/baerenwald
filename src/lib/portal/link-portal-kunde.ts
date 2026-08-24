@@ -263,17 +263,47 @@ export async function linkPortalKundeToAuthUser(opts: {
     }
 
     const hvRole = await resolveHvPortalRolleByEmail(email);
+    const { data: before } = await supabaseAdmin
+      .from("kunden")
+      .select("portal_modus")
+      .eq("id", canonical.id)
+      .maybeSingle();
+    const keepOrgModus =
+      (before?.portal_modus ?? "") === "organisation" &&
+      (await import("@/lib/auth/baerenwald-primary-staff")).isBaerenwaldPrimaryStaffEmail(
+        email
+      );
+
     const { error: upErr } = await supabaseAdmin
       .from("kunden")
       .update({
         auth_user_id: opts.userId,
         email,
-        ...(hvRole ? { portal_modus: hvRole.portalModus } : {}),
+        ...(hvRole && !keepOrgModus ? { portal_modus: hvRole.portalModus } : {}),
       })
       .eq("id", canonical.id);
 
     if (upErr) return fail(upErr);
-    if (hvRole) {
+    if (hvRole?.portalModus === "hausmeister" && hvRole.hausmeisterId) {
+      if (keepOrgModus) {
+        const { ensureHausmeisterPortalActivation } = await import(
+          "@/lib/org/ensure-hausmeister-portal"
+        );
+        const { data: hmRow } = await supabaseAdmin
+          .from("org_hausmeister")
+          .select("org_kunde_id")
+          .eq("id", hvRole.hausmeisterId)
+          .maybeSingle();
+        if (hmRow?.org_kunde_id) {
+          await ensureHausmeisterPortalActivation({
+            orgHausmeisterId: hvRole.hausmeisterId,
+            orgKundeId: String(hmRow.org_kunde_id),
+          });
+        }
+      } else {
+        await linkHvPortalRolleToKunde(String(canonical.id), hvRole);
+      }
+    } else if (hvRole) {
       await linkHvPortalRolleToKunde(String(canonical.id), hvRole);
     }
     return { ok: true, kundeId: String(canonical.id) };
