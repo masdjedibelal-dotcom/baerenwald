@@ -1,8 +1,9 @@
 "use client";
 
-import { useMemo } from "react";
+import { useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
 
+import { useCookieConsent } from "@/components/consent/CookieConsentContext";
 import { PortalFunnelHost } from "@/components/funnel/PortalFunnelHost";
 import { MieterWlFrame } from "@/components/melden/MieterWlFrame";
 import { MELDE_ALLGEMEIN_SLUG } from "@/lib/org/melde-url";
@@ -80,6 +81,18 @@ export function MeldeFormular({
   prefill,
 }: Props) {
   const router = useRouter();
+  const { setLegalLinks } = useCookieConsent();
+
+  useEffect(() => {
+    if (datenschutzHref && impressumHref) {
+      setLegalLinks({
+        datenschutz: datenschutzHref,
+        impressum: impressumHref,
+      });
+      return () => setLegalLinks(null);
+    }
+    return undefined;
+  }, [datenschutzHref, impressumHref, setLegalLinks]);
 
   const brand: MieterWlBrand = useMemo(
     () => ({

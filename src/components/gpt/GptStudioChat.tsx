@@ -67,7 +67,11 @@ import { cn } from "@/lib/utils";
 import "./guided-chat.css";
 import "./gpt-viz.css";
 
-const INITIAL_TEXT = `Hi! Ich bin Ihr Handwerks-Assistent von Bärenwald — für Renovierung, Reparatur und Umbau in München.
+const INITIAL_TEXT_DU = `Hi! Ich bin ein KI-Assistent von Bärenwald — für Renovierung, Reparatur und Umbau in München.
+
+Schreib einfach los — oder wähl unten, womit wir starten sollen. Beraten, visualisieren, Preisrahmen oder direkt anfragen: alles hier im Chat.`;
+
+const INITIAL_TEXT_SIE = `Hallo! Ich bin ein KI-Assistent von Bärenwald — für Renovierung, Reparatur und Umbau in München.
 
 Schreiben Sie einfach los — oder wählen Sie unten, womit wir starten sollen. Beraten, visualisieren, Preisrahmen oder direkt anfragen: alles hier im Chat.`;
 
@@ -79,6 +83,8 @@ type GptStudioChatProps = {
   priceHandoff?: boolean;
   /** Raumfoto-Button in der Eingabezeile (Portal: aus). */
   showPhotoUpload?: boolean;
+  /** Marketing-Rechner: Du · Partner/Login: Sie (Leitfaden). */
+  anrede?: "du" | "sie";
 };
 
 function isActiveVizFlow(phase: GptVizPhase, flowActive: boolean): boolean {
@@ -107,6 +113,7 @@ export function GptStudioChat({
   locked = false,
   priceHandoff = false,
   showPhotoUpload = true,
+  anrede = "du",
 }: GptStudioChatProps) {
 
   const {
@@ -121,6 +128,7 @@ export function GptStudioChat({
     mergeChatVerlauf,
   } = useGptProjekt();
   const guidedHybrid = priceHandoff;
+  const initialText = anrede === "sie" ? INITIAL_TEXT_SIE : INITIAL_TEXT_DU;
   const [voiceActive, setVoiceActive] = useState(false);
   const [guidedDraft, setGuidedDraft] = useState<GuidedFunnelDraft>(() =>
     emptyGuidedDraft()
@@ -129,7 +137,7 @@ export function GptStudioChat({
     {
       id: newChatId(),
       role: "assistant",
-      text: INITIAL_TEXT,
+      text: initialText,
       blocks: guidedHybrid ? [{ type: "journey_entry" }] : undefined,
       actions: guidedHybrid
         ? undefined
@@ -635,13 +643,15 @@ export function GptStudioChat({
 
       appendAssistant(
         erklaerung?.chat_kurz ??
-          "So könnte Ihr Raum aussehen — unten finden Sie Ihre **Visualisierung** zum Herunterladen.",
+          (anrede === "sie"
+            ? "So könnte Ihr Raum aussehen — unten finden Sie die **KI-generierte Visualisierung** zum Herunterladen."
+            : "So könnte dein Raum aussehen — unten findest du die **KI-generierte Visualisierung** zum Herunterladen."),
         {
           compare: {
             before: { url: istUrl, label: "Vorher", downloadName: "baerenwald-vorher.jpg" },
             after: {
               url: resultUrl,
-              label: "Visualisierung",
+              label: "KI-generierte Visualisierung",
               downloadName: "baerenwald-visualisierung.jpg",
             },
             erklaerung,
@@ -1216,7 +1226,9 @@ export function GptStudioChat({
               <span className="ki-rechner-mode-label ki-rechner-mode-label--chat">BärenwaldGPT</span>
             </div>
             {!guidedHybrid || buildDraftSummaryItems(guidedDraft).length === 0 ? (
-              <div className="ki-rechner-chat-sub">Beraten · Visualisieren · Preis · Anfrage</div>
+              <div className="ki-rechner-chat-sub">
+                KI-Assistent · Beraten · Visualisieren · Preis · Anfrage
+              </div>
             ) : null}
           </div>
         </div>
@@ -1324,7 +1336,7 @@ export function GptStudioChat({
                 }
                 className="ki-rechner-chat-input ki-rechner-chat-textarea"
                 disabled={inputDisabled}
-                aria-label="Nachricht"
+                aria-label="Nachricht an den KI-Assistenten"
               />
             </>
           ) : null}
@@ -1352,7 +1364,8 @@ export function GptStudioChat({
           )}
         </div>
         <p className="ki-rechner-chat-privacy">
-          KI-Dienst Anthropic · <Link href="/datenschutz#ki-beratung">Datenschutz</Link>
+          KI-Assistent · Anthropic ·{' '}
+          <Link href="/datenschutz#ki-beratung">Datenschutz</Link>
         </p>
       </div>
 

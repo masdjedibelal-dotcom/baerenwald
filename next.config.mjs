@@ -55,6 +55,19 @@ const nextConfig = {
     ];
   },
   async redirects() {
+    const isStaging =
+      process.env.CONTEXT === "deploy-preview" ||
+      process.env.CONTEXT === "branch-deploy" ||
+      (process.env.URL || "").includes("staging--") ||
+      (process.env.DEPLOY_PRIME_URL || "").includes("staging--");
+    const crmBase = (
+      process.env.NEXT_PUBLIC_DASHBOARD_URL ||
+      process.env.CRM_DASHBOARD_URL ||
+      process.env.NEXT_PUBLIC_CRM_URL ||
+      (isStaging
+        ? "https://staging--baerenwald-backend.netlify.app"
+        : "https://crm.baerenwaldmuenchen.de")
+    ).replace(/\/$/, "");
     return [
       {
         source: "/galerie",
@@ -65,6 +78,17 @@ const nextConfig = {
         source: "/galerie/",
         destination: "/leistungen",
         permanent: true,
+      },
+      // Projekt-/Nachtrag-Token leben nur auf der CRM-Domain (kein Marketing-404)
+      {
+        source: "/projekt/:token*",
+        destination: `${crmBase}/projekt/:token*`,
+        permanent: false,
+      },
+      {
+        source: "/nachtrag/:token*",
+        destination: `${crmBase}/nachtrag/:token*`,
+        permanent: false,
       },
     ];
   },

@@ -29,9 +29,21 @@ const MIETER_LABELS: Record<MieterStatusStufe, string> = {
   erledigt: "Erledigt",
 };
 
-/** Mieter-Status aus Lead-Feldern (5 Stufen inkl. Vor Ort). */
+/**
+ * CRM → Mieter-Timeline (kanonische Zuordnung, Glossar + status-map Kommentar).
+ *
+ * | CRM-Signal                                              | Mieter-Stufe        |
+ * |---------------------------------------------------------|---------------------|
+ * | Lead neu / Meldung ohne Bearbeitung                     | Eingegangen         |
+ * | Lead kontaktiert \| termin; Freigabe; HV prüft          | In Bearbeitung      |
+ * | Auftrag erstellt; HW/Partner gesendet/angefragt         | Beauftragt          |
+ * | HW bestätigt; Bautagebuch; mieter_vor_ort; in_arbeit    | Handwerker vor Ort  |
+ * | Abnahme ohne offene Mängel; Positionen erledigt         | Erledigt            |
+ * | Offene Mängel (Abnahme)                                  | NICHT Erledigt      |
+ */
 export function resolveMieterStatusStufe(
   lead: {
+    status?: string | null;
     hv_meldung_status?: string | null;
     vorgang_phase?: string | null;
     org_freigabe_status?: string | null;
@@ -39,32 +51,85 @@ export function resolveMieterStatusStufe(
   },
   auftrag?: PortalAuftragKontext | null
 ): MieterStatusStufe {
-  if (portalErledigtFromLeadAndAuftrag(lead, auftrag)) return "erledigt";
-
-  if (lead.mieter_vor_ort_at?.trim()) return "vor_ort";
-
+  const leadStatus = (lead.status ?? "").trim().toLowerCase();
   const phase = (lead.vorgang_phase ?? "").trim();
-  if (phase === "beauftragt" || phase === "abnahme") return "beauftragt";
-  if (phase === "abgelehnt") return "erledigt";
-
-  // Auftrag existiert → für Mieter mind. „Beauftragt“ (auch wenn Lead-Phase noch hinterherhinkt)
-  if (auftrag) return "beauftragt";
-
   const hv = (lead.hv_meldung_status ?? "").trim();
-  if (hv === "abgelehnt") return "erledigt";
-  if (hv === "hm_erledigt") return "erledigt";
+  const freigabe = (lead.org_freigabe_status ?? "").trim();
+  const auftragStatus = (auftrag?.status ?? "").trim().toLowerCase();
+  const offeneMaengel = Boolean(auftrag?.hasOffeneMaengel);
+
+  /* Erledigt nur ohne offene Mängel */
+  if (!offeneMaengel && portalErledigtFromLeadAndAuftrag(lead, auftrag)) {
+    return "erledigt";
+  }
   if (
+    !offeneMaengel &&
+    (leadStatus === "abgeschlossen" ||
+      phase === "abgeschlossen" ||
+      hv === "abgeschlossen" ||
+      hv === "hm_erledigt" ||
+      auftragStatus === "abgeschlossen")
+  ) {
+    return "erledigt";
+  }
+  if (
+    !offeneMaengel &&
+    (phase === "abgelehnt" || hv === "abgelehnt" || freigabe === "abgelehnt")
+  ) {
+    return "erledigt";
+  }
+
+  /* Handwerker vor Ort */
+  const vorOrt =
+    Boolean(lead.mieter_vor_ort_at?.trim()) ||
+    Boolean(auftrag?.handwerkerBestaetigt) ||
+    Boolean(auftrag?.hasBautagebuch) ||
+    auftragStatus === "in_arbeit" ||
+    (auftragStatus === "abnahme" && !offeneMaengel) ||
+    (offeneMaengel &&
+      (auftragStatus === "abnahme" ||
+        auftragStatus === "in_arbeit" ||
+        Boolean(lead.mieter_vor_ort_at?.trim())));
+
+  if (vorOrt || offeneMaengel) {
+    /* Mit offenen Mängeln: mindestens Vor Ort / Beauftragt, nie Erledigt */
+    if (
+      vorOrt ||
+      auftragStatus === "abnahme" ||
+      auftragStatus === "in_arbeit" ||
+      Boolean(lead.mieter_vor_ort_at?.trim())
+    ) {
+      return "vor_ort";
+    }
+    return "beauftragt";
+  }
+
+  /* Beauftragt: Auftrag oder HW gesendet */
+  const hwGesendet = Boolean(auftrag?.hwGesendet)
+  if (
+    auftrag ||
+    phase === "beauftragt" ||
+    phase === "abnahme" ||
+    leadStatus === "auftrag" ||
+    hwGesendet
+  ) {
+    return "beauftragt";
+  }
+
+  /* In Bearbeitung: CRM kontaktiert/termin + HV-Prüfsignale */
+  if (
+    leadStatus === "kontaktiert" ||
+    leadStatus === "termin" ||
+    leadStatus === "angebot" ||
+    freigabe === "freigegeben" ||
     hv === "notmassnahme" ||
     hv === "kleinreparatur" ||
     hv === "angebot_eingefordert" ||
-    hv === "hm_pruefung"
+    hv === "hm_pruefung" ||
+    phase === "in_bearbeitung"
   ) {
     return "in_bearbeitung";
   }
-
-  const freigabe = (lead.org_freigabe_status ?? "").trim();
-  if (freigabe === "freigegeben") return "in_bearbeitung";
-  if (freigabe === "abgelehnt") return "erledigt";
 
   return "eingegangen";
 }

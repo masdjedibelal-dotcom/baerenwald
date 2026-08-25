@@ -68,6 +68,9 @@ function SendMessageIcon() {
   );
 }
 
+const KI_ASSIST_WELCOME =
+  "Ich bin ein KI-Assistent und helfe Ihnen, den Text zu formulieren. Beschreiben Sie kurz, was Sie brauchen — oder tippen Sie einen Vorschlag unten.";
+
 /**
  * Label + Sparkles → GPT-Chat-Sheet → Übernehmen schreibt in das Feld.
  */
@@ -130,7 +133,9 @@ export function PortalKiAssistField({
     setOpen(true);
     setError(null);
     setDraftText(null);
-    setMessages([]);
+    setMessages([
+      { id: newId(), role: "assistant", content: KI_ASSIST_WELCOME },
+    ]);
     setInput("");
     setVoiceActive(false);
   }
@@ -215,8 +220,8 @@ export function PortalKiAssistField({
             type="button"
             disabled={disabled}
             onClick={openChat}
-            title="BärenwaldGPT öffnen"
-            aria-label="BärenwaldGPT öffnen"
+            title="KI-Assistent öffnen"
+            aria-label="KI-Assistent öffnen"
             className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-border-default bg-white text-[var(--org-primary,var(--p2-primary,#2e7d52))] transition-colors hover:bg-[var(--org-primary-soft,var(--p2-primary-soft,#e7f1e9))] disabled:opacity-50"
           >
             <Sparkles className="h-3.5 w-3.5" aria-hidden />
@@ -230,32 +235,17 @@ export function PortalKiAssistField({
       <PortalModalShell
         open={open}
         onClose={closeChat}
-        title="BärenwaldGPT"
+        title="KI-Assistent"
         variant="funnel"
         closeOnBackdrop={!pending}
         busy={false}
         className="portal-ki-gpt-shell"
       >
         <div className="portal-ki-gpt-chat">
+          <p className="portal-ki-gpt-ai-label" role="status">
+            Sie sprechen mit einem KI-Assistenten
+          </p>
           <div className="portal-ki-gpt-messages">
-            {messages.length === 0 && !pending ? (
-              <div className="portal-ki-gpt-empty">
-                <div className="portal-ki-gpt-chips">
-                  {cfg.quickPrompts.map((q) => (
-                    <button
-                      key={q.label}
-                      type="button"
-                      disabled={pending}
-                      onClick={() => void send(q.prompt)}
-                      className="portal-ki-gpt-chip"
-                    >
-                      {q.label}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            ) : null}
-
             {messages.map((m) => {
               const display =
                 m.role === "assistant"
@@ -275,6 +265,24 @@ export function PortalKiAssistField({
                 </div>
               );
             })}
+
+            {!messages.some((m) => m.role === "user") && !pending ? (
+              <div className="portal-ki-gpt-empty">
+                <div className="portal-ki-gpt-chips">
+                  {cfg.quickPrompts.map((q) => (
+                    <button
+                      key={q.label}
+                      type="button"
+                      disabled={pending}
+                      onClick={() => void send(q.prompt)}
+                      className="portal-ki-gpt-chip"
+                    >
+                      {q.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            ) : null}
 
             {pending ? (
               <div

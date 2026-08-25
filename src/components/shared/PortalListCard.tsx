@@ -262,7 +262,7 @@ export function PortalListCard({
       ) : null}
       {hasMedia ? (
         <div
-          className="w-full shrink-0"
+          className="h-[140px] w-full shrink-0 overflow-hidden [&>div]:h-full [&>img]:h-full [&>img]:w-full [&>img]:object-cover"
           onClick={(e) => e.stopPropagation()}
           onKeyDown={(e) => e.stopPropagation()}
         >

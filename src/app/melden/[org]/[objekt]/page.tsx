@@ -5,6 +5,9 @@ import { MELDE_ALLGEMEIN_SLUG } from "@/lib/org/melde-url";
 import { resolveMeldeLegalUrls } from "@/lib/org/melde-legal-urls";
 import { resolveMeldeKontext } from "@/lib/org/resolve-melde-kontext";
 
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 export const metadata = {
   title: "Schaden melden",
   robots: { index: false, follow: false },
@@ -24,7 +27,9 @@ export default async function MeldenObjektPage({ params }: Props) {
   const objSlug = params.objekt.trim().toLowerCase();
 
   if (!kontext.objekt && objSlug !== MELDE_ALLGEMEIN_SLUG) {
-    redirect(`/melden/${kontext.org.org_kennung}`);
+    redirect(
+      `/melden/${encodeURIComponent(kontext.org.org_kennung)}?hinweis=objekt_nicht_gefunden`
+    );
   }
 
   const orgName =

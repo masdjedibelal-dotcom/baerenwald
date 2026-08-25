@@ -9,7 +9,6 @@ import { PortalVorgangDetail } from "@/components/portal/PortalVorgangDetail";
 import { PortalKundePrivatDashboard } from "@/components/portal/PortalKundePrivatDashboard";
 import {
   portalHeaderHeroSrc,
-  resolveObjektCoverSrc,
 } from "@/lib/portal2/portal-media";
 import {
   paintPortalBusyNow,
@@ -18,6 +17,7 @@ import {
 } from "@/components/shared/PortalBusyContext";
 import { PortalContentBusy } from "@/components/shared/PortalContentBusy";
 import { PortalListCard } from "@/components/shared/PortalListCard";
+import { OrganisationObjektCover } from "@/components/org/OrganisationObjektCover";
 import { PortalEntityDetailLayout } from "@/components/shared/PortalEntityDetailLayout";
 import {
   PORTAL_LIST_PAGE_SIZE,
@@ -621,11 +621,12 @@ export function HausmeisterPortalClient({
                         accent="auftrag"
                         showLeftAccent={false}
                         media={
-                          // eslint-disable-next-line @next/next/no-img-element
-                          <img
-                            src={resolveObjektCoverSrc(o.cover_url)}
-                            alt=""
-                            className="h-full w-full object-cover"
+                          <OrganisationObjektCover
+                            objektId={o.id}
+                            coverUrl={o.cover_url}
+                            variant="card"
+                            className="!rounded-none"
+                            canUpload={false}
                           />
                         }
                         title={o.titel}

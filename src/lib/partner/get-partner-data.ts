@@ -9,6 +9,7 @@ import {
   resolveAuftragPortalPhase,
   type PartnerPortalPhase,
 } from "@/lib/partner/partner-portal-phase";
+import { isPartnerZuweisungInaktiv } from "@/lib/partner/partner-zuweisung-access";
 import {
   mapAngebotHandwerkerRow,
   PARTNER_ANGEBOT_EMBED,
@@ -656,6 +657,8 @@ export async function getPartnerDataForHandwerker(
     await mapAngebotHandwerkerRows(rawRows, objektById, signedCache.resolve)
   ).filter((_, i) => {
     const row = rawRows[i]!;
+    const st = String(row.status ?? "").toLowerCase();
+    if (st === "ersetzt") return false;
     const ang = Array.isArray(row.angebote) ? row.angebote[0] : row.angebote;
     const leadRaw =
       ang && typeof ang === "object"
@@ -700,8 +703,17 @@ export async function getPartnerDataForHandwerker(
       abnahme_protokoll_id?: string | null;
     };
     const aid = String(row.auftrag_id);
+    const st = String(row.status ?? "ausstehend");
+    /* ersetzt: kein aktiver Portal-Zugriff über Zuweisung */
+    if (isPartnerZuweisungInaktiv(st)) {
+      abnahmeByAuftrag.set(aid, {
+        signiertAm: row.abnahme_signiert_am ?? null,
+        protokollId: row.abnahme_protokoll_id ?? null,
+      });
+      continue;
+    }
     const list = hwStatusByAuftrag.get(aid) ?? [];
-    list.push(String(row.status ?? "ausstehend"));
+    list.push(st);
     hwStatusByAuftrag.set(aid, list);
     abnahmeByAuftrag.set(aid, {
       signiertAm: row.abnahme_signiert_am ?? null,
@@ -718,7 +730,7 @@ export async function getPartnerDataForHandwerker(
   }
 
   const auftragIds = uniqueIds([
-    ...(hwAuftraege ?? []).map((r) => String((r as { auftrag_id: string }).auftrag_id)),
+    ...Array.from(hwStatusByAuftrag.keys()),
     ...(posAuftraege ?? []).map((r) => String((r as { auftrag_id: string }).auftrag_id)),
   ]);
 

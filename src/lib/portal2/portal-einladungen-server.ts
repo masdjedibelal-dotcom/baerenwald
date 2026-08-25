@@ -288,6 +288,55 @@ export async function redeemPortalEinladung(opts: {
       inviteRolle = "eigentuemer";
     }
   }
+
+  // Primary-Staff (info@baerenwald-muenchen.de): kein zweites Auth-Konto —
+  // HM-Stub aktivieren und Einladung einlösen.
+  if (inviteRolle === "hausmeister" && orgHmId) {
+    const { isBaerenwaldPrimaryStaffEmail, ensureHausmeisterPortalActivation } =
+      await import("@/lib/org/ensure-hausmeister-portal");
+    if (isBaerenwaldPrimaryStaffEmail(email)) {
+      await supabaseAdmin
+        .from("org_hausmeister")
+        .update({
+          portal_zugang: true,
+          email,
+          name,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", orgHmId)
+        .eq("org_kunde_id", row.kunde_id);
+      const act = await ensureHausmeisterPortalActivation({
+        orgHausmeisterId: orgHmId,
+        orgKundeId: String(row.kunde_id),
+      });
+      if (!act.ok) {
+        return { ok: false, error: act.error, status: 500 };
+      }
+      if (row.objekt_id) {
+        await supabaseAdmin.from("hausmeister_objekte").upsert(
+          {
+            org_hausmeister_id: orgHmId,
+            kunde_objekt_id: row.objekt_id,
+          },
+          { onConflict: "kunde_objekt_id" }
+        );
+      }
+      const { error: updErr } = await supabaseAdmin
+        .from("portal_einladungen")
+        .update({
+          status: "eingeloest",
+          eingeloest_am: new Date().toISOString(),
+          portal_kunde_id: act.portalKundeId,
+        })
+        .eq("id", row.id)
+        .eq("status", "offen");
+      if (updErr) {
+        return { ok: false, error: updErr.message, status: 500 };
+      }
+      return { ok: true, portalKundeId: act.portalKundeId };
+    }
+  }
+
   const portalModus =
     inviteRolle === "eigentuemer"
       ? "eigentuemer"
@@ -306,19 +355,36 @@ export async function redeemPortalEinladung(opts: {
       .ilike("email", email)
       .limit(5);
 
-    const candidates = (existing ?? []).filter(
-      (k) => (k.portal_modus ?? "") !== "organisation"
-    );
+    const candidates = (existing ?? []).filter((k) => {
+      const m = (k.portal_modus ?? "") as string;
+      if (m === "organisation") return false;
+      if (inviteRolle === "hausmeister") {
+        return m === "hausmeister" || !m || m === "privat";
+      }
+      return true;
+    });
+    // HM: Stub mit portal_modus=hausmeister bevorzugen
+    const hmStub = candidates.find((k) => (k.portal_modus ?? "") === "hausmeister");
     const linked = candidates.find((k) => k.auth_user_id === opts.authUserId);
     const free = candidates.find((k) => !k.auth_user_id);
-    const pick = linked ?? free ?? candidates[0];
+    const pick =
+      inviteRolle === "hausmeister"
+        ? hmStub ?? linked ?? free ?? candidates[0]
+        : linked ?? free ?? candidates[0];
 
     if (pick) {
       portalKundeId = String(pick.id);
+      const { data: authOccupied } = await supabaseAdmin
+        .from("kunden")
+        .select("id")
+        .eq("auth_user_id", opts.authUserId)
+        .maybeSingle();
+      const canTakeAuth =
+        !authOccupied?.id || String(authOccupied.id) === portalKundeId;
       await supabaseAdmin
         .from("kunden")
         .update({
-          auth_user_id: opts.authUserId,
+          ...(canTakeAuth ? { auth_user_id: opts.authUserId } : {}),
           name,
           email,
           portal_modus: portalModus,

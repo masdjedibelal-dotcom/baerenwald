@@ -34,7 +34,7 @@ function absoluteUrl(pathOrUrl: string): string {
 }
 
 /**
- * Bestätigung nach Meldung — großer MeinBärenwald-CTA + Status-Link darunter.
+ * Bestätigung nach Meldung — Konto-CTA (neutral) + Status-Link darunter.
  */
 export function MeldenBestaetigungClient({
   brand,

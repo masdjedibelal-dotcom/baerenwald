@@ -69,6 +69,14 @@ export type PortalAuftragKontext = {
   status?: string | null;
   fortschritt?: number | null;
   positionen?: PortalPositionErledigtInput[] | null;
+  /** Partner hat Zuweisung bestätigt / übernommen */
+  handwerkerBestaetigt?: boolean;
+  /** Mindestens ein Bautagebuch-Eintrag */
+  hasBautagebuch?: boolean;
+  /** HW wurde angefragt / zugewiesen (nicht nur Lead) */
+  hwGesendet?: boolean;
+  /** Offene Abnahme-Mängel → Mieter darf nicht „Erledigt“ sehen */
+  hasOffeneMaengel?: boolean;
 };
 
 export function portalErledigtFromLeadAndAuftrag(
@@ -78,6 +86,7 @@ export function portalErledigtFromLeadAndAuftrag(
   },
   auftrag?: PortalAuftragKontext | null
 ): boolean {
+  if (auftrag?.hasOffeneMaengel) return false;
   return isVorgangPortalErledigt({
     leadVorgangPhase: lead.vorgang_phase,
     hv_meldung_status: lead.hv_meldung_status,

@@ -9,6 +9,10 @@ import {
   upsertOrgHausmeister,
   buildHausmeisterEinladungMailto,
 } from "@/lib/org/org-hausmeister";
+import {
+  ensureHausmeisterPortalActivation,
+  isBaerenwaldPrimaryStaffEmail,
+} from "@/lib/org/ensure-hausmeister-portal";
 import { requireOrganisationSession } from "@/lib/org/require-org-session";
 import { requireOrgWrite } from "@/lib/org/assert-org-objekt";
 import { orgDisplayName } from "@/lib/org/org-mieter-kontakt";
@@ -118,7 +122,22 @@ export async function POST(req: Request) {
 
     let inviteMailto: string | null = null;
     let inviteUrl: string | null = null;
-    if (body.invite) {
+    const hmRow = (await listOrgHausmeister(session.kunde.id)).find(
+      (h) => h.id === hmId
+    );
+    const sharedLogin = isBaerenwaldPrimaryStaffEmail(hmRow?.email);
+
+    if (hmRow?.portal_zugang && (sharedLogin || body.invite)) {
+      const act = await ensureHausmeisterPortalActivation({
+        orgHausmeisterId: hmId,
+        orgKundeId: session.kunde.id,
+      });
+      if (!act.ok) {
+        console.warn("[api/org/hausmeister] ensure:", act.error);
+      }
+    }
+
+    if (body.invite && !sharedLogin) {
       const inv = await createHausmeisterEinladung({
         orgKundeId: session.kunde.id,
         orgHausmeisterId: hmId,
@@ -127,16 +146,13 @@ export async function POST(req: Request) {
       });
       if (inv.ok) {
         inviteUrl = inv.url;
-        const hm = (await listOrgHausmeister(session.kunde.id)).find(
-          (h) => h.id === hmId
-        );
-        if (hm?.email) {
+        if (hmRow?.email) {
           inviteMailto = buildHausmeisterEinladungMailto({
-            toEmail: hm.email,
+            toEmail: hmRow.email,
             link: inv.url,
             hvName: orgDisplayName(session.kunde),
             objektLabel: String(obj.titel ?? "Objekt"),
-            hmName: hm.name,
+            hmName: hmRow.name,
           });
         }
       }

@@ -18,16 +18,27 @@ export type MieterWlBrand = {
   mail?: string | null;
 };
 
-/** Mock `wlFehler` */
+/** Mock `wlFehler` — auch neutrale Token-Fehlerseite (F-012/F-014) */
 export const MIETER_WL_FEHLER = {
   title_de: "Link nicht verfügbar",
   title_en: "Link unavailable",
-  body_de:
-    "Dieser Melde-Link ist ungültig oder wurde deaktiviert. Bitte wenden Sie sich an Ihre Verwaltung.",
-  body_en:
-    "This report link is invalid or has been disabled. Please contact your property manager.",
+  body_de: "Dieser Link ist ungültig oder nicht mehr aktiv.",
+  body_en: "This link is invalid or no longer active.",
   btn_de: "Zur Objektauswahl",
   btn_en: "Back to selection",
+} as const;
+
+/** Soft-gelöschte Meldung — Status-Token (Whitelabel) */
+export const MIETER_WL_STATUS_INAKTIV = {
+  title_de: "Meldung nicht mehr aktiv",
+  title_en: "Report no longer active",
+  body_de:
+    "Diese Meldung ist nicht mehr aktiv. Bei Fragen wenden Sie sich an Ihre Hausverwaltung.",
+  body_en:
+    "This report is no longer active. Please contact your property management if you have questions.",
+  /** Hard-Delete / Token unbekannt — ohne Org-Kontakt */
+  body_neutral_de: "Diese Meldung ist nicht mehr aktiv.",
+  body_neutral_en: "This report is no longer active.",
 } as const;
 
 /** Mock `wlObjekt` Intro */
@@ -57,13 +68,13 @@ export const MIETER_WL_BESTAETIGUNG = {
   copy_en: "Copy link",
   copied_de: "Kopiert",
   copied_en: "Copied",
-  /** Primär-CTA: MeinBärenwald-Konto für Status-Tracking */
-  register_de: "Zu Bärenwald registrieren",
-  register_en: "Register with Bärenwald",
+  /** Primär-CTA: neutral, kein Bärenwald-Branding (Whitelabel) */
+  register_de: "Konto anlegen, um Ihre Meldungen zu verfolgen",
+  register_en: "Create an account to track your reports",
   register_hint_de:
-    "Konto anlegen und den Status Ihrer Meldung jederzeit verfolgen.",
+    "Mit einem Konto sehen Sie den Status Ihrer Meldung jederzeit.",
   register_hint_en:
-    "Create an account to track your report status anytime.",
+    "With an account you can check your report status anytime.",
   login_de: "Bereits Konto? Anmelden",
   login_en: "Already have an account? Sign in",
 } as const;

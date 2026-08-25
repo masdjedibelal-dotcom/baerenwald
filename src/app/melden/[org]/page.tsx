@@ -6,14 +6,17 @@ import { MELDE_ALLGEMEIN_SLUG } from "@/lib/org/melde-url";
 import { resolveMeldeLegalUrls } from "@/lib/org/melde-legal-urls";
 import { resolveMeldeKontext } from "@/lib/org/resolve-melde-kontext";
 
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 export const metadata = {
   title: "Schaden melden",
   robots: { index: false, follow: false },
 };
 
-type Props = { params: { org: string } };
+type Props = { params: { org: string }; searchParams?: { hinweis?: string } };
 
-export default async function MeldenOrgPage({ params }: Props) {
+export default async function MeldenOrgPage({ params, searchParams }: Props) {
   const resolved = await resolveMeldeKontext(params.org);
   if (!resolved.ok) {
     redirect(
@@ -94,6 +97,11 @@ export default async function MeldenOrgPage({ params }: Props) {
   return (
     <MeldeObjektAuswahl
       brand={brand}
+      hinweis={
+        searchParams?.hinweis === "objekt_nicht_gefunden"
+          ? "Objekt nicht gefunden — bitte wählen Sie Ihr Objekt"
+          : null
+      }
       objekte={kontext.objekte.map((o) => ({
         id: o.id,
         name: o.display.name,

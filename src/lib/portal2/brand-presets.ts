@@ -139,7 +139,7 @@ export function findBrandPresetByPrimary(
   return BRAND_PRESETS.find((x) => x.primary.toLowerCase() === p) ?? null;
 }
 
-/** Leitet Dk/Soft ab. Ohne primary → Portal-Default-Hex, nicht selbstreferenzierende CSS-Vars. */
+/** Leitet Dk/Soft ab. Ohne primary → neutrales Anthrazit (kein BW-Grün). */
 export function resolveBrandPalette(input: {
   primary?: string | null;
   primaryDk?: string | null;
@@ -147,10 +147,11 @@ export function resolveBrandPalette(input: {
 }): Pick<BrandPreset, "primary" | "primaryDk" | "soft"> {
   const raw = input.primary?.trim();
   if (!raw) {
+    const anthra = BRAND_PRESETS.find((x) => x.id === "anthra")!;
     return {
-      primary: PORTAL_C.primary,
-      primaryDk: PORTAL_C.primaryDk,
-      soft: PORTAL_C.primarySoft,
+      primary: anthra.primary,
+      primaryDk: anthra.primaryDk,
+      soft: anthra.soft,
     };
   }
   const preset = findBrandPresetByPrimary(raw);

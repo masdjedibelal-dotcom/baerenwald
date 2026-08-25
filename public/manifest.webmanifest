@@ -1,7 +1,7 @@
 {
-  "name": "Bärenwald Portal",
-  "short_name": "Bärenwald",
-  "description": "Vorgänge, Angebote und Meldungen — Bärenwald München",
+  "name": "Portal",
+  "short_name": "Portal",
+  "description": "Vorgänge, Angebote und Meldungen",
   "start_url": "/portal",
   "scope": "/",
   "display": "standalone",

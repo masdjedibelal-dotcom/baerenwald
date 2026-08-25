@@ -23,6 +23,7 @@ export function PortalBaerenwaldGpt({
     <GptStudioChat
       locked={false}
       priceHandoff
+      anrede="sie"
       onPreisBereit={() => router.push("/portal-tools/rechner?modus=ki")}
       onBeratungBereit={() => router.push("/portal-tools/rechner?modus=ki")}
     />
@@ -41,7 +42,7 @@ export function PortalBaerenwaldGpt({
             >
               <X className="h-5 w-5" />
             </button>
-            <p className="portal-gpt-shell-title">Bärenwald GPT</p>
+            <p className="portal-gpt-shell-title">KI-Assistent · BärenwaldGPT</p>
           </div>
         ) : null}
         <div className="portal-gpt-body portal-gpt-chat-active">{chat}</div>
@@ -71,7 +72,7 @@ export function PortalBaerenwaldGpt({
           >
             <X className="h-5 w-5" />
           </button>
-          <p className="portal-gpt-shell-title">Bärenwald GPT</p>
+          <p className="portal-gpt-shell-title">KI-Assistent · BärenwaldGPT</p>
         </div>
         <div className="portal-gpt-body portal-gpt-chat-active min-h-0 flex-1 overflow-hidden">
           {chat}

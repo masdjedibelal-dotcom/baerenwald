@@ -25,7 +25,7 @@ export async function GET(req: Request) {
   const { data: lead } = await supabaseAdmin
     .from("leads")
     .select(
-      "id, hv_meldung_status, vorgang_phase, org_freigabe_status, freigabe_bypass_grund, mieter_vor_ort_at, geloescht_am"
+      "id, hv_meldung_status, vorgang_phase, org_freigabe_status, freigabe_bypass_grund, mieter_vor_ort_at, geloescht_am, status"
     )
     .eq("melde_tracking_token", token)
     .maybeSingle();

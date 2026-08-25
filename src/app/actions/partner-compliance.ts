@@ -6,6 +6,7 @@ import { linkPortalHandwerkerToAuthUser } from "@/lib/partner/link-portal-handwe
 import { uploadPartnerComplianceDoc } from "@/lib/partner/partner-storage";
 import { createClient } from "@/lib/supabase/server";
 import { isSupabaseConfigured, supabaseAdmin } from "@/lib/supabase";
+import { assertPartnerAktiveZuweisung } from "@/lib/partner/partner-zuweisung-access";
 
 export type PartnerComplianceUploadResult =
   | { ok: true }
@@ -56,19 +57,7 @@ export async function deletePartnerComplianceDokument(input: {
 
   if (input.auftragId?.trim()) {
     const aid = input.auftragId.trim();
-    const { data: zuweisung } = await supabaseAdmin
-      .from("auftrag_handwerker")
-      .select("id")
-      .eq("auftrag_id", aid)
-      .eq("handwerker_id", link.handwerkerId)
-      .maybeSingle();
-    const { data: pos } = await supabaseAdmin
-      .from("auftrag_positionen")
-      .select("id")
-      .eq("auftrag_id", aid)
-      .eq("handwerker_id", link.handwerkerId)
-      .limit(1);
-    if (!zuweisung && !(pos?.length ?? 0)) {
+    if (!(await assertPartnerAktiveZuweisung(link.handwerkerId, aid))) {
       return { ok: false, error: "Keine Berechtigung für diesen Auftrag." };
     }
     if (row.auftrag_id && String(row.auftrag_id) !== aid) {
@@ -139,19 +128,7 @@ export async function uploadPartnerComplianceDokument(
   }
 
   if (auftragId) {
-    const { data: zuweisung } = await supabaseAdmin
-      .from("auftrag_handwerker")
-      .select("id")
-      .eq("auftrag_id", auftragId)
-      .eq("handwerker_id", link.handwerkerId)
-      .maybeSingle();
-    const { data: pos } = await supabaseAdmin
-      .from("auftrag_positionen")
-      .select("id")
-      .eq("auftrag_id", auftragId)
-      .eq("handwerker_id", link.handwerkerId)
-      .limit(1);
-    if (!zuweisung && !(pos?.length ?? 0)) {
+    if (!(await assertPartnerAktiveZuweisung(link.handwerkerId, auftragId))) {
       return { ok: false, error: "Keine Berechtigung für diesen Auftrag." };
     }
   }

@@ -332,8 +332,13 @@ export async function submitPartnerRechnung(
     return { ok: false, error: "Keine Berechtigung." };
   }
 
-  const st = String(row.status).toLowerCase();
-  if (st !== "akzeptiert" && st !== "angenommen") {
+  const st = String(row.status).toLowerCase()
+  /* Eingangsrechnung bleibt nach Redisposition (`ersetzt`) möglich */
+  if (
+    st !== 'akzeptiert' &&
+    st !== 'angenommen' &&
+    st !== 'ersetzt'
+  ) {
     return { ok: false, error: "Nur für angenommene Anfragen möglich." };
   }
 

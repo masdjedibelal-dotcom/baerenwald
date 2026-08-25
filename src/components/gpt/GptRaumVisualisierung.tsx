@@ -394,7 +394,7 @@ export function GptRaumVisualisierung({
 
       {(step === "render" || step === "erklaerung") && ergebnisUrl ? (
         <div>
-          <h2 className="gpt-viz-step-title">Ihre Visualisierung</h2>
+          <h2 className="gpt-viz-step-title">KI-generierte Visualisierung</h2>
           <GptVizBeforeAfter
             ergebnisUrl={ergebnisUrl}
             historie={historie}

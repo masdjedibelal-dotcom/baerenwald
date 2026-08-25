@@ -1,3 +1,5 @@
+import { unstable_noStore as noStore } from "next/cache";
+
 import { supabaseAdmin, isSupabaseConfigured } from "@/lib/supabase";
 import { ensureMeldeSlugsForKunde } from "@/lib/org/ensure-melde-slug";
 import { MELDE_ALLGEMEIN_SLUG } from "@/lib/org/melde-url";
@@ -178,6 +180,7 @@ export async function resolveMeldeKontext(
   orgKennung: string,
   objektSlug?: string | null
 ): Promise<ResolveMeldeResult> {
+  noStore();
   if (!isSupabaseConfigured()) {
     return { ok: false, code: "config", message: "Service nicht verfügbar." };
   }
