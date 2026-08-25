@@ -51,7 +51,7 @@
 }
 
 .melden-kategorie-btn[data-active="true"] {
-  border-color: var(--org-primary, var(--p2-primary, #2e7d52));
+  border-color: var(--org-primary, var(--p2-primary, #363b41));
   background: var(--org-primary-soft, var(--p2-primary-soft, #e7f1e9));
 }
 
@@ -129,7 +129,7 @@
 }
 
 .melden-objekt-link:hover {
-  border-color: var(--org-primary, var(--p2-primary, #2e7d52));
+  border-color: var(--org-primary, var(--p2-primary, #363b41));
 }
 
 .melden-privacy-notice {
@@ -164,7 +164,7 @@
   min-height: 100dvh;
   background: #fff;
   /* HV-Akzent für FunnelFooter / Tiles wie Website-Funnel */
-  --fl-accent: var(--org-primary, #2e7d52);
+  --fl-accent: var(--org-primary, #363b41);
   --fl-accent-dark: var(--org-primary-dk, #1a3d2b);
   --fl-accent-light: var(--org-primary-soft, #eaf3de);
 }
@@ -237,7 +237,7 @@
   width: 40px;
   height: 40px;
   border-radius: 9px;
-  background: var(--org-primary, var(--p2-primary, #2e7d52));
+  background: var(--org-primary, var(--p2-primary, #363b41));
   color: #fff;
   font-weight: 700;
   font-size: 16px;
@@ -291,7 +291,7 @@
 
 .mieter-wl-lang-btn--active {
   background: #fff;
-  color: var(--org-primary, var(--p2-primary, #2e7d52));
+  color: var(--org-primary, var(--p2-primary, #363b41));
   box-shadow: var(--p2-shadow, 0 1px 3px rgba(0, 0, 0, 0.04));
 }
 
@@ -352,7 +352,7 @@
 }
 
 .mieter-wl-btn--primary {
-  background: var(--org-primary, var(--p2-primary, #2e7d52));
+  background: var(--org-primary, var(--p2-primary, #363b41));
   color: #fff;
 }
 
@@ -419,7 +419,7 @@
   height: 44px;
   border-radius: 10px;
   background: var(--org-primary-soft, var(--p2-primary-soft, #e7f1e9));
-  color: var(--org-primary, var(--p2-primary, #2e7d52));
+  color: var(--org-primary, var(--p2-primary, #363b41));
   display: grid;
   place-items: center;
   font-size: 20px;
@@ -476,15 +476,15 @@
 }
 
 .mieter-stg-row--done .mieter-stg-dot {
-  background: var(--org-primary, var(--p2-primary, #2e7d52));
+  background: var(--org-primary, var(--p2-primary, #363b41));
   color: #fff;
-  border-color: var(--org-primary, var(--p2-primary, #2e7d52));
+  border-color: var(--org-primary, var(--p2-primary, #363b41));
 }
 
 .mieter-stg-row--active .mieter-stg-dot {
   background: #fff;
-  color: var(--org-primary, var(--p2-primary, #2e7d52));
-  border-color: var(--org-primary, var(--p2-primary, #2e7d52));
+  color: var(--org-primary, var(--p2-primary, #363b41));
+  border-color: var(--org-primary, var(--p2-primary, #363b41));
 }
 
 .mieter-stg-line {
@@ -496,7 +496,7 @@
 }
 
 .mieter-stg-row--done .mieter-stg-line {
-  background: var(--org-primary, var(--p2-primary, #2e7d52));
+  background: var(--org-primary, var(--p2-primary, #363b41));
 }
 
 .mieter-stg-copy {

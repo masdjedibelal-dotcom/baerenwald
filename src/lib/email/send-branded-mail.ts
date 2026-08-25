@@ -4,6 +4,7 @@ import {
   inlineLogoAttachmentsForHtml,
   rewriteMailLogoUrlsToCid,
 } from "@/lib/email/mail-logo-inline";
+import { insertEmailLogRow } from "@/lib/kommunikation/insert-email-log";
 import { isStagingDeploy } from "@/lib/staging";
 
 function toBase64(content: Buffer | Uint8Array | string): string {
@@ -57,16 +58,36 @@ export async function sendBrandedMail(
   };
 
   if (isMailCatcherActive()) {
-    const catchId = `staging-catch:${crypto.randomUUID()}`;
-    const to = "to" in sendPayload ? sendPayload.to : undefined;
+    const catchId = `staging-catch:website-${crypto.randomUUID()}`;
+    const toRaw = "to" in sendPayload ? sendPayload.to : undefined;
+    const toList = Array.isArray(toRaw)
+      ? toRaw.map(String)
+      : toRaw
+        ? [String(toRaw)]
+        : [];
+    const subject =
+      "subject" in sendPayload && sendPayload.subject
+        ? String(sendPayload.subject)
+        : "(ohne Betreff)";
     console.info("[mail-catcher:website-sendBrandedMail]", {
       catchId,
-      to,
-      subject: "subject" in sendPayload ? sendPayload.subject : undefined,
+      to: toList,
+      subject,
       from: "from" in sendPayload ? sendPayload.from : undefined,
       attachmentCount: attachments.length,
       at: new Date().toISOString(),
     });
+    const { error: logErr } = await insertEmailLogRow({
+      typ: "website",
+      an_email: toList.join(", ") || "(unbekannt)",
+      betreff: subject,
+      inhalt_html: html,
+      status: "gesendet",
+      resend_id: catchId,
+    });
+    if (logErr) {
+      console.warn("[mail-catcher:website-sendBrandedMail] email_log:", logErr);
+    }
     return { data: { id: catchId }, error: null };
   }
 
