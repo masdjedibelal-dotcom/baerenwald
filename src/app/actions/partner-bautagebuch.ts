@@ -159,51 +159,39 @@ export async function createPartnerBautagebuchEintrag(
   const handwerkerName = String(hw?.name ?? "Partner");
   const auftragTitel = String(auf?.titel ?? "Auftrag").trim() || "Auftrag";
 
-  const mailInternal = await sendPartnerInternalBautagebuchMail({
-    handwerkerName,
-    firma: (hw?.firma as string | null) ?? null,
-    auftragTitel,
-    eintragTitel: titel,
-    datum,
-    auftragId,
-  });
-  if (
-    mailInternal &&
-    typeof mailInternal === "object" &&
-    "ok" in mailInternal &&
-    !(mailInternal as { ok?: boolean }).ok
-  ) {
-    console.warn("[partner-bautagebuch] interne Mail:", mailInternal);
+  try {
+    await sendPartnerInternalBautagebuchMail({
+      handwerkerName,
+      firma: (hw?.firma as string | null) ?? null,
+      auftragTitel,
+      eintragTitel: titel,
+      datum,
+      auftragId,
+    });
+  } catch (e) {
+    console.warn("[partner-bautagebuch] interne Mail:", e);
   }
 
-  const hvMail = await notifyHvPartnerBautagebuch({
-    auftragId,
-    handwerkerName,
-    eintragTitel: titel,
-  });
-  if (
-    hvMail &&
-    typeof hvMail === "object" &&
-    "ok" in hvMail &&
-    !(hvMail as { ok?: boolean }).ok
-  ) {
-    console.warn("[partner-bautagebuch] HV-Notify:", hvMail);
+  try {
+    await notifyHvPartnerBautagebuch({
+      auftragId,
+      handwerkerName,
+      eintragTitel: titel,
+    });
+  } catch (e) {
+    console.warn("[partner-bautagebuch] HV-Notify:", e);
   }
 
   if (leadId) {
-    const mieterMail = await notifyMieterBautagebuchEintrag({
-      leadId,
-      handwerkerName,
-      eintragTitel: titel,
-      auftragTitel,
-    });
-    if (
-      mieterMail &&
-      typeof mieterMail === "object" &&
-      "ok" in mieterMail &&
-      !(mieterMail as { ok?: boolean }).ok
-    ) {
-      console.warn("[partner-bautagebuch] Mieter-Notify:", mieterMail);
+    try {
+      await notifyMieterBautagebuchEintrag({
+        leadId,
+        handwerkerName,
+        eintragTitel: titel,
+        auftragTitel,
+      });
+    } catch (e) {
+      console.warn("[partner-bautagebuch] Mieter-Notify:", e);
     }
   }
 
