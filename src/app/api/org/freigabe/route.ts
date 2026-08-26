@@ -157,5 +157,7 @@ export async function POST(req: Request) {
     ok: true,
     status: aktion,
     crmNotifyOk: crmNotify.ok,
+    crmNotifySkipped: crmNotify.ok ? false : crmNotify.skipped === true,
+    crmNotifyError: crmNotify.ok ? null : crmNotify.error,
   });
 }

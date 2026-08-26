@@ -391,23 +391,30 @@ export async function persistMeldungLead(input: PersistMeldungLeadInput) {
   // Melder-Link / Einladung → HV-Glocke (CRM erst nach HV „Vorgang freigeben“,
   // außer Akut-Direktauftrag: dann sofort BW informieren)
   if (input.erfassung_von === "melder") {
-    void import("@/lib/org/notify-hv-neue-meldung").then(
-      ({ notifyHvNeueMeldung }) =>
-        notifyHvNeueMeldung({ leadId: result.id }).catch((e) =>
-          console.error("[persistMeldungLead] hv notify:", e)
-        )
-    );
-    if (bypassAktiv) {
-      void import("@/lib/org/notify-crm-org").then(({ notifyCrmOrgPortal }) =>
-        notifyCrmOrgPortal({ leadId: result.id, typ: "meldung" }).then((r) => {
-          if (!r.ok) {
-            console.warn("[persistMeldungLead] CRM-Notify (Akut):", r.error, {
-              leadId: result.id,
-              skipped: r.skipped === true,
-            });
-          }
-        })
+    try {
+      const { notifyHvNeueMeldung } = await import(
+        "@/lib/org/notify-hv-neue-meldung"
       );
+      await notifyHvNeueMeldung({ leadId: result.id });
+    } catch (e) {
+      console.error("[persistMeldungLead] hv notify:", e);
+    }
+    if (bypassAktiv) {
+      try {
+        const { notifyCrmOrgPortal } = await import("@/lib/org/notify-crm-org");
+        const r = await notifyCrmOrgPortal({
+          leadId: result.id,
+          typ: "meldung",
+        });
+        if (!r.ok) {
+          console.warn("[persistMeldungLead] CRM-Notify (Akut):", r.error, {
+            leadId: result.id,
+            skipped: r.skipped === true,
+          });
+        }
+      } catch (e) {
+        console.error("[persistMeldungLead] CRM-Notify (Akut):", e);
+      }
     }
     // Verknüpfter Portal-User (kunde_id mit auth) → eigene Glocke
     void import("@/lib/portal/notify-portal-lead-user").then(
