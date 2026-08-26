@@ -7,6 +7,7 @@ import {
   MieterWlBtn,
   MieterWlFrame,
 } from "@/components/melden/MieterWlFrame";
+import { InfoTip } from "@/components/ui/InfoTip";
 import {
   MIETER_WL_BESTAETIGUNG,
   type MieterWlBrand,
@@ -90,13 +91,15 @@ export function MeldenBestaetigungClient({
         <div className="mieter-wl-check" aria-hidden>
           ✓
         </div>
-        <h1 className="mieter-wl-center-title">{t.title_de}</h1>
+        <h1 className="mieter-wl-center-title inline-flex items-center justify-center gap-1.5">
+          <span>{t.title_de}</span>
+          {t.register_hint_de ? (
+            <InfoTip tip={t.register_hint_de} label="Konto-Hinweis" />
+          ) : null}
+        </h1>
         <p className="mieter-wl-center-body">
           {brand.name}
           {t.body_suffix_de}
-        </p>
-        <p className="text-[13px] leading-relaxed text-[#4a5c54] text-center mt-2 max-w-[340px]">
-          {t.register_hint_de}
         </p>
 
         {referenz?.trim() ? (

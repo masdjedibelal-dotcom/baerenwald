@@ -293,13 +293,6 @@ export function MeldeStatusClient({
             {t.title_de}
           </h1>
           <p className="text-[13px] text-[#4a5c54] mt-1">{metaLine}</p>
-          <p className="mt-3 text-[14px] font-semibold text-[#16201B]">
-            {active.title}
-            <span className="font-normal text-[#4a5c54]">
-              {" "}
-              — {active.subtitle}
-            </span>
-          </p>
         </div>
 
         <MieterStgTimeline stufe={stufe} lang={lang} />

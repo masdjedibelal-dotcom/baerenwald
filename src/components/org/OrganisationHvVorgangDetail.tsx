@@ -1320,10 +1320,34 @@ export function OrganisationHvVorgangDetail({
 
           {activeSection === "dokumente" ? (
             <DetailCard id="vorgang-panel-dokumente" title={HV_DETAIL_COPY.dokumenteTitle}>
+              {abnahmeProtokolle.length > 0 ? (
+                <div className="mb-4 space-y-2">
+                  {abnahmeProtokolle.map((doc) => (
+                    <PortalDocOpenButton
+                      key={`dok-abnahme-${doc.id}`}
+                      href={doc.href!}
+                      name={doc.name}
+                      kind="pdf"
+                      className="block w-full overflow-hidden rounded-xl border border-[var(--portal-primary,#2E7D52)]/30 bg-[var(--portal-primary,#2E7D52)]/5 text-left"
+                    >
+                      <p
+                        className="px-3 py-4 text-center text-[13px] font-semibold"
+                        style={{ color: PORTAL_VAR.primary }}
+                      >
+                        {doc.name} — PDF öffnen
+                      </p>
+                    </PortalDocOpenButton>
+                  ))}
+                </div>
+              ) : null}
               <DokumenteTabelle
                 heading=""
                 className="!border-0 !pt-0"
-                emptyText={HV_DETAIL_COPY.dokumenteEmpty}
+                emptyText={
+                  abnahmeProtokolle.length > 0
+                    ? "Keine weiteren Dokumente."
+                    : HV_DETAIL_COPY.dokumenteEmpty
+                }
                 dokumente={dokumenteOhneAbnahme.map((d) => ({
                   id: d.id,
                   name: d.name,

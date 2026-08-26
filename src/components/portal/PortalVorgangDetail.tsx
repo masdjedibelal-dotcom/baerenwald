@@ -516,16 +516,53 @@ export function PortalVorgangDetail({
           ) : null}
 
           {activeSection === "dokumente" ? (
-            <DokumenteTabelle
-              heading=""
-              emptyText="Noch keine Dokumente."
-              dokumente={(item.dokumente ?? []).map((d) => ({
-                id: d.id,
-                name: d.name,
-                datum: d.datum,
-                href: d.href,
-              }))}
-            />
+            (() => {
+              const docs = item.dokumente ?? [];
+              const abnahmeDocs = docs.filter(
+                (d) =>
+                  /abnahme/i.test(d.name ?? "") && Boolean(d.href?.trim())
+              );
+              const otherDocs =
+                abnahmeDocs.length > 0
+                  ? docs.filter((d) => !abnahmeDocs.includes(d))
+                  : docs;
+              return (
+                <div className="space-y-4">
+                  {abnahmeDocs.length > 0 ? (
+                    <div className="space-y-2 rounded-xl border border-[var(--portal-primary,#2E7D52)]/30 bg-white p-3">
+                      <p className="text-sm font-semibold text-[var(--portal-ink,#1A3D2B)]">
+                        Abnahmeprotokoll
+                      </p>
+                      {abnahmeDocs.map((d) => (
+                        <a
+                          key={d.id}
+                          href={d.href!}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex min-h-[48px] items-center justify-center rounded-xl bg-[var(--portal-primary,#2E7D52)] px-4 text-sm font-semibold text-white"
+                        >
+                          {d.name} öffnen (PDF)
+                        </a>
+                      ))}
+                    </div>
+                  ) : null}
+                  <DokumenteTabelle
+                    heading=""
+                    emptyText={
+                      abnahmeDocs.length > 0
+                        ? "Keine weiteren Dokumente."
+                        : "Noch keine Dokumente."
+                    }
+                    dokumente={otherDocs.map((d) => ({
+                      id: d.id,
+                      name: d.name,
+                      datum: d.datum,
+                      href: d.href,
+                    }))}
+                  />
+                </div>
+              );
+            })()
           ) : null}
 
           {activeSection === "feedback" && item.leadId ? (

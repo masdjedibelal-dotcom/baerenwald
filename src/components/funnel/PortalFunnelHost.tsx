@@ -1314,6 +1314,7 @@ export function PortalFunnelHost({
   };
 
   const submit = async () => {
+    if (busy) return;
     setBusy(true);
     setError(null);
     let navigatedAway = false;
@@ -2046,9 +2047,15 @@ export function PortalFunnelHost({
                 ? "Bitte das Passendste wählen"
                 : isHvIntern
                   ? "Bereich für den Vorgang"
-                  : "Wasser, Heizung, Strom & Co. — Dringlichkeit setzen wir automatisch"
+                  : undefined
               : undefined
           }
+          infoTip={
+            useMeldeKaputtFlow && !hvMitMieter && !isHvIntern
+              ? "Wasser, Heizung, Strom & Co. — die Dringlichkeit setzen wir automatisch."
+              : undefined
+          }
+          infoTipLabel="Zur Dringlichkeit"
           animateKey="bereiche"
         >
           <div className="funnel-step-tiles-card flex flex-col gap-2">

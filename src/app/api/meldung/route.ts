@@ -1,6 +1,10 @@
 import { NextResponse } from "next/server";
 
-import { parseMeldeBereichId, persistMeldungLead } from "@/lib/org/persist-meldung-lead";
+import {
+  findRecentDuplicateMeldungLead,
+  parseMeldeBereichId,
+  persistMeldungLead,
+} from "@/lib/org/persist-meldung-lead";
 import { addressesMatch } from "@/lib/org/match-lead-objekt";
 import { MELDE_ALLGEMEIN_SLUG } from "@/lib/org/melde-url";
 import { resolveMeldeKontext } from "@/lib/org/resolve-melde-kontext";
@@ -157,8 +161,25 @@ export async function POST(req: Request) {
     }
   }
 
-  // Kein 15-Min-Lead-Reuse für Melde (Mieter/HV) — jeder Submit = neuer Lead.
-  // Website-Funnel kann separat deduplizieren; CRM/Staff (org/anfrage) hatte das nie.
+  // Doppel-Submit / Retry: gleicher Melder + Beschreibung innerhalb 60s → bestehendes Lead.
+  const dup = await findRecentDuplicateMeldungLead({
+    auftraggeber_kunde_id: orgRow.id,
+    kunde_objekt_id: matchedObjektId,
+    name,
+    email: isValidEmail(email) ? email : null,
+    telefon: telefon || null,
+    beschreibung,
+  });
+  if (dup) {
+    const trackingToken = dup.meldeTrackingToken || undefined;
+    return NextResponse.json({
+      ok: true,
+      id: dup.id,
+      statusLink: trackingToken ? meldeStatusUrl(trackingToken) : undefined,
+      meldeTrackingToken: trackingToken,
+      reused: true,
+    });
+  }
 
   const result = await persistMeldungLead({
     name,
