@@ -14,9 +14,9 @@ export const metadata = {
   robots: { index: false, follow: false },
 };
 
-type Props = { params: { org: string } };
+type Props = { params: { org: string }; searchParams?: { hinweis?: string } };
 
-export default async function MeldenOrgPage({ params }: Props) {
+export default async function MeldenOrgPage({ params, searchParams }: Props) {
   const resolved = await resolveMeldeKontext(params.org);
   if (!resolved.ok) {
     redirect(
@@ -65,11 +65,17 @@ export default async function MeldenOrgPage({ params }: Props) {
     akutFallIds: kontext.org.akut_fall_ids ?? [],
   };
 
+  const objektHinweis =
+    searchParams?.hinweis === "objekt_nicht_gefunden"
+      ? "Objekt nicht gefunden — bitte wählen Sie Ihr Objekt"
+      : null;
+
   if (kontext.objekt) {
     const obj = kontext.objekt;
     return (
       <MeldeFormular
         {...formProps}
+        hinweis={objektHinweis}
         objektTitel={obj.display.name}
         objektAdresse={[obj.strasse, obj.hausnummer].filter(Boolean).join(" ")}
         objektPlzOrt={obj.display.adr}
@@ -97,6 +103,7 @@ export default async function MeldenOrgPage({ params }: Props) {
   return (
     <MeldeObjektAuswahl
       brand={brand}
+      hinweis={objektHinweis}
       objekte={kontext.objekte.map((o) => ({
         id: o.id,
         name: o.display.name,

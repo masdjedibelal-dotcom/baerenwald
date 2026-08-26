@@ -4,7 +4,7 @@ import { useCallback, useRef, useState } from "react";
 
 import { cn } from "@/lib/utils";
 
-const MAX_FILE_SIZE = 10 * 1024 * 1024;
+const MAX_FILE_SIZE = 8 * 1024 * 1024;
 const MAX_TOTAL_SIZE = 30 * 1024 * 1024;
 
 const UPLOAD_ACCEPT =
@@ -198,7 +198,7 @@ export function PhotoUpload({
       for (const file of compressed) {
         if (file.size > MAX_FILE_SIZE) {
           setUploadError(
-            `"${file.name}" ist zu groß (max. 10 MB pro Datei).`
+            `"${file.name}" ist zu groß (max. 8 MB).`
           );
           return;
         }
@@ -315,7 +315,7 @@ export function PhotoUpload({
         <p className="text-sm font-medium text-text-primary">{buttonTitle}</p>
         <p className="mt-1 text-xs text-text-tertiary">{buttonHint}</p>
         <p className="mt-0.5 text-[11px] text-text-tertiary">
-          Max. {maxFiles} Dateien · je max. 10 MB, gesamt max. 30 MB
+          Max. {maxFiles} Dateien · je max. 8 MB, gesamt max. 30 MB
         </p>
       </button>
       {showCompareOfferHint ? (

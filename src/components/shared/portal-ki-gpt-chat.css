@@ -24,6 +24,15 @@
   background: #f7f8f7;
 }
 
+.portal-ki-gpt-ai-label {
+  margin: 0;
+  padding: 0.55rem 1rem 0;
+  font-size: 12px;
+  line-height: 1.35;
+  color: #5c6b64;
+  font-weight: 600;
+}
+
 .portal-ki-gpt-messages {
   display: flex;
   flex: 1;

@@ -11,6 +11,7 @@ export type PortalAuftragByLeadSnapshot = PortalAuftragKontext & {
   end_datum?: string | null;
   /** Zugewiesene Handwerker-Firma(n), nicht CRM-Betreuer. */
   handwerkerLabel?: string | null;
+  handwerkerBestaetigt?: boolean;
 };
 
 /** Aufträge + Positionen für Meldungs-Leads (HV-Portal). */
@@ -28,7 +29,9 @@ export async function loadPortalAuftraegeByLeadIds(
 
   const { data: rows } = await supabaseAdmin
     .from("auftraege")
-    .select("id, lead_id, titel, status, fortschritt, start_datum, end_datum, created_at")
+    .select(
+      "id, lead_id, titel, status, fortschritt, start_datum, end_datum, created_at, handwerker_bestaetigt_at"
+    )
     .in("lead_id", ids)
     .order("created_at", { ascending: false });
 
@@ -45,6 +48,10 @@ export async function loadPortalAuftraegeByLeadIds(
       start_datum: (row as { start_datum?: string | null }).start_datum ?? null,
       end_datum: (row as { end_datum?: string | null }).end_datum ?? null,
       created_at: (row as { created_at?: string | null }).created_at ?? null,
+      handwerkerBestaetigt: Boolean(
+        (row as { handwerker_bestaetigt_at?: string | null })
+          .handwerker_bestaetigt_at
+      ),
       positionen: [],
     });
   }
@@ -119,6 +126,60 @@ export async function loadPortalAuftraegeByLeadIds(
   }
 
   const auftraege = Array.from(latestByLead.values());
+  const auftragIdsAll = auftraege.map((a) => a.id);
+
+  const hasBautagebuch = new Set<string>();
+  const hwGesendet = new Set<string>();
+  const hwBestaetigt = new Set<string>();
+  const hasOffeneMaengel = new Set<string>();
+
+  if (auftragIdsAll.length) {
+    const [{ data: btRows }, { data: ahRows }, { data: protoRows }] =
+      await Promise.all([
+        supabaseAdmin
+          .from("auftrag_bautagebuch_eintraege")
+          .select("auftrag_id")
+          .in("auftrag_id", auftragIdsAll)
+          .limit(500),
+        supabaseAdmin
+          .from("auftrag_handwerker")
+          .select("auftrag_id, status")
+          .in("auftrag_id", auftragIdsAll),
+        supabaseAdmin
+          .from("auftrag_abnahmeprotokolle")
+          .select("auftrag_id, maengel")
+          .in("auftrag_id", auftragIdsAll)
+          .order("created_at", { ascending: false }),
+      ]);
+
+    for (const r of btRows ?? []) {
+      hasBautagebuch.add(String((r as { auftrag_id: string }).auftrag_id));
+    }
+    for (const r of ahRows ?? []) {
+      const aid = String((r as { auftrag_id: string }).auftrag_id);
+      const st = String((r as { status?: string }).status ?? "").toLowerCase();
+      if (st === "ersetzt") continue;
+      hwGesendet.add(aid);
+      if (st === "akzeptiert" || st === "zugewiesen" || st === "angenommen") {
+        hwBestaetigt.add(aid);
+      }
+    }
+    const seenProto = new Set<string>();
+    for (const r of protoRows ?? []) {
+      const aid = String((r as { auftrag_id: string }).auftrag_id);
+      if (seenProto.has(aid)) continue;
+      seenProto.add(aid);
+      const maengel = (r as { maengel?: unknown }).maengel;
+      if (!Array.isArray(maengel)) continue;
+      const offen = maengel.some((m) => {
+        if (!m || typeof m !== "object") return false;
+        const s = String((m as { status?: string }).status ?? "offen").toLowerCase();
+        return s === "offen" || s === "in_bearbeitung";
+      });
+      if (offen) hasOffeneMaengel.add(aid);
+    }
+  }
+
   const kontextByLeadId: Record<string, PortalAuftragKontext> = {};
   const auftragIdByLeadId: Record<string, string> = {};
   for (const a of auftraege) {
@@ -126,6 +187,11 @@ export async function loadPortalAuftraegeByLeadIds(
       status: a.status,
       fortschritt: a.fortschritt,
       positionen: a.positionen,
+      handwerkerBestaetigt:
+        Boolean(a.handwerkerBestaetigt) || hwBestaetigt.has(a.id),
+      hasBautagebuch: hasBautagebuch.has(a.id),
+      hwGesendet: hwGesendet.has(a.id),
+      hasOffeneMaengel: hasOffeneMaengel.has(a.id),
     };
     auftragIdByLeadId[a.lead_id] = a.id;
   }

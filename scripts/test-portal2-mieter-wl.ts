@@ -102,6 +102,14 @@ assert(
   !JSON.stringify(MIETER_WL_BESTAETIGUNG).includes("MeinBärenwald")
 );
 assert(
+  "bestaetigung no Bärenwald leak",
+  !JSON.stringify(MIETER_WL_BESTAETIGUNG).includes("Bärenwald")
+);
+assert(
+  "bestaetigung register cta neutral",
+  MIETER_WL_BESTAETIGUNG.register_de.includes("Konto anlegen")
+);
+assert(
   "status title",
   MIETER_WL_STATUS.title_de === "Status Ihrer Meldung"
 );

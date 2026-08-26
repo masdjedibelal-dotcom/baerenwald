@@ -158,33 +158,36 @@ export async function POST(req: Request) {
     }
 
     if (hm.email) {
-      void notifyHausmeisterPruefung({
+      const hmMail = await notifyHausmeisterPruefung({
         leadId,
         toEmail: hm.email,
         kontaktName: hm.name,
-      }).then((r) => {
-        if (!r.ok && !r.skipped) {
-          console.warn("[meldung-aktion] HM-Mail:", r.error);
-        }
       });
+      if (!hmMail.ok && !hmMail.skipped) {
+        console.warn("[meldung-aktion] HM-Mail:", hmMail.error);
+      }
     }
 
-    void import("@/lib/portal/notify-portal-hausmeister").then(
-      ({ notifyPortalHausmeisterNeuerVorgang }) =>
-        notifyPortalHausmeisterNeuerVorgang({
-          leadId,
-          kundeObjektId: lead.kunde_objekt_id,
-        }).catch((e) =>
-          console.warn("[meldung-aktion] hm portal notify:", e)
-        )
-    );
+    try {
+      const { notifyPortalHausmeisterNeuerVorgang } = await import(
+        "@/lib/portal/notify-portal-hausmeister"
+      );
+      await notifyPortalHausmeisterNeuerVorgang({
+        leadId,
+        kundeObjektId: lead.kunde_objekt_id,
+      });
+    } catch (e) {
+      console.warn("[meldung-aktion] hm portal notify:", e);
+    }
 
-    void import("@/lib/org/notify-hv-wir-kuemmern").then(
-      ({ notifyHvWirKuemmernUns }) =>
-        notifyHvWirKuemmernUns({ leadId }).catch((e) =>
-          console.warn("[meldung-aktion] hv wir-kuemmern:", e)
-        )
-    );
+    try {
+      const { notifyHvWirKuemmernUns } = await import(
+        "@/lib/org/notify-hv-wir-kuemmern"
+      );
+      await notifyHvWirKuemmernUns({ leadId });
+    } catch (e) {
+      console.warn("[meldung-aktion] hv wir-kuemmern:", e);
+    }
 
     return NextResponse.json({
       ok: true,
@@ -252,12 +255,14 @@ export async function POST(req: Request) {
     }
 
     if (aktion === "direkt_baerenwald") {
-      void import("@/lib/org/notify-hv-wir-kuemmern").then(
-        ({ notifyHvWirKuemmernUns }) =>
-          notifyHvWirKuemmernUns({ leadId }).catch((e) =>
-            console.warn("[meldung-aktion] hv wir-kuemmern:", e)
-          )
-      );
+      try {
+        const { notifyHvWirKuemmernUns } = await import(
+          "@/lib/org/notify-hv-wir-kuemmern"
+        );
+        await notifyHvWirKuemmernUns({ leadId });
+      } catch (e) {
+        console.warn("[meldung-aktion] hv wir-kuemmern:", e);
+      }
     }
 
     return NextResponse.json({ ok: true, status: "angebot_eingefordert" });

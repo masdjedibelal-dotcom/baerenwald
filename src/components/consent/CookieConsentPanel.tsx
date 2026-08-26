@@ -13,6 +13,8 @@ export function CookieConsentPanel({
   onNecessaryOnly,
   onSave,
   onClose,
+  datenschutzHref = "/datenschutz#cookies-tracking",
+  impressumHref = "/impressum",
 }: {
   mode: "banner" | "settings";
   statisticsDraft?: boolean;
@@ -21,6 +23,8 @@ export function CookieConsentPanel({
   onNecessaryOnly: () => void;
   onSave?: () => void;
   onClose?: () => void;
+  datenschutzHref?: string;
+  impressumHref?: string;
 }) {
   const isSettings = mode === "settings";
 
@@ -84,9 +88,9 @@ export function CookieConsentPanel({
           ) : null}
 
           <nav className="cookie-consent-links" aria-label="Rechtliches">
-            <Link href="/datenschutz#cookies-tracking">Datenschutz</Link>
+            <Link href={datenschutzHref}>Datenschutz</Link>
             <span aria-hidden>·</span>
-            <Link href="/impressum">Impressum</Link>
+            <Link href={impressumHref}>Impressum</Link>
           </nav>
         </div>
 
@@ -120,14 +124,7 @@ export function CookieConsentPanel({
               <button
                 type="button"
                 onClick={onNecessaryOnly}
-                className="cookie-consent-btn cookie-consent-btn--ghost"
-              >
-                Nur notwendige
-              </button>
-              <button
-                type="button"
-                onClick={onNecessaryOnly}
-                className="cookie-consent-btn cookie-consent-btn--outline"
+                className="cookie-consent-btn cookie-consent-btn--equal"
               >
                 Ablehnen
               </button>

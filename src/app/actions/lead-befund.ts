@@ -442,15 +442,17 @@ export async function completeLeadBefundAction(input: {
       )
   );
 
-  void import("@/lib/org/notify-hv-hm-befund").then(
-    ({ notifyHvHausmeisterBefundFertig }) =>
-      notifyHvHausmeisterBefundFertig({
-        leadId: owned.leadId,
-        ergebnis,
-      }).catch((e) =>
-        console.warn("[completeLeadBefund] HV-Notify:", e)
-      )
-  );
+  try {
+    const { notifyHvHausmeisterBefundFertig } = await import(
+      "@/lib/org/notify-hv-hm-befund"
+    );
+    await notifyHvHausmeisterBefundFertig({
+      leadId: owned.leadId,
+      ergebnis,
+    });
+  } catch (e) {
+    console.warn("[completeLeadBefund] HV-Notify:", e);
+  }
 
   revalidatePath("/portal");
   return { ok: true, befund, hvStatus };
@@ -504,12 +506,14 @@ export async function rejectLeadBefundToHvAction(input: {
     })
     .eq("id", befundId);
 
-  void import("@/lib/org/notify-hv-hm-befund").then(
-    ({ notifyHvHausmeisterBefundZurueck }) =>
-      notifyHvHausmeisterBefundZurueck({ leadId: owned.leadId }).catch((e) =>
-        console.warn("[rejectLeadBefundToHv] HV-Notify:", e)
-      )
-  );
+  try {
+    const { notifyHvHausmeisterBefundZurueck } = await import(
+      "@/lib/org/notify-hv-hm-befund"
+    );
+    await notifyHvHausmeisterBefundZurueck({ leadId: owned.leadId });
+  } catch (e) {
+    console.warn("[rejectLeadBefundToHv] HV-Notify:", e);
+  }
 
   revalidatePath("/portal");
   return { ok: true, hvStatus: "neu" };

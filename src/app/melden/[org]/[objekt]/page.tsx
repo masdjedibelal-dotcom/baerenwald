@@ -27,7 +27,9 @@ export default async function MeldenObjektPage({ params }: Props) {
   const objSlug = params.objekt.trim().toLowerCase();
 
   if (!kontext.objekt && objSlug !== MELDE_ALLGEMEIN_SLUG) {
-    redirect(`/melden/${kontext.org.org_kennung}`);
+    redirect(
+      `/melden/${encodeURIComponent(kontext.org.org_kennung)}?hinweis=objekt_nicht_gefunden`
+    );
   }
 
   const orgName =

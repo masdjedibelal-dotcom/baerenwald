@@ -1,11 +1,11 @@
-import { notFound } from "next/navigation";
-
+import { MeldeFehlerClient } from "@/components/melden/MeldeFehlerClient";
 import { MeldeStatusClient } from "@/components/melden/MeldeStatusClient";
 import {
   fachdetailRowsFromFunnelDaten,
   normalizeFunnelDaten,
 } from "@/lib/lead-funnel-daten";
 import { labelSituation } from "@/lib/lead-funnel-labels";
+import { resolveMeldeLegalUrls } from "@/lib/org/melde-legal-urls";
 import {
   formatAnfrageBereiche,
   formatAnfrageZeitraum,
@@ -13,26 +13,143 @@ import {
 import { loadPortalAuftraegeByLeadIds } from "@/lib/portal/load-auftraege-by-lead-ids";
 import { portalErledigtFromLeadAndAuftrag } from "@/lib/portal/vorgang-erledigt";
 import { resolveOrgSubLabel } from "@/lib/portal2/brand-presets";
+import {
+  MIETER_WL_FEHLER,
+  MIETER_WL_STATUS_INAKTIV,
+  type MieterWlBrand,
+} from "@/lib/portal2/mieter-wl";
 import { resolveMieterStatusStufe } from "@/lib/vorgang/vorgang-phase";
 import { supabaseAdmin } from "@/lib/supabase";
 
 type Props = { params: Promise<{ token: string }> };
 
+async function loadOrgBrand(
+  auftraggeberKundeId: string | null | undefined
+): Promise<
+  MieterWlBrand & {
+    orgKennung: string | null;
+    datenschutzUrl: string | null;
+    impressumUrl: string | null;
+  }
+> {
+  const fallback: MieterWlBrand & {
+    orgKennung: string | null;
+    datenschutzUrl: string | null;
+    impressumUrl: string | null;
+  } = {
+    name: "Verwaltung",
+    sub: "Verwaltung",
+    logoUrl: null,
+    logoKuerzel: null,
+    primary: null,
+    primaryDk: null,
+    soft: null,
+    tel: null,
+    mail: null,
+    orgKennung: null,
+    datenschutzUrl: null,
+    impressumUrl: null,
+  };
+  const id = String(auftraggeberKundeId ?? "").trim();
+  if (!id) return fallback;
+
+  let org: Record<string, unknown> | null = null;
+  const full = await supabaseAdmin
+    .from("kunden")
+    .select(
+      "name, org_anzeigename, org_sub, org_kennung, org_logo_url, org_logo_kuerzel, mieter_kontakt_telefon, mieter_kontakt_email, mieter_kontakt_hinweis, org_primary_color, org_primary_color_dk, org_primary_color_soft, datenschutz_url, impressum_url"
+    )
+    .eq("id", id)
+    .maybeSingle();
+  if (full.error) {
+    const legacy = await supabaseAdmin
+      .from("kunden")
+      .select(
+        "name, org_anzeigename, org_kennung, org_logo_url, mieter_kontakt_telefon, mieter_kontakt_email, mieter_kontakt_hinweis, org_primary_color, datenschutz_url, impressum_url"
+      )
+      .eq("id", id)
+      .maybeSingle();
+    org = (legacy.data as Record<string, unknown> | null) ?? null;
+  } else {
+    org = (full.data as Record<string, unknown> | null) ?? null;
+  }
+  if (!org) return fallback;
+
+  const kennung = String(org.org_kennung ?? "")
+    .trim()
+    .toLowerCase();
+
+  return {
+    name:
+      String(org.org_anzeigename ?? org.name ?? "Verwaltung").trim() ||
+      "Verwaltung",
+    sub: resolveOrgSubLabel(org.org_sub as string | null),
+    logoUrl: (org.org_logo_url as string | null) ?? null,
+    logoKuerzel: (org.org_logo_kuerzel as string | null) ?? null,
+    primary: (org.org_primary_color as string | null) ?? null,
+    primaryDk: (org.org_primary_color_dk as string | null) ?? null,
+    soft: (org.org_primary_color_soft as string | null) ?? null,
+    tel: (org.mieter_kontakt_telefon as string | null) ?? null,
+    mail: (org.mieter_kontakt_email as string | null) ?? null,
+    orgKennung: kennung || null,
+    datenschutzUrl: (org.datenschutz_url as string | null) ?? null,
+    impressumUrl: (org.impressum_url as string | null) ?? null,
+  };
+}
+
+function NeutralTokenFehler() {
+  return (
+    <MeldeFehlerClient
+      neutral
+      showObjektButton={false}
+      title={MIETER_WL_FEHLER.title_de}
+      body={MIETER_WL_FEHLER.body_de}
+    />
+  );
+}
+
 export default async function MeldeStatusPage({ params }: Props) {
   const { token } = await params;
   const trimmed = token?.trim();
-  if (!trimmed) notFound();
+  if (!trimmed) {
+    return <NeutralTokenFehler />;
+  }
 
   const { data: lead } = await supabaseAdmin
     .from("leads")
     .select(
-      "id, melder_name, melder_einheit, created_at, hv_meldung_status, vorgang_phase, org_freigabe_status, freigabe_bypass_grund, mieter_vor_ort_at, kunde_objekt_id, auftraggeber_kunde_id, storniert_am, kontakt_nachricht, anlass, funnel_daten, situation, bereiche, zeitraum, plz, strasse, hausnummer, geloescht_am"
+      "id, melder_name, melder_einheit, created_at, hv_meldung_status, vorgang_phase, org_freigabe_status, freigabe_bypass_grund, mieter_vor_ort_at, kunde_objekt_id, auftraggeber_kunde_id, storniert_am, kontakt_nachricht, anlass, funnel_daten, situation, bereiche, zeitraum, plz, geloescht_am, status"
     )
     .eq("melde_tracking_token", trimmed)
     .maybeSingle();
 
-  if (!lead) notFound();
-  if ((lead as { geloescht_am?: string | null }).geloescht_am) notFound();
+  /* Hard-Delete / Token unbekannt — neutral, ohne Org-/BW-Branding (F-012/F-014) */
+  if (!lead) {
+    return <NeutralTokenFehler />;
+  }
+
+  /* Soft-Delete — Whitelabel der Org, Token bleibt für Restore nutzbar (F-013) */
+  if ((lead as { geloescht_am?: string | null }).geloescht_am) {
+    const agId = String(lead.auftraggeber_kunde_id ?? "").trim();
+    if (!agId) {
+      return <NeutralTokenFehler />;
+    }
+    const brand = await loadOrgBrand(agId);
+    const { orgKennung, datenschutzUrl: _d, impressumUrl: _i, ...wlBrand } =
+      brand;
+    void _d;
+    void _i;
+    return (
+      <MeldeFehlerClient
+        brand={wlBrand}
+        showOrgContact
+        showObjektButton={Boolean(orgKennung)}
+        objektAuswahlHref={orgKennung ? `/melden/${orgKennung}` : null}
+        title={MIETER_WL_STATUS_INAKTIV.title_de}
+        body={MIETER_WL_STATUS_INAKTIV.body_de}
+      />
+    );
+  }
 
   const { kontextByLeadId, auftragIdByLeadId } = await loadPortalAuftraegeByLeadIds([
     String(lead.id),
@@ -64,73 +181,30 @@ export default async function MeldeStatusPage({ params }: Props) {
   }
 
   let objektTitel = "Objekt";
-  let objektOrt: string | null = null;
-  let objektPlz: string | null =
-    typeof lead.plz === "string" ? lead.plz.trim() || null : null;
   if (lead.kunde_objekt_id) {
     const { data: obj } = await supabaseAdmin
       .from("kunden_objekte")
-      .select("titel, ort, plz")
+      .select("titel")
       .eq("id", lead.kunde_objekt_id)
       .maybeSingle();
     objektTitel = String(obj?.titel ?? "Objekt");
-    objektOrt = (obj?.ort as string | null)?.trim() || null;
-    if (!objektPlz && obj?.plz) {
-      objektPlz = String(obj.plz).trim() || null;
-    }
   }
 
-  let brand = {
-    name: "Verwaltung",
-    sub: "Verwaltung" as string | null,
-    logoUrl: null as string | null,
-    logoKuerzel: null as string | null,
-    primary: null as string | null,
-    primaryDk: null as string | null,
-    soft: null as string | null,
-    tel: null as string | null,
-    mail: null as string | null,
-  };
-
-  if (lead.auftraggeber_kunde_id) {
-    let org: Record<string, unknown> | null = null;
-    const full = await supabaseAdmin
-      .from("kunden")
-      .select(
-        "name, org_anzeigename, org_sub, org_logo_url, org_logo_kuerzel, mieter_kontakt_telefon, mieter_kontakt_email, mieter_kontakt_hinweis, org_primary_color, org_primary_color_dk, org_primary_color_soft"
-      )
-      .eq("id", lead.auftraggeber_kunde_id)
-      .maybeSingle();
-    if (full.error) {
-      const legacy = await supabaseAdmin
-        .from("kunden")
-        .select(
-          "name, org_anzeigename, org_logo_url, mieter_kontakt_telefon, mieter_kontakt_email, mieter_kontakt_hinweis, org_primary_color"
-        )
-        .eq("id", lead.auftraggeber_kunde_id)
-        .maybeSingle();
-      org = (legacy.data as Record<string, unknown> | null) ?? null;
-    } else {
-      org = (full.data as Record<string, unknown> | null) ?? null;
-    }
-    brand = {
-      name:
-        String(org?.org_anzeigename ?? org?.name ?? "Verwaltung").trim() ||
-        "Verwaltung",
-      sub: resolveOrgSubLabel(org?.org_sub as string | null),
-      logoUrl: (org?.org_logo_url as string | null) ?? null,
-      logoKuerzel: (org?.org_logo_kuerzel as string | null) ?? null,
-      primary: (org?.org_primary_color as string | null) ?? null,
-      primaryDk: (org?.org_primary_color_dk as string | null) ?? null,
-      soft: (org?.org_primary_color_soft as string | null) ?? null,
-      tel: (org?.mieter_kontakt_telefon as string | null) ?? null,
-      mail: (org?.mieter_kontakt_email as string | null) ?? null,
-    };
-  }
+  const brandFull = await loadOrgBrand(lead.auftraggeber_kunde_id as string | null);
+  const { orgKennung, datenschutzUrl, impressumUrl, ...brand } = brandFull;
+  const legal = resolveMeldeLegalUrls({
+    meldeSlug: orgKennung,
+    datenschutz_url: datenschutzUrl,
+    impressum_url: impressumUrl,
+  });
 
   const stufe = resolveMieterStatusStufe(lead, auftragKontext);
   const referenz = String(lead.id).slice(0, 8).toUpperCase();
-  const melderName = String(lead.melder_name ?? "Mieter");
+  /* Datensparsamkeit: nur Vorname im Payload */
+  const melderVorname =
+    String(lead.melder_name ?? "")
+      .trim()
+      .split(/\s+/)[0] || "Mieter";
   const einheit = lead.melder_einheit ? String(lead.melder_einheit) : null;
   const erledigt = portalErledigtFromLeadAndAuftrag(lead, auftragKontext);
   const beschreibung =
@@ -146,10 +220,10 @@ export default async function MeldeStatusPage({ params }: Props) {
     bereiche,
     funnel_daten: lead.funnel_daten,
     zeitraum: lead.zeitraum as string | null,
-    plz: objektPlz,
-    strasse: lead.strasse as string | null,
-    hausnummer: lead.hausnummer as string | null,
-    ort: objektOrt,
+    plz: null,
+    strasse: null,
+    hausnummer: null,
+    ort: null,
   };
   const norm = normalizeFunnelDaten(lead.funnel_daten, bereiche);
   const situationSlug =
@@ -170,25 +244,26 @@ export default async function MeldeStatusPage({ params }: Props) {
         (u): u is string => typeof u === "string" && /^https?:\/\//i.test(u)
       )
     : [];
-  const meldeStrasse =
-    [lead.strasse, lead.hausnummer].filter(Boolean).join(" ").trim() || null;
 
   return (
     <MeldeStatusClient
       brand={brand}
       token={trimmed}
       objektTitel={objektTitel}
-      melderName={melderName}
+      melderName={melderVorname}
       einheit={einheit}
       referenz={referenz}
       initialStufe={stufe}
       erledigt={erledigt}
       anhaenge={anhaenge}
       beschreibung={beschreibung}
+      datenschutzHref={legal.datenschutz}
+      impressumHref={legal.impressum}
       meldeDetail={{
-        meldeStrasse,
-        meldePlz: objektPlz,
-        meldeOrt: objektOrt,
+        /* Adresse = Objekt-Kurzname, keine volle Anschrift */
+        meldeStrasse: objektTitel,
+        meldePlz: null,
+        meldeOrt: null,
         meldeSituation,
         meldeBereich,
         meldeZeitraum,

@@ -1,3 +1,5 @@
+import { createHash } from "crypto";
+
 import { persistLead } from "@/lib/lead/persist-lead";
 import { generateMeldeTrackingToken } from "@/lib/melde/melde-tracking";
 import { vorgeschlagenerKostentraeger } from "@/lib/vorgang/kostentraeger";
@@ -16,6 +18,100 @@ import { mapMeldeToPrice } from "@/lib/org/map-melde-to-price";
 import { isMeldeDirektauftrag } from "@/lib/funnel/melde-direktauftrag";
 import { normalizeAkutFallIds } from "@/lib/org/sofortmassnahme-faelle";
 import type { MeldeKategorie } from "@/lib/org/types";
+
+/** Kurzer Text-Hash für Idempotenz (Doppel-Submit innerhalb 60s). */
+export function meldungBeschreibungHash(text: string): string {
+  return createHash("sha256")
+    .update(text.trim().toLowerCase())
+    .digest("hex")
+    .slice(0, 16);
+}
+
+function digitsOnly(v: string): string {
+  return v.replace(/\D/g, "");
+}
+
+/**
+ * Neueren Lead derselben Org/Objekt + Melder + Beschreibung innerhalb 60s finden
+ * (Retry / Doppelklick) — dann bestehendes id zurückgeben statt Insert.
+ */
+export async function findRecentDuplicateMeldungLead(input: {
+  auftraggeber_kunde_id: string;
+  kunde_objekt_id?: string | null;
+  name: string;
+  email?: string | null;
+  telefon?: string | null;
+  beschreibung: string;
+}): Promise<{ id: string; meldeTrackingToken: string | null } | null> {
+  const since = new Date(Date.now() - 60_000).toISOString();
+  const emailNorm = (input.email ?? "").trim().toLowerCase();
+  const nameNorm = input.name.trim().toLowerCase();
+  const telDigits = digitsOnly(input.telefon ?? "");
+  const descTrim = input.beschreibung.trim();
+  const descHash = meldungBeschreibungHash(descTrim);
+
+  let q = supabaseAdmin
+    .from("leads")
+    .select(
+      "id, kontakt_email, kontakt_name, kontakt_telefon, kontakt_nachricht, melder_email, melder_name, melder_telefon, melde_tracking_token, created_at"
+    )
+    .eq("auftraggeber_kunde_id", input.auftraggeber_kunde_id)
+    .gte("created_at", since)
+    .order("created_at", { ascending: false })
+    .limit(25);
+
+  if (input.kunde_objekt_id) {
+    q = q.eq("kunde_objekt_id", input.kunde_objekt_id);
+  }
+
+  const { data: rows } = await q;
+  for (const row of rows ?? []) {
+    const rowEmail = (
+      (row.kontakt_email as string | null) ||
+      (row.melder_email as string | null) ||
+      ""
+    )
+      .trim()
+      .toLowerCase();
+    const rowName = (
+      (row.kontakt_name as string | null) ||
+      (row.melder_name as string | null) ||
+      ""
+    )
+      .trim()
+      .toLowerCase();
+    const rowTel = digitsOnly(
+      String(
+        (row.kontakt_telefon as string | null) ||
+          (row.melder_telefon as string | null) ||
+          ""
+      )
+    );
+
+    const sameMelder = emailNorm
+      ? rowEmail === emailNorm
+      : Boolean(nameNorm) &&
+        rowName === nameNorm &&
+        telDigits.length >= 6 &&
+        rowTel === telDigits;
+    if (!sameMelder) continue;
+
+    const existingDesc = String(row.kontakt_nachricht ?? "").trim();
+    const sameDesc =
+      existingDesc === descTrim ||
+      (existingDesc.length > 0 &&
+        meldungBeschreibungHash(existingDesc) === descHash);
+    if (!sameDesc) continue;
+
+    return {
+      id: String(row.id),
+      meldeTrackingToken: row.melde_tracking_token
+        ? String(row.melde_tracking_token)
+        : null,
+    };
+  }
+  return null;
+}
 
 export type PersistMeldungLeadInput = {
   name: string;
@@ -391,23 +487,30 @@ export async function persistMeldungLead(input: PersistMeldungLeadInput) {
   // Melder-Link / Einladung → HV-Glocke (CRM erst nach HV „Vorgang freigeben“,
   // außer Akut-Direktauftrag: dann sofort BW informieren)
   if (input.erfassung_von === "melder") {
-    void import("@/lib/org/notify-hv-neue-meldung").then(
-      ({ notifyHvNeueMeldung }) =>
-        notifyHvNeueMeldung({ leadId: result.id }).catch((e) =>
-          console.error("[persistMeldungLead] hv notify:", e)
-        )
-    );
-    if (bypassAktiv) {
-      void import("@/lib/org/notify-crm-org").then(({ notifyCrmOrgPortal }) =>
-        notifyCrmOrgPortal({ leadId: result.id, typ: "meldung" }).then((r) => {
-          if (!r.ok) {
-            console.warn("[persistMeldungLead] CRM-Notify (Akut):", r.error, {
-              leadId: result.id,
-              skipped: r.skipped === true,
-            });
-          }
-        })
+    try {
+      const { notifyHvNeueMeldung } = await import(
+        "@/lib/org/notify-hv-neue-meldung"
       );
+      await notifyHvNeueMeldung({ leadId: result.id });
+    } catch (e) {
+      console.error("[persistMeldungLead] hv notify:", e);
+    }
+    if (bypassAktiv) {
+      try {
+        const { notifyCrmOrgPortal } = await import("@/lib/org/notify-crm-org");
+        const r = await notifyCrmOrgPortal({
+          leadId: result.id,
+          typ: "meldung",
+        });
+        if (!r.ok) {
+          console.warn("[persistMeldungLead] CRM-Notify (Akut):", r.error, {
+            leadId: result.id,
+            skipped: r.skipped === true,
+          });
+        }
+      } catch (e) {
+        console.error("[persistMeldungLead] CRM-Notify (Akut):", e);
+      }
     }
     // Verknüpfter Portal-User (kunde_id mit auth) → eigene Glocke
     void import("@/lib/portal/notify-portal-lead-user").then(

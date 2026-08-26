@@ -1288,14 +1288,33 @@ export function PortalFunnelHost({
         method: "POST",
         body: fd,
       });
-      const json = (await res.json()) as { url?: string; error?: string };
-      if (!res.ok || !json.url) throw new Error(json.error ?? "Upload fehlgeschlagen");
+      if (res.status === 413) {
+        const msg = "Datei zu groß (max. 8 MB)";
+        portalToastError("Upload fehlgeschlagen", msg);
+        throw new Error(msg);
+      }
+      let json: { url?: string; error?: string } = {};
+      try {
+        json = (await res.json()) as { url?: string; error?: string };
+      } catch {
+        if (!res.ok) {
+          const msg = "Upload fehlgeschlagen";
+          portalToastError("Upload fehlgeschlagen", msg);
+          throw new Error(msg);
+        }
+      }
+      if (!res.ok || !json.url) {
+        const msg = json.error ?? "Upload fehlgeschlagen";
+        portalToastError("Upload fehlgeschlagen", msg);
+        throw new Error(msg);
+      }
       urls.push(json.url);
     }
     return urls;
   };
 
   const submit = async () => {
+    if (busy) return;
     setBusy(true);
     setError(null);
     let navigatedAway = false;
@@ -1370,6 +1389,7 @@ export function PortalFunnelHost({
           error?: string;
           statusLink?: string;
           meldeTrackingToken?: string;
+          id?: string;
         };
         if (!res.ok) {
           setError(json.error ?? "Senden fehlgeschlagen.");
@@ -1389,6 +1409,9 @@ export function PortalFunnelHost({
           q.set("token", json.meldeTrackingToken);
         } else if (json.statusLink) {
           q.set("statusLink", json.statusLink);
+        }
+        if (json.id?.trim()) {
+          q.set("ref", json.id.trim().slice(0, 8).toUpperCase());
         }
         const contactEmail = state.email.trim() || mieterEmail.trim();
         const contactTel = state.telefon.trim() || mieterTel.trim();
@@ -1608,7 +1631,9 @@ export function PortalFunnelHost({
       onDone();
       navigatedAway = true;
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Netzwerkfehler.");
+      const msg = e instanceof Error ? e.message : "Netzwerkfehler.";
+      setError(msg);
+      portalToastError("Senden fehlgeschlagen", msg);
     } finally {
       if (!navigatedAway) setBusy(false);
     }
@@ -2022,9 +2047,15 @@ export function PortalFunnelHost({
                 ? "Bitte das Passendste wählen"
                 : isHvIntern
                   ? "Bereich für den Vorgang"
-                  : "Wasser, Heizung, Strom & Co. — Dringlichkeit setzen wir automatisch"
+                  : undefined
               : undefined
           }
+          infoTip={
+            useMeldeKaputtFlow && !hvMitMieter && !isHvIntern
+              ? "Wasser, Heizung, Strom & Co. — die Dringlichkeit setzen wir automatisch."
+              : undefined
+          }
+          infoTipLabel="Zur Dringlichkeit"
           animateKey="bereiche"
         >
           <div className="funnel-step-tiles-card flex flex-col gap-2">

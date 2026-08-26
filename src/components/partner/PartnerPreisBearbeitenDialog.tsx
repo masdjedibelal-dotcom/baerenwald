@@ -133,7 +133,7 @@ export function PartnerPreisBearbeitenDialog({
           onClick={onConfirm}
           className="portal-action-btn portal-action-btn--primary disabled:opacity-50"
         >
-          Übernehmen
+          Speichern
         </button>
       </div>
     </PortalModalShell>

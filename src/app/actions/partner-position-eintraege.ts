@@ -15,6 +15,7 @@ import {
 } from "@/lib/partner/sync-bautagebuch-kunde-timeline";
 import { createClient } from "@/lib/supabase/server";
 import { isSupabaseConfigured, supabaseAdmin } from "@/lib/supabase";
+import { assertPartnerAktiveZuweisung } from "@/lib/partner/partner-zuweisung-access";
 
 export type PartnerPositionEintragResult =
   | { ok: true; eintragId: string; positionId: string }
@@ -59,6 +60,14 @@ async function loadOwnPosition(handwerkerId: string, positionId: string) {
       if (!fallback || String(fallback.handwerker_id) !== handwerkerId) {
         return null;
       }
+      if (
+        !(await assertPartnerAktiveZuweisung(
+          handwerkerId,
+          String(fallback.auftrag_id)
+        ))
+      ) {
+        return null;
+      }
       return {
         ...fallback,
         verguetung: "festpreis" as string | null,
@@ -71,6 +80,14 @@ async function loadOwnPosition(handwerkerId: string, positionId: string) {
     return null;
   }
   if (!data || String(data.handwerker_id) !== handwerkerId) return null;
+  if (
+    !(await assertPartnerAktiveZuweisung(
+      handwerkerId,
+      String(data.auftrag_id)
+    ))
+  ) {
+    return null;
+  }
   return data;
 }
 

@@ -52,14 +52,14 @@ export interface KiRechnerChatProps {
   onRaumVisualisieren?: () => void;
 }
 
-const INITIAL_MESSAGE = `Hi! Ich bin Ihr Handwerks-Assistent von Bärenwald — für Renovierung, Reparatur und Umbau in München.
+const INITIAL_MESSAGE = `Hi! Ich bin ein KI-Assistent von Bärenwald — für Renovierung, Reparatur und Umbau in München.
 
-Ob erste Idee oder konkretes Projekt: Hier klären Sie alles Handwerkliche. Ich helfe Ihnen z. B.:
-• zu verstehen, **was Sie wirklich brauchen** (Gewerke, Ablauf, Stolpersteine)
-• bei **Fragen zu Ihrem Vorhaben** — auch wenn noch vieles offen ist
+Ob erste Idee oder konkretes Projekt: Hier klären wir alles Handwerkliche. Ich helfe dir z. B.:
+• zu verstehen, **was du wirklich brauchst** (Gewerke, Ablauf, Stolpersteine)
+• bei **Fragen zu deinem Vorhaben** — auch wenn noch vieles offen ist
 • zu sehen, **was als Nächstes Sinn macht**
 
-Sind die wichtigsten Punkte da, tippen Sie unten auf **Zum Preis** für einen unverbindlichen Rahmen. Nicht alles müssen Sie sofort wissen.
+Sind die wichtigsten Punkte da, tippe unten auf **Zum Preis** für einen unverbindlichen Rahmen. Nicht alles musst du sofort wissen.
 
 Womit sollen wir starten?`;
 
@@ -356,7 +356,7 @@ export function KiRechnerChat({
             </span>
           </div>
           <div className="ki-rechner-chat-sub">
-            Beratung · Planung · Preisrahmen
+            KI-Assistent · Beratung · Planung · Preisrahmen
           </div>
         </div>
       </div>
@@ -446,7 +446,7 @@ export function KiRechnerChat({
             }
             className="ki-rechner-chat-input ki-rechner-chat-textarea"
             disabled={inputDisabled}
-            aria-label="Nachricht an den Bärenwald Handwerks-Assistenten"
+            aria-label="Nachricht an den KI-Assistenten"
             aria-describedby={limitReached ? "ki-chat-limit-hint" : undefined}
           />
           <button
@@ -460,8 +460,7 @@ export function KiRechnerChat({
           </button>
         </div>
         <p className="ki-rechner-chat-privacy">
-          Nachrichten werden zur Antwort an einen KI-Dienst (Anthropic) übermittelt und
-          protokolliert.{" "}
+          KI-Assistent · Anthropic ·{" "}
           <Link href="/datenschutz#ki-beratung">Datenschutz</Link>
         </p>
       </div>

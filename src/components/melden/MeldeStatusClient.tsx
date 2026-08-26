@@ -2,7 +2,9 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 
+import { useCookieConsent } from "@/components/consent/CookieConsentContext";
 import { DokumenteTabelle } from "@/components/shared/DokumenteTabelle";
+import { PortalPhotoGallery } from "@/components/shared/PortalPhotoGallery";
 import { VorgangDetailBlocks } from "@/components/shared/vorgang-detail";
 import {
   MieterWlCard,
@@ -53,6 +55,8 @@ type Props = {
   beschreibung?: string | null;
   statusLabel?: string;
   meldeDetail?: MeldeDetailExtras;
+  datenschutzHref?: string;
+  impressumHref?: string;
 };
 
 const STATUS_POLL_MS = 20_000;
@@ -84,8 +88,11 @@ export function MeldeStatusClient({
   beschreibung = null,
   statusLabel: initialStatusLabel,
   meldeDetail,
+  datenschutzHref,
+  impressumHref,
 }: Props) {
   const lang = "de" as const;
+  const { setLegalLinks } = useCookieConsent();
   const [stufe, setStufe] = useState(initialStufe);
   const [erledigt, setErledigt] = useState(initialErledigt);
   const [anhaenge, setAnhaenge] = useState(initialAnhaenge);
@@ -98,10 +105,23 @@ export function MeldeStatusClient({
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
 
+  useEffect(() => {
+    if (datenschutzHref && impressumHref) {
+      setLegalLinks({
+        datenschutz: datenschutzHref,
+        impressum: impressumHref,
+      });
+      return () => setLegalLinks(null);
+    }
+    return undefined;
+  }, [datenschutzHref, impressumHref, setLegalLinks]);
+
   const active = useMemo(
     () => mieterStgActiveCopy(stufe, lang),
     [stufe, lang]
   );
+
+  const fotos = meldeDetail?.fotos ?? [];
 
   const detailVm = useMemo(
     () =>
@@ -119,7 +139,8 @@ export function MeldeStatusClient({
         meldeBereich: meldeDetail?.meldeBereich,
         meldeZeitraum: meldeDetail?.meldeZeitraum,
         meldeFachdetails: meldeDetail?.meldeFachdetails,
-        fotos: meldeDetail?.fotos,
+        /* Fotos separat hinter Aufklapp — nicht im Detail-VM */
+        fotos: [],
       }),
     [
       referenz,
@@ -261,25 +282,33 @@ export function MeldeStatusClient({
   const t = MIETER_WL_STATUS;
 
   return (
-    <MieterWlFrame brand={brand}>
+    <MieterWlFrame
+      brand={brand}
+      datenschutzHref={datenschutzHref}
+      impressumHref={impressumHref}
+    >
       <div className="space-y-4">
         <div>
           <h1 className="mieter-wl-objekt-title" style={{ fontSize: 21 }}>
             {t.title_de}
           </h1>
           <p className="text-[13px] text-[#4a5c54] mt-1">{metaLine}</p>
-          <p className="mt-3 text-[14px] font-semibold text-[#16201B]">
-            {active.title}
-            <span className="font-normal text-[#4a5c54]">
-              {" "}
-              — {active.subtitle}
-            </span>
-          </p>
         </div>
 
         <MieterStgTimeline stufe={stufe} lang={lang} />
 
         <VorgangDetailBlocks vm={detailVm} />
+
+        {fotos.length > 0 ? (
+          <details className="rounded-[10px] border border-[var(--p2-line)] bg-white">
+            <summary className="cursor-pointer select-none px-4 py-3 text-[13.5px] font-semibold text-[#16201B]">
+              Fotos anzeigen ({fotos.length})
+            </summary>
+            <div className="border-t border-[var(--p2-line)] px-4 py-3">
+              <PortalPhotoGallery urls={fotos} />
+            </div>
+          </details>
+        ) : null}
 
         {bestaetigt ? (
           <MieterWlCard>

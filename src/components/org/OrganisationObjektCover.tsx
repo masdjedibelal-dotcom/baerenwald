@@ -121,7 +121,7 @@ export function OrganisationObjektCover({
           src={src}
           alt=""
           className={cn(
-            "h-full w-full object-cover",
+            "absolute inset-0 h-full w-full object-cover",
             !hasCustom && "opacity-90"
           )}
           onError={() => setImgFailed(true)}

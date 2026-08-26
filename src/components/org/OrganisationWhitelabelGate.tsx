@@ -192,7 +192,7 @@ export function OrganisationWhitelabelGate({ kunde, canComplete, onComplete }: P
 
       {canComplete ? (
         <button type="submit" className="btn-pill-primary mt-5 w-full" disabled={busy}>
-          {busy ? "Speichern…" : "Speichern und fortfahren"}
+          {busy ? "Speichern…" : "Speichern"}
         </button>
       ) : (
         <form action="/portal/auth/signout" method="post" className="mt-5">

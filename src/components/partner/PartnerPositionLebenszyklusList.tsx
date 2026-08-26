@@ -675,7 +675,7 @@ export function PartnerPositionLebenszyklusList({
                               setSheet({ mode: "erledigt", position: p })
                             }
                           >
-                            Erledigt markieren
+                            Erledigt
                           </button>
                         ) : null}
                       </div>
@@ -698,7 +698,7 @@ export function PartnerPositionLebenszyklusList({
                             setSheet({ mode: "erledigt", position: p })
                           }
                         >
-                          {isRegie ? "Ende (Foto)" : "Erledigt markieren"}
+                          {isRegie ? "Ende (Foto)" : "Erledigt"}
                         </button>
                       </div>
                     ) : null}
@@ -868,15 +868,7 @@ export function PartnerPositionLebenszyklusList({
                 className="btn-pill-primary w-full"
                 disabled={submitting}
               >
-                {submitting
-                  ? "Speichern…"
-                  : sheet.mode === "erledigt"
-                    ? sheetIsRegie
-                      ? "Ende-Foto speichern"
-                      : "Erledigt speichern"
-                    : sheet.mode === "start" && sheetIsRegie
-                      ? "Start-Foto speichern"
-                      : "Update speichern"}
+                {submitting ? "Speichern…" : "Speichern"}
               </button>
             </div>
           </form>
