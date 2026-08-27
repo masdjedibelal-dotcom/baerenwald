@@ -176,6 +176,7 @@ function MeldungDetail({
 }) {
   const [resendBusy, setResendBusy] = useState(false);
   const [resendMsg, setResendMsg] = useState<string | null>(null);
+  const { runBusy } = usePortalBusy();
 
   const kategorie = meldeKategorieFromLead(lead);
 
@@ -183,24 +184,26 @@ function MeldungDetail({
     setResendBusy(true);
     setResendMsg(null);
     try {
-      const res = await fetch("/api/org/meldung-einladung-erneut", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ leadId: lead.id }),
-      });
-      const json = (await res.json()) as { error?: string; link?: string };
-      if (!res.ok) {
-        setResendMsg(json.error ?? "Fehler.");
-        return;
-      }
-      if (json.link) {
-        const url = json.link.startsWith("http")
-          ? json.link
-          : `${window.location.origin}${json.link.startsWith("/") ? json.link : `/${json.link}`}`;
-        await navigator.clipboard.writeText(url);
-        orgPortalToast.linkKopiert();
-        setResendMsg("Einladungs-Link kopiert — bitte an Mieter weitergeben.");
-      }
+      await runBusy(async () => {
+        const res = await fetch("/api/org/meldung-einladung-erneut", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ leadId: lead.id }),
+        });
+        const json = (await res.json()) as { error?: string; link?: string };
+        if (!res.ok) {
+          setResendMsg(json.error ?? "Fehler.");
+          return;
+        }
+        if (json.link) {
+          const url = json.link.startsWith("http")
+            ? json.link
+            : `${window.location.origin}${json.link.startsWith("/") ? json.link : `/${json.link}`}`;
+          await navigator.clipboard.writeText(url);
+          orgPortalToast.portalLinkGesendet({ rolle: "Mieter" });
+          setResendMsg("Einladungs-Link kopiert — bitte an Mieter weitergeben.");
+        }
+      }, 400);
     } finally {
       setResendBusy(false);
     }

@@ -4,6 +4,10 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { OrganisationObjektMieterMenu } from "@/components/org/OrganisationObjektMieterMenu";
 import { PortalConfirmDialog } from "@/components/shared/PortalDetailUi";
+import {
+  PortalInviteMailtoSheet,
+  type PortalInviteMailtoReady,
+} from "@/components/shared/PortalInviteMailtoSheet";
 import { PortalInboxEmpty } from "@/components/shared/PortalEmptyState";
 import {
   PortalActionMenu,
@@ -13,8 +17,6 @@ import { PortalModalShell } from "@/components/shared/PortalModalShell";
 import {
   EinstellungenEdField,
   EinstellungenEditModal,
-  EinstellungenPfList,
-  EinstellungenPfRow,
   EinstellungenSectionHeader,
   EinstellungenToggle,
 } from "@/components/shared/PortalEinstellungenUi";
@@ -29,7 +31,6 @@ import { cn } from "@/lib/utils";
 import {
   orgPortalToast,
   portalToastError,
-  portalToastSuccess,
 } from "@/lib/shared/portal-toast";
 import { usePortalBusy } from "@/components/shared/PortalBusyContext";
 import { PortalContentBusy } from "@/components/shared/PortalContentBusy";
@@ -87,9 +88,9 @@ export function OrganisationObjektEinheitenTab({
   const [detailId, setDetailId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const [einheitForm, setEinheitForm] = useState<
-    null | { mode: "create" } | { mode: "edit"; id: string }
-  >(null);
+  const [einheitForm, setEinheitForm] = useState<null | { mode: "create" }>(
+    null
+  );
   const [bezeichnung, setBezeichnung] = useState("");
   const [etage, setEtage] = useState("");
   const [m2, setM2] = useState("");
@@ -125,6 +126,8 @@ export function OrganisationObjektEinheitenTab({
 
   const [busyId, setBusyId] = useState<string | null>(null);
   const { runBusy } = usePortalBusy();
+  const [inviteMailtoReady, setInviteMailtoReady] =
+    useState<PortalInviteMailtoReady | null>(null);
   const [confirm, setConfirm] = useState<
     | { kind: "einheit"; id: string; label: string }
     | { kind: "person"; id: string; label: string }
@@ -180,58 +183,88 @@ export function OrganisationObjektEinheitenTab({
     setEinheitForm({ mode: "create" });
   }
 
-  function openEinheitEdit(u: Einheit) {
-    setBezeichnung(u.bezeichnung);
-    setEtage(u.etage?.trim() || "");
-    setM2(u.wohnflaeche_m2 != null ? String(u.wohnflaeche_m2) : "");
-    setEinheitForm({ mode: "edit", id: u.id });
-  }
-
   function closeEinheitForm() {
     if (einheitBusy) return;
     setEinheitForm(null);
   }
 
-  async function saveEinheit() {
+  /** Drafts für Detail-Sheet bei Wechsel der Einheit laden. */
+  useEffect(() => {
+    if (!detailId) return;
+    const u = einheiten.find((e) => e.id === detailId);
+    if (!u) return;
+    setBezeichnung(u.bezeichnung);
+    setEtage(u.etage?.trim() || "");
+    setM2(u.wohnflaeche_m2 != null ? String(u.wohnflaeche_m2) : "");
+    // Nur bei Einheiten-Wechsel syncen — nicht nach jedem Speichern/Reload.
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- absichtlich nur detailId
+  }, [detailId]);
+
+  const detailDirty = Boolean(
+    detailEinheit &&
+      (bezeichnung.trim() !== detailEinheit.bezeichnung ||
+        (etage.trim() || "") !== (detailEinheit.etage?.trim() || "") ||
+        (m2.trim()
+          ? Number(m2.replace(",", "."))
+          : null) !== (detailEinheit.wohnflaeche_m2 ?? null))
+  );
+
+  async function saveEinheitCreate() {
     const label = bezeichnung.trim();
-    if (!label || !einheitForm) return;
+    if (!label || einheitForm?.mode !== "create") return;
     setEinheitBusy(true);
     try {
       await runBusy(async () => {
-        const body =
-          einheitForm.mode === "create"
-            ? {
-                objektId,
-                bezeichnung: label,
-                etage: etage.trim() || null,
-                wohnflaeche_m2: m2.trim()
-                  ? Number(m2.replace(",", "."))
-                  : null,
-              }
-            : {
-                id: einheitForm.id,
-                bezeichnung: label,
-                etage: etage.trim() || null,
-                wohnflaeche_m2: m2.trim()
-                  ? Number(m2.replace(",", "."))
-                  : null,
-              };
         const res = await fetch("/api/org/objekte/einheiten", {
-          method: einheitForm.mode === "create" ? "POST" : "PATCH",
+          method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(body),
+          body: JSON.stringify({
+            objektId,
+            bezeichnung: label,
+            etage: etage.trim() || null,
+            wohnflaeche_m2: m2.trim()
+              ? Number(m2.replace(",", "."))
+              : null,
+          }),
         });
         const json = (await res.json()) as { error?: string };
         if (!res.ok) {
-          portalToastError(
-            einheitForm.mode === "create"
-              ? "Einheit nicht angelegt"
-              : "Einheit nicht gespeichert",
-            json.error
-          );
+          portalToastError("Einheit nicht angelegt", json.error);
           return;
         }
         setEinheitForm(null);
+        orgPortalToast.objektAktualisiert();
+        await load();
+        onEinheitenChange?.();
+      });
+    } finally {
+      setEinheitBusy(false);
+    }
+  }
+
+  async function saveDetailEinheit() {
+    const label = bezeichnung.trim();
+    if (!label || !detailEinheit) return;
+    setEinheitBusy(true);
+    try {
+      await runBusy(async () => {
+        const res = await fetch("/api/org/objekte/einheiten", {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            id: detailEinheit.id,
+            bezeichnung: label,
+            etage: etage.trim() || null,
+            wohnflaeche_m2: m2.trim()
+              ? Number(m2.replace(",", "."))
+              : null,
+          }),
+        });
+        const json = (await res.json()) as { error?: string };
+        if (!res.ok) {
+          portalToastError("Einheit nicht gespeichert", json.error);
+          return;
+        }
         orgPortalToast.objektAktualisiert();
         await load();
         onEinheitenChange?.();
@@ -496,18 +529,16 @@ export function OrganisationObjektEinheitenTab({
         });
         try {
           await navigator.clipboard.writeText(json.url);
-          portalToastSuccess(
-            "Link kopiert",
-            toEmail
-              ? `${rolleLabel}-Einladung: Mail öffnet sich mit Empfänger.`
-              : `${rolleLabel}-Einladung in die Zwischenablage gelegt.`
-          );
         } catch {
-          window.prompt("Einladungs-Link:", json.url);
+          /* Sheet bietet Kopieren */
         }
-        // Mail-App öffnen (mit An-Feld, falls E-Mail hinterlegt)
-        window.location.href = mailto;
-      });
+        setInviteMailtoReady({
+          mailto,
+          url: json.url,
+          rolle: rolleLabel,
+          toEmail: toEmail || null,
+        });
+      }, 500);
     } finally {
       setBusyId(null);
     }
@@ -517,7 +548,7 @@ export function OrganisationObjektEinheitenTab({
     return [
       {
         label: "Bearbeiten",
-        onClick: () => openEinheitEdit(u),
+        onClick: () => setDetailId(u.id),
       },
       {
         label: "Einheit entfernen",
@@ -621,6 +652,11 @@ export function OrganisationObjektEinheitenTab({
 
   return (
     <div className="space-y-3">
+      <PortalInviteMailtoSheet
+        open={Boolean(inviteMailtoReady)}
+        payload={inviteMailtoReady}
+        onClose={() => setInviteMailtoReady(null)}
+      />
       <PortalDetailCard
         title={
           einheiten.length === 1
@@ -699,54 +735,41 @@ export function OrganisationObjektEinheitenTab({
 
       <PortalModalShell
         open={Boolean(detailEinheit)}
-        title={detailEinheit?.bezeichnung ?? "Einheit"}
-        subtitle={
-          detailEinheit
-            ? [
-                detailEinheit.etage?.trim()
-                  ? `Etage ${detailEinheit.etage.trim()}`
-                  : null,
-                detailEinheit.wohnflaeche_m2 != null
-                  ? `${detailEinheit.wohnflaeche_m2} m²`
-                  : null,
-              ]
-                .filter(Boolean)
-                .join(" · ") || null
-            : null
-        }
-        onClose={() => setDetailId(null)}
+        title={bezeichnung.trim() || detailEinheit?.bezeichnung || "Einheit"}
+        subtitle="Bezeichnung, Etage und Fläche — Speichern unten."
+        onClose={() => {
+          if (einheitBusy) return;
+          setDetailId(null);
+        }}
         variant="edit"
-        headerExtra={
-          detailEinheit ? (
-            <PortalActionMenu
-              title={detailEinheit.bezeichnung}
-              items={einheitMenuItems(detailEinheit)}
-              variant="popover"
-              triggerLabel="Einheit-Menü"
-            />
-          ) : null
-        }
+        dirty={detailDirty && !einheitBusy}
+        busy={einheitBusy}
+        onConfirm={() => void saveDetailEinheit()}
+        confirmLabel={einheitBusy ? "Speichern…" : "Speichern"}
+        confirmDisabled={!bezeichnung.trim() || !detailDirty || einheitBusy}
       >
         {detailEinheit ? (
           <div className="space-y-5">
-            <EinstellungenPfList>
-              <EinstellungenPfRow
+            <div className="space-y-3">
+              <EinstellungenEdField
                 label="Bezeichnung"
-                value={detailEinheit.bezeichnung}
+                value={bezeichnung}
+                onChange={setBezeichnung}
+                placeholder="z. B. WE 12"
               />
-              <EinstellungenPfRow
-                label="Etage"
-                value={detailEinheit.etage?.trim() || "—"}
+              <EinstellungenEdField
+                label="Etage (optional)"
+                value={etage}
+                onChange={setEtage}
+                placeholder="z. B. 3. OG"
               />
-              <EinstellungenPfRow
-                label="Wohnfläche"
-                value={
-                  detailEinheit.wohnflaeche_m2 != null
-                    ? `${detailEinheit.wohnflaeche_m2} m²`
-                    : "—"
-                }
+              <EinstellungenEdField
+                label="Wohnfläche m² (optional)"
+                value={m2}
+                onChange={setM2}
+                placeholder="z. B. 68"
               />
-            </EinstellungenPfList>
+            </div>
 
             {renderPersonList(
               detailEinheit,
@@ -928,38 +951,6 @@ export function OrganisationObjektEinheitenTab({
             />
           ) : null}
         </EinstellungenEditModal>
-
-        {einheitForm?.mode === "edit" ? (
-          <EinstellungenEditModal
-            open
-            title="Einheit bearbeiten"
-            subtitle="Bezeichnung, Etage und Fläche."
-            onClose={closeEinheitForm}
-            onSave={() => void saveEinheit()}
-            saving={einheitBusy}
-            saveDisabled={!bezeichnung.trim()}
-            saveLabel="Speichern"
-          >
-            <EinstellungenEdField
-              label="Bezeichnung"
-              value={bezeichnung}
-              onChange={setBezeichnung}
-              placeholder="z. B. WE 12"
-            />
-            <EinstellungenEdField
-              label="Etage (optional)"
-              value={etage}
-              onChange={setEtage}
-              placeholder="z. B. 3. OG"
-            />
-            <EinstellungenEdField
-              label="Wohnfläche m² (optional)"
-              value={m2}
-              onChange={setM2}
-              placeholder="z. B. 68"
-            />
-          </EinstellungenEditModal>
-        ) : null}
       </PortalModalShell>
 
       <EinstellungenEditModal
@@ -967,7 +958,7 @@ export function OrganisationObjektEinheitenTab({
         title="Einheit anlegen"
         subtitle="Danach Mieter und Eigentümer zuordnen."
         onClose={closeEinheitForm}
-        onSave={() => void saveEinheit()}
+        onSave={() => void saveEinheitCreate()}
         saving={einheitBusy}
         saveDisabled={!bezeichnung.trim()}
         saveLabel="Anlegen"
@@ -991,39 +982,6 @@ export function OrganisationObjektEinheitenTab({
           placeholder="z. B. 68"
         />
       </EinstellungenEditModal>
-
-      {/* Edit ohne offenes Detail (⋯ in der Liste) */}
-      {detailId == null && einheitForm?.mode === "edit" ? (
-        <EinstellungenEditModal
-          open
-          title="Einheit bearbeiten"
-          subtitle="Bezeichnung, Etage und Fläche."
-          onClose={closeEinheitForm}
-          onSave={() => void saveEinheit()}
-          saving={einheitBusy}
-          saveDisabled={!bezeichnung.trim()}
-          saveLabel="Speichern"
-        >
-          <EinstellungenEdField
-            label="Bezeichnung"
-            value={bezeichnung}
-            onChange={setBezeichnung}
-            placeholder="z. B. WE 12"
-          />
-          <EinstellungenEdField
-            label="Etage (optional)"
-            value={etage}
-            onChange={setEtage}
-            placeholder="z. B. 3. OG"
-          />
-          <EinstellungenEdField
-            label="Wohnfläche m² (optional)"
-            value={m2}
-            onChange={setM2}
-            placeholder="z. B. 68"
-          />
-        </EinstellungenEditModal>
-      ) : null}
 
       <PortalConfirmDialog
         open={Boolean(confirm)}

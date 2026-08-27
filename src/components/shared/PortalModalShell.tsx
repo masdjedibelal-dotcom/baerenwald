@@ -28,6 +28,9 @@ import {
   type PortalModalSizeLegacy,
   type PortalModalVariant,
 } from "@/lib/portal2/modal-shell";
+import {
+  portalToastDiscarded,
+} from "@/lib/shared/portal-toast";
 import { cn } from "@/lib/utils";
 
 /** Verschachtelte Modals (z. B. KI im Sheet) jeweils eine Schicht höher. */
@@ -116,22 +119,29 @@ export type PortalModalShellProps = {
   closeOnBackdrop?: boolean;
   /**
    * Unsaved changes — X / Backdrop / Escape / Browser-Back
-   * öffnen Confirm „Änderungen verwerfen?“ statt sofort zu schließen.
+   * öffnen Confirm „Nicht gespeichert“ statt sofort zu schließen.
    */
   dirty?: boolean;
   className?: string;
   /** Zusätzlicher Inhalt im Header rechts (Titel links neben ×). */
   headerExtra?: ReactNode;
   /**
-   * Check rechts oben — Speichern/Bestätigen und schließen.
-   * Nur nutzen, wenn es keinen Footer-CTA gibt (sonst doppelte Aktion).
-   * × links = nur schließen (ohne Speichern).
+   * Primäraktion (Speichern / PDF / Hochladen).
+   * Default: Footer-CTA. `confirmPlacement="header"` nur für Ausnahmen.
+   * × = schließen ohne Speichern (bei dirty → Hinweis).
    */
   onConfirm?: () => void;
-  /** Check deaktivieren (Validierung / Busy). */
+  /** Check/CTA deaktivieren (Validierung / Busy). */
   confirmDisabled?: boolean;
-  /** aria-label für den Check. Default „Bestätigen“. */
+  /** Label für Confirm. Default „Speichern“. */
   confirmLabel?: string;
+  /**
+   * Wo die Confirm-Aktion liegt.
+   * Default `footer` — sichtbarer CTA unten.
+   */
+  confirmPlacement?: "footer" | "header";
+  /** Eigener Sticky-Footer (ersetzt Auto-Footer aus onConfirm). */
+  footer?: ReactNode;
   /** Speichern / Upload — Overlay im Sheet (über dem Inhalt). */
   busy?: boolean;
   busyTitle?: string;
@@ -159,7 +169,9 @@ export function PortalModalShell({
   headerExtra,
   onConfirm,
   confirmDisabled = false,
-  confirmLabel = "Bestätigen",
+  confirmLabel = "Speichern",
+  confirmPlacement = "footer",
+  footer,
   busy = false,
   busyTitle = "Wird gespeichert…",
   busyBody = "Einen Moment bitte.",
@@ -171,6 +183,24 @@ export function PortalModalShell({
   const maxW =
     typeof resolvedMax === "number" ? `${resolvedMax}px` : resolvedMax;
   const isFunnel = variant === "funnel";
+  const showHeaderConfirm = Boolean(onConfirm) && confirmPlacement === "header";
+  const showFooterConfirm =
+    Boolean(onConfirm) && confirmPlacement === "footer" && footer == null;
+  const resolvedFooter =
+    footer ??
+    (showFooterConfirm ? (
+      <button
+        type="button"
+        className="portal-action-btn portal-action-btn--primary portal-action-btn--block"
+        disabled={busy || confirmDisabled}
+        onClick={() => {
+          if (busy || confirmDisabled) return;
+          onConfirm?.();
+        }}
+      >
+        {confirmLabel}
+      </button>
+    ) : null);
 
   const [discardOpen, setDiscardOpen] = useState(false);
   const layerIdRef = useRef(Symbol("portal-modal"));
@@ -386,10 +416,10 @@ export function PortalModalShell({
                 </p>
               ) : null}
             </div>
-            {headerExtra || onConfirm ? (
+            {headerExtra || showHeaderConfirm ? (
               <div className="portal-modal-shell-header-extra">
                 {headerExtra}
-                {onConfirm ? (
+                {showHeaderConfirm ? (
                   <button
                     type="button"
                     className="portal-modal-shell-confirm"
@@ -397,7 +427,7 @@ export function PortalModalShell({
                     disabled={busy || confirmDisabled}
                     onClick={() => {
                       if (busy || confirmDisabled) return;
-                      onConfirm();
+                      onConfirm?.();
                     }}
                   >
                     <Check strokeWidth={2.5} aria-hidden />
@@ -423,17 +453,24 @@ export function PortalModalShell({
               </div>
             ) : null}
           </div>
+          {resolvedFooter ? (
+            <div className="portal-modal-shell-footer">{resolvedFooter}</div>
+          ) : null}
         </div>
 
         <PortalSheetConfirm
           open={discardOpen && !busy}
           placement="nested"
-          title="Änderungen verwerfen?"
+          title="Nicht gespeichert"
+          description="Ihre Änderungen werden verworfen."
           cancelLabel="Weiter bearbeiten"
           confirmLabel="Verwerfen"
           confirmVariant="danger"
           onCancel={() => setDiscardOpen(false)}
-          onConfirm={() => closeNow(false)}
+          onConfirm={() => {
+            portalToastDiscarded();
+            closeNow(false);
+          }}
         />
       </div>
     </PortalModalDepthContext.Provider>

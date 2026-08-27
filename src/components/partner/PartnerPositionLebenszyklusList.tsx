@@ -981,18 +981,10 @@ export function PartnerPositionLebenszyklusList({
             </div>
           </div>
         </div>
-        <div className="portal-action-row mt-5">
+        <div className="mt-5">
           <button
             type="button"
-            className="portal-action-btn portal-action-btn--secondary"
-            disabled={submitting}
-            onClick={closeNachtrag}
-          >
-            Abbrechen
-          </button>
-          <button
-            type="button"
-            className="portal-action-btn portal-action-btn--primary"
+            className="portal-action-btn portal-action-btn--primary portal-action-btn--block"
             disabled={
               submitting ||
               nachtragTitel.trim().length < 4 ||

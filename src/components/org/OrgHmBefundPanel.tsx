@@ -24,7 +24,7 @@ import { FileUploadField } from "@/components/shared/FileUploadField";
 import { usePortalBusy } from "@/components/shared/PortalBusyContext";
 import { getBefundVorlage, isBefundVorlageKey } from "@/lib/org/lead-befund-vorlagen";
 import { PORTAL_VAR } from "@/lib/portal2/tokens";
-import { orgPortalToast } from "@/lib/shared/portal-toast";
+import { orgPortalToast, portalToastSaved } from "@/lib/shared/portal-toast";
 import { cn } from "@/lib/utils";
 
 const STATUS_OPTS: Array<{
@@ -322,6 +322,7 @@ export function OrgHmBefundPanel({
             }
           : prev
       );
+      portalToastSaved();
       closePunkt();
     });
   }

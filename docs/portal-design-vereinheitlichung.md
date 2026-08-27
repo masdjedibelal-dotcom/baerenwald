@@ -98,7 +98,8 @@ Alle 12 Punkte sind erledigt.
 - Section-Kopf „Hinzufügen“ → `PortalSectionAddButton` (Accent-Kreis `+`) bzw. `EinstellungenSectionHeader.onAdd` / `PortalDetailCard.onAdd`
 - Listen-CTA oben rechts → `btn-pill-primary` (z. B. „＋ Objekt“)
 - Sticky/entscheidend → `portal-action-btn`
-- Interaktiver Themenblock → `PortalDetailCard` (`responsive`); Stammdaten-Klartext bleibt flach
+- **Objekt-Stammdaten-Tab = immer flach** (`EinstellungenSectionHeader` + KeyValues) — kein Card-Mix mit Objektdaten/HM/Versicherung/Kosten/Kontakte
+- Interaktive Themen-Tabs (Anlagen, Prüfpflichten, Vorgang-Blöcke) → `PortalDetailCard` (`responsive`) — innerhalb eines Tabs einheitlich
 
 **Erledigt:**
 - [x] Primitive `PortalSectionAddButton` + Header/`PortalDetailCard`-Hooks

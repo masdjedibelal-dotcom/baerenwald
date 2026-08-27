@@ -169,6 +169,10 @@ export function PortalKontoSicherheitPanel({
         onClose={closePasswordModal}
         closeOnBackdrop={!pwBusy}
         busy={pwBusy}
+        dirty={Boolean(pwCurrent || pwNew)}
+        onConfirm={() => void changePassword()}
+        confirmLabel={pwBusy ? "Speichern…" : "Passwort speichern"}
+        confirmDisabled={pwBusy || !pwCurrent || pwNew.length < 8}
       >
         <div className="flex flex-col gap-3">
           <EinstellungenEdField
@@ -185,24 +189,6 @@ export function PortalKontoSicherheitPanel({
             type="password"
             autoComplete="new-password"
           />
-          <div className="portal-action-row mt-2">
-            <button
-              type="button"
-              className="portal-action-btn portal-action-btn--secondary"
-              disabled={pwBusy}
-              onClick={closePasswordModal}
-            >
-              Abbrechen
-            </button>
-            <button
-              type="button"
-              className="portal-action-btn portal-action-btn--primary"
-              disabled={pwBusy || !pwCurrent || pwNew.length < 8}
-              onClick={() => void changePassword()}
-            >
-              {pwBusy ? "Speichern…" : "Passwort speichern"}
-            </button>
-          </div>
         </div>
       </PortalModalShell>
 
@@ -214,6 +200,16 @@ export function PortalKontoSicherheitPanel({
         onClose={closeDeleteModal}
         closeOnBackdrop={!deleteBusy}
         busy={deleteBusy}
+        footer={
+          <button
+            type="button"
+            className="portal-action-btn portal-action-btn--danger portal-action-btn--block"
+            disabled={deleteBusy || deletePw.length < 6}
+            onClick={() => void deleteAccount()}
+          >
+            {deleteBusy ? "Löschen…" : "Endgültig löschen"}
+          </button>
+        }
       >
         <div className="flex flex-col gap-3">
           <p className="portal-text-meta leading-relaxed text-text-secondary">
@@ -233,24 +229,6 @@ export function PortalKontoSicherheitPanel({
             type="password"
             autoComplete="current-password"
           />
-          <div className="portal-action-row mt-2">
-            <button
-              type="button"
-              className="portal-action-btn portal-action-btn--secondary"
-              disabled={deleteBusy}
-              onClick={closeDeleteModal}
-            >
-              Abbrechen
-            </button>
-            <button
-              type="button"
-              className="portal-action-btn portal-action-btn--danger"
-              disabled={deleteBusy || deletePw.length < 6}
-              onClick={() => void deleteAccount()}
-            >
-              {deleteBusy ? "Löschen…" : "Endgültig löschen"}
-            </button>
-          </div>
         </div>
       </PortalModalShell>
     </>

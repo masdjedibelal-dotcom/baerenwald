@@ -16,8 +16,8 @@ export type PortalModalSizeLegacy = "default" | "funnel";
 /** Default `maxW` laut Mock (edit). */
 export const PORTAL_MODAL_DEFAULT_MAX_W = 460;
 
-/** Preview Side-Over / Sheet etwas breiter. */
-export const PORTAL_MODAL_PREVIEW_MAX_W = 640;
+/** Preview Side-Over / Sheet — etwas schmaler, weniger Leerraum. */
+export const PORTAL_MODAL_PREVIEW_MAX_W = 520;
 
 /** Funnel Desktop-Breite. */
 export const PORTAL_MODAL_FUNNEL_MAX_W = 1360;

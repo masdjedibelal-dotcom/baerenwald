@@ -355,7 +355,7 @@ export function PartnerFirmendatenScreen({
         <EinstellungenEditModal
           open
           title="Daten bearbeiten"
-          subtitle="Anschrift, Steuer und Bank — Speichern oder Abbrechen."
+          subtitle="Anschrift, Steuer und Bank — Speichern über den Button unten."
           onClose={closeEdit}
           onSave={() => void onSaveEdit()}
           saving={saving}

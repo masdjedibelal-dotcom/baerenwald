@@ -1514,7 +1514,7 @@ h3 {
   }
 
   .portal-modal-shell-header {
-    padding: 18px 20px 12px;
+    padding: 12px 14px 10px;
     display: flex;
     align-items: flex-start;
     gap: 10px;
@@ -1622,10 +1622,27 @@ h3 {
     overflow-y: auto;
     overscroll-behavior: contain;
     -webkit-overflow-scrolling: touch;
-    padding: 10px 16px var(--portal-safe-pad-bottom, calc(14px + env(safe-area-inset-bottom, 0px)));
+    padding: 8px 14px 12px;
     touch-action: pan-y;
     /* Getönter Boden — weiße SheetCards/Inputs liegen darüber */
     background: transparent;
+  }
+
+  .portal-modal-shell-panel:not(:has(.portal-modal-shell-footer))
+    .portal-modal-shell-body {
+    padding-bottom: max(12px, env(safe-area-inset-bottom, 0px));
+  }
+
+  .portal-modal-shell-footer {
+    flex-shrink: 0;
+    padding: 10px 14px
+      max(12px, env(safe-area-inset-bottom, 0px));
+    border-top: 0.5px solid var(--p2-line2, rgba(0, 0, 0, 0.06));
+    background: var(--p2-bg-content, #f6f5f3);
+  }
+
+  .portal-modal-shell-footer .portal-action-btn--block {
+    width: 100%;
   }
 
   .portal-modal-shell-busy {
@@ -1779,8 +1796,8 @@ h3 {
     }
 
     .portal-modal-shell--preview .portal-modal-shell-panel {
-      width: min(100%, var(--portal-modal-max, 640px));
-      max-width: var(--portal-modal-max, 640px);
+      width: min(100%, var(--portal-modal-max, 520px));
+      max-width: var(--portal-modal-max, 520px);
     }
 
     .portal-modal-shell--confirm {

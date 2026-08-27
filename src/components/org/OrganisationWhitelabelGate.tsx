@@ -251,7 +251,7 @@ export function OrganisationWhitelabelGate({ kunde, canComplete, onComplete }: P
         variant="preview"
         closeOnBackdrop
       >
-        <pre className="max-h-[min(60vh,28rem)] overflow-y-auto whitespace-pre-wrap font-sans portal-text-body text-text-primary">
+        <pre className="max-h-[min(70vh,32rem)] overflow-y-auto whitespace-pre-wrap break-words font-sans portal-text-body text-text-primary">
           {avText}
         </pre>
       </PortalModalShell>

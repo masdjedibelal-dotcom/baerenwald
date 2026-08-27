@@ -438,16 +438,7 @@ export function PartnerAbschlussModal({
             >
               Zurück
             </button>
-          ) : (
-            <button
-              type="button"
-              disabled={loading}
-              onClick={resetAndClose}
-              className="portal-action-btn portal-action-btn--secondary"
-            >
-              Abbrechen
-            </button>
-          )}
+          ) : null}
           <button
             type="button"
             disabled={

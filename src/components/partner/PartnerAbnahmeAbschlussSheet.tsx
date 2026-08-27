@@ -967,17 +967,10 @@ export function PartnerAbnahmeAbschlussSheet({
                     />
                   </label>
                 ) : null}
-                <div className="portal-action-row">
+                <div className="mt-1">
                   <button
                     type="button"
-                    className="portal-action-btn portal-action-btn--secondary"
-                    onClick={resetDraft}
-                  >
-                    Abbrechen
-                  </button>
-                  <button
-                    type="button"
-                    className="portal-action-btn portal-action-btn--primary"
+                    className="portal-action-btn portal-action-btn--primary portal-action-btn--block"
                     disabled={draftTitel.trim().length < 2}
                     onClick={() => {
                       const ok =
@@ -1043,17 +1036,10 @@ export function PartnerAbnahmeAbschlussSheet({
                       leistungName={draftTitel}
                       placeholder="Tippen — KI formuliert kundenfertig"
                     />
-                    <div className="portal-action-row">
+                    <div className="mt-1">
                       <button
                         type="button"
-                        className="portal-action-btn portal-action-btn--secondary"
-                        onClick={resetDraft}
-                      >
-                        Abbrechen
-                      </button>
-                      <button
-                        type="button"
-                        className="portal-action-btn portal-action-btn--primary"
+                        className="portal-action-btn portal-action-btn--primary portal-action-btn--block"
                         disabled={draftTitel.trim().length < 2}
                         onClick={() => {
                           if (addErkanntLeistung()) resetDraft();

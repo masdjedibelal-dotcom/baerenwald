@@ -11,6 +11,10 @@ import { OrganisationObjektHistoriePanel } from "@/components/org/OrganisationOb
 import { OrganisationObjektHausmeisterMenu } from "@/components/org/OrganisationObjektHausmeisterMenu";
 import { OrganisationObjektKontaktePanel } from "@/components/org/OrganisationObjektKontaktePanel";
 import { PortalConfirmDialog } from "@/components/shared/PortalDetailUi";
+import {
+  PortalInviteMailtoSheet,
+  type PortalInviteMailtoReady,
+} from "@/components/shared/PortalInviteMailtoSheet";
 import { PortalDetailCover } from "@/components/shared/PortalDetailCover";
 import { PortalDetailHead } from "@/components/shared/PortalDetailUi";
 import { PortalDetailTabs } from "@/components/shared/PortalDetailTabs";
@@ -107,6 +111,8 @@ export function OrganisationObjektDetail({
   dokumenteByLeadId = {},
 }: Props) {
   const { runBusy } = usePortalBusy();
+  const [inviteMailtoReady, setInviteMailtoReady] =
+    useState<PortalInviteMailtoReady | null>(null);
   const [tab, setTab] = useState<ObjDetailTabId>("stamm");
   const [pruefpflichtBadge, setPruefpflichtBadge] = useState(0);
   const [schwelleAktiv, setSchwelleAktiv] = useState(
@@ -398,34 +404,47 @@ export function OrganisationObjektDetail({
               portalZugang: editHmPortal,
               invite: editHmPortal,
             };
-      const res = await fetch("/api/org/hausmeister", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body),
-      });
-      const json = (await res.json()) as {
-        error?: string;
-        inviteMailto?: string | null;
-      };
-      if (!res.ok) {
-        portalToastError("Hausmeister nicht gespeichert", json.error);
-        return;
-      }
-      setHmEditOpen(false);
-      orgPortalToast.objektAktualisiert();
-      if (json.inviteMailto) {
-        window.location.href = json.inviteMailto;
-      }
-      onRefresh();
-      const reload = await fetch(
-        `/api/org/hausmeister?objektId=${encodeURIComponent(objekt.id)}`
+      const willInvite = Boolean(
+        body.invite && (body.email as string | null | undefined)?.toString().trim()
       );
-      const j = (await reload.json()) as {
-        hausmeister?: typeof hmOptions;
-        amObjekt?: typeof hmAmObjekt;
+      const run = async () => {
+        const res = await fetch("/api/org/hausmeister", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(body),
+        });
+        const json = (await res.json()) as {
+          error?: string;
+          inviteMailto?: string | null;
+          inviteUrl?: string | null;
+        };
+        if (!res.ok) {
+          portalToastError("Hausmeister nicht gespeichert", json.error);
+          return;
+        }
+        setHmEditOpen(false);
+        orgPortalToast.objektAktualisiert();
+        if (json.inviteMailto) {
+          setInviteMailtoReady({
+            mailto: json.inviteMailto,
+            url: json.inviteUrl,
+            rolle: "Hausmeister",
+            toEmail: editHmEmail.trim() || hmAmObjekt?.email || null,
+          });
+        }
+        onRefresh();
+        const reload = await fetch(
+          `/api/org/hausmeister?objektId=${encodeURIComponent(objekt.id)}`
+        );
+        const j = (await reload.json()) as {
+          hausmeister?: typeof hmOptions;
+          amObjekt?: typeof hmAmObjekt;
+        };
+        setHmOptions(j.hausmeister ?? []);
+        setHmAmObjekt(j.amObjekt ?? null);
       };
-      setHmOptions(j.hausmeister ?? []);
-      setHmAmObjekt(j.amObjekt ?? null);
+      if (willInvite) await runBusy(run, 500);
+      else await run();
     } catch {
       portalToastError("Hausmeister nicht gespeichert");
     } finally {
@@ -456,15 +475,21 @@ export function OrganisationObjektDetail({
       const json = (await res.json()) as {
         error?: string;
         inviteMailto?: string | null;
+        inviteUrl?: string | null;
       };
       if (!res.ok) {
         portalToastError("Einladung fehlgeschlagen", json.error);
         return;
       }
       if (json.inviteMailto) {
-        window.location.href = json.inviteMailto;
+        setInviteMailtoReady({
+          mailto: json.inviteMailto,
+          url: json.inviteUrl,
+          rolle: "Hausmeister",
+          toEmail: hmAmObjekt.email,
+        });
       } else {
-        orgPortalToast.saved();
+        orgPortalToast.portalLinkGesendet({ rolle: "Hausmeister" });
       }
       const reload = await fetch(
         `/api/org/hausmeister?objektId=${encodeURIComponent(objekt.id)}`
@@ -475,7 +500,7 @@ export function OrganisationObjektDetail({
       };
       setHmOptions(j.hausmeister ?? []);
       setHmAmObjekt(j.amObjekt ?? null);
-    });
+    }, 500);
   }
 
   async function removeHausmeister() {
@@ -998,6 +1023,11 @@ export function OrganisationObjektDetail({
 
   return (
     <div className="-mx-4 -mt-5 min-w-0 lg:-mx-6 lg:-mt-7">
+      <PortalInviteMailtoSheet
+        open={Boolean(inviteMailtoReady)}
+        payload={inviteMailtoReady}
+        onClose={() => setInviteMailtoReady(null)}
+      />
       <PortalDetailCover
         coverUrl={objekt.cover_url}
         onBack={onBack}

@@ -22,6 +22,16 @@ export function portalToastWarning(title: string, description?: string) {
   });
 }
 
+/** Einheitlich nach Sheet-Speichern */
+export function portalToastSaved(title = "Änderungen gespeichert") {
+  toast.success(title, { duration: 2800 });
+}
+
+/** Nach Verwerfen / X ohne Speichern */
+export function portalToastDiscarded(title = "Nicht gespeichert") {
+  toast.warning(title, { duration: 2800 });
+}
+
 /** Partner-Portal */
 export const partnerPortalToast = {
   zuweisungAngenommen() {
@@ -224,6 +234,16 @@ export const orgPortalToast = {
     portalToastSuccess(
       "Einladung erneut gesendet",
       "Der Mieter erhält den Link noch einmal per E-Mail."
+    );
+  },
+  /** Nach „Portal-Link senden“ — Link bereit (Mail-App ggf. manuell). */
+  portalLinkGesendet(opts?: { rolle?: string }) {
+    const rolle = opts?.rolle?.trim();
+    portalToastSuccess(
+      "Portal-Link bereit",
+      rolle
+        ? `Einladung für ${rolle} — Mail-App über den Button öffnen.`
+        : "Mail-App über den Button öffnen oder Link kopieren."
     );
   },
   einstellungenGespeichert() {

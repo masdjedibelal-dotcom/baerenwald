@@ -17,6 +17,7 @@ import {
 import { buildPortalEinladungMailto } from "@/lib/portal2/portal-einladungen";
 import type { PortalEinladungHvBlock } from "@/lib/portal2/portal-einladungen";
 import { orgPortalToast, portalToastError } from "@/lib/shared/portal-toast";
+import { usePortalBusy } from "@/components/shared/PortalBusyContext";
 
 export type PortalModalEinladenProps = {
   open?: boolean;
@@ -59,6 +60,7 @@ export function PortalModalEinladen({
   const [busy, setBusy] = useState(false);
   const [copied, setCopied] = useState(false);
   const [qrOpen, setQrOpen] = useState(false);
+  const { runBusy } = usePortalBusy();
 
   const objekt = useMemo(
     () => objekte.find((o) => o.id === objektId) ?? null,
@@ -97,31 +99,33 @@ export function PortalModalEinladen({
       setBusy(true);
       setLink("");
       try {
-        const res = await fetch("/api/org/portal-einladungen", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            objektId: oid,
-            einheitId: eid || null,
-            einheitRef: ref,
-          }),
-        });
-        const json = (await res.json()) as { error?: string; url?: string };
-        if (!res.ok || !json.url) {
-          portalToastError(
-            "Einladung nicht erstellt",
-            json.error ??
-              "Migration noch nicht freigegeben oder Serverfehler."
-          );
-          return;
-        }
-        setLink(json.url);
-        setQrOpen(true);
+        await runBusy(async () => {
+          const res = await fetch("/api/org/portal-einladungen", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              objektId: oid,
+              einheitId: eid || null,
+              einheitRef: ref,
+            }),
+          });
+          const json = (await res.json()) as { error?: string; url?: string };
+          if (!res.ok || !json.url) {
+            portalToastError(
+              "Einladung nicht erstellt",
+              json.error ??
+                "Migration noch nicht freigegeben oder Serverfehler."
+            );
+            return;
+          }
+          setLink(json.url);
+          setQrOpen(true);
+        }, 400);
       } finally {
         setBusy(false);
       }
     },
-    []
+    [runBusy]
   );
 
   useEffect(() => {
@@ -165,6 +169,9 @@ export function PortalModalEinladen({
       subtitle={PORTAL_EINLADEN_SUBTITLE}
       onClose={onClose}
       variant="edit"
+      busy={busy}
+      busyTitle="Einladung wird erstellt…"
+      busyBody="Einen Moment bitte."
     >
       {!kennung ? (
         <p className="portal-einladen-warn">
@@ -263,7 +270,18 @@ export function PortalModalEinladen({
               }
               aria-disabled={!link}
               onClick={(e) => {
-                if (!link) e.preventDefault();
+                if (!link) {
+                  e.preventDefault();
+                  return;
+                }
+                orgPortalToast.portalLinkGesendet({
+                  rolle:
+                    rolle === "eigentuemer"
+                      ? "Eigentümer"
+                      : rolle === "mieter"
+                        ? "Mieter"
+                        : undefined,
+                });
               }}
             >
               {PORTAL_EINLADEN_MAIL}

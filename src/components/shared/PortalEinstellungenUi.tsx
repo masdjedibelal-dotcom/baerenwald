@@ -196,7 +196,7 @@ export function EinstellungenEditModal({
   subtitle?: string | null;
   children: ReactNode;
   onClose: () => void;
-  onSave: () => void;
+  onSave: () => void | Promise<void>;
   saving?: boolean;
   saveDisabled?: boolean;
   saveLabel?: string;
@@ -210,6 +210,10 @@ export function EinstellungenEditModal({
 
   const dirty = dirtyProp ?? touched;
 
+  async function handleSave() {
+    await onSave();
+  }
+
   return (
     <PortalModalShell
       open={open}
@@ -220,6 +224,9 @@ export function EinstellungenEditModal({
       dirty={dirty && !saving}
       closeOnBackdrop={!saving}
       busy={Boolean(saving)}
+      onConfirm={() => void handleSave()}
+      confirmLabel={saving ? "Speichern…" : saveLabel}
+      confirmDisabled={Boolean(saving || saveDisabled)}
     >
       <div
         className="flex flex-col gap-3"
@@ -227,24 +234,6 @@ export function EinstellungenEditModal({
         onChange={() => setTouched(true)}
       >
         {children}
-      </div>
-      <div className="portal-action-row mt-5">
-        <button
-          type="button"
-          className="portal-action-btn portal-action-btn--secondary"
-          disabled={saving}
-          onClick={onClose}
-        >
-          Abbrechen
-        </button>
-        <button
-          type="button"
-          className="portal-action-btn portal-action-btn--primary"
-          disabled={saving || saveDisabled}
-          onClick={onSave}
-        >
-          {saving ? "Speichern…" : saveLabel}
-        </button>
       </div>
     </PortalModalShell>
   );

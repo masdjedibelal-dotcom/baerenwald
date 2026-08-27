@@ -10,6 +10,10 @@ import { OrganisationObjektDetail } from "@/components/org/OrganisationObjektDet
 import { OrganisationObjektWizard } from "@/components/org/OrganisationObjektWizard";
 import { OrganisationMeldeQrModal } from "@/components/org/OrganisationMeldeQrModal";
 import { PortalConfirmDialog } from "@/components/shared/PortalDetailUi";
+import {
+  PortalInviteMailtoSheet,
+  type PortalInviteMailtoReady,
+} from "@/components/shared/PortalInviteMailtoSheet";
 import { PortalInboxEmpty } from "@/components/shared/PortalEmptyState";
 import { PortalModalShell } from "@/components/shared/PortalModalShell";
 import { PortalListeTitle } from "@/components/shared/PortalListeChrome";
@@ -120,6 +124,8 @@ export function OrganisationObjektePanel({
   const [busy, setBusy] = useState(false);
   const [wizardBusy, setWizardBusy] = useState(false);
   const { runBusy } = usePortalBusy();
+  const [inviteMailtoReady, setInviteMailtoReady] =
+    useState<PortalInviteMailtoReady | null>(null);
   const [confirmAction, setConfirmAction] = useState<
     | { kind: "delete"; objekt: OrganisationObjekt }
     | { kind: "bulk" }
@@ -264,11 +270,17 @@ export function OrganisationObjektePanel({
       const hmJson = (await hmRes.json()) as {
         error?: string;
         inviteMailto?: string | null;
+        inviteUrl?: string | null;
       };
       if (!hmRes.ok) {
         portalToastError("Hausmeister nicht gespeichert", hmJson.error);
       } else if (hmJson.inviteMailto) {
-        window.location.href = hmJson.inviteMailto;
+        setInviteMailtoReady({
+          mailto: hmJson.inviteMailto,
+          url: hmJson.inviteUrl,
+          rolle: "Hausmeister",
+          toEmail: payload.hmEmail?.trim() || null,
+        });
       }
     }
     if (editId) orgPortalToast.objektAktualisiert();
@@ -513,6 +525,11 @@ export function OrganisationObjektePanel({
 
   return (
     <div className="space-y-4">
+      <PortalInviteMailtoSheet
+        open={Boolean(inviteMailtoReady)}
+        payload={inviteMailtoReady}
+        onClose={() => setInviteMailtoReady(null)}
+      />
       <div className="relative flex items-end justify-between gap-3">
         <div className="min-w-0 flex-1 space-y-0.5">
           <PortalListeTitle>Objekte</PortalListeTitle>

@@ -13,7 +13,7 @@ import {
   resolvePruefpflichtBadge,
   type PruefpflichtBadgeStatus,
 } from "@/lib/org/pruefpflichten-catalog";
-import { portalToastError } from "@/lib/shared/portal-toast";
+import { portalToastError, portalToastSaved } from "@/lib/shared/portal-toast";
 import { cn } from "@/lib/utils";
 
 type Pruefpflicht = {
@@ -157,6 +157,7 @@ export function OrganisationObjektPruefpflichtenPanel({ objektId }: { objektId: 
         portalToastError(json.error ?? "Speichern fehlgeschlagen");
         return;
       }
+      portalToastSaved();
       setSheetOpen(false);
       await load();
     } finally {
@@ -285,6 +286,8 @@ export function OrganisationObjektPruefpflichtenPanel({ objektId }: { objektId: 
         confirmLabel={busy ? "Speichern …" : "Speichern"}
         onConfirm={() => void save()}
         confirmDisabled={busy}
+        dirty
+        busy={busy}
       >
         <div className="space-y-3">
           <label className="block text-[13px]">

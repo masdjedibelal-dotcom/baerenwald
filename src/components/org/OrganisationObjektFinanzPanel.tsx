@@ -5,6 +5,7 @@ import { ChevronDown, Download } from "lucide-react";
 
 import type { ObjektFinanzPortalPayload } from "@/lib/org/objektakte/load-objekt-finanz-portal";
 import { OrganisationVersammlungsberichtSheet } from "@/components/org/OrganisationVersammlungsberichtSheet";
+import { EinstellungenSectionHeader } from "@/components/shared/PortalEinstellungenUi";
 import {
   PORTAL_LIST_PAGE_SIZE,
   PortalListPagination,
@@ -152,36 +153,63 @@ export function OrganisationObjektFinanzPanel({
       : "—";
 
   return (
-    <div className="space-y-4 rounded-[12px] border bg-white p-4" style={{ borderColor: PORTAL_VAR.line }}>
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <p className="portal-text-section">Kosten & Belege</p>
-          <p className="portal-text-meta mt-0.5 text-text-tertiary">
-            Zeitraum: {fmtDatum(von)} – {fmtDatum(bis)}
-          </p>
-        </div>
-        <div className="relative">
-          <button type="button" className="portal-btn portal-btn-secondary inline-flex items-center gap-1.5 text-[13px]" onClick={() => setExportOpen((o) => !o)}>
-            Export <ChevronDown className="h-4 w-4" />
-          </button>
-          {exportOpen ? (
-            <>
-              <button type="button" className="fixed inset-0 z-10" aria-label="Schließen" onClick={() => setExportOpen(false)} />
-              <div className="absolute right-0 z-20 mt-1 min-w-[220px] rounded-xl border bg-white py-1 shadow-lg" style={{ borderColor: PORTAL_VAR.line }}>
-                <button type="button" className="block w-full px-3 py-2 text-left text-[13px] hover:bg-muted/60" onClick={() => { setExportOpen(false); setBerichtOpen(true); }}>
-                  Versammlungsbericht (PDF)
-                </button>
-                <a className="block px-3 py-2 text-[13px] hover:bg-muted/60" href={`/api/org/objekte/bericht?objektId=${encodeURIComponent(objektId)}&jahr=${encodeURIComponent(jahr)}`} onClick={() => setExportOpen(false)}>
-                  Jahresbericht (PDF)
-                </a>
-                <a className="block px-3 py-2 text-[13px] hover:bg-muted/60" href={`/api/org/objekte/kosten-csv?objektId=${encodeURIComponent(objektId)}&von=${encodeURIComponent(von)}&bis=${encodeURIComponent(bis)}`} onClick={() => setExportOpen(false)}>
-                  Kostenübersicht (CSV)
-                </a>
-              </div>
-            </>
-          ) : null}
-        </div>
-      </div>
+    <div className="space-y-3">
+      <EinstellungenSectionHeader
+        title="Kosten & Belege"
+        trailing={
+          <div className="relative">
+            <button
+              type="button"
+              className="portal-btn portal-btn-secondary inline-flex items-center gap-1.5 text-[13px]"
+              onClick={() => setExportOpen((o) => !o)}
+            >
+              Export <ChevronDown className="h-4 w-4" />
+            </button>
+            {exportOpen ? (
+              <>
+                <button
+                  type="button"
+                  className="fixed inset-0 z-10"
+                  aria-label="Schließen"
+                  onClick={() => setExportOpen(false)}
+                />
+                <div
+                  className="absolute right-0 z-20 mt-1 min-w-[220px] rounded-xl border bg-white py-1 shadow-lg"
+                  style={{ borderColor: PORTAL_VAR.line }}
+                >
+                  <button
+                    type="button"
+                    className="block w-full px-3 py-2 text-left text-[13px] hover:bg-muted/60"
+                    onClick={() => {
+                      setExportOpen(false);
+                      setBerichtOpen(true);
+                    }}
+                  >
+                    Versammlungsbericht (PDF)
+                  </button>
+                  <a
+                    className="block px-3 py-2 text-[13px] hover:bg-muted/60"
+                    href={`/api/org/objekte/bericht?objektId=${encodeURIComponent(objektId)}&jahr=${encodeURIComponent(jahr)}`}
+                    onClick={() => setExportOpen(false)}
+                  >
+                    Jahresbericht (PDF)
+                  </a>
+                  <a
+                    className="block px-3 py-2 text-[13px] hover:bg-muted/60"
+                    href={`/api/org/objekte/kosten-csv?objektId=${encodeURIComponent(objektId)}&von=${encodeURIComponent(von)}&bis=${encodeURIComponent(bis)}`}
+                    onClick={() => setExportOpen(false)}
+                  >
+                    Kostenübersicht (CSV)
+                  </a>
+                </div>
+              </>
+            ) : null}
+          </div>
+        }
+      />
+      <p className="portal-text-meta -mt-1 text-text-tertiary">
+        Zeitraum: {fmtDatum(von)} – {fmtDatum(bis)}
+      </p>
 
       <div className="flex flex-wrap gap-2">
         {(
@@ -205,7 +233,9 @@ export function OrganisationObjektFinanzPanel({
             }}
             className={cn(
               "rounded-full px-3 py-1.5 text-xs font-semibold",
-              preset === id ? "bg-accent-light text-accent" : "bg-muted text-text-secondary"
+              preset === id
+                ? "bg-accent-light text-accent"
+                : "bg-muted text-text-secondary"
             )}
           >
             {label}
@@ -215,8 +245,18 @@ export function OrganisationObjektFinanzPanel({
 
       {preset === "custom" ? (
         <div className="flex flex-wrap gap-2">
-          <input type="date" className="portal-field text-[13px]" value={von} onChange={(e) => setVon(e.target.value)} />
-          <input type="date" className="portal-field text-[13px]" value={bis} onChange={(e) => setBis(e.target.value)} />
+          <input
+            type="date"
+            className="portal-field text-[13px]"
+            value={von}
+            onChange={(e) => setVon(e.target.value)}
+          />
+          <input
+            type="date"
+            className="portal-field text-[13px]"
+            value={bis}
+            onChange={(e) => setBis(e.target.value)}
+          />
         </div>
       ) : null}
 
@@ -225,14 +265,30 @@ export function OrganisationObjektFinanzPanel({
       ) : (
         <>
           <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-4">
-            <KpiTile label={`Kosten ${jahr}`} value={fmtEuro(data?.gesamtKosten ?? 0)} muted={!data?.rechnungenAnzahl} />
-            <KpiTile label="Rechnungen" value={String(data?.rechnungenAnzahl ?? 0)} />
-            <KpiTile label="Offen / in Arbeit" value={String(data?.offenInArbeit ?? 0)} />
-            <KpiTile label="Ohne Betrag" value={String(data?.ohneBetrag ?? 0)} muted={(data?.ohneBetrag ?? 0) === 0} />
+            <KpiTile
+              label={`Kosten ${jahr}`}
+              value={fmtEuro(data?.gesamtKosten ?? 0)}
+              muted={!data?.rechnungenAnzahl}
+            />
+            <KpiTile
+              label="Rechnungen"
+              value={String(data?.rechnungenAnzahl ?? 0)}
+            />
+            <KpiTile
+              label="Offen / in Arbeit"
+              value={String(data?.offenInArbeit ?? 0)}
+            />
+            <KpiTile
+              label="Ohne Betrag"
+              value={String(data?.ohneBetrag ?? 0)}
+              muted={(data?.ohneBetrag ?? 0) === 0}
+            />
           </div>
           {(data?.ohneBetrag ?? 0) > 0 ? (
             <p className="portal-text-meta text-text-tertiary">
-              {data?.ohneBetrag} Maßnahme{data?.ohneBetrag === 1 ? "" : "n"} ohne Kostenangabe — nicht in der Summe enthalten.
+              {data?.ohneBetrag} Maßnahme
+              {data?.ohneBetrag === 1 ? "" : "n"} ohne Kostenangabe — nicht in
+              der Summe enthalten.
             </p>
           ) : null}
           {data && data.nachTraeger.length > 0 ? (
@@ -245,13 +301,18 @@ export function OrganisationObjektFinanzPanel({
               ))}
             </ul>
           ) : null}
-          <p className="portal-text-meta text-text-tertiary">Nach Gewerk: {gewerkHint}</p>
+          <p className="portal-text-meta text-text-tertiary">
+            Nach Gewerk: {gewerkHint}
+          </p>
         </>
       )}
 
       <BelegSection
         belegFilter={belegFilter}
-        setBelegFilter={(f) => { setBelegFilter(f); setListPage(1); }}
+        setBelegFilter={(f) => {
+          setBelegFilter(f);
+          setListPage(1);
+        }}
         pageBelege={pageBelege}
         filteredCount={filteredBelege.length}
         safePage={safePage}
@@ -260,15 +321,24 @@ export function OrganisationObjektFinanzPanel({
         onOpenVorgang={onOpenVorgang}
       />
 
-      <OrganisationVersammlungsberichtSheet open={berichtOpen} onClose={() => setBerichtOpen(false)} objektId={objektId} />
+      <OrganisationVersammlungsberichtSheet
+        open={berichtOpen}
+        onClose={() => setBerichtOpen(false)}
+        objektId={objektId}
+      />
     </div>
   );
 }
 
 function KpiTile({ label, value, muted }: { label: string; value: string; muted?: boolean }) {
   return (
-    <div style={{ background: "#fff", border: `0.5px solid ${PORTAL_VAR.line}`, borderRadius: 12, padding: "14px 14px" }}>
-      <p className={cn("portal-text-title leading-none", muted && "text-text-tertiary")}>{value}</p>
+    <div
+      className="rounded-[10px] px-3.5 py-3"
+      style={{ background: "var(--p2-selected, #f0f2f0)" }}
+    >
+      <p className={cn("portal-text-title leading-none", muted && "text-text-tertiary")}>
+        {value}
+      </p>
       <p className="portal-text-label mt-1.5 normal-case tracking-normal">{label}</p>
     </div>
   );
@@ -286,8 +356,8 @@ function BelegSection(props: {
 }) {
   const filters: Array<[BelegFilter, string]> = [["alle", "Alle"], ["rechnungen", "Rechnungen"], ["protokolle", "Protokolle"], ["angebote", "Angebote"]];
   return (
-    <div className="border-t pt-4" style={{ borderColor: PORTAL_VAR.line }}>
-      <div className="mb-3 flex flex-wrap gap-1.5">
+    <div className="space-y-3 border-t pt-4" style={{ borderColor: PORTAL_VAR.line }}>
+      <div className="flex flex-wrap gap-1.5">
         {filters.map(([id, label]) => (
           <button key={id} type="button" onClick={() => props.setBelegFilter(id)} className={cn("rounded-full px-2.5 py-1 text-xs font-semibold", props.belegFilter === id ? "bg-accent-light text-accent" : "bg-muted text-text-secondary")}>
             {label}
@@ -298,9 +368,9 @@ function BelegSection(props: {
         <p className="portal-text-meta rounded-xl border border-dashed px-3 py-5 text-center text-text-secondary">Noch keine Belege in diesem Zeitraum.</p>
       ) : (
         <>
-          <ul className="space-y-2">
+          <ul className="divide-y divide-border-light">
             {props.pageBelege.map((b) => (
-              <li key={b.id} className="flex flex-wrap items-center justify-between gap-2 rounded-xl border px-3 py-3 text-[13px]" style={{ borderColor: PORTAL_VAR.line }}>
+              <li key={b.id} className="flex flex-wrap items-center justify-between gap-2 py-3 text-[13px]">
                 <button type="button" className="min-w-0 flex-1 text-left" onClick={() => props.onOpenVorgang?.(b.leadId)}>
                   <span className="font-medium">{b.name}</span>
                   <span className="portal-text-meta mt-0.5 block text-text-tertiary">{fmtDatum(b.datum)} · {b.vorgangTitel}</span>

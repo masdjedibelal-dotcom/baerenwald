@@ -3,13 +3,13 @@
 import { useCallback, useEffect, useState } from "react";
 
 import { PortalActionMenu } from "@/components/shared/PortalActionMenu";
-import { PortalDetailCard } from "@/components/shared/PortalDetailCard";
 import { PortalConfirmDialog } from "@/components/shared/PortalDetailUi";
 import {
   EinstellungenEdField,
   EinstellungenEditModal,
   EinstellungenPfList,
   EinstellungenPfRow,
+  EinstellungenSectionHeader,
 } from "@/components/shared/PortalEinstellungenUi";
 import { PortalInboxEmpty } from "@/components/shared/PortalEmptyState";
 import { orgPortalToast, portalToastError } from "@/lib/shared/portal-toast";
@@ -203,11 +203,12 @@ export function OrganisationObjektKontaktePanel({ objektId }: Props) {
 
   return (
     <>
-      <PortalDetailCard
-        title="Kontakte vor Ort"
-        onAdd={openNeu}
-        addLabel="Kontakt hinzufügen"
-      >
+      <div className="space-y-3">
+        <EinstellungenSectionHeader
+          title="Kontakte vor Ort"
+          onAdd={openNeu}
+          addLabel="Kontakt hinzufügen"
+        />
         {loading ? (
           <p className="text-[13px] text-text-secondary">Laden…</p>
         ) : items.length === 0 ? (
@@ -267,7 +268,7 @@ export function OrganisationObjektKontaktePanel({ objektId }: Props) {
             })}
           </ul>
         )}
-      </PortalDetailCard>
+      </div>
 
       <EinstellungenEditModal
         open={editOpen}
