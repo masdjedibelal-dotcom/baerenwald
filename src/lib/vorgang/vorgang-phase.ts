@@ -38,8 +38,9 @@ const MIETER_LABELS: Record<MieterStatusStufe, string> = {
  * | Lead kontaktiert \| termin; Freigabe; HV prüft          | In Bearbeitung      |
  * | Auftrag erstellt; HW/Partner gesendet/angefragt         | Beauftragt          |
  * | HW bestätigt; Bautagebuch; mieter_vor_ort; in_arbeit    | Handwerker vor Ort  |
- * | Abnahme ohne offene Mängel; Positionen erledigt         | Erledigt            |
- * | Offene Mängel (Abnahme)                                  | NICHT Erledigt      |
+ * | Abnahme ohne offene Mängel; Auftrag abgeschlossen; Positionen erledigt | Erledigt |
+ * | Offene Mängel (Abnahme)                                  | NICHT Erledigt (bleibt Vor Ort) |
+ * | Rechnung / Bezahlung                                     | für Melder irrelevant (bleibt Erledigt) |
  */
 export function resolveMieterStatusStufe(
   lead: {
@@ -58,7 +59,7 @@ export function resolveMieterStatusStufe(
   const auftragStatus = (auftrag?.status ?? "").trim().toLowerCase();
   const offeneMaengel = Boolean(auftrag?.hasOffeneMaengel);
 
-  /* Erledigt nur ohne offene Mängel */
+  /* Erledigt nur ohne offene Mängel — Rechnung zählt für Melder nicht */
   if (!offeneMaengel && portalErledigtFromLeadAndAuftrag(lead, auftrag)) {
     return "erledigt";
   }
@@ -68,7 +69,8 @@ export function resolveMieterStatusStufe(
       phase === "abgeschlossen" ||
       hv === "abgeschlossen" ||
       hv === "hm_erledigt" ||
-      auftragStatus === "abgeschlossen")
+      auftragStatus === "abgeschlossen" ||
+      auftragStatus === "abnahme")
   ) {
     return "erledigt";
   }
@@ -79,13 +81,12 @@ export function resolveMieterStatusStufe(
     return "erledigt";
   }
 
-  /* Handwerker vor Ort */
+  /* Handwerker vor Ort — Abnahme ohne Mängel ist oben schon Erledigt */
   const vorOrt =
     Boolean(lead.mieter_vor_ort_at?.trim()) ||
     Boolean(auftrag?.handwerkerBestaetigt) ||
     Boolean(auftrag?.hasBautagebuch) ||
     auftragStatus === "in_arbeit" ||
-    (auftragStatus === "abnahme" && !offeneMaengel) ||
     (offeneMaengel &&
       (auftragStatus === "abnahme" ||
         auftragStatus === "in_arbeit" ||

@@ -18,9 +18,11 @@ function crmNotifyBaseUrl(): string | null {
 
 export async function notifyCrmOrgPortal(input: {
   leadId: string;
-  typ?: "meldung" | "freigabe_ergebnis" | "angebot_entscheidung";
+  typ?: "meldung" | "freigabe_ergebnis" | "angebot_entscheidung" | "hm_befund";
   aktion?: "freigegeben" | "abgelehnt" | "angenommen";
   notiz?: string | null;
+  /** Bei typ hm_befund: fachfirma_angebot | fachfirma_akut */
+  ergebnis?: "fachfirma_angebot" | "fachfirma_akut" | "selbst_erledigt";
 }): Promise<NotifyCrmOrgResult> {
   const leadId = input.leadId.trim();
   if (!leadId) {
@@ -55,11 +57,14 @@ export async function notifyCrmOrgPortal(input: {
             ? "freigabe_ergebnis"
             : input.typ === "angebot_entscheidung"
               ? "angebot_entscheidung"
-              : input.typ === "meldung"
-                ? "meldung"
-                : undefined,
+              : input.typ === "hm_befund"
+                ? "hm_befund"
+                : input.typ === "meldung"
+                  ? "meldung"
+                  : undefined,
         aktion: input.aktion,
         notiz: input.notiz,
+        ergebnis: input.ergebnis,
       }),
       cache: "no-store",
     });

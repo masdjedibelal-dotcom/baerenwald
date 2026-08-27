@@ -35,6 +35,10 @@ import {
 } from "@/lib/portal/portal-ansprechpartner";
 import type { PortalDokument } from "@/lib/portal/portal-dokumente";
 import {
+  isAngebotPortalAnnehmbar,
+  isAngebotPortalSichtbar,
+} from "@/lib/portal/portal-angebot-sichtbarkeit";
+import {
   collectVorgangDokumente,
   excludeMeldeFunnelFotosFromDokumente,
   filterPortalDokumenteForViewer,
@@ -238,21 +242,17 @@ function resolveVorgangStatusForLead(
   });
   const terminSlots = auftrag?.terminSlots ?? [];
   const angebotStatus = angebot?.status_einfach ?? angebot?.status;
-  const angebotSt = String(angebotStatus ?? "")
-    .toLowerCase()
-    .replace(/[\s-]+/g, "_");
-  const angebotTerminal =
-    angebotSt === "abgelehnt" ||
-    angebotSt === "ersetzt" ||
-    angebotSt === "abgelaufen" ||
-    angebotSt === "angenommen" ||
-    angebotSt === "kunde_akzeptiert" ||
-    angebotSt === "beauftragt";
   const angebotEntscheidbar = Boolean(
     angebot &&
       !auftrag &&
-      !angebotTerminal &&
-      Boolean(angebot.pdf_url?.trim())
+      isAngebotPortalAnnehmbar({
+        status: angebot.status,
+        status_einfach: angebot.status_einfach,
+        pdf_url: angebot.pdf_url,
+        angebotsnr: angebot.angebotsnr,
+        gesendet_am: angebot.gesendet_am,
+        gesendet_kunde_at: angebot.gesendet_kunde_at,
+      })
   );
   const legacy = resolveKundeVorgangStatus({
     leadStatus: lead.status,
@@ -739,6 +739,7 @@ export function buildKundeVorgaenge(input: {
 }): KundePortalDetailItem[] {
   const angeboteByLeadId = new Map<string, PortalAngebot[]>();
   for (const a of input.angebote) {
+    if (!isAngebotPortalSichtbar(a)) continue;
     const leadId = normPortalId(a.lead_id);
     if (!leadId) continue;
     const list = angeboteByLeadId.get(leadId) ?? [];
@@ -748,6 +749,7 @@ export function buildKundeVorgaenge(input: {
 
   const angebotByLead = new Map<string, PortalAngebot>();
   for (const [leadId, list] of Array.from(angeboteByLeadId.entries())) {
+    if (!list.length) continue;
     angebotByLead.set(leadId, pickPreferredAngebot(list));
   }
 

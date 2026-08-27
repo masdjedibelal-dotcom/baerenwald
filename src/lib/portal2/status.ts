@@ -196,7 +196,9 @@ export function portalFlowToMieterStg(
   flowId: PortalMockStatusId,
   opts?: { vorOrt?: boolean }
 ): (typeof MIETER_STG)[number]["id"] {
-  if (opts?.vorOrt && flowId !== "bezahlt") return "vor_ort";
+  if (opts?.vorOrt && flowId !== "bezahlt" && flowId !== "abschluss" && flowId !== "rechnung") {
+    return "vor_ort";
+  }
   switch (flowId) {
     case "gemeldet":
       return "eingegangen";
@@ -205,9 +207,9 @@ export function portalFlowToMieterStg(
     case "angebot":
       return "in_bearbeitung";
     case "auftrag":
+      return "beauftragt";
     case "abschluss":
     case "rechnung":
-      return "beauftragt";
     case "bezahlt":
     case "abgelehnt":
       return "erledigt";

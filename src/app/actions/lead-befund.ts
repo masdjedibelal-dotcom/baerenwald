@@ -392,7 +392,8 @@ export async function completeLeadBefundAction(input: {
     const { notifyCrmOrgPortal } = await import("@/lib/org/notify-crm-org");
     const crm = await notifyCrmOrgPortal({
       leadId: owned.leadId,
-      typ: "meldung",
+      typ: "hm_befund",
+      ergebnis: "fachfirma_angebot",
     });
     if (!crm.ok) {
       console.warn("[completeLeadBefund] CRM-Notify:", crm.error);
@@ -425,7 +426,8 @@ export async function completeLeadBefundAction(input: {
     const { notifyCrmOrgPortal } = await import("@/lib/org/notify-crm-org");
     const crm = await notifyCrmOrgPortal({
       leadId: owned.leadId,
-      typ: "meldung",
+      typ: "hm_befund",
+      ergebnis: "fachfirma_akut",
     });
     if (!crm.ok) {
       console.warn("[completeLeadBefund] CRM-Notify Akut:", crm.error);
@@ -523,6 +525,8 @@ export async function rejectLeadBefundToHvAction(input: {
 export async function addLeadBefundFreipunktAction(input: {
   befundId: string;
   titel: string;
+  status?: LeadBefundPunktStatus | null;
+  notiz?: string;
 }): Promise<ActionResult<{ punkt: LeadBefundPunktRow }>> {
   const actorRes = await requireBefundActor();
   if (!actorRes.ok) return { ok: false, error: actorRes.error };
@@ -533,6 +537,18 @@ export async function addLeadBefundFreipunktAction(input: {
   const titel = String(input.titel ?? "").trim();
   if (!befundId) return { ok: false, error: "Befund fehlt." };
   if (titel.length < 2) return { ok: false, error: "Titel zu kurz." };
+
+  let status: LeadBefundPunktStatus | null = null;
+  if (input.status !== undefined && input.status !== null) {
+    if (
+      !["unauffaellig", "auffaellig", "nicht_pruefbar"].includes(input.status)
+    ) {
+      return { ok: false, error: "Status ungültig." };
+    }
+    status = input.status;
+  }
+
+  const notiz = String(input.notiz ?? "").trim();
 
   const owned = await assertBefundForActor(actorRes.actor, befundId);
   if (!owned) return { ok: false, error: "Befund nicht gefunden." };
@@ -558,7 +574,8 @@ export async function addLeadBefundFreipunktAction(input: {
       titel,
       quelle: "frei",
       vorlage_key: null,
-      notiz: "",
+      status,
+      notiz,
       foto_refs: [],
     })
     .select(

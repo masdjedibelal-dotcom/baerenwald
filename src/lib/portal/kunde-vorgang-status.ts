@@ -211,7 +211,7 @@ export function resolveKundeVorgangStatus(input: {
   hv_meldung_status?: string | null;
   org_freigabe_status?: string | null;
   angebotStatus?: string | null;
-  /** Angebot hat PDF / ist zugestellt — Annehmen/Ablehnen möglich (auch Entwurf mit PDF). */
+  /** Angebot gesendet + PDF — Annehmen/Ablehnen im Portal. */
   angebotEntscheidbar?: boolean;
   auftragStatus?: string | null;
   auftragFortschritt?: number | null;

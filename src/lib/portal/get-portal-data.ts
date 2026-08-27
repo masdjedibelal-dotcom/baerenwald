@@ -12,6 +12,7 @@ import {
   dokumenteFromAuftrag,
   dokumenteFromUrls,
 } from "@/lib/portal/portal-dokumente";
+import { isAngebotPortalSichtbar } from "@/lib/portal/portal-angebot-sichtbarkeit";
 import { mapPortalRechnungForResolver } from "@/lib/crm-vorgang/portal-resolve";
 import {
   resolvePortalObjekt,
@@ -992,7 +993,18 @@ export async function getPortalDataForKunde(
       };
     });
 
-  const mappedAngebote = angebote.map((a) => {
+  const mappedAngebote = angebote
+    .filter((a) =>
+      isAngebotPortalSichtbar({
+        status: a.status,
+        status_einfach: a.status_einfach,
+        pdf_url: a.pdf_url,
+        angebotsnr: a.angebotsnr,
+        gesendet_am: a.gesendet_am,
+        gesendet_kunde_at: a.gesendet_kunde_at,
+      })
+    )
+    .map((a) => {
       const display = buildAngebotPortalDisplay(a);
       const leadId = a.lead_id != null ? String(a.lead_id) : null;
       const linkedLead = leadId ? leadPortalById.get(leadId) ?? null : null;

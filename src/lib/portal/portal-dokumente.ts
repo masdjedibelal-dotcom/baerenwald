@@ -1,3 +1,5 @@
+import { isAngebotPortalSichtbar } from "@/lib/portal/portal-angebot-sichtbarkeit";
+
 export type PortalDokument = {
   id: string;
   name: string;
@@ -53,13 +55,11 @@ type AuftragDokumentInput = {
 
 /**
  * Angebot für Portal-Dokumente (HV + Endkunde):
- * sobald ein PDF existiert — außer ersetzt.
- * Nicht an Freigabe/Schwelle gekoppelt.
+ * erst nach Senden — Entwürfe mit PDF bleiben CRM-intern.
  */
 function isKundenAngebotSichtbar(a: AngebotDokumentInput): boolean {
-  const st = (a.status_einfach || "").toLowerCase().replace(/[\s-]+/g, "_");
-  if (st === "ersetzt") return false;
-  return Boolean(a.pdf_url?.trim());
+  if (!a.pdf_url?.trim()) return false;
+  return isAngebotPortalSichtbar(a);
 }
 
 export function dokumenteFromAngebot(a: AngebotDokumentInput): PortalDokument[] {

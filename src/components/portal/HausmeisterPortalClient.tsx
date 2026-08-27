@@ -369,6 +369,21 @@ export function HausmeisterPortalClient({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [detailOpening, selectedId, selectedItem]);
 
+  /** Nach HM-Abschluss (z. B. Angebot einholen) fällt der Lead aus dem Filter — Detail-URL sonst Endlos-Laden. */
+  useEffect(() => {
+    if (!selectedId || selectedItem) return;
+    const t = window.setTimeout(() => {
+      if (findKundeVorgangByQueryId(vorgaengeItems, selectedId)) return;
+      endDetailOpening();
+      ignoreUrlDetailRef.current = true;
+      pendingDetailIdRef.current = null;
+      flushSync(() => setSelectedId(null));
+      router.replace("/portal?section=vorgaenge", { scroll: false });
+    }, 350);
+    return () => window.clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedId, selectedItem, vorgaengeItems]);
+
   const helloName =
     kunde.name?.trim().split(/\s+/)[0] ||
     kunde.email?.split("@")[0] ||

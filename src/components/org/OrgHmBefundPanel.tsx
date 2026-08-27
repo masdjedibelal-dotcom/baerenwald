@@ -49,6 +49,8 @@ type Props = {
   hvMeldungStatus: string | null | undefined;
   readOnly?: boolean;
   onUpdated?: () => void;
+  /** Nach Abschluss/Zurückgeben (HM: zurück zur Liste). */
+  onCompleted?: () => void;
   /** Meldet dem Parent, ob ein Befund existiert (Tab bleibt nach BW-Übergabe). */
   onBefundPresence?: (has: boolean) => void;
   /** Sticky-CTAs im Parent (HM-Portal). */
@@ -225,6 +227,7 @@ export function OrgHmBefundPanel({
   hvMeldungStatus,
   readOnly: readOnlyProp,
   onUpdated,
+  onCompleted,
   onBefundPresence,
   onActionsReady,
   hideInlineActions = false,
@@ -251,6 +254,30 @@ export function OrgHmBefundPanel({
   const [draftDirty, setDraftDirty] = useState(false);
   const [addOpen, setAddOpen] = useState(false);
   const [addTitel, setAddTitel] = useState("");
+  const [addStatus, setAddStatus] = useState<LeadBefundPunktStatus | null>(
+    null
+  );
+  const [addNotiz, setAddNotiz] = useState("");
+  const [addFotos, setAddFotos] = useState<File[]>([]);
+  const [addDirty, setAddDirty] = useState(false);
+
+  function resetAddForm() {
+    setAddTitel("");
+    setAddStatus(null);
+    setAddNotiz("");
+    setAddFotos([]);
+    setAddDirty(false);
+  }
+
+  function openAddForm() {
+    resetAddForm();
+    setAddOpen(true);
+  }
+
+  function closeAddForm() {
+    setAddOpen(false);
+    resetAddForm();
+  }
 
   const hinweis = useMemo(() => {
     const key = befund?.vorlage_key;
@@ -373,17 +400,32 @@ export function OrgHmBefundPanel({
       const res = await addLeadBefundFreipunktAction({
         befundId: befund.id,
         titel: addTitel.trim(),
+        status: addStatus,
+        notiz: addNotiz,
       });
       if (!res.ok) {
         setError(res.error);
         return;
       }
+      let punkt = res.punkt;
+      for (const file of addFotos) {
+        const fd = new FormData();
+        fd.set("foto", file);
+        const up = await uploadLeadBefundFotoAction({
+          punktId: punkt.id,
+          formData: fd,
+        });
+        if (!up.ok) {
+          setError(up.error);
+          break;
+        }
+        punkt = up.punkt;
+      }
       setBefund((prev) =>
-        prev ? { ...prev, punkte: [...prev.punkte, res.punkt] } : prev
+        prev ? { ...prev, punkte: [...prev.punkte, punkt] } : prev
       );
-      setAddTitel("");
-      setAddOpen(false);
-      openPunkt(res.punkt);
+      portalToastSaved();
+      closeAddForm();
     });
   }
 
@@ -402,7 +444,8 @@ export function OrgHmBefundPanel({
         return;
       }
       orgPortalToast.hmZurueckAnHv();
-      onUpdated?.();
+      if (onCompleted) onCompleted();
+      else onUpdated?.();
     });
   }
 
@@ -441,7 +484,8 @@ export function OrgHmBefundPanel({
       else orgPortalToast.hmFachfirmaAngebot();
       setSheetOpen(false);
       setBefund(res.befund);
-      onUpdated?.();
+      if (onCompleted) onCompleted();
+      else onUpdated?.();
     });
   }
 
@@ -535,10 +579,7 @@ export function OrgHmBefundPanel({
               <button
                 type="button"
                 className="portal-action-btn portal-action-btn--secondary shrink-0"
-                onClick={() => {
-                  setAddTitel("");
-                  setAddOpen(true);
-                }}
+                onClick={openAddForm}
               >
                 <Plus className="mr-1.5 h-4 w-4" aria-hidden />
                 Hinzufügen
@@ -728,24 +769,114 @@ export function OrgHmBefundPanel({
 
       <PortalModalShell
         open={addOpen}
-        onClose={() => setAddOpen(false)}
+        onClose={closeAddForm}
         variant="edit"
         title="Prüfpunkt hinzufügen"
-        subtitle="Eigener Punkt für diese Prüfung"
+        subtitle="Titel, Zustand, Beschreibung und Fotos"
+        dirty={addDirty}
         onConfirm={() => void addFrei()}
         confirmDisabled={!addTitel.trim()}
-        confirmLabel="Anlegen"
+        confirmLabel="Speichern"
       >
-        <label className="block space-y-1.5">
-          <span className="portal-text-label text-text-tertiary">Titel</span>
-          <input
-            className="portal-input w-full rounded-xl border border-border-default px-3 py-2.5"
-            value={addTitel}
-            onChange={(e) => setAddTitel(e.target.value)}
-            placeholder="z. B. Kellerraum zusätzlich geprüft"
-            autoFocus
+        <div className="space-y-4">
+          <label className="block space-y-1.5">
+            <span className="portal-text-label text-text-tertiary">Titel</span>
+            <input
+              className="portal-input w-full rounded-xl border border-border-default px-3 py-2.5"
+              value={addTitel}
+              onChange={(e) => {
+                setAddTitel(e.target.value);
+                setAddDirty(true);
+              }}
+              placeholder="z. B. Kellerraum zusätzlich geprüft"
+              autoFocus
+            />
+          </label>
+
+          <div className="space-y-2">
+            <p className="portal-text-label text-text-tertiary">Zustand</p>
+            <div className="flex flex-wrap gap-1.5">
+              {STATUS_OPTS.map((o) => (
+                <StatusChip
+                  key={o.id}
+                  label={o.label}
+                  active={addStatus === o.id}
+                  onClick={() => {
+                    setAddStatus(o.id);
+                    setAddDirty(true);
+                  }}
+                />
+              ))}
+            </div>
+          </div>
+
+          <PortalKiAssistField
+            scope="hm_befund_notiz"
+            label="Beschreibung"
+            value={addNotiz}
+            onApply={(text) => {
+              setAddNotiz(text);
+              setAddDirty(true);
+            }}
+            contextHint={[
+              addTitel.trim() ? `Prüfpunkt: ${addTitel.trim()}` : null,
+              befund?.vorlage_key && isBefundVorlageKey(befund.vorlage_key)
+                ? `Vorlage: ${getBefundVorlage(befund.vorlage_key).label}`
+                : null,
+            ]
+              .filter(Boolean)
+              .join("\n")}
+          >
+            <textarea
+              className="portal-input w-full rounded-xl border border-border-default px-3 py-2.5"
+              rows={4}
+              placeholder="Kurz notieren, was Sie gesehen haben…"
+              value={addNotiz}
+              onChange={(e) => {
+                setAddNotiz(e.target.value);
+                setAddDirty(true);
+              }}
+            />
+          </PortalKiAssistField>
+
+          <FileUploadField
+            label="Fotos hinzufügen"
+            accept="image/jpeg,image/png,image/webp"
+            size="compact"
+            multiple
+            onChange={(files) => {
+              if (!files.length) return;
+              setAddFotos((prev) => [...prev, ...files]);
+              setAddDirty(true);
+            }}
           />
-        </label>
+
+          {addFotos.length > 0 ? (
+            <ul className="space-y-1.5">
+              {addFotos.map((f, i) => (
+                <li
+                  key={`${f.name}-${i}`}
+                  className="flex items-center justify-between gap-2 rounded-lg border px-3 py-2 text-[13px]"
+                  style={{ borderColor: PORTAL_VAR.line }}
+                >
+                  <span className="min-w-0 truncate text-text-secondary">
+                    {f.name}
+                  </span>
+                  <button
+                    type="button"
+                    className="shrink-0 text-[12px] font-semibold text-text-tertiary"
+                    onClick={() => {
+                      setAddFotos((prev) => prev.filter((_, idx) => idx !== i));
+                      setAddDirty(true);
+                    }}
+                  >
+                    Entfernen
+                  </button>
+                </li>
+              ))}
+            </ul>
+          ) : null}
+        </div>
       </PortalModalShell>
 
       <PortalModalShell

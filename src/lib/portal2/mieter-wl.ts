@@ -155,12 +155,14 @@ export function buildMieterStgTimeline(
   const norm = stufe.toLowerCase().replace(/[\s-]+/g, "_");
   let idx = order.indexOf(norm as (typeof order)[number]);
   if (idx < 0) idx = 0;
+  const isTerminal = idx === order.length - 1;
 
   return MIETER_STG.map((s, i) => ({
     id: s.id,
     title: lang === "en" ? s.title_en : s.title_de,
     subtitle: lang === "en" ? s.subtitle_en : s.subtitle_de,
-    done: i < idx,
+    // Terminal „Erledigt“: letzter Punkt als erledigt (✓), nicht nur aktiv
+    done: i < idx || (isTerminal && i === idx),
     active: i === idx,
   }));
 }

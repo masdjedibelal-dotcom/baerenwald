@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
 
 import {
   previewPartnerAutoDokument,
@@ -342,7 +341,6 @@ export function PartnerDokumentPreviewModal({
   skipAsk,
   onFirmendatenMissing,
 }: Props) {
-  const router = useRouter();
   const { uploadBusy: loading, runUpload } = usePortalUploadBusy();
   const autoSkipAsk = skipAsk ?? art === "rechnung";
   const [step, setStep] = useState<Step>(autoSkipAsk ? "preview" : "ask");
@@ -524,6 +522,7 @@ export function PartnerDokumentPreviewModal({
       return;
     }
     setError(null);
+    let ok = false;
     await runUpload(async () => {
       const res =
         art === "angebot"
@@ -542,14 +541,18 @@ export function PartnerDokumentPreviewModal({
         setError(res.error);
         return;
       }
+      ok = true;
       if (art === "angebot") {
         partnerPortalToast.unterlagenHochgeladen();
       } else {
         partnerPortalToast.rechnungEingereicht();
       }
-      router.refresh();
-      onSuccess();
     });
+    // Erst nach Busy-Ende schließen/refresh — sonst bleibt Shell-Loading hängen
+    // (PortalModalShell hold + nested refresh).
+    if (ok) {
+      onSuccess();
+    }
   }
 
   const title =

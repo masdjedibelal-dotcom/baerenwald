@@ -1384,6 +1384,14 @@ export function OrganisationHvVorgangDetail({
                 }
                 onBefundPresence={setHasBefund}
                 onUpdated={onUpdated}
+                onCompleted={
+                  hausmeisterActor
+                    ? () => {
+                        onBack();
+                        onUpdated();
+                      }
+                    : undefined
+                }
                 onActionsReady={
                   hausmeisterActor ? setHmStickyActions : undefined
                 }

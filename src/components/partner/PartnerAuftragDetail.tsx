@@ -312,8 +312,8 @@ export function PartnerAuftragDetail({
       }
       partnerPortalToast.unterlagenHochgeladen();
       setAngebotPdfs([]);
-      await refresh();
     });
+    await refresh();
   }
 
   async function onRechnungSubmit(e: React.FormEvent) {
@@ -323,6 +323,7 @@ export function PartnerAuftragDetail({
     const fd = new FormData();
     fd.set("anfrageId", item.angebotHandwerkerId);
     fd.set("pdf", rechnungPdf);
+    let ok = false;
     await runUpload(async () => {
       const res = await submitPartnerRechnung(fd);
       if (!res.ok) {
@@ -331,8 +332,9 @@ export function PartnerAuftragDetail({
       }
       partnerPortalToast.rechnungEingereicht();
       setRechnungPdf(null);
-      await refresh();
+      ok = true;
     });
+    if (ok) await refresh();
   }
   const { label: listenStatusLabel } =
     resolvePartnerVorgangListenStatus(vorgangState, item);

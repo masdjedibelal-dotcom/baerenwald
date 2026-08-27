@@ -6,6 +6,7 @@ import { revalidatePath } from "next/cache";
 import { linkPortalKundeToAuthUser } from "@/lib/portal/link-portal-kunde";
 import { notifyCrmOrgPortal } from "@/lib/org/notify-crm-org";
 import { angebotPositionenJsonToAuftragRows } from "@/lib/portal/copy-angebot-positionen-to-auftrag";
+import { isAngebotPortalAnnehmbar } from "@/lib/portal/portal-angebot-sichtbarkeit";
 import { createClient } from "@/lib/supabase/server";
 import { isSupabaseConfigured, supabaseAdmin } from "@/lib/supabase";
 
@@ -60,7 +61,7 @@ export async function acceptKundeAngebot(
   const { data: angebot, error: loadErr } = await supabaseAdmin
     .from("angebote")
     .select(
-      "id, lead_id, kunde_id, status, status_einfach, gesendet_am, gesendet_kunde_at, pdf_url, positionen"
+      "id, lead_id, kunde_id, status, status_einfach, angebotsnr, gesendet_am, gesendet_kunde_at, pdf_url, positionen"
     )
     .eq("id", id)
     .maybeSingle();
@@ -100,20 +101,21 @@ export async function acceptKundeAngebot(
     statusEinfach === "angenommen" ||
     statusEinfach === "kunde_akzeptiert" ||
     statusFein === "kunde_akzeptiert";
-  const terminalBlocked =
-    statusEinfach === "abgelehnt" ||
-    statusEinfach === "ersetzt" ||
-    statusEinfach === "abgelaufen" ||
-    statusFein === "abgelehnt";
-  const hasPdf = Boolean(String(angebot.pdf_url ?? "").trim());
-  if (!hasPdf) {
+  // Erst nach CRM-Senden (nicht bloß Entwurf + PDF).
+  const waitingForAccept = isAngebotPortalAnnehmbar({
+    status: angebot.status,
+    status_einfach: angebot.status_einfach,
+    pdf_url: angebot.pdf_url,
+    angebotsnr: angebot.angebotsnr,
+    gesendet_am: angebot.gesendet_am,
+    gesendet_kunde_at: angebot.gesendet_kunde_at,
+  });
+  if (!alreadyAccepted && !waitingForAccept) {
     return {
       ok: false,
-      error: "Zum Angebot liegt noch kein PDF vor.",
+      error: "Dieses Angebot ist noch nicht freigegeben bzw. nicht annehmbar.",
     };
   }
-  // PDF im CRM gespeichert = vorgelegt; E-Mail-Versand ist optional.
-  const waitingForAccept = !terminalBlocked;
 
   const { data: existingAuftrag } = await supabaseAdmin
     .from("auftraege")
@@ -150,11 +152,6 @@ export async function acceptKundeAngebot(
 
   if (alreadyAccepted) {
     // Status schon gesetzt, Auftrag fehlt noch → nachziehen
-  } else if (!waitingForAccept) {
-    return {
-      ok: false,
-      error: "Dieses Angebot kann derzeit nicht angenommen werden.",
-    };
   }
 
   const now = new Date().toISOString();
@@ -385,7 +382,7 @@ export async function rejectKundeAngebot(
   const { data: angebot, error: loadErr } = await supabaseAdmin
     .from("angebote")
     .select(
-      "id, lead_id, kunde_id, status, status_einfach, gesendet_am, gesendet_kunde_at, pdf_url"
+      "id, lead_id, kunde_id, status, status_einfach, angebotsnr, gesendet_am, gesendet_kunde_at, pdf_url"
     )
     .eq("id", id)
     .maybeSingle();
@@ -425,27 +422,19 @@ export async function rejectKundeAngebot(
     return { ok: true };
   }
 
-  const terminalBlocked =
-    statusEinfach === "ersetzt" ||
-    statusEinfach === "abgelaufen" ||
-    statusEinfach === "angenommen" ||
-    statusEinfach === "kunde_akzeptiert" ||
-    statusFein === "kunde_akzeptiert" ||
-    statusEinfach === "beauftragt";
-  const hasPdf = Boolean(String(angebot.pdf_url ?? "").trim());
-  if (!hasPdf) {
+  if (
+    !isAngebotPortalAnnehmbar({
+      status: angebot.status,
+      status_einfach: angebot.status_einfach,
+      pdf_url: angebot.pdf_url,
+      angebotsnr: angebot.angebotsnr,
+      gesendet_am: angebot.gesendet_am,
+      gesendet_kunde_at: angebot.gesendet_kunde_at,
+    })
+  ) {
     return {
       ok: false,
-      error: "Zum Angebot liegt noch kein PDF vor.",
-    };
-  }
-  // PDF im CRM gespeichert = vorgelegt; E-Mail-Versand ist optional.
-  const waitingForAccept = !terminalBlocked;
-
-  if (!waitingForAccept) {
-    return {
-      ok: false,
-      error: "Dieses Angebot kann derzeit nicht abgelehnt werden.",
+      error: "Dieses Angebot ist noch nicht freigegeben bzw. nicht ablehnbar.",
     };
   }
 
