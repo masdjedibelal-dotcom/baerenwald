@@ -247,13 +247,16 @@ export function PortalListCard({
   // card | responsive
   const isCardShell = variant === "card" || variant === "responsive";
   const hasMedia = Boolean(media);
+  const responsiveMedia = variant === "responsive" && hasMedia;
 
   return (
     <div
       className={cn(
         "relative",
         portalListItemClass(variant, { selected }),
-        hasMedia && "flex-col !gap-0 overflow-hidden !p-0"
+        hasMedia && variant === "card" && "flex-col !gap-0 overflow-hidden !p-0",
+        responsiveMedia &&
+          "flex-col !gap-0 overflow-hidden !p-0 lg:flex-row lg:items-stretch lg:!gap-3 lg:!p-0 lg:pl-0"
       )}
       style={isCardShell ? portalListItemBorderStyle(variant) : undefined}
     >
@@ -262,7 +265,13 @@ export function PortalListCard({
       ) : null}
       {hasMedia ? (
         <div
-          className="h-[140px] w-full shrink-0 overflow-hidden [&>div]:h-full [&>img]:h-full [&>img]:w-full [&>img]:object-cover"
+          className={cn(
+            "shrink-0 overflow-hidden",
+            variant === "card" &&
+              "h-[140px] w-full [&>div]:h-full [&>img]:h-full [&>img]:w-full [&>img]:object-cover",
+            responsiveMedia &&
+              "h-[140px] w-full [&>div]:h-full [&>img]:h-full [&>img]:w-full [&>img]:object-cover lg:h-auto lg:w-24 lg:self-stretch lg:rounded-none lg:[&>div]:h-full lg:[&>div]:min-h-[4.5rem] lg:[&>div]:rounded-none"
+          )}
           onClick={(e) => e.stopPropagation()}
           onKeyDown={(e) => e.stopPropagation()}
         >
@@ -273,7 +282,8 @@ export function PortalListCard({
       <div
         className={cn(
           "flex w-full items-start gap-3",
-          hasMedia && "px-3.5 py-3.5 sm:px-4"
+          hasMedia && variant === "card" && "px-3.5 py-3.5 sm:px-4",
+          responsiveMedia && "px-3.5 py-3.5 sm:px-4 lg:min-w-0 lg:flex-1 lg:py-3.5 lg:pr-4 lg:pl-0"
         )}
       >
         {showCheckbox ? (

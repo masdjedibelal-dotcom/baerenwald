@@ -29,15 +29,38 @@ export async function isPortalAuthEmailRegistered(
   );
   if (error) {
     console.error("[isPortalAuthEmailRegistered]", error.message);
-    // Fallback: kunden mit auth_user_id
-    const { data: row } = await supabaseAdmin
-      .from("kunden")
-      .select("id")
-      .ilike("email", norm)
-      .not("auth_user_id", "is", null)
-      .limit(1)
-      .maybeSingle();
-    return Boolean(row?.id);
+    const norm = normalizeKundenEmail(email);
+    if (!norm) return false;
+    const { data: list } = await supabaseAdmin.auth.admin.listUsers({
+      page: 1,
+      perPage: 200,
+    });
+    const user = list?.users?.find(
+      (u) => (u.email ?? "").toLowerCase() === norm && !u.deleted_at
+    );
+    if (!user?.id) return false;
+    const [kunde, hw, mitglied] = await Promise.all([
+      supabaseAdmin
+        .from("kunden")
+        .select("id")
+        .eq("auth_user_id", user.id)
+        .limit(1)
+        .maybeSingle(),
+      supabaseAdmin
+        .from("handwerker")
+        .select("id")
+        .eq("auth_user_id", user.id)
+        .limit(1)
+        .maybeSingle(),
+      supabaseAdmin
+        .from("kunden_mitglieder")
+        .select("id")
+        .eq("auth_user_id", user.id)
+        .eq("aktiv", true)
+        .limit(1)
+        .maybeSingle(),
+    ]);
+    return Boolean(kunde.data?.id || hw.data?.id || mitglied.data?.id);
   }
   return Boolean(data);
 }

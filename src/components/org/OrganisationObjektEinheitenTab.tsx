@@ -15,8 +15,10 @@ import {
   EinstellungenEditModal,
   EinstellungenPfList,
   EinstellungenPfRow,
+  EinstellungenSectionHeader,
   EinstellungenToggle,
 } from "@/components/shared/PortalEinstellungenUi";
+import { PortalDetailCard } from "@/components/shared/PortalDetailCard";
 import {
   OBJ_MIETER_PORTAL_STATUS,
   resolveObjMieterPortalStatus,
@@ -539,18 +541,11 @@ export function OrganisationObjektEinheitenTab({
     const title = rolle === "eigentuemer" ? "Eigentümer" : "Mieter";
     return (
       <div className="space-y-2">
-        <div className="flex items-center justify-between gap-2">
-          <p className="text-[12.5px] font-bold uppercase tracking-wide text-text-secondary">
-            {title}
-          </p>
-          <button
-            type="button"
-            className="rounded-lg border border-border-default bg-white px-2.5 py-1 text-[12px] font-semibold text-text-secondary hover:border-accent/40 hover:text-accent"
-            onClick={() => openPersonCreate(einheit.id, rolle)}
-          >
-            ＋ {title}
-          </button>
-        </div>
+        <EinstellungenSectionHeader
+          title={title}
+          onAdd={() => openPersonCreate(einheit.id, rolle)}
+          addLabel={`${title} hinzufügen`}
+        />
         {people.length === 0 ? (
           <p className="text-[13px] text-text-secondary">Noch keine {title}.</p>
         ) : (
@@ -626,21 +621,15 @@ export function OrganisationObjektEinheitenTab({
 
   return (
     <div className="space-y-3">
-      <div className="flex items-center justify-between gap-2">
-        <p className="font-[family-name:var(--font-display)] text-sm font-bold text-text-primary">
-          {einheiten.length === 1
+      <PortalDetailCard
+        title={
+          einheiten.length === 1
             ? "1 Einheit"
-            : `${einheiten.length} Einheiten`}
-        </p>
-        <button
-          type="button"
-          className="rounded-[9px] border border-border-default bg-white px-3 py-1.5 text-[12.5px] font-semibold text-text-secondary hover:border-accent/40 hover:text-accent"
-          onClick={openEinheitCreate}
-        >
-          ＋ Einheit
-        </button>
-      </div>
-
+            : `${einheiten.length} Einheiten`
+        }
+        onAdd={openEinheitCreate}
+        addLabel="Einheit hinzufügen"
+      >
       {loading ? (
         <PortalContentBusy
           title="Einheiten werden geladen…"
@@ -648,13 +637,9 @@ export function OrganisationObjektEinheitenTab({
           className="!min-h-[12rem] !py-8"
         />
       ) : einheiten.length === 0 ? (
-        <PortalInboxEmpty
-          title="Noch keine Einheiten"
-          description="Anzahl im Objekt-Stamm erhöhen — oder hier eine Einheit manuell anlegen."
-          compact
-        />
+        <PortalInboxEmpty title="Noch keine Einheiten" compact />
       ) : (
-        <ul className="divide-y divide-border-light overflow-hidden rounded-xl border border-border-default bg-white">
+        <ul className="divide-y divide-border-light overflow-hidden rounded-xl border border-border-default bg-white lg:rounded-none lg:border-0">
           {einheiten.map((u) => {
             const people = byEinheit.get(u.id) ?? [];
             const mieter = people.filter((p) => p.rolle !== "eigentuemer");
@@ -710,6 +695,7 @@ export function OrganisationObjektEinheitenTab({
           })}
         </ul>
       )}
+      </PortalDetailCard>
 
       <PortalModalShell
         open={Boolean(detailEinheit)}

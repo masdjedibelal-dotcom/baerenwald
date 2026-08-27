@@ -5,7 +5,6 @@ import { assertPortalEmailAllowed } from "@/app/actions/assert-portal-email-allo
 import { acceptPartnerRahmenvertragForEmail } from "@/app/actions/partner-vertrag";
 import {
   generateFunnelOtpCode,
-  isPortalAuthEmailRegistered,
   issueSignupOtp,
   sendFunnelOtpEmail,
   storeFunnelOtp,
@@ -17,6 +16,7 @@ import { linkPortalHandwerkerToAuthUser } from "@/lib/partner/link-portal-handwe
 import { PARTNER_AUTH_COPY } from "@/lib/partner/partner-auth-copy";
 import { verifyPartnerRegistrationEmail } from "@/lib/partner/partner-registration-eligibility";
 import { linkPortalKundeToAuthUser } from "@/lib/portal/link-portal-kunde";
+import { ensurePortalRegistrationEmailAvailable } from "@/lib/portal/reclaim-orphan-portal-auth";
 import {
   normalizePortalRegisterKundeTyp,
   type PortalRegisterKundeTyp,
@@ -83,13 +83,8 @@ export async function registerMeinBaerenwaldWithOtp(input: {
     };
   }
 
-  const already = await isPortalAuthEmailRegistered(email);
-  if (already) {
-    return {
-      ok: false,
-      error: "Diese E-Mail ist bereits registriert. Bitte melden Sie sich an.",
-    };
-  }
+  const availability = await ensurePortalRegistrationEmailAvailable(email);
+  if (!availability.ok) return availability;
 
   const now = new Date().toISOString();
   const meta: Record<string, unknown> = {
@@ -114,6 +109,26 @@ export async function registerMeinBaerenwaldWithOtp(input: {
   if (createErr || !created.user) {
     const msg = createErr?.message?.toLowerCase() ?? "";
     if (msg.includes("already") || msg.includes("registered")) {
+      const { reclaimOrphanPortalAuthUser } = await import(
+        "@/lib/portal/reclaim-orphan-portal-auth"
+      );
+      if ((await reclaimOrphanPortalAuthUser(email)) === "deleted") {
+        const retry = await supabaseAdmin.auth.admin.createUser({
+          email,
+          password,
+          email_confirm: false,
+          user_metadata: meta,
+        });
+        if (!retry.error && retry.data.user) {
+          const vorname = name.split(/\s+/)[0];
+          return issueSignupOtp({
+            email,
+            userId: retry.data.user.id,
+            vorname,
+            brand: "meinbaerenwald",
+          });
+        }
+      }
       return {
         ok: false,
         error: "Diese E-Mail ist bereits registriert. Bitte melden Sie sich an.",

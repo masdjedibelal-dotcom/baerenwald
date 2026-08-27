@@ -476,8 +476,16 @@ export function PartnerAuftragDetail({
 
   const handleBack = onBack ?? (() => router.back());
 
+  const stickyFooter =
+    rechnungInline || abschlussInline ? (
+      <>
+        {rechnungInline}
+        {abschlussInline}
+      </>
+    ) : undefined;
+
   return (
-    <PortalDetailLayout>
+    <PortalDetailLayout footer={stickyFooter}>
       <PortalEntityDetailLayout
         layout="default"
         coverUrl={coverUrl}
@@ -512,8 +520,6 @@ export function PartnerAuftragDetail({
                 hatAbschluss={hatAbschluss}
               />
             ) : null}
-            {rechnungInline}
-            {abschlussInline}
           </div>
         ) : null}
 

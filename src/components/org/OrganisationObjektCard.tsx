@@ -16,7 +16,7 @@ type Props = {
 };
 
 /**
- * Objekt-Listenkarte — immer Card (auch Desktop mit Rand).
+ * Objekt-Listenkarte — C1: mobil Card, Desktop flache Zeile (`responsive`).
  */
 export function OrganisationObjektCard({
   card,
@@ -28,7 +28,7 @@ export function OrganisationObjektCard({
 }: Props) {
   return (
     <PortalListCard
-      variant="card"
+      variant="responsive"
       accent="auftrag"
       showLeftAccent={false}
       selected={selected}
@@ -56,7 +56,7 @@ export function OrganisationObjektCard({
           objektId={card.id}
           coverUrl={card.coverUrl}
           variant="card"
-          className="!rounded-none"
+          className="!rounded-none h-full min-h-[140px] lg:min-h-[4.5rem]"
           onUploaded={onCoverUploaded}
         />
       }

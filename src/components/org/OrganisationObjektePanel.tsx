@@ -10,6 +10,7 @@ import { OrganisationObjektDetail } from "@/components/org/OrganisationObjektDet
 import { OrganisationObjektWizard } from "@/components/org/OrganisationObjektWizard";
 import { OrganisationMeldeQrModal } from "@/components/org/OrganisationMeldeQrModal";
 import { PortalConfirmDialog } from "@/components/shared/PortalDetailUi";
+import { PortalInboxEmpty } from "@/components/shared/PortalEmptyState";
 import { PortalModalShell } from "@/components/shared/PortalModalShell";
 import { PortalListeTitle } from "@/components/shared/PortalListeChrome";
 import {
@@ -531,21 +532,21 @@ export function OrganisationObjektePanel({
       </div>
 
       {selected.length > 0 ? (
-        <div className="flex flex-wrap items-center gap-3 rounded-[10px] border border-accent bg-accent-light px-3.5 py-2.5">
+        <div className="flex flex-wrap items-center gap-2 rounded-[10px] border border-accent bg-accent-light px-3.5 py-2.5">
           <span className="text-[13px] font-bold text-accent">
             {selected.length} ausgewählt
           </span>
           <button
             type="button"
             disabled={busy}
-            className="portal-danger ml-auto rounded-lg border border-[var(--p2-danger-border)] bg-white px-3 py-1.5 text-[12.5px] font-semibold"
+            className="btn-pill-outline portal-btn-compact portal-danger ml-auto"
             onClick={() => requestBulkDelete()}
           >
-            ✕ Löschen
+            Löschen
           </button>
           <button
             type="button"
-            className="rounded-lg border border-border-default bg-white px-3 py-1.5 text-[12.5px] font-semibold text-text-secondary"
+            className="btn-pill-outline portal-btn-compact"
             onClick={() => setSelected([])}
           >
             Auswahl aufheben
@@ -554,12 +555,13 @@ export function OrganisationObjektePanel({
       ) : null}
 
       {empty ? (
-        <div className="px-2 py-8 text-center portal-text-body text-text-secondary">
-          Noch keine Objekte. Legen Sie Ihr erstes Gebäude an — Link und Aushang
-          finden Sie danach im Detail.
-        </div>
+        <PortalInboxEmpty
+          title="Noch keine Objekte"
+          description="Legen Sie Ihr erstes Gebäude an — Link und Aushang finden Sie danach im Detail."
+          compact
+        />
       ) : (
-        <div className={portalListStackClass("card")}>
+        <div className={portalListStackClass("responsive")}>
           {objekte.map((o) => {
             const isSel = selected.includes(o.id);
             const offen = offenById[o.id] ?? 0;

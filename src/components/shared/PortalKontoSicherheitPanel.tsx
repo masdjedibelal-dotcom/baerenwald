@@ -3,10 +3,9 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
-import { EinstellungenEdField } from "@/components/shared/PortalEinstellungenUi";
+import { EinstellungenEdField, EinstellungenSectionHeader } from "@/components/shared/PortalEinstellungenUi";
 import { PortalModalShell } from "@/components/shared/PortalModalShell";
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
-import { PORTAL_VAR } from "@/lib/portal2/tokens";
 import { portalToastError, portalToastSuccess } from "@/lib/shared/portal-toast";
 
 type Props = {
@@ -128,13 +127,8 @@ export function PortalKontoSicherheitPanel({
 
   return (
     <>
-      <div className="space-y-3 border-t border-border-default pt-4">
-        <p
-          className="portal-text-label normal-case tracking-wide"
-          style={{ color: PORTAL_VAR.faint }}
-        >
-          KONTO & SICHERHEIT
-        </p>
+      <div className="space-y-3">
+        <EinstellungenSectionHeader title="Konto & Sicherheit" />
         <div className="flex flex-col items-start gap-2">
           <button
             type="button"

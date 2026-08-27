@@ -40,7 +40,7 @@ export function OrganisationEinstellungenScreen({
       {(tab) => {
         if (tab === "profil") {
           return (
-            <div className="flex flex-col gap-6">
+            <div className="flex flex-col gap-8">
               <OrganisationPortalAngabenPanel
                 kunde={kunde}
                 readOnly={!isAdmin}

@@ -515,8 +515,14 @@ export function PortalClient({
         })
       );
     }
+    // HV-Portal: keine „Rechnung“-Phase — Abschlagsrechnung ist CRM, nicht HV-Akte.
+    if (hvPortalMode) {
+      for (const [id, flow] of Array.from(map.entries())) {
+        if (flow === "rechnung") map.set(id, "abschluss");
+      }
+    }
     return map;
-  }, [vorgaengeItems, leads, angebote, auftraege]);
+  }, [vorgaengeItems, leads, angebote, auftraege, hvPortalMode]);
 
   const filteredVorgaenge = useMemo(() => {
     if (isPrivatLike && !hvPortalMode) {
@@ -729,20 +735,25 @@ export function PortalClient({
     setListPage(1);
   }, [section, vorgangFilter, privatChip, controlledHvListeFilter]);
 
-  /** Filterwechsel (nicht Initial-Mount): Detail schließen. */
+  /** Filterwechsel (nicht Initial-Mount): Detail schließen.
+   * Ausnahme: Deep-Link/Notification setzt oft Filter auf „alle“ und öffnet gleichzeitig —
+   * dann Detail nicht sofort wieder zunichtemachen. */
   const filterKey = `${vorgangFilter}|${privatChip}|${controlledHvListeFilter ?? ""}`;
   const prevFilterKeyRef = useRef(filterKey);
   useEffect(() => {
     if (prevFilterKeyRef.current === filterKey) return;
     prevFilterKeyRef.current = filterKey;
     if (!selectedId) return;
+    const forced = forceDetailId?.trim() || null;
+    if (pendingDetailIdRef.current) return;
+    if (forced && (forced === selectedId || selectedId === forced)) return;
     ignoreUrlDetailRef.current = true;
     pendingDetailIdRef.current = null;
     setDetailItem(null);
     setDetailLoading(false);
     setSelectedId(null);
     onHvDetailOpenChange?.(false);
-  }, [filterKey, selectedId, onHvDetailOpenChange]);
+  }, [filterKey, selectedId, onHvDetailOpenChange, forceDetailId]);
 
   useEffect(() => {
     if (!hvPortalMode || !onHvDetailOpenChange) return;

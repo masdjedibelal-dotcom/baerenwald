@@ -21,14 +21,6 @@ export function OrganisationObjektKpiCard({
   onHistorieClick,
   onBerichtClick,
 }: Props) {
-  const gewerkHint =
-    kpis.nachGewerk.length > 0
-      ? kpis.nachGewerk
-          .slice(0, 3)
-          .map((g) => `${g.gewerk} (${g.count})`)
-          .join(" · ")
-      : "—";
-
   const tiles = [
     {
       id: "vorgaenge",
@@ -61,9 +53,6 @@ export function OrganisationObjektKpiCard({
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <p className="portal-text-section">Kennzahlen</p>
-          <p className="portal-text-meta mt-0.5 text-text-tertiary">
-            Objektübersicht — leere Register zeigen Nullen.
-          </p>
         </div>
         {onBerichtClick ? (
           <button
@@ -113,13 +102,6 @@ export function OrganisationObjektKpiCard({
           );
         })}
       </div>
-
-      <p className="portal-text-meta text-text-tertiary">
-        Nach Gewerk: {gewerkHint}
-        {kpis.kostenOhneAngabeImJahr > 0
-          ? ` · ${kpis.kostenOhneAngabeImJahr} Maßnahme${kpis.kostenOhneAngabeImJahr === 1 ? "" : "n"} in ${jahr} ohne Kostenangabe`
-          : ""}
-      </p>
     </div>
   );
 }

@@ -11,8 +11,10 @@ import { DokumenteTabelle } from "@/components/shared/DokumenteTabelle";
 import { PortalDocInlinePreview } from "@/components/shared/PortalDocInlinePreview";
 import { PortalDocOpenButton } from "@/components/shared/PortalDocOpenButton";
 import { PortalDetailCover } from "@/components/shared/PortalDetailCover";
+import { PortalDetailCard } from "@/components/shared/PortalDetailCard";
 import {
   PortalDetailHead,
+  PortalDetailInfoBox,
   PortalDetailLayout,
   PortalDetailStickyActions,
 } from "@/components/shared/PortalDetailUi";
@@ -49,8 +51,6 @@ import {
   type HvVerlaufEntry,
 } from "@/lib/portal2/hv-detail";
 import {
-  portalDetailSectionBorderStyle,
-  portalDetailSectionClass,
   type PortalDetailSectionId,
 } from "@/lib/portal2/layout-chrome";
 import { PORTAL_STATUS, type PortalMockStatusId } from "@/lib/portal2/status";
@@ -182,29 +182,26 @@ function DetailCard({
   badge?: number | null;
 }) {
   return (
-    <section
+    <PortalDetailCard
       id={id}
-      className={cn(portalDetailSectionClass("responsive"))}
-      style={portalDetailSectionBorderStyle("responsive")}
+      title={title}
+      chrome="responsive"
+      headerAction={
+        badge && badge > 0 ? (
+          <span
+            className="inline-flex h-5 min-w-[1.25rem] items-center justify-center rounded-full px-1.5 text-[10px] font-bold"
+            style={{
+              background: PORTAL_VAR.dangerSoft,
+              color: PORTAL_VAR.danger,
+            }}
+          >
+            {badge > 9 ? "9+" : badge}
+          </span>
+        ) : undefined
+      }
     >
-      {title || (badge && badge > 0) ? (
-        <div className="mb-3 flex items-center gap-2">
-          {title ? <h3 className="portal-text-section">{title}</h3> : null}
-          {badge && badge > 0 ? (
-            <span
-              className="inline-flex h-5 min-w-[1.25rem] items-center justify-center rounded-full px-1.5 text-[10px] font-bold"
-              style={{
-                background: PORTAL_VAR.dangerSoft,
-                color: PORTAL_VAR.danger,
-              }}
-            >
-              {badge > 9 ? "9+" : badge}
-            </span>
-          ) : null}
-        </div>
-      ) : null}
       {children}
-    </section>
+    </PortalDetailCard>
   );
 }
 
@@ -461,12 +458,16 @@ export function OrganisationHvVorgangDetail({
     rechnungPdfHref?.trim() ||
       dokumente.some((d) => /rechnung/i.test(d.name ?? ""))
   );
-  /** Rechnung gesendet → Hinweis „Rechnung“ statt „Auftrag“. */
+  /** Rechnung gesendet → Hinweis „Rechnung“ statt „Auftrag“ (nur Kunden-/Privat-Portal).
+   * HV: Abschlags-/Kundenrechnung ist CRM — Status bleibt Abschluss/Auftrag. */
   const displayFlowStatus: PortalMockStatusId = (() => {
     if (rejected || flowStatus === "abgelehnt") {
       return "abgelehnt";
     }
-    if (
+    if (detailRole === "hv") {
+      if (flowStatus === "rechnung") return "abschluss";
+      if (flowStatus === "bezahlt") return "bezahlt";
+    } else if (
       hasRechnungDoc &&
       (flowStatus === "auftrag" ||
         flowStatus === "abschluss" ||
@@ -1188,6 +1189,29 @@ export function OrganisationHvVorgangDetail({
         onSecondary={() => void rejectAngebotAct()}
         secondaryDisabled={busy}
       />
+    ) : showFreigabeButtons ? (
+      <div className="portal-action-row flex-wrap">
+        <ActionBtn
+          label={HV_DETAIL_COPY.ablehnen}
+          kind="secondary"
+          disabled={busy}
+          onClick={() => void meldungAct("ablehnen")}
+        />
+        {hasHmKontakt ? (
+          <ActionBtn
+            label="Hausmeister"
+            kind="secondary"
+            disabled={busy}
+            onClick={() => void meldungAct("hm_begutachten")}
+          />
+        ) : null}
+        <ActionBtn
+          label="Direkt Bärenwald"
+          mobileLabel="Bärenwald"
+          disabled={busy}
+          onClick={() => void meldungAct("direkt_baerenwald")}
+        />
+      </div>
     ) : undefined;
 
   return (
@@ -1253,38 +1277,15 @@ export function OrganisationHvVorgangDetail({
                 vm={uebersichtVm}
                 detailsActions={
                   hvStatusNorm === "hm_pruefung" ? (
-                    <div className="space-y-1 rounded-xl border border-border-default bg-white px-3.5 py-3">
-                      <p className="portal-text-card-title">
+                    <PortalDetailInfoBox>
+                      <p className="font-semibold text-text-primary">
                         Hausmeister-Prüfung läuft
                       </p>
-                      <p className="portal-text-body text-text-secondary">
+                      <p className="mt-1 text-[13px] text-text-secondary">
                         Der Vorgang liegt beim Hausmeister. Fortschritt und
                         Checkliste unter Tab „Hausmeister“.
                       </p>
-                    </div>
-                  ) : showFreigabeButtons ? (
-                    <>
-                      <ActionBtn
-                        label={HV_DETAIL_COPY.ablehnen}
-                        kind="secondary"
-                        disabled={busy}
-                        onClick={() => void meldungAct("ablehnen")}
-                      />
-                      {hasHmKontakt ? (
-                        <ActionBtn
-                          label="Hausmeister"
-                          kind="secondary"
-                          disabled={busy}
-                          onClick={() => void meldungAct("hm_begutachten")}
-                        />
-                      ) : null}
-                      <ActionBtn
-                        label="Direkt Bärenwald"
-                        mobileLabel="Bärenwald"
-                        disabled={busy}
-                        onClick={() => void meldungAct("direkt_baerenwald")}
-                      />
-                    </>
+                    </PortalDetailInfoBox>
                   ) : undefined
                 }
               />

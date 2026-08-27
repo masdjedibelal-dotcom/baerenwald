@@ -16,12 +16,8 @@ export function inferFlowFromKundeItem(
   }
 ): PortalMockStatusId {
   if (extras?.rechnungBezahlt) return "bezahlt";
-  if (extras?.hasRechnung) return "rechnung";
-  if (
-    item.dokumente?.some((d) => /rechnung/i.test(d.name ?? ""))
-  ) {
-    return "rechnung";
-  }
+  // Kein Status „Rechnung“ allein wegen Dateiname — das war Legacy-Heuristik
+  // und wirkte im HV-Portal wie eine offene Kundenrechnung.
   if (item.isAuftragDetail) {
     const phase = (item.auftragPhasen?.aktuellePhase ?? "").toLowerCase();
     if (phase.includes("abnahme") || phase.includes("abschluss")) {

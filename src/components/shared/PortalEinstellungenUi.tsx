@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, type ReactNode } from "react";
-import { Pencil } from "lucide-react";
+import { Pencil, Plus } from "lucide-react";
 
 import {
   formatEinstellungenSchwelle,
@@ -11,6 +11,39 @@ import { PortalDetailInfoBox } from "@/components/shared/PortalDetailUi";
 import { PortalModalShell } from "@/components/shared/PortalModalShell";
 import { PORTAL_VAR } from "@/lib/portal2/tokens";
 import { cn } from "@/lib/utils";
+
+/**
+ * Accent-Kreis „+“ für Section-Köpfe (Hinzufügen).
+ * Regel: Section-Add = dieser Button; Listen-CTA oben rechts = `btn-pill-primary`;
+ * Sticky/entscheidend = `portal-action-btn`.
+ */
+export function PortalSectionAddButton({
+  onClick,
+  label = "Hinzufügen",
+  disabled,
+  className,
+}: {
+  onClick: () => void;
+  label?: string;
+  disabled?: boolean;
+  className?: string;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={disabled}
+      aria-label={label}
+      title={label}
+      className={cn(
+        "inline-flex h-9 w-9 items-center justify-center rounded-full bg-accent text-white shadow-sm transition-colors hover:bg-accent-hover disabled:cursor-not-allowed disabled:opacity-50",
+        className
+      )}
+    >
+      <Plus className="h-4 w-4" aria-hidden strokeWidth={2.25} />
+    </button>
+  );
+}
 
 /** Read-only Zeile: Label links, Wert rechts — scannbar auf Mobil. */
 export function EinstellungenPfRow({
@@ -93,27 +126,36 @@ export function EinstellungenInfoBox({ children }: { children: ReactNode }) {
   return <PortalDetailInfoBox>{children}</PortalDetailInfoBox>;
 }
 
-/** Abschnittskopf: Label + optionale Aktionen / Stift-Icon. */
+/** Abschnittskopf: Label + optionale Aktionen / Plus (Add) / Stift (Edit). */
 export function EinstellungenSectionHeader({
   title,
   onEdit,
   editLabel = "Bearbeiten",
+  onAdd,
+  addLabel = "Hinzufügen",
   trailing,
 }: {
   title: string;
   onEdit?: () => void;
   editLabel?: string;
-  /** z. B. ⋯-Menü links vom Stift. */
+  /** Accent-Plus — für neue Einträge (nicht Bearbeiten). */
+  onAdd?: () => void;
+  addLabel?: string;
+  /** z. B. ⋯-Menü links vom Stift/Plus. */
   trailing?: ReactNode;
 }) {
+  const hasActions = Boolean(onEdit || onAdd || trailing);
   return (
     <div className="mb-1 flex items-center justify-between gap-2">
       <p className="text-[12.5px] font-bold uppercase tracking-wide text-text-secondary">
         {title}
       </p>
-      {onEdit || trailing ? (
+      {hasActions ? (
         <div className="flex items-center gap-1.5">
           {trailing}
+          {onAdd ? (
+            <PortalSectionAddButton onClick={onAdd} label={addLabel} />
+          ) : null}
           {onEdit ? (
             <button
               type="button"

@@ -116,6 +116,7 @@ export function OrganisationMieterLegalLinksPanel({
       <EinstellungenSectionHeader
         title="Impressum & Datenschutz (Mieter)"
         onEdit={readOnly ? undefined : openEdit}
+        editLabel="Links bearbeiten"
       />
       <EinstellungenPfList>
         <EinstellungenPfRow label="Impressum" value={dash(saved.impressum)} />

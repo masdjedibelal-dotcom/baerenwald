@@ -642,7 +642,10 @@ export function OrganisationObjektDetail({
         <div className="space-y-3">
           <EinstellungenSectionHeader
             title="Hausmeister"
-            onEdit={openHmEdit}
+            onAdd={hmAmObjekt ? undefined : openHmEdit}
+            addLabel="Hausmeister hinzufügen"
+            onEdit={hmAmObjekt ? openHmEdit : undefined}
+            editLabel="Hausmeister bearbeiten"
             trailing={
               hmAmObjekt ? (
                 <OrganisationObjektHausmeisterMenu
@@ -676,7 +679,7 @@ export function OrganisationObjektDetail({
           </EinstellungenPfList>
           <EinstellungenEditModal
             open={hmEditOpen}
-            title="Hausmeister bearbeiten"
+            title={hmAmObjekt ? "Hausmeister bearbeiten" : "Hausmeister hinzufügen"}
             onClose={closeHmEdit}
             onSave={() => void saveHmEdit()}
             saving={hmSaving}

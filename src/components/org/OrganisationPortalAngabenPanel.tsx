@@ -156,7 +156,7 @@ export function OrganisationPortalAngabenPanel({
   }
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex flex-col gap-8">
       <div className="space-y-3">
         <EinstellungenSectionHeader title="Logo" />
         <div className="flex items-center gap-3.5">
@@ -199,7 +199,7 @@ export function OrganisationPortalAngabenPanel({
                   type="button"
                   disabled={logoBusy}
                   onClick={() => logoInputRef.current?.click()}
-                  className="mt-2 rounded-lg border border-border-default bg-white px-3 py-1.5 text-[12.5px] font-semibold text-text-primary disabled:opacity-50"
+                  className="btn-pill-outline portal-btn-compact mt-2 disabled:opacity-50"
                 >
                   {logoBusy
                     ? "Wird hochgeladen…"

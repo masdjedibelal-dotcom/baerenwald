@@ -11,6 +11,7 @@ import {
 } from "@/lib/funnel/funnel-portal-otp";
 import { normalizeKundenEmail } from "@/lib/kunden/kunde-email";
 import { linkPortalKundeToAuthUser } from "@/lib/portal/link-portal-kunde";
+import { ensurePortalRegistrationEmailAvailable } from "@/lib/portal/reclaim-orphan-portal-auth";
 import {
   buildPortalContactPrefill,
   type PortalContactPrefill,
@@ -97,13 +98,8 @@ export async function registerFunnelPortalAccount(
     };
   }
 
-  const already = await isPortalAuthEmailRegistered(email);
-  if (already) {
-    return {
-      ok: false,
-      error: "Diese E-Mail ist bereits registriert. Bitte melden Sie sich an.",
-    };
-  }
+  const availability = await ensurePortalRegistrationEmailAvailable(email);
+  if (!availability.ok) return availability;
 
   const fullName = `${vorname} ${nachname}`.trim();
   const telefon = (input.telefon ?? "").trim() || null;
@@ -132,6 +128,37 @@ export async function registerFunnelPortalAccount(
   if (createErr || !created.user) {
     const msg = createErr?.message?.toLowerCase() ?? "";
     if (msg.includes("already") || msg.includes("registered")) {
+      const { reclaimOrphanPortalAuthUser } = await import(
+        "@/lib/portal/reclaim-orphan-portal-auth"
+      );
+      if ((await reclaimOrphanPortalAuthUser(email)) === "deleted") {
+        const retry = await supabaseAdmin.auth.admin.createUser({
+          email,
+          password,
+          email_confirm: false,
+          user_metadata: {
+            name: fullName,
+            vorname,
+            nachname,
+            telefon,
+            strasse,
+            hausnummer,
+            plz,
+            ort,
+            datenschutz_akzeptiert_at: now,
+            agb_akzeptiert_at: now,
+            funnel_register: true,
+          },
+        });
+        if (!retry.error && retry.data.user) {
+          return issueSignupOtp({
+            email,
+            userId: retry.data.user.id,
+            vorname,
+            brand: "meinbaerenwald",
+          });
+        }
+      }
       return {
         ok: false,
         error: "Diese E-Mail ist bereits registriert. Bitte melden Sie sich an.",

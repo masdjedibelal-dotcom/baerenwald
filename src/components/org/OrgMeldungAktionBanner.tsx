@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 
 import { HvFreigabeInfoBanner } from "@/components/org/HvFreigabeInfoBanner";
+import { PortalDetailInfoBox } from "@/components/shared/PortalDetailUi";
 import { usePortalBusy } from "@/components/shared/PortalBusyContext";
 import {
   funnelDirektauftragFromDaten,
@@ -66,12 +67,16 @@ export function OrgMeldungAktionBanner({
 
   if (isHmPruefung) {
     return (
-      <div className="mb-4 space-y-2 rounded-xl border border-border-default bg-white p-4">
-        <p className="portal-text-card-title">Hausmeister-Prüfung läuft</p>
-        <p className="portal-text-body text-text-secondary">
-          Der Vorgang liegt beim Hausmeister. Fortschritt und Checkliste unter
-          Tab „Hausmeister“.
-        </p>
+      <div className="mb-4">
+        <PortalDetailInfoBox>
+          <p className="font-semibold text-text-primary">
+            Hausmeister-Prüfung läuft
+          </p>
+          <p className="mt-1 text-[13px] text-text-secondary">
+            Der Vorgang liegt beim Hausmeister. Fortschritt und Checkliste unter
+            Tab „Hausmeister“.
+          </p>
+        </PortalDetailInfoBox>
       </div>
     );
   }
@@ -139,8 +144,15 @@ export function OrgMeldungAktionBanner({
   };
 
   return (
-    <div className="mb-4 space-y-2 rounded-xl border border-border-default bg-white p-4">
-      <p className="portal-text-card-title">Freigabe erforderlich</p>
+    <div className="mb-4 space-y-3">
+      <PortalDetailInfoBox variant="warning">
+        <p className="font-semibold text-amber-950">Freigabe erforderlich</p>
+        {error ? (
+          <p className="mt-2 text-xs font-semibold text-red-700" role="alert">
+            {error}
+          </p>
+        ) : null}
+      </PortalDetailInfoBox>
       <div className="portal-action-row flex-wrap">
         <button
           type="button"
@@ -169,11 +181,6 @@ export function OrgMeldungAktionBanner({
           Direkt Bärenwald beauftragen
         </button>
       </div>
-      {error ? (
-        <p className="portal-text-meta font-semibold text-red-700" role="alert">
-          {error}
-        </p>
-      ) : null}
     </div>
   );
 }

@@ -89,3 +89,32 @@ Bereits erledigt (nicht nochmal anfassen):
 ## Empfohlene Reihenfolge
 
 Alle 12 Punkte sind erledigt.
+
+---
+
+## Phase A+B (2026-08) — Section-Add + HV Objekt-Detail
+
+**Regel (fest):**
+- Section-Kopf „Hinzufügen“ → `PortalSectionAddButton` (Accent-Kreis `+`) bzw. `EinstellungenSectionHeader.onAdd` / `PortalDetailCard.onAdd`
+- Listen-CTA oben rechts → `btn-pill-primary` (z. B. „＋ Objekt“)
+- Sticky/entscheidend → `portal-action-btn`
+- Interaktiver Themenblock → `PortalDetailCard` (`responsive`); Stammdaten-Klartext bleibt flach
+
+**Erledigt:**
+- [x] Primitive `PortalSectionAddButton` + Header/`PortalDetailCard`-Hooks
+- [x] HV Objekt-Detail: Kontakte, Einheiten (+ Personen), Prüfpflichten, Anlagen, Hausmeister (Plus wenn leer / Stift wenn gesetzt)
+
+## Phase C+D (2026-08) — Objekte-Liste + Einstellungen
+
+- [x] C: Objekte-Liste `responsive` (mobil Card, Desktop flach); „＋ Objekt“ bleibt Pill; Leerzustand + Bulk-Aktionen auf Pills
+- [x] D: Einstellungen flach mit einheitlichem Section-Header/`gap-8`; Melde/Logo/QR auf `btn-pill-*`; Konto & Sicherheit gleicher Header
+
+## Phase E+F (2026-08) — Vorgangs-Detail + Partner/Eigentümer
+
+- [x] E1: `VorgangDetailBlocks.BlockShell` → `PortalDetailCard` (`responsive`) — gilt für HV/Partner/Privat/Eigentümer
+- [x] E2: HV Freigabe-CTAs sticky; HM-Hinweis → `PortalDetailInfoBox`; lokales DetailCard → `PortalDetailCard`
+- [x] E3: `OrgFreigabeBanner` / `OrgMeldungAktionBanner` → InfoBox + Action-Row (keine Violet/White-Snowflakes)
+- [x] E4: Privat Abnahme-PDF wie HV (`PortalDetailCard` + `PortalDocOpenButton`)
+- [x] E5: Partner Auftrag Rechnung/Abschluss → sticky Footer
+- [x] F1: `PartnerPflichtenCard` → `PortalDetailCard`
+- [x] F3: Eigentümer Einheiten-Stammdaten flach (`PortalDetailKeyValues`); Empty → `PortalInboxEmpty`

@@ -13,6 +13,8 @@ import { PortalVorgangFeedbackSection } from "@/components/portal/PortalVorgangF
 import { PartnerPortalDetailSections } from "@/components/partner/PartnerPortalDetailSections";
 import { BautagebuchAccordionList } from "@/components/shared/BautagebuchAccordionList";
 import { DokumenteTabelle } from "@/components/shared/DokumenteTabelle";
+import { PortalDetailCard } from "@/components/shared/PortalDetailCard";
+import { PortalDocOpenButton } from "@/components/shared/PortalDocOpenButton";
 import { PortalDetailTabs } from "@/components/shared/PortalDetailTabs";
 import { PortalModalShell } from "@/components/shared/PortalModalShell";
 import {
@@ -535,22 +537,23 @@ export function PortalVorgangDetail({
               return (
                 <div className="space-y-4">
                   {abnahmeDocs.length > 0 ? (
-                    <div className="space-y-2 rounded-xl border border-[var(--portal-primary,#2E7D52)]/30 bg-white p-3">
-                      <p className="text-sm font-semibold text-[var(--portal-ink,#1A3D2B)]">
-                        Abnahmeprotokoll
-                      </p>
-                      {abnahmeDocs.map((d) => (
-                        <a
-                          key={d.id}
-                          href={d.href!}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="flex min-h-[48px] items-center justify-center rounded-xl bg-[var(--portal-primary,#2E7D52)] px-4 text-sm font-semibold text-white"
-                        >
-                          {d.name} öffnen (PDF)
-                        </a>
-                      ))}
-                    </div>
+                    <PortalDetailCard title="Abnahmeprotokoll" chrome="responsive">
+                      <div className="space-y-2">
+                        {abnahmeDocs.map((d) => (
+                          <PortalDocOpenButton
+                            key={d.id}
+                            href={d.href!}
+                            name={d.name}
+                            kind="pdf"
+                            className="block w-full overflow-hidden rounded-xl border border-[var(--portal-primary,#2E7D52)]/30 bg-[var(--portal-primary,#2E7D52)]/5 text-left"
+                          >
+                            <p className="px-3 py-4 text-center text-[13px] font-semibold text-[var(--portal-primary,#2E7D52)]">
+                              {d.name} — PDF öffnen
+                            </p>
+                          </PortalDocOpenButton>
+                        ))}
+                      </div>
+                    </PortalDetailCard>
                   ) : null}
                   <DokumenteTabelle
                     heading=""

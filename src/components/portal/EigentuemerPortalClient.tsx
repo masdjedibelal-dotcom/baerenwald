@@ -17,6 +17,8 @@ import {
 import { PortalContentBusy } from "@/components/shared/PortalContentBusy";
 import { PortalListCard } from "@/components/shared/PortalListCard";
 import { PortalEntityDetailLayout } from "@/components/shared/PortalEntityDetailLayout";
+import { PortalDetailKeyValues } from "@/components/shared/PortalDetailUi";
+import { PortalInboxEmpty } from "@/components/shared/PortalEmptyState";
 import {
   PORTAL_LIST_PAGE_SIZE,
   PortalListPagination,
@@ -601,54 +603,49 @@ export function EigentuemerPortalClient({
                 onTabChange={() => {}}
                 tabsNavLabel="Einheit-Abschnitte"
               >
-                <dl className="portal-surface space-y-3 p-4">
-                  <div>
-                    <dt className="portal-text-meta text-text-tertiary">
-                      Objekt / Adresse
-                    </dt>
-                    <dd className="portal-text-body font-medium">
-                      {activeEinheit.objektTitel}
-                      {activeEinheit.objektStrasse
-                        ? ` · ${activeEinheit.objektStrasse}`
-                        : ""}
-                      {activeEinheit.objektPlzOrt
-                        ? `, ${activeEinheit.objektPlzOrt}`
-                        : ""}
-                    </dd>
-                  </div>
-                  <div>
-                    <dt className="portal-text-meta text-text-tertiary">
-                      Mieter
-                    </dt>
-                    <dd className="portal-text-body font-medium">
-                      {mieterAnEinheit.length === 0 ? (
-                        <span className="font-normal text-text-secondary">
-                          Keine Mieter hinterlegt
-                        </span>
-                      ) : (
-                        <ul className="mt-1 space-y-3 font-normal">
-                          {mieterAnEinheit.map((m) => (
-                            <li key={m.id} className="space-y-0.5">
-                              <p className="font-medium text-text-primary">
-                                {m.name}
-                              </p>
-                              {m.email ? (
-                                <p className="portal-text-meta text-text-secondary">
-                                  {m.email}
+                <PortalDetailKeyValues
+                  rows={[
+                    {
+                      label: "Objekt / Adresse",
+                      value: [
+                        activeEinheit.objektTitel,
+                        activeEinheit.objektStrasse || null,
+                        activeEinheit.objektPlzOrt || null,
+                      ]
+                        .filter(Boolean)
+                        .join(" · "),
+                    },
+                    {
+                      label: "Mieter",
+                      value:
+                        mieterAnEinheit.length === 0 ? (
+                          <span className="font-normal text-text-secondary">
+                            Keine Mieter hinterlegt
+                          </span>
+                        ) : (
+                          <ul className="space-y-2 text-left font-normal">
+                            {mieterAnEinheit.map((m) => (
+                              <li key={m.id} className="space-y-0.5">
+                                <p className="font-medium text-text-primary">
+                                  {m.name}
                                 </p>
-                              ) : null}
-                              {m.telefon ? (
-                                <p className="portal-text-meta text-text-secondary">
-                                  {m.telefon}
-                                </p>
-                              ) : null}
-                            </li>
-                          ))}
-                        </ul>
-                      )}
-                    </dd>
-                  </div>
-                </dl>
+                                {m.email ? (
+                                  <p className="portal-text-meta text-text-secondary">
+                                    {m.email}
+                                  </p>
+                                ) : null}
+                                {m.telefon ? (
+                                  <p className="portal-text-meta text-text-secondary">
+                                    {m.telefon}
+                                  </p>
+                                ) : null}
+                              </li>
+                            ))}
+                          </ul>
+                        ),
+                    },
+                  ]}
+                />
               </PortalEntityDetailLayout>
             </div>
           ) : (
@@ -657,9 +654,11 @@ export function EigentuemerPortalClient({
                 <PortalListeTitle>Meine Einheiten</PortalListeTitle>
               </div>
               {einheiten.length === 0 ? (
-                <div className="portal-surface p-6 text-center portal-text-body text-text-secondary">
-                  Noch keine Einheiten zugeordnet.
-                </div>
+                <PortalInboxEmpty
+                  title="Keine Einheiten"
+                  description="Noch keine Einheiten zugeordnet."
+                  compact
+                />
               ) : (
                 <div className="portal-list-panel portal-list-rows">
                   {einheiten.map((e) => (

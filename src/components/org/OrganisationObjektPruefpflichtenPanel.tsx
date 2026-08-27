@@ -184,19 +184,14 @@ export function OrganisationObjektPruefpflichtenPanel({ objektId }: { objektId: 
       : "";
 
   return (
-    <PortalDetailCard title="Prüfpflichten & Wartung">
-      <div className="mb-3 flex flex-wrap items-start justify-between gap-2">
-        <p className="portal-text-meta text-text-tertiary">
-          Übersicht Ihrer wiederkehrenden Prüfungen. Erinnerungen folgen in Kürze.
-        </p>
-        <button
-          type="button"
-          className="portal-btn portal-btn-secondary text-[13px]"
-          onClick={openCreate}
-        >
-          Hinzufügen
-        </button>
-      </div>
+    <PortalDetailCard
+      title="Prüfpflichten & Wartung"
+      onAdd={openCreate}
+      addLabel="Prüfpflicht hinzufügen"
+    >
+      <p className="portal-text-meta mb-3 text-text-tertiary">
+        Übersicht Ihrer wiederkehrenden Prüfungen. Erinnerungen folgen in Kürze.
+      </p>
       {items.length > 0 ? (
         <p className="portal-text-meta mb-3 text-text-tertiary">
           {stats.bald > 0 ? `${stats.bald} bald fällig · ` : ""}

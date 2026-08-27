@@ -221,6 +221,7 @@ export function OrganisationFreigabeRegelnPanel({
       <EinstellungenSectionHeader
         title={EINSTELLUNGEN_SCHWELLE_TITLE}
         onEdit={isAdmin ? openEdit : undefined}
+        editLabel="Freigabe-Regeln bearbeiten"
       />
       <EinstellungenPfList>
         <EinstellungenPfRow

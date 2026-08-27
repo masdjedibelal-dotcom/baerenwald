@@ -1,6 +1,7 @@
 "use client";
 
 import type { ObjektAnlagePortal } from "@/lib/org/objektakte/types";
+import { PortalDetailCard } from "@/components/shared/PortalDetailCard";
 import { PortalInboxEmpty } from "@/components/shared/PortalEmptyState";
 import { PORTAL_VAR } from "@/lib/portal2/tokens";
 
@@ -29,27 +30,22 @@ export function OrganisationObjektAnlagenPanel({
 }) {
   if (!anlagen.length) {
     return (
-      <PortalInboxEmpty
-        title="Noch keine Anlagen"
-        description="Das Anlagen-Register wird in der Objektakte gepflegt — hier sehen Sie den Stand read-only."
-        compact
-      />
+      <PortalDetailCard title="Anlagen & Teile">
+        <PortalInboxEmpty title="Noch keine Anlagen" compact />
+      </PortalDetailCard>
     );
   }
 
   return (
-    <div className="space-y-2.5">
-      <p className="portal-text-section px-0.5">
-        Anlagen & Teile ({anlagen.length})
-      </p>
+    <PortalDetailCard title={`Anlagen & Teile (${anlagen.length})`}>
       <div
-        className="overflow-hidden rounded-[12px] border bg-white"
+        className="overflow-hidden rounded-[12px] border bg-white lg:rounded-none lg:border-0"
         style={{ borderColor: PORTAL_VAR.line }}
       >
         <div className="hidden overflow-x-auto sm:block">
           <table className="w-full text-left text-[13px]">
             <thead>
-              <tr className="border-b bg-[#fafafa] text-text-tertiary">
+              <tr className="border-b bg-[#fafafa] text-text-tertiary lg:bg-transparent">
                 <th className="px-4 py-2.5 font-medium">Bezeichnung</th>
                 <th className="px-4 py-2.5 font-medium">Gewerk</th>
                 <th className="px-4 py-2.5 font-medium">Standort</th>
@@ -107,6 +103,6 @@ export function OrganisationObjektAnlagenPanel({
           ))}
         </div>
       </div>
-    </div>
+    </PortalDetailCard>
   );
 }

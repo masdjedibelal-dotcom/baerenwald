@@ -1,5 +1,6 @@
 "use client";
 
+import { PortalDetailCard } from "@/components/shared/PortalDetailCard";
 import { PortalPhotoGallery } from "@/components/shared/PortalPhotoGallery";
 import { VorgangLeistungenListe } from "@/components/shared/vorgang-detail/VorgangLeistungenListe";
 import { cn } from "@/lib/utils";
@@ -20,15 +21,9 @@ function BlockShell({
   className?: string;
 }) {
   return (
-    <section
-      className={cn(
-        "rounded-xl border border-border-default bg-[var(--p2-panel,#fff)] p-4 shadow-sm",
-        className
-      )}
-    >
-      <h3 className="portal-text-section mb-3">{title}</h3>
+    <PortalDetailCard title={title} chrome="responsive" className={className}>
       {children}
-    </section>
+    </PortalDetailCard>
   );
 }
 

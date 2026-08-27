@@ -100,7 +100,7 @@ export function OrganisationMeldeMaterial({ kunde }: Props) {
             <button
               type="button"
               disabled={!actionsEnabled}
-              className="rounded-full border border-border-default bg-white px-4 py-2 text-[13px] font-semibold text-text-secondary disabled:cursor-not-allowed disabled:opacity-45 enabled:hover:border-accent enabled:hover:text-accent"
+              className="btn-pill-outline !py-2 disabled:cursor-not-allowed disabled:opacity-45"
               onClick={() => setQrOpen(true)}
             >
               QR-Code

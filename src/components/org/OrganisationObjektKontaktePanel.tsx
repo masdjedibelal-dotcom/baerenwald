@@ -3,14 +3,15 @@
 import { useCallback, useEffect, useState } from "react";
 
 import { PortalActionMenu } from "@/components/shared/PortalActionMenu";
+import { PortalDetailCard } from "@/components/shared/PortalDetailCard";
 import { PortalConfirmDialog } from "@/components/shared/PortalDetailUi";
 import {
   EinstellungenEdField,
   EinstellungenEditModal,
   EinstellungenPfList,
   EinstellungenPfRow,
-  EinstellungenSectionHeader,
 } from "@/components/shared/PortalEinstellungenUi";
+import { PortalInboxEmpty } from "@/components/shared/PortalEmptyState";
 import { orgPortalToast, portalToastError } from "@/lib/shared/portal-toast";
 
 export type ObjektKontaktVorOrt = {
@@ -201,32 +202,27 @@ export function OrganisationObjektKontaktePanel({ objektId }: Props) {
   }
 
   return (
-    <div className="space-y-3">
-      <EinstellungenSectionHeader
+    <>
+      <PortalDetailCard
         title="Kontakte vor Ort"
-        onEdit={openNeu}
-        editLabel="Kontakt hinzufügen"
-      />
-
-      {loading ? (
-        <p className="text-[13px] text-text-secondary">Laden…</p>
-      ) : items.length === 0 ? (
-        <p className="rounded-[10px] border border-dashed border-border-light bg-muted/20 px-3 py-4 text-[13px] leading-relaxed text-text-secondary">
-          Noch keine Kontakte — Beirat, Notfall oder andere Personen hinzufügen.
-          Der Hausmeister steht in der Karte darüber.
-        </p>
-      ) : (
-        <ul className="space-y-3">
-          {items.map((k) => {
-            const kontaktZeile = [k.telefon?.trim(), k.email?.trim()]
-              .filter(Boolean)
-              .join(" · ");
-            return (
-              <li
-                key={k.id}
-                className="rounded-[12px] border border-border-light bg-white px-3 py-2.5"
-              >
-                <div className="flex items-start justify-between gap-2">
+        onAdd={openNeu}
+        addLabel="Kontakt hinzufügen"
+      >
+        {loading ? (
+          <p className="text-[13px] text-text-secondary">Laden…</p>
+        ) : items.length === 0 ? (
+          <PortalInboxEmpty title="Noch keine Kontakte" compact />
+        ) : (
+          <ul className="divide-y divide-border-light">
+            {items.map((k) => {
+              const kontaktZeile = [k.telefon?.trim(), k.email?.trim()]
+                .filter(Boolean)
+                .join(" · ");
+              return (
+                <li
+                  key={k.id}
+                  className="flex items-start justify-between gap-2 py-2.5 first:pt-0 last:pb-0"
+                >
                   <div className="min-w-0 flex-1">
                     <div className="flex flex-wrap items-center gap-2">
                       <span className="text-[14.5px] font-semibold text-text-primary">
@@ -266,12 +262,12 @@ export function OrganisationObjektKontaktePanel({ objektId }: Props) {
                       },
                     ]}
                   />
-                </div>
-              </li>
-            );
-          })}
-        </ul>
-      )}
+                </li>
+              );
+            })}
+          </ul>
+        )}
+      </PortalDetailCard>
 
       <EinstellungenEditModal
         open={editOpen}
@@ -341,6 +337,6 @@ export function OrganisationObjektKontaktePanel({ objektId }: Props) {
         onCancel={() => setRemoveTarget(null)}
         onConfirm={() => void confirmRemove()}
       />
-    </div>
+    </>
   );
 }

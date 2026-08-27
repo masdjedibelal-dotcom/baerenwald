@@ -338,12 +338,22 @@ export function OrganisationPortalClient({
       setSection("vorgaenge");
       setVorgangFilterIntent("alle");
     });
-    const target =
+    const normalized =
       ensurePortalVorgangNotificationHref({
         href,
         vorgangId: id,
       }) ||
       `/portal?section=vorgaenge&filter=alle&id=${encodeURIComponent(id)}`;
+    let target = normalized;
+    try {
+      const u = new URL(normalized, "https://local.invalid");
+      u.searchParams.set("section", "vorgaenge");
+      u.searchParams.set("filter", "alle");
+      u.searchParams.set("id", id);
+      target = `${u.pathname}${u.search}${u.hash}`;
+    } catch {
+      /* keep normalized */
+    }
     router.push(target);
   }
 
