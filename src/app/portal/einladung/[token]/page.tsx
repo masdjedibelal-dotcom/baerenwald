@@ -129,8 +129,15 @@ export default async function PortalEinladungPage({ params }: Props) {
       >
         <PortalRegisterForm
           einladungToken={token}
+          inviteRole={data.rolle}
           submitLabel={AUTH_INVITE.submit}
-          lockedHint={hasPrefill ? AUTH_INVITE.lockedHint : null}
+          lockedHint={
+            hasPrefill
+              ? data.rolle === "hausmeister"
+                ? AUTH_INVITE.lockedHintHausmeister
+                : AUTH_INVITE.lockedHint
+              : null
+          }
           prefill={{
             name: data.prefill.name ?? undefined,
             email: data.prefill.email ?? undefined,

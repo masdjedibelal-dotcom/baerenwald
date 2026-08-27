@@ -1,4 +1,5 @@
 import { SITE_CONFIG } from "@/lib/config";
+import { MAIL_LOGO_URL_GREEN } from "@/lib/email/mail-logo-inline";
 import {
   buildBreakdownRows,
   buildGroessenRows,
@@ -47,7 +48,7 @@ function phoneDisplayMunichLandline(): string {
   return SITE_CONFIG.phone;
 }
 
-const LOGO_MARK_URL = `${SITE_CONFIG.url}/logo-mark-green.png`;
+const LOGO_MARK_URL = MAIL_LOGO_URL_GREEN;
 
 /**
  * Vorhaben für Kunden-Mails (z. B. „Bad erneuern“).

@@ -427,14 +427,26 @@ export function OrganisationHvVorgangDetail({
     }
     let cancelled = false;
     void (async () => {
-      if (!kundeObjektId) {
+      let oid = String(kundeObjektId ?? "").trim();
+      if (!oid && leadId) {
+        const { getLeadHausmeisterMetaAction } = await import(
+          "@/app/actions/lead-befund"
+        );
+        const meta = await getLeadHausmeisterMetaAction({ leadId });
+        if (cancelled) return;
+        if (meta.ok) {
+          oid = String(meta.kundeObjektId ?? "").trim();
+          // hasHausmeister = zugewiesen; Delegation braucht zusätzlich Portal-Aktivierung
+        }
+      }
+      if (!oid) {
         if (!cancelled) {
           setHasHmKontakt(false);
           setHmPortalZugang(false);
         }
         return;
       }
-      const st = await fetchObjektHmDelegierbar(kundeObjektId);
+      const st = await fetchObjektHmDelegierbar(oid);
       if (cancelled) return;
       setHasHmKontakt(st.canDelegate);
       setHmPortalZugang(st.portalAktiv);

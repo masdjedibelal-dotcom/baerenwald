@@ -160,7 +160,7 @@ export const AUTH_INVITE = {
   subtitleEigentuemer:
     "Ihre Verwaltung hat Sie als Eigentümer eingeladen. Angaben sind vorausgefüllt — bitte Passwort setzen und zustimmen.",
   subtitleHausmeister:
-    "Ihre Verwaltung hat Sie als Hausmeister eingeladen. Angaben sind vorausgefüllt — bitte Passwort setzen und zustimmen.",
+    "Ihre Verwaltung hat Sie als Hausmeister eingeladen. Angaben sind vorausgefüllt — bitte nur noch ein Passwort setzen.",
   nameLabel: "Ihr Name",
   emailLabel: "E-Mail",
   passwordLabel: "Passwort festlegen",
@@ -169,6 +169,8 @@ export const AUTH_INVITE = {
   submit: "Konto aktivieren",
   lockedHint:
     "Ihre Angaben von der Verwaltung sind übernommen. Bitte nur noch ein Passwort vergeben und die Zustimmung erteilen.",
+  lockedHintHausmeister:
+    "Ihre Angaben von der Verwaltung sind übernommen. Bitte nur noch ein Passwort vergeben.",
 } as const;
 
 /** Mock `authConfirm` Screens. */

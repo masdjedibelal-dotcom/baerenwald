@@ -88,6 +88,7 @@ type PortalLead = PortalAnfrageLeadSource & {
   anlass?: string | null;
   kanal?: string | null;
   auftraggeber_kunde_id?: string | null;
+  kunde_objekt_id?: string | null;
   hv_meldung_status?: string | null;
   org_freigabe_status?: string | null;
   freigabe_bypass_grund?: string | null;
@@ -471,6 +472,17 @@ function buildItemFromLead(
         ? true
         : false,
     hvMeldungStatus: lead.hv_meldung_status ?? null,
+    kundeObjektId:
+      (lead.kunde_objekt_id != null
+        ? String(lead.kunde_objekt_id).trim()
+        : "") ||
+      (lead.objekt &&
+      typeof lead.objekt === "object" &&
+      "id" in lead.objekt &&
+      lead.objekt.id != null
+        ? String(lead.objekt.id).trim()
+        : "") ||
+      null,
     meldeStrasse,
     meldeHausnummer: addr.hausnummer || null,
     meldePlz,

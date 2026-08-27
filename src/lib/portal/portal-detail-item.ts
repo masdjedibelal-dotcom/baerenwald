@@ -136,6 +136,8 @@ export type KundePortalDetailItem = {
   /** Funnel Sofortmaßnahme (direktauftrag) */
   funnelDirektauftrag?: boolean | null;
   hvMeldungStatus?: string | null;
+  /** Objekt-ID für HM-Delegation / Freigabe-CTAs */
+  kundeObjektId?: string | null;
   /** Melde-Adresse (Lead / Objekt) */
   meldeStrasse?: string | null;
   meldeHausnummer?: string | null;

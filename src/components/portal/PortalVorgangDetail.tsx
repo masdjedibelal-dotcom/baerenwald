@@ -306,6 +306,7 @@ export function PortalVorgangDetail({
         }
         funnelDirektauftrag={item.funnelDirektauftrag ?? null}
         hvMeldungStatus={hvMeldungStatus ?? item.hvMeldungStatus}
+        kundeObjektId={item.kundeObjektId ?? null}
         angebotId={item.isAngebotDetail ? item.id : null}
         canAcceptAngebot={
           !mieterStatusMode &&

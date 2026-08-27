@@ -7,7 +7,7 @@ import { useMemo, useState } from "react";
 import { registerMeinBaerenwaldWithOtp } from "@/app/actions/portal-signup-otp";
 import { PortalAuthBusy } from "@/components/portal/auth/PortalAuthBusy";
 import { PortalSignupOtpStep } from "@/components/portal/PortalSignupOtpStep";
-import { AUTH_INVITE } from "@/lib/portal2/auth";
+import { AUTH_INVITE, type AuthPortalRole } from "@/lib/portal2/auth";
 import {
   PORTAL_REGISTER_KUNDE_TYP_OPTIONS,
   type PortalRegisterKundeTyp,
@@ -35,6 +35,8 @@ type Props = {
   prefill?: PortalRegisterPrefill;
   /** E4: Einladungs-Token — nach OTP einlösen */
   einladungToken?: string | null;
+  /** Rolle aus Einladung (steuert Consent / Copy) */
+  inviteRole?: AuthPortalRole | null;
   /** Hinweis über den locked Prefill-Feldern */
   lockedHint?: string | null;
   /** Submit-Label (Einladung: „Konto aktivieren“) */
@@ -55,6 +57,7 @@ function splitPrefillName(full: string): { vorname: string; nachname: string } {
 export function PortalRegisterForm({
   prefill,
   einladungToken,
+  inviteRole,
   lockedHint,
   submitLabel = "Konto anlegen",
 }: Props) {
@@ -121,6 +124,9 @@ export function PortalRegisterForm({
 
   const inviteToken = einladungToken?.trim() || "";
   const askKundeTyp = !inviteToken;
+  const isHausmeisterInvite = inviteRole === "hausmeister";
+  /** Hausmeister: Werkzeugnutzer der HV — keine Kunden-AGB / keine Consent-Checkboxen. */
+  const requireLegalConsent = !isHausmeisterInvite;
   const needsFirma =
     askKundeTyp &&
     (kundentyp === "gewerbe" || kundentyp === "hausverwaltung");
@@ -130,6 +136,14 @@ export function PortalRegisterForm({
     if (firma.trim()) return firma.trim();
     return [vorname.trim(), nachname.trim()].filter(Boolean).join(" ");
   }, [firma, vorname, nachname]);
+
+  /** Locked: nur befüllte Felder zeigen — leere read-only Inputs wirken wie kaputt. */
+  const showVorname = !locked || Boolean(vorname.trim());
+  const showNachname = !locked || Boolean(nachname.trim());
+  const showTelefon = !locked || Boolean(telefon.trim());
+  const showNameRow =
+    needsStammAdresse ||
+    (Boolean(inviteToken) && (showVorname || showNachname));
 
   const nextPath =
     searchParams.get("next") ||
@@ -143,7 +157,9 @@ export function PortalRegisterForm({
   const hintText =
     lockedHint?.trim() ||
     (inviteToken
-      ? AUTH_INVITE.lockedHint
+      ? isHausmeisterInvite
+        ? AUTH_INVITE.lockedHintHausmeister
+        : AUTH_INVITE.lockedHint
       : locked
         ? "Ihre Angaben aus der Schadenmeldung sind übernommen. Bitte Kundentyp wählen, Passwort vergeben und die Zustimmung erteilen."
         : null);
@@ -193,16 +209,21 @@ export function PortalRegisterForm({
         hasError = true;
       }
     }
-    if (!datenschutz) {
-      setDatenschutzError(true);
-      hasError = true;
+    if (requireLegalConsent) {
+      if (!datenschutz) {
+        setDatenschutzError(true);
+        hasError = true;
+      } else {
+        setDatenschutzError(false);
+      }
+      if (!agb) {
+        setAgbError(true);
+        hasError = true;
+      } else {
+        setAgbError(false);
+      }
     } else {
       setDatenschutzError(false);
-    }
-    if (!agb) {
-      setAgbError(true);
-      hasError = true;
-    } else {
       setAgbError(false);
     }
     if (hasError) return;
@@ -368,36 +389,45 @@ export function PortalRegisterForm({
         </label>
       ) : null}
 
-      {needsStammAdresse || inviteToken ? (
-        <div className="grid gap-4 sm:grid-cols-2">
-          <label className="block space-y-1.5">
-            <span className="portal-form-label">Vorname</span>
-            <input
-              type="text"
-              autoComplete="given-name"
-              required={needsStammAdresse}
-              value={vorname}
-              onChange={(e) => {
-                if (!locked) setVorname(e.target.value);
-              }}
-              readOnly={locked}
-              className={fieldClass}
-            />
-          </label>
-          <label className="block space-y-1.5">
-            <span className="portal-form-label">Nachname</span>
-            <input
-              type="text"
-              autoComplete="family-name"
-              required={needsStammAdresse}
-              value={nachname}
-              onChange={(e) => {
-                if (!locked) setNachname(e.target.value);
-              }}
-              readOnly={locked}
-              className={fieldClass}
-            />
-          </label>
+      {showNameRow ? (
+        <div
+          className={cn(
+            "grid gap-4",
+            showVorname && showNachname ? "sm:grid-cols-2" : "sm:grid-cols-1"
+          )}
+        >
+          {showVorname ? (
+            <label className="block space-y-1.5">
+              <span className="portal-form-label">Vorname</span>
+              <input
+                type="text"
+                autoComplete="given-name"
+                required={needsStammAdresse}
+                value={vorname}
+                onChange={(e) => {
+                  if (!locked) setVorname(e.target.value);
+                }}
+                readOnly={locked}
+                className={fieldClass}
+              />
+            </label>
+          ) : null}
+          {showNachname ? (
+            <label className="block space-y-1.5">
+              <span className="portal-form-label">Nachname</span>
+              <input
+                type="text"
+                autoComplete="family-name"
+                required={needsStammAdresse}
+                value={nachname}
+                onChange={(e) => {
+                  if (!locked) setNachname(e.target.value);
+                }}
+                readOnly={locked}
+                className={fieldClass}
+              />
+            </label>
+          ) : null}
         </div>
       ) : null}
 
@@ -470,24 +500,26 @@ export function PortalRegisterForm({
         />
       </label>
 
-      <label className="block space-y-1.5">
-        <span className="portal-form-label">
-          Telefon{" "}
-          {!locked ? (
-            <span className="text-text-tertiary">(optional)</span>
-          ) : null}
-        </span>
-        <input
-          type="tel"
-          autoComplete="tel"
-          value={telefon}
-          onChange={(e) => {
-            if (!locked) setTelefon(e.target.value);
-          }}
-          readOnly={locked}
-          className={fieldClass}
-        />
-      </label>
+      {showTelefon ? (
+        <label className="block space-y-1.5">
+          <span className="portal-form-label">
+            Telefon{" "}
+            {!locked ? (
+              <span className="text-text-tertiary">(optional)</span>
+            ) : null}
+          </span>
+          <input
+            type="tel"
+            autoComplete="tel"
+            value={telefon}
+            onChange={(e) => {
+              if (!locked) setTelefon(e.target.value);
+            }}
+            readOnly={locked}
+            className={fieldClass}
+          />
+        </label>
+      ) : null}
 
       <label className="block space-y-1.5">
         <span className="portal-form-label">
@@ -504,18 +536,71 @@ export function PortalRegisterForm({
         />
       </label>
 
-      <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-border-light bg-muted/20 p-3">
-        <input
-          type="checkbox"
-          checked={datenschutz}
-          onChange={(e) => {
-            setDatenschutz(e.target.checked);
-            if (e.target.checked) setDatenschutzError(false);
-          }}
-          className="mt-0.5 h-4 w-4 shrink-0 accent-[#2E7D52]"
-        />
-        <span className="portal-text-body text-text-primary">
-          Ich habe die{" "}
+      {requireLegalConsent ? (
+        <>
+          <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-border-light bg-muted/20 p-3">
+            <input
+              type="checkbox"
+              checked={datenschutz}
+              onChange={(e) => {
+                setDatenschutz(e.target.checked);
+                if (e.target.checked) setDatenschutzError(false);
+              }}
+              className="mt-0.5 h-4 w-4 shrink-0 accent-[#2E7D52]"
+            />
+            <span className="portal-text-body text-text-primary">
+              Ich habe die{" "}
+              <a
+                href="/datenschutz#meinbaerenwald"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="font-medium text-accent underline-offset-2 hover:underline"
+              >
+                Datenschutzerklärung
+              </a>{" "}
+              gelesen und stimme der Verarbeitung meiner Daten in MeinBärenwald
+              zu.
+            </span>
+          </label>
+          {datenschutzError ? (
+            <p className="portal-text-body -mt-2 text-red-700">
+              Bitte stimmen Sie der Datenschutzerklärung zu.
+            </p>
+          ) : null}
+
+          <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-border-light bg-muted/20 p-3">
+            <input
+              type="checkbox"
+              checked={agb}
+              onChange={(e) => {
+                setAgb(e.target.checked);
+                if (e.target.checked) setAgbError(false);
+              }}
+              className="mt-0.5 h-4 w-4 shrink-0 accent-[#2E7D52]"
+            />
+            <span className="portal-text-body text-text-primary">
+              Ich habe die{" "}
+              <a
+                href="/agb"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="font-medium text-accent underline-offset-2 hover:underline"
+              >
+                Allgemeinen Geschäftsbedingungen
+              </a>{" "}
+              gelesen und akzeptiere sie für die Nutzung des Kundenportals sowie
+              für künftige Beauftragungen über Bärenwald.
+            </span>
+          </label>
+          {agbError ? (
+            <p className="portal-text-body -mt-2 text-red-700">
+              Bitte akzeptieren Sie die AGB.
+            </p>
+          ) : null}
+        </>
+      ) : (
+        <p className="portal-text-body text-text-secondary">
+          Mit der Aktivierung gilt die{" "}
           <a
             href="/datenschutz#meinbaerenwald"
             target="_blank"
@@ -524,44 +609,10 @@ export function PortalRegisterForm({
           >
             Datenschutzerklärung
           </a>{" "}
-          gelesen und stimme der Verarbeitung meiner Daten in MeinBärenwald zu.
-        </span>
-      </label>
-      {datenschutzError ? (
-        <p className="portal-text-body -mt-2 text-red-700">
-          Bitte stimmen Sie der Datenschutzerklärung zu.
+          für Ihr Login bei MeinBärenwald. Die Nutzung erfolgt im Auftrag Ihrer
+          Verwaltung — keine Kunden-AGB.
         </p>
-      ) : null}
-
-      <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-border-light bg-muted/20 p-3">
-        <input
-          type="checkbox"
-          checked={agb}
-          onChange={(e) => {
-            setAgb(e.target.checked);
-            if (e.target.checked) setAgbError(false);
-          }}
-          className="mt-0.5 h-4 w-4 shrink-0 accent-[#2E7D52]"
-        />
-        <span className="portal-text-body text-text-primary">
-          Ich habe die{" "}
-          <a
-            href="/agb"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="font-medium text-accent underline-offset-2 hover:underline"
-          >
-            Allgemeinen Geschäftsbedingungen
-          </a>{" "}
-          gelesen und akzeptiere sie für die Nutzung des Kundenportals sowie für
-          künftige Beauftragungen über Bärenwald.
-        </span>
-      </label>
-      {agbError ? (
-        <p className="portal-text-body -mt-2 text-red-700">
-          Bitte akzeptieren Sie die AGB.
-        </p>
-      ) : null}
+      )}
 
       <button
         type="submit"
