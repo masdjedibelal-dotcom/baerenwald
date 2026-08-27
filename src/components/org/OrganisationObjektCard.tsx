@@ -41,7 +41,12 @@ export function OrganisationObjektCard({
           ? "bg-accent-light text-accent"
           : "bg-[#eceef0] text-text-tertiary"
       }
-      meta={[{ text: card.einheitenLabel }]}
+      meta={[
+        { text: card.einheitenLabel },
+        ...(card.pruefpflichtFaellig
+          ? [{ text: `${card.pruefpflichtFaellig} fällig` }]
+          : []),
+      ]}
       showCheckbox
       checked={selected}
       onCheckedChange={() => onToggleSelect()}

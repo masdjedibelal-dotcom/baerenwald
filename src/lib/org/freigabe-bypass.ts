@@ -114,6 +114,7 @@ export function orgFreigabeStatusImpliesAngebot(
   const st = String(orgFreigabeStatus ?? "").trim().toLowerCase();
   return (
     st === "ausstehend" ||
+    st === "beschluss_ausstehend" ||
     st === "angefordert" ||
     st === "freigegeben" ||
     st === "abgelehnt"

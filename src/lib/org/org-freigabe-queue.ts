@@ -81,7 +81,13 @@ export function isInOrgFreigabeQueue(
   ) {
     return true;
   }
-  if (freigabe === "ausstehend" || freigabe === "angefordert") return true;
+  if (
+    freigabe === "ausstehend" ||
+    freigabe === "beschluss_ausstehend" ||
+    freigabe === "angefordert"
+  ) {
+    return true;
+  }
 
   return false;
 }

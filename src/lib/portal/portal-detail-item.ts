@@ -123,6 +123,12 @@ export type KundePortalDetailItem = {
   kostentraeger?: string | null;
   kostentraegerVorgeschlagen?: boolean;
   versicherungsNr?: string | null;
+  schadenNr?: string | null;
+  versicherungsaktePdfUrl?: string | null;
+  versicherungsakteErstelltAm?: string | null;
+  schadenNrGeaendertAm?: string | null;
+  versicherungsNrGeaendertAm?: string | null;
+  objektVersicherungsNr?: string | null;
   meldeFotos?: string[];
   orgFreigabeStatus?: string | null;
   /** CRM: schwelle | akut — Auto-Auftrag ohne HV-Annahme */

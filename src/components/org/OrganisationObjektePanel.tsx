@@ -124,6 +124,27 @@ export function OrganisationObjektePanel({
     | { kind: "bulk" }
     | null
   >(null);
+  const [pruefFaelligById, setPruefFaelligById] = useState<
+    Record<string, number>
+  >({});
+
+  useEffect(() => {
+    let cancelled = false;
+    void fetch("/api/org/objekte/pruefpflichten-summary")
+      .then(async (res) => {
+        if (!res.ok) return null;
+        return (await res.json()) as { byObjektId?: Record<string, number> };
+      })
+      .then((json) => {
+        if (!cancelled && json?.byObjektId) {
+          setPruefFaelligById(json.byObjektId);
+        }
+      })
+      .catch(() => undefined);
+    return () => {
+      cancelled = true;
+    };
+  }, [objekte.length]);
 
   useEffect(() => {
     onDetailOpenChange?.(mode.kind !== "list");
@@ -542,7 +563,11 @@ export function OrganisationObjektePanel({
           {objekte.map((o) => {
             const isSel = selected.includes(o.id);
             const offen = offenById[o.id] ?? 0;
-            const card = buildObjCardModel(o, offen);
+            const card = buildObjCardModel(
+              o,
+              offen,
+              pruefFaelligById[o.id] ?? 0
+            );
             const canAushang = !!(
               orgKennung &&
               o.melde_slug &&

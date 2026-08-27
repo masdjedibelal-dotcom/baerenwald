@@ -20,6 +20,7 @@ export type EinladungStatus = "offen" | "ergaenzt" | "entfallen";
 export type OrgFreigabeStatus =
   | "nicht_noetig"
   | "ausstehend"
+  | "beschluss_ausstehend"
   | "freigegeben"
   | "abgelehnt";
 
@@ -135,6 +136,8 @@ export type OrganisationLead = {
   einladung_token?: string | null;
   einladung_status?: EinladungStatus | null;
   org_freigabe_status?: OrgFreigabeStatus | null;
+  beschluss_versammlung_am?: string | null;
+  beschluss_protokoll_url?: string | null;
   freigabe_bypass_grund?: FreigabeBypassGrund | null;
   mieter_vor_ort_at?: string | null;
   hv_meldung_status?: HvMeldungStatus | null;
@@ -151,6 +154,10 @@ export type OrganisationLead = {
   kostentraeger_vorgeschlagen?: boolean | null;
   versicherungs_nr?: string | null;
   versicherungsakte_pdf_url?: string | null;
+  schaden_nr?: string | null;
+  schaden_nr_geaendert_am?: string | null;
+  versicherungs_nr_geaendert_am?: string | null;
+  versicherungsakte_erstellt_am?: string | null;
   vorgang_phase?: string | null;
   plz?: string | null;
   strasse?: string | null;
@@ -167,5 +174,6 @@ export type OrganisationLead = {
     ort?: string | null;
     plzOrt?: string;
     cover_url?: string | null;
+    versicherungs_nr?: string | null;
   } | null;
 };

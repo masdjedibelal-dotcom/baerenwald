@@ -1,6 +1,7 @@
 "use client";
 
 import { PortalScreenDashboard } from "@/components/shared/PortalScreenDashboard";
+import { OrganisationHvSlaSection } from "@/components/org/OrganisationHvSlaSection";
 import {
   HV_DASHBOARD_EMPTY_RECENT,
   HV_DASHBOARD_KPI_DEFS,
@@ -67,6 +68,7 @@ export function OrganisationHvDashboard({
       recentTitle={HV_DASHBOARD_RECENT_TITLE}
       recentAllLabel={HV_DASHBOARD_RECENT_ALL}
       recentEmpty={HV_DASHBOARD_EMPTY_RECENT}
+      afterTiles={<OrganisationHvSlaSection />}
     />
   );
 }

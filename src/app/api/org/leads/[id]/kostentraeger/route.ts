@@ -12,7 +12,11 @@ import { supabaseAdmin } from "@/lib/supabase";
 
 export const runtime = "nodejs";
 
-type Body = { kostentraeger?: string; versicherungs_nr?: string };
+type Body = {
+  kostentraeger?: string;
+  versicherungs_nr?: string;
+  schaden_nr?: string | null;
+};
 
 export async function PATCH(
   req: Request,
@@ -49,14 +53,16 @@ export async function PATCH(
     return NextResponse.json({ error: "Vorgang nicht gefunden." }, { status: 404 });
   }
 
+  const now = new Date().toISOString();
   const patch: Record<string, unknown> = {
     kostentraeger: kt,
     kostentraeger_vorgeschlagen: false,
-    updated_at: new Date().toISOString(),
+    updated_at: now,
   };
   if (kt === "versicherung") {
     if (body.versicherungs_nr?.trim()) {
       patch.versicherungs_nr = body.versicherungs_nr.trim();
+      patch.versicherungs_nr_geaendert_am = now;
     } else if (lead.kunde_objekt_id) {
       const { data: obj } = await supabaseAdmin
         .from("kunden_objekte")
@@ -67,8 +73,13 @@ export async function PATCH(
         patch.versicherungs_nr = obj.versicherungs_nr.trim();
       }
     }
+    if (body.schaden_nr !== undefined) {
+      patch.schaden_nr = body.schaden_nr?.trim() || null;
+      patch.schaden_nr_geaendert_am = now;
+    }
   } else {
     patch.versicherungs_nr = null;
+    patch.schaden_nr = null;
   }
 
   const { error } = await supabaseAdmin.from("leads").update(patch).eq("id", id);

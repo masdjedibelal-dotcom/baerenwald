@@ -34,6 +34,9 @@ export function eingangStatusLabel(lead: OrganisationLead): string {
     return hvMeldungStatusLabel(lead.hv_meldung_status);
   }
   if (lead.org_freigabe_status === "ausstehend") return "Angebot zur Freigabe";
+  if (lead.org_freigabe_status === "beschluss_ausstehend") {
+    return "Wartet auf Beschluss";
+  }
   if (lead.org_freigabe_status === "abgelehnt") return "Abgelehnt";
   if (lead.org_freigabe_status === "freigegeben") return "Freigegeben";
   return lead.status?.trim() || "Neu";

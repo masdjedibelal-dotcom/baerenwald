@@ -149,7 +149,11 @@ export function resolveHvVorgangFilter(
   auftrag?: PortalAuftragKontext | null
 ): "zur_freigabe" | "aktiv" | "erledigt" {
   const freigabe = (lead.org_freigabe_status ?? "").trim();
-  if (freigabe === "ausstehend" || freigabe === "angefordert") {
+  if (
+    freigabe === "ausstehend" ||
+    freigabe === "beschluss_ausstehend" ||
+    freigabe === "angefordert"
+  ) {
     return "zur_freigabe";
   }
 
@@ -183,7 +187,11 @@ export function resolveVorgangPhase(lead: {
   if (hv === "abgeschlossen" || hv === "hm_erledigt") return "abgeschlossen";
 
   const freigabe = (lead.org_freigabe_status ?? "").trim();
-  if (freigabe === "ausstehend" || freigabe === "angefordert") {
+  if (
+    freigabe === "ausstehend" ||
+    freigabe === "beschluss_ausstehend" ||
+    freigabe === "angefordert"
+  ) {
     return "eingegangen";
   }
 

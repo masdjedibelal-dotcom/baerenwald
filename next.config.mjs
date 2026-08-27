@@ -70,6 +70,16 @@ const nextConfig = {
     ).replace(/\/$/, "");
     return [
       {
+        source: "/gpt",
+        destination: "/rechner",
+        permanent: false,
+      },
+      {
+        source: "/gpt/",
+        destination: "/rechner",
+        permanent: false,
+      },
+      {
         source: "/galerie",
         destination: "/leistungen",
         permanent: true,

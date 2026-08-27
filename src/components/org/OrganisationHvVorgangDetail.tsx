@@ -18,6 +18,7 @@ import {
 } from "@/components/shared/PortalDetailUi";
 import { VorgangDetailSectionNav } from "@/components/shared/VorgangDetailSectionNav";
 import { HvFreigabeInfoBanner } from "@/components/org/HvFreigabeInfoBanner";
+import { OrganisationVersicherungBlock } from "@/components/org/OrganisationVersicherungBlock";
 import { OrgHmBefundPanel } from "@/components/org/OrgHmBefundPanel";
 import {
   hvFreigabeEntfaellt,
@@ -131,6 +132,12 @@ export type OrganisationHvVorgangDetailProps = {
   kostentraeger?: string | null;
   kostentraegerVorgeschlagen?: boolean;
   versicherungsNr?: string | null;
+  schadenNr?: string | null;
+  versicherungsaktePdfUrl?: string | null;
+  versicherungsakteErstelltAm?: string | null;
+  schadenNrGeaendertAm?: string | null;
+  versicherungsNrGeaendertAm?: string | null;
+  objektPolicenNr?: string | null;
   meldeFotos?: string[];
   meldeStrasse?: string | null;
   meldePlz?: string | null;
@@ -350,6 +357,12 @@ export function OrganisationHvVorgangDetail({
   kostentraeger,
   kostentraegerVorgeschlagen,
   versicherungsNr,
+  schadenNr,
+  versicherungsaktePdfUrl,
+  versicherungsakteErstelltAm,
+  schadenNrGeaendertAm,
+  versicherungsNrGeaendertAm,
+  objektPolicenNr,
   meldeFotos,
   meldeStrasse,
   meldePlz,
@@ -502,6 +515,24 @@ export function OrganisationHvVorgangDetail({
     actionKindRaw === "freigabe" &&
     hvStatusNorm !== "hm_pruefung" &&
     hvStatusNorm !== "hm_erledigt";
+  const showVersicherungBlock =
+    detailRole === "hv" && !mieterStatusMode && !hausmeisterActor && Boolean(leadId);
+  const versicherungBlock = showVersicherungBlock ? (
+    <OrganisationVersicherungBlock
+      leadId={leadId}
+      kostentraeger={kostentraeger}
+      kostentraegerVorgeschlagen={kostentraegerVorgeschlagen}
+      versicherungsNr={versicherungsNr}
+      schadenNr={schadenNr}
+      hvMeldungStatus={hvMeldungStatus}
+      versicherungsaktePdfUrl={versicherungsaktePdfUrl}
+      versicherungsakteErstelltAm={versicherungsakteErstelltAm}
+      schadenNrGeaendertAm={schadenNrGeaendertAm}
+      versicherungsNrGeaendertAm={versicherungsNrGeaendertAm}
+      objektPolicenNr={objektPolicenNr}
+      onSaved={onUpdated}
+    />
+  ) : null;
   const empfohlen = pickEmpfohlenesAngebot(offers);
   const statusLabel =
     statusLabelOverride?.trim() || PORTAL_STATUS[displayFlowStatus].label;
@@ -730,9 +761,11 @@ export function OrganisationHvVorgangDetail({
           strasse: meldeStrasse,
           plz: meldePlz,
           ort: meldeOrt,
-          kostentraeger,
-          kostentraeger_vorgeschlagen: kostentraegerVorgeschlagen,
-          versicherungs_nr: versicherungsNr,
+          kostentraeger: showVersicherungBlock ? null : kostentraeger,
+          kostentraeger_vorgeschlagen: showVersicherungBlock
+            ? false
+            : kostentraegerVorgeschlagen,
+          versicherungs_nr: showVersicherungBlock ? null : versicherungsNr,
           org_freigabe_status: orgFreigabeStatus,
           hv_meldung_status: hvMeldungStatus,
         },
@@ -773,10 +806,10 @@ export function OrganisationHvVorgangDetail({
       orgFreigabeStatus,
       hvMeldungStatus,
       mieterStatusMode,
+      showVersicherungBlock,
     ]
   );
 
-  /** Angebot-Tab zeigt Leistungen & Preise — in Details nicht doppelt. */
   const uebersichtVm = useMemo(
     () =>
       actionKind === "angebot"
@@ -1215,6 +1248,7 @@ export function OrganisationHvVorgangDetail({
               !showAngebotSection
                 ? abschlussCard
                 : null}
+              {!showFreigabeButtons ? versicherungBlock : null}
               <VorgangDetailBlocks
                 vm={uebersichtVm}
                 detailsActions={
@@ -1254,6 +1288,7 @@ export function OrganisationHvVorgangDetail({
                   ) : undefined
                 }
               />
+              {showFreigabeButtons ? versicherungBlock : null}
             </section>
           ) : null}
 

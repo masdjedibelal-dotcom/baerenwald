@@ -2,8 +2,12 @@
 
 import { useEffect, useMemo, useState } from "react";
 
+import { OrganisationObjektFinanzPanel } from "@/components/org/OrganisationObjektFinanzPanel";
+import { OrganisationObjektPruefpflichtenPanel } from "@/components/org/OrganisationObjektPruefpflichtenPanel";
+import { OrganisationObjektAnlagenPanel } from "@/components/org/OrganisationObjektAnlagenPanel";
 import { OrganisationObjektDokumentePanel } from "@/components/org/OrganisationObjektDokumentePanel";
 import { OrganisationObjektEinheitenTab } from "@/components/org/OrganisationObjektEinheitenTab";
+import { OrganisationObjektHistoriePanel } from "@/components/org/OrganisationObjektHistoriePanel";
 import { OrganisationObjektHausmeisterMenu } from "@/components/org/OrganisationObjektHausmeisterMenu";
 import { OrganisationObjektKontaktePanel } from "@/components/org/OrganisationObjektKontaktePanel";
 import { PortalConfirmDialog } from "@/components/shared/PortalDetailUi";
@@ -27,6 +31,7 @@ import { PortalListCard } from "@/components/shared/PortalListCard";
 import { leadBelongsToObjekt } from "@/lib/org/match-lead-objekt";
 import { meldeKategorieLabel } from "@/lib/org/melde-kategorien";
 import { meldeKategorieFromLead } from "@/lib/org/org-eingang-utils";
+import type { ObjektAktePortalPayload } from "@/lib/org/objektakte/types";
 import type { OrganisationLead, OrganisationObjekt } from "@/lib/org/types";
 import type { PortalEinladungHvBlock } from "@/lib/portal2/portal-einladungen";
 import {
@@ -50,6 +55,7 @@ import {
   parseEinheitenCount,
   type ObjDetailTabId,
 } from "@/lib/portal2/objekte";
+import type { PortalDetailTab } from "@/components/shared/PortalDetailTabs";
 import { orgPortalToast, portalToastError } from "@/lib/shared/portal-toast";
 import {
   HAUSMEISTER_PORTAL_STATUS_LABEL,
@@ -102,6 +108,7 @@ export function OrganisationObjektDetail({
 }: Props) {
   const { runBusy } = usePortalBusy();
   const [tab, setTab] = useState<ObjDetailTabId>("stamm");
+  const [pruefpflichtBadge, setPruefpflichtBadge] = useState(0);
   const [schwelleAktiv, setSchwelleAktiv] = useState(
     () =>
       objekt.freigabe_schwelle_eur != null &&
@@ -128,6 +135,34 @@ export function OrganisationObjektDetail({
     () => decodeObjektMeta(objekt.notizen_intern),
     [objekt.notizen_intern]
   );
+
+  const detailTabs = useMemo((): readonly PortalDetailTab[] => {
+    return OBJ_DETAIL_TABS.map((t) =>
+      t.id === "pruefpflichten" && pruefpflichtBadge > 0
+        ? { ...t, badge: pruefpflichtBadge }
+        : t
+    );
+  }, [pruefpflichtBadge]);
+
+  useEffect(() => {
+    let cancelled = false;
+    void fetch(
+      `/api/org/objekte/pruefpflichten-summary`
+    )
+      .then(async (res) => {
+        if (!res.ok) return null;
+        return (await res.json()) as { byObjektId?: Record<string, number> };
+      })
+      .then((json) => {
+        if (!cancelled) {
+          setPruefpflichtBadge(json?.byObjektId?.[objekt.id] ?? 0);
+        }
+      })
+      .catch(() => undefined);
+    return () => {
+      cancelled = true;
+    };
+  }, [objekt.id]);
 
   const [hmOptions, setHmOptions] = useState<
     Array<{
@@ -167,6 +202,9 @@ export function OrganisationObjektDetail({
   const [editAutoSchadenakte, setEditAutoSchadenakte] = useState(false);
   const [versSaving, setVersSaving] = useState(false);
 
+  const [akte, setAkte] = useState<ObjektAktePortalPayload | null>(null);
+  const [akteLoading, setAkteLoading] = useState(true);
+
   useEffect(() => {
     let cancelled = false;
     void fetch(
@@ -198,6 +236,61 @@ export function OrganisationObjektDetail({
           setHmOptions([]);
           setHmAmObjekt(null);
         }
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [objekt.id]);
+
+  useEffect(() => {
+    let cancelled = false;
+    setAkteLoading(true);
+    void fetch(`/api/org/objekte/akte?objektId=${encodeURIComponent(objekt.id)}`)
+      .then((r) => r.json())
+      .then((j: ObjektAktePortalPayload & { error?: string }) => {
+        if (cancelled) return;
+        if ("error" in j && j.error) {
+          setAkte({ anlagen: [], historie: [], kpis: {
+            vorgaengeGesamt: 0,
+            offenInArbeit: 0,
+            kostenLaufendesJahr: 0,
+            kostenOhneAngabeImJahr: 0,
+            anlagenAnzahl: 0,
+            nachGewerk: [],
+          }});
+          return;
+        }
+        setAkte({
+          anlagen: j.anlagen ?? [],
+          historie: j.historie ?? [],
+          kpis: j.kpis ?? {
+            vorgaengeGesamt: 0,
+            offenInArbeit: 0,
+            kostenLaufendesJahr: 0,
+            kostenOhneAngabeImJahr: 0,
+            anlagenAnzahl: 0,
+            nachGewerk: [],
+          },
+        });
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setAkte({
+            anlagen: [],
+            historie: [],
+            kpis: {
+              vorgaengeGesamt: 0,
+              offenInArbeit: 0,
+              kostenLaufendesJahr: 0,
+              kostenOhneAngabeImJahr: 0,
+              anlagenAnzahl: 0,
+              nachGewerk: [],
+            },
+          });
+        }
+      })
+      .finally(() => {
+        if (!cancelled) setAkteLoading(false);
       });
     return () => {
       cancelled = true;
@@ -516,6 +609,18 @@ export function OrganisationObjektDetail({
   if (tab === "stamm") {
     body = (
       <div className="space-y-6">
+        {akteLoading ? (
+          <p className="portal-text-meta text-text-tertiary px-0.5">
+            Kennzahlen werden geladen …
+          </p>
+        ) : akte ? (
+          <OrganisationObjektFinanzPanel
+            objektId={objekt.id}
+            dokumenteByLeadId={dokumenteByLeadId}
+            onOpenVorgang={onOpenVorgang}
+          />
+        ) : null}
+
         <div className="space-y-3">
           <EinstellungenSectionHeader title="Objektdaten" onEdit={onEdit} />
           <EinstellungenPfList>
@@ -719,6 +824,28 @@ export function OrganisationObjektDetail({
         </div>
       </div>
     );
+  } else if (tab === "anlagen") {
+    body = akteLoading ? (
+      <p className="portal-text-meta text-text-tertiary px-0.5">
+        Anlagen werden geladen …
+      </p>
+    ) : (
+      <OrganisationObjektAnlagenPanel anlagen={akte?.anlagen ?? []} />
+    );
+  } else if (tab === "pruefpflichten") {
+    body = <OrganisationObjektPruefpflichtenPanel objektId={objekt.id} />;
+  } else if (tab === "historie") {
+    body = akteLoading ? (
+      <p className="portal-text-meta text-text-tertiary px-0.5">
+        Historie wird geladen …
+      </p>
+    ) : (
+      <OrganisationObjektHistoriePanel
+        rows={akte?.historie ?? []}
+        anlagen={akte?.anlagen ?? []}
+        onOpenVorgang={onOpenVorgang}
+      />
+    );
   } else if (tab === "einheiten") {
     body = (
       <OrganisationObjektEinheitenTab
@@ -882,7 +1009,7 @@ export function OrganisationObjektDetail({
         />
 
         <PortalDetailTabs
-          tabs={OBJ_DETAIL_TABS}
+          tabs={detailTabs}
           activeId={tab}
           onChange={(id) => setTab(id as ObjDetailTabId)}
           navLabel="Objekt-Abschnitte"

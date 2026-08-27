@@ -50,7 +50,11 @@ export function resolvePlattformStatus(
   if (hv === "abgelehnt") return "storniert";
 
   const freigabe = (lead.org_freigabe_status ?? "").trim();
-  if (freigabe === "ausstehend" || freigabe === "angefordert") {
+  if (
+    freigabe === "ausstehend" ||
+    freigabe === "beschluss_ausstehend" ||
+    freigabe === "angefordert"
+  ) {
     return "wartet_freigabe";
   }
 
@@ -71,6 +75,17 @@ export function resolvePlattformStatus(
 
 export function plattformStatusLabel(key: PlattformStatusKey): string {
   return PLATTFORM_STATUS_LABELS[key];
+}
+
+/** HV-Listen: Beschluss-Parkzustand mit eigenem Label. */
+export function plattformStatusLabelForLead(
+  key: PlattformStatusKey,
+  orgFreigabeStatus?: string | null
+): string {
+  if ((orgFreigabeStatus ?? "").trim() === "beschluss_ausstehend") {
+    return "Wartet auf Beschluss";
+  }
+  return plattformStatusLabel(key);
 }
 
 export function plattformStatusPillClass(key: PlattformStatusKey): string {

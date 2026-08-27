@@ -25,7 +25,7 @@ import type {
 import { isSupabaseConfigured, supabaseAdmin } from "@/lib/supabase";
 
 const EINGANG_SELECT_FULL =
-  "id, situation, bereiche, status, created_at, plz, strasse, hausnummer, zeitraum, kontakt_name, preis_min, preis_max, preis_unsicher, kontakt_nachricht, funnel_daten, kunde_objekt_id, anlass, erfassung_von, melder_name, melder_einheit, melder_telefon, melder_email, melde_tracking_token, einladung_token, einladung_status, org_freigabe_status, freigabe_bypass_grund, hv_meldung_status, service_modus, auftraggeber_kunde_id, kunde_id, kostentraeger, kostentraeger_vorgeschlagen, versicherungs_nr, versicherungsakte_pdf_url, vorgang_phase, kanal";
+  "id, situation, bereiche, status, created_at, plz, strasse, hausnummer, zeitraum, kontakt_name, preis_min, preis_max, preis_unsicher, kontakt_nachricht, funnel_daten, kunde_objekt_id, anlass, erfassung_von, melder_name, melder_einheit, melder_telefon, melder_email, melde_tracking_token, einladung_token, einladung_status, org_freigabe_status, beschluss_versammlung_am, beschluss_protokoll_url, freigabe_bypass_grund, hv_meldung_status, service_modus, auftraggeber_kunde_id, kunde_id, kostentraeger, kostentraeger_vorgeschlagen, versicherungs_nr, versicherungsakte_pdf_url, schaden_nr, schaden_nr_geaendert_am, versicherungs_nr_geaendert_am, versicherungsakte_erstellt_am, vorgang_phase, kanal";
 
 const EINGANG_SELECT_BASE =
   "id, situation, bereiche, status, created_at, plz, strasse, hausnummer, zeitraum, kontakt_name, preis_min, preis_max, kontakt_nachricht, funnel_daten, kunde_objekt_id, anlass, erfassung_von, melder_name, melder_einheit, melder_telefon, melder_email, einladung_token, einladung_status, org_freigabe_status, service_modus, auftraggeber_kunde_id, kunde_id";
@@ -108,6 +108,44 @@ async function loadEingangLeads(
 
   if (!eingangErr) {
     return (eingangRows ?? []) as Record<string, unknown>[];
+  }
+
+  if (/beschluss_versammlung_am|beschluss_protokoll_url/i.test(eingangErr.message)) {
+    const withoutBeschluss = EINGANG_SELECT_FULL.replace(
+      ", beschluss_versammlung_am, beschluss_protokoll_url",
+      ""
+    );
+    let qB = supabaseAdmin
+      .from("leads")
+      .select(withoutBeschluss)
+      .eq("auftraggeber_kunde_id", kundeId)
+      .eq("anlass", "meldung")
+      .is("geloescht_am", null)
+      .order("created_at", { ascending: false });
+    if (listMode) qB = qB.limit(PORTAL_LIST_LEAD_LIMIT);
+    const retryB = await qB;
+    if (!retryB.error) {
+      return (retryB.data ?? []) as unknown as Record<string, unknown>[];
+    }
+  }
+
+  if (/schaden_nr|versicherungsakte_erstellt|versicherungs_nr_geaendert/i.test(eingangErr.message)) {
+    const withoutSchaden = EINGANG_SELECT_FULL.replace(
+      ", schaden_nr, schaden_nr_geaendert_am, versicherungs_nr_geaendert_am, versicherungsakte_erstellt_am",
+      ""
+    );
+    let qSch = supabaseAdmin
+      .from("leads")
+      .select(withoutSchaden)
+      .eq("auftraggeber_kunde_id", kundeId)
+      .eq("anlass", "meldung")
+      .is("geloescht_am", null)
+      .order("created_at", { ascending: false });
+    if (listMode) qSch = qSch.limit(PORTAL_LIST_LEAD_LIMIT);
+    const retrySch = await qSch;
+    if (!retrySch.error) {
+      return (retrySch.data ?? []) as unknown as Record<string, unknown>[];
+    }
   }
 
   if (/versicherungsakte_pdf_url/i.test(eingangErr.message)) {
@@ -195,6 +233,7 @@ export async function getOrganisationPortalData(
     return {
       ...portal,
       titel: portal.name,
+      versicherungs_nr: o.versicherungs_nr ?? null,
       adresseZeile: portal.strasse ?? undefined,
       plzOrt: [portal.plz, portal.ort].filter(Boolean).join(" ") || undefined,
     };

@@ -12,7 +12,7 @@ import {
 } from "@/lib/portal/portal-anfrage-display";
 import { loadPortalAuftraegeByLeadIds } from "@/lib/portal/load-auftraege-by-lead-ids";
 import { portalErledigtFromLeadAndAuftrag } from "@/lib/portal/vorgang-erledigt";
-import { resolveOrgSubLabel } from "@/lib/portal2/brand-presets";
+import { orgBrandFromKunde, resolveBrandPalette } from "@/lib/portal2/brand-presets";
 import {
   MIETER_WL_FEHLER,
   MIETER_WL_STATUS_INAKTIV,
@@ -32,6 +32,7 @@ async function loadOrgBrand(
     impressumUrl: string | null;
   }
 > {
+  const fallbackPalette = resolveBrandPalette({});
   const fallback: MieterWlBrand & {
     orgKennung: string | null;
     datenschutzUrl: string | null;
@@ -41,9 +42,9 @@ async function loadOrgBrand(
     sub: "Verwaltung",
     logoUrl: null,
     logoKuerzel: null,
-    primary: null,
-    primaryDk: null,
-    soft: null,
+    primary: fallbackPalette.primary,
+    primaryDk: fallbackPalette.primaryDk,
+    soft: fallbackPalette.soft,
     tel: null,
     mail: null,
     orgKennung: null,
@@ -78,19 +79,18 @@ async function loadOrgBrand(
   const kennung = String(org.org_kennung ?? "")
     .trim()
     .toLowerCase();
+  const mapped = orgBrandFromKunde(org);
 
   return {
-    name:
-      String(org.org_anzeigename ?? org.name ?? "Verwaltung").trim() ||
-      "Verwaltung",
-    sub: resolveOrgSubLabel(org.org_sub as string | null),
+    name: mapped.name,
+    sub: mapped.sub,
     logoUrl: (org.org_logo_url as string | null) ?? null,
-    logoKuerzel: (org.org_logo_kuerzel as string | null) ?? null,
-    primary: (org.org_primary_color as string | null) ?? null,
-    primaryDk: (org.org_primary_color_dk as string | null) ?? null,
-    soft: (org.org_primary_color_soft as string | null) ?? null,
-    tel: (org.mieter_kontakt_telefon as string | null) ?? null,
-    mail: (org.mieter_kontakt_email as string | null) ?? null,
+    logoKuerzel: mapped.logo,
+    primary: mapped.primary,
+    primaryDk: mapped.primaryDk,
+    soft: mapped.soft,
+    tel: mapped.tel || null,
+    mail: mapped.mail || null,
     orgKennung: kennung || null,
     datenschutzUrl: (org.datenschutz_url as string | null) ?? null,
     impressumUrl: (org.impressum_url as string | null) ?? null,

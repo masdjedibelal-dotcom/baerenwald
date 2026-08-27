@@ -34,6 +34,7 @@ import {
   hvFreigabeEntfaellt,
   resolveAngebotZugestelltForHvFreigabe,
 } from "@/lib/org/freigabe-bypass";
+import { isOrgFreigabeOffen } from "@/lib/org/org-freigabe-status";
 import { leadBelongsToObjekt } from "@/lib/org/match-lead-objekt";
 import type {
   OrganisationKunde,
@@ -212,7 +213,7 @@ function MeldungDetail({
         angebot.pdf_url?.trim() ||
         angebot.dokumente?.some((d) => d.href?.trim()))
   );
-  const wartetOrgFreigabe = lead.org_freigabe_status === "ausstehend";
+  const wartetOrgFreigabe = isOrgFreigabeOffen(lead.org_freigabe_status);
   const freigabeInfoKind = hvFreigabeEntfaellt({
     orgFreigabeStatus: lead.org_freigabe_status,
     bypassGrund: lead.freigabe_bypass_grund,
@@ -361,6 +362,8 @@ function MeldungDetail({
           bypassGrund={lead.freigabe_bypass_grund}
           hvMeldungStatus={lead.hv_meldung_status}
           funnelDirektauftrag={funnelDirektauftragFromDaten(lead.funnel_daten)}
+          beschlussVersammlungAm={lead.beschluss_versammlung_am}
+          beschlussProtokollUrl={lead.beschluss_protokoll_url}
           schwelleLabel={
             kunde.freigabe_schwelle_eur != null
               ? new Intl.NumberFormat("de-DE", {

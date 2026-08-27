@@ -36,6 +36,8 @@ type Props = {
   tiles: PortalDashboardTile[];
   /** Überschrift über den KPI-Kacheln (z. B. „Vorgänge“). */
   tilesTitle?: string;
+  /** Zwischen KPI-Kacheln und „Zuletzt"-Liste. */
+  afterTiles?: ReactNode;
   recent: PortalDashboardRecentRow[];
   onOpenAll: () => void;
   onOpenItem: (id: string) => void;
@@ -67,6 +69,7 @@ export function PortalScreenDashboard({
   recentAllLabel = "Alle ansehen",
   recentEmpty = "Noch keine Vorgänge — sie erscheinen hier, sobald etwas losgeht.",
   beforeTiles,
+  afterTiles,
   after,
 }: Props) {
   const view = usePortalView();
@@ -148,6 +151,10 @@ export function PortalScreenDashboard({
             );
           })}
         </div>
+
+        {afterTiles ? (
+          <div className="portal-dash-after-tiles px-4 pb-2">{afterTiles}</div>
+        ) : null}
 
         <div className="portal-dash-recent">
           <div className="portal-dash-recent-head">
@@ -291,6 +298,10 @@ export function PortalScreenDashboard({
           );
         })}
       </div>
+
+      {afterTiles ? (
+        <div style={{ padding: "0 24px 8px" }}>{afterTiles}</div>
+      ) : null}
 
       <div style={{ padding: "10px 24px 24px" }}>
         <div

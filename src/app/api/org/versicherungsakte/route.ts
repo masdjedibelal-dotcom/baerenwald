@@ -65,7 +65,8 @@ export async function GET(req: Request) {
     pdfUrl = lead.versicherungsakte_pdf_url
       ? String(lead.versicherungsakte_pdf_url)
       : "";
-    if (!pdfUrl) {
+    const regenerate = url.searchParams.get("regenerate") === "1";
+    if (!pdfUrl || regenerate) {
       const generated = await ensureVersicherungsakteForLead(leadId, {
         actorId: session.userId,
         actorRolle: session.rolle,

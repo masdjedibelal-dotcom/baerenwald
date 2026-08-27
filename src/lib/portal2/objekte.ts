@@ -72,6 +72,9 @@ export const OBJ_WIZ_TITLES: Record<ObjWizStepId, string> = {
 export const OBJ_DETAIL_TABS = [
   { id: "stamm", label: "Stammdaten" },
   { id: "einheiten", label: "Einheiten" },
+  { id: "anlagen", label: "Anlagen" },
+  { id: "pruefpflichten", label: "Prüfpflichten" },
+  { id: "historie", label: "Historie" },
   { id: "vorgaenge", label: "Vorgänge" },
   { id: "regeln", label: "Freigabe" },
   { id: "dokumente", label: "Dokumente" },
@@ -202,6 +205,8 @@ export type ObjCardModel = {
   typLine: string;
   einheitenLabel: string;
   offen: number;
+  /** Überfällig + bald fällig (Prüfpflichten). */
+  pruefpflichtFaellig?: number;
   coverUrl?: string | null;
 };
 
@@ -220,7 +225,8 @@ export function buildObjCardModel(
     einheitenCount?: number | null;
     cover_url?: string | null;
   },
-  offen = 0
+  offen = 0,
+  pruefpflichtFaellig = 0
 ): ObjCardModel {
   return {
     id: o.id,
@@ -232,6 +238,7 @@ export function buildObjCardModel(
       o.einheitenCount
     ),
     offen,
+    pruefpflichtFaellig: pruefpflichtFaellig > 0 ? pruefpflichtFaellig : undefined,
     coverUrl: o.cover_url ?? null,
   };
 }

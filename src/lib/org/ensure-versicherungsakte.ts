@@ -83,7 +83,7 @@ export async function ensureVersicherungsakteForLead(
   const { data: lead, error } = await supabaseAdmin
     .from("leads")
     .select(
-      "id, kostentraeger, versicherungs_nr, kontakt_nachricht, notizen, situation, melder_name, created_at, strasse, hausnummer, plz, kunde_objekt_id, auftraggeber_kunde_id, kunde_id"
+      "id, kostentraeger, versicherungs_nr, schaden_nr, kontakt_nachricht, notizen, situation, melder_name, created_at, strasse, hausnummer, plz, kunde_objekt_id, auftraggeber_kunde_id, kunde_id"
     )
     .eq("id", id)
     .maybeSingle();
@@ -326,7 +326,7 @@ export async function ensureVersicherungsakteForLead(
     objektTitel,
     objektAdresse,
     versicherungsNr: versNr,
-    schadenNr: versNr,
+    schadenNr: String(lead.schaden_nr ?? "").trim() || null,
     schadendatum: (lead.created_at as string | undefined) ?? null,
     kostentraegerLabel: kostentraegerLabel(kt),
     hergang: hergangFromLead({
@@ -353,8 +353,10 @@ export async function ensureVersicherungsakteForLead(
   const { data: pub } = supabaseAdmin.storage.from(BUCKET).getPublicUrl(path);
   const url = pub.publicUrl;
 
+  const now = new Date().toISOString();
   const leadPatch: Record<string, unknown> = {
     versicherungsakte_pdf_url: url,
+    versicherungsakte_erstellt_am: now,
     kostentraeger: "versicherung",
   };
   if (versNr) leadPatch.versicherungs_nr = versNr;

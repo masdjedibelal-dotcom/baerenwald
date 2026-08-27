@@ -1418,8 +1418,15 @@ export function PortalFunnelHost({
         if (contactName) q.set("name", contactName);
         if (contactEmail) q.set("email", contactEmail);
         if (contactTel) q.set("telefon", contactTel);
-        router.push(`/melden/bestaetigung?${q.toString()}`);
-        onDone();
+        const confirmUrl = `/melden/bestaetigung?${q.toString()}`
+        router.push(confirmUrl)
+        // Harte Navigation falls SPA-Routing hängen bleibt (F-176).
+        window.setTimeout(() => {
+          if (window.location.pathname.includes("/melden/") && !window.location.pathname.includes("/bestaetigung")) {
+            window.location.assign(confirmUrl)
+          }
+        }, 1200)
+        onDone()
         navigatedAway = true;
         return;
       }

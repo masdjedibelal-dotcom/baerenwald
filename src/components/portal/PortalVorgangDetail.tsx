@@ -278,6 +278,12 @@ export function PortalVorgangDetail({
         kostentraeger={item.kostentraeger}
         kostentraegerVorgeschlagen={item.kostentraegerVorgeschlagen}
         versicherungsNr={item.versicherungsNr}
+        schadenNr={item.schadenNr}
+        versicherungsaktePdfUrl={item.versicherungsaktePdfUrl}
+        versicherungsakteErstelltAm={item.versicherungsakteErstelltAm}
+        schadenNrGeaendertAm={item.schadenNrGeaendertAm}
+        versicherungsNrGeaendertAm={item.versicherungsNrGeaendertAm}
+        objektPolicenNr={item.objektVersicherungsNr}
         meldeFotos={item.meldeFotos}
         meldeStrasse={item.meldeStrasse}
         meldePlz={item.meldePlz}

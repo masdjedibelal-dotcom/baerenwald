@@ -17,7 +17,7 @@ import { PortalListCard } from "@/components/shared/PortalListCard";
 import { buildKundeVorgaenge } from "@/lib/portal/build-kunde-vorgaenge";
 import { PortalVorgangDetail } from "@/components/portal/PortalVorgangDetail";
 import {
-  plattformStatusLabel,
+  plattformStatusLabelForLead,
   plattformStatusPillClass,
   resolvePlattformStatus,
 } from "@/lib/vorgang/plattform-status";
@@ -39,6 +39,7 @@ import {
   buildAuftragByLeadId,
   isInOrgFreigabeQueue,
 } from "@/lib/org/org-vorgang-filter";
+import { isOrgFreigabeOffen } from "@/lib/org/org-freigabe-status";
 
 type AngebotFreigabe = {
   id: string;
@@ -120,7 +121,7 @@ function buildAngebotFreigaben(
   const freigabeLeadIds = new Set(
     leads
       .filter((l) => isInOrgFreigabeQueue(l, auftragByLeadId))
-      .filter((l) => l.org_freigabe_status === "ausstehend")
+      .filter((l) => isOrgFreigabeOffen(l.org_freigabe_status))
       .map((l) => l.id)
   );
 
@@ -200,7 +201,7 @@ export function OrganisationFreigabePanel({
     const freigabeLeadIds = new Set(
       leads
         .filter((l) => isInOrgFreigabeQueue(l, auftragByLeadId))
-        .filter((l) => l.org_freigabe_status === "ausstehend")
+        .filter((l) => isOrgFreigabeOffen(l.org_freigabe_status))
         .map((l) => l.id)
     );
     return angebote
@@ -321,7 +322,7 @@ export function OrganisationFreigabePanel({
     return (
       <div className="-mx-4 -mt-2 min-w-0 lg:-mx-6">
         {/* Bypass-Banner kommt aus dem Detail; hier nur CTAs wenn Freigabe offen. */}
-        {!bypassGrund && orgStatus === "ausstehend" ? (
+        {!bypassGrund && isOrgFreigabeOffen(orgStatus) ? (
           <OrgFreigabeBanner
             leadId={leadId}
             status={orgStatus}
@@ -331,6 +332,8 @@ export function OrganisationFreigabePanel({
               leadMeta?.funnel_daten
             )}
             schwelleLabel={schwelleLabel}
+            beschlussVersammlungAm={leadMeta?.beschluss_versammlung_am}
+            beschlussProtokollUrl={leadMeta?.beschluss_protokoll_url}
             onUpdated={onRefresh}
           />
         ) : null}
@@ -448,8 +451,9 @@ export function OrganisationFreigabePanel({
                     showChevron
                     title={a.titel}
                     subtitle={subtitle}
-                    statusLabel={plattformStatusLabel(
-                      resolvePlattformStatus(lead ?? {})
+                    statusLabel={plattformStatusLabelForLead(
+                      resolvePlattformStatus(lead ?? {}),
+                      lead?.org_freigabe_status
                     )}
                     statusPillClass={plattformStatusPillClass(
                       resolvePlattformStatus(lead ?? {})
