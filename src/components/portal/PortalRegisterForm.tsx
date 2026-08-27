@@ -17,8 +17,15 @@ import { cn } from "@/lib/utils";
 
 export type PortalRegisterPrefill = {
   name?: string;
+  vorname?: string;
+  nachname?: string;
+  firma?: string;
   email?: string;
   telefon?: string;
+  strasse?: string;
+  hausnummer?: string;
+  plz?: string;
+  ort?: string;
   /** Felder Name/E-Mail/Telefon nur anzeigen, nicht ändern */
   locked?: boolean;
 };
@@ -33,6 +40,13 @@ type Props = {
   /** Submit-Label (Einladung: „Konto aktivieren“) */
   submitLabel?: string;
 };
+
+function splitPrefillName(full: string): { vorname: string; nachname: string } {
+  const parts = full.trim().split(/\s+/).filter(Boolean);
+  if (!parts.length) return { vorname: "", nachname: "" };
+  if (parts.length === 1) return { vorname: parts[0], nachname: "" };
+  return { vorname: parts[0], nachname: parts.slice(1).join(" ") };
+}
 
 /**
  * MeinBärenwald-Registrierung mit E-Mail-OTP statt Bestätigungslink.
@@ -53,25 +67,49 @@ export function PortalRegisterForm({
       searchParams.get("from") === "melde";
     return {
       name: searchParams.get("name")?.trim() || undefined,
+      vorname: searchParams.get("vorname")?.trim() || undefined,
+      nachname: searchParams.get("nachname")?.trim() || undefined,
+      firma: searchParams.get("firma")?.trim() || undefined,
       email: searchParams.get("email")?.trim() || undefined,
       telefon: searchParams.get("telefon")?.trim() || undefined,
+      strasse: searchParams.get("strasse")?.trim() || undefined,
+      hausnummer: searchParams.get("hausnummer")?.trim() || undefined,
+      plz: searchParams.get("plz")?.trim() || undefined,
+      ort: searchParams.get("ort")?.trim() || undefined,
       locked,
     };
   }, [searchParams]);
 
   const locked = Boolean(prefill?.locked || fromQuery.locked);
-  const initialName = prefill?.name?.trim() || fromQuery.name || "";
+  const initialFullName = prefill?.name?.trim() || fromQuery.name || "";
+  const splitName = splitPrefillName(initialFullName);
   const initialEmail = prefill?.email?.trim() || fromQuery.email || "";
   const initialTelefon =
     prefill?.telefon?.trim() || fromQuery.telefon || "";
 
-  const [name, setName] = useState(initialName);
-  const [email, setEmail] = useState(initialEmail);
-  const [telefon, setTelefon] = useState(initialTelefon);
   const [kundentyp, setKundentyp] = useState<PortalRegisterKundeTyp | null>(
     null
   );
   const [kundentypError, setKundentypError] = useState(false);
+  const [firma, setFirma] = useState(
+    prefill?.firma?.trim() || fromQuery.firma || ""
+  );
+  const [vorname, setVorname] = useState(
+    prefill?.vorname?.trim() || fromQuery.vorname || splitName.vorname
+  );
+  const [nachname, setNachname] = useState(
+    prefill?.nachname?.trim() || fromQuery.nachname || splitName.nachname
+  );
+  const [strasse, setStrasse] = useState(
+    prefill?.strasse?.trim() || fromQuery.strasse || ""
+  );
+  const [hausnummer, setHausnummer] = useState(
+    prefill?.hausnummer?.trim() || fromQuery.hausnummer || ""
+  );
+  const [plz, setPlz] = useState(prefill?.plz?.trim() || fromQuery.plz || "");
+  const [ort, setOrt] = useState(prefill?.ort?.trim() || fromQuery.ort || "");
+  const [email, setEmail] = useState(initialEmail);
+  const [telefon, setTelefon] = useState(initialTelefon);
   const [password, setPassword] = useState("");
   const [datenschutz, setDatenschutz] = useState(false);
   const [agb, setAgb] = useState(false);
@@ -83,10 +121,16 @@ export function PortalRegisterForm({
 
   const inviteToken = einladungToken?.trim() || "";
   const askKundeTyp = !inviteToken;
-  const nameLabel =
-    kundentyp === "gewerbe" || kundentyp === "hausverwaltung"
-      ? "Firma / Name"
-      : "Name";
+  const needsFirma =
+    askKundeTyp &&
+    (kundentyp === "gewerbe" || kundentyp === "hausverwaltung");
+  const needsStammAdresse = askKundeTyp;
+
+  const displayName = useMemo(() => {
+    if (firma.trim()) return firma.trim();
+    return [vorname.trim(), nachname.trim()].filter(Boolean).join(" ");
+  }, [firma, vorname, nachname]);
+
   const nextPath =
     searchParams.get("next") ||
     (inviteToken
@@ -129,6 +173,26 @@ export function PortalRegisterForm({
     } else {
       setKundentypError(false);
     }
+    if (needsFirma && !firma.trim()) {
+      setError(
+        kundentyp === "hausverwaltung"
+          ? "Bitte Firmenname der Hausverwaltung angeben."
+          : "Bitte Firmenname angeben."
+      );
+      hasError = true;
+    }
+    if (needsStammAdresse) {
+      if (!vorname.trim() && !nachname.trim()) {
+        setError("Bitte Vor- und Nachname angeben.");
+        hasError = true;
+      } else if (!strasse.trim() || !hausnummer.trim()) {
+        setError("Bitte Straße und Hausnummer angeben.");
+        hasError = true;
+      } else if (!plz.trim() || !ort.trim()) {
+        setError("Bitte PLZ und Ort angeben.");
+        hasError = true;
+      }
+    }
     if (!datenschutz) {
       setDatenschutzError(true);
       hasError = true;
@@ -146,7 +210,14 @@ export function PortalRegisterForm({
     setLoading(true);
     setError(null);
     const result = await registerMeinBaerenwaldWithOtp({
-      name,
+      name: displayName || email.trim(),
+      vorname: vorname.trim() || undefined,
+      nachname: nachname.trim() || undefined,
+      firma: needsFirma ? firma.trim() : undefined,
+      strasse: needsStammAdresse ? strasse.trim() : undefined,
+      hausnummer: needsStammAdresse ? hausnummer.trim() : undefined,
+      plz: needsStammAdresse ? plz.trim() : undefined,
+      ort: needsStammAdresse ? ort.trim() : undefined,
       email,
       telefon,
       password,
@@ -225,6 +296,8 @@ export function PortalRegisterForm({
     ? "portal-input w-full rounded-xl border border-border-default bg-muted/40 px-3 py-3 text-text-secondary"
     : "portal-input w-full rounded-xl border border-border-default bg-surface-card px-3 py-3 focus:border-accent";
 
+  const canSubmitInvite = !locked || Boolean(email.trim() && displayName);
+
   return (
     <form onSubmit={onSubmit} className="space-y-4">
       {hintText ? (
@@ -239,21 +312,6 @@ export function PortalRegisterForm({
         </p>
       ) : null}
 
-      <label className="block space-y-1.5">
-        <span className="portal-form-label">{nameLabel}</span>
-        <input
-          type="text"
-          autoComplete="name"
-          required
-          value={name}
-          onChange={(e) => {
-            if (!locked) setName(e.target.value);
-          }}
-          readOnly={locked}
-          className={fieldClass}
-        />
-      </label>
-
       {askKundeTyp ? (
         <fieldset className="space-y-2">
           <legend className="portal-form-label">Ich bin …</legend>
@@ -267,6 +325,7 @@ export function PortalRegisterForm({
                   onClick={() => {
                     setKundentyp(opt.value);
                     setKundentypError(false);
+                    setError(null);
                   }}
                   className={cn(
                     "rounded-xl border px-3 py-3 text-left transition",
@@ -291,6 +350,109 @@ export function PortalRegisterForm({
             </p>
           ) : null}
         </fieldset>
+      ) : null}
+
+      {needsFirma ? (
+        <label className="block space-y-1.5">
+          <span className="portal-form-label">
+            {kundentyp === "hausverwaltung" ? "Firmenname" : "Firmenname"}
+          </span>
+          <input
+            type="text"
+            autoComplete="organization"
+            required
+            value={firma}
+            onChange={(e) => setFirma(e.target.value)}
+            className={fieldClass}
+          />
+        </label>
+      ) : null}
+
+      {needsStammAdresse || inviteToken ? (
+        <div className="grid gap-4 sm:grid-cols-2">
+          <label className="block space-y-1.5">
+            <span className="portal-form-label">Vorname</span>
+            <input
+              type="text"
+              autoComplete="given-name"
+              required={needsStammAdresse}
+              value={vorname}
+              onChange={(e) => {
+                if (!locked) setVorname(e.target.value);
+              }}
+              readOnly={locked}
+              className={fieldClass}
+            />
+          </label>
+          <label className="block space-y-1.5">
+            <span className="portal-form-label">Nachname</span>
+            <input
+              type="text"
+              autoComplete="family-name"
+              required={needsStammAdresse}
+              value={nachname}
+              onChange={(e) => {
+                if (!locked) setNachname(e.target.value);
+              }}
+              readOnly={locked}
+              className={fieldClass}
+            />
+          </label>
+        </div>
+      ) : null}
+
+      {needsStammAdresse ? (
+        <>
+          <div className="grid gap-4 sm:grid-cols-[1fr_7rem]">
+            <label className="block space-y-1.5">
+              <span className="portal-form-label">Straße</span>
+              <input
+                type="text"
+                autoComplete="address-line1"
+                required
+                value={strasse}
+                onChange={(e) => setStrasse(e.target.value)}
+                className={fieldClass}
+              />
+            </label>
+            <label className="block space-y-1.5">
+              <span className="portal-form-label">Nr.</span>
+              <input
+                type="text"
+                autoComplete="address-line2"
+                required
+                value={hausnummer}
+                onChange={(e) => setHausnummer(e.target.value)}
+                className={fieldClass}
+              />
+            </label>
+          </div>
+          <div className="grid gap-4 sm:grid-cols-[7rem_1fr]">
+            <label className="block space-y-1.5">
+              <span className="portal-form-label">PLZ</span>
+              <input
+                type="text"
+                inputMode="numeric"
+                autoComplete="postal-code"
+                required
+                value={plz}
+                onChange={(e) => setPlz(e.target.value)}
+                className={fieldClass}
+              />
+            </label>
+            <label className="block space-y-1.5">
+              <span className="portal-form-label">Ort</span>
+              <input
+                type="text"
+                autoComplete="address-level2"
+                required
+                value={ort}
+                onChange={(e) => setOrt(e.target.value)}
+                className={fieldClass}
+              />
+            </label>
+          </div>
+        </>
       ) : null}
 
       <label className="block space-y-1.5">
@@ -323,9 +485,6 @@ export function PortalRegisterForm({
             if (!locked) setTelefon(e.target.value);
           }}
           readOnly={locked}
-          placeholder={
-            locked ? undefined : "Für die Verknüpfung mit bestehenden Anfragen"
-          }
           className={fieldClass}
         />
       </label>
@@ -406,7 +565,7 @@ export function PortalRegisterForm({
 
       <button
         type="submit"
-        disabled={locked && (!name.trim() || !email.trim())}
+        disabled={!canSubmitInvite}
         className="btn-pill-primary portal-btn w-full disabled:opacity-60"
       >
         {submitLabel}

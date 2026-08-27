@@ -85,18 +85,20 @@ export async function ensurePortalRegistrationEmailAvailable(
   const email = normalizeKundenEmail(emailRaw);
   if (!email) return { ok: false, error: "Ungültige E-Mail." };
 
-  const { isPortalAuthEmailRegistered } = await import(
-    "@/lib/funnel/funnel-portal-otp"
-  );
-  if (await isPortalAuthEmailRegistered(email)) {
+  // Zuerst verwaiste Auth-User entfernen (CRM-Kunde gelöscht, Auth blieb).
+  // Danach erst „bereits registriert“ prüfen — sonst blockiert ein Orphan ewig.
+  const reclaimed = await reclaimOrphanPortalAuthUser(email);
+  if (reclaimed === "linked") {
     return {
       ok: false,
       error: "Diese E-Mail ist bereits registriert. Bitte melden Sie sich an.",
     };
   }
 
-  const reclaimed = await reclaimOrphanPortalAuthUser(email);
-  if (reclaimed === "linked") {
+  const { isPortalAuthEmailRegistered } = await import(
+    "@/lib/funnel/funnel-portal-otp"
+  );
+  if (await isPortalAuthEmailRegistered(email)) {
     return {
       ok: false,
       error: "Diese E-Mail ist bereits registriert. Bitte melden Sie sich an.",

@@ -47,6 +47,11 @@ async function resolveUnconfirmedUserId(
   return found.id;
 }
 
+function trimOrNull(v: string | undefined | null): string | null {
+  const t = (v ?? "").trim();
+  return t || null;
+}
+
 export async function registerMeinBaerenwaldWithOtp(input: {
   name: string;
   email: string;
@@ -55,6 +60,13 @@ export async function registerMeinBaerenwaldWithOtp(input: {
   einladungToken?: string;
   /** privat | gewerbe | hausverwaltung — Pflicht außer bei Einladung */
   kundentyp?: string;
+  vorname?: string;
+  nachname?: string;
+  firma?: string;
+  strasse?: string;
+  hausnummer?: string;
+  plz?: string;
+  ort?: string;
 }): Promise<PortalSignupOtpResult> {
   const allowed = await assertPortalEmailAllowed(input.email);
   if (!allowed.ok) return allowed;
@@ -64,11 +76,25 @@ export async function registerMeinBaerenwaldWithOtp(input: {
   }
 
   const email = normalizeKundenEmail(input.email);
-  const name = input.name.trim();
   const password = input.password;
-  const telefon = (input.telefon ?? "").trim() || null;
+  const telefon = trimOrNull(input.telefon);
   const invite = Boolean(input.einladungToken?.trim());
   const kundentyp = normalizePortalRegisterKundeTyp(input.kundentyp);
+  const vorname = trimOrNull(input.vorname);
+  const nachname = trimOrNull(input.nachname);
+  const firma = trimOrNull(input.firma);
+  const strasse = trimOrNull(input.strasse);
+  const hausnummer = trimOrNull(input.hausnummer);
+  const plz = trimOrNull(input.plz);
+  const ort = trimOrNull(input.ort);
+
+  const personName = [vorname, nachname].filter(Boolean).join(" ");
+  const name =
+    firma ||
+    personName ||
+    input.name.trim() ||
+    email.split("@")[0]?.replace(/[._]/g, " ") ||
+    "";
 
   if (!email || !name) {
     return { ok: false, error: "Bitte Name und E-Mail angeben." };
@@ -80,6 +106,28 @@ export async function registerMeinBaerenwaldWithOtp(input: {
     return {
       ok: false,
       error: "Bitte wählen Sie, ob Privat, Gewerbe oder Hausverwaltung.",
+    };
+  }
+  if (
+    !invite &&
+    (kundentyp === "gewerbe" || kundentyp === "hausverwaltung") &&
+    !firma
+  ) {
+    return {
+      ok: false,
+      error:
+        kundentyp === "hausverwaltung"
+          ? "Bitte Firmenname der Hausverwaltung angeben."
+          : "Bitte Firmenname angeben.",
+    };
+  }
+  if (!invite && (!vorname || !nachname)) {
+    return { ok: false, error: "Bitte Vor- und Nachname angeben." };
+  }
+  if (!invite && (!strasse || !hausnummer || !plz || !ort)) {
+    return {
+      ok: false,
+      error: "Bitte Straße, Hausnummer, PLZ und Ort angeben.",
     };
   }
 
@@ -94,6 +142,13 @@ export async function registerMeinBaerenwaldWithOtp(input: {
     agb_akzeptiert_at: now,
   };
   if (kundentyp) meta.kundentyp = kundentyp;
+  if (vorname) meta.vorname = vorname;
+  if (nachname) meta.nachname = nachname;
+  if (firma) meta.firma = firma;
+  if (strasse) meta.strasse = strasse;
+  if (hausnummer) meta.hausnummer = hausnummer;
+  if (plz) meta.plz = plz;
+  if (ort) meta.ort = ort;
   if (input.einladungToken?.trim()) {
     meta.portal_einladung_token = input.einladungToken.trim();
   }
@@ -120,11 +175,10 @@ export async function registerMeinBaerenwaldWithOtp(input: {
           user_metadata: meta,
         });
         if (!retry.error && retry.data.user) {
-          const vorname = name.split(/\s+/)[0];
           return issueSignupOtp({
             email,
             userId: retry.data.user.id,
-            vorname,
+            vorname: vorname ?? name.split(/\s+/)[0],
             brand: "meinbaerenwald",
           });
         }
@@ -141,11 +195,10 @@ export async function registerMeinBaerenwaldWithOtp(input: {
     };
   }
 
-  const vorname = name.split(/\s+/)[0];
   return issueSignupOtp({
     email,
     userId: created.user.id,
-    vorname,
+    vorname: vorname ?? name.split(/\s+/)[0],
     brand: "meinbaerenwald",
   });
 }
@@ -285,15 +338,21 @@ export async function confirmPortalSignupCode(opts: {
   const kundentyp = normalizePortalRegisterKundeTyp(meta.kundentyp) as
     | PortalRegisterKundeTyp
     | null;
+  const metaStr = (key: string) =>
+    typeof meta[key] === "string" ? (meta[key] as string) : null;
   const link = await linkPortalKundeToAuthUser({
     userId: result.userId,
     email,
-    name:
-      typeof meta.name === "string"
-        ? meta.name
-        : email.split("@")[0] ?? email,
-    telefon: typeof meta.telefon === "string" ? meta.telefon : null,
+    name: metaStr("name") ?? email.split("@")[0] ?? email,
+    telefon: metaStr("telefon"),
     typ: kundentyp,
+    vorname: metaStr("vorname"),
+    nachname: metaStr("nachname"),
+    firma: metaStr("firma"),
+    strasse: metaStr("strasse"),
+    hausnummer: metaStr("hausnummer"),
+    plz: metaStr("plz"),
+    ort: metaStr("ort"),
   });
   if (!link.ok) return { ok: false, error: link.error };
 

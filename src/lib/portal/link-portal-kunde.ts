@@ -189,6 +189,45 @@ async function linkHvPortalRolleToKunde(
   }
 }
 
+function trimStamm(v: string | null | undefined): string | null {
+  const t = (v ?? "").trim();
+  return t || null;
+}
+
+/** Stammdaten aus Selbstregistrierung → CRM `kunden`-Spalten. */
+function buildRegisterStammPatch(opts: {
+  name?: string | null;
+  telefon?: string | null;
+  vorname?: string | null;
+  nachname?: string | null;
+  firma?: string | null;
+  strasse?: string | null;
+  hausnummer?: string | null;
+  plz?: string | null;
+  ort?: string | null;
+}): Record<string, string | null> {
+  const vorname = trimStamm(opts.vorname);
+  const nachname = trimStamm(opts.nachname);
+  const firma = trimStamm(opts.firma);
+  const personName = [vorname, nachname].filter(Boolean).join(" ");
+  const name =
+    firma ||
+    personName ||
+    trimStamm(opts.name) ||
+    null;
+
+  const patch: Record<string, string | null> = {};
+  if (name) patch.name = name;
+  if (vorname) patch.vorname = vorname;
+  if (nachname) patch.nachname = nachname;
+  if (trimStamm(opts.strasse)) patch.strasse = trimStamm(opts.strasse);
+  if (trimStamm(opts.hausnummer)) patch.hausnummer = trimStamm(opts.hausnummer);
+  if (trimStamm(opts.plz)) patch.plz = trimStamm(opts.plz);
+  if (trimStamm(opts.ort)) patch.ort = trimStamm(opts.ort);
+  if (trimStamm(opts.telefon)) patch.telefon = trimStamm(opts.telefon);
+  return patch;
+}
+
 /**
  * Verknüpft Auth-User mit kunden.auth_user_id.
  * Die Login-E-Mail ist führend — Name dient nur zur Anzeige, nie zur Zuordnung.
@@ -200,12 +239,20 @@ export async function linkPortalKundeToAuthUser(opts: {
   telefon?: string | null;
   /** Selbstregistrierung: privat | gewerbe | hausverwaltung → CRM `kunden.typ` */
   typ?: PortalRegisterKundeTyp | string | null;
+  vorname?: string | null;
+  nachname?: string | null;
+  firma?: string | null;
+  strasse?: string | null;
+  hausnummer?: string | null;
+  plz?: string | null;
+  ort?: string | null;
 }): Promise<LinkPortalKundeResult> {
   const email = normalizeKundenEmail(opts.email);
   if (!email) {
     return { ok: false, error: "Keine E-Mail-Adresse im Konto." };
   }
   const registerTyp = normalizePortalRegisterKundeTyp(opts.typ);
+  const stammPatch = buildRegisterStammPatch(opts);
 
   try {
     const gesperrt = await isKundePortalGesperrt({ email });
@@ -279,6 +326,7 @@ export async function linkPortalKundeToAuthUser(opts: {
       .update({
         auth_user_id: opts.userId,
         email,
+        ...stammPatch,
         ...(hvRole && !keepOrgModus ? { portal_modus: hvRole.portalModus } : {}),
       })
       .eq("id", canonical.id);
@@ -314,6 +362,7 @@ export async function linkPortalKundeToAuthUser(opts: {
   }
 
   const name =
+    stammPatch.name ||
     opts.name?.trim() ||
     email.split("@")[0]?.replace(/[._]/g, " ") ||
     "Kunde";
@@ -331,10 +380,20 @@ export async function linkPortalKundeToAuthUser(opts: {
     .insert({
       name: hvRole?.name || name,
       email,
-      telefon: opts.telefon?.trim() || hvRole?.telefon || null,
+      telefon:
+        stammPatch.telefon ||
+        opts.telefon?.trim() ||
+        hvRole?.telefon ||
+        null,
       typ: crmTyp,
       portal_modus: portalModus,
       auth_user_id: opts.userId,
+      ...(stammPatch.vorname ? { vorname: stammPatch.vorname } : {}),
+      ...(stammPatch.nachname ? { nachname: stammPatch.nachname } : {}),
+      ...(stammPatch.strasse ? { strasse: stammPatch.strasse } : {}),
+      ...(stammPatch.hausnummer ? { hausnummer: stammPatch.hausnummer } : {}),
+      ...(stammPatch.plz ? { plz: stammPatch.plz } : {}),
+      ...(stammPatch.ort ? { ort: stammPatch.ort } : {}),
     })
     .select("id")
     .single();
@@ -364,6 +423,7 @@ export async function linkPortalKundeToAuthUser(opts: {
           .update({
             auth_user_id: opts.userId,
             email,
+            ...stammPatch,
             ...(hvRole ? { portal_modus: hvRole.portalModus } : {}),
           })
           .eq("id", existingId);
