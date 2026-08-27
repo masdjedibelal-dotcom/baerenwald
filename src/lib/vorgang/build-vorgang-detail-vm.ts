@@ -123,7 +123,7 @@ function leistungenFromPartnerKonditionen(
 }
 
 export type BuildKundeHvVmInput = {
-  role: "hv" | "kunde" | "mieter";
+  role: "hv" | "kunde" | "mieter" | "hausmeister";
   idLabel: string;
   titel: string;
   statusLabel?: string;

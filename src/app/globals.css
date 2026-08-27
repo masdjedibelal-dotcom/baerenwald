@@ -2889,6 +2889,9 @@ h3 {
   html.portal-modal-open .portal-detail-mobile-cta,
   html.portal-modal-open .portal-shell-mobile-nav,
   html.portal-modal-open .portal-shell-fab,
+  body.portal-shell-busy .portal-detail-mobile-cta,
+  body.portal-shell-busy .portal-shell-mobile-nav,
+  body.portal-shell-busy .portal-shell-fab,
   body:has(.portal-doc-viewer) .portal-detail-mobile-cta,
   body:has(.portal-doc-viewer) .portal-shell-mobile-nav,
   body:has(.portal-doc-viewer) .portal-shell-fab,
@@ -2901,8 +2904,10 @@ h3 {
   html.portal-modal-open .portal-detail-mobile-cta *,
   html.portal-modal-open .portal-shell-mobile-nav *,
   html.portal-modal-open .portal-shell-fab *,
+  body.portal-shell-busy .portal-detail-mobile-cta *,
+  body.portal-shell-busy .portal-shell-mobile-nav *,
+  body.portal-shell-busy .portal-shell-fab *,
   body:has(.portal-doc-viewer) .portal-detail-mobile-cta *,
-  body:has(.portal-doc-viewer) .portal-shell-mobile-nav *,
   body:has(.portal-gpt-shell--overlay) .portal-detail-mobile-cta * {
     pointer-events: none !important;
   }

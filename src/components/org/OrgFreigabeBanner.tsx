@@ -97,7 +97,7 @@ export function OrgFreigabeBanner({
         if (aktion === "freigegeben") orgPortalToast.freigegeben();
         else if (aktion === "abgelehnt") orgPortalToast.freigabeAbgelehnt();
         onUpdated();
-      });
+      }, 480);
     } finally {
       setBusy(false);
     }
@@ -107,21 +107,23 @@ export function OrgFreigabeBanner({
     setBusy(true);
     setError(null);
     try {
-      const res = await fetch("/api/org/freigabe", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          leadId,
-          beschluss_versammlung_am: versammlungAm || null,
-          beschluss_protokoll_url: protokollUrl.trim() || null,
-        }),
-      });
-      const json = (await res.json().catch(() => ({}))) as { error?: string };
-      if (!res.ok) {
-        setError(json.error ?? "Speichern fehlgeschlagen.");
-        return;
-      }
-      onUpdated();
+      await runBusy(async () => {
+        const res = await fetch("/api/org/freigabe", {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            leadId,
+            beschluss_versammlung_am: versammlungAm || null,
+            beschluss_protokoll_url: protokollUrl.trim() || null,
+          }),
+        });
+        const json = (await res.json().catch(() => ({}))) as { error?: string };
+        if (!res.ok) {
+          setError(json.error ?? "Speichern fehlgeschlagen.");
+          return;
+        }
+        onUpdated();
+      }, 320);
     } finally {
       setBusy(false);
     }
@@ -176,7 +178,7 @@ export function OrgFreigabeBanner({
             disabled={busy}
             onClick={() => void act("abgelehnt")}
           >
-            Ablehnen
+            {busy ? "Wird geladen…" : "Ablehnen"}
           </button>
           <button
             type="button"
@@ -184,7 +186,7 @@ export function OrgFreigabeBanner({
             disabled={busy}
             onClick={() => void act("freigegeben")}
           >
-            Freigeben
+            {busy ? "Wird geladen…" : "Freigeben"}
           </button>
         </div>
       </div>
@@ -208,7 +210,7 @@ export function OrgFreigabeBanner({
           disabled={busy}
           onClick={() => void act("abgelehnt")}
         >
-          Ablehnen
+          {busy ? "Wird geladen…" : "Ablehnen"}
         </button>
         <button
           type="button"
@@ -216,7 +218,7 @@ export function OrgFreigabeBanner({
           disabled={busy}
           onClick={() => void act("beschluss_ausstehend")}
         >
-          Beschluss erforderlich
+          {busy ? "Wird geladen…" : "Beschluss erforderlich"}
         </button>
         <button
           type="button"
@@ -224,7 +226,7 @@ export function OrgFreigabeBanner({
           disabled={busy}
           onClick={() => void act("freigegeben")}
         >
-          Freigeben
+          {busy ? "Wird geladen…" : "Freigeben"}
         </button>
       </div>
     </div>

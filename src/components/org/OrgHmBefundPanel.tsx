@@ -51,6 +51,16 @@ type Props = {
   onUpdated?: () => void;
   /** Meldet dem Parent, ob ein Befund existiert (Tab bleibt nach BW-Übergabe). */
   onBefundPresence?: (has: boolean) => void;
+  /** Sticky-CTAs im Parent (HM-Portal). */
+  onActionsReady?: (
+    actions: {
+      editable: boolean;
+      openAbschluss: () => void;
+      ablehnenAnHv: () => void;
+    } | null
+  ) => void;
+  /** Inline-Aktionszeile ausblenden, wenn Parent Sticky nutzt. */
+  hideInlineActions?: boolean;
 };
 
 function statusLabel(status: LeadBefundPunktStatus | null): string | null {
@@ -216,6 +226,8 @@ export function OrgHmBefundPanel({
   readOnly: readOnlyProp,
   onUpdated,
   onBefundPresence,
+  onActionsReady,
+  hideInlineActions = false,
 }: Props) {
   const hv = (hvMeldungStatus ?? "").trim().toLowerCase();
   const editable = hv === "hm_pruefung" && !readOnlyProp;
@@ -394,6 +406,23 @@ export function OrgHmBefundPanel({
     });
   }
 
+  useEffect(() => {
+    if (!onActionsReady) return;
+    if (!editable || !befund) {
+      onActionsReady(null);
+      return;
+    }
+    onActionsReady({
+      editable: true,
+      openAbschluss: openAbschlussSheet,
+      ablehnenAnHv: () => {
+        void ablehnenAnHv();
+      },
+    });
+    return () => onActionsReady(null);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- stable callbacks via state
+  }, [onActionsReady, editable, befund?.id]);
+
   async function confirmAbschluss() {
     if (!befund || !pendingErgebnis) return;
     await runBusy(async () => {
@@ -553,21 +582,21 @@ export function OrgHmBefundPanel({
             )}
           </section>
 
-          {editable ? (
+          {editable && !hideInlineActions ? (
             <div className="portal-action-row pt-1">
               <button
                 type="button"
                 className="portal-action-btn portal-action-btn--secondary"
                 onClick={() => void ablehnenAnHv()}
               >
-                Ablehnen
+                Zurück an Verwaltung
               </button>
               <button
                 type="button"
                 className="portal-action-btn portal-action-btn--primary"
                 onClick={openAbschlussSheet}
               >
-                Abschließen
+                Prüfung abschließen
               </button>
             </div>
           ) : null}
@@ -748,7 +777,7 @@ export function OrgHmBefundPanel({
                 className="mt-0.5 block text-[12px] font-normal"
                 style={{ color: PORTAL_VAR.sub }}
               >
-                Kein Auftrag an Bärenwald.
+                Kein Auftrag an Bärenwald — Vorgang wird geschlossen.
               </span>
             </button>
             <button
@@ -757,7 +786,13 @@ export function OrgHmBefundPanel({
               style={{ borderColor: PORTAL_VAR.line }}
               onClick={() => setSheetStep("fachfirma")}
             >
-              Fachfirma nötig
+              An Bärenwald weitergeben
+              <span
+                className="mt-0.5 block text-[12px] font-normal"
+                style={{ color: PORTAL_VAR.sub }}
+              >
+                Fachfirma nötig — Bärenwald übernimmt.
+              </span>
             </button>
           </div>
         ) : null}

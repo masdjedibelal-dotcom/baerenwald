@@ -65,6 +65,7 @@ import { formatPreisspanneDisplay } from "@/lib/org/hv-meldung-workflow";
 import {
   buildMeldeVorgangTitel,
   leadIstMeldeTitelQuelle,
+  titelFromFunnelLeistungen,
 } from "@/lib/org/melde-vorgang-titel";
 
 function meldeFotosFromFunnel(funnelDaten: unknown): string[] {
@@ -356,7 +357,11 @@ function anfrageTitleFromLead(
   }
 
   /** HV-selbst / normale Anfrage: Situation · Gewerk — nie „Meldung“. */
-  const title = [vorhaben, gewerk].filter(Boolean).join(" · ") || "Vorgang";
+  const fromFunnel = titelFromFunnelLeistungen(lead.funnel_daten);
+  const title =
+    [vorhaben, gewerk].filter(Boolean).join(" · ") ||
+    fromFunnel ||
+    "Vorgang";
   return { title, anfrageVorhaben: vorhaben, anfrageGewerk: gewerk };
 }
 

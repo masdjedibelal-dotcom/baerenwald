@@ -3,7 +3,7 @@
  * Drei Blöcke: Auftraggeber · Objekt & Melder · Ausführung
  */
 
-export type VorgangDetailRole = "hv" | "mieter" | "kunde" | "partner";
+export type VorgangDetailRole = "hv" | "mieter" | "kunde" | "partner" | "hausmeister";
 
 /** Render-Tiefe eines Blocks */
 export type BlockSight =
@@ -43,6 +43,13 @@ export const VORGANG_DETAIL_SIGHT: Record<VorgangDetailRole, VorgangDetailSight>
       objektMelder: "safe",
       ausfuehrung: "summary",
       leistungen: "vk",
+    },
+    /** Hausmeister: Melde-Details + nächster Schritt, keine Preise/Freigabe. */
+    hausmeister: {
+      auftraggeber: "hidden",
+      objektMelder: "full",
+      ausfuehrung: "plain",
+      leistungen: "hidden",
     },
     partner: {
       auftraggeber: "hidden",

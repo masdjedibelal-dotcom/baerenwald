@@ -208,6 +208,17 @@ export function PortalShell({
   }, []);
 
   const showContentBusy = contentBusy || ctxBusy;
+
+  useEffect(() => {
+    const root = document.body;
+    if (!showContentBusy) {
+      root.classList.remove("portal-shell-busy");
+      return;
+    }
+    root.classList.add("portal-shell-busy");
+    return () => root.classList.remove("portal-shell-busy");
+  }, [showContentBusy]);
+
   const bottomNav = mobileNav ?? nav;
   const shellStyle = applyBrandStyle({
     primary: brandPrimary ?? orgPrimaryColor,

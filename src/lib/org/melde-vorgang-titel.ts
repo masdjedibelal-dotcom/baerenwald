@@ -173,13 +173,18 @@ export function buildMeldeVorgangTitel(input: MeldeVorgangTitelInput): string {
   }
 
   if (!core || isGenericTitel(core) || isMeldeBereichFallbackTitel(core)) {
-    const vorhaben = formatVorhabenTitel(input.situation, input.bereiche);
+    const vorhaben = formatVorhabenTitel(
+      input.situation,
+      input.bereiche,
+      input.funnelDaten
+    );
     core =
       firstMeaningfulLine(input.beschreibung) ||
       (bereichLabel && !isMeldeBereichFallbackTitel(bereichLabel)
         ? bereichLabel
         : null) ||
-      vorhaben ||
+      (vorhaben !== "Vorgang" ? vorhaben : null) ||
+      titelFromFunnelLeistungen(input.funnelDaten) ||
       "Vorgang";
   }
 
@@ -199,15 +204,56 @@ function formatAnfrageGewerk(bereiche?: string[] | null): string | undefined {
   return parts.length ? parts.join(", ") : undefined;
 }
 
+/** Leistungstitel aus Funnel (CRM was_zeilen / Positionen) — Fallback statt „Vorgang“. */
+export function titelFromFunnelLeistungen(funnelDaten: unknown): string | null {
+  if (funnelDaten == null) return null;
+
+  const pools: unknown[] = [];
+  if (Array.isArray(funnelDaten)) {
+    pools.push(...funnelDaten);
+  } else if (typeof funnelDaten === "object") {
+    const f = funnelDaten as Record<string, unknown>;
+    if (Array.isArray(f.was_zeilen)) pools.push(...f.was_zeilen);
+    if (Array.isArray(f.positionen)) pools.push(...f.positionen);
+    if (Array.isArray(f.leistungen)) pools.push(...f.leistungen);
+    for (const key of ["items", "zeilen"] as const) {
+      if (Array.isArray(f[key])) pools.push(...(f[key] as unknown[]));
+    }
+  } else {
+    return null;
+  }
+
+  const titles: string[] = [];
+  for (const row of pools) {
+    if (!row || typeof row !== "object") continue;
+    const t = String(
+      (row as { titel?: unknown; title?: unknown; leistung?: unknown }).titel ??
+        (row as { title?: unknown }).title ??
+        (row as { leistung?: unknown }).leistung ??
+        ""
+    ).trim();
+    if (t && !isGenericTitel(t)) titles.push(t);
+  }
+  if (!titles.length) return null;
+  if (titles.length === 1) return titles[0]!.slice(0, 80);
+  return `${titles[0]!.slice(0, 50)} (+${titles.length - 1})`;
+}
+
 /** Situation · Gewerk — wie normale Anfragen / HV-selbst angelegte Vorgänge. */
 export function formatVorhabenTitel(
   situation?: string | null,
-  bereiche?: string[] | null
+  bereiche?: string[] | null,
+  funnelDaten?: unknown
 ): string {
   const vorhabenLabel = labelSituation(situation);
   const vorhaben = vorhabenLabel !== "—" ? vorhabenLabel : undefined;
   const gewerk = formatAnfrageGewerk(bereiche);
-  return [vorhaben, gewerk].filter(Boolean).join(" · ") || "Vorgang";
+  const fromFunnel = titelFromFunnelLeistungen(funnelDaten);
+  return (
+    [vorhaben, gewerk].filter(Boolean).join(" · ") ||
+    fromFunnel ||
+    "Vorgang"
+  );
 }
 
 /**

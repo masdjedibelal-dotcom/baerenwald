@@ -2,6 +2,7 @@
 
 import { useEffect, useState, type CSSProperties } from "react";
 
+import { usePortalBusy } from "@/components/shared/PortalBusyContext";
 import { isHvDirektauftragInfoOnly } from "@/lib/org/org-direktauftrag";
 import { fetchObjektHmDelegierbar } from "@/lib/org/fetch-objekt-hm-delegierbar";
 import { orgPortalToast } from "@/lib/shared/portal-toast";
@@ -58,8 +59,10 @@ export function HvMeldungListActions({
   onUpdated,
 }: Props) {
   const [busy, setBusy] = useState(false);
+  const [busyAktion, setBusyAktion] = useState<Aktion | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [hasHm, setHasHm] = useState(false);
+  const { runBusy } = usePortalBusy();
 
   const status = (lead.hv_meldung_status ?? "neu").trim().toLowerCase();
   const isNeu = status === "neu";
@@ -88,26 +91,33 @@ export function HvMeldungListActions({
 
   const act = async (aktion: Aktion) => {
     setBusy(true);
+    setBusyAktion(aktion);
     setError(null);
     try {
-      const res = await fetch("/api/org/meldung-aktion", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ leadId: lead.id, aktion }),
-      });
-      const json = (await res.json()) as { error?: string };
-      if (!res.ok) {
-        setError(json.error ?? "Aktion fehlgeschlagen.");
-        return;
-      }
-      if (aktion === "hm_begutachten") orgPortalToast.hmBegutachten();
-      else if (aktion === "ablehnen") orgPortalToast.meldungAbgelehnt();
-      else orgPortalToast.angebotEingefordert();
-      onUpdated();
+      await runBusy(async () => {
+        const res = await fetch("/api/org/meldung-aktion", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ leadId: lead.id, aktion }),
+        });
+        const json = (await res.json()) as { error?: string };
+        if (!res.ok) {
+          setError(json.error ?? "Aktion fehlgeschlagen.");
+          return;
+        }
+        if (aktion === "hm_begutachten") orgPortalToast.hmBegutachten();
+        else if (aktion === "ablehnen") orgPortalToast.meldungAbgelehnt();
+        else orgPortalToast.angebotEingefordert();
+        onUpdated();
+      }, 480);
     } finally {
       setBusy(false);
+      setBusyAktion(null);
     }
   };
+
+  const label = (aktion: Aktion, idle: string) =>
+    busyAktion === aktion ? "Wird geladen…" : idle;
 
   return (
     <div className="space-y-1.5">
@@ -122,7 +132,7 @@ export function HvMeldungListActions({
           className="rounded-lg px-3.5 py-2 text-[12.5px] font-semibold disabled:opacity-60"
           style={btnStyle("danger")}
         >
-          Ablehnen
+          {label("ablehnen", "Ablehnen")}
         </button>
         {hasHm ? (
           <button
@@ -135,7 +145,7 @@ export function HvMeldungListActions({
             className="rounded-lg px-3.5 py-2 text-[12.5px] font-semibold disabled:opacity-60"
             style={btnStyle("ghost")}
           >
-            Hausmeister
+            {label("hm_begutachten", "Hausmeister")}
           </button>
         ) : null}
         <button
@@ -148,7 +158,7 @@ export function HvMeldungListActions({
           className="rounded-lg px-3.5 py-2 text-[12.5px] font-semibold disabled:opacity-60"
           style={btnStyle("primary")}
         >
-          Direkt Bärenwald
+          {label("direkt_baerenwald", "Direkt Bärenwald")}
         </button>
       </div>
       {error ? (

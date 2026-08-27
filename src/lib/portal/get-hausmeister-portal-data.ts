@@ -119,25 +119,35 @@ export async function getHausmeisterPortalData(kundeId: string): Promise<{
   const { data: leadRows } = await supabaseAdmin
     .from("leads")
     .select(
-      "id, situation, bereiche, status, vorgang_phase, created_at, plz, strasse, hausnummer, zeitraum, kontakt_name, preis_min, preis_max, budget_ca, kontakt_nachricht, funnel_daten, kunde_objekt_id, anlass, kanal, auftraggeber_kunde_id, hv_meldung_status, org_freigabe_status, melde_tracking_token"
+      "id, situation, bereiche, status, vorgang_phase, created_at, plz, strasse, hausnummer, zeitraum, kontakt_name, kontakt_nachricht, notizen, preis_min, preis_max, budget_ca, funnel_daten, kunde_objekt_id, anlass, kanal, erfassung_von, auftraggeber_kunde_id, hv_meldung_status, org_freigabe_status, freigabe_bypass_grund, melde_tracking_token, melder_name, melder_einheit, melder_telefon, melder_email"
     )
     .in("kunde_objekt_id", objektIds)
     .is("geloescht_am", null)
     .order("created_at", { ascending: false });
 
-  const leads: LeadRow[] = (leadRows ?? []).map((l) => {
-    const raw = l as LeadRow;
-    return {
-      ...raw,
-      objekt: resolvePortalObjekt({
-        objektId: raw.kunde_objekt_id,
-        objektById,
-        kunde: kundeRow,
-        leadPlz: raw.plz,
-      }),
-      dokumente: [],
-    };
-  });
+  /** Nur Vorgänge, die beim HM liegen oder lagen — kein CRM-Junk ohne Prüfung. */
+  const hmRelevant = (l: { hv_meldung_status?: string | null }) => {
+    const s = String(l.hv_meldung_status ?? "")
+      .trim()
+      .toLowerCase();
+    return s === "hm_pruefung" || s === "hm_erledigt";
+  };
+
+  const leads: LeadRow[] = (leadRows ?? [])
+    .filter((l) => hmRelevant(l as { hv_meldung_status?: string | null }))
+    .map((l) => {
+      const raw = l as unknown as LeadRow;
+      return {
+        ...raw,
+        objekt: resolvePortalObjekt({
+          objektId: raw.kunde_objekt_id,
+          objektById,
+          kunde: kundeRow,
+          leadPlz: raw.plz,
+        }),
+        dokumente: [],
+      };
+    });
 
   const base = await getPortalDataForKunde(id, { mode: "list" });
   const byId = new Map<string, LeadRow>();
@@ -146,7 +156,7 @@ export async function getHausmeisterPortalData(kundeId: string): Promise<{
       base.leads as LeadRow[],
       objektIds
     )) {
-      byId.set(String(l.id), l);
+      if (hmRelevant(l)) byId.set(String(l.id), l);
     }
   }
   for (const l of leads) byId.set(String(l.id), l);

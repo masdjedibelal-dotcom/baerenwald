@@ -123,22 +123,42 @@ export default async function PortalDashboardPage({
     tryRedeemOpenHausmeisterInvitesForAuthUser,
     tryRedeemOpenBewohnerInvitesForAuthUser,
   } = await import("@/lib/portal2/portal-einladungen-server");
-  const hmRedeem = await tryRedeemOpenHausmeisterInvitesForAuthUser({
-    authUserId: user.id,
-    email: user.email,
-    name: meta?.name,
-    telefon: meta?.telefon,
-  });
-  const bewRedeem = hmRedeem.redeemed
-    ? { redeemed: false as const }
-    : await tryRedeemOpenBewohnerInvitesForAuthUser({
+
+  const { data: linkKundeRow } = await supabaseAdmin
+    .from("kunden")
+    .select("id, portal_modus, typ")
+    .eq("id", link.kundeId)
+    .maybeSingle();
+  const linkIsOrg =
+    String(linkKundeRow?.portal_modus ?? "").toLowerCase() === "organisation" ||
+    ["hausverwaltung", "hv"].includes(
+      String(linkKundeRow?.typ ?? "").toLowerCase()
+    );
+
+  // HM-Redeem darf Org-/HV-Login nicht überschreiben — nur bei ?view=hausmeister
+  // oder wenn kein Organisations-Konto verknüpft ist.
+  let portalKundeId = link.kundeId;
+  if (forceHausmeisterView || !linkIsOrg) {
+    const hmRedeem = await tryRedeemOpenHausmeisterInvitesForAuthUser({
+      authUserId: user.id,
+      email: user.email,
+      name: meta?.name,
+      telefon: meta?.telefon,
+    });
+    if (hmRedeem.portalKundeId) {
+      portalKundeId = hmRedeem.portalKundeId;
+    } else if (!linkIsOrg) {
+      const bewRedeem = await tryRedeemOpenBewohnerInvitesForAuthUser({
         authUserId: user.id,
         email: user.email,
         name: meta?.name,
         telefon: meta?.telefon,
       });
-  let portalKundeId =
-    hmRedeem.portalKundeId ?? bewRedeem.portalKundeId ?? link.kundeId;
+      if (bewRedeem.portalKundeId) {
+        portalKundeId = bewRedeem.portalKundeId;
+      }
+    }
+  }
 
   const { isBaerenwaldPrimaryStaffEmail } = await import(
     "@/lib/auth/baerenwald-primary-staff"
@@ -171,6 +191,21 @@ export default async function PortalDashboardPage({
         portalKundeId = act.portalKundeId;
         break;
       }
+    }
+  }
+
+  // Ohne view=hausmeister: wenn zur E-Mail ein Org-Konto existiert, immer dorthin
+  if (!forceHausmeisterView) {
+    const { data: orgKunde } = await supabaseAdmin
+      .from("kunden")
+      .select("id")
+      .ilike("email", user.email.trim().toLowerCase())
+      .eq("portal_modus", "organisation")
+      .order("created_at", { ascending: true })
+      .limit(1)
+      .maybeSingle();
+    if (orgKunde?.id) {
+      portalKundeId = String(orgKunde.id);
     }
   }
 

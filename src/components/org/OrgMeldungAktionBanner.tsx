@@ -137,7 +137,7 @@ export function OrgMeldungAktionBanner({
         else if (aktion === "ablehnen") orgPortalToast.meldungAbgelehnt();
         else orgPortalToast.angebotEingefordert();
         onUpdated();
-      });
+      }, 480);
     } finally {
       setBusy(false);
     }
@@ -160,7 +160,7 @@ export function OrgMeldungAktionBanner({
           onClick={() => void act("ablehnen")}
           className="portal-action-btn portal-action-btn--secondary"
         >
-          Ablehnen
+          {busy ? "Wird geladen…" : "Ablehnen"}
         </button>
         {hasHm ? (
           <button
@@ -169,7 +169,7 @@ export function OrgMeldungAktionBanner({
             onClick={() => void act("hm_begutachten")}
             className="portal-action-btn portal-action-btn--secondary"
           >
-            Selbst begutachten (Hausmeister)
+            {busy ? "Wird geladen…" : "Selbst begutachten (Hausmeister)"}
           </button>
         ) : null}
         <button
@@ -178,7 +178,7 @@ export function OrgMeldungAktionBanner({
           onClick={() => void act("direkt_baerenwald")}
           className="portal-action-btn portal-action-btn--primary"
         >
-          Direkt Bärenwald beauftragen
+          {busy ? "Wird geladen…" : "Direkt Bärenwald beauftragen"}
         </button>
       </div>
     </div>

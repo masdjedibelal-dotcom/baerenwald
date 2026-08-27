@@ -171,6 +171,9 @@ export function VorgangDetailBlocks({
   const sight = sightProp ?? sightForRole(vm.role);
   const { auftraggeber: A, objektMelder: B, ausfuehrung: C } = vm;
   const isHv = vm.role === "hv";
+  const isHausmeister = vm.role === "hausmeister";
+  const isKunde = vm.role === "kunde";
+  const isMieter = vm.role === "mieter";
 
   const showAuftraggeber = visible(sight.auftraggeber);
   const showObjekt = visible(sight.objektMelder);
@@ -188,8 +191,6 @@ export function VorgangDetailBlocks({
     null;
   const plzOrtDisplay = B.plzOrt?.trim() || null;
 
-  const isKunde = vm.role === "kunde";
-  const isMieter = vm.role === "mieter";
   const hasMeldeTextDetails = Boolean(
     B.situationLabel ||
       B.bereichLabel ||
@@ -200,9 +201,9 @@ export function VorgangDetailBlocks({
       (vm.detailsLeistungen && vm.leistungen.length > 0)
   );
   const showMeldeDetails =
-    (isHv || isKunde || isMieter) &&
+    (isHv || isKunde || isMieter || isHausmeister) &&
     (hasMeldeTextDetails ||
-      ((isHv || isKunde || isMieter) && Boolean(B.fotos && B.fotos.length > 0)));
+      Boolean(B.fotos && B.fotos.length > 0));
 
   return (
     <div className={cn("space-y-3.5", className)}>
@@ -219,7 +220,7 @@ export function VorgangDetailBlocks({
               <MetaRow label="Objekt" value={B.objektTitel} />
             ) : null}
             <MetaRow label="Adresse" value={adresseDisplay || "—"} />
-            {isHv || plzOrtDisplay ? (
+            {isHv || isHausmeister || plzOrtDisplay ? (
               <MetaRow label="PLZ / Ort" value={plzOrtDisplay || "—"} />
             ) : null}
             {B.einheit ? <MetaRow label="Einheit" value={B.einheit} /> : null}
@@ -234,7 +235,7 @@ export function VorgangDetailBlocks({
             ) : null}
           </div>
           {/* Beschreibung nur hier, wenn kein eigener Details-Block folgt */}
-          {!isHv && !isKunde && !isMieter && B.beschreibung && !siteOnly ? (
+          {!isHv && !isKunde && !isMieter && !isHausmeister && B.beschreibung && !siteOnly ? (
             <p className="portal-text-body mt-3 whitespace-pre-wrap text-text-secondary">
               {B.beschreibung}
             </p>
@@ -275,7 +276,9 @@ export function VorgangDetailBlocks({
               </p>
             </div>
           ) : null}
-          {(isHv || isKunde || isMieter) && B.fotos && B.fotos.length > 0 ? (
+          {(isHv || isKunde || isMieter || isHausmeister) &&
+          B.fotos &&
+          B.fotos.length > 0 ? (
             <div className="mt-3">
               <p className="mb-2 text-[12px] font-semibold uppercase tracking-wide text-text-secondary">
                 Fotos
@@ -395,7 +398,9 @@ export function VorgangDetailBlocks({
           ) : null}
           {plainExec && !C.terminLabel && vm.leistungen.length === 0 ? (
             <p className="portal-text-meta text-text-secondary">
-              Sobald Termine oder Arbeiten feststehen, erscheinen sie hier.
+              {isHausmeister
+                ? "Prüfen Sie die Checkliste — danach selbst erledigen oder an Bärenwald weitergeben."
+                : "Sobald Termine oder Arbeiten feststehen, erscheinen sie hier."}
             </p>
           ) : null}
         </BlockShell>

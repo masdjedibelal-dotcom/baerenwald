@@ -32,7 +32,6 @@ import { PortalLegalFooter } from "@/components/shared/PortalLegalFooter";
 import { PortalRoleBadge } from "@/components/shared/PortalRoleBadge";
 import { PortalShell } from "@/components/shared/PortalShell";
 import { PortalHeaderSearch } from "@/components/shared/PortalHeaderSearch";
-import { PortalEmptyState } from "@/components/shared/PortalStateView";
 import { buildKundeVorgaenge } from "@/lib/portal/build-kunde-vorgaenge";
 import { findKundeVorgangByQueryId } from "@/lib/portal/portal-detail-item";
 import { buildKundeVorgangCardRows } from "@/lib/portal/portal-list-mappers";
@@ -59,6 +58,7 @@ import {
 } from "@/lib/portal2/kunde-dashboard";
 import {
   HAUSMEISTER_DASHBOARD_ROLE,
+  HAUSMEISTER_LISTE_EMPTY,
   HAUSMEISTER_LISTE_TITLE,
   HAUSMEISTER_OBJEKTE_EMPTY,
   HAUSMEISTER_OBJEKTE_TITLE,
@@ -522,7 +522,11 @@ export function HausmeisterPortalClient({
                 }))}
               />
               {pageRows.length === 0 ? (
-                <PortalEmptyState role="hausmeister" compact canCreate={false} />
+                <div className="rounded-2xl border border-border-light bg-white px-4 py-8 text-center">
+                  <p className="portal-text-body text-text-secondary">
+                    {HAUSMEISTER_LISTE_EMPTY}
+                  </p>
+                </div>
               ) : (
                 <div className={portalListStackClass("responsive")}>
                   {pageRows.map((row) => (

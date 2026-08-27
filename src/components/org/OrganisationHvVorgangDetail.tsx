@@ -146,7 +146,7 @@ export type OrganisationHvVorgangDetailProps = {
   meldeBereich?: string | null;
   meldeZeitraum?: string | null;
   meldeFachdetails?: Array<{ label: string; value: string }>;
-  detailRole?: "hv" | "kunde" | "mieter";
+  detailRole?: "hv" | "kunde" | "mieter" | "hausmeister";
   /** Hausmeister-Portal: Befund im Tab editierbar, ohne HV-only CTAs. */
   hausmeisterActor?: boolean;
   /**
@@ -211,6 +211,7 @@ function ActionBtn({
   onClick,
   kind = "primary",
   disabled,
+  loading,
   className,
 }: {
   label: string;
@@ -219,13 +220,17 @@ function ActionBtn({
   onClick: () => void;
   kind?: "primary" | "secondary" | "ghost" | "danger";
   disabled?: boolean;
+  loading?: boolean;
   className?: string;
 }) {
+  const shown = loading ? "Wird geladen…" : label;
+  const shownMobile = loading ? "…" : mobileLabel;
   return (
     <button
       type="button"
-      disabled={disabled}
+      disabled={disabled || loading}
       onClick={onClick}
+      aria-busy={loading || undefined}
       className={cn(
         "portal-action-btn",
         kind === "ghost"
@@ -238,13 +243,13 @@ function ActionBtn({
         className
       )}
     >
-      {mobileLabel ? (
+      {shownMobile ? (
         <>
-          <span className="sm:hidden">{mobileLabel}</span>
-          <span className="hidden sm:inline">{label}</span>
+          <span className="sm:hidden">{shownMobile}</span>
+          <span className="hidden sm:inline">{shown}</span>
         </>
       ) : (
-        label
+        shown
       )}
     </button>
   );
@@ -380,6 +385,7 @@ export function OrganisationHvVorgangDetail({
   const { runBusy } = usePortalBusy();
   const deepLinkAppliedRef = useRef(false);
   const [busy, setBusy] = useState(false);
+  const [busyAktion, setBusyAktion] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [accepted, setAccepted] = useState(false);
   const [rejected, setRejected] = useState(false);
@@ -387,10 +393,25 @@ export function OrganisationHvVorgangDetail({
   const [hasHmKontakt, setHasHmKontakt] = useState(false);
   const [hmPortalZugang, setHmPortalZugang] = useState(false);
   const [hasBefund, setHasBefund] = useState(false);
+  /** Nach HM-Delegation sofort Tab/UI, bevor Refresh ankommt. */
+  const [hvStatusOptimistic, setHvStatusOptimistic] = useState<string | null>(
+    null
+  );
+  const [hmStickyActions, setHmStickyActions] = useState<{
+    editable: boolean;
+    openAbschluss: () => void;
+    ablehnenAnHv: () => void;
+  } | null>(null);
   const [activeSection, setActiveSection] =
     useState<PortalDetailSectionId>("uebersicht");
 
-  const hvStatusNorm = (hvMeldungStatus ?? "").trim().toLowerCase();
+  const hvStatusNorm = (
+    hvStatusOptimistic ??
+    hvMeldungStatus ??
+    ""
+  )
+    .trim()
+    .toLowerCase();
   const showHmTab =
     !mieterStatusMode &&
     (hvStatusNorm === "hm_pruefung" ||
@@ -401,6 +422,10 @@ export function OrganisationHvVorgangDetail({
     if (!hausmeisterActor || !showHmTab) return;
     setActiveSection("hm_pruefung");
   }, [hausmeisterActor, showHmTab, leadId]);
+
+  useEffect(() => {
+    setHvStatusOptimistic(null);
+  }, [leadId, hvMeldungStatus]);
 
   useEffect(() => {
     if (mieterStatusMode) {
@@ -869,6 +894,7 @@ export function OrganisationHvVorgangDetail({
       | "ablehnen"
   ) => {
     setBusy(true);
+    setBusyAktion(aktion);
     setError(null);
     try {
       await runBusy(async () => {
@@ -884,6 +910,7 @@ export function OrganisationHvVorgangDetail({
         }
         if (aktion === "hm_begutachten") {
           orgPortalToast.hmBegutachten();
+          setHvStatusOptimistic("hm_pruefung");
           setActiveSection("hm_pruefung");
         } else if (
           aktion === "angebot_einfordern" ||
@@ -895,9 +922,10 @@ export function OrganisationHvVorgangDetail({
         }
         onUpdated();
         if (aktion !== "hm_begutachten") onBack?.();
-      });
+      }, 480);
     } finally {
       setBusy(false);
+      setBusyAktion(null);
     }
   };
 
@@ -1191,7 +1219,16 @@ export function OrganisationHvVorgangDetail({
   }
 
   const actionFooter =
-    actionKind === "angebot" && showAcceptCta ? (
+    hausmeisterActor &&
+    hvStatusNorm === "hm_pruefung" &&
+    hmStickyActions?.editable ? (
+      <PortalDetailStickyActions
+        primaryLabel="Prüfung abschließen"
+        onPrimary={() => hmStickyActions.openAbschluss()}
+        secondaryLabel="Zurück an Verwaltung"
+        onSecondary={() => hmStickyActions.ablehnenAnHv()}
+      />
+    ) : actionKind === "angebot" && showAcceptCta ? (
       <PortalDetailStickyActions
         primaryLabel={HV_DETAIL_COPY.empfohlenAnnehmen}
         onPrimary={() => void acceptAngebotAct()}
@@ -1207,6 +1244,7 @@ export function OrganisationHvVorgangDetail({
           label={HV_DETAIL_COPY.ablehnen}
           kind="secondary"
           disabled={busy}
+          loading={busyAktion === "ablehnen"}
           onClick={() => void meldungAct("ablehnen")}
         />
         {hasHmKontakt ? (
@@ -1214,6 +1252,7 @@ export function OrganisationHvVorgangDetail({
             label="Hausmeister"
             kind="secondary"
             disabled={busy}
+            loading={busyAktion === "hm_begutachten"}
             onClick={() => void meldungAct("hm_begutachten")}
           />
         ) : null}
@@ -1221,6 +1260,7 @@ export function OrganisationHvVorgangDetail({
           label="Direkt Bärenwald"
           mobileLabel="Bärenwald"
           disabled={busy}
+          loading={busyAktion === "direkt_baerenwald"}
           onClick={() => void meldungAct("direkt_baerenwald")}
         />
       </div>
@@ -1291,12 +1331,24 @@ export function OrganisationHvVorgangDetail({
                   hvStatusNorm === "hm_pruefung" ? (
                     <PortalDetailInfoBox>
                       <p className="font-semibold text-text-primary">
-                        Hausmeister-Prüfung läuft
+                        {hausmeisterActor
+                          ? "Hausmeister-Prüfung"
+                          : "Hausmeister-Prüfung läuft"}
                       </p>
                       <p className="mt-1 text-[13px] text-text-secondary">
-                        Der Vorgang liegt beim Hausmeister. Fortschritt und
-                        Checkliste unter Tab „Hausmeister“.
+                        {hausmeisterActor
+                          ? "Unter Tab „Checkliste“ Punkte abhaken — danach selbst erledigen oder an Bärenwald weitergeben."
+                          : "Der Vorgang liegt beim Hausmeister. Fortschritt und Checkliste unter Tab „Hausmeister“."}
                       </p>
+                      {hausmeisterActor ? (
+                        <button
+                          type="button"
+                          className="portal-action-btn portal-action-btn--primary mt-3"
+                          onClick={() => setActiveSection("hm_pruefung")}
+                        >
+                          Zur Checkliste
+                        </button>
+                      ) : null}
                     </PortalDetailInfoBox>
                   ) : undefined
                 }
@@ -1321,10 +1373,10 @@ export function OrganisationHvVorgangDetail({
           ) : null}
 
           {activeSection === "hm_pruefung" && showHmTab ? (
-            <DetailCard id="vorgang-panel-hm" title="Befund">
+            <DetailCard id="vorgang-panel-hm" title="Checkliste">
               <OrgHmBefundPanel
                 leadId={leadId}
-                hvMeldungStatus={hvMeldungStatus}
+                hvMeldungStatus={hvStatusOptimistic ?? hvMeldungStatus}
                 readOnly={
                   hausmeisterActor
                     ? hvStatusNorm !== "hm_pruefung"
@@ -1332,6 +1384,10 @@ export function OrganisationHvVorgangDetail({
                 }
                 onBefundPresence={setHasBefund}
                 onUpdated={onUpdated}
+                onActionsReady={
+                  hausmeisterActor ? setHmStickyActions : undefined
+                }
+                hideInlineActions={hausmeisterActor}
               />
             </DetailCard>
           ) : null}

@@ -317,7 +317,7 @@ export function PortalVorgangDetail({
           mieterStatusMode || item.hvMieterView
             ? "mieter"
             : hausmeisterActor
-              ? "kunde"
+              ? "hausmeister"
               : privatkunde
                 ? "kunde"
                 : "hv"

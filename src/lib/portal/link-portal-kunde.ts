@@ -43,6 +43,8 @@ type KundeCandidate = {
   auth_user_id: string | null;
   email: string | null;
   created_at: string | null;
+  portal_modus?: string | null;
+  typ?: string | null;
 };
 
 async function countKundePortalDaten(kundeId: string): Promise<number> {
@@ -64,13 +66,26 @@ async function countKundePortalDaten(kundeId: string): Promise<number> {
   return (leads.count ?? 0) + (angebote.count ?? 0) + (auftraege.count ?? 0);
 }
 
+function isOrganisationKunde(k: {
+  portal_modus?: string | null;
+  typ?: string | null;
+}): boolean {
+  const modus = String(k.portal_modus ?? "")
+    .trim()
+    .toLowerCase();
+  const typ = String(k.typ ?? "")
+    .trim()
+    .toLowerCase();
+  return modus === "organisation" || typ === "hausverwaltung" || typ === "hv";
+}
+
 /** Alle Kundenstämme zur Login-E-Mail (nicht Name, nicht Telefon). */
 async function findKundenByLoginEmail(
   email: string
 ): Promise<KundeCandidate[]> {
   const { data, error } = await supabaseAdmin
     .from("kunden")
-    .select("id, auth_user_id, email, created_at")
+    .select("id, auth_user_id, email, created_at, portal_modus, typ")
     .ilike("email", email);
 
   if (error) throw new Error(error.message);
@@ -79,7 +94,7 @@ async function findKundenByLoginEmail(
 
 /**
  * Führender Kundenstamm für die Login-E-Mail:
- * der mit den meisten Portal-Daten; bei Gleichstand der ältere CRM-Stamm.
+ * Organisation/HV vor Hausmeister-Stub; sonst die meisten Portal-Daten.
  */
 async function pickCanonicalKundeForLoginEmail(
   email: string
@@ -95,6 +110,13 @@ async function pickCanonicalKundeForLoginEmail(
   );
 
   scored.sort((a, b) => {
+    const aOrg = isOrganisationKunde(a) ? 1 : 0;
+    const bOrg = isOrganisationKunde(b) ? 1 : 0;
+    if (aOrg !== bOrg) return bOrg - aOrg;
+    const aHm = String(a.portal_modus ?? "").toLowerCase() === "hausmeister" ? 1 : 0;
+    const bHm = String(b.portal_modus ?? "").toLowerCase() === "hausmeister" ? 1 : 0;
+    // HM-Stub nur wählen, wenn kein Org-Konto — unter Org sortieren wir schon oben
+    if (aHm !== bHm) return aHm - bHm;
     if (b.datenAnzahl !== a.datenAnzahl) return b.datenAnzahl - a.datenAnzahl;
     const ta = new Date(a.created_at ?? 0).getTime();
     const tb = new Date(b.created_at ?? 0).getTime();
@@ -276,14 +298,29 @@ export async function linkPortalKundeToAuthUser(opts: {
 
   const { data: linkedByAuth } = await supabaseAdmin
     .from("kunden")
-    .select("id, auth_user_id, email")
+    .select("id, auth_user_id, email, portal_modus, typ")
     .eq("auth_user_id", opts.userId)
     .maybeSingle();
 
-  // Bereits verknüpft + gleiche Login-E-Mail → kein Canonical-Recount (teuer).
+  // Bereits verknüpft + gleiche Login-E-Mail → ggf. Org vor HM-Stub bevorzugen.
   if (linkedByAuth?.id) {
     const linkedEmail = normalizeKundenEmail(linkedByAuth.email);
     if (linkedEmail === email) {
+      if (!isOrganisationKunde(linkedByAuth)) {
+        const orgForEmail = (await findKundenByLoginEmail(email)).find((k) =>
+          isOrganisationKunde(k)
+        );
+        if (orgForEmail?.id && orgForEmail.id !== linkedByAuth.id) {
+          await detachAuthFromKunde(String(linkedByAuth.id), opts.userId);
+          const { error: upOrg } = await supabaseAdmin
+            .from("kunden")
+            .update({ auth_user_id: opts.userId, email })
+            .eq("id", orgForEmail.id);
+          if (!upOrg) {
+            return { ok: true, kundeId: String(orgForEmail.id) };
+          }
+        }
+      }
       return { ok: true, kundeId: String(linkedByAuth.id) };
     }
   }
