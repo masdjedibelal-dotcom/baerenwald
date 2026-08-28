@@ -34,7 +34,10 @@ import {
   type PortalAnsprechpartner,
 } from "@/lib/portal/portal-ansprechpartner";
 import type { PortalDokument } from "@/lib/portal/portal-dokumente";
-import { isAngebotPortalSichtbar } from "@/lib/portal/portal-angebot-sichtbarkeit";
+import {
+  isAngebotPortalAnnehmbar,
+  isAngebotPortalSichtbar,
+} from "@/lib/portal/portal-angebot-sichtbarkeit";
 import { isLeadPortalListbar } from "@/lib/portal/portal-lead-sichtbarkeit";
 import {
   collectVorgangDokumente,

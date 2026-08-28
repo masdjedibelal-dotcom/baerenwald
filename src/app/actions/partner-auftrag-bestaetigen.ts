@@ -379,7 +379,7 @@ export async function confirmPartnerAuftrag(opts: {
   const nachreichungKontext = {
     crm_auftrag_positionen: auftragPositionen,
     gewerk_id: String(row.gewerk_id ?? ""),
-    gewerk_name: gewerk?.name?.trim(),
+    gewerk_name: gewerk?.name?.trim() ?? "Gewerk",
     handwerker_id: link.handwerkerId,
     hw_konditionen: existingHw,
     hw_status: String(row.hw_status ?? "").toLowerCase(),
@@ -833,7 +833,7 @@ export async function declinePartnerAnfrage(opts: {
       bestaetigt_at: (row as { bestaetigt_at?: string | null }).bestaetigt_at,
       crm_auftrag_positionen: auftragPositionen,
       gewerk_id: String(row.gewerk_id ?? ""),
-      gewerk_name: gewerk?.name?.trim(),
+      gewerk_name: gewerk?.name?.trim() ?? "Gewerk",
       handwerker_id: link.handwerkerId,
       hw_konditionen: parsePartnerHwKonditionen(row.hw_konditionen),
       alle_hw_konditionen,
