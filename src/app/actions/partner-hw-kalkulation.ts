@@ -7,6 +7,7 @@ import {
   ANGEBOT_HERKUNFT_HANDWERKER,
   hwKalkSumme,
   hwKalkValid,
+  parseHwMengeFaktor,
   type HwKalkPosition,
 } from "@/lib/portal2/hw-kalkulation";
 import { createClient } from "@/lib/supabase/server";
@@ -184,6 +185,34 @@ export async function submitPartnerHwKalkulation(input: {
     .eq("handwerker_id", link.handwerkerId);
 
   if (updAh) return { ok: false, error: updAh.message };
+
+  if (ohneLv) {
+    const positionenJson = cleaned.map((p, i) => ({
+      pos: i + 1,
+      titel: p.pos,
+      beschreibung: p.pos,
+      leistung: p.pos,
+      leistung_name: p.pos,
+      menge: parseHwMengeFaktor(p.menge),
+      einheit: p.menge.replace(/^\d+(?:[.,]\d+)?\s*/, "").trim() || "Stk.",
+      einzelpreis: p.einzel,
+      vk_netto: p.einzel,
+      gewerk: p.gewerk,
+    }));
+    const { error: updIntern } = await supabaseAdmin
+      .from("angebote")
+      .update({
+        positionen: positionenJson,
+        gesamt_preis: Math.round(sum.brutto * 100) / 100,
+        gesamt_min: Math.round(sum.net * 100) / 100,
+        gesamt_max: Math.round(sum.brutto * 100) / 100,
+        updated_at: now,
+      })
+      .eq("id", angebotId);
+    if (updIntern) {
+      console.warn("[submitPartnerHwKalkulation] intern angebot:", updIntern.message);
+    }
+  }
 
   revalidatePath("/partner");
   revalidatePath("/portal");

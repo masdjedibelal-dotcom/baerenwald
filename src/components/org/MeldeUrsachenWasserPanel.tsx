@@ -326,7 +326,7 @@ export function MeldeUrsachenWasserPanel({
           type="button"
           disabled={busy || !selected || !entscheidung}
           onClick={() => void onSave()}
-          className="portal-text-body mt-4 w-full rounded-lg border border-border-default bg-[var(--p2-selected,#f0f2f0)] px-3 py-2.5 font-semibold text-text-primary disabled:opacity-50"
+          className="portal-text-body mt-4 w-full rounded-lg border border-border-default bg-white px-3 py-2.5 font-semibold text-text-primary disabled:opacity-50"
         >
           {busy
             ? "Speichern…"

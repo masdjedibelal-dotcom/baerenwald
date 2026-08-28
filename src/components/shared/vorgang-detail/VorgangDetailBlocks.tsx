@@ -205,6 +205,13 @@ export function VorgangDetailBlocks({
     (hasMeldeTextDetails ||
       Boolean(B.fotos && B.fotos.length > 0));
 
+  const showAusfuehrungBlock =
+    showAusfuehrung &&
+    !(
+      isHausmeister &&
+      String(A.hvMeldungStatus ?? "").trim().toLowerCase() === "hm_pruefung"
+    );
+
   return (
     <div className={cn("space-y-3.5", className)}>
       {showObjekt ? (
@@ -356,7 +363,7 @@ export function VorgangDetailBlocks({
         </BlockShell>
       ) : null}
 
-      {showAusfuehrung ? (
+      {showAusfuehrungBlock ? (
         <BlockShell title={plainExec ? "Was passiert als Nächstes" : "Ausführung"}>
           <div className="space-y-0">
             {C.gewerk ? <MetaRow label="Gewerk" value={C.gewerk} /> : null}

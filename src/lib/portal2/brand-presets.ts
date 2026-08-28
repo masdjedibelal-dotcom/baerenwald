@@ -38,9 +38,9 @@ export const BRAND_PRESETS: readonly BrandPreset[] = [
   {
     id: "gruen",
     name: "Waldgrün",
-    primary: "#2E6B4F",
-    primaryDk: "#245740",
-    soft: "#E7F0EB",
+    primary: "#2E7D52",
+    primaryDk: "#1A3D2B",
+    soft: "#E7F1E9",
   },
   {
     id: "bordeaux",
@@ -139,7 +139,7 @@ export function findBrandPresetByPrimary(
   return BRAND_PRESETS.find((x) => x.primary.toLowerCase() === p) ?? null;
 }
 
-/** Leitet Dk/Soft ab. Ohne primary → neutrales Anthrazit (kein BW-Grün). */
+/** Leitet Dk/Soft ab. Ohne primary → Bärenwald-Grün (CRM-Default). */
 export function resolveBrandPalette(input: {
   primary?: string | null;
   primaryDk?: string | null;
@@ -147,11 +147,10 @@ export function resolveBrandPalette(input: {
 }): Pick<BrandPreset, "primary" | "primaryDk" | "soft"> {
   const raw = input.primary?.trim();
   if (!raw) {
-    const anthra = BRAND_PRESETS.find((x) => x.id === "anthra")!;
     return {
-      primary: anthra.primary,
-      primaryDk: anthra.primaryDk,
-      soft: anthra.soft,
+      primary: PORTAL_C.primary,
+      primaryDk: PORTAL_C.primaryDk,
+      soft: PORTAL_C.primarySoft,
     };
   }
   const preset = findBrandPresetByPrimary(raw);

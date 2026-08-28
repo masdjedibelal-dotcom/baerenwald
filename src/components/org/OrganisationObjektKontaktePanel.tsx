@@ -9,7 +9,7 @@ import {
   EinstellungenEditModal,
   EinstellungenPfList,
   EinstellungenPfRow,
-  EinstellungenSectionHeader,
+  EinstellungenSectionCard,
 } from "@/components/shared/PortalEinstellungenUi";
 import { PortalInboxEmpty } from "@/components/shared/PortalEmptyState";
 import { orgPortalToast, portalToastError } from "@/lib/shared/portal-toast";
@@ -203,12 +203,11 @@ export function OrganisationObjektKontaktePanel({ objektId }: Props) {
 
   return (
     <>
-      <div className="space-y-3">
-        <EinstellungenSectionHeader
-          title="Kontakte vor Ort"
-          onAdd={openNeu}
-          addLabel="Kontakt hinzufügen"
-        />
+      <EinstellungenSectionCard
+        title="Kontakte vor Ort"
+        onAdd={openNeu}
+        addLabel="Kontakt hinzufügen"
+      >
         {loading ? (
           <p className="text-[13px] text-text-secondary">Laden…</p>
         ) : items.length === 0 ? (
@@ -268,7 +267,7 @@ export function OrganisationObjektKontaktePanel({ objektId }: Props) {
             })}
           </ul>
         )}
-      </div>
+      </EinstellungenSectionCard>
 
       <EinstellungenEditModal
         open={editOpen}

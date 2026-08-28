@@ -5,7 +5,7 @@ import { ChevronDown, Download } from "lucide-react";
 
 import type { ObjektFinanzPortalPayload } from "@/lib/org/objektakte/load-objekt-finanz-portal";
 import { OrganisationVersammlungsberichtSheet } from "@/components/org/OrganisationVersammlungsberichtSheet";
-import { EinstellungenSectionHeader } from "@/components/shared/PortalEinstellungenUi";
+import { EinstellungenSectionCard } from "@/components/shared/PortalEinstellungenUi";
 import {
   PORTAL_LIST_PAGE_SIZE,
   PortalListPagination,
@@ -153,60 +153,59 @@ export function OrganisationObjektFinanzPanel({
       : "—";
 
   return (
-    <div className="space-y-3">
-      <EinstellungenSectionHeader
-        title="Kosten & Belege"
-        trailing={
-          <div className="relative">
-            <button
-              type="button"
-              className="portal-btn portal-btn-secondary inline-flex items-center gap-1.5 text-[13px]"
-              onClick={() => setExportOpen((o) => !o)}
-            >
-              Export <ChevronDown className="h-4 w-4" />
-            </button>
-            {exportOpen ? (
-              <>
+    <EinstellungenSectionCard
+      title="Kosten & Belege"
+      trailing={
+        <div className="relative">
+          <button
+            type="button"
+            className="portal-btn portal-btn-secondary inline-flex items-center gap-1.5 text-[13px]"
+            onClick={() => setExportOpen((o) => !o)}
+          >
+            Export <ChevronDown className="h-4 w-4" />
+          </button>
+          {exportOpen ? (
+            <>
+              <button
+                type="button"
+                className="fixed inset-0 z-10"
+                aria-label="Schließen"
+                onClick={() => setExportOpen(false)}
+              />
+              <div
+                className="absolute right-0 z-20 mt-1 min-w-[220px] rounded-xl border bg-white py-1 shadow-lg"
+                style={{ borderColor: PORTAL_VAR.line }}
+              >
                 <button
                   type="button"
-                  className="fixed inset-0 z-10"
-                  aria-label="Schließen"
-                  onClick={() => setExportOpen(false)}
-                />
-                <div
-                  className="absolute right-0 z-20 mt-1 min-w-[220px] rounded-xl border bg-white py-1 shadow-lg"
-                  style={{ borderColor: PORTAL_VAR.line }}
+                  className="block w-full px-3 py-2 text-left text-[13px] hover:bg-muted/60"
+                  onClick={() => {
+                    setExportOpen(false);
+                    setBerichtOpen(true);
+                  }}
                 >
-                  <button
-                    type="button"
-                    className="block w-full px-3 py-2 text-left text-[13px] hover:bg-muted/60"
-                    onClick={() => {
-                      setExportOpen(false);
-                      setBerichtOpen(true);
-                    }}
-                  >
-                    Versammlungsbericht (PDF)
-                  </button>
-                  <a
-                    className="block px-3 py-2 text-[13px] hover:bg-muted/60"
-                    href={`/api/org/objekte/bericht?objektId=${encodeURIComponent(objektId)}&jahr=${encodeURIComponent(jahr)}`}
-                    onClick={() => setExportOpen(false)}
-                  >
-                    Jahresbericht (PDF)
-                  </a>
-                  <a
-                    className="block px-3 py-2 text-[13px] hover:bg-muted/60"
-                    href={`/api/org/objekte/kosten-csv?objektId=${encodeURIComponent(objektId)}&von=${encodeURIComponent(von)}&bis=${encodeURIComponent(bis)}`}
-                    onClick={() => setExportOpen(false)}
-                  >
-                    Kostenübersicht (CSV)
-                  </a>
-                </div>
-              </>
-            ) : null}
-          </div>
-        }
-      />
+                  Versammlungsbericht (PDF)
+                </button>
+                <a
+                  className="block px-3 py-2 text-[13px] hover:bg-muted/60"
+                  href={`/api/org/objekte/bericht?objektId=${encodeURIComponent(objektId)}&jahr=${encodeURIComponent(jahr)}`}
+                  onClick={() => setExportOpen(false)}
+                >
+                  Jahresbericht (PDF)
+                </a>
+                <a
+                  className="block px-3 py-2 text-[13px] hover:bg-muted/60"
+                  href={`/api/org/objekte/kosten-csv?objektId=${encodeURIComponent(objektId)}&von=${encodeURIComponent(von)}&bis=${encodeURIComponent(bis)}`}
+                  onClick={() => setExportOpen(false)}
+                >
+                  Kostenübersicht (CSV)
+                </a>
+              </div>
+            </>
+          ) : null}
+        </div>
+      }
+    >
       <p className="portal-text-meta -mt-1 text-text-tertiary">
         Zeitraum: {fmtDatum(von)} – {fmtDatum(bis)}
       </p>
@@ -235,7 +234,7 @@ export function OrganisationObjektFinanzPanel({
               "rounded-full px-3 py-1.5 text-xs font-semibold",
               preset === id
                 ? "bg-accent-light text-accent"
-                : "bg-muted text-text-secondary"
+                : "border border-border-default bg-white text-text-secondary"
             )}
           >
             {label}
@@ -326,16 +325,13 @@ export function OrganisationObjektFinanzPanel({
         onClose={() => setBerichtOpen(false)}
         objektId={objektId}
       />
-    </div>
+    </EinstellungenSectionCard>
   );
 }
 
 function KpiTile({ label, value, muted }: { label: string; value: string; muted?: boolean }) {
   return (
-    <div
-      className="rounded-[10px] px-3.5 py-3"
-      style={{ background: "var(--p2-selected, #f0f2f0)" }}
-    >
+    <div className="portal-kpi-card">
       <p className={cn("portal-text-title leading-none", muted && "text-text-tertiary")}>
         {value}
       </p>

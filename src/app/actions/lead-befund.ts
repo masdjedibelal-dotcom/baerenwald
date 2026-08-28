@@ -308,7 +308,7 @@ export async function updateLeadBefundPunktAction(input: {
 
 /**
  * Abschluss aus dem HM-Sheet:
- * - selbst_erledigt → hm_erledigt (kein CRM)
+ * - selbst_erledigt → hm_erledigt + CRM-Lead status abgeschlossen
  * - fachfirma_angebot → angebot_eingefordert + CRM
  * - fachfirma_akut → Akut-Bypass + CRM (HV-Klick = Freigabe)
  */
@@ -378,6 +378,8 @@ export async function completeLeadBefundAction(input: {
       .update({
         hv_meldung_status: "hm_erledigt",
         vorgang_phase: "abgeschlossen",
+        status: "abgeschlossen",
+        updated_at: nowIso,
       })
       .eq("id", owned.leadId);
     if (error) return { ok: false, error: error.message };
@@ -594,6 +596,146 @@ export async function addLeadBefundFreipunktAction(input: {
 
   revalidatePath("/portal");
   return { ok: true, punkt: mapPunkt(inserted as Record<string, unknown>) };
+}
+
+/** Systempunkt aus Vorlage-Katalog nachrüsten (Dropdown „Hinzufügen“). */
+export async function addLeadBefundVorlagePunktAction(input: {
+  befundId: string;
+  punktKey: string;
+}): Promise<ActionResult<{ punkt: LeadBefundPunktRow }>> {
+  const actorRes = await requireBefundActor();
+  if (!actorRes.ok) return { ok: false, error: actorRes.error };
+  const write = requireBefundWrite(actorRes.actor);
+  if (!write.ok) return { ok: false, error: write.error };
+
+  const befundId = String(input.befundId ?? "").trim();
+  const punktKey = String(input.punktKey ?? "").trim();
+  if (!befundId) return { ok: false, error: "Befund fehlt." };
+  if (!punktKey) return { ok: false, error: "Prüfpunkt fehlt." };
+
+  const owned = await assertBefundForActor(actorRes.actor, befundId);
+  if (!owned) return { ok: false, error: "Befund nicht gefunden." };
+
+  const { data: head } = await supabaseAdmin
+    .from("lead_befunde")
+    .select("id, vorlage_key")
+    .eq("id", befundId)
+    .maybeSingle();
+  if (!head?.id) return { ok: false, error: "Befund nicht gefunden." };
+
+  const { findVorlagePunktDef, isBefundVorlageKey } = await import(
+    "@/lib/org/lead-befund-vorlagen"
+  );
+  const vk = String(head.vorlage_key ?? "").trim();
+  if (!isBefundVorlageKey(vk)) {
+    return { ok: false, error: "Keine Vorlage für diesen Befund." };
+  }
+  const def = findVorlagePunktDef(vk, punktKey);
+  if (!def) return { ok: false, error: "Prüfpunkt unbekannt." };
+
+  const { data: existing } = await supabaseAdmin
+    .from("lead_befund_punkte")
+    .select("id")
+    .eq("befund_id", befundId)
+    .eq("vorlage_key", punktKey)
+    .maybeSingle();
+  if (existing?.id) {
+    return { ok: false, error: "Prüfpunkt ist bereits in der Checkliste." };
+  }
+
+  const { data: maxRow } = await supabaseAdmin
+    .from("lead_befund_punkte")
+    .select("sort_order")
+    .eq("befund_id", befundId)
+    .order("sort_order", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  const nextOrder =
+    maxRow?.sort_order != null && Number.isFinite(Number(maxRow.sort_order))
+      ? Number(maxRow.sort_order) + 1
+      : 0;
+
+  const { data: inserted, error } = await supabaseAdmin
+    .from("lead_befund_punkte")
+    .insert({
+      befund_id: befundId,
+      sort_order: nextOrder,
+      titel: def.titel,
+      quelle: "system",
+      vorlage_key: def.key,
+      notiz: "",
+      foto_refs: [],
+    })
+    .select(
+      "id, befund_id, sort_order, titel, quelle, vorlage_key, status, notiz, foto_refs, updated_at"
+    )
+    .single();
+
+  if (error || !inserted) {
+    return { ok: false, error: error?.message ?? "Punkt anlegen fehlgeschlagen." };
+  }
+
+  await supabaseAdmin
+    .from("lead_befunde")
+    .update({ updated_at: new Date().toISOString() })
+    .eq("id", befundId);
+
+  revalidatePath("/portal");
+  return { ok: true, punkt: mapPunkt(inserted as Record<string, unknown>) };
+}
+
+/** Prüfpunkt aus der Checkliste entfernen (HM während Prüfung). */
+export async function deleteLeadBefundPunktAction(input: {
+  punktId: string;
+}): Promise<ActionResult<object>> {
+  const actorRes = await requireBefundActor();
+  if (!actorRes.ok) return { ok: false, error: actorRes.error };
+  const write = requireBefundWrite(actorRes.actor);
+  if (!write.ok) return { ok: false, error: write.error };
+
+  const punktId = String(input.punktId ?? "").trim();
+  if (!punktId) return { ok: false, error: "Prüfpunkt fehlt." };
+
+  const { data: punkt } = await supabaseAdmin
+    .from("lead_befund_punkte")
+    .select("id, befund_id")
+    .eq("id", punktId)
+    .maybeSingle();
+  if (!punkt?.befund_id) return { ok: false, error: "Prüfpunkt nicht gefunden." };
+
+  const owned = await assertBefundForActor(
+    actorRes.actor,
+    String(punkt.befund_id)
+  );
+  if (!owned) return { ok: false, error: "Befund nicht gefunden." };
+
+  const { data: lead } = await supabaseAdmin
+    .from("leads")
+    .select("hv_meldung_status")
+    .eq("id", owned.leadId)
+    .maybeSingle();
+  const hv = String(lead?.hv_meldung_status ?? "").trim().toLowerCase();
+  if (hv !== "hm_pruefung") {
+    return {
+      ok: false,
+      error: "Prüfpunkte können nur während der Hausmeister-Prüfung entfernt werden.",
+    };
+  }
+
+  const { error } = await supabaseAdmin
+    .from("lead_befund_punkte")
+    .delete()
+    .eq("id", punktId);
+  if (error) return { ok: false, error: error.message };
+
+  await supabaseAdmin
+    .from("lead_befunde")
+    .update({ updated_at: new Date().toISOString() })
+    .eq("id", punkt.befund_id);
+
+  revalidatePath("/portal");
+  return { ok: true };
 }
 
 /** Ob am Lead-Objekt ein Hausmeister-Kontakt hinterlegt ist. */

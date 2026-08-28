@@ -23,7 +23,7 @@ type Props = {
   lead: OrganisationLead;
   kunde: OrganisationKunde;
   objekte?: OrganisationObjekt[];
-  onUpdated: () => void;
+  onUpdated: () => void | Promise<void>;
 };
 
 function btnStyle(variant: "primary" | "ghost" | "danger"): CSSProperties {
@@ -108,7 +108,7 @@ export function HvMeldungListActions({
         if (aktion === "hm_begutachten") orgPortalToast.hmBegutachten();
         else if (aktion === "ablehnen") orgPortalToast.meldungAbgelehnt();
         else orgPortalToast.angebotEingefordert();
-        onUpdated();
+        await onUpdated();
       }, 480);
     } finally {
       setBusy(false);

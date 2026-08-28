@@ -45,7 +45,7 @@ export function OrganisationObjektAnlagenPanel({
         <div className="hidden overflow-x-auto sm:block">
           <table className="w-full text-left text-[13px]">
             <thead>
-              <tr className="border-b bg-[#fafafa] text-text-tertiary lg:bg-transparent">
+              <tr className="border-b bg-white text-text-tertiary lg:bg-transparent">
                 <th className="px-4 py-2.5 font-medium">Bezeichnung</th>
                 <th className="px-4 py-2.5 font-medium">Gewerk</th>
                 <th className="px-4 py-2.5 font-medium">Standort</th>

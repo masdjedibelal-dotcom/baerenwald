@@ -95,6 +95,7 @@ import {
   type HvDashboardAngebotSlice,
   type HvDashboardAuftragSlice,
 } from "@/lib/portal2/hv-dashboard";
+import { filterPortalListableLeads } from "@/lib/portal/portal-lead-sichtbarkeit";
 import {
   compareByNewestCreated,
   PORTAL_DASHBOARD_RECENT_LIMIT,
@@ -421,8 +422,11 @@ export function OrganisationPortalClient({
   const allLeadsForFlow = useMemo(() => {
     const byId = new Map<string, OrganisationLead>();
     for (const l of [...leads, ...eingang]) byId.set(l.id, l);
-    return Array.from(byId.values());
-  }, [leads, eingang]);
+    return filterPortalListableLeads(Array.from(byId.values()), {
+      angebote: angebote as HvDashboardAngebotSlice[],
+      auftraege: auftraege as HvDashboardAuftragSlice[],
+    });
+  }, [leads, eingang, angebote, auftraege]);
 
   const hvKpis = useMemo(() => {
     const flow = countLeadsByPortalFlow({
@@ -531,12 +535,14 @@ export function OrganisationPortalClient({
         contentKey={`${section}:${searchParams.get("filter") ?? ""}`}
         contentBusy={ctxBusy || Boolean(pendingDetailId)}
         contentBusyTitle={
-          pendingDetailId ? "Vorgang wird geladen…" : undefined
+          pendingDetailId ? "Vorgang wird geladen…" : ctxBusy ? "Wird verarbeitet…" : undefined
         }
         contentBusyBody={
           pendingDetailId
             ? "Einen Moment — wir öffnen die Details."
-            : undefined
+            : ctxBusy
+              ? "Einen Moment bitte."
+              : undefined
         }
         onNavChange={(id) => switchSection(id as OrgSection)}
         nav={buildPortalShellNav("kunde_hv", "org", {

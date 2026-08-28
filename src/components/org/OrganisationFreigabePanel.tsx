@@ -377,7 +377,7 @@ export function OrganisationFreigabePanel({
           <h3 className="portal-text-section">{HV_SECTION_MELDUNGEN}</h3>
           <span
             className="portal-text-label normal-case tracking-normal rounded-full px-2 py-0.5"
-            style={{ color: PORTAL_VAR.faint, background: "#eceef0" }}
+            style={{ color: PORTAL_VAR.faint, background: "var(--p2-primary-soft, #e7f1e9)" }}
           >
             {freigabeEingang.length}
           </span>
@@ -399,7 +399,7 @@ export function OrganisationFreigabePanel({
           <h3 className="portal-text-section">{HV_SECTION_ANGEBOTE}</h3>
           <span
             className="portal-text-label normal-case tracking-normal rounded-full px-2 py-0.5"
-            style={{ color: PORTAL_VAR.faint, background: "#eceef0" }}
+            style={{ color: PORTAL_VAR.faint, background: "var(--p2-primary-soft, #e7f1e9)" }}
           >
             {angebotFreigaben.length}
           </span>

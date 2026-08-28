@@ -203,8 +203,8 @@ export function PortalDokumentUploadZone({
       className={cn(
         "cursor-pointer outline-none transition-colors",
         stacked
-          ? "flex items-center gap-2.5 rounded-xl border-2 border-dashed border-border-default bg-[var(--p2-selected,#f0f2f0)] px-3.5 py-3.5"
-          : "flex flex-col items-center justify-center gap-1 rounded-xl border-2 border-dashed border-border-default bg-[var(--p2-selected,#f0f2f0)] px-4 py-5 text-center",
+          ? "flex items-center gap-2.5 rounded-xl border-2 border-dashed border-border-default bg-white px-3.5 py-3.5"
+          : "flex flex-col items-center justify-center gap-1 rounded-xl border-2 border-dashed border-border-default bg-white px-4 py-5 text-center",
         dragOver && "border-accent bg-accent-light/25",
         disabled && "cursor-not-allowed opacity-60",
         !disabled && "hover:bg-[var(--p2-hover,#eef1ef)]",

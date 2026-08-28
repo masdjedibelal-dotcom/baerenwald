@@ -60,7 +60,7 @@ export function PortalHvTerminSection({
   if (bestaetigt) {
     return (
       <PortalDetailSection title="Termin">
-        <div className="portal-text-body rounded-xl border border-border-light bg-muted/20 px-3 py-3">
+        <div className="portal-text-body rounded-xl border border-border-light bg-white px-3 py-3">
           <p className="font-semibold text-text-primary">
             {readOnly ? "Bestätigter Termin" : "Ihr Termin"}
           </p>
@@ -75,7 +75,7 @@ export function PortalHvTerminSection({
   if (readOnly) {
     return (
       <PortalDetailSection title="Terminvorschläge">
-        <div className="portal-text-body space-y-2 rounded-xl border border-border-light bg-muted/20 p-3">
+        <div className="portal-text-body space-y-2 rounded-xl border border-border-light bg-white p-3">
           <p className="portal-text-meta text-text-secondary">
             Warte auf Terminwahl durch den Melder.
           </p>
@@ -98,7 +98,7 @@ export function PortalHvTerminSection({
 
   return (
     <PortalDetailSection title="Terminvorschläge">
-      <div className="portal-text-body space-y-2 rounded-xl border border-border-light bg-muted/20 p-3">
+      <div className="portal-text-body space-y-2 rounded-xl border border-border-light bg-white p-3">
         <p className="portal-text-meta text-text-secondary">
           Bitte wähle einen Termin — der Handwerker wurde informiert.
         </p>

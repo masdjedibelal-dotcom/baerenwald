@@ -26,7 +26,7 @@ import {
   EinstellungenEuroSlider,
   EinstellungenPfList,
   EinstellungenPfRow,
-  EinstellungenSectionHeader,
+  EinstellungenSectionCard,
   EinstellungenSheetCard,
   EinstellungenToggle,
 } from "@/components/shared/PortalEinstellungenUi";
@@ -633,7 +633,7 @@ export function OrganisationObjektDetail({
 
   if (tab === "stamm") {
     body = (
-      <div className="space-y-6">
+      <div className="flex flex-col gap-3">
         {akteLoading ? (
           <p className="portal-text-meta text-text-tertiary px-0.5">
             Kennzahlen werden geladen …
@@ -646,8 +646,7 @@ export function OrganisationObjektDetail({
           />
         ) : null}
 
-        <div className="space-y-3">
-          <EinstellungenSectionHeader title="Objektdaten" onEdit={onEdit} />
+        <EinstellungenSectionCard title="Objektdaten" onEdit={onEdit}>
           <EinstellungenPfList>
             <EinstellungenPfRow label="Bezeichnung" value={dash(objekt.titel)} />
             <EinstellungenPfRow label="Typ" value={dash(typLine)} />
@@ -662,26 +661,25 @@ export function OrganisationObjektDetail({
               value={we === 1 ? "1 Einheit" : `${we} Einheiten`}
             />
           </EinstellungenPfList>
-        </div>
+        </EinstellungenSectionCard>
 
-        <div className="space-y-3">
-          <EinstellungenSectionHeader
-            title="Hausmeister"
-            onAdd={hmAmObjekt ? undefined : openHmEdit}
-            addLabel="Hausmeister hinzufügen"
-            onEdit={hmAmObjekt ? openHmEdit : undefined}
-            editLabel="Hausmeister bearbeiten"
-            trailing={
-              hmAmObjekt ? (
-                <OrganisationObjektHausmeisterMenu
-                  canEinladen={Boolean(hmAmObjekt.email?.trim())}
-                  onEinladen={() => void inviteHausmeister()}
-                  onBearbeiten={openHmEdit}
-                  onEntfernen={() => setHmConfirmRemove(true)}
-                />
-              ) : null
-            }
-          />
+        <EinstellungenSectionCard
+          title="Hausmeister"
+          onAdd={hmAmObjekt ? undefined : openHmEdit}
+          addLabel="Hausmeister hinzufügen"
+          onEdit={hmAmObjekt ? openHmEdit : undefined}
+          editLabel="Hausmeister bearbeiten"
+          trailing={
+            hmAmObjekt ? (
+              <OrganisationObjektHausmeisterMenu
+                canEinladen={Boolean(hmAmObjekt.email?.trim())}
+                onEinladen={() => void inviteHausmeister()}
+                onBearbeiten={openHmEdit}
+                onEntfernen={() => setHmConfirmRemove(true)}
+              />
+            ) : null
+          }
+        >
           <EinstellungenPfList>
             <EinstellungenPfRow
               label="Name"
@@ -788,15 +786,14 @@ export function OrganisationObjektDetail({
             onCancel={() => setHmConfirmRemove(false)}
             onConfirm={() => void removeHausmeister()}
           />
-        </div>
+        </EinstellungenSectionCard>
 
         <OrganisationObjektKontaktePanel objektId={objekt.id} />
 
-        <div className="space-y-3">
-          <EinstellungenSectionHeader
-            title="Gebäudeversicherung"
-            onEdit={openVersEdit}
-          />
+        <EinstellungenSectionCard
+          title="Gebäudeversicherung"
+          onEdit={openVersEdit}
+        >
           <EinstellungenPfList>
             <EinstellungenPfRow label="Versicherer" value={dash(versicherer)} />
             <EinstellungenPfRow label="Policen-Nr." value={dash(objVersNr)} />
@@ -849,7 +846,7 @@ export function OrganisationObjektDetail({
               }
             />
           </EinstellungenEditModal>
-        </div>
+        </EinstellungenSectionCard>
       </div>
     );
   } else if (tab === "anlagen") {
@@ -940,11 +937,10 @@ export function OrganisationObjektDetail({
     );
   } else if (tab === "regeln") {
     body = (
-      <div className="space-y-3">
-        <EinstellungenSectionHeader
-          title={EINSTELLUNGEN_SCHWELLE_TITLE}
-          onEdit={openFreigabeEdit}
-        />
+      <EinstellungenSectionCard
+        title={EINSTELLUNGEN_SCHWELLE_TITLE}
+        onEdit={openFreigabeEdit}
+      >
         <EinstellungenPfList>
           <EinstellungenPfRow
             label={<SofortmassnahmeAkutTitle />}
@@ -1007,7 +1003,7 @@ export function OrganisationObjektDetail({
             </EinstellungenSheetCard>
           ) : null}
         </EinstellungenEditModal>
-      </div>
+      </EinstellungenSectionCard>
     );
   } else {
     body = (

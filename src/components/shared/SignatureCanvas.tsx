@@ -95,7 +95,7 @@ export function SignatureCanvas({ onChange, className, large = true }: Props) {
 
   return (
     <div className={cn("space-y-1.5", className)}>
-      <div className="relative rounded-xl border border-dashed border-border-default bg-[#fbfcfb]">
+      <div className="relative rounded-xl border border-dashed border-border-default bg-white">
         <canvas
           ref={canvasRef}
           width={640}

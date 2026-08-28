@@ -39,7 +39,7 @@ export function PortalListTable({
     <div className={cn("portal-list-panel", className)}>
       <div
         className={cn(
-          "portal-text-label grid gap-3 bg-[#f7f8f7] px-3.5 py-2.5 text-text-tertiary",
+          "portal-text-label grid gap-3 bg-white px-3.5 py-2.5 text-text-tertiary",
           hideHeaderOnMobile && "max-sm:hidden",
           gridColsClass(columns.length)
         )}
@@ -60,7 +60,7 @@ export function PortalListTable({
         {empty}
       </div>
       {footer ? (
-        <div className="border-t border-[var(--p2-line2,rgba(0,0,0,0.05))] bg-[var(--p2-hover)] px-3.5 py-3">
+        <div className="border-t border-[var(--p2-line2,rgba(0,0,0,0.05))] bg-white px-3.5 py-3">
           {footer}
         </div>
       ) : null}

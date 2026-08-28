@@ -182,7 +182,7 @@ export function VorgangDetailSectionNav({
                 "inline-flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1.5 text-[13px] font-semibold transition-colors",
                 on
                   ? "bg-[var(--org-primary-soft,var(--p2-primary-soft,#e7f1e9))]"
-                  : "bg-[var(--p2-selected,#f0f2f0)]"
+                  : "border border-[var(--p2-line)] bg-white"
               )}
               style={{
                 color: on ? PORTAL_VAR.primary : PORTAL_VAR.sub,

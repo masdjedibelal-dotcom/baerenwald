@@ -124,7 +124,7 @@ export function HausmeisterPortalClient({
   const ignoreUrlDetailRef = useRef(false);
   const pendingDetailIdRef = useRef<string | null>(null);
   const detailOpeningTimerRef = useRef<number | null>(null);
-  const { hold, release, flash } = usePortalBusy();
+  const { hold, release, flash, busy: ctxBusy } = usePortalBusy();
   const detailHoldRef = useRef(false);
 
   function flashPageBusy(ms = PORTAL_BUSY_MIN_MS) {
@@ -417,14 +417,20 @@ export function HausmeisterPortalClient({
         }
         activeNavId={section}
         contentKey={`${section}:${objektDetailId ?? ""}:${selectedId ?? ""}`}
-        contentBusy={pageBusy || detailOpening}
+        contentBusy={pageBusy || detailOpening || ctxBusy}
         contentBusyTitle={
-          detailOpening ? "Vorgang wird geladen…" : undefined
+          detailOpening || pageBusy
+            ? "Vorgang wird geladen…"
+            : ctxBusy
+              ? "Wird verarbeitet…"
+              : undefined
         }
         contentBusyBody={
-          detailOpening
+          detailOpening || pageBusy
             ? "Einen Moment — wir öffnen die Details."
-            : undefined
+            : ctxBusy
+              ? "Einen Moment bitte."
+              : undefined
         }
         onNavChange={(id) => switchSection(id as SectionId)}
         nav={buildPortalShellNav("eigentuemer", "eigentuemer")}
@@ -657,7 +663,7 @@ export function HausmeisterPortalClient({
                           },
                         ]}
                         statusLabel="Objekt"
-                        statusPillClass="bg-[#eceef0] text-text-tertiary"
+                        statusPillClass="bg-[var(--p2-primary-soft,#e7f1e9)] text-text-tertiary"
                         showChevron
                         onClick={() => {
                           flashPageBusy();

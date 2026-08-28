@@ -109,7 +109,7 @@ export function PartnerMultiFotoSlot({
           type="button"
           onClick={openPicker}
           disabled={status === "uploading"}
-          className="flex w-full flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-border-default bg-[var(--p2-selected,#f0f2f0)] px-4 py-7 text-center transition-colors hover:bg-[var(--p2-hover,#eef1ef)] disabled:opacity-60"
+          className="flex w-full flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-border-default bg-white px-4 py-7 text-center transition-colors hover:bg-[var(--p2-hover,#eef1ef)] disabled:opacity-60"
         >
           {status === "uploading" ? (
             <span className="inline-flex items-center gap-1.5 text-[12px] text-text-secondary">

@@ -13,6 +13,8 @@ import { flushSync } from "react-dom";
 
 type PortalBusyApi = {
   busy: boolean;
+  /** Läuft hold/runBusy (auch verschachtelt). */
+  isHeld: () => boolean;
   /** Kurz Loading zeigen (z. B. nach Nav ohne Detail-Fetch). */
   flash: (ms?: number) => void;
   /** Busy halten bis release() — für Klick → Zielseite. */
@@ -117,9 +119,11 @@ export function PortalBusyProvider({ children }: { children: ReactNode }) {
     [hold, release]
   );
 
+  const isHeld = useCallback(() => holdRef.current > 0, []);
+
   const api = useMemo(
-    () => ({ busy, flash, hold, release, runBusy }),
-    [busy, flash, hold, release, runBusy]
+    () => ({ busy, isHeld, flash, hold, release, runBusy }),
+    [busy, isHeld, flash, hold, release, runBusy]
   );
 
   return (
@@ -129,6 +133,7 @@ export function PortalBusyProvider({ children }: { children: ReactNode }) {
 
 const NOOP_API: PortalBusyApi = {
   busy: false,
+  isHeld: () => false,
   flash: () => undefined,
   hold: () => undefined,
   release: () => undefined,

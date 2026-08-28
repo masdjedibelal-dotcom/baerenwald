@@ -5,6 +5,8 @@ import { revalidatePath } from "next/cache";
 
 import { linkPortalKundeToAuthUser } from "@/lib/portal/link-portal-kunde";
 import { notifyCrmOrgPortal } from "@/lib/org/notify-crm-org";
+import { funnelDirektauftragFromDaten } from "@/lib/org/freigabe-bypass";
+import { orgFreigabeBlockiertPartner } from "@/lib/org/org-freigabe-status";
 import { angebotPositionenJsonToAuftragRows } from "@/lib/portal/copy-angebot-positionen-to-auftrag";
 import { isAngebotPortalAnnehmbar } from "@/lib/portal/portal-angebot-sichtbarkeit";
 import { createClient } from "@/lib/supabase/server";
@@ -76,23 +78,60 @@ export async function acceptKundeAngebot(
   const leadId = angebot.lead_id != null ? String(angebot.lead_id) : null;
 
   let belongsToKunde = angebotKundeId === kundeId;
-  if (!belongsToKunde && leadId) {
+  let leadRow: {
+    kunde_id?: string | null;
+    auftraggeber_kunde_id?: string | null;
+    org_freigabe_status?: string | null;
+    hv_meldung_status?: string | null;
+    freigabe_bypass_grund?: string | null;
+    funnel_daten?: unknown;
+  } | null = null;
+
+  if (leadId) {
     const { data: lead } = await supabaseAdmin
       .from("leads")
-      .select("kunde_id, auftraggeber_kunde_id")
+      .select(
+        "kunde_id, auftraggeber_kunde_id, org_freigabe_status, hv_meldung_status, freigabe_bypass_grund, funnel_daten"
+      )
       .eq("id", leadId)
       .maybeSingle();
-    const leadKunde =
-      lead?.auftraggeber_kunde_id != null
-        ? String(lead.auftraggeber_kunde_id)
-        : lead?.kunde_id != null
-          ? String(lead.kunde_id)
-          : null;
-    belongsToKunde = leadKunde === kundeId;
+    leadRow = lead;
+    if (!belongsToKunde) {
+      const leadKunde =
+        lead?.auftraggeber_kunde_id != null
+          ? String(lead.auftraggeber_kunde_id)
+          : lead?.kunde_id != null
+            ? String(lead.kunde_id)
+            : null;
+      belongsToKunde = leadKunde === kundeId;
+    }
   }
 
   if (!belongsToKunde) {
     return { ok: false, error: "Sie haben keinen Zugriff auf dieses Angebot." };
+  }
+
+  if (leadRow?.auftraggeber_kunde_id) {
+    const bypass = String(leadRow.freigabe_bypass_grund ?? "")
+      .trim()
+      .toLowerCase();
+    const akut =
+      bypass === "akut" || funnelDirektauftragFromDaten(leadRow.funnel_daten);
+    if (
+      !akut &&
+      orgFreigabeBlockiertPartner(
+        leadRow.org_freigabe_status,
+        leadRow.hv_meldung_status
+      )
+    ) {
+      return {
+        ok: false,
+        error:
+          leadRow.org_freigabe_status === "abgelehnt"
+            ? "Die Kostenfreigabe wurde abgelehnt."
+            : "Erst Freigabe erteilen — die Hausverwaltung muss das Angebot freigeben.",
+      };
+    }
   }
 
   const statusEinfach = normalizeStatus(angebot.status_einfach);

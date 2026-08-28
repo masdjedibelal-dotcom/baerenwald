@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 
 import {
-  EinstellungenSectionHeader,
+  EinstellungenSectionCard,
   EinstellungenToggle,
 } from "@/components/shared/PortalEinstellungenUi";
 import { usePortalBusy } from "@/components/shared/PortalBusyContext";
@@ -125,10 +125,9 @@ export function PortalPushSettingsPanel({ portal }: Props) {
     (!enabled && canRequestPushPermission().reason === "unsupported");
 
   return (
-    <div className="space-y-4">
-      <EinstellungenSectionHeader title="Benachrichtigungen" />
-
+    <EinstellungenSectionCard title="Benachrichtigungen">
       <EinstellungenToggle
+        nested
         checked={enabled}
         onChange={onToggle}
         disabled={disableToggle}
@@ -146,6 +145,6 @@ export function PortalPushSettingsPanel({ portal }: Props) {
           Testnachricht senden
         </button>
       ) : null}
-    </div>
+    </EinstellungenSectionCard>
   );
 }

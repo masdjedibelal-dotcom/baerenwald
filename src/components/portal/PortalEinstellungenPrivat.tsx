@@ -11,7 +11,7 @@ import {
   EinstellungenEditModal,
   EinstellungenPfList,
   EinstellungenPfRow,
-  EinstellungenSectionHeader,
+  EinstellungenSectionCard,
 } from "@/components/shared/PortalEinstellungenUi";
 import type { PortalKundeTyp } from "@/lib/portal2/kunde-typ";
 import { portalKundeTypRoleLabel } from "@/lib/portal2/kunde-typ";
@@ -90,13 +90,12 @@ export function PortalEinstellungenPrivat({
           tab === "benachrichtigungen" ? (
             <PortalPushSettingsPanel portal="portal" />
           ) : (
-          <div className="space-y-4">
-            <div className="space-y-2.5">
-              <EinstellungenSectionHeader
-                title="PROFIL"
-                onEdit={openEdit}
-                editLabel="Profil bearbeiten"
-              />
+          <>
+            <EinstellungenSectionCard
+              title="PROFIL"
+              onEdit={openEdit}
+              editLabel="Profil bearbeiten"
+            >
               <EinstellungenPfList>
                 <EinstellungenPfRow label="Name" value={savedName || "—"} />
                 <EinstellungenPfRow label="E-Mail" value={email?.trim() || "—"} />
@@ -105,10 +104,10 @@ export function PortalEinstellungenPrivat({
               <p className="portal-text-label normal-case tracking-normal text-text-tertiary">
                 E-Mail-Änderung nur über Support (Verifizierung).
               </p>
-            </div>
+            </EinstellungenSectionCard>
 
             <PortalKontoSicherheitPanel signOutHref="/portal/login" />
-          </div>
+          </>
           )
         }
       </PortalEinstellungenShell>

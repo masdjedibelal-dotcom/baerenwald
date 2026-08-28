@@ -11,7 +11,7 @@ import {
   EinstellungenEditModal,
   EinstellungenPfList,
   EinstellungenPfRow,
-  EinstellungenSectionHeader,
+  EinstellungenSectionCard,
 } from "@/components/shared/PortalEinstellungenUi";
 import { SITE_CONFIG } from "@/lib/config";
 import {
@@ -121,9 +121,8 @@ export function PortalEinstellungenMieter({
 
           if (tab === "zugang") {
             return (
-              <div className="space-y-4">
-                <div className="space-y-2.5">
-                  <EinstellungenSectionHeader title={MIETER_KONTO_ZUGANG_TITLE} />
+              <>
+                <EinstellungenSectionCard title={MIETER_KONTO_ZUGANG_TITLE}>
                   <EinstellungenPfList>
                     <EinstellungenPfRow
                       label="Wohnung"
@@ -137,10 +136,9 @@ export function PortalEinstellungenMieter({
                   <p className="portal-text-meta leading-relaxed text-text-secondary">
                     {mieterKontoZugangHinweis(zugangMail)}
                   </p>
-                </div>
+                </EinstellungenSectionCard>
 
-                <div className="space-y-3 border-t border-border-default pt-4">
-                  <EinstellungenSectionHeader title={MIETER_SPRACHE_TITLE} />
+                <EinstellungenSectionCard title={MIETER_SPRACHE_TITLE}>
                   <div
                     className="flex gap-2"
                     role="group"
@@ -162,20 +160,19 @@ export function PortalEinstellungenMieter({
                       </button>
                     ))}
                   </div>
-                </div>
+                </EinstellungenSectionCard>
 
                 <PortalKontoSicherheitPanel signOutHref="/portal/login" />
-              </div>
+              </>
             );
           }
 
           return (
-            <div className="space-y-2.5">
-              <EinstellungenSectionHeader
-                title="PROFIL"
-                onEdit={openEdit}
-                editLabel="Telefon bearbeiten"
-              />
+            <EinstellungenSectionCard
+              title="PROFIL"
+              onEdit={openEdit}
+              editLabel="Telefon bearbeiten"
+            >
               <EinstellungenPfList>
                 <EinstellungenPfRow label="Name" value={name?.trim() || "—"} />
                 <EinstellungenPfRow label="E-Mail" value={email?.trim() || "—"} />
@@ -190,7 +187,7 @@ export function PortalEinstellungenMieter({
                   {supportMail}
                 </a>
               </p>
-            </div>
+            </EinstellungenSectionCard>
           );
         }}
       </PortalEinstellungenShell>

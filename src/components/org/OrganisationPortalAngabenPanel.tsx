@@ -8,14 +8,14 @@ import {
   orgAddressDraftFromKunde,
   orgBrandFromKunde,
 } from "@/lib/portal2/brand-presets";
-import { EINSTELLUNGEN_LOGO_HINT } from "@/lib/portal2/einstellungen";
 import {
   EinstellungenEdField,
   EinstellungenEditModal,
   EinstellungenGrid2,
+  EinstellungenLogoRow,
   EinstellungenPfList,
   EinstellungenPfRow,
-  EinstellungenSectionHeader,
+  EinstellungenSectionCard,
 } from "@/components/shared/PortalEinstellungenUi";
 import { usePortalUploadBusy } from "@/components/shared/usePortalUploadBusy";
 import { orgPortalToast, portalToastError } from "@/lib/shared/portal-toast";
@@ -156,12 +156,33 @@ export function OrganisationPortalAngabenPanel({
   }
 
   return (
-    <div className="flex flex-col gap-8">
-      <div className="space-y-3">
-        <EinstellungenSectionHeader title="Logo" />
-        <div className="flex items-center gap-3.5">
-          <div className="flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-border-default bg-muted">
-            {logoSrc ? (
+    <>
+      <EinstellungenSectionCard title="Logo">
+        <EinstellungenLogoRow
+          fallbackLabel={saved.logo || "HV"}
+          readOnly={readOnly}
+          uploadBusy={logoBusy}
+          hasLogo={Boolean(logoSrc)}
+          onUploadClick={
+            readOnly ? undefined : () => logoInputRef.current?.click()
+          }
+          fileInput={
+            !readOnly ? (
+              <input
+                ref={logoInputRef}
+                type="file"
+                accept="image/jpeg,image/png,image/webp"
+                className="hidden"
+                onChange={(e) => {
+                  const f = e.target.files?.[0];
+                  e.target.value = "";
+                  if (f) void uploadLogo(f);
+                }}
+              />
+            ) : null
+          }
+          preview={
+            logoSrc ? (
               <Image
                 src={logoSrc}
                 alt=""
@@ -170,55 +191,16 @@ export function OrganisationPortalAngabenPanel({
                 className="h-full w-full object-cover"
                 unoptimized
               />
-            ) : (
-              <span className="font-[family-name:var(--font-display)] text-sm font-bold text-text-primary">
-                {saved.logo || "HV"}
-              </span>
-            )}
-          </div>
-          <div className="min-w-0 flex-1">
-            <p className="text-[12.5px] leading-relaxed text-text-secondary">
-              {EINSTELLUNGEN_LOGO_HINT}{" "}
-              <b className="text-text-primary">„{saved.logo || "HV"}“</b> als
-              Platzhalter.
-            </p>
-            {!readOnly ? (
-              <>
-                <input
-                  ref={logoInputRef}
-                  type="file"
-                  accept="image/jpeg,image/png,image/webp"
-                  className="hidden"
-                  onChange={(e) => {
-                    const f = e.target.files?.[0];
-                    e.target.value = "";
-                    if (f) void uploadLogo(f);
-                  }}
-                />
-                <button
-                  type="button"
-                  disabled={logoBusy}
-                  onClick={() => logoInputRef.current?.click()}
-                  className="btn-pill-outline portal-btn-compact mt-2 disabled:opacity-50"
-                >
-                  {logoBusy
-                    ? "Wird hochgeladen…"
-                    : logoSrc
-                      ? "Logo ersetzen"
-                      : "Logo hochladen"}
-                </button>
-              </>
-            ) : null}
-          </div>
-        </div>
-      </div>
-
-      <div className="space-y-3">
-        <EinstellungenSectionHeader
-          title="Angaben fürs Portal"
-          onEdit={readOnly ? undefined : openEdit}
-          editLabel="Portal-Angaben bearbeiten"
+            ) : null
+          }
         />
+      </EinstellungenSectionCard>
+
+      <EinstellungenSectionCard
+        title="Angaben fürs Portal"
+        onEdit={readOnly ? undefined : openEdit}
+        editLabel="Portal-Angaben bearbeiten"
+      >
         <EinstellungenPfList>
           <EinstellungenPfRow label="Zusatz / Rolle" value={dash(saved.sub)} />
           <EinstellungenPfRow
@@ -233,7 +215,7 @@ export function OrganisationPortalAngabenPanel({
           <EinstellungenPfRow label="PLZ" value={dash(saved.plz)} />
           <EinstellungenPfRow label="Ort" value={dash(saved.ort)} />
         </EinstellungenPfList>
-      </div>
+      </EinstellungenSectionCard>
 
       {edit ? (
         <EinstellungenEditModal
@@ -282,6 +264,6 @@ export function OrganisationPortalAngabenPanel({
           </EinstellungenGrid2>
         </EinstellungenEditModal>
       ) : null}
-    </div>
+    </>
   );
 }

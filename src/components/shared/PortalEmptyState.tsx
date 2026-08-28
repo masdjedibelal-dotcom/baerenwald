@@ -27,7 +27,7 @@ export function PortalInboxEmpty({
   return (
     <div
       className={cn(
-        "flex flex-col items-center justify-center rounded-xl border border-dashed border-border-light bg-muted/15 text-center",
+        "flex flex-col items-center justify-center rounded-xl border border-dashed border-border-light bg-white text-center",
         compact ? "px-3 py-6" : "px-4 py-10",
         className
       )}

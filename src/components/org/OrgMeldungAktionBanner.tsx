@@ -136,7 +136,7 @@ export function OrgMeldungAktionBanner({
         if (aktion === "hm_begutachten") orgPortalToast.hmBegutachten();
         else if (aktion === "ablehnen") orgPortalToast.meldungAbgelehnt();
         else orgPortalToast.angebotEingefordert();
-        onUpdated();
+        await onUpdated();
       }, 480);
     } finally {
       setBusy(false);

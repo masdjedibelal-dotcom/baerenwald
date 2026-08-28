@@ -39,7 +39,7 @@ export function OrganisationObjektCard({
       statusPillClass={
         card.offen
           ? "bg-accent-light text-accent"
-          : "bg-[#eceef0] text-text-tertiary"
+          : "bg-[var(--p2-primary-soft,#e7f1e9)] text-text-tertiary"
       }
       meta={[
         { text: card.einheitenLabel },

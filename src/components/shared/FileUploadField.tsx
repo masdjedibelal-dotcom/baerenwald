@@ -99,7 +99,7 @@ export function FileUploadField({
           showImagePreview && previewUrl && "py-3",
           dragOver
             ? "border-accent bg-accent-light/40"
-            : "border-border-default bg-[var(--p2-selected,#f0f2f0)] hover:bg-[var(--p2-hover,#eef1ef)]",
+            : "border-border-default bg-white hover:bg-[var(--p2-hover,#eef1ef)]",
           disabled && "cursor-not-allowed opacity-60"
         )}
       >

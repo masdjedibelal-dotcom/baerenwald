@@ -3,7 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
-import { EinstellungenEdField, EinstellungenSectionHeader } from "@/components/shared/PortalEinstellungenUi";
+import { EinstellungenEdField, EinstellungenSectionCard } from "@/components/shared/PortalEinstellungenUi";
 import { PortalModalShell } from "@/components/shared/PortalModalShell";
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
 import { portalToastError, portalToastSuccess } from "@/lib/shared/portal-toast";
@@ -127,8 +127,7 @@ export function PortalKontoSicherheitPanel({
 
   return (
     <>
-      <div className="space-y-3">
-        <EinstellungenSectionHeader title="Konto & Sicherheit" />
+      <EinstellungenSectionCard title="Konto & Sicherheit">
         <div className="flex flex-col items-start gap-2">
           <button
             type="button"
@@ -159,7 +158,7 @@ export function PortalKontoSicherheitPanel({
             </p>
           )}
         </div>
-      </div>
+      </EinstellungenSectionCard>
 
       <PortalModalShell
         open={pwOpen}

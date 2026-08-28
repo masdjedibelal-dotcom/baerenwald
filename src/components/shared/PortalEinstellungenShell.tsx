@@ -158,8 +158,8 @@ export function PortalEinstellungenShell({
 
         <div className="min-w-0 flex-1">
           {/*
-            Flat wie Listen (Aufträge): kein Outer-Card auf dem Page-BG.
-            Interaktive Inputs behalten eigene Borders — kein doppelter Surface-Wrapper.
+            Section-Stack: je Block eine portal-section-card (Geschwister auf Page-BG).
+            Kein Outer-Card — siehe section-card-contract.ts.
           */}
           <div className="portal-einstellungen-stack max-w-[560px]">
             {children(tab)}

@@ -82,7 +82,7 @@ export function PartnerDirektKameraSlot({
       </p>
       <div
         className={cn(
-          "flex w-full flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-border-default bg-[var(--p2-selected,#f0f2f0)] text-center",
+          "flex w-full flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-border-default bg-white text-center",
           compact ? "px-2 py-4" : "px-4 py-6"
         )}
       >

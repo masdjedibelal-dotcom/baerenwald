@@ -513,7 +513,7 @@ export function OrganisationObjektWizard({
         className={cn(
           "border-t border-border-default",
           isModal
-            ? "shrink-0 bg-[var(--p2-bg-content,#f6f5f3)] px-1 pb-[var(--portal-safe-pad-bottom)] pt-3"
+            ? "shrink-0 bg-[var(--p2-bg-content,#f6f7f6)] px-1 pb-[var(--portal-safe-pad-bottom)] pt-3"
             : "mt-6 pt-4"
         )}
       >

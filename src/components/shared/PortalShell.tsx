@@ -347,10 +347,18 @@ export function PortalShell({
                   {children}
                 </div>
                 {showContentBusy ? (
-                  <div className="absolute inset-0 z-10 flex items-start justify-center bg-[var(--surface-page,#f7f8fa)]/90 backdrop-blur-[1px]">
+                  <div className="absolute inset-0 z-[80] flex items-start justify-center bg-[var(--surface-page,#f7f8fa)]/92 backdrop-blur-[2px]">
                     <PortalContentBusy
-                      title={contentBusyTitle}
-                      body={contentBusyBody}
+                      title={
+                        contentBusyTitle ??
+                        (ctxBusy && !contentBusy ? "Wird verarbeitet…" : undefined)
+                      }
+                      body={
+                        contentBusyBody ??
+                        (ctxBusy && !contentBusy
+                          ? "Einen Moment bitte."
+                          : undefined)
+                      }
                     />
                   </div>
                 ) : null}

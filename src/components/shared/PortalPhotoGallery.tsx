@@ -101,7 +101,7 @@ export function PortalPhotoGallery({
             key={`${src}-${i}`}
             type="button"
             onClick={() => setIndex(i)}
-            className="group relative aspect-square overflow-hidden rounded-lg border border-border-light bg-muted/20 text-left focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--org-primary,#2E7D52)]"
+            className="group relative aspect-square overflow-hidden rounded-lg border border-border-light bg-white text-left focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--org-primary,#2E7D52)]"
             aria-label={`Foto ${i + 1} vergrößern`}
           >
             {/* eslint-disable-next-line @next/next/no-img-element */}

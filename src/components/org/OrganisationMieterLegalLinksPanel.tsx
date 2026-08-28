@@ -7,7 +7,7 @@ import {
   EinstellungenEditModal,
   EinstellungenPfList,
   EinstellungenPfRow,
-  EinstellungenSectionHeader,
+  EinstellungenSectionCard,
 } from "@/components/shared/PortalEinstellungenUi";
 import {
   normalizeOrgHttpUrl,
@@ -112,12 +112,11 @@ export function OrganisationMieterLegalLinksPanel({
   }, [edit, onSaved, readOnly]);
 
   return (
-    <div className="space-y-3">
-      <EinstellungenSectionHeader
-        title="Impressum & Datenschutz (Mieter)"
-        onEdit={readOnly ? undefined : openEdit}
-        editLabel="Links bearbeiten"
-      />
+    <EinstellungenSectionCard
+      title="Impressum & Datenschutz (Mieter)"
+      onEdit={readOnly ? undefined : openEdit}
+      editLabel="Links bearbeiten"
+    >
       <EinstellungenPfList>
         <EinstellungenPfRow label="Impressum" value={dash(saved.impressum)} />
         <EinstellungenPfRow
@@ -164,6 +163,6 @@ export function OrganisationMieterLegalLinksPanel({
           ) : null}
         </EinstellungenEditModal>
       ) : null}
-    </div>
+    </EinstellungenSectionCard>
   );
 }

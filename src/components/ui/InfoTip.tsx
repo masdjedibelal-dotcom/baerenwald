@@ -4,17 +4,20 @@ import { useId, useRef, useState, type ReactNode } from 'react'
 import { cn } from '@/lib/utils'
 
 /**
- * Leichtgewichtiger i-Hinweis für Funnel/Melde (Website).
- * Entspricht CRM `MockInfoTip` — 1–2 Sätze, kein Absatz unter H1.
+ * Leichtgewichtiger i-Hinweis für Funnel/Melde/Portal.
+ * Popover-Breite responsiv — auf schmalen Tiles rechts ausrichten (`popoverAlign="end"`).
  */
 export function InfoTip({
   tip,
   label = 'Hinweis',
   className,
+  popoverAlign = 'start',
 }: {
   tip: ReactNode
   label?: string
   className?: string
+  /** `end` = Popover am Button rechtsbündig (KPI-Kacheln) */
+  popoverAlign?: 'start' | 'end'
 }) {
   const id = useId()
   const [open, setOpen] = useState(false)
@@ -22,7 +25,7 @@ export function InfoTip({
 
   return (
     <span
-      className={cn('inline-flex align-middle relative', className)}
+      className={cn('relative inline-flex shrink-0 align-middle', className)}
       style={{ verticalAlign: 'middle' }}
     >
       <button
@@ -58,7 +61,11 @@ export function InfoTip({
           id={id}
           role="tooltip"
           tabIndex={-1}
-          className="absolute left-0 top-[calc(100%+6px)] z-50 max-w-[260px] rounded-lg border border-[var(--p2-line,#E5E3DF)] bg-white px-3 py-2 text-left text-[12.5px] leading-snug text-[#16201B] shadow-md"
+          className={cn(
+            'absolute top-[calc(100%+6px)] z-50 rounded-lg border border-[var(--p2-line,#E5E3DF)] bg-white px-3 py-2 text-left text-[13px] leading-snug text-[#16201B] shadow-md',
+            'w-max min-w-[11rem] max-w-[min(18rem,calc(100vw-2rem))] sm:min-w-[13rem] sm:max-w-[20rem]',
+            popoverAlign === 'end' ? 'right-0' : 'left-0'
+          )}
         >
           {tip}
         </span>

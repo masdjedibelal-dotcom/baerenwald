@@ -1,7 +1,7 @@
 "use client";
 
 import { Info } from "lucide-react";
-import { useEffect, useState } from "react";
+import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 
 import {
@@ -14,6 +14,13 @@ import { useIsPortalMobile } from "@/lib/portal2/use-is-portal-mobile";
 import { usePortalMobileScrollChrome } from "@/lib/portal2/use-portal-mobile-scroll-chrome";
 import { cn } from "@/lib/utils";
 import { stripHtmlToPlainText } from "@/lib/portal/portal-display";
+
+/** Footer aus `PortalDetailLayout` — Desktop: automatisch in `PortalDetailHead`. */
+const PortalDetailLayoutFooterContext = createContext<ReactNode>(null);
+
+export function usePortalDetailLayoutFooter(): ReactNode {
+  return useContext(PortalDetailLayoutFooterContext);
+}
 
 /**
  * Einheitliches Bottom-Confirm — gleiches Pattern wie Dirty „Verwerfen / Weiter bearbeiten“.
@@ -75,9 +82,12 @@ export function PortalDetailHead({
   subtitle?: string;
   /** Badges/Chips neben dem Titel. */
   titleBadges?: React.ReactNode;
-  /** CTA-Zeile rechts (Desktop) / unter dem Head (Mobile). */
+  /** CTA-Zeile rechts (Desktop) — aus Layout-Footer oder explizit. */
   actions?: React.ReactNode;
 }) {
+  const layoutFooter = usePortalDetailLayoutFooter();
+  const resolvedActions = actions ?? layoutFooter;
+  const layoutFooterOnly = !actions && Boolean(layoutFooter);
   const showStatusRow = Boolean(statusLabel?.trim()) || Boolean(subtitle);
   return (
     <header className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
@@ -110,9 +120,14 @@ export function PortalDetailHead({
           </div>
         ) : null}
       </div>
-      {actions ? (
-        <div className="flex flex-wrap items-center gap-2 sm:shrink-0 sm:justify-end">
-          {actions}
+      {resolvedActions ? (
+        <div
+          className={cn(
+            "portal-detail-head-actions flex flex-wrap items-center gap-2 sm:shrink-0 sm:justify-end",
+            layoutFooterOnly && "hidden lg:flex"
+          )}
+        >
+          {resolvedActions}
         </div>
       ) : null}
     </header>
@@ -169,7 +184,7 @@ export function PortalDetailInfoBox({
     );
   }
   return (
-    <div className="portal-text-body flex gap-3 rounded-xl border border-border-light bg-muted/30 px-3 py-3.5 text-text-secondary">
+    <div className="portal-text-body flex gap-3 rounded-xl border border-border-light bg-white px-3 py-3.5 text-text-secondary">
       <Info className="mt-0.5 h-4 w-4 shrink-0 text-accent" aria-hidden />
       <div className="min-w-0">{children}</div>
     </div>
@@ -444,15 +459,17 @@ export function PortalDetailLayout({
       : null;
 
   return (
-    <div className="flex flex-col">
-      <div className="portal-detail-layout space-y-5 pb-2">{children}</div>
-      {footer && !useHybrid ? (
-        <div className="mt-5 border-t border-[var(--p2-line)] px-4 py-4 lg:px-6">
-          {footer}
-        </div>
-      ) : null}
-      {mobileBar}
-    </div>
+    <PortalDetailLayoutFooterContext.Provider value={footer ?? null}>
+      <div className="flex flex-col">
+        <div className="portal-detail-layout space-y-5 pb-2">{children}</div>
+        {footer && !useHybrid ? (
+          <div className="mt-5 border-t border-[var(--p2-line)] px-4 py-4 lg:hidden">
+            {footer}
+          </div>
+        ) : null}
+        {mobileBar}
+      </div>
+    </PortalDetailLayoutFooterContext.Provider>
   );
 }
 
@@ -466,6 +483,9 @@ export function PortalDetailStickyActions({
   secondaryLabel,
   onSecondary,
   secondaryDisabled,
+  tertiaryLabel,
+  onTertiary,
+  tertiaryDisabled,
   disabledHint,
 }: {
   primaryLabel: string;
@@ -477,12 +497,26 @@ export function PortalDetailStickyActions({
   secondaryLabel?: string;
   onSecondary?: () => void;
   secondaryDisabled?: boolean;
+  /** Dritter Button links (z. B. „Ablehnen“ neben Secondary + Primary). */
+  tertiaryLabel?: string;
+  onTertiary?: () => void;
+  tertiaryDisabled?: boolean;
   /** Hinweis unter den Buttons, wenn Primary disabled (z. B. fehlende Checkbox). */
   disabledHint?: string | null;
 }) {
   return (
-    <div className="w-full space-y-2">
+    <div className="w-full space-y-2 lg:w-auto">
       <div className="portal-action-row">
+        {tertiaryLabel ? (
+          <button
+            type="button"
+            disabled={tertiaryDisabled || primaryLoading}
+            onClick={onTertiary}
+            className="portal-action-btn portal-action-btn--ghost"
+          >
+            {tertiaryLabel}
+          </button>
+        ) : null}
         {secondaryLabel ? (
           <button
             type="button"

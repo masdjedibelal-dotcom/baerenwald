@@ -314,7 +314,7 @@ export function PortalRegisterForm({
   }
 
   const fieldClass = locked
-    ? "portal-input w-full rounded-xl border border-border-default bg-muted/40 px-3 py-3 text-text-secondary"
+    ? "portal-input w-full rounded-xl border border-border-default bg-white px-3 py-3 text-text-secondary"
     : "portal-input w-full rounded-xl border border-border-default bg-surface-card px-3 py-3 focus:border-accent";
 
   const canSubmitInvite = !locked || Boolean(email.trim() && displayName);

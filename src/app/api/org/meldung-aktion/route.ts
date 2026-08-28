@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { canOfferKleinreparatur } from "@/lib/org/hv-meldung-workflow";
 import { notifyCrmOrgPortal } from "@/lib/org/notify-crm-org";
 import { notifyHausmeisterPruefung } from "@/lib/org/notify-hausmeister-pruefung";
+import { notifyHvMieterEvent } from "@/lib/org/notify-hv-mieter-event";
 import {
   assertHausmeisterDelegierbar,
   loadObjektHausmeisterKontakt,
@@ -315,6 +316,7 @@ export async function POST(req: Request) {
   const patch: Record<string, string> = { hv_meldung_status: status };
   if (aktion === "ablehnen") {
     patch.org_freigabe_status = "abgelehnt";
+    patch.vorgang_phase = "abgelehnt";
   }
 
   const { error: updErr } = await supabaseAdmin
@@ -323,6 +325,28 @@ export async function POST(req: Request) {
     .eq("id", leadId);
   if (updErr) {
     return NextResponse.json({ error: updErr.message }, { status: 500 });
+  }
+
+  if (aktion === "ablehnen") {
+    try {
+      const melder = lead.melder_name ? String(lead.melder_name) : "Mieter";
+      await notifyHvMieterEvent({
+        leadId,
+        typ: "meldung_abgelehnt",
+        titel: "Meldung abgelehnt",
+        body: `Die Meldung von ${melder} wurde abgelehnt und abgeschlossen. Bitte informieren Sie den Mieter bei Bedarf.`,
+      });
+    } catch (e) {
+      console.warn("[meldung-aktion] notifyHvMieterEvent:", e);
+    }
+
+    const crmNotify = await notifyCrmOrgPortal({ leadId, typ: "meldung" });
+    if (!crmNotify.ok) {
+      console.warn("[meldung-aktion] CRM-Notify:", crmNotify.error, {
+        leadId,
+        skipped: crmNotify.skipped === true,
+      });
+    }
   }
 
   let objektTitel = "Objekt";

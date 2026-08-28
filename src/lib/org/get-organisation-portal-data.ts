@@ -17,6 +17,7 @@ import {
   type PortalDokument,
 } from "@/lib/portal/portal-dokumente";
 import { PORTAL_LIST_LEAD_LIMIT } from "@/lib/portal/portal-list-limits";
+import { filterPortalListableLeads } from "@/lib/portal/portal-lead-sichtbarkeit";
 import { meldeFotosFromLead } from "@/lib/org/org-eingang-utils";
 import type {
   OrganisationLead,
@@ -542,11 +543,25 @@ export async function getOrganisationPortalData(
     }
   }
 
+  const portalListCtx = {
+    angebote: base.angebote as Parameters<
+      typeof filterPortalListableLeads
+    >[1]["angebote"],
+    auftraege: mergedAuftraege as Parameters<
+      typeof filterPortalListableLeads
+    >[1]["auftraege"],
+  };
+  const eingangVisible = filterPortalListableLeads(eingang, portalListCtx);
+  const mergedLeadsVisible = filterPortalListableLeads(
+    mergedLeads,
+    portalListCtx
+  );
+
   return {
     kunde,
     objekte,
-    eingang,
-    leads: mergedLeads,
+    eingang: eingangVisible,
+    leads: mergedLeadsVisible,
     angebote: base.angebote,
     auftraege: mergedAuftraege,
     bautagebuchByLeadId,

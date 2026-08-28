@@ -56,7 +56,7 @@ function UploadFooter({ upload }: { upload: DokumenteTabelleUpload }) {
   if (!(upload.selectedLabel || upload.error || upload.onSubmit)) return null;
   return (
     <div
-      className="space-y-2 rounded-xl border border-border-default bg-muted/15 px-3.5 py-3"
+      className="space-y-2 rounded-xl border border-border-default bg-white px-3.5 py-3"
       onClick={(e) => e.stopPropagation()}
       onKeyDown={(e) => e.stopPropagation()}
     >
@@ -180,7 +180,7 @@ export function DokumenteTabelle({
 
       {dokumente.length === 0 ? (
         uploadZone ?? (
-          <p className="portal-text-body rounded-xl border border-dashed border-border-light bg-muted/15 px-4 py-5 text-center text-text-secondary">
+          <p className="portal-text-body rounded-xl border border-dashed border-border-light bg-white px-4 py-5 text-center text-text-secondary">
             {emptyText}
           </p>
         )

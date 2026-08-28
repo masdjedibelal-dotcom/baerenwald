@@ -255,7 +255,7 @@ export function OrganisationObjektEinheitenPanel({
           items.map((u) => (
             <li
               key={u.id}
-              className="flex items-center justify-between gap-2 rounded-xl border border-border-light bg-white px-3.5 py-3 text-sm sm:rounded-lg sm:border-transparent sm:bg-muted/30 sm:py-2"
+              className="flex items-center justify-between gap-2 rounded-xl border border-border-light bg-white px-3.5 py-3 text-sm sm:rounded-lg sm:border-transparent sm:bg-white sm:py-2"
             >
               <span>
                 {u.bezeichnung}

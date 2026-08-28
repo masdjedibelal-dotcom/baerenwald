@@ -26,6 +26,8 @@ export type BefundVorlagePunktDef = {
   /** Stabiler Key für Auswertung (auch als DB `vorlage_key` am Punkt). */
   key: string;
   titel: string;
+  /** Beim Befund-Start als Vorschlag (typisch 2–3 pro Vorlage). */
+  haeufig?: boolean;
 };
 
 export type BefundVorlageDef = {
@@ -40,10 +42,12 @@ const BASIS_PUNKTE: BefundVorlagePunktDef[] = [
   {
     key: "basis_vorgefunden",
     titel: "Schaden wie gemeldet vorgefunden",
+    haeufig: true,
   },
   {
     key: "basis_fotos",
     titel: "Fotos vom Ist-Zustand gemacht",
+    haeufig: true,
   },
   {
     key: "basis_ursache",
@@ -56,8 +60,13 @@ const BASIS_PUNKTE: BefundVorlagePunktDef[] = [
   },
 ];
 
+/** Erstes Ursachen-Element als dritter Vorschlag, falls nicht gesetzt. */
 function withBasis(ursachen: BefundVorlagePunktDef[]): BefundVorlagePunktDef[] {
-  return [...BASIS_PUNKTE, ...ursachen];
+  const urs = ursachen.map((p, i) => ({
+    ...p,
+    haeufig: p.haeufig ?? i === 0,
+  }));
+  return [...BASIS_PUNKTE, ...urs];
 }
 
 export const LEAD_BEFUND_VORLAGEN: Record<
@@ -339,7 +348,7 @@ export function resolveBefundVorlageKey(
   return "sonstiges";
 }
 
-/** Materialisierte Systempunkte für Insert (sort_order ab 0). */
+/** Nur häufige Vorschläge (Fallback: erste 3 der Vorlage). */
 export function materializeVorlagePunkte(key: BefundVorlageKey): Array<{
   sort_order: number;
   titel: string;
@@ -347,10 +356,33 @@ export function materializeVorlagePunkte(key: BefundVorlageKey): Array<{
   vorlage_key: string;
 }> {
   const vorlage = getBefundVorlage(key);
-  return vorlage.punkte.map((p, i) => ({
+  const haeufig = vorlage.punkte.filter((p) => p.haeufig);
+  const selected =
+    haeufig.length > 0 ? haeufig : vorlage.punkte.slice(0, 3);
+  return selected.map((p, i) => ({
     sort_order: i,
     titel: p.titel,
     quelle: "system" as const,
     vorlage_key: p.key,
   }));
+}
+
+/** Vorlagenpunkte, die noch nicht am Befund hängen (für Hinzufügen-Dropdown). */
+export function listVorlageKatalogOffen(
+  key: BefundVorlageKey,
+  activeVorlageKeys: Iterable<string>
+): BefundVorlagePunktDef[] {
+  const active = new Set(
+    [...activeVorlageKeys].map((k) => k.trim()).filter(Boolean)
+  );
+  return getBefundVorlage(key).punkte.filter((p) => !active.has(p.key));
+}
+
+export function findVorlagePunktDef(
+  key: BefundVorlageKey,
+  punktKey: string
+): BefundVorlagePunktDef | null {
+  const k = punktKey.trim();
+  if (!k) return null;
+  return getBefundVorlage(key).punkte.find((p) => p.key === k) ?? null;
 }

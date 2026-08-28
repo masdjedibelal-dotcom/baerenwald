@@ -4,9 +4,9 @@
  */
 
 export const PORTAL_C = {
-  /** Seitenhintergrund — klar abgesetzt von weißen Panels/Cards */
-  bg: "#F6F5F3",
-  bgContent: "#F6F5F3",
+  /** Seitenhintergrund — CRM `--bg-soft` (leicht grünliches Grau) */
+  bg: "#F6F7F6",
+  bgContent: "#F6F7F6",
   panel: "#ffffff",
   line: "rgba(0,0,0,0.09)",
   line2: "rgba(0,0,0,0.06)",
@@ -16,7 +16,7 @@ export const PORTAL_C = {
   faint: "#55615B",
   faint2: "#7A857F",
   primary: "#2E7D52",
-  primaryDk: "#2a724b",
+  primaryDk: "#1A3D2B",
   primarySoft: "#E7F1E9",
   greenDark: "#1A3D2B",
   green50: "#E7F1E9",

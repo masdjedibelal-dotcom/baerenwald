@@ -11,7 +11,7 @@ import {
 import { PORTAL_VAR } from "@/lib/portal2/tokens";
 import { cn } from "@/lib/utils";
 
-/** Weiße Detail-Card — C1: `responsive` = Border mobil, flach ab lg. */
+/** Weiße Detail-Card — `responsive` / `card` = immer Section-Card; `flat` = ohne Rahmen. */
 export function PortalDetailCard({
   title,
   children,

@@ -316,7 +316,7 @@ export function PortalClient({
   const router = useRouter();
   const searchParams = useSearchParams();
   const embedded = layout === "embedded";
-  const { hold, release, flash: flashShellBusy } = usePortalBusy();
+  const { hold, release, flash: flashShellBusy, busy: ctxBusy } = usePortalBusy();
   const { refreshFlash } = usePortalRefresh();
   const detailHoldRef = useRef(false);
 
@@ -1167,7 +1167,15 @@ export function PortalClient({
     selectedItem || selectedId || showDetailBusy ? detailScreen : listPanel;
 
   if (embedded) {
-    const showEmbeddedBusy = Boolean(pageBusy || showDetailBusy);
+    const showEmbeddedBusy = Boolean(pageBusy || showDetailBusy || ctxBusy);
+    const embeddedBusyTitle =
+      showDetailBusy || pageBusy
+        ? "Vorgang wird geladen…"
+        : "Wird verarbeitet…";
+    const embeddedBusyBody =
+      showDetailBusy || pageBusy
+        ? "Einen Moment — wir öffnen die Details."
+        : "Einen Moment bitte.";
     return (
       <div className="relative min-h-[40vh] min-w-0">
         <div
@@ -1179,10 +1187,10 @@ export function PortalClient({
           {vorgaengeScreen}
         </div>
         {showEmbeddedBusy ? (
-          <div className="absolute inset-0 z-10 flex items-start justify-center bg-[var(--surface-page,#f7f8fa)]/90 backdrop-blur-[1px]">
+          <div className="absolute inset-0 z-[80] flex items-start justify-center bg-[var(--surface-page,#f7f8fa)]/92 backdrop-blur-[2px]">
             <PortalContentBusy
-              title="Vorgang wird geladen…"
-              body="Einen Moment — wir öffnen die Details."
+              title={embeddedBusyTitle}
+              body={embeddedBusyBody}
             />
           </div>
         ) : null}

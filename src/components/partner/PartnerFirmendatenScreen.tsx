@@ -15,9 +15,10 @@ import {
   EinstellungenEdField,
   EinstellungenEditModal,
   EinstellungenGrid2,
+  EinstellungenLogoRow,
   EinstellungenPfList,
   EinstellungenPfRow,
-  EinstellungenSectionHeader,
+  EinstellungenSectionCard,
 } from "@/components/shared/PortalEinstellungenUi";
 import { filterProfilStammCompliance } from "@/lib/partner/compliance-summary";
 import type {
@@ -25,7 +26,6 @@ import type {
   PartnerProfilKontext,
 } from "@/lib/partner/get-partner-data";
 import { resolveHandwerkerAnschrift } from "@/lib/partner/handwerker-anschrift";
-import { EINSTELLUNGEN_LOGO_HINT } from "@/lib/portal2/einstellungen";
 import { HW_FIRMEN_SECTIONS } from "@/lib/portal2/einstellungen-ui";
 import { partnerPortalToast, portalToastError } from "@/lib/shared/portal-toast";
 
@@ -223,36 +223,14 @@ export function PartnerFirmendatenScreen({
           }
 
           return (
-            <div className="space-y-6">
-              <EinstellungenSectionHeader
-                title="Daten"
-                onEdit={openEdit}
-                editLabel="Daten bearbeiten"
-              />
-
-              <div className="space-y-3">
-                <EinstellungenSectionHeader title={HW_FIRMEN_SECTIONS.logo} />
-                <div className="flex items-center gap-3.5">
-                  <div className="flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-border-default bg-muted">
-                    {logoSrc ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img
-                        src={logoSrc}
-                        alt="Firmenlogo"
-                        className="h-full w-full object-contain"
-                      />
-                    ) : (
-                      <span className="font-[family-name:var(--font-display)] text-sm font-bold text-text-primary">
-                        {saved.logo}
-                      </span>
-                    )}
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <p className="text-[12.5px] leading-relaxed text-text-secondary">
-                      {EINSTELLUNGEN_LOGO_HINT}{" "}
-                      <b className="text-text-primary">„{saved.logo}“</b> als
-                      Platzhalter.
-                    </p>
+            <>
+              <EinstellungenSectionCard title={HW_FIRMEN_SECTIONS.logo}>
+                <EinstellungenLogoRow
+                  fallbackLabel={saved.logo}
+                  uploadBusy={saving}
+                  hasLogo={Boolean(logoSrc)}
+                  onUploadClick={() => logoInputRef.current?.click()}
+                  fileInput={
                     <input
                       ref={logoInputRef}
                       type="file"
@@ -264,26 +242,25 @@ export function PartnerFirmendatenScreen({
                         void onLogoChange(f);
                       }}
                     />
-                    <button
-                      type="button"
-                      disabled={saving}
-                      onClick={() => logoInputRef.current?.click()}
-                      className="mt-2 rounded-lg border border-border-default bg-white px-3 py-1.5 text-[12.5px] font-semibold text-text-primary disabled:opacity-50"
-                    >
-                      {saving
-                        ? "Wird hochgeladen…"
-                        : logoSrc
-                          ? "Logo ersetzen"
-                          : "Logo hochladen"}
-                    </button>
-                  </div>
-                </div>
-              </div>
-
-              <div className="space-y-3">
-                <EinstellungenSectionHeader
-                  title={HW_FIRMEN_SECTIONS.anschrift}
+                  }
+                  preview={
+                    logoSrc ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={logoSrc}
+                        alt="Firmenlogo"
+                        className="h-full w-full object-contain"
+                      />
+                    ) : null
+                  }
                 />
+              </EinstellungenSectionCard>
+
+              <EinstellungenSectionCard
+                title={HW_FIRMEN_SECTIONS.anschrift}
+                onEdit={openEdit}
+                editLabel="Daten bearbeiten"
+              >
                 <EinstellungenPfList>
                   <EinstellungenPfRow
                     label="Firmenname"
@@ -312,10 +289,9 @@ export function PartnerFirmendatenScreen({
                     value={dash(saved.mail)}
                   />
                 </EinstellungenPfList>
-              </div>
+              </EinstellungenSectionCard>
 
-              <div className="space-y-3">
-                <EinstellungenSectionHeader title={HW_FIRMEN_SECTIONS.steuer} />
+              <EinstellungenSectionCard title={HW_FIRMEN_SECTIONS.steuer}>
                 <EinstellungenPfList>
                   <EinstellungenPfRow
                     label="USt-IdNr."
@@ -334,19 +310,18 @@ export function PartnerFirmendatenScreen({
                     value={saved.kleinunternehmer ? "Ja" : "Nein"}
                   />
                 </EinstellungenPfList>
-              </div>
+              </EinstellungenSectionCard>
 
-              <div className="space-y-3">
-                <EinstellungenSectionHeader title={HW_FIRMEN_SECTIONS.bank} />
+              <EinstellungenSectionCard title={HW_FIRMEN_SECTIONS.bank}>
                 <EinstellungenPfList>
                   <EinstellungenPfRow label="IBAN" value={dash(saved.iban)} />
                   <EinstellungenPfRow label="BIC" value={dash(saved.bic)} />
                   <EinstellungenPfRow label="Bank" value={dash(saved.bank)} />
                 </EinstellungenPfList>
-              </div>
+              </EinstellungenSectionCard>
 
               <PortalKontoSicherheitPanel signOutHref="/partner/login" />
-            </div>
+            </>
           );
         }}
       </PortalEinstellungenShell>

@@ -82,8 +82,8 @@
  * Keine Rundung der Hex-/RGBA-Werte.
  */
 .portal-ui {
-  --p2-bg: #f6f5f3;
-  --p2-bg-content: #f6f5f3;
+  --p2-bg: #f6f7f6;
+  --p2-bg-content: #f6f7f6;
   --p2-panel: #ffffff;
   --p2-line: rgba(0, 0, 0, 0.09);
   --p2-line2: rgba(0, 0, 0, 0.06);
@@ -91,13 +91,14 @@
   --p2-sub: #1f2924;
   --p2-faint: #3d4a44;
   --p2-faint2: #5c6963;
-  --p2-primary: #363b41;
-  --p2-primary-dk: #24282d;
-  --p2-primary-soft: #eceef0;
+  --p2-primary: #2e7d52;
+  --p2-primary-dk: #1a3d2b;
+  --p2-primary-soft: #e7f1e9;
   --p2-green-dark: #1a3d2b;
   --p2-green-50: #e7f1e9;
   --p2-hover: #eef1ef;
-  --p2-selected: #e8ece9;
+  /* Flächen auf Page-BG: weiß — kein Grau-auf-Grau (#f0f2f0 o. ä.) */
+  --p2-selected: #ffffff;
   --p2-danger: #a1242a;
   --p2-danger-soft: #fce3e3;
   --p2-danger-border: #f5c2c0;
@@ -412,18 +413,77 @@ h3 {
     overflow: hidden;
   }
 
+  /*
+   * Box-Flächen: muted-Opacity / graue Hex → weiß auf Page-BG.
+   * Hover-States (hover:bg-muted) bleiben unberührt.
+   */
+  .rounded-xl.bg-muted\/15,
+  .rounded-xl.bg-muted\/20,
+  .rounded-xl.bg-muted\/30,
+  .rounded-xl.bg-muted\/40,
+  .rounded-xl.bg-muted\/50,
+  .rounded-xl.bg-muted\/60,
+  .rounded-lg.bg-muted\/15,
+  .rounded-lg.bg-muted\/20,
+  .rounded-lg.bg-muted\/30,
+  .rounded-lg.bg-muted\/40,
+  .rounded-lg.bg-muted\/50,
+  .rounded-lg.bg-muted\/60,
+  .rounded-\[10px\].bg-muted,
+  .rounded-\[11px\].bg-muted,
+  .border-dashed.bg-muted\/15,
+  .border-dashed.bg-muted\/20 {
+    background-color: #fff !important;
+  }
+
+  /* Inaktive Filter-Chips (rounded-full + muted) → weiß mit Rand */
+  .rounded-full.bg-muted {
+    background-color: #fff !important;
+    box-shadow: inset 0 0 0 1px var(--p2-line, rgba(0, 0, 0, 0.09));
+  }
+
+  /* Vorgangslisten — weiße Einzelkarten (CRM-Mobil / portal-dash-recent-item) */
+  .portal-list-card {
+    background: #fff;
+    border-color: var(--p2-line, rgba(0, 0, 0, 0.09));
+    box-shadow:
+      0 1px 2px rgba(22, 32, 27, 0.04),
+      0 4px 12px rgba(22, 32, 27, 0.05);
+  }
+
   .portal-list-panel > * + * {
     border-top: 0.5px solid var(--p2-line2, rgba(0, 0, 0, 0.05));
   }
 
-  /* Mock screenSettings — card() + Freigabe-Schwellen */
-  /* Legacy: Card-Klasse → flach (kein weißer Rahmen mehr) */
-  .portal-einstellungen-card {
+  /* Section-Cards — Einstellungen, Detail-Blocks (nicht Listen-Wrapper) */
+  .portal-section-card {
+    background: #fff;
+    border: 0.5px solid var(--p2-line, rgba(0, 0, 0, 0.09));
+    border-radius: var(--p2-radius-md, 12px);
+    box-shadow:
+      0 1px 2px rgba(22, 32, 27, 0.04),
+      0 4px 12px rgba(22, 32, 27, 0.05);
+  }
+
+  /* Innerhalb Section-Card: keine zweite Card (Toggles, Hinweise) */
+  .portal-section-card .portal-nested-panel {
     background: transparent;
     border: none;
     border-radius: 0;
-    padding: 0;
     box-shadow: none;
+    padding: 0;
+  }
+
+  /* Mock screenSettings — Section-Stack (Cards mit Abstand, kein Outer-Wrapper) */
+  .portal-einstellungen-card,
+  .portal-einstellungen-card.portal-section-card {
+    background: #fff;
+    border: 0.5px solid var(--p2-line, rgba(0, 0, 0, 0.09));
+    border-radius: var(--p2-radius-md, 12px);
+    box-shadow:
+      0 1px 2px rgba(22, 32, 27, 0.04),
+      0 4px 12px rgba(22, 32, 27, 0.05);
+    padding: 1rem;
   }
 
   .portal-einstellungen-card-title {
@@ -437,7 +497,7 @@ h3 {
   .portal-einstellungen-stack {
     display: flex;
     flex-direction: column;
-    gap: 14px;
+    gap: 12px;
   }
 
   input[type="range"].portal-einstellungen-range {
@@ -604,7 +664,7 @@ h3 {
   .portal-input:disabled {
     cursor: not-allowed;
     opacity: 0.7;
-    background: var(--p2-selected, #f0f2f0);
+    background: #fff;
   }
 
   textarea.portal-field,
@@ -661,7 +721,7 @@ h3 {
 
   .portal-action-btn--secondary {
     border: 1px solid var(--p2-line, rgba(0, 0, 0, 0.08));
-    background: var(--p2-selected, #f0f2f0);
+    background: #fff;
     color: var(--p2-sub, #404a45);
   }
 
@@ -710,12 +770,17 @@ h3 {
       width: auto;
       max-width: 100%;
       flex-wrap: wrap;
-      justify-content: flex-start;
+      justify-content: flex-end;
     }
 
     .portal-action-row > .portal-action-btn {
       flex: 0 1 auto;
       min-width: 0;
+    }
+
+    .portal-detail-head-actions {
+      align-self: flex-start;
+      max-width: min(100%, 540px);
     }
   }
 
@@ -972,7 +1037,7 @@ h3 {
 
   /* Mobil-Dashboard: Header-Bild + Kurve + Avatar */
   .portal-dash {
-    background: var(--p2-bg, #f6f5f3);
+    background: var(--p2-bg, #f6f7f6);
     padding-bottom: 8px;
   }
 
@@ -1497,7 +1562,7 @@ h3 {
     display: flex;
     flex-direction: column;
     /* Getönte Fläche — weiße Cards/Inputs liegen darauf (nicht Weiß-auf-Weiß) */
-    background: var(--p2-bg-content, #f6f5f3);
+    background: var(--p2-bg-content, #f6f7f6);
     border-radius: 20px 20px 0 0;
     width: 100%;
     max-width: none; /* Mobil: volle Breite — kein eingeengtes Center-Card */
@@ -1519,7 +1584,7 @@ h3 {
     align-items: flex-start;
     gap: 10px;
     flex-shrink: 0;
-    background: var(--p2-bg-content, #f6f5f3);
+    background: var(--p2-bg-content, #f6f7f6);
     border-bottom: 0.5px solid var(--p2-line2, rgba(0, 0, 0, 0.06));
   }
 
@@ -1638,7 +1703,7 @@ h3 {
     padding: 10px 14px
       max(12px, env(safe-area-inset-bottom, 0px));
     border-top: 0.5px solid var(--p2-line2, rgba(0, 0, 0, 0.06));
-    background: var(--p2-bg-content, #f6f5f3);
+    background: var(--p2-bg-content, #f6f7f6);
   }
 
   .portal-modal-shell-footer .portal-action-btn--block {
@@ -1723,7 +1788,7 @@ h3 {
 
   .portal-modal-discard-panel {
     width: 100%;
-    background: var(--p2-bg-content, #f6f5f3);
+    background: var(--p2-bg-content, #f6f7f6);
     border-radius: 16px 16px 0 0;
     padding: 18px 20px var(--portal-safe-pad-bottom, calc(14px + env(safe-area-inset-bottom, 0px)));
     box-shadow: 0 -8px 32px rgba(0, 0, 0, 0.2);
@@ -1792,7 +1857,7 @@ h3 {
       width: min(100%, var(--portal-modal-max, 460px));
       max-width: var(--portal-modal-max, 460px);
       box-shadow: -16px 0 48px rgba(0, 0, 0, 0.28);
-      background: var(--p2-bg-content, #f6f5f3);
+      background: var(--p2-bg-content, #f6f7f6);
     }
 
     .portal-modal-shell--preview .portal-modal-shell-panel {
@@ -2506,7 +2571,7 @@ h3 {
       border-radius: 0;
       border: none;
       box-shadow: none;
-      background: var(--p2-bg, #f6f5f3);
+      background: var(--p2-bg, #f6f7f6);
     }
 
     .portal-shell-main > .portal-page-stack {
@@ -2545,7 +2610,7 @@ h3 {
     min-width: 0;
     display: flex;
     flex-direction: column;
-    background: var(--p2-bg, #f6f5f3);
+    background: var(--p2-bg, #f6f7f6);
   }
 
   .portal-shell-brand {
@@ -2798,7 +2863,7 @@ h3 {
 
   /*
    * Detail-Hybrid (mobil): oben Bottom-Nav, nach Scroll CTAs an derselben Stelle.
-   * Kein Overlay über der Nav — Bar ist transparent, pointer-events nur auf den Buttons.
+   * Schmale Frost-Bar hinter den Buttons — Inhalt darunter leicht geblurrt, nicht schwebend.
    */
   .portal-detail-mobile-cta {
     position: fixed;
@@ -2811,12 +2876,12 @@ h3 {
     display: flex;
     justify-content: center;
     align-items: flex-end;
-    padding: 10px 16px var(--portal-safe-pad-bottom-nav, calc(12px + env(safe-area-inset-bottom, 0px)));
-    background: transparent;
-    border: none;
-    box-shadow: none;
-    backdrop-filter: none;
-    -webkit-backdrop-filter: none;
+    padding: 6px 16px var(--portal-safe-pad-bottom-nav, calc(8px + env(safe-area-inset-bottom, 0px)));
+    background: rgba(255, 255, 255, 0.78);
+    border-top: 1px solid rgba(22, 32, 27, 0.08);
+    box-shadow: 0 -6px 20px -14px rgba(22, 32, 27, 0.22);
+    backdrop-filter: blur(10px) saturate(1.15);
+    -webkit-backdrop-filter: blur(10px) saturate(1.15);
     pointer-events: none;
     touch-action: manipulation;
     transform: translateY(0);
@@ -3149,7 +3214,7 @@ h3 {
 
 .portal-ui .btn-pill-outline {
   border-width: 1.5px;
-  background: var(--p2-selected, #f0f2f0) !important;
+  background: #fff !important;
   color: var(--p2-sub, #404a45) !important;
   border-color: var(--p2-line, rgba(0, 0, 0, 0.08)) !important;
 }
@@ -3618,3 +3683,18 @@ select {
   width: 100%;
   text-align: center;
 }
+
+/* Partner LV-Kalkulation — Position oben, Menge/Einheit/€ gleich breit darunter */
+.hw-kalk-pos__fields {
+  align-items: stretch;
+}
+.hw-kalk-pos__field {
+  min-width: 0;
+  min-height: 40px;
+}
+@media (max-width: 380px) {
+  .hw-kalk-pos__fields {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+

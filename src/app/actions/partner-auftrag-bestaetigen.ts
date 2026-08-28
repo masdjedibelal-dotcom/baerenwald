@@ -789,8 +789,15 @@ export async function declinePartnerAnfrage(opts: {
       id,
       handwerker_id,
       angebot_id,
-      handwerker(name),
-      gewerke(name)
+      gewerk_id,
+      status,
+      antwort_at,
+      gesendet_at,
+      hw_status,
+      hw_konditionen,
+      bestaetigt_at,
+      gewerke(name),
+      handwerker(name)
     `
     )
     .eq("id", opts.anfrageId.trim())
@@ -799,6 +806,40 @@ export async function declinePartnerAnfrage(opts: {
   if (error || !row) return { ok: false, error: "Vorgang nicht gefunden." };
   if (String(row.handwerker_id) !== link.handwerkerId) {
     return { ok: false, error: "Keine Berechtigung." };
+  }
+
+  const angebotId = String(row.angebot_id ?? "");
+  const { data: auftrag } = await supabaseAdmin
+    .from("auftraege")
+    .select("id")
+    .eq("angebot_id", angebotId)
+    .maybeSingle();
+  const auftragId = auftrag?.id ? String(auftrag.id) : null;
+  const auftragPositionen = auftragId
+    ? await loadAuftragPositionen(auftragId, link.handwerkerId)
+    : [];
+  const alle_hw_konditionen = await loadAlleHwKonditionenForAngebot(
+    angebotId,
+    link.handwerkerId
+  );
+  const gewerk = one(row.gewerke) as { name?: string | null } | null;
+
+  if (
+    !isPartnerAngebotOffenListItem({
+      status: String(row.status ?? ""),
+      antwort_at: row.antwort_at as string | null,
+      gesendet_at: (row as { gesendet_at?: string | null }).gesendet_at,
+      hw_status: (row as { hw_status?: string | null }).hw_status ?? undefined,
+      bestaetigt_at: (row as { bestaetigt_at?: string | null }).bestaetigt_at,
+      crm_auftrag_positionen: auftragPositionen,
+      gewerk_id: String(row.gewerk_id ?? ""),
+      gewerk_name: gewerk?.name?.trim(),
+      handwerker_id: link.handwerkerId,
+      hw_konditionen: parsePartnerHwKonditionen(row.hw_konditionen),
+      alle_hw_konditionen,
+    })
+  ) {
+    return { ok: false, error: "Dieser Vorgang kann nicht mehr abgelehnt werden." };
   }
 
   const notiz = opts.notiz?.trim() || null;

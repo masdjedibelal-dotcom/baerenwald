@@ -20,16 +20,22 @@ function wait(ms: number) {
  */
 export function usePortalRefresh() {
   const router = useRouter();
-  const { runBusy, flash } = usePortalBusy();
+  const { runBusy, flash, isHeld } = usePortalBusy();
 
   const refresh = useCallback(
     async (msMin = PORTAL_BUSY_MIN_MS) => {
+      /** Bereits in runBusy/hold — kein zweites Hold (sonst endet Overlay zu früh). */
+      if (isHeld()) {
+        router.refresh();
+        await wait(msMin);
+        return;
+      }
       await runBusy(async () => {
         router.refresh();
         await wait(msMin);
       }, msMin);
     },
-    [router, runBusy]
+    [router, runBusy, isHeld]
   );
 
   /** Sofort flashen + refresh (z. B. nach Nav ohne Await). */

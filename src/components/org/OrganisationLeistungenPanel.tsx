@@ -91,7 +91,7 @@ export function OrganisationLeistungenPanel({
               "rounded-full px-3 py-1.5 portal-text-meta font-semibold",
               familie === f.id
                 ? "bg-accent-light text-accent"
-                : "bg-muted text-text-secondary"
+                : "border border-border-default bg-white text-text-secondary"
             )}
           >
             {f.label}

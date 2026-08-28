@@ -82,7 +82,7 @@ export function BautagebuchAccordionList({
                   />
                 </button>
                 {open ? (
-                  <div className="portal-text-body space-y-3 border-t border-border-light bg-muted/15 px-0 py-4">
+                  <div className="portal-text-body space-y-3 border-t border-border-light bg-white px-0 py-4">
                     {e.badges ? (
                       <div className="flex flex-wrap gap-1 sm:hidden">{e.badges}</div>
                     ) : null}

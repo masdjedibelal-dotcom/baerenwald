@@ -7,7 +7,7 @@ import {
   EinstellungenEuroSlider,
   EinstellungenPfList,
   EinstellungenPfRow,
-  EinstellungenSectionHeader,
+  EinstellungenSectionCard,
   EinstellungenSheetCard,
   EinstellungenToggle,
 } from "@/components/shared/PortalEinstellungenUi";
@@ -208,7 +208,11 @@ export function OrganisationFreigabeRegelnPanel({
         : `${akutFaelle.length} Fälle`;
 
   return (
-    <div className="space-y-3">
+    <EinstellungenSectionCard
+      title={EINSTELLUNGEN_SCHWELLE_TITLE}
+      onEdit={isAdmin ? openEdit : undefined}
+      editLabel="Freigabe-Regeln bearbeiten"
+    >
       {!isAdmin ? (
         <p
           className="text-[13px] leading-[1.55]"
@@ -218,11 +222,6 @@ export function OrganisationFreigabeRegelnPanel({
         </p>
       ) : null}
 
-      <EinstellungenSectionHeader
-        title={EINSTELLUNGEN_SCHWELLE_TITLE}
-        onEdit={isAdmin ? openEdit : undefined}
-        editLabel="Freigabe-Regeln bearbeiten"
-      />
       <EinstellungenPfList>
         <EinstellungenPfRow
           label={<SofortmassnahmeAkutTitle />}
@@ -310,6 +309,6 @@ export function OrganisationFreigabeRegelnPanel({
           }
         />
       </EinstellungenEditModal>
-    </div>
+    </EinstellungenSectionCard>
   );
 }

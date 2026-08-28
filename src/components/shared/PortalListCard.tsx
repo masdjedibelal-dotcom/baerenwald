@@ -70,8 +70,8 @@ export type PortalListCardProps = {
   /** Mock-Liste: Chevron rechts */
   showChevron?: boolean;
   /**
-   * `responsive` = mobile card / lg+ flat (C1 Default).
-   * `card` = immer Karte · `row` = immer flache Zeile.
+   * `responsive` = weiße Karte (Default, wie CRM Mobil).
+   * `card` = identisch · `row` = flache Zeile in Panel.
    */
   variant?: PortalListVariant;
   /** Checkbox links (Mock) — Klick stoppt Propagation. */
@@ -128,7 +128,7 @@ function AttentionCornerBadge({ count }: { count: number }) {
 }
 
 /**
- * Vorgangs-Listenzeile — C1: mobile card / lg+ flat bei `responsive`.
+ * Vorgangs-Listenzeile — C1: weiße Karte auf Page-BG (`card` / `responsive`).
  */
 export function PortalListCard({
   selected,

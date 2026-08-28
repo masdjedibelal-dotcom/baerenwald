@@ -124,6 +124,11 @@ export function PartnerEinholungDetail({
     }));
   }, [item.hw_angebot_anhang_signed_urls, item.hw_angebot_pdf_signed_url]);
 
+  function finishInPlace() {
+    setView("detail");
+    void refresh();
+  }
+
   function finish() {
     if (onConfirmed) onConfirmed(item.id);
     else void refresh();
@@ -171,7 +176,7 @@ export function PartnerEinholungDetail({
         return;
       }
       partnerPortalToast.hwAngebotEingereicht();
-      finish();
+      finishInPlace();
     });
   }
 
@@ -191,7 +196,7 @@ export function PartnerEinholungDetail({
             anfrageId={item.id}
             variant="einholung"
             initialPositionen={lvStartPositionen}
-            onDone={finish}
+            onDone={finishInPlace}
             onCancel={() => setView("detail")}
           />
         </PortalEntityDetailLayout>
@@ -258,6 +263,9 @@ export function PartnerEinholungDetail({
       onPrimary={() => setView("erstellen")}
       secondaryLabel="Angebot hochladen"
       onSecondary={() => setView("upload")}
+      tertiaryLabel="Ablehnen"
+      onTertiary={() => setShowReject(true)}
+      tertiaryDisabled={loading}
     />
   ) : (
     <PortalDetailStickyActions
@@ -353,17 +361,6 @@ export function PartnerEinholungDetail({
           ) : null}
 
           {error ? <PortalDetailError message={error} /> : null}
-
-          {!eingereicht && !showReject ? (
-            <button
-              type="button"
-              className="btn-pill-outline"
-              disabled={loading}
-              onClick={() => setShowReject(true)}
-            >
-              Ablehnen
-            </button>
-          ) : null}
 
           <PortalConfirmDialog
             open={confirmReject}

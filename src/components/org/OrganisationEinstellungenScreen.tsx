@@ -10,7 +10,7 @@ import { PortalPushSettingsPanel } from "@/components/shared/PortalPushSettingsP
 import {
   EinstellungenPfList,
   EinstellungenPfRow,
-  EinstellungenSectionHeader,
+  EinstellungenSectionCard,
 } from "@/components/shared/PortalEinstellungenUi";
 import type { OrganisationKunde } from "@/lib/org/types";
 
@@ -40,15 +40,14 @@ export function OrganisationEinstellungenScreen({
       {(tab) => {
         if (tab === "profil") {
           return (
-            <div className="flex flex-col gap-8">
+            <>
               <OrganisationPortalAngabenPanel
                 kunde={kunde}
                 readOnly={!isAdmin}
                 onSaved={onSaved}
               />
 
-              <div className="space-y-3">
-                <EinstellungenSectionHeader title="Profil" />
+              <EinstellungenSectionCard title="Profil">
                 <EinstellungenPfList>
                   <EinstellungenPfRow label="Name" value={displayName} />
                   <EinstellungenPfRow
@@ -57,7 +56,7 @@ export function OrganisationEinstellungenScreen({
                   />
                   <EinstellungenPfRow label="Telefon" value={tel} />
                 </EinstellungenPfList>
-              </div>
+              </EinstellungenSectionCard>
 
               <OrganisationMieterLegalLinksPanel
                 kunde={kunde}
@@ -72,7 +71,7 @@ export function OrganisationEinstellungenScreen({
                 allowDelete={false}
                 deleteMailto="info@baerenwald-muenchen.de"
               />
-            </div>
+            </>
           );
         }
 

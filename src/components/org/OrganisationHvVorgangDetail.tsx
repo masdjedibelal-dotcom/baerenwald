@@ -56,7 +56,6 @@ import {
 import { PORTAL_STATUS, type PortalMockStatusId } from "@/lib/portal2/status";
 import { PORTAL_VAR } from "@/lib/portal2/tokens";
 import { kundePortalToast, orgPortalToast } from "@/lib/shared/portal-toast";
-import { track } from "@/lib/analytics";
 import type { PortalBautagebuchEntry } from "@/lib/portal/portal-detail-item";
 import type { PortalAngebotPositionDisplay } from "@/lib/portal/portal-angebot-display";
 import type { PortalAuftragPositionDisplay } from "@/lib/portal/kunde-auftrag-aenderung";
@@ -112,7 +111,7 @@ export type OrganisationHvVorgangDetailProps = {
   verlauf?: HvVerlaufEntry[];
   coverUrl?: string | null;
   onBack?: () => void;
-  onUpdated: () => void;
+  onUpdated: () => void | Promise<void>;
   /** org_freigabe_status für Angebots-Freigabe */
   orgFreigabeStatus?: string | null;
   /** Persistierter Bypass (V2) — Portal rechnet nicht selbst */
@@ -599,7 +598,7 @@ export function OrganisationHvVorgangDetail({
                   href={doc.href!}
                   name={doc.name}
                   kind="pdf"
-                  className="block w-full overflow-hidden bg-muted/20 text-left"
+                  className="block w-full overflow-hidden bg-white text-left"
                 >
                   <p
                     className="px-3 py-4 text-center text-[12.5px] font-semibold"
@@ -920,38 +919,12 @@ export function OrganisationHvVorgangDetail({
         } else {
           orgPortalToast.meldungAbgelehnt();
         }
-        onUpdated();
+        await onUpdated();
         if (aktion !== "hm_begutachten") onBack?.();
       }, 480);
     } finally {
       setBusy(false);
       setBusyAktion(null);
-    }
-  };
-
-  const freigabeAct = async (aktion: "freigegeben" | "abgelehnt") => {
-    setBusy(true);
-    setError(null);
-    try {
-      await runBusy(async () => {
-        const res = await fetch("/api/org/freigabe", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ leadId, aktion }),
-        });
-        const json = (await res.json().catch(() => ({}))) as { error?: string };
-        if (!res.ok) {
-          setError(json.error ?? "Aktion fehlgeschlagen.");
-          return;
-        }
-        track.orgFreigabe(aktion);
-        if (aktion === "freigegeben") orgPortalToast.freigegeben();
-        else orgPortalToast.freigabeAbgelehnt();
-        onUpdated();
-        onBack?.();
-      });
-    } finally {
-      setBusy(false);
     }
   };
 
@@ -972,9 +945,9 @@ export function OrganisationHvVorgangDetail({
         }
         setAccepted(true);
         kundePortalToast.angebotAngenommen();
-        onUpdated();
+        await onUpdated();
         onBack?.();
-      });
+      }, 480);
     } finally {
       setBusy(false);
     }
@@ -997,9 +970,9 @@ export function OrganisationHvVorgangDetail({
         }
         setRejected(true);
         kundePortalToast.angebotAbgelehnt();
-        onUpdated();
+        await onUpdated();
         onBack?.();
-      });
+      }, 480);
     } finally {
       setBusy(false);
     }
@@ -1015,6 +988,8 @@ export function OrganisationHvVorgangDetail({
       (canAcceptAngebot ||
         (actionKind === "angebot" && Boolean(resolvedAngebotId)))
   );
+
+  const hmSelbstErledigt = hvStatusNorm === "hm_erledigt";
 
   const rolePanel = (() => {
     if (actionKind === "privat_auto") {
@@ -1063,6 +1038,7 @@ export function OrganisationHvVorgangDetail({
       return null;
     }
     if (actionKind === "abschluss") {
+      if (hmSelbstErledigt) return null;
       return mieterStatusMode ? null : abschlussCard;
     }
     if (actionKind === "rechnung") {
@@ -1218,6 +1194,59 @@ export function OrganisationHvVorgangDetail({
     if (id === "bautagebuch") onBautagebuchViewed();
   }
 
+  const hmErledigtBanner =
+    hmSelbstErledigt && !mieterStatusMode ? (
+      <PortalDetailInfoBox>
+        <p className="font-semibold text-text-primary">
+          Vom Hausmeister erledigt
+        </p>
+        <p className="mt-1 text-[13px] text-text-secondary">
+          Die Vor-Ort-Prüfung ist abgeschlossen — Bärenwald muss hier nichts
+          mehr tun. Dokumentierte Prüfpunkte finden Sie unter Tab „Checkliste“.
+        </p>
+        {showHmTab ? (
+          <button
+            type="button"
+            className="portal-action-btn portal-action-btn--secondary mt-3"
+            onClick={() => setActiveSection("hm_pruefung")}
+          >
+            Zur Checkliste
+          </button>
+        ) : null}
+      </PortalDetailInfoBox>
+    ) : null;
+
+  const hmPruefungBanner =
+    hvStatusNorm === "hm_pruefung" && !mieterStatusMode ? (
+      <PortalDetailInfoBox>
+        <p className="font-semibold text-text-primary">
+          {hausmeisterActor ? "Hausmeister-Prüfung" : "Hausmeister-Prüfung läuft"}
+        </p>
+        <p className="mt-1 text-[13px] text-text-secondary">
+          {hausmeisterActor
+            ? "Unter Tab „Checkliste“ Punkte prüfen — danach selbst erledigen oder an Bärenwald weitergeben."
+            : "Der Vorgang liegt beim Hausmeister. Ergebnis erscheint unter Tab „Checkliste“, sobald die Prüfung abgeschlossen ist."}
+        </p>
+        {hausmeisterActor ? (
+          <button
+            type="button"
+            className="portal-action-btn portal-action-btn--primary mt-3"
+            onClick={() => setActiveSection("hm_pruefung")}
+          >
+            Zur Checkliste
+          </button>
+        ) : showHmTab ? (
+          <button
+            type="button"
+            className="portal-action-btn portal-action-btn--secondary mt-3"
+            onClick={() => setActiveSection("hm_pruefung")}
+          >
+            Zum Tab Checkliste
+          </button>
+        ) : null}
+      </PortalDetailInfoBox>
+    ) : null;
+
   const actionFooter =
     hausmeisterActor &&
     hvStatusNorm === "hm_pruefung" &&
@@ -1298,6 +1327,10 @@ export function OrganisationHvVorgangDetail({
           </div>
         ) : null}
 
+        {hmErledigtBanner ?? hmPruefungBanner ? (
+          <div className="mt-3">{hmErledigtBanner ?? hmPruefungBanner}</div>
+        ) : null}
+
       </div>
 
       <div className="flex flex-col gap-4 px-4 pb-6 pt-3 sm:px-6 sm:pt-4 lg:flex-row lg:items-start lg:gap-6 lg:pt-5">
@@ -1324,36 +1357,8 @@ export function OrganisationHvVorgangDetail({
               !showAngebotSection
                 ? abschlussCard
                 : null}
-              {!showFreigabeButtons ? versicherungBlock : null}
-              <VorgangDetailBlocks
-                vm={uebersichtVm}
-                detailsActions={
-                  hvStatusNorm === "hm_pruefung" ? (
-                    <PortalDetailInfoBox>
-                      <p className="font-semibold text-text-primary">
-                        {hausmeisterActor
-                          ? "Hausmeister-Prüfung"
-                          : "Hausmeister-Prüfung läuft"}
-                      </p>
-                      <p className="mt-1 text-[13px] text-text-secondary">
-                        {hausmeisterActor
-                          ? "Unter Tab „Checkliste“ Punkte abhaken — danach selbst erledigen oder an Bärenwald weitergeben."
-                          : "Der Vorgang liegt beim Hausmeister. Fortschritt und Checkliste unter Tab „Hausmeister“."}
-                      </p>
-                      {hausmeisterActor ? (
-                        <button
-                          type="button"
-                          className="portal-action-btn portal-action-btn--primary mt-3"
-                          onClick={() => setActiveSection("hm_pruefung")}
-                        >
-                          Zur Checkliste
-                        </button>
-                      ) : null}
-                    </PortalDetailInfoBox>
-                  ) : undefined
-                }
-              />
-              {showFreigabeButtons ? versicherungBlock : null}
+              <VorgangDetailBlocks vm={uebersichtVm} />
+              {versicherungBlock}
             </section>
           ) : null}
 
@@ -1377,17 +1382,18 @@ export function OrganisationHvVorgangDetail({
               <OrgHmBefundPanel
                 leadId={leadId}
                 hvMeldungStatus={hvStatusOptimistic ?? hvMeldungStatus}
+                viewerRole={hausmeisterActor ? "hm" : "hv"}
                 readOnly={
                   hausmeisterActor
                     ? hvStatusNorm !== "hm_pruefung"
-                    : hmPortalZugang || hvStatusNorm !== "hm_pruefung"
+                    : true
                 }
                 onBefundPresence={setHasBefund}
                 onUpdated={onUpdated}
                 onCompleted={
                   hausmeisterActor
                     ? () => {
-                        onBack();
+                        onBack?.();
                         onUpdated();
                       }
                     : undefined
@@ -1395,7 +1401,7 @@ export function OrganisationHvVorgangDetail({
                 onActionsReady={
                   hausmeisterActor ? setHmStickyActions : undefined
                 }
-                hideInlineActions={hausmeisterActor}
+                hideInlineActions
               />
             </DetailCard>
           ) : null}

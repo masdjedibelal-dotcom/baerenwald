@@ -3,8 +3,8 @@
 import { useState } from "react";
 import { FileText, RefreshCw } from "lucide-react";
 
-import { KostentraegerSelector } from "@/components/org/KostentraegerSelector";
 import { PortalDetailCard } from "@/components/shared/PortalDetailCard";
+import { usePortalBusy } from "@/components/shared/PortalBusyContext";
 import { portalToastError, portalToastSuccess } from "@/lib/shared/portal-toast";
 
 type Props = {
@@ -32,8 +32,6 @@ function fmtDatum(iso: string | null | undefined): string {
 export function OrganisationVersicherungBlock({
   leadId,
   kostentraeger,
-  kostentraegerVorgeschlagen,
-  versicherungsNr,
   schadenNr,
   hvMeldungStatus,
   versicherungsaktePdfUrl,
@@ -43,15 +41,14 @@ export function OrganisationVersicherungBlock({
   objektPolicenNr,
   onSaved,
 }: Props) {
-  const [localSchadenNr, setLocalSchadenNr] = useState(schadenNr ?? "");
-  const [localVersNr, setLocalVersNr] = useState(
-    versicherungsNr ?? objektPolicenNr ?? ""
-  );
   const [busy, setBusy] = useState(false);
+  const { runBusy } = usePortalBusy();
 
   const isVersicherung = (kostentraeger ?? "").trim() === "versicherung";
   const hmBlock = (hvMeldungStatus ?? "").trim().toLowerCase() === "hm_pruefung";
   const hasPdf = Boolean(versicherungsaktePdfUrl?.trim());
+  const settingsVersNr = (objektPolicenNr ?? "").trim();
+  const versNrFehlt = isVersicherung && !settingsVersNr;
 
   const dataChangedAfterPdf =
     hasPdf &&
@@ -61,26 +58,27 @@ export function OrganisationVersicherungBlock({
       (versicherungsNrGeaendertAm &&
         versicherungsNrGeaendertAm > versicherungsakteErstelltAm));
 
-  async function saveSchadenNr() {
+  async function setAbrechnungVersicherung(ja: boolean) {
+    if (ja === isVersicherung) return;
     setBusy(true);
     try {
-      const res = await fetch(`/api/org/leads/${leadId}/kostentraeger`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          kostentraeger: "versicherung",
-          versicherungs_nr: localVersNr.trim() || undefined,
-          schaden_nr: localSchadenNr.trim() || null,
-        }),
-      });
-      const data = (await res.json()) as { error?: string; schadenakteWarning?: string };
-      if (!res.ok) throw new Error(data.error ?? "Speichern fehlgeschlagen");
-      if (data.schadenakteWarning) {
-        portalToastSuccess("Gespeichert. " + data.schadenakteWarning);
-      } else {
-        portalToastSuccess("Versicherungsdaten gespeichert.");
-      }
-      onSaved?.();
+      await runBusy(async () => {
+        const res = await fetch(`/api/org/leads/${leadId}/kostentraeger`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            kostentraeger: ja ? "versicherung" : "gemeinschaft",
+          }),
+        });
+        const data = (await res.json()) as { error?: string; schadenakteWarning?: string };
+        if (!res.ok) throw new Error(data.error ?? "Speichern fehlgeschlagen");
+        if (data.schadenakteWarning) {
+          portalToastSuccess(data.schadenakteWarning);
+        } else if (ja) {
+          portalToastSuccess("Versicherungsabrechnung aktiviert.");
+        }
+        await onSaved?.();
+      }, 320);
     } catch (e) {
       portalToastError(e instanceof Error ? e.message : "Fehler");
     } finally {
@@ -91,19 +89,21 @@ export function OrganisationVersicherungBlock({
   async function openAkte(regenerate = false) {
     setBusy(true);
     try {
-      const url = `/api/org/versicherungsakte?leadId=${encodeURIComponent(leadId)}${regenerate ? "&regenerate=1" : ""}`;
-      const res = await fetch(url);
-      if (!res.ok) {
-        const j = (await res.json().catch(() => null)) as { error?: string } | null;
-        portalToastError(j?.error ?? "Schadenakte nicht verfügbar");
-        return;
-      }
-      const blob = await res.blob();
-      const objUrl = URL.createObjectURL(blob);
-      window.open(objUrl, "_blank", "noopener,noreferrer");
-      setTimeout(() => URL.revokeObjectURL(objUrl), 60_000);
-      if (regenerate) portalToastSuccess("Schadenakte aktualisiert.");
-      onSaved?.();
+      await runBusy(async () => {
+        const url = `/api/org/versicherungsakte?leadId=${encodeURIComponent(leadId)}${regenerate ? "&regenerate=1" : ""}`;
+        const res = await fetch(url);
+        if (!res.ok) {
+          const j = (await res.json().catch(() => null)) as { error?: string } | null;
+          portalToastError(j?.error ?? "Schadenakte nicht verfügbar");
+          return;
+        }
+        const blob = await res.blob();
+        const objUrl = URL.createObjectURL(blob);
+        window.open(objUrl, "_blank", "noopener,noreferrer");
+        setTimeout(() => URL.revokeObjectURL(objUrl), 60_000);
+        if (regenerate) portalToastSuccess("Schadenakte aktualisiert.");
+        await onSaved?.();
+      }, 320);
     } finally {
       setBusy(false);
     }
@@ -111,48 +111,49 @@ export function OrganisationVersicherungBlock({
 
   return (
     <PortalDetailCard title="Versicherung & Abrechnung">
-      <div className="space-y-3">
-        <KostentraegerSelector
-          leadId={leadId}
-          value={kostentraeger}
-          vorgeschlagen={kostentraegerVorgeschlagen}
-          versicherungsNr={localVersNr}
-          onSaved={onSaved}
-        />
-
-        {isVersicherung ? (
-          <>
-            <label className="block text-[13px]">
-              <span className="portal-text-label mb-1 block">Policen-Nr.</span>
-              <input
-                className="portal-field w-full"
-                value={localVersNr}
-                onChange={(e) => setLocalVersNr(e.target.value)}
-                placeholder={objektPolicenNr ? "Aus Objekt-Stammdaten" : ""}
-              />
-              {objektPolicenNr && !versicherungsNr ? (
-                <span className="portal-text-meta mt-1 block text-text-tertiary">
-                  Aus Objekt-Stammdaten übernommen.
-                </span>
-              ) : null}
-            </label>
-            <label className="block text-[13px]">
-              <span className="portal-text-label mb-1 block">Schaden-Nr.</span>
-              <input
-                className="portal-field w-full"
-                value={localSchadenNr}
-                onChange={(e) => setLocalSchadenNr(e.target.value)}
-                placeholder="Vom Versicherer, optional"
-              />
-            </label>
+      <div className="space-y-4">
+        <div className="space-y-2">
+          <p className="portal-text-meta font-semibold text-text-secondary">
+            Abrechnung über Versicherung?
+          </p>
+          <div className="flex flex-wrap gap-2">
             <button
               type="button"
-              className="portal-btn portal-btn-secondary text-[13px]"
               disabled={busy}
-              onClick={() => void saveSchadenNr()}
+              onClick={() => void setAbrechnungVersicherung(true)}
+              className={
+                isVersicherung
+                  ? "btn-pill-primary portal-btn-compact"
+                  : "btn-pill-outline portal-btn-compact"
+              }
             >
-              Versicherungsdaten speichern
+              Ja
             </button>
+            <button
+              type="button"
+              disabled={busy}
+              onClick={() => void setAbrechnungVersicherung(false)}
+              className={
+                !isVersicherung
+                  ? "btn-pill-primary portal-btn-compact"
+                  : "btn-pill-outline portal-btn-compact"
+              }
+            >
+              Nein
+            </button>
+          </div>
+          <p className="text-xs text-text-tertiary">
+            Bei Ja erstellen wir die Schadenakte automatisch für die Einreichung.
+          </p>
+        </div>
+
+        {isVersicherung ? (
+          <div className="space-y-3 border-t border-border-light pt-3">
+            {versNrFehlt ? (
+              <p className="portal-text-meta rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-amber-950">
+                Versicherungsnummer fehlt
+              </p>
+            ) : null}
 
             {hmBlock ? (
               <p className="portal-text-meta rounded-lg bg-muted/50 px-3 py-2 text-text-secondary">
@@ -204,7 +205,7 @@ export function OrganisationVersicherungBlock({
                 Schadenakte erstellen
               </button>
             ) : null}
-          </>
+          </div>
         ) : null}
       </div>
     </PortalDetailCard>

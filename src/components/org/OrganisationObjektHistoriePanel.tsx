@@ -160,7 +160,7 @@ export function OrganisationObjektHistoriePanel({
           <div className="hidden overflow-x-auto sm:block">
             <table className="w-full text-left text-[13px]">
               <thead>
-                <tr className="border-b bg-[#fafafa] text-text-tertiary">
+                <tr className="border-b bg-white text-text-tertiary">
                   <th className="px-4 py-2.5 font-medium">Datum</th>
                   <th className="px-4 py-2.5 font-medium">Titel</th>
                   <th className="px-4 py-2.5 font-medium">Einheit</th>
@@ -213,7 +213,7 @@ export function OrganisationObjektHistoriePanel({
                 ))}
               </tbody>
               <tfoot>
-                <tr className="bg-[#fafafa]">
+                <tr className="bg-white">
                   <td
                     colSpan={6}
                     className="px-4 py-2.5 text-text-tertiary"

@@ -3,12 +3,18 @@
 import { useEffect, useState, type ReactNode } from "react";
 import { Pencil, Plus } from "lucide-react";
 
+import { PortalDetailInfoBox } from "@/components/shared/PortalDetailUi";
+import { PortalModalShell } from "@/components/shared/PortalModalShell";
+import { InfoTip } from "@/components/ui/InfoTip";
 import {
+  EINSTELLUNGEN_LOGO_HINT,
   formatEinstellungenSchwelle,
   snapEinstellungenSchwelle,
 } from "@/lib/portal2/einstellungen";
-import { PortalDetailInfoBox } from "@/components/shared/PortalDetailUi";
-import { PortalModalShell } from "@/components/shared/PortalModalShell";
+import {
+  PORTAL_NESTED_PANEL_CLASS,
+  PORTAL_SECTION_CARD_CLASS,
+} from "@/lib/portal2/section-card-contract";
 import { PORTAL_VAR } from "@/lib/portal2/tokens";
 import { cn } from "@/lib/utils";
 
@@ -124,6 +130,95 @@ export function EinstellungenEdField({
 /** Alias — gleiche Info-Box wie Detail-Screens. */
 export function EinstellungenInfoBox({ children }: { children: ReactNode }) {
   return <PortalDetailInfoBox>{children}</PortalDetailInfoBox>;
+}
+
+/** Weiße Section-Card — eine pro Einstellungs-Block (kein Outer-Wrapper). */
+export function EinstellungenSectionCard({
+  title,
+  onEdit,
+  editLabel = "Bearbeiten",
+  onAdd,
+  addLabel = "Hinzufügen",
+  trailing,
+  children,
+  className,
+}: {
+  title?: string;
+  onEdit?: () => void;
+  editLabel?: string;
+  onAdd?: () => void;
+  addLabel?: string;
+  trailing?: ReactNode;
+  children: ReactNode;
+  className?: string;
+}) {
+  return (
+    <section className={cn(PORTAL_SECTION_CARD_CLASS, "space-y-3 p-4", className)}>
+      {title ? (
+        <EinstellungenSectionHeader
+          title={title}
+          onEdit={onEdit}
+          editLabel={editLabel}
+          onAdd={onAdd}
+          addLabel={addLabel}
+          trailing={trailing}
+        />
+      ) : null}
+      {children}
+    </section>
+  );
+}
+
+/** Logo-Zeile: Vorschau + Upload links, InfoTip rechts (Hinweis nicht inline). */
+export function EinstellungenLogoRow({
+  preview,
+  fallbackLabel,
+  hint = EINSTELLUNGEN_LOGO_HINT,
+  readOnly,
+  uploadBusy,
+  hasLogo,
+  onUploadClick,
+  fileInput,
+}: {
+  preview: ReactNode;
+  fallbackLabel: string;
+  hint?: string;
+  readOnly?: boolean;
+  uploadBusy?: boolean;
+  hasLogo?: boolean;
+  onUploadClick?: () => void;
+  fileInput?: ReactNode;
+}) {
+  return (
+    <div className="flex items-center gap-3.5">
+      <div className="flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-border-default bg-white">
+        {preview ?? (
+          <span className="font-[family-name:var(--font-display)] text-sm font-bold text-text-primary">
+            {fallbackLabel}
+          </span>
+        )}
+      </div>
+      {!readOnly && onUploadClick ? (
+        <>
+          {fileInput}
+          <button
+            type="button"
+            disabled={uploadBusy}
+            onClick={onUploadClick}
+            className="btn-pill-outline portal-btn-compact shrink-0 disabled:opacity-50"
+          >
+            {uploadBusy
+              ? "Wird hochgeladen…"
+              : hasLogo
+                ? "Logo ersetzen"
+                : "Logo hochladen"}
+          </button>
+        </>
+      ) : null}
+      <div className="min-w-0 flex-1" aria-hidden />
+      <InfoTip tip={hint} label="Logo-Hinweis" popoverAlign="end" />
+    </div>
+  );
 }
 
 /** Abschnittskopf: Label + optionale Aktionen / Plus (Add) / Stift (Edit). */
@@ -302,9 +397,8 @@ export function EinstellungenGrid2({
 }
 
 /**
- * Flacher Einstellungs-Block (Handwerker-Contract).
- * Keine weiße Card — nur SectionHeader + Inhalt.
- * @deprecated Bevorzugt EinstellungenSectionHeader + children direkt.
+ * Flacher Einstellungs-Block — delegiert an EinstellungenSectionCard.
+ * @deprecated Bevorzugt EinstellungenSectionCard.
  */
 export function EinstellungenCard({
   title,
@@ -318,12 +412,9 @@ export function EinstellungenCard({
   onEdit?: () => void;
 }) {
   return (
-    <section className={cn("space-y-3", className)}>
-      {title ? (
-        <EinstellungenSectionHeader title={title} onEdit={onEdit} />
-      ) : null}
+    <EinstellungenSectionCard title={title} onEdit={onEdit} className={className}>
       {children}
-    </section>
+    </EinstellungenSectionCard>
   );
 }
 
@@ -440,13 +531,22 @@ export function EinstellungenSheetCard({
   title,
   description,
   children,
+  nested,
 }: {
   title: string;
   description?: string;
   children?: ReactNode;
+  /** Flach innerhalb EinstellungenSectionCard — keine Card-in-Card. */
+  nested?: boolean;
 }) {
   return (
-    <div className="rounded-[11px] border border-border-default bg-[var(--p2-panel,#fff)] px-3.5 py-[13px] shadow-sm">
+    <div
+      className={cn(
+        nested
+          ? PORTAL_NESTED_PANEL_CLASS
+          : "rounded-[11px] border border-border-default bg-[var(--p2-panel,#fff)] px-3.5 py-[13px] shadow-sm"
+      )}
+    >
       <p className="portal-text-card-title">{title}</p>
       {description ? (
         <p
@@ -499,17 +599,23 @@ export function EinstellungenToggle({
   disabled,
   title,
   description,
+  nested,
 }: {
   checked: boolean;
   onChange: (checked: boolean) => void;
   disabled?: boolean;
   title: ReactNode;
   description?: ReactNode;
+  /** Flach innerhalb EinstellungenSectionCard — keine Card-in-Card. */
+  nested?: boolean;
 }) {
   return (
     <div
       className={cn(
-        "flex w-full items-start gap-3 rounded-[11px] border border-border-default bg-[var(--p2-panel,#fff)] px-3.5 py-[13px] shadow-sm",
+        "flex w-full items-start gap-3",
+        nested
+          ? PORTAL_NESTED_PANEL_CLASS
+          : "rounded-[11px] border border-border-default bg-[var(--p2-panel,#fff)] px-3.5 py-[13px] shadow-sm",
         disabled && "opacity-60"
       )}
     >

@@ -336,10 +336,10 @@ export function PortalVorgangDetail({
             : item.wartetAufHwLabel ?? null
         }
         onBack={onBack}
-        onUpdated={() => {
+        onUpdated={async () => {
           onAccepted?.();
           onHvFeedbackSubmitted?.();
-          void refresh();
+          await refresh();
         }}
       />
     );
