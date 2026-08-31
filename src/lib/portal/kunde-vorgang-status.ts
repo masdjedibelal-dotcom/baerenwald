@@ -243,6 +243,25 @@ export function resolveKundeVorgangStatus(input: {
     };
   }
 
+  // HM selbst erledigt / Lead abgeschlossen — auch ohne Auftrag/Angebot
+  if (
+    isVorgangPortalErledigt({
+      leadVorgangPhase: input.leadVorgangPhase,
+      hv_meldung_status: input.hv_meldung_status,
+      auftragStatus: input.auftragStatus,
+      auftragFortschritt: input.auftragFortschritt,
+      positionen: input.auftragPositionen,
+    })
+  ) {
+    return {
+      phase: "abgeschlossen",
+      label: LABELS.abgeschlossen,
+      pillKey: "abgeschlossen",
+      sortPriority: 80,
+      needsAction: false,
+    };
+  }
+
   if (input.hasAuftragRecord) {
     const st = normalizeStatus(input.auftragStatus);
     const done =

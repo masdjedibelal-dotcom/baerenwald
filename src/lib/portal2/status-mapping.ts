@@ -253,10 +253,12 @@ export function portalMieterFlowTimeline(
   const order = MIETER_STG.map((s) => s.id);
   let idx = order.indexOf(stufe);
   if (idx < 0) idx = 0;
+  const isTerminal = idx === order.length - 1;
   return MIETER_STG.map((s, i) => ({
     id: s.id,
     label: s.title_de,
-    done: i < idx,
+    // Terminal „Erledigt“: fertig (grün), nicht nur aktiv (weiß)
+    done: i < idx || (isTerminal && i === idx),
     active: i === idx,
   }));
 }

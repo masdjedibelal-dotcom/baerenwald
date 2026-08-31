@@ -219,6 +219,16 @@ function resolvePhase(input: ResolveVorgangInput): PhasePick {
     }
   }
 
+  const hv = (lead.hv_meldung_status ?? '').trim().toLowerCase()
+  if (hv === 'hm_erledigt' || hv === 'abgeschlossen') {
+    return {
+      phase: 'auftrag',
+      entityId: lead.id,
+      unterstatus: 'abgeschlossen',
+      updatedAt: entityTs(lead),
+    }
+  }
+
   return {
     phase: 'anfrage',
     entityId: lead.id,

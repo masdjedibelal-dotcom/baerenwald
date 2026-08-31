@@ -176,7 +176,7 @@ export function buildOrgAngebotFreigabeHtml(input: {
   });
 }
 
-/** HV: Angebot unter Freigabeschwelle — trotzdem Annehmen/Ablehnen, kein Kosten-Freigabe-Button. */
+/** HV: Angebot unter Freigabeschwelle — Info, Direktauftrag; kein Annehmen/Ablehnen. */
 export function buildOrgAngebotUnterSchwelleHtml(input: {
   objektTitel: string;
   betrag?: string;
@@ -186,13 +186,13 @@ export function buildOrgAngebotUnterSchwelleHtml(input: {
   const link = orgPortalDeepLink(input.portalPath);
   const schwelle =
     input.schwelleLabel?.trim() != null && input.schwelleLabel.trim() !== ""
-      ? ` (Freigabeschwelle ${esc(input.schwelleLabel.trim())})`
+      ? ` (${esc(input.schwelleLabel.trim())})`
       : "";
   return wrapOrgMail({
     preheader: `Angebot unter Freigabeschwelle — ${input.objektTitel}`,
     bodyInnerHtml: `
       <p style="margin:0 0 12px;font-size:15px;color:#374151;line-height:1.6;">Für <strong>${esc(input.objektTitel)}</strong>${input.betrag ? ` liegt ein Angebot (${esc(input.betrag)})` : " liegt ein Angebot"} unter Ihrer Freigabeschwelle${schwelle}.</p>
-      <p style="margin:0;font-size:15px;color:#374151;line-height:1.6;"><strong>Bitte entscheiden:</strong> Nehmen Sie das Angebot im Portal an oder lehnen Sie es ab. Eine separate Kostenfreigabe ist nicht nötig — mit der Annahme startet der Auftrag direkt.</p>
+      <p style="margin:0;font-size:15px;color:#374151;line-height:1.6;">Aufgrund Ihrer erteilten Freigabeschwelle ist eine Annahme oder Ablehnung <strong>nicht nötig</strong> — wir kümmern uns direkt um den Auftrag. Den Stand sehen Sie jederzeit im Auftraggeber-Portal.</p>
     `,
     ctaHref: link,
     ctaLabel: "Zum Auftraggeber-Portal →",

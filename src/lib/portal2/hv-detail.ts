@@ -200,8 +200,8 @@ export const HV_DETAIL_COPY = {
   empfohlenAnnehmen: "Annehmen",
   angebotAnnehmenTitle: "Angebot annehmen",
   unterSchwelle: (schwelleLabel: string) =>
-    `Auftrag läuft (unter ${schwelleLabel})`,
-  unterSchwelleAkut: "Sofortmaßnahme — wir kümmern uns",
+    `Unter Freigabeschwelle (${schwelleLabel}) — wir kümmern uns direkt`,
+  unterSchwelleAkut: "Akut / Sofortmaßnahme — wir kümmern uns direkt",
   inAusfuehrung: "In Ausführung",
   abnahmeTitle: "Abschluss",
   abnahmeEmpty: "Noch kein Abnahmeprotokoll.",

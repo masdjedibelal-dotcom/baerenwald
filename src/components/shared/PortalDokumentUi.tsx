@@ -5,6 +5,7 @@ import { Download, Trash2, Upload } from "lucide-react";
 
 import { PdfFileIcon } from "@/components/shared/PdfFileIcon";
 import { PortalDocOpenButton } from "@/components/shared/PortalDocOpenButton";
+import { triggerPortalDocDownload } from "@/lib/portal2/doc-viewer";
 import { cn } from "@/lib/utils";
 
 const ACTION_BTN =
@@ -50,7 +51,7 @@ export function PortalDokumentMetaLine({
 
 /**
  * Einheitliche Dokument-Aktionen (Ansehen / Download / Upload / Löschen).
- * Ohne href und ohne weitere Aktionen: nichts rendern (kein „—“).
+ * Ansehen → neuer Tab; Download → Blob-Download (kein Navigieren zur Datei).
  */
 export function PortalDokumentActions({
   href,
@@ -70,14 +71,27 @@ export function PortalDokumentActions({
   loading?: boolean;
   onUploadClick?: () => void;
   onDelete?: () => void;
-  /** Optional: eigenes Öffnen (z. B. DokumenteTabelle-Viewer). */
+  /** Optional: eigenes Öffnen (z. B. DokumenteTabelle). */
   onOpen?: () => void;
   className?: string;
 }) {
   const url = href?.trim() ? normalizeHref(href.trim()) : "";
+  const [dlBusy, setDlBusy] = useState(false);
   const showOpen = Boolean(url);
   const showAnything = showOpen || kannHochladen || kannLoeschen;
   if (!showAnything) return null;
+
+  async function onDownloadClick() {
+    if (!url || dlBusy) return;
+    setDlBusy(true);
+    try {
+      await triggerPortalDocDownload(url, name);
+    } catch {
+      /* ignore */
+    } finally {
+      setDlBusy(false);
+    }
+  }
 
   return (
     <div className={cn("flex items-center gap-1", className)}>
@@ -103,17 +117,18 @@ export function PortalDokumentActions({
               <span className="sr-only">{`${name} ansehen`}</span>
             </PortalDocOpenButton>
           )}
-          <a
-            href={url}
-            download
+          <button
+            type="button"
+            onClick={() => void onDownloadClick()}
+            disabled={dlBusy}
             className={cn(
               ACTION_BTN,
-              "text-text-secondary hover:bg-muted/40"
+              "text-text-secondary hover:bg-muted/40 disabled:opacity-50"
             )}
             aria-label={`${name} herunterladen`}
           >
             <Download className="h-4 w-4" />
-          </a>
+          </button>
         </>
       ) : null}
       {kannHochladen && onUploadClick ? (

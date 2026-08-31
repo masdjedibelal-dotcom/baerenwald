@@ -3,11 +3,20 @@ import { NextResponse } from "next/server";
 import {
   ensureVersicherungsakteForAuftrag,
   ensureVersicherungsakteForLead,
+  getVersicherungPdfReadinessForLead,
 } from "@/lib/org/ensure-versicherungsakte";
+import {
+  phasePdfFilename,
+  type VersicherungPdfPhase,
+} from "@/lib/org/versicherung-pdf-readiness";
 import { requireOrganisationSession } from "@/lib/org/require-org-session";
 import { supabaseAdmin } from "@/lib/supabase";
 
 export const runtime = "nodejs";
+
+function parsePhase(raw: string | null): VersicherungPdfPhase {
+  return raw === "ursache" ? "ursache" : "meldung";
+}
 
 async function loadOrgAuftrag(auftragId: string, kundeId: string) {
   return supabaseAdmin
@@ -36,7 +45,7 @@ async function loadOrgLead(leadId: string, kundeId: string) {
     });
 }
 
-/** PDF der Schadenakte herunterladen (ggf. zuvor erzeugen). */
+/** Status oder PDF der Versicherungs-Teilakte. */
 export async function GET(req: Request) {
   const session = await requireOrganisationSession();
   if (!session.ok) {
@@ -45,60 +54,60 @@ export async function GET(req: Request) {
 
   const url = new URL(req.url);
   const auftragId = url.searchParams.get("auftragId")?.trim();
-  const leadId = url.searchParams.get("leadId")?.trim();
+  const leadIdParam = url.searchParams.get("leadId")?.trim();
+  const phase = parsePhase(url.searchParams.get("phase"));
+  const statusOnly = url.searchParams.get("status") === "1";
 
-  if (!auftragId && !leadId) {
+  if (!auftragId && !leadIdParam) {
     return NextResponse.json(
       { error: "auftragId oder leadId fehlt." },
       { status: 400 }
     );
   }
 
-  let pdfUrl = "";
-  let fileKey = "";
+  let leadId = leadIdParam ?? "";
 
-  if (leadId) {
-    const { data: lead } = await loadOrgLead(leadId, session.kunde.id);
-    if (!lead) {
-      return NextResponse.json({ error: "Vorgang nicht gefunden." }, { status: 404 });
-    }
-    pdfUrl = lead.versicherungsakte_pdf_url
-      ? String(lead.versicherungsakte_pdf_url)
-      : "";
-    const regenerate = url.searchParams.get("regenerate") === "1";
-    if (!pdfUrl || regenerate) {
-      const generated = await ensureVersicherungsakteForLead(leadId, {
-        actorId: session.userId,
-        actorRolle: session.rolle,
-      });
-      if (!generated.ok) {
-        return NextResponse.json({ error: generated.message }, { status: 404 });
-      }
-      pdfUrl = generated.url;
-    }
-    fileKey = leadId.slice(0, 8);
-  } else if (auftragId) {
+  if (!leadId && auftragId) {
     const { data: auftrag } = await loadOrgAuftrag(auftragId, session.kunde.id);
     if (!auftrag) {
       return NextResponse.json({ error: "Auftrag nicht gefunden." }, { status: 404 });
     }
-    pdfUrl = auftrag.versicherungsakte_pdf_url
-      ? String(auftrag.versicherungsakte_pdf_url)
-      : "";
-    if (!pdfUrl) {
-      const generated = await ensureVersicherungsakteForAuftrag(auftragId, {
-        actorId: session.userId,
-        actorRolle: session.rolle,
-      });
-      if (!generated.ok) {
-        return NextResponse.json({ error: generated.message }, { status: 404 });
-      }
-      pdfUrl = generated.url;
+    leadId = auftrag.lead_id ? String(auftrag.lead_id) : "";
+    if (!leadId) {
+      return NextResponse.json(
+        { error: "Auftrag ohne Lead — Schadenakte nicht möglich." },
+        { status: 400 }
+      );
     }
-    fileKey = auftragId.slice(0, 8);
   }
 
-  const pdfRes = await fetch(pdfUrl);
+  const { data: lead } = await loadOrgLead(leadId, session.kunde.id);
+  if (!lead) {
+    return NextResponse.json({ error: "Vorgang nicht gefunden." }, { status: 404 });
+  }
+
+  if (statusOnly) {
+    const readiness = await getVersicherungPdfReadinessForLead(leadId);
+    if ("error" in readiness) {
+      return NextResponse.json({ error: readiness.error }, { status: 404 });
+    }
+    return NextResponse.json({ ok: true, ...readiness });
+  }
+
+  const regenerate = url.searchParams.get("regenerate") === "1";
+  const generated = await ensureVersicherungsakteForLead(leadId, {
+    actorId: session.userId,
+    actorRolle: session.rolle,
+    phase,
+  });
+  if (!generated.ok) {
+    return NextResponse.json({ error: generated.message }, { status: 400 });
+  }
+
+  // regenerate-Flag: ensure schreibt immer neu; ohne Flag ebenfalls neu (Teil-PDF klein)
+  void regenerate;
+
+  const pdfRes = await fetch(generated.url);
   if (!pdfRes.ok) {
     return NextResponse.json(
       { error: "PDF konnte nicht geladen werden." },
@@ -110,25 +119,30 @@ export async function GET(req: Request) {
   return new NextResponse(buf, {
     headers: {
       "Content-Type": "application/pdf",
-      "Content-Disposition": `attachment; filename="versicherungsakte-${fileKey}.pdf"`,
+      "Content-Disposition": `attachment; filename="${phasePdfFilename(leadId, phase)}"`,
     },
   });
 }
 
-/** Schadenakte neu erzeugen / aktualisieren. */
+/** Teil-PDF neu erzeugen. */
 export async function POST(req: Request) {
   const session = await requireOrganisationSession();
   if (!session.ok) {
     return NextResponse.json({ error: session.error }, { status: session.status });
   }
 
-  let body: { auftragId?: string; leadId?: string };
+  let body: { auftragId?: string; leadId?: string; phase?: string };
   try {
-    body = (await req.json()) as { auftragId?: string; leadId?: string };
+    body = (await req.json()) as {
+      auftragId?: string;
+      leadId?: string;
+      phase?: string;
+    };
   } catch {
     return NextResponse.json({ error: "Ungültige Anfrage." }, { status: 400 });
   }
 
+  const phase = parsePhase(body.phase ?? null);
   const auftragId = String(body.auftragId ?? "").trim();
   const leadId = String(body.leadId ?? "").trim();
 
@@ -140,11 +154,12 @@ export async function POST(req: Request) {
     const result = await ensureVersicherungsakteForLead(leadId, {
       actorId: session.userId,
       actorRolle: session.rolle,
+      phase,
     });
     if (!result.ok) {
       return NextResponse.json({ error: result.message }, { status: 400 });
     }
-    return NextResponse.json({ ok: true, url: result.url });
+    return NextResponse.json({ ok: true, url: result.url, phase: result.phase });
   }
 
   if (!auftragId) {
@@ -162,10 +177,11 @@ export async function POST(req: Request) {
   const result = await ensureVersicherungsakteForAuftrag(auftragId, {
     actorId: session.userId,
     actorRolle: session.rolle,
+    phase,
   });
 
   if (!result.ok) {
     return NextResponse.json({ error: result.message }, { status: 400 });
   }
-  return NextResponse.json({ ok: true, url: result.url });
+  return NextResponse.json({ ok: true, url: result.url, phase: result.phase });
 }

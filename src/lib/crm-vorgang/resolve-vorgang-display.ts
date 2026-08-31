@@ -53,6 +53,14 @@ export function resolveVorgangDisplay(resolved: ResolvedVorgang, role: PortalRol
   if (role === 'mieter') phaseLabel = MIETER_PHASE[resolved.phase] ?? phaseLabel
   if (role === 'hv') phaseLabel = HV_PHASE[resolved.phase] ?? phaseLabel
 
+  // Terminal ohne Rechnung: nicht „Neu“ / „In Bearbeitung“
+  if (
+    resolved.unterstatus === 'abgeschlossen' ||
+    resolved.unterstatus === 'hm_erledigt'
+  ) {
+    phaseLabel = 'Erledigt'
+  }
+
   const metaParts: string[] = []
   if (resolved.kanalMeta) metaParts.push(resolved.kanalMeta)
   if (resolved.ueberfaellig) metaParts.push('Überfällig')

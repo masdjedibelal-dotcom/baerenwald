@@ -50,16 +50,26 @@ export async function notifyHvHausmeisterBefundFertig(input: {
         ? "Fachfirma (Akut)"
         : "Fachfirma (Angebot)";
 
-  const titel = `Hausmeister-Prüfung fertig — ${objektTitel}`;
-  const body = `Ergebnis: ${ergebnisLabel}. Bitte im Vorgang prüfen.`;
+  const titel =
+    input.ergebnis === "selbst_erledigt"
+      ? `Hausmeister hat erledigt — ${objektTitel}`
+      : `Hausmeister-Prüfung fertig — ${objektTitel}`;
+  const body =
+    input.ergebnis === "selbst_erledigt"
+      ? `Der Hausmeister hat den Vorgang selbst erledigt. Bitte im Portal prüfen.`
+      : `Ergebnis: ${ergebnisLabel}. Bitte im Vorgang prüfen.`;
   const link = withPortalDetailDeepLink(
     `/portal?section=vorgaenge&id=${encodeURIComponent(input.leadId)}`,
     null
   );
 
+  // selbst_erledigt → abgeschlossen (wie Partner-Abschluss); sonst hm_befund
+  const typ =
+    input.ergebnis === "selbst_erledigt" ? "abgeschlossen" : "hm_befund";
+
   await createHvNotification({
     kundeId,
-    typ: "hm_befund",
+    typ,
     titel,
     body,
     link,

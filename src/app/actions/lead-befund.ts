@@ -383,6 +383,16 @@ export async function completeLeadBefundAction(input: {
       })
       .eq("id", owned.leadId);
     if (error) return { ok: false, error: error.message };
+
+    const { notifyCrmOrgPortal } = await import("@/lib/org/notify-crm-org");
+    const crm = await notifyCrmOrgPortal({
+      leadId: owned.leadId,
+      typ: "hm_befund",
+      ergebnis: "selbst_erledigt",
+    });
+    if (!crm.ok) {
+      console.warn("[completeLeadBefund] CRM-Notify selbst_erledigt:", crm.error);
+    }
   } else if (ergebnis === "fachfirma_angebot") {
     hvStatus = "angebot_eingefordert";
     const { error } = await supabaseAdmin

@@ -91,16 +91,16 @@ export function freigabeBypassInfoCopy(opts: {
 }): { title: string; body: string } {
   if (opts.bypassGrund === "akut") {
     return {
-      title: "Akut-Fall",
-      body: "Keine Freigabe notwendig",
+      title: "Akut / Sofortmaßnahme",
+      body: "Keine Freigabe oder Annahme nötig — wir kümmern uns direkt um den Auftrag.",
     };
   }
   const schwelle = opts.schwelleLabel?.trim();
   return {
     title: schwelle
-      ? `Preis unter Schwelle (${schwelle})`
-      : "Preis unter Schwelle",
-    body: "Keine Freigabe notwendig",
+      ? `Unter Freigabeschwelle (${schwelle})`
+      : "Unter Freigabeschwelle",
+    body: "Aufgrund Ihrer erteilten Freigabeschwelle liegt das Angebot darunter — wir kümmern uns direkt um den Auftrag. Keine Freigabe oder Annahme nötig.",
   };
 }
 

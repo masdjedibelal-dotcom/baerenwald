@@ -37,10 +37,13 @@ export type ObjektFinanzPortalPayload = {
   bis: string;
   gesamtKosten: number;
   rechnungenAnzahl: number;
+  /** Vorgänge im Zeitraum (Historie). */
+  vorgaengeAnzahl: number;
   offenInArbeit: number;
   ohneBetrag: number;
   nachTraeger: Array<{ traeger: string; summe: number }>;
   nachGewerk: Array<{ gewerk: string; count: number }>;
+  /** Rechnungs-Belege (ohne Dokumenten-Merge) — für Export/Detail, nicht für Stammdaten-Liste. */
   belege: ObjektFinanzBelegRow[];
   csvRows: ObjektFinanzCsvRow[];
 };
@@ -275,6 +278,7 @@ export async function loadObjektFinanzPortal(input: {
     bis,
     gesamtKosten,
     rechnungenAnzahl: winningRechnungen.length,
+    vorgaengeAnzahl: historieImZeitraum.length,
     offenInArbeit: historieImZeitraum.filter(istOffen).length,
     ohneBetrag,
     nachTraeger: Array.from(traegerMap.entries())

@@ -207,14 +207,6 @@ export function PortalEinstellungenMieter({
           autoComplete="tel"
         />
       </EinstellungenEditModal>
-
-      <div className="px-4 lg:px-6">
-        <form action="/portal/auth/signout" method="post">
-          <button type="submit" className="btn-pill-outline w-full">
-            Abmelden
-          </button>
-        </form>
-      </div>
     </div>
   );
 }

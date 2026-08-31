@@ -1,15 +1,14 @@
 "use client";
 
 import type { ReactNode, MouseEvent } from "react";
+import { useState } from "react";
 
 import { useOptionalPortalDocViewer } from "@/components/shared/PortalDocViewerContext";
 import {
   detectPortalDocKind,
-  downloadPortalBlob,
-  fetchPortalDocBlob,
-  normalizePortalDocUrl,
-  portalDocDownloadName,
+  openPortalDocInNewTab,
   shouldAvoidNativePdfNavigation,
+  triggerPortalDocDownload,
   type PortalDocKind,
 } from "@/lib/portal2/doc-viewer";
 import { cn } from "@/lib/utils";
@@ -24,8 +23,8 @@ type Props = {
 };
 
 /**
- * Öffnet Dokumente über PortalDocViewer (PWA-sicher).
- * Kein `target=_blank` auf PDFs in Standalone/iOS.
+ * Öffnet PDFs in neuem Tab (Browser).
+ * iOS/PWA: In-App-Viewer, damit die App nicht ersetzt wird.
  */
 export function PortalDocOpenButton({
   href,
@@ -35,40 +34,49 @@ export function PortalDocOpenButton({
   kind: kindProp,
 }: Props) {
   const docViewer = useOptionalPortalDocViewer();
-  const url = normalizePortalDocUrl(href);
-  const kind =
-    kindProp ??
-    (detectPortalDocKind(name) !== "other"
-      ? detectPortalDocKind(name)
-      : detectPortalDocKind(url));
+  const [busy, setBusy] = useState(false);
+  const kind = kindProp ?? detectPortalDocKind(name);
 
   async function onClick(e: MouseEvent) {
     e.preventDefault();
     e.stopPropagation();
-    if (!url) return;
+    const url = href.trim();
+    if (!url || busy) return;
 
-    if (docViewer) {
-      docViewer.openDoc({ name, url, kind });
+    const resolvedKind =
+      kind !== "other" ? kind : detectPortalDocKind(url);
+
+    // PWA / iOS: In-App-Viewer statt `_blank` (sonst App weg)
+    if (shouldAvoidNativePdfNavigation() && docViewer) {
+      docViewer.openDoc({ name, url, kind: resolvedKind });
       return;
     }
 
-    if (kind === "pdf" && shouldAvoidNativePdfNavigation()) {
-      // Ohne Provider: trotzdem nicht top-level navigieren — Blob speichern
-      // ist Fallback; mit PortalDocViewerProvider öffnet sich die Vorschau.
-      try {
-        const blob = await fetchPortalDocBlob(url);
-        downloadPortalBlob(blob, portalDocDownloadName(name, kind));
-      } catch {
-        /* ignore */
+    setBusy(true);
+    try {
+      if (resolvedKind === "pdf" || resolvedKind === "image") {
+        await openPortalDocInNewTab(url);
+      } else {
+        window.open(url, "_blank", "noopener,noreferrer");
       }
-      return;
+    } catch {
+      if (docViewer) {
+        docViewer.openDoc({ name, url, kind: resolvedKind });
+      } else {
+        // Letzter Fallback: erzwungener Download
+        try {
+          await triggerPortalDocDownload(url, name);
+        } catch {
+          /* ignore */
+        }
+      }
+    } finally {
+      setBusy(false);
     }
-
-    window.open(url, "_blank", "noopener,noreferrer");
   }
 
   return (
-    <button type="button" className={cn(className)} onClick={onClick}>
+    <button type="button" className={cn(className)} onClick={onClick} disabled={busy}>
       {children}
     </button>
   );

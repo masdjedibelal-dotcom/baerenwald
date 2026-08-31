@@ -4,11 +4,10 @@ import { useCallback, useEffect, useState } from "react";
 
 import { PortalActionMenu } from "@/components/shared/PortalActionMenu";
 import { PortalConfirmDialog } from "@/components/shared/PortalDetailUi";
+import { PortalEntityCard } from "@/components/shared/PortalEntityCard";
 import {
   EinstellungenEdField,
   EinstellungenEditModal,
-  EinstellungenPfList,
-  EinstellungenPfRow,
   EinstellungenSectionCard,
 } from "@/components/shared/PortalEinstellungenUi";
 import { PortalInboxEmpty } from "@/components/shared/PortalEmptyState";
@@ -36,17 +35,12 @@ function rolleLabel(rolle: string): string {
   return ROLLEN.find((r) => r.id === rolle)?.label ?? rolle;
 }
 
-function dash(v: string | null | undefined): string {
-  const t = (v ?? "").trim();
-  return t || "—";
-}
-
 type Props = {
   objektId: string;
 };
 
 /**
- * Kontakte vor Ort (Beirat, Notfall, …) — Card unter Hausmeister, analog CRM.
+ * Kontakte vor Ort — Entity-Cards + ⋮ (leere Felder ausgeblendet).
  */
 export function OrganisationObjektKontaktePanel({ objektId }: Props) {
   const [items, setItems] = useState<ObjektKontaktVorOrt[]>([]);
@@ -213,54 +207,55 @@ export function OrganisationObjektKontaktePanel({ objektId }: Props) {
         ) : items.length === 0 ? (
           <PortalInboxEmpty title="Noch keine Kontakte" compact />
         ) : (
-          <ul className="divide-y divide-border-light">
+          <ul className="space-y-2">
             {items.map((k) => {
               const kontaktZeile = [k.telefon?.trim(), k.email?.trim()]
                 .filter(Boolean)
                 .join(" · ");
               return (
-                <li
-                  key={k.id}
-                  className="flex items-start justify-between gap-2 py-2.5 first:pt-0 last:pb-0"
-                >
-                  <div className="min-w-0 flex-1">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <span className="text-[14.5px] font-semibold text-text-primary">
-                        {k.name}
-                      </span>
+                <li key={k.id}>
+                  <PortalEntityCard
+                    title={k.name}
+                    badge={
                       <span className="rounded-full bg-muted px-2 py-0.5 text-[11px] font-semibold text-text-secondary">
                         {rolleLabel(k.rolle)}
                       </span>
-                    </div>
-                    <EinstellungenPfList className="mt-1">
-                      <EinstellungenPfRow
-                        label="Kontakt"
-                        value={dash(kontaktZeile)}
+                    }
+                    meta={
+                      kontaktZeile || k.notiz?.trim() ? (
+                        <div className="space-y-0.5">
+                          {kontaktZeile ? (
+                            <p className="truncate text-[13px] text-text-secondary">
+                              {kontaktZeile}
+                            </p>
+                          ) : null}
+                          {k.notiz?.trim() ? (
+                            <p className="truncate text-[12.5px] text-text-tertiary">
+                              {k.notiz.trim()}
+                            </p>
+                          ) : null}
+                        </div>
+                      ) : undefined
+                    }
+                    menu={
+                      <PortalActionMenu
+                        title={k.name}
+                        triggerLabel="Kontakt-Menü"
+                        variant="popover"
+                        items={[
+                          {
+                            label: "Bearbeiten",
+                            onClick: () => openBearbeiten(k),
+                          },
+                          {
+                            label: "Entfernen",
+                            danger: true,
+                            dividerBefore: true,
+                            onClick: () => setRemoveTarget(k),
+                          },
+                        ]}
                       />
-                      {k.notiz?.trim() ? (
-                        <EinstellungenPfRow
-                          label="Notiz"
-                          value={k.notiz.trim()}
-                        />
-                      ) : null}
-                    </EinstellungenPfList>
-                  </div>
-                  <PortalActionMenu
-                    title={k.name}
-                    triggerLabel="Kontakt-Menü"
-                    variant="popover"
-                    items={[
-                      {
-                        label: "Bearbeiten",
-                        onClick: () => openBearbeiten(k),
-                      },
-                      {
-                        label: "Entfernen",
-                        danger: true,
-                        dividerBefore: true,
-                        onClick: () => setRemoveTarget(k),
-                      },
-                    ]}
+                    }
                   />
                 </li>
               );

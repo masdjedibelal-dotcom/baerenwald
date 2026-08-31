@@ -5,7 +5,7 @@ import { requireOrganisationSession } from "@/lib/org/require-org-session";
 
 export const runtime = "nodejs";
 
-/** Kosten & Belege — KPIs und Belegliste für Zeitraum. */
+/** Kosten & Kennzahlen — KPIs für Zeitraum (Belege/Akte unter Dokumente). */
 export async function GET(req: Request) {
   const session = await requireOrganisationSession();
   if (!session.ok) {

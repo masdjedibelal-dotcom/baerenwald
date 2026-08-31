@@ -54,7 +54,7 @@ export async function notifyPortalAngebotGesendet(
   const { data: lead } = await supabaseAdmin
     .from("leads")
     .select(
-      "id, kunde_id, auftraggeber_kunde_id, kunde_objekt_id, situation, bereiche, kontakt_name, melder_name, kontakt_nachricht, notizen, funnel_daten, anlass, kanal, preis_max, budget_ca"
+      "id, kunde_id, auftraggeber_kunde_id, kunde_objekt_id, situation, bereiche, kontakt_name, melder_name, kontakt_nachricht, notizen, funnel_daten, anlass, kanal, preis_max, budget_ca, freigabe_bypass_grund"
     )
     .eq("id", trimmed)
     .maybeSingle();
@@ -139,9 +139,21 @@ export async function notifyPortalAngebotGesendet(
   const notifTitel = formatMeldeNotifTitel(MELDE_NOTIF_COPY.neuesAngebot, {
     titel,
   });
-  const body = formatMeldeNotifTitel(MELDE_NOTIF_COPY.neuesAngebotBody, {
-    titel: nr !== "—" ? `${titel} (${nr})` : titel,
-  });
+  const unterSchwelle =
+    String(
+      (lead as { freigabe_bypass_grund?: string | null }).freigabe_bypass_grund ??
+        ""
+    )
+      .trim()
+      .toLowerCase() === "schwelle";
+  const body = formatMeldeNotifTitel(
+    unterSchwelle
+      ? MELDE_NOTIF_COPY.neuesAngebotUnterSchwelleBody
+      : MELDE_NOTIF_COPY.neuesAngebotBody,
+    {
+      titel: nr !== "—" ? `${titel} (${nr})` : titel,
+    }
+  );
 
   const insertHv = async (kundeId: string) => {
     if (await hasRecentHvAngebotNotif({ kundeId, leadId: trimmed })) return;

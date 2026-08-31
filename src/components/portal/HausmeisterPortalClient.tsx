@@ -66,13 +66,13 @@ import {
 } from "@/lib/portal2/hausmeister";
 import { buildPortalShellNav } from "@/lib/portal2/nav-items";
 import type { PortalMockStatusId } from "@/lib/portal2/status";
+import { PORTAL_STATUS, portalStatusChipStyle } from "@/lib/portal2/status";
 import {
   formatObjektAdresse,
   formatObjektPlzOrt,
   formatObjektStrasse,
   resolveObjektTyp,
 } from "@/lib/portal2/objekte";
-import { portalDetailStatusPillStyle } from "@/lib/shared/portal-detail-format";
 
 type SectionId = "uebersicht" | "vorgaenge" | "objekte";
 
@@ -550,24 +550,26 @@ export function HausmeisterPortalClient({
                 </div>
               ) : (
                 <div className={portalListStackClass("responsive")}>
-                  {pageRows.map((row) => (
+                  {pageRows.map((row) => {
+                    const flow =
+                      flowByItemId.get(row.id) ?? ("gemeldet" as PortalMockStatusId);
+                    return (
                     <PortalListCard
                       key={row.id}
                       variant="responsive"
                       selected={false}
                       title={row.title}
                       subtitle={row.subtitle}
-                      statusLabel={row.statusLabel}
+                      statusLabel={PORTAL_STATUS[flow].label}
                       statusPillClass=""
-                      statusPillStyle={portalDetailStatusPillStyle(
-                        row.statusPillKey as PortalMockStatusId
-                      )}
+                      statusPillStyle={portalStatusChipStyle(flow)}
                       accent={row.accent}
                       meta={row.meta}
                       showChevron
                       onClick={() => openVorgangById(row.id)}
                     />
-                  ))}
+                    );
+                  })}
                   <PortalListPagination
                     totalItems={cardRows.length}
                     itemLabel="Vorgänge"

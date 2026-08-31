@@ -9,7 +9,9 @@ import {
 import { useOptionalPortalDocViewer } from "@/components/shared/PortalDocViewerContext";
 import {
   detectPortalDocKind,
+  openPortalDocInNewTab,
   shouldAvoidNativePdfNavigation,
+  triggerPortalDocDownload,
 } from "@/lib/portal2/doc-viewer";
 import { cn } from "@/lib/utils";
 
@@ -112,10 +114,12 @@ export function DokumenteTabelle({
     const href = doc.href?.trim();
     if (!href) return;
     const url = normalizeHref(href);
-    if (docViewer) {
-      const fromName = detectPortalDocKind(doc.name);
-      const kind =
-        fromName !== "other" ? fromName : detectPortalDocKind(url);
+    const fromName = detectPortalDocKind(doc.name);
+    const kind =
+      fromName !== "other" ? fromName : detectPortalDocKind(url);
+
+    // iOS/PWA: In-App-Viewer, sonst neuer Tab
+    if (shouldAvoidNativePdfNavigation() && docViewer) {
       docViewer.openDoc({
         name: doc.name,
         meta: doc.meta?.trim() || undefined,
@@ -124,28 +128,27 @@ export function DokumenteTabelle({
       });
       return;
     }
-    if (
-      detectPortalDocKind(doc.name) === "pdf" ||
-      detectPortalDocKind(url) === "pdf"
-    ) {
-      if (shouldAvoidNativePdfNavigation()) {
-        void (async () => {
-          try {
-            const {
-              fetchPortalDocBlob,
-              downloadPortalBlob,
-              portalDocDownloadName,
-            } = await import("@/lib/portal2/doc-viewer");
-            const blob = await fetchPortalDocBlob(url);
-            downloadPortalBlob(blob, portalDocDownloadName(doc.name, "pdf"));
-          } catch {
-            /* ignore */
-          }
-        })();
-        return;
+
+    void (async () => {
+      try {
+        await openPortalDocInNewTab(url);
+      } catch {
+        if (docViewer) {
+          docViewer.openDoc({
+            name: doc.name,
+            meta: doc.meta?.trim() || undefined,
+            url,
+            kind,
+          });
+          return;
+        }
+        try {
+          await triggerPortalDocDownload(url, doc.name);
+        } catch {
+          /* ignore */
+        }
       }
-    }
-    window.open(url, "_blank", "noopener,noreferrer");
+    })();
   }
 
   const uploadZone = upload ? (

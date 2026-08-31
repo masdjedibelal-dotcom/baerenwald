@@ -1,33 +1,19 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
-import { ChevronDown, Download } from "lucide-react";
+import { useCallback, useEffect, useState } from "react";
+import { ChevronDown } from "lucide-react";
 
 import type { ObjektFinanzPortalPayload } from "@/lib/org/objektakte/load-objekt-finanz-portal";
 import { OrganisationVersammlungsberichtSheet } from "@/components/org/OrganisationVersammlungsberichtSheet";
 import { EinstellungenSectionCard } from "@/components/shared/PortalEinstellungenUi";
-import {
-  PORTAL_LIST_PAGE_SIZE,
-  PortalListPagination,
-} from "@/components/shared/PortalListPagination";
 import { portalToastError } from "@/lib/shared/portal-toast";
 import { PORTAL_VAR } from "@/lib/portal2/tokens";
 import { cn } from "@/lib/utils";
 
 type ZeitraumPreset = "laufendes_jahr" | "letztes_jahr" | "12_monate" | "custom";
-type BelegFilter = "alle" | "rechnungen" | "protokolle" | "angebote";
-
-type DocSlice = {
-  id: string;
-  name: string;
-  datum?: string;
-  href: string;
-};
 
 type Props = {
   objektId: string;
-  dokumenteByLeadId?: Record<string, DocSlice[]>;
-  onOpenVorgang?: (leadId: string) => void;
 };
 
 function isoDate(d: Date): string {
@@ -58,18 +44,11 @@ function fmtDatum(iso: string): string {
   return Number.isNaN(dt.getTime()) ? d : dt.toLocaleDateString("de-DE");
 }
 
-function docArt(name: string): "rechnung" | "angebot" | "protokoll" | "dokument" {
-  if (/rechnung/i.test(name)) return "rechnung";
-  if (/angebot/i.test(name)) return "angebot";
-  if (/protokoll|abnahme|versicherungsakte/i.test(name)) return "protokoll";
-  return "dokument";
-}
-
-export function OrganisationObjektFinanzPanel({
-  objektId,
-  dokumenteByLeadId = {},
-  onOpenVorgang,
-}: Props) {
+/**
+ * Stammdaten-Kennzahlen: Kosten + Vorgänge im Zeitraum.
+ * Belege/Akten liegen unter Dokumente bzw. Vorgänge — hier keine Liste.
+ */
+export function OrganisationObjektFinanzPanel({ objektId }: Props) {
   const [preset, setPreset] = useState<ZeitraumPreset>("laufendes_jahr");
   const [von, setVon] = useState(() => presetRange("laufendes_jahr").von);
   const [bis, setBis] = useState(() => presetRange("laufendes_jahr").bis);
@@ -77,8 +56,6 @@ export function OrganisationObjektFinanzPanel({
   const [loading, setLoading] = useState(true);
   const [exportOpen, setExportOpen] = useState(false);
   const [berichtOpen, setBerichtOpen] = useState(false);
-  const [belegFilter, setBelegFilter] = useState<BelegFilter>("alle");
-  const [listPage, setListPage] = useState(1);
 
   const load = useCallback(async () => {
     if (!objektId.trim() || !von.trim() || !bis.trim()) return;
@@ -105,47 +82,6 @@ export function OrganisationObjektFinanzPanel({
     void load();
   }, [load]);
 
-  const allBelege = useMemo(() => {
-    const merged = [...(data?.belege ?? [])];
-    const hrefSeen = new Set(merged.map((b) => b.href).filter(Boolean));
-    for (const [leadId, docs] of Object.entries(dokumenteByLeadId)) {
-      for (const d of docs) {
-        if (d.href && hrefSeen.has(d.href)) continue;
-        merged.push({
-          id: d.id,
-          datum: d.datum?.slice(0, 10) ?? "",
-          name: d.name,
-          leadId,
-          vorgangTitel: "Vorgang",
-          betragEuro: null,
-          href: d.href?.trim() || null,
-          art: docArt(d.name ?? ""),
-        });
-      }
-    }
-    return merged
-      .filter((b) => {
-        const day = b.datum?.slice(0, 10) ?? "";
-        if (!day) return true;
-        return day >= von && day <= bis;
-      })
-      .sort((a, b) => (b.datum ?? "").localeCompare(a.datum ?? ""));
-  }, [data?.belege, dokumenteByLeadId, von, bis]);
-
-  const filteredBelege = useMemo(() => {
-    if (belegFilter === "rechnungen") return allBelege.filter((b) => b.art === "rechnung");
-    if (belegFilter === "protokolle") return allBelege.filter((b) => b.art === "protokoll");
-    if (belegFilter === "angebote") return allBelege.filter((b) => b.art === "angebot");
-    return allBelege;
-  }, [allBelege, belegFilter]);
-
-  const totalPages = Math.max(1, Math.ceil(filteredBelege.length / PORTAL_LIST_PAGE_SIZE));
-  const safePage = Math.min(listPage, totalPages);
-  const pageBelege = filteredBelege.slice(
-    (safePage - 1) * PORTAL_LIST_PAGE_SIZE,
-    safePage * PORTAL_LIST_PAGE_SIZE
-  );
-
   const jahr = von.slice(0, 4);
   const gewerkHint =
     data && data.nachGewerk.length > 0
@@ -154,7 +90,7 @@ export function OrganisationObjektFinanzPanel({
 
   return (
     <EinstellungenSectionCard
-      title="Kosten & Belege"
+      title="Kosten & Kennzahlen"
       trailing={
         <div className="relative">
           <button
@@ -270,17 +206,16 @@ export function OrganisationObjektFinanzPanel({
               muted={!data?.rechnungenAnzahl}
             />
             <KpiTile
-              label="Rechnungen"
-              value={String(data?.rechnungenAnzahl ?? 0)}
+              label="Vorgänge"
+              value={String(data?.vorgaengeAnzahl ?? 0)}
             />
             <KpiTile
               label="Offen / in Arbeit"
               value={String(data?.offenInArbeit ?? 0)}
             />
             <KpiTile
-              label="Ohne Betrag"
-              value={String(data?.ohneBetrag ?? 0)}
-              muted={(data?.ohneBetrag ?? 0) === 0}
+              label="Rechnungen"
+              value={String(data?.rechnungenAnzahl ?? 0)}
             />
           </div>
           {(data?.ohneBetrag ?? 0) > 0 ? (
@@ -306,20 +241,6 @@ export function OrganisationObjektFinanzPanel({
         </>
       )}
 
-      <BelegSection
-        belegFilter={belegFilter}
-        setBelegFilter={(f) => {
-          setBelegFilter(f);
-          setListPage(1);
-        }}
-        pageBelege={pageBelege}
-        filteredCount={filteredBelege.length}
-        safePage={safePage}
-        totalPages={totalPages}
-        onPageChange={setListPage}
-        onOpenVorgang={onOpenVorgang}
-      />
-
       <OrganisationVersammlungsberichtSheet
         open={berichtOpen}
         onClose={() => setBerichtOpen(false)}
@@ -336,51 +257,6 @@ function KpiTile({ label, value, muted }: { label: string; value: string; muted?
         {value}
       </p>
       <p className="portal-text-label mt-1.5 normal-case tracking-normal">{label}</p>
-    </div>
-  );
-}
-
-function BelegSection(props: {
-  belegFilter: BelegFilter;
-  setBelegFilter: (f: BelegFilter) => void;
-  pageBelege: ObjektFinanzPortalPayload["belege"];
-  filteredCount: number;
-  safePage: number;
-  totalPages: number;
-  onPageChange: (p: number) => void;
-  onOpenVorgang?: (id: string) => void;
-}) {
-  const filters: Array<[BelegFilter, string]> = [["alle", "Alle"], ["rechnungen", "Rechnungen"], ["protokolle", "Protokolle"], ["angebote", "Angebote"]];
-  return (
-    <div className="space-y-3 border-t pt-4" style={{ borderColor: PORTAL_VAR.line }}>
-      <div className="flex flex-wrap gap-1.5">
-        {filters.map(([id, label]) => (
-          <button key={id} type="button" onClick={() => props.setBelegFilter(id)} className={cn("rounded-full px-2.5 py-1 text-xs font-semibold", props.belegFilter === id ? "bg-accent-light text-accent" : "bg-muted text-text-secondary")}>
-            {label}
-          </button>
-        ))}
-      </div>
-      {props.filteredCount === 0 ? (
-        <p className="portal-text-meta rounded-xl border border-dashed px-3 py-5 text-center text-text-secondary">Noch keine Belege in diesem Zeitraum.</p>
-      ) : (
-        <>
-          <ul className="divide-y divide-border-light">
-            {props.pageBelege.map((b) => (
-              <li key={b.id} className="flex flex-wrap items-center justify-between gap-2 py-3 text-[13px]">
-                <button type="button" className="min-w-0 flex-1 text-left" onClick={() => props.onOpenVorgang?.(b.leadId)}>
-                  <span className="font-medium">{b.name}</span>
-                  <span className="portal-text-meta mt-0.5 block text-text-tertiary">{fmtDatum(b.datum)} · {b.vorgangTitel}</span>
-                </button>
-                <span className="font-semibold">{b.betragEuro != null ? fmtEuro(b.betragEuro) : "—"}</span>
-                {b.href ? (
-                  <a href={b.href} target="_blank" rel="noopener noreferrer" className="text-accent" title="Download"><Download className="h-4 w-4" /></a>
-                ) : null}
-              </li>
-            ))}
-          </ul>
-          <PortalListPagination currentPage={props.safePage} totalPages={props.totalPages} totalItems={props.filteredCount} onPageChange={props.onPageChange} itemLabel="Belege" />
-        </>
-      )}
     </div>
   );
 }

@@ -114,7 +114,12 @@ export async function fetchPortalDocBlob(url: string): Promise<Blob> {
 
 /** Download ohne `target=_blank` (bleibt in der PWA). */
 export function downloadPortalBlob(blob: Blob, filename: string): void {
-  const objectUrl = URL.createObjectURL(blob);
+  // octet-stream: Browser zeigt PDF nicht an, sondern startet den Download.
+  const file =
+    blob.type === "application/pdf" || !blob.type
+      ? new Blob([blob], { type: "application/octet-stream" })
+      : blob;
+  const objectUrl = URL.createObjectURL(file);
   const a = document.createElement("a");
   a.href = objectUrl;
   a.download = filename;
@@ -123,6 +128,54 @@ export function downloadPortalBlob(blob: Blob, filename: string): void {
   a.click();
   a.remove();
   window.setTimeout(() => URL.revokeObjectURL(objectUrl), 4_000);
+}
+
+/**
+ * PDF/Dokument in neuem Tab öffnen.
+ * iOS/PWA: kein natives `_blank` (ersetzt die App) — Caller soll Viewer nutzen.
+ */
+export async function openPortalDocInNewTab(url: string): Promise<void> {
+  const absolute = normalizePortalDocUrl(url);
+  if (!absolute) return;
+  if (shouldAvoidNativePdfNavigation()) {
+    throw new Error("native-pdf-nav-blocked");
+  }
+  // Fenster sofort öffnen (User-Gesture), sonst blockiert der Browser nach await.
+  const win = window.open("about:blank", "_blank");
+  try {
+    const blob = await fetchPortalDocBlob(absolute);
+    const pdfBlob =
+      blob.type === "application/pdf" || PDF_EXT.test(absolute)
+        ? new Blob([blob], { type: "application/pdf" })
+        : blob;
+    const objectUrl = URL.createObjectURL(pdfBlob);
+    if (win) {
+      win.opener = null;
+      win.location.href = objectUrl;
+    } else {
+      window.open(objectUrl, "_blank", "noopener,noreferrer");
+    }
+    window.setTimeout(() => URL.revokeObjectURL(objectUrl), 120_000);
+  } catch {
+    if (win) {
+      win.opener = null;
+      win.location.href = absolute;
+    } else {
+      window.open(absolute, "_blank", "noopener,noreferrer");
+    }
+  }
+}
+
+/** Erzwingt Datei-Download (kein Tab, kein „Datei anzeigen“). */
+export async function triggerPortalDocDownload(
+  url: string,
+  filename: string
+): Promise<void> {
+  const absolute = normalizePortalDocUrl(url);
+  if (!absolute) return;
+  const blob = await fetchPortalDocBlob(absolute);
+  const kind = detectPortalDocKind(filename, blob.type);
+  downloadPortalBlob(blob, portalDocDownloadName(filename, kind));
 }
 
 export async function sharePortalBlob(

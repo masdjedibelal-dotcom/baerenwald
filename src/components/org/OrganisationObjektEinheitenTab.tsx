@@ -21,6 +21,7 @@ import {
   EinstellungenToggle,
 } from "@/components/shared/PortalEinstellungenUi";
 import { PortalDetailCard } from "@/components/shared/PortalDetailCard";
+import { PortalEntityCard } from "@/components/shared/PortalEntityCard";
 import {
   OBJ_MIETER_PORTAL_STATUS,
   resolveObjMieterPortalStatus,
@@ -675,7 +676,7 @@ export function OrganisationObjektEinheitenTab({
       ) : einheiten.length === 0 ? (
         <PortalInboxEmpty title="Noch keine Einheiten" compact />
       ) : (
-        <ul className="divide-y divide-border-light overflow-hidden rounded-xl border border-border-default bg-white lg:rounded-none lg:border-0">
+        <ul className="space-y-2">
           {einheiten.map((u) => {
             const people = byEinheit.get(u.id) ?? [];
             const mieter = people.filter((p) => p.rolle !== "eigentuemer");
@@ -693,39 +694,36 @@ export function OrganisationObjektEinheitenTab({
               .join(" · ");
 
             return (
-              <li key={u.id} className="flex items-stretch">
-                <button
-                  type="button"
-                  className="flex min-w-0 flex-1 items-center gap-2 px-3.5 py-3 text-left hover:bg-muted/40"
-                  onClick={() => setDetailId(u.id)}
-                >
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate text-[14.5px] font-semibold text-text-primary">
-                      {u.bezeichnung}
-                    </p>
+              <li key={u.id}>
+                <PortalEntityCard
+                  title={u.bezeichnung}
+                  badge={
+                    <span
+                      className={cn(
+                        "shrink-0 rounded-full px-2.5 py-1 text-[11px] font-semibold",
+                        badge === "leer"
+                          ? "bg-[#FBF1D6] text-[#8A5A06]"
+                          : "bg-accent-light text-accent"
+                      )}
+                    >
+                      {badge}
+                    </span>
+                  }
+                  meta={
                     <p className="truncate text-[13px] text-text-secondary">
                       {meta || "Keine Personen"}
                     </p>
-                  </div>
-                  <span
-                    className={cn(
-                      "shrink-0 rounded-full px-2.5 py-1 text-[11px] font-semibold",
-                      badge === "leer"
-                        ? "bg-[#FBF1D6] text-[#8A5A06]"
-                        : "bg-accent-light text-accent"
-                    )}
-                  >
-                    {badge}
-                  </span>
-                </button>
-                <div className="flex items-center pr-2">
-                  <PortalActionMenu
-                    title={u.bezeichnung}
-                    items={einheitMenuItems(u)}
-                    variant="popover"
-                    triggerLabel="Einheit-Menü"
-                  />
-                </div>
+                  }
+                  onClick={() => setDetailId(u.id)}
+                  menu={
+                    <PortalActionMenu
+                      title={u.bezeichnung}
+                      items={einheitMenuItems(u)}
+                      variant="popover"
+                      triggerLabel="Einheit-Menü"
+                    />
+                  }
+                />
               </li>
             );
           })}

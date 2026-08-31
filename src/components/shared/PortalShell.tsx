@@ -347,19 +347,31 @@ export function PortalShell({
                   {children}
                 </div>
                 {showContentBusy ? (
-                  <div className="absolute inset-0 z-[80] flex items-start justify-center bg-[var(--surface-page,#f7f8fa)]/92 backdrop-blur-[2px]">
-                    <PortalContentBusy
-                      title={
-                        contentBusyTitle ??
-                        (ctxBusy && !contentBusy ? "Wird verarbeitet…" : undefined)
-                      }
-                      body={
-                        contentBusyBody ??
-                        (ctxBusy && !contentBusy
-                          ? "Einen Moment bitte."
-                          : undefined)
-                      }
-                    />
+                  <div
+                    className="absolute inset-0 z-[80] bg-[var(--surface-page,#f7f8fa)]/92 backdrop-blur-[2px]"
+                    role="presentation"
+                  >
+                    {/*
+                      Dokument scrollt (nicht Innen-Viewport) — Spinner sticky im
+                      sichtbaren Bereich, sonst unsichtbar nach Scroll zur Checkliste.
+                    */}
+                    <div className="sticky top-[max(1rem,18vh)] flex justify-center px-3 py-6">
+                      <PortalContentBusy
+                        className="!min-h-0 !py-8"
+                        title={
+                          contentBusyTitle ??
+                          (ctxBusy && !contentBusy
+                            ? "Wird verarbeitet…"
+                            : undefined)
+                        }
+                        body={
+                          contentBusyBody ??
+                          (ctxBusy && !contentBusy
+                            ? "Einen Moment bitte."
+                            : undefined)
+                        }
+                      />
+                    </div>
                   </div>
                 ) : null}
               </div>

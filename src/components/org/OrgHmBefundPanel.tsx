@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { Pencil, Plus, Trash2 } from "lucide-react";
+import { Plus, Trash2 } from "lucide-react";
 
 import {
   addLeadBefundFreipunktAction,
@@ -497,7 +497,7 @@ export function OrgHmBefundPanel({
           : prev
       );
       portalToastSaved();
-    });
+    }, 450);
   }
 
   function openAbschlussSheet() {
@@ -583,11 +583,11 @@ export function OrgHmBefundPanel({
 
   if (hvWartetSichtbar) {
     return (
-      <PortalDetailInfoBox>
-        <p className="font-semibold text-text-primary">
+      <PortalDetailInfoBox variant="warning">
+        <p className="font-semibold text-amber-950">
           Warte auf Hausmeister-Prüfung
         </p>
-        <p className="mt-1 text-[13px] text-text-secondary">
+        <p className="mt-1 text-[13px] text-amber-900/90">
           Der Hausmeister prüft vor Ort. Sobald die Prüfung abgeschlossen ist,
           sehen Sie hier das Ergebnis und die dokumentierten Prüfpunkte.
         </p>
@@ -732,7 +732,7 @@ export function OrgHmBefundPanel({
                 className="portal-action-btn portal-action-btn--secondary"
                 onClick={() => void ablehnenAnHv()}
               >
-                Zurück an Verwaltung
+                Ablehnen
               </button>
               <button
                 type="button"
@@ -753,14 +753,6 @@ export function OrgHmBefundPanel({
         title={editPunkt?.titel ?? "Prüfpunkt"}
         subtitle={editable ? "Status, Notiz und Fotos" : "Nur Ansicht"}
         dirty={draftDirty}
-        headerExtra={
-          editable ? (
-            <span className="inline-flex items-center gap-1 text-[12px] font-semibold text-text-tertiary">
-              <Pencil className="h-3.5 w-3.5" aria-hidden />
-              Bearbeiten
-            </span>
-          ) : null
-        }
         onConfirm={editable ? () => void savePunkt() : undefined}
         confirmLabel="Speichern"
       >

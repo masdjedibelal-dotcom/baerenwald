@@ -2,7 +2,9 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 
+import { PortalActionMenu } from "@/components/shared/PortalActionMenu";
 import { PortalDetailCard } from "@/components/shared/PortalDetailCard";
+import { PortalEntityCard } from "@/components/shared/PortalEntityCard";
 import { PortalInboxEmpty } from "@/components/shared/PortalEmptyState";
 import { PortalModalShell } from "@/components/shared/PortalModalShell";
 import {
@@ -70,19 +72,6 @@ export function OrganisationObjektPruefpflichtenPanel({ objektId }: { objektId: 
   useEffect(() => {
     void load();
   }, [load]);
-
-  const stats = useMemo(() => {
-    let ueberfaellig = 0;
-    let bald = 0;
-    let keinDatum = 0;
-    for (const p of items) {
-      const b = resolvePruefpflichtBadge(p.naechste_faellig);
-      if (b === "ueberfaellig") ueberfaellig++;
-      if (b === "bald_faellig") bald++;
-      if (b === "kein_datum") keinDatum++;
-    }
-    return { ueberfaellig, bald, keinDatum };
-  }, [items]);
 
   const grouped = useMemo(() => {
     const map = new Map<PruefpflichtBadgeStatus, Pruefpflicht[]>();
@@ -190,19 +179,6 @@ export function OrganisationObjektPruefpflichtenPanel({ objektId }: { objektId: 
       onAdd={openCreate}
       addLabel="Prüfpflicht hinzufügen"
     >
-      <p className="portal-text-meta mb-3 text-text-tertiary">
-        Übersicht Ihrer wiederkehrenden Prüfungen. Erinnerungen folgen in Kürze.
-      </p>
-      {items.length > 0 ? (
-        <p className="portal-text-meta mb-3 text-text-tertiary">
-          {stats.bald > 0 ? `${stats.bald} bald fällig · ` : ""}
-          {stats.ueberfaellig > 0 ? `${stats.ueberfaellig} überfällig` : ""}
-          {stats.keinDatum > 0
-            ? `${stats.bald || stats.ueberfaellig ? " · " : ""}${stats.keinDatum} ohne Datum`
-            : ""}
-        </p>
-      ) : null}
-
       {items.length === 0 ? (
         <PortalInboxEmpty
           title="Noch keine Prüfpflichten"
@@ -210,71 +186,55 @@ export function OrganisationObjektPruefpflichtenPanel({ objektId }: { objektId: 
           compact
         />
       ) : (
-        <div className="space-y-4">
+        <div className="space-y-2">
           {GROUP_ORDER.map((group) => {
             const rows = grouped.get(group) ?? [];
             if (!rows.length) return null;
-            return (
-              <div key={group} className="space-y-2">
-                {rows.map((p) => {
-                  const badge = resolvePruefpflichtBadge(p.naechste_faellig);
-                  return (
-                    <div
-                      key={p.id}
-                      className="rounded-xl border border-border-default bg-white px-3 py-3 sm:py-2.5"
+            return rows.map((p) => {
+              const badge = resolvePruefpflichtBadge(p.naechste_faellig);
+              return (
+                <PortalEntityCard
+                  key={p.id}
+                  title={p.typ}
+                  badge={
+                    <span
+                      className={cn(
+                        "rounded-full px-2 py-0.5 text-[11px] font-semibold",
+                        BADGE_CLASS[badge]
+                      )}
                     >
-                      <div className="flex flex-wrap items-start justify-between gap-2">
-                        <div className="min-w-0 flex-1">
-                          <div className="flex flex-wrap items-center gap-2">
-                            <span
-                              className={cn(
-                                "rounded-full px-2 py-0.5 text-[11px] font-semibold",
-                                BADGE_CLASS[badge]
-                              )}
-                            >
-                              {PRUEFPFLICHT_BADGE_LABEL[badge]}
-                            </span>
-                            <span className="font-medium text-[13px]">{p.typ}</span>
-                          </div>
-                          <p className="portal-text-meta mt-1 text-text-tertiary">
-                            {p.naechste_faellig
-                              ? `Fällig ${fmtDatum(p.naechste_faellig)}`
-                              : "Kein Fälligkeitsdatum hinterlegt"}
-                            {p.intervall_monate
-                              ? ` · alle ${p.intervall_monate} Monate`
-                              : ""}
-                            {p.letzte_pruefung
-                              ? ` · zuletzt ${fmtDatum(p.letzte_pruefung)}`
-                              : ""}
-                          </p>
-                          {p.geaendert_von_name ? (
-                            <p className="portal-text-meta mt-0.5 text-text-tertiary">
-                              Zuletzt geändert: {fmtDatum(p.geaendert_am)} · {p.geaendert_von_name}
-                            </p>
-                          ) : null}
-                        </div>
-                        <div className="flex gap-2">
-                          <button
-                            type="button"
-                            className="text-xs font-semibold text-accent"
-                            onClick={() => openEdit(p)}
-                          >
-                            Bearbeiten
-                          </button>
-                          <button
-                            type="button"
-                            className="text-xs font-semibold text-text-tertiary"
-                            onClick={() => void archivieren(p.id)}
-                          >
-                            Archivieren
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            );
+                      {PRUEFPFLICHT_BADGE_LABEL[badge]}
+                    </span>
+                  }
+                  meta={
+                    <p className="text-[13px] text-text-secondary">
+                      {p.naechste_faellig
+                        ? `Fällig ${fmtDatum(p.naechste_faellig)}`
+                        : "Kein Fälligkeitsdatum"}
+                    </p>
+                  }
+                  menu={
+                    <PortalActionMenu
+                      title={p.typ}
+                      triggerLabel="Prüfpflicht-Menü"
+                      variant="popover"
+                      items={[
+                        {
+                          label: "Bearbeiten",
+                          onClick: () => openEdit(p),
+                        },
+                        {
+                          label: "Archivieren",
+                          danger: true,
+                          dividerBefore: true,
+                          onClick: () => void archivieren(p.id),
+                        },
+                      ]}
+                    />
+                  }
+                />
+              );
+            });
           })}
         </div>
       )}

@@ -1,24 +1,41 @@
-import { PDFDocument, StandardFonts, rgb } from "pdf-lib";
+import { PDFDocument, StandardFonts, rgb, type PDFFont, type PDFPage } from "pdf-lib";
 
-export type VersicherungsaktePdfInput = {
-  orgName: string;
+import type { VersicherungPdfPhase } from "@/lib/org/versicherung-pdf-readiness";
+
+export type VersicherungsTeilPdfAbsender = {
+  name: string;
+  zeilen?: string[];
+  telefon?: string | null;
+  email?: string | null;
+};
+
+export type VersicherungsTeilPdfInput = {
+  phase: VersicherungPdfPhase;
+  absender: VersicherungsTeilPdfAbsender;
   objektTitel: string;
   objektAdresse?: string;
   versicherungsNr?: string | null;
   schadenNr?: string | null;
   schadendatum?: string | null;
-  kostentraegerLabel?: string | null;
+  /** Freitext Hergang / Melder */
   hergang?: string | null;
-  chronologie: Array<{ datum: string; text: string }>;
-  befundZeilen: Array<{ datum: string; titel: string; text: string; fotoCount: number }>;
-  abnahmeHinweis?: string | null;
-  rechnungHinweis?: string | null;
-  selbstbehaltEur?: number | null;
+  melderZeile?: string | null;
+  chronologie?: Array<{ datum: string; text: string }>;
+  befundZeilen?: Array<{
+    datum: string;
+    titel: string;
+    text: string;
+    fotoCount: number;
+  }>;
+  fotoHinweis?: string | null;
 };
 
 const green = rgb(0.1, 0.24, 0.17);
 const gray = rgb(0.35, 0.42, 0.39);
+const line = rgb(0.82, 0.84, 0.82);
 const margin = 48;
+const pageW = 595;
+const pageH = 842;
 
 function fmtDatum(iso: string | null | undefined): string {
   if (!iso) return "—";
@@ -34,198 +51,239 @@ function fmtDatum(iso: string | null | undefined): string {
 function wrapText(text: string, maxChars: number): string[] {
   const words = text.replace(/\s+/g, " ").trim().split(" ");
   const lines: string[] = [];
-  let line = "";
+  let cur = "";
   for (const w of words) {
-    const next = line ? `${line} ${w}` : w;
+    const next = cur ? `${cur} ${w}` : w;
     if (next.length > maxChars) {
-      if (line) lines.push(line);
-      line = w;
+      if (cur) lines.push(cur);
+      cur = w;
     } else {
-      line = next;
+      cur = next;
     }
   }
-  if (line) lines.push(line);
-  return lines.length ? lines : ["—"];
+  if (cur) lines.push(cur);
+  return lines.length ? lines : [];
 }
 
-/** Schadenakte Versicherung — Familie Eigentümerbericht/Abnahme (Helvetica-grün). */
-export async function generateVersicherungsaktePdf(
-  input: VersicherungsaktePdfInput
+function phaseTitle(phase: VersicherungPdfPhase): string {
+  return phase === "meldung"
+    ? "Schadenmeldung zur Versicherung"
+    : "Schadenursache / Befund";
+}
+
+/**
+ * Teil-PDF Versicherung — Briefkopf + Meta + Phaseninhalt (ohne Platzhalter-Kapitel).
+ */
+export async function generateVersicherungsTeilPdf(
+  input: VersicherungsTeilPdfInput
 ): Promise<Uint8Array> {
   const pdf = await PDFDocument.create();
   const font = await pdf.embedFont(StandardFonts.Helvetica);
   const fontBold = await pdf.embedFont(StandardFonts.HelveticaBold);
-  let page = pdf.addPage([595, 842]);
-  let y = 780;
+  let page = pdf.addPage([pageW, pageH]);
+  let y = 790;
   const schadenNr =
     input.schadenNr?.trim() ||
     input.versicherungsNr?.trim() ||
     "ohne Nr.";
+  const erstelltAm = new Date().toLocaleDateString("de-DE", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+  });
 
   const ensureSpace = (need: number) => {
     if (y < need) {
-      page.drawText(`Schaden-Nr. ${schadenNr}`, {
-        x: margin,
-        y: 36,
-        size: 8,
-        font,
-        color: gray,
-      });
-      page = pdf.addPage([595, 842]);
-      y = 780;
+      drawFooter(page, font, schadenNr, erstelltAm);
+      page = pdf.addPage([pageW, pageH]);
+      y = 790;
     }
   };
 
-  const drawLine = (text: string, opts?: { bold?: boolean; size?: number }) => {
-    const size = opts?.size ?? 11;
-    ensureSpace(60);
+  const drawText = (
+    text: string,
+    opts?: { bold?: boolean; size?: number; color?: ReturnType<typeof rgb> }
+  ) => {
+    const size = opts?.size ?? 10;
+    ensureSpace(size + 24);
     page.drawText(text.slice(0, 110), {
       x: margin,
       y,
       size,
       font: opts?.bold ? fontBold : font,
-      color: opts?.bold ? green : gray,
+      color: opts?.color ?? gray,
     });
-    y -= size + 6;
+    y -= size + 5;
   };
 
-  const drawParagraph = (label: string, body: string) => {
-    ensureSpace(80);
-    page.drawText(label, { x: margin, y, size: 12, font: fontBold, color: green });
-    y -= 18;
-    for (const line of wrapText(body || "—", 88)) {
-      ensureSpace(60);
-      page.drawText(line, { x: margin, y, size: 10, font, color: gray });
-      y -= 14;
+  const drawWrapped = (
+    text: string,
+    opts?: { bold?: boolean; size?: number; max?: number }
+  ) => {
+    const size = opts?.size ?? 10;
+    for (const ln of wrapText(text, opts?.max ?? 88)) {
+      drawText(ln, { bold: opts?.bold, size });
     }
-    y -= 8;
   };
 
-  page.drawText("Schadenakte Versicherung", {
-    x: margin,
-    y,
-    size: 20,
-    font: fontBold,
+  const hr = () => {
+    ensureSpace(20);
+    page.drawLine({
+      start: { x: margin, y: y + 4 },
+      end: { x: pageW - margin, y: y + 4 },
+      thickness: 0.6,
+      color: line,
+    });
+    y -= 12;
+  };
+
+  // —— Absender ——
+  drawText(input.absender.name || "Hausverwaltung", {
+    bold: true,
+    size: 12,
     color: green,
   });
-  y -= 28;
+  for (const z of input.absender.zeilen ?? []) {
+    if (z.trim()) drawText(z.trim(), { size: 9 });
+  }
+  const kontakt = [
+    input.absender.telefon?.trim() ? `Tel. ${input.absender.telefon.trim()}` : null,
+    input.absender.email?.trim() || null,
+  ]
+    .filter(Boolean)
+    .join(" · ");
+  if (kontakt) drawText(kontakt, { size: 9 });
 
-  drawLine(input.orgName, { bold: true, size: 12 });
-  drawLine(input.objektTitel, { bold: true, size: 11 });
-  if (input.objektAdresse) drawLine(input.objektAdresse, { size: 10 });
+  y -= 6;
+  hr();
+
+  // —— Titel ——
+  drawText(phaseTitle(input.phase), { bold: true, size: 16, color: green });
   y -= 4;
 
-  drawLine(`Policen- / Versicherungs-Nr.: ${input.versicherungsNr?.trim() || "—"}`);
-  drawLine(`Schaden-Nr.: ${schadenNr}`);
-  drawLine(`Schadendatum: ${fmtDatum(input.schadendatum)}`);
-  if (input.kostentraegerLabel) {
-    drawLine(`Kostenträger: ${input.kostentraegerLabel}`);
+  // —— Meta ——
+  drawText(input.objektTitel, { bold: true, size: 11, color: green });
+  if (input.objektAdresse?.trim()) {
+    drawText(input.objektAdresse.trim(), { size: 10 });
   }
-  if (input.selbstbehaltEur != null && Number.isFinite(input.selbstbehaltEur)) {
-    drawLine(
-      `Selbstbehalt: ${new Intl.NumberFormat("de-DE", {
-        style: "currency",
-        currency: "EUR",
-      }).format(input.selbstbehaltEur)}`
-    );
-  }
-  y -= 6;
-
-  page.drawText("Inhaltsverzeichnis", {
-    x: margin,
-    y,
-    size: 13,
-    font: fontBold,
-    color: green,
-  });
-  y -= 18;
-  const toc = [
-    "1. Deckblatt",
-    "2. Schadenhergang",
-    "3. Chronologie / Erstmaßnahmen",
-    "4. Befund / Leckortung",
-    "5. Abnahme",
-    "6. Rechnung",
+  y -= 4;
+  const meta: Array<[string, string]> = [
+    ["Policen-Nr.", input.versicherungsNr?.trim() || "—"],
+    ["Schaden-Nr.", schadenNr],
+    ["Schadendatum", fmtDatum(input.schadendatum)],
   ];
-  for (const t of toc) drawLine(t, { size: 10 });
-  y -= 8;
-
-  drawParagraph(
-    "2. Schadenhergang",
-    input.hergang?.trim() ||
-      "Aus den Vorgangsdaten zusammengestellt — bitte vor Einreichung prüfen."
-  );
-
-  ensureSpace(80);
-  page.drawText("3. Chronologie / Erstmaßnahmen", {
-    x: margin,
-    y,
-    size: 12,
-    font: fontBold,
-    color: green,
-  });
-  y -= 18;
-  if (input.chronologie.length === 0) {
-    drawLine("Keine Chronologie-Einträge hinterlegt.", { size: 10 });
-  } else {
-    for (const c of input.chronologie) {
-      drawLine(`${fmtDatum(c.datum)} — ${c.text}`, { size: 10 });
-    }
+  for (const [k, v] of meta) {
+    drawText(`${k}: ${v}`, { size: 10 });
   }
-  y -= 8;
+  if (input.melderZeile?.trim()) {
+    drawText(`Melder: ${input.melderZeile.trim()}`, { size: 10 });
+  }
 
-  ensureSpace(80);
-  page.drawText("4. Befund / Leckortung", {
-    x: margin,
-    y,
-    size: 12,
-    font: fontBold,
-    color: green,
-  });
-  y -= 18;
-  if (input.befundZeilen.length === 0) {
-    drawLine("Noch kein Partner-Befund hinterlegt.", { size: 10 });
+  y -= 4;
+  hr();
+
+  if (input.phase === "meldung") {
+    drawText("Schadenhergang", { bold: true, size: 12, color: green });
+    y -= 2;
+    const hergang = input.hergang?.trim();
+    if (hergang) drawWrapped(hergang, { size: 10 });
+    else drawText("Keine Hergangsbeschreibung hinterlegt.", { size: 10 });
+
+    if (input.fotoHinweis?.trim()) {
+      y -= 6;
+      drawText("Anlagen / Fotos", { bold: true, size: 12, color: green });
+      y -= 2;
+      drawWrapped(input.fotoHinweis.trim(), { size: 10 });
+    }
   } else {
-    for (const b of input.befundZeilen) {
-      drawLine(`${fmtDatum(b.datum)} — ${b.titel}`, { bold: true, size: 10 });
-      for (const line of wrapText(b.text || "—", 88)) {
-        drawLine(line, { size: 10 });
+    const befund = input.befundZeilen ?? [];
+    if (befund.length > 0) {
+      drawText("Befund / Ursachenfindung", { bold: true, size: 12, color: green });
+      y -= 2;
+      for (const b of befund) {
+        drawText(`${fmtDatum(b.datum)} — ${b.titel}`, {
+          bold: true,
+          size: 10,
+          color: green,
+        });
+        if (b.text.trim()) drawWrapped(b.text, { size: 10 });
+        if (b.fotoCount > 0) {
+          drawText(
+            `${b.fotoCount} Foto${b.fotoCount === 1 ? "" : "s"} zum Befund dokumentiert.`,
+            { size: 9 }
+          );
+        }
+        y -= 4;
       }
-      drawLine(
-        b.fotoCount > 0
-          ? `Fotos: ${b.fotoCount} Anhang/Anhänge (siehe Vorgang)`
-          : "Fotos: —",
-        { size: 9 }
-      );
-      y -= 4;
+    }
+
+    const chrono = input.chronologie ?? [];
+    if (chrono.length > 0) {
+      y -= 2;
+      drawText("Chronologie vor Ort", { bold: true, size: 12, color: green });
+      y -= 2;
+      for (const c of chrono) {
+        drawWrapped(`${fmtDatum(c.datum)} — ${c.text}`, { size: 10 });
+      }
     }
   }
-  y -= 8;
 
-  drawParagraph(
-    "5. Abnahme",
-    input.abnahmeHinweis?.trim() || "Abnahme noch ausstehend bzw. nicht erforderlich."
-  );
-  drawParagraph(
-    "6. Rechnung",
-    input.rechnungHinweis?.trim() ||
-      "Rechnung folgt bzw. ist als separates Dokument im Vorgang abgelegt."
-  );
+  drawFooter(page, font, schadenNr, erstelltAm);
+  return pdf.save();
+}
 
-  page.drawText("Erstellt über Bärenwald Verwaltungs-Plattform", {
+function drawFooter(
+  page: PDFPage,
+  font: PDFFont,
+  schadenNr: string,
+  erstelltAm: string
+) {
+  page.drawText(`Erstellt ${erstelltAm} · Bärenwald Verwaltungs-Plattform`, {
     x: margin,
-    y: 52,
-    size: 9,
-    font,
-    color: gray,
-  });
-  page.drawText(`Schaden-Nr. ${schadenNr}`, {
-    x: margin,
-    y: 36,
+    y: 40,
     size: 8,
     font,
     color: gray,
   });
+  page.drawText(`Schaden-Nr. ${schadenNr}`, {
+    x: pageW - margin - 120,
+    y: 40,
+    size: 8,
+    font,
+    color: gray,
+  });
+}
 
-  return pdf.save();
+/** @deprecated Alias — alte Mega-Akte; nutzt Phase Meldung + leere Ursache-Felder. */
+export async function generateVersicherungsaktePdf(
+  input: {
+    orgName: string;
+    objektTitel: string;
+    objektAdresse?: string;
+    versicherungsNr?: string | null;
+    schadenNr?: string | null;
+    schadendatum?: string | null;
+    hergang?: string | null;
+    chronologie?: Array<{ datum: string; text: string }>;
+    befundZeilen?: Array<{
+      datum: string;
+      titel: string;
+      text: string;
+      fotoCount: number;
+    }>;
+    kostentraegerLabel?: string | null;
+    abnahmeHinweis?: string | null;
+    rechnungHinweis?: string | null;
+  }
+): Promise<Uint8Array> {
+  return generateVersicherungsTeilPdf({
+    phase: "meldung",
+    absender: { name: input.orgName },
+    objektTitel: input.objektTitel,
+    objektAdresse: input.objektAdresse,
+    versicherungsNr: input.versicherungsNr,
+    schadenNr: input.schadenNr,
+    schadendatum: input.schadendatum,
+    hergang: input.hergang,
+  });
 }

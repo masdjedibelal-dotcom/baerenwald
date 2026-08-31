@@ -21,6 +21,7 @@ import {
 import { VorgangDetailSectionNav } from "@/components/shared/VorgangDetailSectionNav";
 import { HvFreigabeInfoBanner } from "@/components/org/HvFreigabeInfoBanner";
 import { OrganisationVersicherungBlock } from "@/components/org/OrganisationVersicherungBlock";
+import { KostentraegerSelector } from "@/components/org/KostentraegerSelector";
 import { OrgHmBefundPanel } from "@/components/org/OrgHmBefundPanel";
 import {
   hvFreigabeEntfaellt,
@@ -552,23 +553,16 @@ export function OrganisationHvVorgangDetail({
     actionKindRaw === "freigabe" &&
     hvStatusNorm !== "hm_pruefung" &&
     hvStatusNorm !== "hm_erledigt";
-  const showVersicherungBlock =
+  const showVersicherungTab =
+    detailRole === "hv" &&
+    !mieterStatusMode &&
+    !hausmeisterActor &&
+    Boolean(leadId) &&
+    String(kostentraeger ?? "").trim().toLowerCase() === "versicherung";
+  const showKostentraegerEdit =
     detailRole === "hv" && !mieterStatusMode && !hausmeisterActor && Boolean(leadId);
-  const versicherungBlock = showVersicherungBlock ? (
-    <OrganisationVersicherungBlock
-      leadId={leadId}
-      kostentraeger={kostentraeger}
-      kostentraegerVorgeschlagen={kostentraegerVorgeschlagen}
-      versicherungsNr={versicherungsNr}
-      schadenNr={schadenNr}
-      hvMeldungStatus={hvMeldungStatus}
-      versicherungsaktePdfUrl={versicherungsaktePdfUrl}
-      versicherungsakteErstelltAm={versicherungsakteErstelltAm}
-      schadenNrGeaendertAm={schadenNrGeaendertAm}
-      versicherungsNrGeaendertAm={versicherungsNrGeaendertAm}
-      objektPolicenNr={objektPolicenNr}
-      onSaved={onUpdated}
-    />
+  const versicherungBlock = showVersicherungTab ? (
+    <OrganisationVersicherungBlock leadId={leadId} onSaved={onUpdated} />
   ) : null;
   const empfohlen = pickEmpfohlenesAngebot(offers);
   const statusLabel =
@@ -798,11 +792,11 @@ export function OrganisationHvVorgangDetail({
           strasse: meldeStrasse,
           plz: meldePlz,
           ort: meldeOrt,
-          kostentraeger: showVersicherungBlock ? null : kostentraeger,
-          kostentraeger_vorgeschlagen: showVersicherungBlock
+          kostentraeger: showKostentraegerEdit ? null : kostentraeger,
+          kostentraeger_vorgeschlagen: showKostentraegerEdit
             ? false
             : kostentraegerVorgeschlagen,
-          versicherungs_nr: showVersicherungBlock ? null : versicherungsNr,
+          versicherungs_nr: showKostentraegerEdit ? null : versicherungsNr,
           org_freigabe_status: orgFreigabeStatus,
           hv_meldung_status: hvMeldungStatus,
         },
@@ -843,7 +837,7 @@ export function OrganisationHvVorgangDetail({
       orgFreigabeStatus,
       hvMeldungStatus,
       mieterStatusMode,
-      showVersicherungBlock,
+      showKostentraegerEdit,
     ]
   );
 
@@ -1171,12 +1165,17 @@ export function OrganisationHvVorgangDetail({
         hidden: !showBautagebuch,
         badge: btUnread > 0 ? btUnread : null,
       },
+      {
+        id: "versicherung" as const,
+        hidden: !showVersicherungTab,
+      },
       { id: "dokumente" as const },
     ],
     [
       showAngebotSection,
       showBautagebuch,
       showHmTab,
+      showVersicherungTab,
       btUnread,
       angebotSectionLabel,
     ]
@@ -1196,11 +1195,11 @@ export function OrganisationHvVorgangDetail({
 
   const hmErledigtBanner =
     hmSelbstErledigt && !mieterStatusMode ? (
-      <PortalDetailInfoBox>
-        <p className="font-semibold text-text-primary">
+      <PortalDetailInfoBox variant="warning">
+        <p className="font-semibold text-amber-950">
           Vom Hausmeister erledigt
         </p>
-        <p className="mt-1 text-[13px] text-text-secondary">
+        <p className="mt-1 text-[13px] text-amber-900/90">
           Die Vor-Ort-Prüfung ist abgeschlossen — Bärenwald muss hier nichts
           mehr tun. Dokumentierte Prüfpunkte finden Sie unter Tab „Checkliste“.
         </p>
@@ -1218,11 +1217,11 @@ export function OrganisationHvVorgangDetail({
 
   const hmPruefungBanner =
     hvStatusNorm === "hm_pruefung" && !mieterStatusMode ? (
-      <PortalDetailInfoBox>
-        <p className="font-semibold text-text-primary">
+      <PortalDetailInfoBox variant="warning">
+        <p className="font-semibold text-amber-950">
           {hausmeisterActor ? "Hausmeister-Prüfung" : "Hausmeister-Prüfung läuft"}
         </p>
-        <p className="mt-1 text-[13px] text-text-secondary">
+        <p className="mt-1 text-[13px] text-amber-900/90">
           {hausmeisterActor
             ? "Unter Tab „Checkliste“ Punkte prüfen — danach selbst erledigen oder an Bärenwald weitergeben."
             : "Der Vorgang liegt beim Hausmeister. Ergebnis erscheint unter Tab „Checkliste“, sobald die Prüfung abgeschlossen ist."}
@@ -1254,7 +1253,7 @@ export function OrganisationHvVorgangDetail({
       <PortalDetailStickyActions
         primaryLabel="Prüfung abschließen"
         onPrimary={() => hmStickyActions.openAbschluss()}
-        secondaryLabel="Zurück an Verwaltung"
+        secondaryLabel="Ablehnen"
         onSecondary={() => hmStickyActions.ablehnenAnHv()}
       />
     ) : actionKind === "angebot" && showAcceptCta ? (
@@ -1358,6 +1357,26 @@ export function OrganisationHvVorgangDetail({
                 ? abschlussCard
                 : null}
               <VorgangDetailBlocks vm={uebersichtVm} />
+              {showKostentraegerEdit ? (
+                <DetailCard title="Kostenträger">
+                  <KostentraegerSelector
+                    leadId={leadId}
+                    value={kostentraeger}
+                    vorgeschlagen={kostentraegerVorgeschlagen}
+                    versicherungsNr={versicherungsNr ?? objektPolicenNr}
+                    onSaved={onUpdated}
+                  />
+                </DetailCard>
+              ) : null}
+            </section>
+          ) : null}
+
+          {activeSection === "versicherung" && showVersicherungTab ? (
+            <section
+              id="vorgang-panel-versicherung"
+              role="tabpanel"
+              className="space-y-3.5"
+            >
               {versicherungBlock}
             </section>
           ) : null}

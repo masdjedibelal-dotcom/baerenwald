@@ -97,6 +97,7 @@ function StatusPill({
   statusPillClass: string;
   statusPillStyle?: { color: string; backgroundColor: string };
 }) {
+  if (!statusLabel.trim()) return null;
   return (
     <span
       className={cn(

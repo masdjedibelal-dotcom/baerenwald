@@ -18,6 +18,7 @@ import {
 import { PortalDetailCover } from "@/components/shared/PortalDetailCover";
 import { PortalDetailHead } from "@/components/shared/PortalDetailUi";
 import { PortalDetailTabs } from "@/components/shared/PortalDetailTabs";
+import { PortalEntityCard } from "@/components/shared/PortalEntityCard";
 import { PortalInboxEmpty } from "@/components/shared/PortalEmptyState";
 import { usePortalBusy } from "@/components/shared/PortalBusyContext";
 import {
@@ -37,6 +38,7 @@ import { meldeKategorieLabel } from "@/lib/org/melde-kategorien";
 import { meldeKategorieFromLead } from "@/lib/org/org-eingang-utils";
 import type { ObjektAktePortalPayload } from "@/lib/org/objektakte/types";
 import type { OrganisationLead, OrganisationObjekt } from "@/lib/org/types";
+import { portalListStackClass } from "@/lib/portal2/layout-chrome";
 import type { PortalEinladungHvBlock } from "@/lib/portal2/portal-einladungen";
 import {
   EINSTELLUNGEN_SCHWELLE_BETRAG_INTRO,
@@ -195,16 +197,12 @@ export function OrganisationObjektDetail({
 
   const [versicherer, setVersicherer] = useState(objekt.versicherer ?? "");
   const [objVersNr, setObjVersNr] = useState(objekt.versicherungs_nr ?? "");
-  const [selbstbehalt, setSelbstbehalt] = useState(
-    objekt.selbstbehalt_eur != null ? String(objekt.selbstbehalt_eur) : ""
-  );
   const [autoSchadenakte, setAutoSchadenakte] = useState(
     Boolean(objekt.automatische_schadenakte)
   );
   const [versEditOpen, setVersEditOpen] = useState(false);
   const [editVersicherer, setEditVersicherer] = useState("");
   const [editVersNr, setEditVersNr] = useState("");
-  const [editSelbstbehalt, setEditSelbstbehalt] = useState("");
   const [editAutoSchadenakte, setEditAutoSchadenakte] = useState(false);
   const [versSaving, setVersSaving] = useState(false);
 
@@ -320,16 +318,12 @@ export function OrganisationObjektDetail({
     );
     setVersicherer(objekt.versicherer ?? "");
     setObjVersNr(objekt.versicherungs_nr ?? "");
-    setSelbstbehalt(
-      objekt.selbstbehalt_eur != null ? String(objekt.selbstbehalt_eur) : ""
-    );
     setAutoSchadenakte(Boolean(objekt.automatische_schadenakte));
   }, [
     objekt.freigabe_schwelle_eur,
     objekt.notfall_direkt,
     objekt.versicherer,
     objekt.versicherungs_nr,
-    objekt.selbstbehalt_eur,
     objekt.automatische_schadenakte,
     objekt.id,
   ]);
@@ -529,7 +523,6 @@ export function OrganisationObjektDetail({
   function openVersEdit() {
     setEditVersicherer(versicherer);
     setEditVersNr(objVersNr);
-    setEditSelbstbehalt(selbstbehalt);
     setEditAutoSchadenakte(autoSchadenakte);
     setVersEditOpen(true);
   }
@@ -542,9 +535,6 @@ export function OrganisationObjektDetail({
   async function saveVersEdit() {
     setVersSaving(true);
     try {
-      const sb = editSelbstbehalt.trim()
-        ? Number(editSelbstbehalt.replace(",", "."))
-        : null;
       const res = await fetch("/api/org/objekte", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
@@ -552,7 +542,6 @@ export function OrganisationObjektDetail({
           id: objekt.id,
           versicherer: editVersicherer.trim() || null,
           versicherungs_nr: editVersNr.trim() || null,
-          selbstbehalt_eur: Number.isFinite(sb as number) ? sb : null,
           automatische_schadenakte: editAutoSchadenakte,
         }),
       });
@@ -563,9 +552,6 @@ export function OrganisationObjektDetail({
       }
       setVersicherer(editVersicherer.trim());
       setObjVersNr(editVersNr.trim());
-      setSelbstbehalt(
-        Number.isFinite(sb as number) && sb != null ? String(sb) : ""
-      );
       setAutoSchadenakte(editAutoSchadenakte);
       setVersEditOpen(false);
       orgPortalToast.objektAktualisiert();
@@ -639,11 +625,7 @@ export function OrganisationObjektDetail({
             Kennzahlen werden geladen …
           </p>
         ) : akte ? (
-          <OrganisationObjektFinanzPanel
-            objektId={objekt.id}
-            dokumenteByLeadId={dokumenteByLeadId}
-            onOpenVorgang={onOpenVorgang}
-          />
+          <OrganisationObjektFinanzPanel objektId={objekt.id} />
         ) : null}
 
         <EinstellungenSectionCard title="Objektdaten" onEdit={onEdit}>
@@ -667,39 +649,39 @@ export function OrganisationObjektDetail({
           title="Hausmeister"
           onAdd={hmAmObjekt ? undefined : openHmEdit}
           addLabel="Hausmeister hinzufügen"
-          onEdit={hmAmObjekt ? openHmEdit : undefined}
-          editLabel="Hausmeister bearbeiten"
-          trailing={
-            hmAmObjekt ? (
-              <OrganisationObjektHausmeisterMenu
-                canEinladen={Boolean(hmAmObjekt.email?.trim())}
-                onEinladen={() => void inviteHausmeister()}
-                onBearbeiten={openHmEdit}
-                onEntfernen={() => setHmConfirmRemove(true)}
-              />
-            ) : null
-          }
         >
-          <EinstellungenPfList>
-            <EinstellungenPfRow
-              label="Name"
-              value={dash(hmAmObjekt?.name ?? "")}
-            />
-            <EinstellungenPfRow
-              label="Portal"
-              value={
-                hmAmObjekt
-                  ? HAUSMEISTER_PORTAL_STATUS_LABEL[
-                      resolveHausmeisterPortalStatus(hmAmObjekt)
-                    ]
-                  : "—"
+          {hmAmObjekt ? (
+            <PortalEntityCard
+              title={hmAmObjekt.name}
+              meta={
+                <div className="space-y-0.5">
+                  <p className="text-[13px] text-text-secondary">
+                    Portal:{" "}
+                    {
+                      HAUSMEISTER_PORTAL_STATUS_LABEL[
+                        resolveHausmeisterPortalStatus(hmAmObjekt)
+                      ]
+                    }
+                  </p>
+                  {hmAmObjekt.email?.trim() ? (
+                    <p className="truncate text-[13px] text-text-secondary">
+                      {hmAmObjekt.email.trim()}
+                    </p>
+                  ) : null}
+                </div>
+              }
+              menu={
+                <OrganisationObjektHausmeisterMenu
+                  canEinladen={Boolean(hmAmObjekt.email?.trim())}
+                  onEinladen={() => void inviteHausmeister()}
+                  onBearbeiten={openHmEdit}
+                  onEntfernen={() => setHmConfirmRemove(true)}
+                />
               }
             />
-            <EinstellungenPfRow
-              label="E-Mail"
-              value={dash(hmAmObjekt?.email ?? "")}
-            />
-          </EinstellungenPfList>
+          ) : (
+            <PortalInboxEmpty title="Noch kein Hausmeister" compact />
+          )}
           <EinstellungenEditModal
             open={hmEditOpen}
             title={hmAmObjekt ? "Hausmeister bearbeiten" : "Hausmeister hinzufügen"}
@@ -798,14 +780,6 @@ export function OrganisationObjektDetail({
             <EinstellungenPfRow label="Versicherer" value={dash(versicherer)} />
             <EinstellungenPfRow label="Policen-Nr." value={dash(objVersNr)} />
             <EinstellungenPfRow
-              label="Selbstbehalt"
-              value={
-                selbstbehalt.trim()
-                  ? `${selbstbehalt.trim().replace(".", ",")} €`
-                  : "—"
-              }
-            />
-            <EinstellungenPfRow
               label="Automatische Schadenakte"
               value={autoSchadenakte ? "Ein" : "Aus"}
             />
@@ -829,20 +803,14 @@ export function OrganisationObjektDetail({
               onChange={setEditVersNr}
               placeholder="Police / Vertragsnummer"
             />
-            <EinstellungenEdField
-              label="Selbstbehalt (€)"
-              value={editSelbstbehalt}
-              onChange={setEditSelbstbehalt}
-              placeholder="0"
-            />
             <EinstellungenToggle
               checked={editAutoSchadenakte}
               onChange={setEditAutoSchadenakte}
               title="Automatische Schadenakte"
               description={
                 editAutoSchadenakte
-                  ? "Ein: Bei jeder Schadenmeldung an diesem Objekt wird die Akte erzeugt und unter Dokumente abgelegt. Mit Hausmeister-Prüfung erst nach Befund."
-                  : "Aus: Keine automatische Schadenakte."
+                  ? "Ein: Bei Schadenmeldung wird der Kostenträger Versicherung gesetzt und die Schadenmeldung-PDF erzeugt."
+                  : "Aus: Keine automatische Schadenmeldung-PDF."
               }
             />
           </EinstellungenEditModal>
@@ -894,7 +862,8 @@ export function OrganisationObjektDetail({
         {objektLeads.length === 0 ? (
           <PortalInboxEmpty title="Noch keine Daten" compact />
         ) : (
-          objektLeads.map((l) => {
+          <div className={portalListStackClass("responsive")}>
+          {objektLeads.map((l) => {
             const kat = meldeKategorieLabel(
               meldeKategorieFromLead(l) ?? undefined
             );
@@ -917,7 +886,7 @@ export function OrganisationObjektDetail({
             return (
               <PortalListCard
                 key={l.id}
-                variant="card"
+                variant="responsive"
                 selected={false}
                 onClick={() => onOpenVorgang?.(l.id)}
                 title={kat}
@@ -931,7 +900,8 @@ export function OrganisationObjektDetail({
                 showChevron
               />
             );
-          })
+          })}
+          </div>
         )}
       </div>
     );

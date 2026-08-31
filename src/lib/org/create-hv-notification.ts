@@ -15,12 +15,14 @@ export type CreateHvNotificationInput = {
  * HV-Glocke nur für:
  * - neuer Vorgang (`neue_meldung`)
  * - neues Angebot (`angebot`)
- * - abgeschlossen (`abgeschlossen` / vollständiger Partner-Abschluss)
+ * - abgeschlossen (`abgeschlossen` / Partner- oder HM-Selbstabschluss)
+ * - Hausmeister-Befund fertig (`hm_befund` — selbst erledigt / Fachfirma)
  */
 export const HV_NOTIFICATION_ALLOWED_TYPES = new Set([
   "neue_meldung",
   "angebot",
   "abgeschlossen",
+  "hm_befund",
 ]);
 
 /**

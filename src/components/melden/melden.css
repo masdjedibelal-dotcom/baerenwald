@@ -487,6 +487,14 @@
   border-color: var(--org-primary, var(--p2-primary, #2e7d52));
 }
 
+/* CRM/Portal „Erledigt“: letzter Schritt bleibt grün (nicht weiß wie laufende Active) */
+.mieter-stg-row--complete .mieter-stg-dot,
+.mieter-stg-row--done.mieter-stg-row--active .mieter-stg-dot {
+  background: var(--org-primary, var(--p2-primary, #2e7d52));
+  color: #fff;
+  border-color: var(--org-primary, var(--p2-primary, #2e7d52));
+}
+
 .mieter-stg-line {
   width: 2px;
   flex: 1;
@@ -514,7 +522,8 @@
 }
 
 .mieter-stg-row--done .mieter-stg-title,
-.mieter-stg-row--active .mieter-stg-title {
+.mieter-stg-row--active .mieter-stg-title,
+.mieter-stg-row--complete .mieter-stg-title {
   color: var(--p2-ink, #16201b);
 }
 

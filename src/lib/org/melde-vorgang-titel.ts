@@ -330,6 +330,8 @@ export const MELDE_NOTIF_COPY = {
   neuesAngebot: "Angebot bereit: {titel}",
   neuesAngebotBody:
     "„{titel}“ liegt im Portal bereit — bitte annehmen oder ablehnen.",
+  neuesAngebotUnterSchwelleBody:
+    "„{titel}“ liegt unter Ihrer Freigabeschwelle — wir kümmern uns direkt um den Auftrag.",
   partnerErledigt: "Erledigt: {titel}",
   partnerTeilabschluss: "Teilabschluss: {titel}",
   bautagebuch: "Update: {titel}",

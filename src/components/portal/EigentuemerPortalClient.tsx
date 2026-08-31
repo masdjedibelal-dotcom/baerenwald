@@ -65,7 +65,7 @@ import {
 } from "@/lib/portal2/eigentuemer";
 import { buildPortalShellNav } from "@/lib/portal2/nav-items";
 import type { PortalMockStatusId } from "@/lib/portal2/status";
-import { portalDetailStatusPillStyle } from "@/lib/shared/portal-detail-format";
+import { PORTAL_STATUS, portalStatusChipStyle } from "@/lib/portal2/status";
 
 type SectionId = "uebersicht" | "vorgaenge" | "objekte";
 
@@ -551,22 +551,26 @@ export function EigentuemerPortalClient({
               <PortalEmptyState role="eigentuemer" compact canCreate={false} />
             ) : (
               <div className={portalListStackClass("responsive")}>
-                {pageRows.map((row) => (
+                {pageRows.map((row) => {
+                  const flow =
+                    flowByItemId.get(row.id) ?? ("gemeldet" as PortalMockStatusId);
+                  return (
                   <PortalListCard
                     key={row.id}
                     variant="responsive"
                     selected={false}
                     title={row.title}
                     subtitle={row.subtitle}
-                    statusLabel={row.statusLabel}
+                    statusLabel={PORTAL_STATUS[flow].label}
                     statusPillClass=""
-                    statusPillStyle={portalDetailStatusPillStyle(row.statusPillKey)}
+                    statusPillStyle={portalStatusChipStyle(flow)}
                     accent={row.accent}
                     meta={row.meta}
                     showChevron
                     onClick={() => openVorgangById(row.id)}
                   />
-                ))}
+                  );
+                })}
                 <PortalListPagination
                   totalItems={cardRows.length}
                   itemLabel="Vorgänge"
@@ -660,27 +664,27 @@ export function EigentuemerPortalClient({
                   compact
                 />
               ) : (
-                <div className="portal-list-panel portal-list-rows">
+                <div className={portalListStackClass("responsive")}>
                   {einheiten.map((e) => (
-                    <button
+                    <PortalListCard
                       key={e.id}
-                      type="button"
-                      className="w-full px-4 py-3.5 text-left transition-colors hover:bg-[#f7f8fa]"
+                      variant="responsive"
+                      selected={false}
+                      title={e.bezeichnung}
+                      subtitle={[
+                        e.objektTitel,
+                        e.objektStrasse || null,
+                        e.objektPlzOrt || null,
+                      ]
+                        .filter(Boolean)
+                        .join(" · ")}
+                      statusLabel=""
+                      statusPillClass=""
+                      accent="anfrage"
+                      meta={[]}
+                      showChevron
                       onClick={() => setEinheitDetailId(e.id)}
-                    >
-                      <p className="portal-text-body font-semibold text-text-primary">
-                        {e.bezeichnung}
-                      </p>
-                      <p className="portal-text-meta mt-1 text-text-secondary">
-                        {[
-                          e.objektTitel,
-                          e.objektStrasse || null,
-                          e.objektPlzOrt || null,
-                        ]
-                          .filter(Boolean)
-                          .join(" · ")}
-                      </p>
-                    </button>
+                    />
                   ))}
                 </div>
               )}

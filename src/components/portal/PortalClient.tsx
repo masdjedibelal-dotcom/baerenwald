@@ -1187,11 +1187,17 @@ export function PortalClient({
           {vorgaengeScreen}
         </div>
         {showEmbeddedBusy ? (
-          <div className="absolute inset-0 z-[80] flex items-start justify-center bg-[var(--surface-page,#f7f8fa)]/92 backdrop-blur-[2px]">
-            <PortalContentBusy
-              title={embeddedBusyTitle}
-              body={embeddedBusyBody}
-            />
+          <div
+            className="absolute inset-0 z-[80] bg-[var(--surface-page,#f7f8fa)]/92 backdrop-blur-[2px]"
+            role="presentation"
+          >
+            <div className="sticky top-[max(1rem,18vh)] flex justify-center px-3 py-6">
+              <PortalContentBusy
+                className="!min-h-0 !py-8"
+                title={embeddedBusyTitle}
+                body={embeddedBusyBody}
+              />
+            </div>
           </div>
         ) : null}
       </div>
@@ -1231,14 +1237,20 @@ export function PortalClient({
         }
         activeNavId={section === "gpt" ? "uebersicht" : section}
         contentKey={`${section}:${privatChip ?? ""}:${controlledHvListeFilter ?? controlledVorgangFilter ?? ""}`}
-        contentBusy={pageBusy || detailLoading}
+        contentBusy={pageBusy || detailLoading || ctxBusy}
         contentBusyTitle={
-          detailLoading || pageBusy ? "Vorgang wird geladen…" : undefined
+          detailLoading || pageBusy
+            ? "Vorgang wird geladen…"
+            : ctxBusy
+              ? "Wird verarbeitet…"
+              : undefined
         }
         contentBusyBody={
           detailLoading || pageBusy
             ? "Einen Moment — wir öffnen die Details."
-            : undefined
+            : ctxBusy
+              ? "Einen Moment bitte."
+              : undefined
         }
         onNavChange={(id) => {
           switchSection(id as SectionId);
