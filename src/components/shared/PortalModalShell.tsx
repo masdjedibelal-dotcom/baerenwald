@@ -12,16 +12,16 @@ import {
   type ReactNode,
 } from "react";
 import { createPortal } from "react-dom";
-import { Check } from "lucide-react";
+import { Check, X } from "lucide-react";
 
 import {
   lockPortalBodyScroll,
   unlockPortalBodyScroll,
 } from "@/lib/portal2/lock-portal-body-scroll";
 import { usePortalBusy } from "@/components/shared/PortalBusyContext";
-import { PortalContentBusy } from "@/components/shared/PortalContentBusy";
 import { PortalSheetConfirm } from "@/components/shared/PortalSheetConfirm";
 import {
+  PORTAL_MODAL_SCRIM,
   PORTAL_MODAL_Z_INDEX,
   resolvePortalModalMaxWidth,
   resolvePortalModalVariant,
@@ -183,24 +183,18 @@ export function PortalModalShell({
   const maxW =
     typeof resolvedMax === "number" ? `${resolvedMax}px` : resolvedMax;
   const isFunnel = variant === "funnel";
-  const showHeaderConfirm = Boolean(onConfirm) && confirmPlacement === "header";
+  const isEdit = variant === "edit";
+  const hasAutoConfirm = Boolean(onConfirm) && footer == null;
+  /** Edit: Footer + Desktop-Check. header-Placement: Check Desktop, Footer Mobil. */
+  const showHeaderConfirm =
+    hasAutoConfirm && (confirmPlacement === "header" || isEdit);
   const showFooterConfirm =
-    Boolean(onConfirm) && confirmPlacement === "footer" && footer == null;
-  const resolvedFooter =
-    footer ??
-    (showFooterConfirm ? (
-      <button
-        type="button"
-        className="portal-action-btn portal-action-btn--primary portal-action-btn--block"
-        disabled={busy || confirmDisabled}
-        onClick={() => {
-          if (busy || confirmDisabled) return;
-          onConfirm?.();
-        }}
-      >
-        {confirmLabel}
-      </button>
-    ) : null);
+    hasAutoConfirm &&
+    (confirmPlacement === "footer" ||
+      confirmPlacement === "header" ||
+      isEdit);
+  const footerMobileOnly =
+    hasAutoConfirm && confirmPlacement === "header" && !isEdit;
 
   const [discardOpen, setDiscardOpen] = useState(false);
   const layerIdRef = useRef(Symbol("portal-modal"));
@@ -274,6 +268,35 @@ export function PortalModalShell({
 
   const attemptDismissRef = useRef(attemptDismiss);
   attemptDismissRef.current = attemptDismiss;
+
+  const resolvedFooter =
+    footer ??
+    (showFooterConfirm ? (
+      <div className="portal-modal-shell-footer-actions">
+        <button
+          type="button"
+          className="portal-action-btn portal-action-btn--secondary"
+          disabled={busy}
+          onClick={() => {
+            if (busy) return;
+            attemptDismissRef.current(false);
+          }}
+        >
+          Abbrechen
+        </button>
+        <button
+          type="button"
+          className="portal-action-btn portal-action-btn--primary"
+          disabled={busy || confirmDisabled}
+          onClick={() => {
+            if (busy || confirmDisabled) return;
+            onConfirm?.();
+          }}
+        >
+          {confirmLabel}
+        </button>
+      </div>
+    ) : null);
 
   // Body-Scroll-Lock (mobil): Hintergrund fixieren, Sheet darf scrollen
   useEffect(() => {
@@ -368,12 +391,13 @@ export function PortalModalShell({
         className={cn(
           "portal-ui portal-modal-shell",
           `portal-modal-shell--${variant}`,
+          depth > 0 && "portal-modal-shell--nested",
           className
         )}
         style={{
           // Body-Portal + höhere Schicht bei Nesting (KI/GPT im Sheet nicht von Buttons abschneiden)
           zIndex: PORTAL_MODAL_Z_INDEX + depth * 10,
-          background: "var(--p2-scrim, rgba(16,25,20,.58))",
+          background: PORTAL_MODAL_SCRIM,
         }}
         role="presentation"
         onClick={closeOnBackdrop ? () => attemptDismiss(false) : undefined}
@@ -404,7 +428,7 @@ export function PortalModalShell({
               disabled={busy}
               onClick={() => attemptDismiss(false)}
             >
-              ×
+              <X size={18} strokeWidth={2} aria-hidden />
             </button>
             <div className="portal-modal-shell-heading">
               <h2 id={titleId} className="portal-modal-shell-title">
@@ -430,13 +454,18 @@ export function PortalModalShell({
                       onConfirm?.();
                     }}
                   >
-                    <Check strokeWidth={2.5} aria-hidden />
+                    <Check strokeWidth={2.6} aria-hidden />
                   </button>
                 ) : null}
               </div>
             ) : null}
           </div>
-          <div className="portal-modal-shell-body relative">
+          <div
+            className={cn(
+              "portal-modal-shell-body relative",
+              busy && "portal-modal-shell-body--busy"
+            )}
+          >
             {children}
             {busy ? (
               <div
@@ -445,16 +474,25 @@ export function PortalModalShell({
                 aria-live="polite"
                 aria-busy="true"
               >
-                <PortalContentBusy
-                  title={busyTitle}
-                  body={busyBody}
-                  className="!min-h-0 !py-10"
-                />
+                <div className="portal-modal-shell-busy-inner">
+                  <span className="portal-modal-shell-spinner" aria-hidden />
+                  <p className="portal-modal-shell-busy-title">{busyTitle}</p>
+                  {busyBody ? (
+                    <p className="portal-modal-shell-busy-body">{busyBody}</p>
+                  ) : null}
+                </div>
               </div>
             ) : null}
           </div>
           {resolvedFooter ? (
-            <div className="portal-modal-shell-footer">{resolvedFooter}</div>
+            <div
+              className={cn(
+                "portal-modal-shell-footer",
+                footerMobileOnly && "portal-modal-shell-footer--mobile-only"
+              )}
+            >
+              {resolvedFooter}
+            </div>
           ) : null}
         </div>
 

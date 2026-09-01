@@ -92,7 +92,7 @@ export function OrganisationObjektCover({
     if (f) void upload(f);
   };
 
-  const height = variant === "card" ? "h-[140px]" : "h-[66px] w-24";
+  const height = variant === "card" ? "h-[152px]" : "h-[66px] w-24";
   const editLabel = hasCustom
     ? "Gebäudefoto ersetzen"
     : "Gebäudefoto hochladen";
@@ -101,7 +101,7 @@ export function OrganisationObjektCover({
     <div
       className={cn(
         "relative overflow-hidden bg-muted",
-        variant === "card" ? "w-full rounded-t-xl" : "shrink-0 rounded-[10px]",
+        variant === "card" ? "w-full rounded-none" : "shrink-0 rounded-[10px]",
         height,
         className
       )}

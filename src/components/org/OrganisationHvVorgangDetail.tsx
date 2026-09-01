@@ -12,6 +12,7 @@ import { PortalDocInlinePreview } from "@/components/shared/PortalDocInlinePrevi
 import { PortalDocOpenButton } from "@/components/shared/PortalDocOpenButton";
 import { PortalDetailCover } from "@/components/shared/PortalDetailCover";
 import { PortalDetailCard } from "@/components/shared/PortalDetailCard";
+import { PortalFlowTimeline } from "@/components/shared/PortalFlowTimeline";
 import {
   PortalDetailHead,
   PortalDetailInfoBox,
@@ -1300,17 +1301,24 @@ export function OrganisationHvVorgangDetail({
       <PortalDetailCover
         coverUrl={coverUrl}
         onBack={onBack}
-        backLabel="← Zurück"
-        className={!onBack ? "h-[150px] sm:h-[150px]" : undefined}
+        backLabel={onBack ? "← Vorgänge" : undefined}
+        className={cn(
+          "portal-detail-cover--bleed",
+          !onBack && "h-[150px] sm:h-[150px]"
+        )}
+        statusLabel={statusLabel}
+        statusColor={PORTAL_STATUS[displayFlowStatus].color}
+        title={titel}
       />
 
-      <div
-        className="bg-white px-4 py-4 sm:px-6"
-        style={{ borderBottom: `1px solid ${PORTAL_VAR.line2}` }}
-      >
+      <div className="portal-detail-kopfkarte">
         <PortalDetailHead
           title={titel}
+          hideTitle
           metaLine={objekt?.trim() || undefined}
+          timeline={
+            <PortalFlowTimeline flowStatus={displayFlowStatus} />
+          }
         />
 
         {freigabeEntfaelltKind ? (
@@ -1332,15 +1340,13 @@ export function OrganisationHvVorgangDetail({
 
       </div>
 
-      <div className="flex flex-col gap-4 px-4 pb-6 pt-3 sm:px-6 sm:pt-4 lg:flex-row lg:items-start lg:gap-6 lg:pt-5">
-        <div className="lg:sticky lg:top-3 lg:w-[11rem] lg:shrink-0">
-          <VorgangDetailSectionNav
-            items={navItems}
-            mode="tabs"
-            activeId={activeSection}
-            onActiveChange={onSectionChange}
-          />
-        </div>
+      <div className="flex flex-col gap-4 px-1 pb-6 pt-4 sm:px-0 sm:pt-5">
+        <VorgangDetailSectionNav
+          items={navItems}
+          mode="tabs"
+          activeId={activeSection}
+          onActiveChange={onSectionChange}
+        />
 
         <div className="flex min-w-0 flex-1 flex-col gap-3.5 lg:gap-5">
           {activeSection === "uebersicht" ? (

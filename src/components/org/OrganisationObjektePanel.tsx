@@ -16,7 +16,11 @@ import {
 } from "@/components/shared/PortalInviteMailtoSheet";
 import { PortalInboxEmpty } from "@/components/shared/PortalEmptyState";
 import { PortalModalShell } from "@/components/shared/PortalModalShell";
-import { PortalListeTitle } from "@/components/shared/PortalListeChrome";
+import { MockIcon } from "@/components/shared/MockIcon";
+import {
+  PortalListeEyebrow,
+  PortalListeTitle,
+} from "@/components/shared/PortalListeChrome";
 import {
   copyMeldeLink,
   openMeldeAushangPdf,
@@ -31,7 +35,6 @@ import type {
   OrganisationLead,
   OrganisationObjekt,
 } from "@/lib/org/types";
-import { portalListStackClass } from "@/lib/portal2/layout-chrome";
 import {
   buildObjCardModel,
   countAktiveByObjektId,
@@ -530,13 +533,14 @@ export function OrganisationObjektePanel({
         payload={inviteMailtoReady}
         onClose={() => setInviteMailtoReady(null)}
       />
-      <div className="relative flex items-end justify-between gap-3">
+      <div className="relative flex flex-wrap items-end justify-between gap-3">
         <div className="min-w-0 flex-1 space-y-0.5">
+          <PortalListeEyebrow>Verwaltung</PortalListeEyebrow>
           <PortalListeTitle>Objekte</PortalListeTitle>
         </div>
         <button
           type="button"
-          className="btn-pill-primary shrink-0 !px-3.5 !py-2 !text-[13px]"
+          className="portal-objekt-create"
           onClick={() =>
             setMode({
               kind: "wizard",
@@ -544,7 +548,8 @@ export function OrganisationObjektePanel({
             })
           }
         >
-          ＋ Objekt
+          <MockIcon n="plus" ctx="nav" size={16} className="text-white" />
+          Objekt
         </button>
       </div>
 
@@ -578,7 +583,7 @@ export function OrganisationObjektePanel({
           compact
         />
       ) : (
-        <div className={portalListStackClass("responsive")}>
+        <div className="portal-objekt-grid">
           {objekte.map((o) => {
             const isSel = selected.includes(o.id);
             const offen = offenById[o.id] ?? 0;

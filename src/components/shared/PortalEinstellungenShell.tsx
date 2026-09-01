@@ -91,7 +91,7 @@ export function PortalEinstellungenShell({
       <div
         className={cn(
           "mt-4 flex min-w-0 gap-0 px-4 lg:px-6",
-          showNav && !mobile ? "flex-row gap-5" : "flex-col gap-3"
+          showNav && !mobile ? "flex-row gap-[26px]" : "flex-col gap-3"
         )}
       >
         {showNav ? (
@@ -124,7 +124,7 @@ export function PortalEinstellungenShell({
             </div>
           ) : (
             <nav
-              className="w-[200px] shrink-0"
+              className="w-[210px] shrink-0"
               aria-label="Einstellungen"
             >
               <ul className="flex flex-col gap-0.5">
@@ -137,13 +137,14 @@ export function PortalEinstellungenShell({
                         onClick={() => selectTab(item.id)}
                         aria-current={on ? "page" : undefined}
                         className={cn(
-                          "portal-text-meta w-full rounded-[9px] px-3 py-2.5 text-left font-semibold transition-colors",
+                          "w-full rounded-[14px] px-[15px] py-[13px] text-left text-[13.5px] font-semibold transition-colors",
                           on
-                            ? "bg-[var(--org-primary-soft,var(--p2-primary-soft,#E7F1E9))]"
-                            : "hover:bg-[var(--p2-hover,#eef1ef)]"
+                            ? "bg-white font-extrabold shadow-[var(--p2-shadow)]"
+                            : "bg-transparent hover:bg-white/70"
                         )}
                         style={{
-                          color: on ? PORTAL_VAR.primary : PORTAL_VAR.sub,
+                          color: on ? PORTAL_VAR.greenDark : "#55615B",
+                          fontWeight: on ? 800 : 600,
                         }}
                       >
                         {item.label}
@@ -161,7 +162,7 @@ export function PortalEinstellungenShell({
             Section-Stack: je Block eine portal-section-card (Geschwister auf Page-BG).
             Kein Outer-Card — siehe section-card-contract.ts.
           */}
-          <div className="portal-einstellungen-stack max-w-[560px]">
+          <div className="portal-einstellungen-stack">
             {children(tab)}
           </div>
         </div>

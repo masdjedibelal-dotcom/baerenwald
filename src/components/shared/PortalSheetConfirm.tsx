@@ -3,7 +3,6 @@
 import { useEffect, useId, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 
-import { PortalContentBusy } from "@/components/shared/PortalContentBusy";
 import { PORTAL_MODAL_Z_INDEX } from "@/lib/portal2/modal-shell";
 import { cn } from "@/lib/utils";
 
@@ -132,11 +131,11 @@ export function PortalSheetConfirm({
             aria-live="polite"
             aria-busy="true"
           >
-            <PortalContentBusy
-              title="Wird gespeichert…"
-              body="Einen Moment bitte."
-              className="!min-h-0 !py-6"
-            />
+            <div className="portal-modal-shell-busy-inner">
+              <span className="portal-modal-shell-spinner" aria-hidden />
+              <p className="portal-modal-shell-busy-title">Wird gespeichert…</p>
+              <p className="portal-modal-shell-busy-body">Einen Moment bitte.</p>
+            </div>
           </div>
         ) : null}
       </div>

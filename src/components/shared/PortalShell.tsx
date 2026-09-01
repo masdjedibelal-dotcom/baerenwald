@@ -5,9 +5,10 @@ import { useEffect, useRef, type ReactNode } from "react";
 
 import { usePortalBusy } from "@/components/shared/PortalBusyContext";
 import { PortalContentBusy } from "@/components/shared/PortalContentBusy";
-import { PortalCreateFabIcon } from "@/components/shared/PortalCreateFabIcon";
 import { PortalDocViewerProvider } from "@/components/shared/PortalDocViewerContext";
 import { PortalHeader, type PortalHeaderUser } from "@/components/shared/PortalHeader";
+import { PortalLegalFooter } from "@/components/shared/PortalLegalFooter";
+import { MockIcon } from "@/components/shared/MockIcon";
 import { PortalNavIcon } from "@/components/shared/PortalNavIcon";
 import { PortalCountBadge } from "@/components/shared/PortalNavCountBadge";
 import { PortalOfflineGate } from "@/components/shared/PortalOfflineGate";
@@ -24,12 +25,12 @@ export type PortalShellNavItem = {
   /** Fallback Lucide, wenn kein navKey. */
   icon?: LucideIcon;
   badge?: number;
-  /** z. B. „In Kürze“ als schräger Störer am Label */
+  /** z. B. „In Kürze“ — Inline-Badge hinter dem Label */
   tag?: string;
 };
 
 export type PortalShellCreateAction = {
-  /** Exakt `createLabel()` — ohne führendes „+“ (Sidebar setzt „+ “ selbst). */
+  /** Exakt `createLabel()` — ohne führendes „+“ (Sidebar setzt Icon). */
   label: string;
   onClick: () => void;
 };
@@ -141,7 +142,7 @@ function NavGlyph({
 }
 
 /**
- * Gemeinsame Portal-Shell: Topbar (B1) + Sidebar (B2) + Bottom-Nav (B3) + Mobile-FAB.
+ * Gemeinsame Portal-Shell: Topbar + Sidebar + Bottom-Nav-Pill (Deep Green).
  * Busy-Provider liegt im Portal-/Partner-Layout (Hold über Section-Wechsel).
  */
 export function PortalShell({
@@ -226,18 +227,86 @@ export function PortalShell({
     soft: brandSoft,
   });
   const notifSlot = notifications ?? headerActions;
-  const ownerRaw = sidebarOwner ?? (typeof footer === "string" ? footer : null) ?? brandTitle;
+  const ownerRaw =
+    sidebarOwner ?? (typeof footer === "string" ? footer : null) ?? brandTitle;
   const owner = ownerRaw.trim() || brandTitle;
+  const kuerzel = (
+    brandKuerzel?.trim() ||
+    brandTitle.trim().charAt(0) ||
+    "B"
+  )
+    .slice(0, 2)
+    .toUpperCase();
+  const roleLabel = brandSubtitle.trim() || "Portal";
+  const legalVariant =
+    variant === "partner" ? "partner" : variant === "kunde" ? "kunde" : "org";
+  const createLabel = createAction?.label.replace(/^\+\s*/, "").trim() || "";
 
   const topbarRight =
-    headerSearch || notifSlot || headerUser || headerRoleBadge ? (
+    headerSearch || notifSlot || headerUser ? (
       <PortalHeader
         search={headerSearch}
         notifications={notifSlot}
         user={headerUser}
-        actions={headerRoleBadge}
       />
     ) : null;
+
+  function renderMobileNavItem(item: PortalShellNavItem) {
+    const active =
+      activeNavId === item.id ||
+      (item.id === "mehr" &&
+        ["leistungen", "marktplatz", "profil"].includes(activeNavId));
+    return (
+      <button
+        key={item.id}
+        type="button"
+        onClick={() => onNavChange(item.id)}
+        aria-current={active ? "page" : undefined}
+        aria-label={item.label}
+        className={cn(
+          "portal-shell-mobile-item",
+          active && "portal-shell-mobile-item--active"
+        )}
+      >
+        <span className="portal-shell-mobile-item-icon">
+          <NavGlyph item={item} active={active} surface="nav" size={active ? 17 : 19} />
+          {item.badge != null && item.badge > 0 && !active ? (
+            <PortalCountBadge
+              count={item.badge}
+              variant="corner"
+              className="portal-shell-mobile-badge"
+            />
+          ) : null}
+        </span>
+        {active ? (
+          <span className="portal-shell-mobile-item-label">{item.label}</span>
+        ) : null}
+        {active && item.badge != null && item.badge > 0 ? (
+          <PortalCountBadge
+            count={item.badge}
+            className="portal-shell-nav-badge"
+          />
+        ) : null}
+      </button>
+    );
+  }
+
+  function renderMobileCreate() {
+    if (!createAction || !createLabel) return null;
+    return (
+      <button
+        type="button"
+        className="portal-shell-mobile-create"
+        onClick={createAction.onClick}
+        aria-label={createLabel}
+        title={createLabel}
+      >
+        <span className="portal-shell-mobile-create-btn">
+          <MockIcon n="plus" ctx="nav" size={20} className="text-white" />
+        </span>
+      </button>
+    );
+  }
 
   return (
     <div
@@ -246,230 +315,51 @@ export function PortalShell({
       style={shellStyle}
     >
       <PortalDocViewerProvider>
-      <PortalOfflineGate>
-        <PortalTopbar
-          brandTitle={brandTitle}
-          brandSubtitle={brandSubtitle}
-          brandLogoUrl={brandLogoUrl}
-          brandMarkSrc={brandMarkSrc}
-          brandKuerzel={brandKuerzel}
-          notifications={topbarRight}
-        />
+        <PortalOfflineGate>
+          <PortalTopbar
+            brandTitle={brandTitle}
+            brandSubtitle={brandSubtitle}
+            brandLogoUrl={brandLogoUrl}
+            brandMarkSrc={brandMarkSrc}
+            brandKuerzel={brandKuerzel}
+            notifications={topbarRight}
+          />
 
-        <div className="portal-shell-body">
-          <div className="portal-shell-frame">
-            <aside className="portal-shell-sidebar">
-              <div className="portal-shell-brand">
-                <p className="portal-shell-brand-owner">{owner}</p>
-              </div>
-
-              {createAction ? (
-                <button
-                  type="button"
-                  className="portal-shell-create"
-                  onClick={createAction.onClick}
-                >
-                  + {createAction.label}
-                </button>
-              ) : null}
-
-              <nav className="portal-shell-nav flex-1" aria-label="Hauptnavigation">
-                {nav.map((item) => {
-                  const active = activeNavId === item.id;
-                  return (
-                    <button
-                      key={item.id}
-                      type="button"
-                      onClick={() => onNavChange(item.id)}
-                      aria-current={active ? "page" : undefined}
-                      className={cn(
-                        "portal-shell-nav-item",
-                        active && "portal-shell-nav-item--active"
-                      )}
-                    >
-                      <span className="portal-shell-nav-item-main">
-                        <NavGlyph
-                          item={item}
-                          active={active}
-                          surface="sidebar"
-                          size={16}
-                        />
-                        <span className="relative min-w-0">
-                          {item.label}
-                          {item.tag ? (
-                            <span
-                              className={cn(
-                                "portal-nav-stoerer",
-                                active && "portal-nav-stoerer--on-light"
-                              )}
-                              aria-label={item.tag}
-                            >
-                              {item.tag}
-                            </span>
-                          ) : null}
-                        </span>
-                      </span>
-                      {item.badge != null && item.badge > 0 ? (
-                        <PortalCountBadge
-                          count={item.badge}
-                          className="portal-shell-nav-badge"
-                        />
-                      ) : null}
-                    </button>
-                  );
-                })}
-              </nav>
-            </aside>
-
-            <main
-              className={cn(
-                "portal-shell-main",
-                hideMobileChrome
-                  ? // Keine Bottom-Nav → kein Nav-Padding (z. B. GPT-Vollfläche)
-                    "px-0 py-0 lg:px-6 lg:py-7 lg:pb-8"
-                  : "px-4 py-5 pb-[var(--portal-mobile-nav-pad)] lg:px-6 lg:py-7 lg:pb-8"
-              )}
-            >
-              <div
-                className={cn(
-                  "portal-page-stack relative min-h-[40vh]",
-                  (hideMobileChrome || contentFullBleed) &&
-                    "portal-page-stack--wide"
-                )}
-              >
-                <div
-                  className={cn(
-                    "portal-page-stack-inner",
-                    showContentBusy && "invisible pointer-events-none select-none"
-                  )}
-                  aria-hidden={showContentBusy || undefined}
-                >
-                  {children}
-                </div>
-                {showContentBusy ? (
-                  <div
-                    className="absolute inset-0 z-[80] bg-[var(--surface-page,#f7f8fa)]/92 backdrop-blur-[2px]"
-                    role="presentation"
-                  >
-                    {/*
-                      Dokument scrollt (nicht Innen-Viewport) — Spinner sticky im
-                      sichtbaren Bereich, sonst unsichtbar nach Scroll zur Checkliste.
-                    */}
-                    <div className="sticky top-[max(1rem,18vh)] flex justify-center px-3 py-6">
-                      <PortalContentBusy
-                        className="!min-h-0 !py-8"
-                        title={
-                          contentBusyTitle ??
-                          (ctxBusy && !contentBusy
-                            ? "Wird verarbeitet…"
-                            : undefined)
-                        }
-                        body={
-                          contentBusyBody ??
-                          (ctxBusy && !contentBusy
-                            ? "Einen Moment bitte."
-                            : undefined)
-                        }
+          <div className="portal-shell-body">
+            <div className="portal-shell-frame">
+              <aside className="portal-shell-sidebar">
+                <div className="portal-shell-brand">
+                  <div className="portal-shell-brand-avatar" aria-hidden>
+                    {brandLogoUrl || brandMarkSrc ? (
+                      // eslint-disable-next-line @next/next/no-img-element -- WL-Logo dynamisch
+                      <img
+                        src={brandLogoUrl || brandMarkSrc || ""}
+                        alt=""
+                        className="portal-shell-brand-avatar-img"
                       />
-                    </div>
+                    ) : (
+                      kuerzel
+                    )}
                   </div>
-                ) : null}
-              </div>
-            </main>
-          </div>
-        </div>
+                  <div className="portal-shell-brand-text">
+                    <p className="portal-shell-brand-title">{owner}</p>
+                    <p className="portal-shell-brand-role">{roleLabel}</p>
+                  </div>
+                </div>
 
-        {!hideMobileChrome ? (
-          <>
-            <nav
-              className="portal-shell-mobile-nav lg:hidden"
-              aria-label="Mobile Navigation"
-            >
-              <div className="portal-shell-mobile-nav-inner">
-                {createAction && bottomNav.length >= 4 ? (
-                  <>
-                    {bottomNav.slice(0, 2).map((item) => {
-                      const active = activeNavId === item.id;
-                      return (
-                        <button
-                          key={item.id}
-                          type="button"
-                          onClick={() => onNavChange(item.id)}
-                          aria-current={active ? "page" : undefined}
-                          className={cn(
-                            "portal-shell-mobile-item",
-                            active && "portal-shell-mobile-item--active"
-                          )}
-                        >
-                          <NavGlyph
-                            item={item}
-                            active={active}
-                            surface="nav"
-                            size={17}
-                          />
-                          <span>{item.label}</span>
-                          {item.badge != null && item.badge > 0 ? (
-                            <PortalCountBadge
-                              count={item.badge}
-                              variant="corner"
-                              className="portal-shell-mobile-badge"
-                            />
-                          ) : null}
-                        </button>
-                      );
-                    })}
-                    <button
-                      type="button"
-                      className="portal-shell-mobile-create"
-                      onClick={createAction.onClick}
-                      aria-label={createAction.label}
-                      title={createAction.label}
-                    >
-                      <span className="portal-shell-mobile-create-btn">
-                        <PortalCreateFabIcon className="h-5 w-5" />
-                      </span>
-                      <span className="portal-shell-mobile-create-label">
-                        Neu
-                      </span>
-                    </button>
-                    {bottomNav.slice(2, 4).map((item) => {
-                      const active =
-                        activeNavId === item.id ||
-                        (item.id === "mehr" &&
-                          ["leistungen", "marktplatz", "profil"].includes(
-                            activeNavId
-                          ));
-                      return (
-                        <button
-                          key={item.id}
-                          type="button"
-                          onClick={() => onNavChange(item.id)}
-                          aria-current={active ? "page" : undefined}
-                          className={cn(
-                            "portal-shell-mobile-item",
-                            active && "portal-shell-mobile-item--active"
-                          )}
-                        >
-                          <NavGlyph
-                            item={item}
-                            active={active}
-                            surface="nav"
-                            size={17}
-                          />
-                          <span>{item.label}</span>
-                          {item.badge != null && item.badge > 0 ? (
-                            <PortalCountBadge
-                              count={item.badge}
-                              variant="corner"
-                              className="portal-shell-mobile-badge"
-                            />
-                          ) : null}
-                        </button>
-                      );
-                    })}
-                  </>
-                ) : (
-                  bottomNav.map((item) => {
+                {createAction && createLabel ? (
+                  <button
+                    type="button"
+                    className="portal-shell-create"
+                    onClick={createAction.onClick}
+                  >
+                    <MockIcon n="plus" ctx="nav" size={17} className="portal-shell-create-icon text-white" />
+                    <span>{createLabel}</span>
+                  </button>
+                ) : null}
+
+                <nav className="portal-shell-nav flex-1" aria-label="Hauptnavigation">
+                  {nav.map((item) => {
                     const active = activeNavId === item.id;
                     return (
                       <button
@@ -478,45 +368,124 @@ export function PortalShell({
                         onClick={() => onNavChange(item.id)}
                         aria-current={active ? "page" : undefined}
                         className={cn(
-                          "portal-shell-mobile-item",
-                          active && "portal-shell-mobile-item--active"
+                          "portal-shell-nav-item",
+                          active && "portal-shell-nav-item--active"
                         )}
                       >
-                        <NavGlyph
-                          item={item}
-                          active={active}
-                          surface="nav"
-                          size={17}
-                        />
-                        <span>{item.label}</span>
+                        <span className="portal-shell-nav-item-main">
+                          <NavGlyph
+                            item={item}
+                            active={active}
+                            surface="sidebar"
+                            size={17}
+                          />
+                          <span className="portal-shell-nav-item-label">
+                            {item.label}
+                            {item.tag ? (
+                              <span className="portal-nav-tag" aria-label={item.tag}>
+                                {item.tag}
+                              </span>
+                            ) : null}
+                          </span>
+                        </span>
                         {item.badge != null && item.badge > 0 ? (
                           <PortalCountBadge
                             count={item.badge}
-                            variant="corner"
-                            className="portal-shell-mobile-badge"
+                            className="portal-shell-nav-badge"
                           />
                         ) : null}
                       </button>
                     );
-                  })
+                  })}
+                </nav>
+
+                <div className="portal-shell-sidebar-foot">
+                  {headerRoleBadge ? (
+                    <div className="portal-shell-sidebar-signout">{headerRoleBadge}</div>
+                  ) : null}
+                  <PortalLegalFooter
+                    variant={legalVariant}
+                    showServiceBy={variant === "kunde"}
+                    className="portal-shell-sidebar-legal"
+                  />
+                </div>
+              </aside>
+
+              <main
+                className={cn(
+                  "portal-shell-main",
+                  hideMobileChrome
+                    ? "portal-shell-main--chrome-hidden"
+                    : "portal-shell-main--padded"
+                )}
+              >
+                <div
+                  className={cn(
+                    "portal-page-stack relative min-h-[40vh]",
+                    (hideMobileChrome || contentFullBleed) &&
+                      "portal-page-stack--wide"
+                  )}
+                >
+                  <div
+                    className={cn(
+                      "portal-page-stack-inner",
+                      showContentBusy && "invisible pointer-events-none select-none"
+                    )}
+                    aria-hidden={showContentBusy || undefined}
+                  >
+                    {children}
+                  </div>
+                  {showContentBusy ? (
+                    <div
+                      className="absolute inset-0 z-[80] bg-[var(--surface-page,#f5f6f4)]/92 backdrop-blur-[2px]"
+                      role="presentation"
+                    >
+                      <div className="sticky top-[max(1rem,18vh)] flex justify-center px-3 py-6">
+                        <PortalContentBusy
+                          className="!min-h-0 !py-8"
+                          title={
+                            contentBusyTitle ??
+                            (ctxBusy && !contentBusy
+                              ? "Wird verarbeitet…"
+                              : undefined)
+                          }
+                          body={
+                            contentBusyBody ??
+                            (ctxBusy && !contentBusy
+                              ? "Einen Moment bitte."
+                              : undefined)
+                          }
+                        />
+                      </div>
+                    </div>
+                  ) : null}
+                </div>
+              </main>
+            </div>
+          </div>
+
+          {!hideMobileChrome ? (
+            <nav
+              className="portal-shell-mobile-nav lg:hidden"
+              aria-label="Mobile Navigation"
+            >
+              <div className="portal-shell-mobile-nav-pill">
+                {createAction && bottomNav.length >= 4 ? (
+                  <>
+                    {bottomNav.slice(0, 2).map(renderMobileNavItem)}
+                    {renderMobileCreate()}
+                    {bottomNav.slice(2, 4).map(renderMobileNavItem)}
+                  </>
+                ) : (
+                  <>
+                    {bottomNav.map(renderMobileNavItem)}
+                    {createAction ? renderMobileCreate() : null}
+                  </>
                 )}
               </div>
             </nav>
-
-            {createAction && bottomNav.length < 4 ? (
-              <button
-                type="button"
-                className="portal-shell-fab lg:hidden"
-                onClick={createAction.onClick}
-                aria-label={createAction.label}
-                title={createAction.label}
-              >
-                <PortalCreateFabIcon />
-              </button>
-            ) : null}
-          </>
-        ) : null}
-      </PortalOfflineGate>
+          ) : null}
+        </PortalOfflineGate>
       </PortalDocViewerProvider>
     </div>
   );

@@ -286,17 +286,14 @@ export function PortalNotificationBell({
   );
 
   return (
-    <div ref={rootRef} className="relative z-20 shrink-0 overflow-visible">
+    <div
+      ref={rootRef}
+      className="portal-bell relative z-20 shrink-0 overflow-visible"
+      data-portal-bell=""
+    >
       <button
         type="button"
-        className="relative grid h-[38px] w-[38px] place-items-center overflow-visible rounded-[10px] border text-[17px] transition-colors"
-        style={{
-          borderColor: "var(--p2-line)",
-          color: "var(--p2-sub)",
-          background: open
-            ? "var(--org-primary-soft, var(--p2-primary-soft))"
-            : "var(--p2-panel)",
-        }}
+        className="portal-bell-trigger relative grid place-items-center overflow-visible transition-colors"
         aria-label={
           unreadCount > 0
             ? `Benachrichtigungen, ${unreadCount} ungelesen`

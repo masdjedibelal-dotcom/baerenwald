@@ -1,7 +1,7 @@
 "use client";
 
 import { PortalScreenDashboard } from "@/components/shared/PortalScreenDashboard";
-import { OrganisationHvSlaSection } from "@/components/org/OrganisationHvSlaSection";
+import { PortalServiceVersprechenStrip } from "@/components/shared/PortalDashboardFocusCard";
 import {
   HV_DASHBOARD_EMPTY_RECENT,
   HV_DASHBOARD_KPI_DEFS,
@@ -10,6 +10,7 @@ import {
   HV_DASHBOARD_ROLE_LABEL,
   type HvDashboardKpiValues,
 } from "@/lib/portal2/hv-dashboard";
+import { buildPortalDashboardFocus } from "@/lib/portal2/dashboard-focus";
 import { PORTAL_STATUS, type PortalMockStatusId } from "@/lib/portal2/status";
 import type { OrgVorgangFilter } from "@/lib/org/org-vorgang-filter";
 
@@ -30,7 +31,7 @@ type Props = {
   heroImageUrl?: string | null;
 };
 
-/** Mock `screenDashboard` HV — 1:1 über `PortalScreenDashboard`. */
+/** Deep Green HV-Dashboard. */
 export function OrganisationHvDashboard({
   orgName,
   kpis,
@@ -39,11 +40,24 @@ export function OrganisationHvDashboard({
   onOpenItem,
   heroImageUrl,
 }: Props) {
+  const top = recent[0];
+  const focus = buildPortalDashboardFocus(
+    "hv",
+    top
+      ? {
+          title: top.titel,
+          subtitle: top.objekt,
+          onOpen: () => onOpenItem(top.id),
+        }
+      : null
+  );
+
   return (
     <PortalScreenDashboard
       roleLabel={HV_DASHBOARD_ROLE_LABEL}
       hello={orgName}
       avatarName={orgName}
+      brandSubline={orgName}
       heroImageUrl={heroImageUrl}
       tiles={HV_DASHBOARD_KPI_DEFS.map((def) => ({
         id: def.id,
@@ -51,6 +65,8 @@ export function OrganisationHvDashboard({
         value: kpis[def.id],
         onClick: () => onOpenFilter(def.filter),
       }))}
+      focus={focus}
+      afterFocus={<PortalServiceVersprechenStrip />}
       recent={recent.slice(0, 4).map((v) => {
         const st = PORTAL_STATUS[v.flowStatus];
         return {
@@ -59,7 +75,6 @@ export function OrganisationHvDashboard({
           objekt: v.objekt,
           statusLabel: st.label,
           statusColor: st.color,
-          statusBg: st.bg,
           notfall: v.notfall,
         };
       })}
@@ -68,7 +83,6 @@ export function OrganisationHvDashboard({
       recentTitle={HV_DASHBOARD_RECENT_TITLE}
       recentAllLabel={HV_DASHBOARD_RECENT_ALL}
       recentEmpty={HV_DASHBOARD_EMPTY_RECENT}
-      afterTiles={<OrganisationHvSlaSection />}
     />
   );
 }

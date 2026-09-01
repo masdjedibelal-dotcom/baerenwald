@@ -1,28 +1,45 @@
 "use client";
 
+import type { PortalMockStatusId } from "@/lib/portal2/status";
+import { PortalFlowTimeline } from "@/components/shared/PortalFlowTimeline";
 import {
   PORTAL_AUFTRAG_PHASEN,
   type PortalAuftragPhaseState,
 } from "@/lib/portal/portal-auftrag-phasen";
 import { cn } from "@/lib/utils";
 
-function phaseBarClass(state: PortalAuftragPhaseState): string {
-  if (state === "fertig") return "bg-emerald-600";
-  if (state === "aktuell") return "bg-amber-500";
-  return "bg-border-default";
-}
+type FlowProps = {
+  flowStatus: PortalMockStatusId;
+  className?: string;
+  /** @deprecated ignoriert — Deep Green Flow-Timeline */
+  states?: never;
+  aktuellePhase?: never;
+  fortschritt?: never;
+};
 
-export function PortalAuftragPhasenStrip({
-  states,
-  aktuellePhase,
-  fortschritt,
-  className,
-}: {
+type BauProps = {
+  flowStatus?: undefined;
   states: Record<(typeof PORTAL_AUFTRAG_PHASEN)[number]["id"], PortalAuftragPhaseState>;
   aktuellePhase?: string;
   fortschritt?: number;
   className?: string;
-}) {
+};
+
+/**
+ * Deep Green: mit `flowStatus` = Vorgangs-Timeline (Gemeldet…Rechnung).
+ * Legacy: mit `states` = Bauphasen.
+ */
+export function PortalAuftragPhasenStrip(props: FlowProps | BauProps) {
+  if (props.flowStatus) {
+    return (
+      <PortalFlowTimeline
+        flowStatus={props.flowStatus}
+        className={props.className}
+      />
+    );
+  }
+
+  const { states, aktuellePhase, fortschritt, className } = props;
   const phaseText = [
     aktuellePhase,
     fortschritt != null ? `${fortschritt} %` : undefined,
@@ -30,21 +47,36 @@ export function PortalAuftragPhasenStrip({
     .filter(Boolean)
     .join(" · ");
 
-  if (!phaseText && !PORTAL_AUFTRAG_PHASEN.length) return null;
-
   return (
-    <div className={cn("space-y-1.5", className)} aria-label="Projektphasen">
-      <div className="flex gap-1">
+    <div
+      className={cn("portal-flow-timeline", className)}
+      aria-label="Projektphasen"
+    >
+      <div className="portal-flow-timeline-bars" aria-hidden>
+        {PORTAL_AUFTRAG_PHASEN.map((phase) => {
+          const st = states[phase.id];
+          const on = st === "fertig" || st === "aktuell";
+          return (
+            <span
+              key={phase.id}
+              className={cn(
+                "portal-flow-timeline-bar",
+                on && "portal-flow-timeline-bar--on"
+              )}
+              title={phase.label}
+            />
+          );
+        })}
+      </div>
+      <div className="portal-flow-timeline-labels">
         {PORTAL_AUFTRAG_PHASEN.map((phase) => (
-          <div
-            key={phase.id}
-            className={cn("h-1.5 flex-1 rounded-full", phaseBarClass(states[phase.id]))}
-            title={phase.label}
-          />
+          <span key={phase.id}>{phase.label}</span>
         ))}
       </div>
       {phaseText ? (
-        <p className="portal-text-meta text-text-secondary">{phaseText}</p>
+        <p className="portal-text-meta mt-1.5 text-[var(--p2-sub)]">
+          {phaseText}
+        </p>
       ) : null}
     </div>
   );

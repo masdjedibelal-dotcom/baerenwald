@@ -15,6 +15,9 @@ export type PortalHeaderUser = {
    * Sonst: Portal-Primary-Soft / Primary.
    */
   useOrgAvatarColors?: boolean;
+  /** Unter dem Namen — Rollenlabel (11/800 Uppercase), Farbe aus role-badge */
+  roleLabel?: string | null;
+  roleColor?: string | null;
 };
 
 export type PortalHeaderProps = {
@@ -44,6 +47,7 @@ export function PortalHeader({
   const initials =
     user?.initials?.trim() ||
     (name ? portalHeaderInitials(name) : "");
+  const roleLabel = user?.roleLabel?.trim() || "";
 
   return (
     <div className={cn("portal-header", className)} data-portal-header="">
@@ -66,7 +70,19 @@ export function PortalHeader({
           >
             {initials}
           </div>
-          <span className="portal-header-user-name">{name}</span>
+          <div className="portal-header-user-text">
+            <span className="portal-header-user-name">{name}</span>
+            {roleLabel ? (
+              <span
+                className="portal-header-user-role"
+                style={
+                  user.roleColor ? { color: user.roleColor } : undefined
+                }
+              >
+                {roleLabel}
+              </span>
+            ) : null}
+          </div>
         </div>
       ) : null}
 

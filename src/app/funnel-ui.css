@@ -200,8 +200,8 @@
   flex: 1;
   min-height: 0;
   height: 100%;
-  background: var(--p2-bg-content, #f6f7f6);
-  --fl-bg: var(--p2-bg-content, #f6f7f6);
+  background: #f5f6f4;
+  --fl-bg: #f5f6f4;
   --fl-bg-card: #ffffff;
 }
 
@@ -231,18 +231,34 @@
 
 .portal-funnel-host--modal .funnel-input,
 .portal-funnel-host--modal .funnel-textarea {
+  height: 46px;
+  min-height: 46px;
+  border-radius: 14px;
+  background: #f9faf9;
+  border: 1px solid rgba(20, 32, 25, 0.1);
+  font-size: 15px;
+  font-weight: 600;
+  box-shadow: none;
+}
+
+.portal-funnel-host--modal .funnel-textarea {
+  height: auto;
+  min-height: 88px;
+}
+
+.portal-funnel-host--modal .funnel-input:focus,
+.portal-funnel-host--modal .funnel-textarea:focus {
+  border-color: #2e7d52;
   background: #fff;
-  border-color: rgba(30, 28, 26, 0.08);
-  box-shadow: 0 1px 3px rgba(22, 32, 27, 0.04);
+  outline: none;
 }
 
 .portal-funnel-host--modal .funnel-card-float {
   background: #fff;
-  border: 1px solid rgba(30, 28, 26, 0.06);
-  border-radius: 16px;
-  box-shadow:
-    0 1px 2px rgba(22, 32, 27, 0.04),
-    0 4px 14px rgba(22, 32, 27, 0.06);
+  border: none;
+  border-radius: 20px;
+  box-shadow: 0 2px 10px rgba(16, 32, 24, 0.05);
+  padding: 16px 18px;
 }
 
 .portal-funnel-host--modal .portal-funnel-host__body {
@@ -259,10 +275,10 @@
   position: static;
   flex-shrink: 0;
   margin-top: auto;
-  padding-top: 12px;
+  padding-top: 14px;
   padding-bottom: max(8px, env(safe-area-inset-bottom, 0px));
-  background: var(--p2-bg-content, #f6f7f6);
-  border-top: 1px solid rgba(30, 28, 26, 0.06);
+  background: #f5f6f4;
+  border-top: 1px solid rgba(20, 32, 25, 0.07);
 }
 
 /* Modal: gleicher Footer wie Website-Rechner (Zurück links, Weiter rechts) */
@@ -516,15 +532,15 @@
 }
 
 .portal-modal-shell-panel--funnel {
-  max-height: 94vh;
+  max-height: 88vh;
   display: flex;
   flex-direction: column;
-  width: min(100%, var(--portal-funnel-modal-max, 1360px));
-  background: var(--p2-bg-content, #f6f7f6);
+  width: min(100%, var(--portal-funnel-modal-max, 1100px));
+  background: #f5f6f4;
 }
 
 .portal-modal-shell-panel--funnel .portal-modal-shell-header {
-  background: var(--p2-bg-content, #f6f7f6);
+  background: #f5f6f4;
 }
 
 .portal-modal-shell-panel--funnel .portal-modal-shell-body {
@@ -538,21 +554,19 @@
   background: transparent;
 }
 
-/* Mobil: Funnel-Create (Neuer Vorgang) = Vollbild */
 @media (max-width: 1023px) {
   .portal-modal-shell--funnel {
     align-items: stretch;
     justify-content: stretch;
     padding: 0;
-    background: var(--p2-bg, #f6f7f6);
   }
 
   .portal-modal-shell--funnel .portal-modal-shell-panel--funnel {
     width: 100%;
     max-width: 100%;
-    height: 100dvh;
-    min-height: 100dvh;
-    max-height: 100dvh;
+    height: 100%;
+    min-height: 100%;
+    max-height: 100%;
     border-radius: 0;
     box-shadow: none;
     overflow: hidden;
@@ -562,7 +576,7 @@
 
   .portal-modal-shell--funnel .portal-modal-shell-header {
     flex-shrink: 0;
-    padding-top: max(14px, env(safe-area-inset-top, 0px));
+    padding-top: max(18px, env(safe-area-inset-top, 0px));
   }
 
   /* Scroll nur im Funnel-Body — CTA bleibt am unteren Rand */
@@ -585,5 +599,6 @@
 @media (min-width: 1024px) {
   .portal-modal-shell-panel--funnel {
     min-height: min(88vh, 860px);
+    max-height: 88vh;
   }
 }

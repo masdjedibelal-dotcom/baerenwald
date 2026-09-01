@@ -9,6 +9,11 @@ import {
   groessenklasseLabel,
 } from "@/lib/katalog/katalog-produkte";
 import type { OrganisationKunde, OrganisationObjekt } from "@/lib/org/types";
+import {
+  PortalListeEyebrow,
+  PortalListeFilterChip,
+  PortalListeTitle,
+} from "@/components/shared/PortalListeChrome";
 import { portalToastError, portalToastSuccess } from "@/lib/shared/portal-toast";
 import { cn } from "@/lib/utils";
 
@@ -73,38 +78,33 @@ export function OrganisationLeistungenPanel({
   }
 
   return (
-    <div className="space-y-4">
-      <div className="space-y-0.5">
-        <p className="portal-text-section text-text-primary">Leistungen</p>
-        <p className="portal-text-body text-text-secondary">
+    <div className="space-y-5">
+      <div className="space-y-1">
+        <PortalListeEyebrow>Katalog</PortalListeEyebrow>
+        <PortalListeTitle>Leistungen</PortalListeTitle>
+        <p className="max-w-[40rem] text-[15px] leading-[1.55] text-[#55615B]">
           Pakete, Fixpreise und Service-Abos für Ihre Objekte
         </p>
       </div>
 
       <div className="flex flex-wrap gap-2">
         {FAMILIEN.map((f) => (
-          <button
+          <PortalListeFilterChip
             key={f.id}
-            type="button"
+            active={familie === f.id}
             onClick={() => setFamilie(f.id)}
-            className={cn(
-              "rounded-full px-3 py-1.5 portal-text-meta font-semibold",
-              familie === f.id
-                ? "bg-accent-light text-accent"
-                : "border border-border-default bg-white text-text-secondary"
-            )}
           >
             {f.label}
-          </button>
+          </PortalListeFilterChip>
         ))}
       </div>
 
-      <label className="block space-y-1">
-        <span className="portal-text-meta text-text-secondary">Objekt</span>
+      <label className="block space-y-1.5">
+        <span className="text-[13px] font-semibold text-[#55615B]">Objekt</span>
         <select
           value={objektId}
           onChange={(e) => setObjektId(e.target.value)}
-          className="input-field w-full max-w-md"
+          className="portal-leistungen-select"
         >
           {objekte.map((o) => (
             <option key={o.id} value={o.id}>
@@ -114,14 +114,18 @@ export function OrganisationLeistungenPanel({
         </select>
       </label>
 
-      <div className="grid gap-3 sm:grid-cols-2">
+      <div className="grid gap-3.5 sm:grid-cols-2">
         {filtered.map((p) => (
-          <article key={p.slug} className="portal-surface flex flex-col p-4">
-            <div className="mb-2 flex items-start gap-2">
-              <Package className="mt-0.5 h-4 w-4 shrink-0 text-accent" />
-              <div>
-                <h3 className="font-semibold text-text-primary">{p.bezeichnung}</h3>
-                <p className="portal-text-meta text-text-secondary">
+          <article key={p.slug} className="portal-leistungen-card">
+            <div className="flex items-start gap-3">
+              <span className="portal-leistungen-icon" aria-hidden>
+                <Package className="h-5 w-5" strokeWidth={2} />
+              </span>
+              <div className="min-w-0">
+                <h3 className="text-[17px] font-bold leading-snug text-text-primary">
+                  {p.bezeichnung}
+                </h3>
+                <p className="mt-1 text-[14.5px] font-semibold text-[#2E7D52]">
                   {formatProduktPreis(p)}
                 </p>
               </div>
@@ -133,11 +137,10 @@ export function OrganisationLeistungenPanel({
                     key={pr.id}
                     type="button"
                     disabled={busy === p.slug}
-                    className="btn-pill-outline w-full justify-between portal-btn-compact"
+                    className="portal-leistungen-cta"
                     onClick={() => void bestellen(p, pr.groessenklasse ?? undefined)}
                   >
-                    <span>{groessenklasseLabel(pr.groessenklasse)}</span>
-                    <span>{pr.preis_fix} € netto</span>
+                    {groessenklasseLabel(pr.groessenklasse)} · {pr.preis_fix} € netto
                   </button>
                 ))}
               </div>
@@ -145,23 +148,25 @@ export function OrganisationLeistungenPanel({
               <button
                 type="button"
                 disabled={busy === p.slug}
-                className="btn-pill-primary mt-auto"
+                className={cn("portal-leistungen-cta", "mt-auto")}
                 onClick={() => void bestellen(p)}
               >
-                {p.has_fixpreis || p.preis_typ === "fix" ? "Beauftragen" : "Angebot anfordern"}
+                {p.has_fixpreis || p.preis_typ === "fix"
+                  ? "Beauftragen"
+                  : "Angebot anfordern"}
               </button>
             )}
           </article>
         ))}
         {filtered.length === 0 ? (
-          <p className="portal-text-body text-text-secondary sm:col-span-2">
+          <p className="text-[14.5px] text-[#55615B] sm:col-span-2">
             Keine Leistungen in dieser Kategorie.
           </p>
         ) : null}
       </div>
 
       {familie === "service" ? (
-        <p className="portal-text-meta text-text-tertiary">
+        <p className="text-[13.5px] leading-[1.6] text-[#8A938E]">
           Abos starten am 1. des Folgemonats, Kündigung zum Monatsende mit 4 Wochen Frist.
           Sammelrechnung 1× monatlich je Objekt.
         </p>

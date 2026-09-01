@@ -4,28 +4,27 @@ import { Pencil } from "lucide-react";
 import { useEffect, useState, type ReactNode } from "react";
 
 import { resolveObjektCoverSrc } from "@/lib/portal2/portal-media";
-import { PORTAL_VAR } from "@/lib/portal2/tokens";
 import { cn } from "@/lib/utils";
 
 export type PortalDetailCoverProps = {
   coverUrl?: string | null;
-  /** Ohne `onBack`: Cover ohne Zurück-Button (z. B. HV-Detail eingebettet). */
   onBack?: () => void;
   backLabel?: string;
   onEdit?: () => void;
-  /** Optional title/content overlay (z. B. unter den Buttons). */
   children?: ReactNode;
   className?: string;
-  /** Edit-Button aria/title. */
   editLabel?: string;
+  /** Deep Green: Status-Glas-Pill + Titel im Cover */
+  statusLabel?: string | null;
+  statusColor?: string | null;
+  title?: string | null;
 };
 
 const COVER_FALLBACK_GRADIENT =
   "linear-gradient(135deg, #1A3D2B 0%, #2E7D52 60%, #0f766e 100%)";
 
 /**
- * Full-bleed Detail-Cover — Zurück links, optional Edit (Stift) rechts.
- * Zeigt Objektfoto oder Portal-Default; bei Ladefehler Gradient.
+ * Detail-Cover 200 px — Deep Green Overlay, Zurück-Pill, Status+Titel unten.
  */
 export function PortalDetailCover({
   coverUrl,
@@ -35,6 +34,9 @@ export function PortalDetailCover({
   children,
   className,
   editLabel = "Bearbeiten",
+  statusLabel,
+  statusColor,
+  title,
 }: PortalDetailCoverProps) {
   const src = resolveObjektCoverSrc(coverUrl);
   const [failed, setFailed] = useState(false);
@@ -43,11 +45,12 @@ export function PortalDetailCover({
     setFailed(false);
   }, [src]);
 
+  const showCaption = Boolean(title?.trim() || statusLabel?.trim());
+
   return (
     <div
       className={cn(
-        "relative w-full shrink-0 overflow-hidden",
-        "h-[200px] sm:h-[220px]",
+        "portal-detail-cover relative w-full shrink-0 overflow-hidden",
         className
       )}
     >
@@ -62,27 +65,19 @@ export function PortalDetailCover({
         />
       ) : (
         <div
-          className="absolute inset-0 bg-muted"
+          className="absolute inset-0"
           style={{ background: COVER_FALLBACK_GRADIENT }}
           aria-hidden
         />
       )}
 
-      {/* Leichte Abdunkelung für Lesbarkeit der Overlays */}
-      <div
-        className="pointer-events-none absolute inset-0 bg-gradient-to-b from-black/35 via-transparent to-black/20"
-        aria-hidden
-      />
+      <div className="portal-detail-cover-overlay" aria-hidden />
 
       {onBack ? (
         <button
           type="button"
           onClick={onBack}
-          className="portal-text-meta absolute left-3.5 top-3 z-10 inline-flex h-9 items-center gap-1 rounded-full border border-black/10 px-3 font-semibold shadow-md backdrop-blur-[2px]"
-          style={{
-            background: "rgba(240, 242, 240, 0.95)",
-            color: PORTAL_VAR.sub,
-          }}
+          className="portal-detail-cover-back"
         >
           {backLabel}
         </button>
@@ -92,11 +87,7 @@ export function PortalDetailCover({
         <button
           type="button"
           onClick={onEdit}
-          className={cn(
-            "absolute right-3.5 top-3 z-10 inline-flex h-9 w-9 items-center justify-center rounded-full",
-            "border border-white/40 bg-black/55 text-white shadow-sm backdrop-blur-[2px]",
-            "transition-colors hover:bg-black/70 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
-          )}
+          className="portal-detail-cover-edit"
           title={editLabel}
           aria-label={editLabel}
         >
@@ -105,8 +96,24 @@ export function PortalDetailCover({
       ) : null}
 
       {children ? (
-        <div className="absolute inset-x-0 bottom-0 z-10 px-4 pb-3.5 pt-8">
-          {children}
+        <div className="portal-detail-cover-caption">{children}</div>
+      ) : showCaption ? (
+        <div className="portal-detail-cover-caption">
+          {statusLabel?.trim() ? (
+            <span className="portal-detail-cover-status">
+              <span
+                className="portal-detail-cover-status-dot"
+                style={{
+                  background: statusColor || "var(--p2-primary, #2e7d52)",
+                }}
+                aria-hidden
+              />
+              {statusLabel}
+            </span>
+          ) : null}
+          {title?.trim() ? (
+            <h1 className="portal-detail-cover-title">{title}</h1>
+          ) : null}
         </div>
       ) : null}
     </div>

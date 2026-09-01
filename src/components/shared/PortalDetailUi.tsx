@@ -72,42 +72,55 @@ export function PortalDetailHead({
   subtitle,
   titleBadges,
   actions,
+  /** Deep Green: Titel bereits im Cover — hier nur Meta + Actions */
+  hideTitle,
+  timeline,
 }: {
   title: string;
   metaLine?: string;
   statusLabel?: string;
   statusPillClass?: string;
   statusPillStyle?: { color: string; backgroundColor: string };
-  /** Meta neben Status-Pill (Legacy Hero). */
   subtitle?: string;
-  /** Badges/Chips neben dem Titel. */
   titleBadges?: React.ReactNode;
-  /** CTA-Zeile rechts (Desktop) — aus Layout-Footer oder explizit. */
   actions?: React.ReactNode;
+  hideTitle?: boolean;
+  timeline?: React.ReactNode;
 }) {
   const layoutFooter = usePortalDetailLayoutFooter();
   const resolvedActions = actions ?? layoutFooter;
   const layoutFooterOnly = !actions && Boolean(layoutFooter);
-  const showStatusRow = Boolean(statusLabel?.trim()) || Boolean(subtitle);
+  const showStatusRow =
+    !hideTitle &&
+    (Boolean(statusLabel?.trim()) || Boolean(subtitle));
+
   return (
-    <header className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
-      <div className="min-w-0 flex-1 space-y-2">
-        <div className="flex flex-wrap items-center gap-2">
-          <h3 className="portal-text-title">{title}</h3>
-          {titleBadges}
-        </div>
+    <header className="portal-detail-head">
+      <div className="portal-detail-head-main">
+        {!hideTitle ? (
+          <div className="flex flex-wrap items-center gap-2">
+            <h3 className="portal-detail-head-title">{title}</h3>
+            {titleBadges}
+          </div>
+        ) : titleBadges ? (
+          <div className="flex flex-wrap items-center gap-2">{titleBadges}</div>
+        ) : null}
         {metaLine ? (
-          <p className="portal-text-meta">{metaLine}</p>
+          <p className="portal-detail-head-meta">{metaLine}</p>
         ) : null}
         {showStatusRow ? (
           <div className="flex flex-wrap items-center gap-2">
             {statusLabel?.trim() ? (
               <span
                 className={cn(
-                  "portal-status-pill",
+                  "portal-status-word",
                   !statusPillStyle && statusPillClass
                 )}
-                style={statusPillStyle}
+                style={
+                  statusPillStyle
+                    ? { color: statusPillStyle.color }
+                    : undefined
+                }
               >
                 {statusLabel}
               </span>
@@ -119,11 +132,14 @@ export function PortalDetailHead({
             ) : null}
           </div>
         ) : null}
+        {timeline ? (
+          <div className="portal-detail-head-timeline">{timeline}</div>
+        ) : null}
       </div>
       {resolvedActions ? (
         <div
           className={cn(
-            "portal-detail-head-actions flex flex-wrap items-center gap-2 sm:shrink-0 sm:justify-end",
+            "portal-detail-head-actions",
             layoutFooterOnly && "hidden lg:flex"
           )}
         >
@@ -177,15 +193,18 @@ export function PortalDetailInfoBox({
 }) {
   if (variant === "warning") {
     return (
-      <div className="portal-text-body flex gap-3 rounded-xl border border-amber-200 bg-amber-50 px-3 py-3.5 text-amber-950">
-        <Info className="mt-0.5 h-4 w-4 shrink-0 text-amber-700" aria-hidden />
+      <div className="portal-detail-infobox portal-detail-infobox--warn">
+        <Info className="mt-0.5 h-[17px] w-[17px] shrink-0" aria-hidden />
         <div className="min-w-0">{children}</div>
       </div>
     );
   }
   return (
-    <div className="portal-text-body flex gap-3 rounded-xl border border-border-light bg-white px-3 py-3.5 text-text-secondary">
-      <Info className="mt-0.5 h-4 w-4 shrink-0 text-accent" aria-hidden />
+    <div className="portal-detail-infobox">
+      <Info
+        className="mt-0.5 h-[17px] w-[17px] shrink-0 text-[var(--org-primary,var(--p2-primary,#2e7d52))]"
+        aria-hidden
+      />
       <div className="min-w-0">{children}</div>
     </div>
   );
@@ -219,18 +238,11 @@ export function PortalDetailKeyValues({
   const visible = rows.filter((r) => r.value != null && r.value !== "" && r.value !== "—");
   if (!visible.length) return null;
   return (
-    <dl className="divide-y divide-border-light">
+    <dl className="portal-detail-kv">
       {visible.map((row) => (
-        <div
-          key={row.label}
-          className="flex min-w-0 items-baseline justify-between gap-3 py-2.5"
-        >
-          <dt className="max-w-[44%] min-w-0 text-[13px] font-semibold leading-snug text-text-primary [overflow-wrap:anywhere]">
-            {row.label}
-          </dt>
-          <dd className="min-w-0 flex-1 text-right text-[14.5px] font-semibold leading-snug text-text-primary [overflow-wrap:anywhere]">
-            {row.value}
-          </dd>
+        <div key={row.label} className="portal-detail-kv-row">
+          <dt className="portal-detail-kv-label">{row.label}</dt>
+          <dd className="portal-detail-kv-value">{row.value}</dd>
         </div>
       ))}
     </dl>

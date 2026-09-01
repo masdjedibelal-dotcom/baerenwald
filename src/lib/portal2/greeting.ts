@@ -1,5 +1,5 @@
 /**
- * Tageszeit-Begrüßung für Portal-Dashboard (Mobil-Kurve).
+ * Tageszeit-Begrüßung für Portal-Dashboard (Deep Green).
  */
 export function portalDayGreeting(now = new Date()): string {
   const h = now.getHours();
@@ -8,7 +8,12 @@ export function portalDayGreeting(now = new Date()): string {
   return "Guten Abend";
 }
 
-/** Uppercase-Zeile wie Mock „GUTEN MORGEN 👋“. */
+/** Deep Green: „Guten Morgen,“ / „Guten Tag,“ / „Guten Abend,“ */
+export function portalDayGreetingPhrase(now = new Date()): string {
+  return `${portalDayGreeting(now)},`;
+}
+
+/** @deprecated Legacy Uppercase — Dashboard nutzt `portalDayGreetingPhrase`. */
 export function portalDayGreetingLabel(now = new Date()): string {
   return `${portalDayGreeting(now).toUpperCase()} 👋`;
 }

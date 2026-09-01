@@ -1,6 +1,5 @@
 "use client";
 
-import { Inbox } from "lucide-react";
 import type { ReactNode } from "react";
 
 import { cn } from "@/lib/utils";
@@ -27,28 +26,21 @@ export function PortalInboxEmpty({
   return (
     <div
       className={cn(
-        "flex flex-col items-center justify-center rounded-xl border border-dashed border-border-light bg-white text-center",
-        compact ? "px-3 py-6" : "px-4 py-10",
+        "portal-inbox-empty flex flex-col items-center justify-center text-center",
+        compact ? "px-4 py-6" : "px-5 py-8",
         className
       )}
     >
-      <Inbox
-        className={cn(
-          "mb-2 text-text-tertiary",
-          compact ? "h-5 w-5" : "h-7 w-7"
-        )}
-        aria-hidden
-      />
       <p
         className={cn(
-          "font-semibold text-text-primary",
-          compact ? "portal-text-meta" : "portal-text-section"
+          "font-bold text-[var(--p2-ink,#142019)]",
+          compact ? "text-[14.5px]" : "text-[15.5px]"
         )}
       >
         {title}
       </p>
       {description ? (
-        <p className="portal-text-meta mt-1 max-w-sm text-text-secondary">
+        <p className="mt-1.5 max-w-sm text-[13.5px] leading-relaxed text-[var(--p2-sub,#55615b)]">
           {description}
         </p>
       ) : null}

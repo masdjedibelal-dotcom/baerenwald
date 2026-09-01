@@ -475,6 +475,7 @@ export function EigentuemerPortalClient({
           profileName={kunde.name?.trim() || helloName}
           kundeTyp="privat"
           roleLabel={EIGENTUEMER_DASHBOARD_ROLE}
+          focusRole="eigentuemer"
           kpis={privatKpis}
           recent={recentItems}
           heroImageUrl={portalHeaderHeroSrc("eigentuemer")}

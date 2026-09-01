@@ -20,7 +20,7 @@ export const PORTAL_MODAL_DEFAULT_MAX_W = 460;
 export const PORTAL_MODAL_PREVIEW_MAX_W = 520;
 
 /** Funnel Desktop-Breite. */
-export const PORTAL_MODAL_FUNNEL_MAX_W = 1360;
+export const PORTAL_MODAL_FUNNEL_MAX_W = 1100;
 
 /** Confirm kompakt. */
 export const PORTAL_MODAL_CONFIRM_MAX_W = 420;
@@ -33,7 +33,7 @@ export const PORTAL_MODAL_CONFIRM_MAX_W = 420;
 export const PORTAL_MODAL_Z_INDEX = 200;
 
 /** Scrim hinter Modal / Slide-over — klarer Kontrast zur Seite. */
-export const PORTAL_MODAL_SCRIM = "rgba(16,25,20,.58)";
+export const PORTAL_MODAL_SCRIM = "rgba(16,25,20,0.60)";
 
 export function resolvePortalModalVariant(
   variant: PortalModalVariant | undefined,

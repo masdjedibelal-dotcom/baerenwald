@@ -3,6 +3,7 @@
 import type { ReactNode } from "react";
 
 import { PortalScreenDashboard } from "@/components/shared/PortalScreenDashboard";
+import { buildPortalDashboardFocus } from "@/lib/portal2/dashboard-focus";
 import { partnerStatusChipStyle } from "@/lib/partner/partner-list-mappers";
 
 export type PartnerHwDashboardKpis = {
@@ -24,7 +25,7 @@ const KPI_DEFS: Array<{
   id: keyof PartnerHwDashboardKpis;
   label: string;
 }> = [
-  { id: "neueAnfragen", label: "Offen" },
+  { id: "neueAnfragen", label: "Neue Anfragen" },
   { id: "inAusfuehrung", label: "In Arbeit" },
   { id: "erledigt", label: "Erledigt" },
 ];
@@ -37,11 +38,10 @@ type Props = {
   onOpenItem: (id: string) => void;
   onKpiClick?: (id: keyof PartnerHwDashboardKpis) => void;
   heroImageUrl?: string | null;
-  /** Unter Begrüßung, vor den KPI-Kacheln. */
   beforeTiles?: ReactNode;
 };
 
-/** Mock `screenDashboard` Handwerker — 1:1. */
+/** Deep Green Handwerker-Dashboard. */
 export function PartnerHwDashboard({
   firmName,
   kpis,
@@ -52,11 +52,24 @@ export function PartnerHwDashboard({
   heroImageUrl,
   beforeTiles,
 }: Props) {
+  const top = recent[0];
+  const focus = buildPortalDashboardFocus(
+    "handwerker",
+    top
+      ? {
+          title: top.titel,
+          subtitle: top.objekt,
+          onOpen: () => onOpenItem(top.id),
+        }
+      : null
+  );
+
   return (
     <PortalScreenDashboard
       roleLabel="Handwerker"
       hello={firmName}
       avatarName={firmName}
+      brandSubline={firmName}
       heroImageUrl={heroImageUrl}
       beforeTiles={beforeTiles}
       tiles={KPI_DEFS.map((def) => ({
@@ -65,13 +78,13 @@ export function PartnerHwDashboard({
         value: kpis[def.id],
         onClick: onKpiClick ? () => onKpiClick(def.id) : undefined,
       }))}
+      focus={focus}
       recent={recent.slice(0, 4).map((v) => ({
         id: v.id,
         titel: v.titel,
         objekt: v.objekt,
         statusLabel: v.statusLabel,
         statusColor: v.statusColor,
-        statusBg: v.statusBg,
       }))}
       onOpenAll={onOpenAll}
       onOpenItem={onOpenItem}

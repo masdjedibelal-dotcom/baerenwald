@@ -74,7 +74,7 @@ export const PORTAL_STATUS: Record<PortalMockStatusId, PortalMockStatusMeta> = {
   bezahlt: {
     id: "bezahlt",
     label: "Abgeschlossen",
-    color: "#4B5563",
+    color: "#6B7269",
     bg: "#EAEDEC",
   },
   abgelehnt: {

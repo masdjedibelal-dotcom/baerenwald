@@ -153,7 +153,7 @@ export function EinstellungenSectionCard({
   className?: string;
 }) {
   return (
-    <section className={cn(PORTAL_SECTION_CARD_CLASS, "space-y-3 p-4", className)}>
+    <section className={cn(PORTAL_SECTION_CARD_CLASS, "space-y-3 p-5", className)}>
       {title ? (
         <EinstellungenSectionHeader
           title={title}
@@ -242,7 +242,7 @@ export function EinstellungenSectionHeader({
   const hasActions = Boolean(onEdit || onAdd || trailing);
   return (
     <div className="mb-1 flex items-center justify-between gap-2">
-      <p className="text-[12.5px] font-bold uppercase tracking-wide text-text-secondary">
+      <p className="text-[11.5px] font-extrabold uppercase tracking-wide text-[#7A857F]">
         {title}
       </p>
       {hasActions ? (
@@ -257,7 +257,7 @@ export function EinstellungenSectionHeader({
               onClick={onEdit}
               aria-label={editLabel}
               title={editLabel}
-              className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-accent text-white shadow-sm transition-colors hover:bg-accent-hover"
+              className="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-[#EEF4F0] text-[#2E7D52] transition-colors hover:bg-[#e2ebe5]"
             >
               <Pencil className="h-4 w-4" aria-hidden strokeWidth={2.25} />
             </button>
@@ -504,7 +504,10 @@ export function EinstellungenEuroSlider({
         <span className="portal-text-meta" style={{ color: PORTAL_VAR.sub }}>
           Schwellenwert
         </span>
-        <span className="portal-text-card-title tabular-nums text-accent">
+        <span
+          className="text-[24px] font-extrabold tabular-nums leading-none"
+          style={{ color: "#2E7D52" }}
+        >
           {label}
         </span>
       </div>
@@ -516,7 +519,7 @@ export function EinstellungenEuroSlider({
         disabled={disabled}
         value={Number.isFinite(value) ? value : min}
         onChange={(e) => onChange(Number(e.target.value))}
-        className="h-2 w-full cursor-pointer appearance-none rounded-full bg-border-default accent-[var(--accent,#2F5D50)] disabled:cursor-not-allowed disabled:opacity-60"
+        className="h-2 w-full cursor-pointer appearance-none rounded-full bg-border-default accent-[#2E7D52] disabled:cursor-not-allowed disabled:opacity-60"
         aria-valuemin={min}
         aria-valuemax={max}
         aria-valuenow={value}
@@ -625,24 +628,24 @@ export function EinstellungenToggle({
         aria-pressed={checked}
         onClick={() => onChange(!checked)}
         className={cn(
-          "relative mt-0.5 h-[26px] w-11 shrink-0 rounded-full transition-colors disabled:cursor-not-allowed",
-          checked ? "bg-accent" : "bg-[#cfd4d2]"
+          "relative mt-0.5 h-7 w-12 shrink-0 rounded-full transition-colors disabled:cursor-not-allowed",
+          checked ? "bg-[#2E7D52]" : "bg-[#cfd4d2]"
         )}
       >
         <span
           className={cn(
-            "absolute top-[3px] h-5 w-5 rounded-full bg-white shadow transition-[left]",
-            checked ? "left-[21px]" : "left-[3px]"
+            "absolute top-[3px] h-[22px] w-[22px] rounded-full bg-white shadow transition-[left]",
+            checked ? "left-[23px]" : "left-[3px]"
           )}
           aria-hidden
         />
       </button>
       <div className="min-w-0 flex-1">
-        <div className="portal-text-card-title">{title}</div>
+        <div className="text-[15.5px] font-bold text-text-primary">{title}</div>
         {description ? (
           <div
-            className="portal-text-meta mt-1"
-            style={{ color: PORTAL_VAR.sub }}
+            className="mt-1 text-[13.5px] leading-[1.55]"
+            style={{ color: "#55615B" }}
           >
             {description}
           </div>

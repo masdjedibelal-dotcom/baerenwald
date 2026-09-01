@@ -88,7 +88,7 @@ const ACCENT_CLASS: Record<PortalListCardAccent, string> = {
   auftrag: "border-l-blue-600",
 };
 
-function StatusPill({
+function StatusWord({
   statusLabel,
   statusPillClass,
   statusPillStyle,
@@ -101,10 +101,14 @@ function StatusPill({
   return (
     <span
       className={cn(
-        "portal-status-pill",
+        "portal-status-word",
         !statusPillStyle && statusPillClass
       )}
-      style={statusPillStyle}
+      style={
+        statusPillStyle
+          ? { color: statusPillStyle.color }
+          : undefined
+      }
     >
       {statusLabel}
     </span>
@@ -136,7 +140,7 @@ export function PortalListCard({
   onClick,
   title,
   subtitle,
-  idLabel,
+  idLabel: _idLabel,
   statusLabel,
   statusPillClass,
   statusPillStyle,
@@ -184,27 +188,23 @@ export function PortalListCard({
         <div className="min-w-0 flex-1">
           <div className="flex items-start justify-between gap-2">
             <div className="min-w-0 flex-1">
-              {idLabel ? (
-                <p className="portal-text-label mb-0.5 normal-case tracking-wide text-text-tertiary">
-                  {idLabel}
-                </p>
-              ) : null}
-              <p className="portal-text-card-title line-clamp-2">{title}</p>
+              {/* Deep Green: Vorgangsnummer (idLabel) entfällt in Listen */}
+              <StatusWord
+                statusLabel={statusLabel}
+                statusPillClass={statusPillClass}
+                statusPillStyle={statusPillStyle}
+              />
+              <p className="portal-text-card-title mt-1 line-clamp-2">{title}</p>
               {subtitle ? (
                 <p className="portal-text-meta mt-1 line-clamp-2 text-text-secondary">
                   {subtitle}
                 </p>
               ) : null}
             </div>
-            <div className="flex shrink-0 items-center gap-1.5">
-              <StatusPill
-                statusLabel={statusLabel}
-                statusPillClass={statusPillClass}
-                statusPillStyle={statusPillStyle}
-              />
+            <div className="flex shrink-0 items-center gap-1.5 self-center pt-3.5">
               {showChevron ? (
                 <ChevronRight
-                  className="h-5 w-5 text-text-tertiary"
+                  className="h-5 w-5 text-[var(--p2-faint2,#9aa39e)]"
                   aria-hidden
                 />
               ) : null}
@@ -282,9 +282,10 @@ export function PortalListCard({
 
       <div
         className={cn(
-          "flex w-full items-start gap-3",
-          hasMedia && variant === "card" && "px-3.5 py-3.5 sm:px-4",
-          responsiveMedia && "px-3.5 py-3.5 sm:px-4 lg:min-w-0 lg:flex-1 lg:py-3.5 lg:pr-4 lg:pl-0"
+          "flex w-full items-stretch gap-3.5",
+          hasMedia && variant === "card" && "px-[18px] py-[17px]",
+          responsiveMedia &&
+            "px-[18px] py-[17px] lg:min-w-0 lg:flex-1 lg:py-[17px] lg:pr-[18px] lg:pl-0"
         )}
       >
         {showCheckbox ? (
@@ -301,30 +302,31 @@ export function PortalListCard({
           />
         ) : null}
 
+        {!hasMedia ? (
+          <span className="portal-list-card-edge" aria-hidden />
+        ) : null}
+
         <div className="min-w-0 flex-1">
           <button
             type="button"
             onClick={onClick}
-            className="flex w-full min-w-0 items-start justify-between gap-3 text-left"
+            className="flex w-full min-w-0 items-start gap-3.5 text-left"
           >
             <div className="min-w-0 flex-1">
-              {idLabel ? (
-                <p
-                  className="portal-text-label mb-0.5 normal-case tracking-wide"
-                  style={{ color: PORTAL_VAR.faint }}
-                >
-                  {idLabel}
-                </p>
-              ) : null}
+              <StatusWord
+                statusLabel={statusLabel}
+                statusPillClass={statusPillClass}
+                statusPillStyle={statusPillStyle}
+              />
               <p
-                className="portal-text-card-title line-clamp-2"
+                className="portal-list-card-title mt-1 line-clamp-2"
                 style={{ color: PORTAL_VAR.ink }}
               >
                 {title}
               </p>
               {subtitle ? (
                 <p
-                  className="portal-text-meta mt-1 line-clamp-2"
+                  className="portal-list-card-sub mt-1 line-clamp-2"
                   style={{ color: PORTAL_VAR.sub }}
                 >
                   {subtitle}
@@ -332,7 +334,7 @@ export function PortalListCard({
               ) : null}
               {meta.length > 0 ? (
                 <p
-                  className="portal-text-meta mt-1.5 line-clamp-2"
+                  className="portal-list-card-meta mt-1.5 line-clamp-2"
                   style={{ color: PORTAL_VAR.faint }}
                 >
                   {meta.map((m) => m.text).join(" · ")}
@@ -340,7 +342,7 @@ export function PortalListCard({
               ) : null}
               {hint ? (
                 <p
-                  className="portal-text-meta mt-1.5"
+                  className="portal-list-card-meta mt-1.5"
                   style={{ color: PORTAL_VAR.faint }}
                 >
                   {hint}
@@ -348,20 +350,12 @@ export function PortalListCard({
               ) : null}
             </div>
 
-            <div className="flex shrink-0 items-center gap-1.5 pt-0.5">
-              <StatusPill
-                statusLabel={statusLabel}
-                statusPillClass={statusPillClass}
-                statusPillStyle={statusPillStyle}
+            {showChevron ? (
+              <ChevronRight
+                className="portal-list-card-chevron shrink-0"
+                aria-hidden
               />
-              {showChevron ? (
-                <ChevronRight
-                  className="h-5 w-5 shrink-0"
-                  style={{ color: PORTAL_VAR.faint2 }}
-                  aria-hidden
-                />
-              ) : null}
-            </div>
+            ) : null}
           </button>
 
           {footer ? <div className="mt-2">{footer}</div> : null}

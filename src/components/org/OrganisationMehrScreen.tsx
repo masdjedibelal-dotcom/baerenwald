@@ -2,11 +2,14 @@
 
 import { PortalNavIcon } from "@/components/shared/PortalNavIcon";
 import {
+  PortalListeEyebrow,
+  PortalListeTitle,
+} from "@/components/shared/PortalListeChrome";
+import {
   PORTAL_HV_MEHR_TILES,
   portalNavSectionId,
   type PortalNavKey,
 } from "@/lib/portal2/nav-items";
-import { PORTAL_VAR } from "@/lib/portal2/tokens";
 
 type Props = {
   onOpen: (sectionId: string) => void;
@@ -19,13 +22,9 @@ export function OrganisationMehrScreen({ onOpen }: Props) {
   return (
     <div className="space-y-4">
       <div>
-        <h2
-          className="text-[18px] font-bold text-text-primary"
-          style={{ fontFamily: PORTAL_VAR.head }}
-        >
-          Mehr
-        </h2>
-        <p className="mt-1 text-[13px] text-text-secondary">
+        <PortalListeEyebrow>Menü</PortalListeEyebrow>
+        <PortalListeTitle>Mehr</PortalListeTitle>
+        <p className="mt-1 text-[14px] text-[#55615B]">
           Service, Marktplatz und Einstellungen
         </p>
       </div>
@@ -39,15 +38,9 @@ export function OrganisationMehrScreen({ onOpen }: Props) {
               key={tile.key}
               type="button"
               onClick={() => onOpen(sectionId)}
-              className="flex aspect-square flex-col items-center justify-center gap-2 rounded-2xl border border-border-default bg-white p-4 text-center shadow-sm transition-colors hover:border-accent hover:bg-accent-light/40 active:scale-[0.98]"
+              className="portal-mehr-tile"
             >
-              <span
-                className="grid h-12 w-12 place-items-center rounded-xl"
-                style={{
-                  background: "var(--accent-light, #E7F1E9)",
-                  color: "var(--org-primary, var(--accent, #2E7D52))",
-                }}
-              >
+              <span className="portal-mehr-tile-icon">
                 <PortalNavIcon
                   navId={tile.key as PortalNavKey}
                   active
@@ -55,17 +48,12 @@ export function OrganisationMehrScreen({ onOpen }: Props) {
                   size={22}
                 />
               </span>
-              <span className="relative text-[13px] font-bold text-text-primary">
-                {tile.label}
-                {tile.tag ? (
-                  <span
-                    className="portal-nav-stoerer portal-nav-stoerer--tile"
-                    aria-label={tile.tag}
-                  >
-                    {tile.tag}
-                  </span>
-                ) : null}
-              </span>
+              <span className="portal-mehr-tile-label">{tile.label}</span>
+              {tile.tag ? (
+                <span className="portal-mehr-tile-tag" aria-label={tile.tag}>
+                  {tile.tag}
+                </span>
+              ) : null}
             </button>
           );
         })}

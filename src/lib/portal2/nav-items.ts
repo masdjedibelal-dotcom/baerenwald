@@ -159,7 +159,7 @@ export type PortalShellNavBuilt = {
   navKey: PortalNavKey;
   glyph: string;
   badge?: number;
-  /** z. B. „In Kürze“ als schräger Störer am Label */
+  /** z. B. „In Kürze“ — Inline-Badge hinter dem Label (Deep Green) */
   tag?: string;
 };
 

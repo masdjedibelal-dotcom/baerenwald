@@ -1317,9 +1317,19 @@ export function PortalClient({
               hello={portalKundeDashboardHello(kundeTyp, kunde.name)}
               profileName={kunde.name?.trim() || "MeinBärenwald"}
               kundeTyp={kundeTyp === "gewerbe" ? "gewerbe" : "privat"}
+              focusRole={whiteLabelPortal ? "mieter" : "privat"}
+              roleLabel={
+                whiteLabelPortal
+                  ? "Mieter"
+                  : kundeTyp === "gewerbe"
+                    ? "Gewerbe"
+                    : "Privatkunde"
+              }
               kpis={privatKpis}
               recent={recentItems}
-              heroImageUrl={portalHeaderHeroSrc("mieter")}
+              heroImageUrl={portalHeaderHeroSrc(
+                whiteLabelPortal ? "mieter" : "privat"
+              )}
               onOpenAll={() => {
                 setPrivatChip("alle");
                 setVorgangFilter("alle");
@@ -1344,6 +1354,8 @@ export function PortalClient({
               hello={portalKundeDashboardHello(kundeTyp, kunde.name)}
               profileName={kunde.name?.trim() || "MeinBärenwald"}
               kundeTyp="privat"
+              focusRole="privat"
+              roleLabel="Privatkunde"
               kpis={privatKpis}
               recent={recentItems}
               heroImageUrl={portalHeaderHeroSrc("mieter")}

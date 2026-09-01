@@ -25,7 +25,7 @@ export const PORTAL_DETAIL_CHROME_DEFAULT: PortalDetailChrome = "responsive";
 /** Wrapper um Vorgangslisten — gestapelte weiße Karten mit Abstand. */
 export function portalListStackClass(variant: PortalListVariant = "responsive"): string {
   if (variant === "row") return "portal-list-panel portal-list-rows";
-  return "portal-list-stack flex flex-col gap-2.5";
+  return "portal-list-stack flex flex-col gap-3.5";
 }
 
 /** Klassen für eine Listenzeile/-karte. */
@@ -42,10 +42,10 @@ export function portalListItemClass(
     );
   }
   return cn(
-    "portal-list-card flex w-full items-start gap-3 rounded-[var(--p2-radius-md,12px)] border px-3.5 py-3.5 text-left shadow-sm transition-shadow sm:px-4",
+    "portal-list-card flex w-full items-stretch gap-3.5 rounded-[20px] border-0 px-[18px] py-[17px] text-left transition-shadow",
     selected
       ? "ring-2 ring-[var(--org-primary,var(--p2-primary))]/25"
-      : "hover:shadow-md"
+      : "hover:shadow-[var(--p2-shadow-hover)]"
   );
 }
 
@@ -53,7 +53,10 @@ export function portalListItemBorderStyle(
   variant: PortalListVariant = "responsive"
 ): CSSProperties | undefined {
   if (variant === "row") return undefined;
-  return { borderColor: PORTAL_VAR.line };
+  return {
+    border: "none",
+    boxShadow: "var(--p2-shadow, 0 2px 10px rgba(16,32,24,0.05))",
+  };
 }
 
 /** Detail-Section-Chrome: `card` / `responsive` = weiße Section-Card; `flat` = ohne Rahmen. */
@@ -63,14 +66,18 @@ export function portalDetailSectionClass(
   if (chrome === "flat") {
     return "space-y-3 rounded-none border-0 bg-transparent p-0 shadow-none";
   }
-  return cn("portal-section-card space-y-3 p-4");
+  return cn("portal-section-card space-y-3 p-5");
 }
 
 export function portalDetailSectionBorderStyle(
   chrome: PortalDetailChrome = "responsive"
 ): CSSProperties | undefined {
   if (chrome === "flat") return undefined;
-  return { borderColor: PORTAL_VAR.line };
+  return {
+    border: "none",
+    boxShadow: "var(--p2-shadow, 0 2px 10px rgba(16,32,24,0.05))",
+    borderRadius: "22px",
+  };
 }
 
 /** C2 — HV-Detail Section-Nav (Reihenfolge = Tab-Reihenfolge). */

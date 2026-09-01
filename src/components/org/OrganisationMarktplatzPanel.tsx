@@ -9,6 +9,7 @@ import {
   Store,
 } from "lucide-react";
 
+import { PortalListeTitle } from "@/components/shared/PortalListeChrome";
 import { PORTAL_VAR } from "@/lib/portal2/tokens";
 
 const STEPS = [
@@ -60,19 +61,19 @@ export function OrganisationMarktplatzPanel() {
   return (
     <div className="space-y-8">
       <div className="space-y-3">
-        <div className="flex flex-wrap items-center gap-2">
-          <h2 className="portal-text-section text-text-primary">Marktplatz</h2>
+        <div className="flex flex-wrap items-center gap-2.5">
+          <PortalListeTitle>Marktplatz</PortalListeTitle>
           <span
-            className="rounded-full px-2.5 py-0.5 text-[11px] font-bold uppercase tracking-wide"
+            className="rounded-full px-2.5 py-1 text-[11px] font-extrabold uppercase tracking-wide"
             style={{
-              background: "var(--accent-light, #E7F1E9)",
-              color: "var(--org-primary, var(--accent, #2E7D52))",
+              background: "rgba(232,176,75,0.20)",
+              color: "#8A5A06",
             }}
           >
             In Kürze
           </span>
         </div>
-        <p className="portal-text-body max-w-[40rem] leading-relaxed text-text-secondary">
+        <p className="max-w-[40rem] text-[15px] leading-[1.55] text-[#55615B]">
           Bald holen Sie Vergleichsangebote direkt über unser Partnernetzwerk
           ein. Bärenwald schafft die Voraussetzungen, damit Partner auf Ihre
           Gesuche antworten können — und bereitet die Angebote so auf, dass Sie
@@ -82,26 +83,31 @@ export function OrganisationMarktplatzPanel() {
 
       <ol className="grid gap-4 lg:grid-cols-3">
         {STEPS.map((s) => (
-          <li key={s.n} className="portal-surface flex flex-col gap-3 p-5">
-            <div className="flex items-center gap-3">
+          <li
+            key={s.n}
+            className="flex flex-col gap-3 rounded-[22px] bg-white p-[22px] shadow-[var(--p2-shadow)]"
+          >
+            <div className="flex items-start justify-between gap-3">
               <span
-                className="grid h-11 w-11 place-items-center rounded-xl"
+                className="grid h-[46px] w-[46px] place-items-center rounded-[15px]"
                 style={{
-                  background: "var(--accent-light, #E7F1E9)",
-                  color: "var(--org-primary, var(--accent, #2E7D52))",
+                  background: PORTAL_VAR.greenDark,
+                  color: "#fff",
                 }}
               >
                 <s.Icon className="h-5 w-5" aria-hidden />
               </span>
-              <span
-                className="text-[12px] font-bold tabular-nums"
-                style={{ color: PORTAL_VAR.faint }}
-              >
-                Schritt {s.n}
+              <span className="text-[13px] font-extrabold tabular-nums text-[#CDD4CE]">
+                {s.n}
               </span>
             </div>
-            <h3 className="portal-text-title">{s.title}</h3>
-            <p className="portal-text-body leading-relaxed text-text-secondary">
+            <h3
+              className="text-[18px] font-extrabold text-text-primary"
+              style={{ fontFamily: PORTAL_VAR.head }}
+            >
+              {s.title}
+            </h3>
+            <p className="text-[14.5px] leading-[1.65] text-[#55615B]">
               {s.body}
             </p>
           </li>
@@ -109,25 +115,24 @@ export function OrganisationMarktplatzPanel() {
       </ol>
 
       <div className="space-y-3">
-        <p className="portal-text-label text-text-tertiary">Ihr Vorteil</p>
+        <p className="text-[11.5px] font-extrabold uppercase tracking-wide text-[#7A857F]">
+          Ihr Vorteil
+        </p>
         <ul className="grid gap-3 sm:grid-cols-3">
           {BENEFITS.map((b) => (
             <li
               key={b.id}
-              className="flex items-start gap-3 rounded-2xl border border-border-default bg-white p-4"
+              className="flex items-start gap-3 rounded-[20px] bg-[#EEF4F0] p-[18px]"
             >
-              <span
-                className="grid h-10 w-10 shrink-0 place-items-center rounded-xl"
-                style={{
-                  background: "var(--accent-light, #E7F1E9)",
-                  color: "var(--org-primary, var(--accent, #2E7D52))",
-                }}
-              >
-                <b.Icon className="h-5 w-5" aria-hidden />
-              </span>
+              <b.Icon
+                className="mt-0.5 h-[19px] w-[19px] shrink-0 text-[#2E7D52]"
+                aria-hidden
+              />
               <div className="min-w-0">
-                <p className="font-semibold text-text-primary">{b.label}</p>
-                <p className="portal-text-meta mt-0.5 leading-snug text-text-secondary">
+                <p className="text-[15px] font-bold text-text-primary">
+                  {b.label}
+                </p>
+                <p className="mt-1 text-[13.5px] leading-[1.55] text-[#55615B]">
                   {b.hint}
                 </p>
               </div>

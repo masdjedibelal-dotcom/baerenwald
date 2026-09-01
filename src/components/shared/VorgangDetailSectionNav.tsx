@@ -6,7 +6,6 @@ import {
   PORTAL_DETAIL_SECTION_LABELS,
   type PortalDetailSectionId,
 } from "@/lib/portal2/layout-chrome";
-import { PORTAL_VAR } from "@/lib/portal2/tokens";
 import { cn } from "@/lib/utils";
 import { PortalCountBadge } from "@/components/shared/PortalNavCountBadge";
 
@@ -152,16 +151,11 @@ export function VorgangDetailSectionNav({
   return (
     <nav
       aria-label="Vorgang-Abschnitte"
-      className={cn(
-        "sticky top-0 z-20 -mx-4 bg-white/95 px-4 py-2.5 backdrop-blur sm:-mx-6 sm:px-6",
-        "border-b lg:static lg:mx-0 lg:border-0 lg:bg-transparent lg:px-0 lg:py-0 lg:backdrop-blur-none",
-        className
-      )}
-      style={{ borderColor: PORTAL_VAR.line2 }}
+      className={cn("portal-detail-tabs-nav", className)}
     >
       <div
         className={cn(
-          "flex gap-1.5 overflow-x-auto pb-0.5 lg:hidden",
+          "portal-detail-tabs-row",
           mobileMode === "accordion" && "flex-wrap"
         )}
         role={mode === "tabs" ? "tablist" : undefined}
@@ -176,17 +170,14 @@ export function VorgangDetailSectionNav({
               type="button"
               role={mode === "tabs" ? "tab" : undefined}
               aria-selected={mode === "tabs" ? on : undefined}
-              aria-controls={mode === "tabs" ? `vorgang-panel-${item.id}` : undefined}
+              aria-controls={
+                mode === "tabs" ? `vorgang-panel-${item.id}` : undefined
+              }
               onClick={() => select(item.id)}
               className={cn(
-                "inline-flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1.5 text-[13px] font-semibold transition-colors",
-                on
-                  ? "bg-[var(--org-primary-soft,var(--p2-primary-soft,#e7f1e9))]"
-                  : "border border-[var(--p2-line)] bg-white"
+                "portal-detail-tab",
+                on && "portal-detail-tab--active"
               )}
-              style={{
-                color: on ? PORTAL_VAR.primary : PORTAL_VAR.sub,
-              }}
             >
               {label}
               <PortalCountBadge count={item.badge ?? 0} />
@@ -194,40 +185,6 @@ export function VorgangDetailSectionNav({
           );
         })}
       </div>
-
-      <ul
-        className="hidden flex-col gap-0.5 lg:flex lg:min-w-[9.5rem]"
-        role={mode === "tabs" ? "tablist" : undefined}
-      >
-        {visible.map((item) => {
-          const on = active === item.id;
-          const label =
-            item.label ?? PORTAL_DETAIL_SECTION_LABELS[item.id] ?? item.id;
-          return (
-            <li key={item.id} role={mode === "tabs" ? "presentation" : undefined}>
-              <button
-                type="button"
-                role={mode === "tabs" ? "tab" : undefined}
-                aria-selected={mode === "tabs" ? on : undefined}
-                aria-controls={mode === "tabs" ? `vorgang-panel-${item.id}` : undefined}
-                onClick={() => select(item.id)}
-                className={cn(
-                  "flex w-full items-center justify-between gap-2 rounded-lg px-2.5 py-2 text-left text-[13.5px] font-semibold transition-colors",
-                  on
-                    ? "bg-[var(--org-primary-soft,var(--p2-primary-soft,#E7F1E9))]"
-                    : "hover:bg-[var(--p2-hover)]"
-                )}
-                style={{
-                  color: on ? PORTAL_VAR.primary : PORTAL_VAR.sub,
-                }}
-              >
-                <span>{label}</span>
-                <PortalCountBadge count={item.badge ?? 0} />
-              </button>
-            </li>
-          );
-        })}
-      </ul>
     </nav>
   );
 }

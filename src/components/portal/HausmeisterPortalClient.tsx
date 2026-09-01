@@ -474,6 +474,7 @@ export function HausmeisterPortalClient({
             hello={`Hallo ${helloName}`}
             profileName={kunde.name?.trim() || helloName}
             roleLabel={HAUSMEISTER_DASHBOARD_ROLE}
+            focusRole="hausmeister"
             kundeTyp="privat"
             kpis={privatKpis}
             recent={recentItems}
