@@ -38,7 +38,7 @@ export type PortalEntityDetailLayoutProps = {
 };
 
 /**
- * Entity-Detail: Cover (Status+Titel) → Kopfkarte (Meta+Timeline+Actions) → Tabs.
+ * Entity-Detail: Hero (Titel) → Kopfkarte (Meta+Timeline+Actions) → Tabs.
  */
 export function PortalEntityDetailLayout({
   coverUrl,
@@ -48,9 +48,6 @@ export function PortalEntityDetailLayout({
   editLabel,
   title,
   metaLine,
-  statusLabel,
-  statusColor,
-  statusPillStyle,
   flowStatus,
   actions,
   tabs,
@@ -66,9 +63,6 @@ export function PortalEntityDetailLayout({
     typeof activeTab === "string" &&
     typeof onTabChange === "function";
 
-  const statusColorResolved =
-    statusColor || statusPillStyle?.color || undefined;
-
   return (
     <div className={cn("portal-entity-detail", className)}>
       <PortalDetailCover
@@ -78,8 +72,6 @@ export function PortalEntityDetailLayout({
         onEdit={onEdit}
         editLabel={editLabel}
         className={cn("portal-detail-cover--bleed", coverClassName)}
-        statusLabel={statusLabel}
-        statusColor={statusColorResolved}
         title={title}
       />
 

@@ -10,9 +10,14 @@ import {
   PRIVAT_DASHBOARD_ROLE_LABEL,
   type PrivatDashboardKpiId,
 } from "@/lib/portal2/kunde-dashboard";
-import { buildPortalDashboardFocus, type PortalFocusRole } from "@/lib/portal2/dashboard-focus";
+import type { PortalFocusRole } from "@/lib/portal2/dashboard-focus";
+import type { PortalDashboardActionSlide } from "@/lib/portal2/dashboard-actions/types";
 import type { PortalKundeTyp } from "@/lib/portal2/kunde-typ";
-import { PORTAL_STATUS, portalMieterStatusLabel, type PortalMockStatusId } from "@/lib/portal2/status";
+import {
+  portalListeStatusColor,
+  portalListeStatusLabel,
+} from "@/lib/portal2/liste-status";
+import { portalMieterStatusLabel, type PortalMockStatusId } from "@/lib/portal2/status";
 
 export type PrivatDashboardRecentItem = {
   id: string;
@@ -28,8 +33,10 @@ type Props = {
   hello: string;
   kundeTyp: Exclude<PortalKundeTyp, "hv">;
   roleLabel?: string;
-  /** Fokus-Rolle; Default aus roleLabel/kundeTyp */
+  /** KPI-Labels (Mieter / HM / Eigentümer). */
   focusRole?: PortalFocusRole;
+  actionSlides?: PortalDashboardActionSlide[];
+  onActionRefresh?: () => void | Promise<void>;
   kpis: Record<PrivatDashboardKpiId, number>;
   recent: PrivatDashboardRecentItem[];
   onOpenAll: () => void;
@@ -53,14 +60,10 @@ function resolveFocusRole(
   return "privat";
 }
 
-function kpiLabelFor(
-  id: PrivatDashboardKpiId,
-  focusRole: PortalFocusRole
-): string {
+function kpiLabelFor(id: PrivatDashboardKpiId, focusRole: PortalFocusRole): string {
   if (id === "offen") {
     if (focusRole === "hausmeister") return "Prüfaufträge";
-    if (focusRole === "mieter") return "Offen";
-    return "Zu entscheiden";
+    return "Offen";
   }
   if (id === "in_arbeit") return "In Arbeit";
   return "Erledigt";
@@ -72,6 +75,8 @@ export function PortalKundePrivatDashboard({
   kundeTyp,
   roleLabel: roleLabelProp,
   focusRole: focusRoleProp,
+  actionSlides = [],
+  onActionRefresh,
   kpis,
   recent,
   onOpenAll,
@@ -88,17 +93,6 @@ export function PortalKundePrivatDashboard({
 
   const nameForProfile = (profileName?.trim() || hello.replace(/^Hallo\s+/i, "")).trim();
   const focusRole = resolveFocusRole(focusRoleProp, roleLabel, kundeTyp);
-  const top = recent[0];
-  const focus = buildPortalDashboardFocus(
-    focusRole,
-    top
-      ? {
-          title: top.titel,
-          subtitle: top.objekt,
-          onOpen: () => onOpenItem(top.id),
-        }
-      : null
-  );
 
   return (
     <PortalScreenDashboard
@@ -113,21 +107,19 @@ export function PortalKundePrivatDashboard({
         value: kpis[def.id],
         onClick: onKpiClick ? () => onKpiClick(def.id) : undefined,
       }))}
-      focus={focus}
-      recent={recent.slice(0, 4).map((v) => {
-        const st = PORTAL_STATUS[v.flowStatus];
-        const statusLabel = v.hvMieterView
+      actionSlides={actionSlides}
+      onOpenActionItem={onOpenItem}
+      onActionRefresh={onActionRefresh ?? (() => {})}
+      recent={recent.slice(0, 4).map((v) => ({
+        id: v.id,
+        titel: v.titel,
+        objekt: v.objekt,
+        statusLabel: v.hvMieterView
           ? v.statusLabel?.trim() || portalMieterStatusLabel(v.flowStatus)
-          : st.label;
-        return {
-          id: v.id,
-          titel: v.titel,
-          objekt: v.objekt,
-          statusLabel,
-          statusColor: st.color,
-          notfall: v.notfall,
-        };
-      })}
+          : portalListeStatusLabel(v.flowStatus, "privat"),
+        statusColor: portalListeStatusColor(v.flowStatus, "privat"),
+        notfall: v.notfall,
+      }))}
       onOpenAll={onOpenAll}
       onOpenItem={onOpenItem}
       recentTitle={PRIVAT_DASHBOARD_RECENT_TITLE}

@@ -269,8 +269,8 @@ export function PortalShell({
         )}
       >
         <span className="portal-shell-mobile-item-icon">
-          <NavGlyph item={item} active={active} surface="nav" size={active ? 17 : 19} />
-          {item.badge != null && item.badge > 0 && !active ? (
+          <NavGlyph item={item} active={active} surface="sidebar" size={20} />
+          {item.badge != null && item.badge > 0 ? (
             <PortalCountBadge
               count={item.badge}
               variant="corner"
@@ -278,15 +278,6 @@ export function PortalShell({
             />
           ) : null}
         </span>
-        {active ? (
-          <span className="portal-shell-mobile-item-label">{item.label}</span>
-        ) : null}
-        {active && item.badge != null && item.badge > 0 ? (
-          <PortalCountBadge
-            count={item.badge}
-            className="portal-shell-nav-badge"
-          />
-        ) : null}
       </button>
     );
   }
@@ -302,7 +293,7 @@ export function PortalShell({
         title={createLabel}
       >
         <span className="portal-shell-mobile-create-btn">
-          <MockIcon n="plus" ctx="nav" size={20} className="text-white" />
+          <MockIcon n="plus" ctx="sidebar" size={20} />
         </span>
       </button>
     );
@@ -353,7 +344,7 @@ export function PortalShell({
                     className="portal-shell-create"
                     onClick={createAction.onClick}
                   >
-                    <MockIcon n="plus" ctx="nav" size={17} className="portal-shell-create-icon text-white" />
+                    <MockIcon n="plus" ctx="sidebar" size={17} className="portal-shell-create-icon" />
                     <span>{createLabel}</span>
                   </button>
                 ) : null}

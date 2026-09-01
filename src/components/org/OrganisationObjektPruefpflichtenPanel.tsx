@@ -6,6 +6,7 @@ import { PortalActionMenu } from "@/components/shared/PortalActionMenu";
 import { PortalDetailCard } from "@/components/shared/PortalDetailCard";
 import { PortalEntityCard } from "@/components/shared/PortalEntityCard";
 import { PortalInboxEmpty } from "@/components/shared/PortalEmptyState";
+import { PortalInlineLoading } from "@/components/shared/PortalInlineLoading";
 import { PortalModalShell } from "@/components/shared/PortalModalShell";
 import {
   PRUEFPFLICHT_BADGE_LABEL,
@@ -62,11 +63,17 @@ export function OrganisationObjektPruefpflichtenPanel({ objektId }: { objektId: 
   const [intervall, setIntervall] = useState("");
   const [notiz, setNotiz] = useState("");
   const [busy, setBusy] = useState(false);
+  const [loading, setLoading] = useState(true);
 
   const load = useCallback(async () => {
-    const res = await fetch(`/api/org/objekte/pruefpflichten?objektId=${objektId}`);
-    const json = (await res.json()) as { items?: Pruefpflicht[] };
-    setItems(json.items ?? []);
+    setLoading(true);
+    try {
+      const res = await fetch(`/api/org/objekte/pruefpflichten?objektId=${objektId}`);
+      const json = (await res.json()) as { items?: Pruefpflicht[] };
+      setItems(json.items ?? []);
+    } finally {
+      setLoading(false);
+    }
   }, [objektId]);
 
   useEffect(() => {
@@ -179,7 +186,9 @@ export function OrganisationObjektPruefpflichtenPanel({ objektId }: { objektId: 
       onAdd={openCreate}
       addLabel="Prüfpflicht hinzufügen"
     >
-      {items.length === 0 ? (
+      {loading ? (
+        <PortalInlineLoading label="Prüfpflichten werden geladen" />
+      ) : items.length === 0 ? (
         <PortalInboxEmpty
           title="Noch keine Prüfpflichten"
           description="Tragen Sie wiederkehrende Prüfungen ein — z. B. Legionellen, Rauchmelder, Heizungswartung."

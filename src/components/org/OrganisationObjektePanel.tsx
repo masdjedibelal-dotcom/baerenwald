@@ -548,7 +548,7 @@ export function OrganisationObjektePanel({
             })
           }
         >
-          <MockIcon n="plus" ctx="nav" size={16} className="text-white" />
+          <MockIcon n="plus" ctx="sidebar" size={16} />
           Objekt
         </button>
       </div>

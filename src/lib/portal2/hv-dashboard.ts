@@ -25,7 +25,7 @@ export const HV_DASHBOARD_EMPTY_RECENT =
 export const HV_DASHBOARD_KPI_DEFS = [
   {
     id: "offen" as const,
-    label: "Zu entscheiden",
+    label: "Offen",
     chipLabel: "Offen",
     color: "#8A5A06",
     bg: "#fef3c7",

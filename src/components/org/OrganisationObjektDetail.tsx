@@ -20,6 +20,7 @@ import { PortalDetailHead } from "@/components/shared/PortalDetailUi";
 import { PortalDetailTabs } from "@/components/shared/PortalDetailTabs";
 import { PortalEntityCard } from "@/components/shared/PortalEntityCard";
 import { PortalInboxEmpty } from "@/components/shared/PortalEmptyState";
+import { PortalInlineLoading } from "@/components/shared/PortalInlineLoading";
 import { usePortalBusy } from "@/components/shared/PortalBusyContext";
 import {
   EinstellungenEdField,
@@ -194,6 +195,7 @@ export function OrganisationObjektDetail({
   const [editHmPortal, setEditHmPortal] = useState(false);
   const [hmSaving, setHmSaving] = useState(false);
   const [hmConfirmRemove, setHmConfirmRemove] = useState(false);
+  const [hmLoading, setHmLoading] = useState(true);
 
   const [versicherer, setVersicherer] = useState(objekt.versicherer ?? "");
   const [objVersNr, setObjVersNr] = useState(objekt.versicherungs_nr ?? "");
@@ -211,6 +213,7 @@ export function OrganisationObjektDetail({
 
   useEffect(() => {
     let cancelled = false;
+    setHmLoading(true);
     void fetch(
       `/api/org/hausmeister?objektId=${encodeURIComponent(objekt.id)}`
     )
@@ -240,6 +243,9 @@ export function OrganisationObjektDetail({
           setHmOptions([]);
           setHmAmObjekt(null);
         }
+      })
+      .finally(() => {
+        if (!cancelled) setHmLoading(false);
       });
     return () => {
       cancelled = true;
@@ -621,9 +627,7 @@ export function OrganisationObjektDetail({
     body = (
       <div className="flex flex-col gap-3">
         {akteLoading ? (
-          <p className="portal-text-meta text-text-tertiary px-0.5">
-            Kennzahlen werden geladen …
-          </p>
+          <PortalInlineLoading label="Kennzahlen werden geladen" />
         ) : akte ? (
           <OrganisationObjektFinanzPanel objektId={objekt.id} />
         ) : null}
@@ -647,10 +651,12 @@ export function OrganisationObjektDetail({
 
         <EinstellungenSectionCard
           title="Hausmeister"
-          onAdd={hmAmObjekt ? undefined : openHmEdit}
+          onAdd={hmLoading || hmAmObjekt ? undefined : openHmEdit}
           addLabel="Hausmeister hinzufügen"
         >
-          {hmAmObjekt ? (
+          {hmLoading ? (
+            <PortalInlineLoading label="Hausmeister wird geladen" />
+          ) : hmAmObjekt ? (
             <PortalEntityCard
               title={hmAmObjekt.name}
               meta={
@@ -819,9 +825,7 @@ export function OrganisationObjektDetail({
     );
   } else if (tab === "anlagen") {
     body = akteLoading ? (
-      <p className="portal-text-meta text-text-tertiary px-0.5">
-        Anlagen werden geladen …
-      </p>
+      <PortalInlineLoading label="Anlagen werden geladen" />
     ) : (
       <OrganisationObjektAnlagenPanel anlagen={akte?.anlagen ?? []} />
     );
@@ -829,9 +833,7 @@ export function OrganisationObjektDetail({
     body = <OrganisationObjektPruefpflichtenPanel objektId={objekt.id} />;
   } else if (tab === "historie") {
     body = akteLoading ? (
-      <p className="portal-text-meta text-text-tertiary px-0.5">
-        Historie wird geladen …
-      </p>
+      <PortalInlineLoading label="Historie wird geladen" />
     ) : (
       <OrganisationObjektHistoriePanel
         rows={akte?.historie ?? []}
@@ -852,7 +854,7 @@ export function OrganisationObjektDetail({
     );
   } else if (tab === "vorgaenge") {
     body = (
-      <div className="space-y-2.5">
+      <div className="space-y-3">
         <div className="flex items-baseline justify-between gap-2 px-0.5">
           <p className="portal-text-section">
             Vorgänge ({objektLeads.length})
@@ -862,45 +864,45 @@ export function OrganisationObjektDetail({
         {objektLeads.length === 0 ? (
           <PortalInboxEmpty title="Noch keine Daten" compact />
         ) : (
-          <div className={portalListStackClass("responsive")}>
-          {objektLeads.map((l) => {
-            const kat = meldeKategorieLabel(
-              meldeKategorieFromLead(l) ?? undefined
-            );
-            const adresse = [l.strasse, l.hausnummer]
-              .filter(Boolean)
-              .join(" ");
-            const weLabel = l.melder_einheit?.trim()
-              ? /^(WE|Whg)/i.test(l.melder_einheit.trim())
-                ? l.melder_einheit.trim()
-                : `WE ${l.melder_einheit.trim()}`
-              : undefined;
-            const person = l.melder_name?.trim() || undefined;
-            const subtitle = [
-              adresse || objekt.titel || "Objekt",
-              weLabel,
-              person,
-            ]
-              .filter(Boolean)
-              .join(" · ");
-            return (
-              <PortalListCard
-                key={l.id}
-                variant="responsive"
-                selected={false}
-                onClick={() => onOpenVorgang?.(l.id)}
-                title={kat}
-                subtitle={subtitle}
-                statusLabel={plattformStatusLabel(resolvePlattformStatus(l))}
-                statusPillClass={plattformStatusPillClass(
-                  resolvePlattformStatus(l)
-                )}
-                accent="anfrage"
-                meta={[]}
-                showChevron
-              />
-            );
-          })}
+          <div className={portalListStackClass("card")}>
+            {objektLeads.map((l) => {
+              const kat = meldeKategorieLabel(
+                meldeKategorieFromLead(l) ?? undefined
+              );
+              const adresse = [l.strasse, l.hausnummer]
+                .filter(Boolean)
+                .join(" ");
+              const weLabel = l.melder_einheit?.trim()
+                ? /^(WE|Whg)/i.test(l.melder_einheit.trim())
+                  ? l.melder_einheit.trim()
+                  : `WE ${l.melder_einheit.trim()}`
+                : undefined;
+              const person = l.melder_name?.trim() || undefined;
+              const subtitle = [
+                adresse || objekt.titel || "Objekt",
+                weLabel,
+                person,
+              ]
+                .filter(Boolean)
+                .join(" · ");
+              return (
+                <PortalListCard
+                  key={l.id}
+                  variant="card"
+                  selected={false}
+                  onClick={() => onOpenVorgang?.(l.id)}
+                  title={kat}
+                  subtitle={subtitle}
+                  statusLabel={plattformStatusLabel(resolvePlattformStatus(l))}
+                  statusPillClass={plattformStatusPillClass(
+                    resolvePlattformStatus(l)
+                  )}
+                  accent="anfrage"
+                  meta={[]}
+                  showChevron
+                />
+              );
+            })}
           </div>
         )}
       </div>

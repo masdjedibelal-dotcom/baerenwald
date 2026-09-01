@@ -3,11 +3,9 @@
 import { ChevronRight } from "lucide-react";
 import type { ReactNode } from "react";
 
-import {
-  PortalDashboardFocusCard,
-  type PortalDashboardFocus,
-} from "@/components/shared/PortalDashboardFocusCard";
+import { PortalDashboardActionCarousel } from "@/components/shared/PortalDashboardActionCarousel";
 import { portalDayGreetingPhrase } from "@/lib/portal2/greeting";
+import type { PortalDashboardActionSlide } from "@/lib/portal2/dashboard-actions/types";
 import { cn } from "@/lib/utils";
 
 export type PortalDashboardTile = {
@@ -42,7 +40,10 @@ type Props = {
   tiles: PortalDashboardTile[];
   /** @deprecated KPIs sitzen im Hero — ignoriert */
   tilesTitle?: string;
-  focus?: PortalDashboardFocus | null;
+  /** Echte Aktionen — ersetzt die Mock-Fokus-Karte. */
+  actionSlides?: PortalDashboardActionSlide[];
+  onOpenActionItem?: (id: string) => void;
+  onActionRefresh?: () => void | Promise<void>;
   /** Zwischen Fokus und Liste (z. B. Service-Versprechen HV) */
   afterFocus?: ReactNode;
   /** @deprecated Alias → afterFocus */
@@ -69,7 +70,9 @@ export function PortalScreenDashboard({
   brandSubline,
   avatarName,
   tiles,
-  focus,
+  actionSlides,
+  onOpenActionItem,
+  onActionRefresh,
   recent,
   onOpenAll,
   onOpenItem,
@@ -167,9 +170,11 @@ export function PortalScreenDashboard({
           <div className="portal-dash-before">{beforeTiles}</div>
         ) : null}
 
-        {focus ? (
-          <PortalDashboardFocusCard
-            focus={focus}
+        {actionSlides && actionSlides.length > 0 && onOpenActionItem && onActionRefresh ? (
+          <PortalDashboardActionCarousel
+            slides={actionSlides}
+            onOpen={onOpenActionItem}
+            onRefresh={onActionRefresh}
             className="portal-dash-focus--overlap"
           />
         ) : null}

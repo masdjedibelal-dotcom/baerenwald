@@ -3,7 +3,7 @@
 import type { ReactNode } from "react";
 
 import { PortalScreenDashboard } from "@/components/shared/PortalScreenDashboard";
-import { buildPortalDashboardFocus } from "@/lib/portal2/dashboard-focus";
+import type { PortalDashboardActionSlide } from "@/lib/portal2/dashboard-actions/types";
 import { partnerStatusChipStyle } from "@/lib/partner/partner-list-mappers";
 
 export type PartnerHwDashboardKpis = {
@@ -34,6 +34,8 @@ type Props = {
   firmName: string;
   kpis: PartnerHwDashboardKpis;
   recent: PartnerHwRecentItem[];
+  actionSlides?: PortalDashboardActionSlide[];
+  onActionRefresh?: () => void | Promise<void>;
   onOpenAll: () => void;
   onOpenItem: (id: string) => void;
   onKpiClick?: (id: keyof PartnerHwDashboardKpis) => void;
@@ -46,24 +48,14 @@ export function PartnerHwDashboard({
   firmName,
   kpis,
   recent,
+  actionSlides = [],
+  onActionRefresh,
   onOpenAll,
   onOpenItem,
   onKpiClick,
   heroImageUrl,
   beforeTiles,
 }: Props) {
-  const top = recent[0];
-  const focus = buildPortalDashboardFocus(
-    "handwerker",
-    top
-      ? {
-          title: top.titel,
-          subtitle: top.objekt,
-          onOpen: () => onOpenItem(top.id),
-        }
-      : null
-  );
-
   return (
     <PortalScreenDashboard
       roleLabel="Handwerker"
@@ -78,7 +70,9 @@ export function PartnerHwDashboard({
         value: kpis[def.id],
         onClick: onKpiClick ? () => onKpiClick(def.id) : undefined,
       }))}
-      focus={focus}
+      actionSlides={actionSlides}
+      onOpenActionItem={onOpenItem}
+      onActionRefresh={onActionRefresh ?? (() => {})}
       recent={recent.slice(0, 4).map((v) => ({
         id: v.id,
         titel: v.titel,

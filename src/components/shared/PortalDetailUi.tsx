@@ -11,7 +11,6 @@ import {
 import { PortalModalShell } from "@/components/shared/PortalModalShell";
 import { PortalSheetConfirm } from "@/components/shared/PortalSheetConfirm";
 import { useIsPortalMobile } from "@/lib/portal2/use-is-portal-mobile";
-import { usePortalMobileScrollChrome } from "@/lib/portal2/use-portal-mobile-scroll-chrome";
 import { cn } from "@/lib/utils";
 import { stripHtmlToPlainText } from "@/lib/portal/portal-display";
 
@@ -424,46 +423,26 @@ export function PortalDetailLayout({
 }) {
   const isMobile = useIsPortalMobile();
   const hasCta = Boolean(footer);
-  const { scrolled, canScroll } = usePortalMobileScrollChrome(
-    isMobile && hasCta
-  );
-  const useHybrid = isMobile && hasCta && canScroll;
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => setMounted(true), []);
 
   useEffect(() => {
     const root = document.body;
-    if (!useHybrid) {
-      root.classList.remove(
-        "has-portal-detail-cta",
-        "portal-detail-cta-mode"
-      );
+    if (!isMobile || !hasCta) {
+      root.classList.remove("has-portal-detail-cta");
       return;
     }
     root.classList.add("has-portal-detail-cta");
-    root.classList.toggle("portal-detail-cta-mode", scrolled);
     return () => {
-      root.classList.remove(
-        "has-portal-detail-cta",
-        "portal-detail-cta-mode"
-      );
+      root.classList.remove("has-portal-detail-cta");
     };
-  }, [useHybrid, scrolled]);
+  }, [isMobile, hasCta]);
 
   const mobileBar =
-    mounted && useHybrid && footer
+    mounted && isMobile && footer
       ? createPortal(
-          <div
-            className={cn(
-              "portal-detail-mobile-cta",
-              !scrolled && "portal-detail-mobile-cta--hidden"
-            )}
-            role="toolbar"
-            aria-label="Aktionen"
-            aria-hidden={!scrolled}
-            inert={!scrolled ? true : undefined}
-          >
+          <div className="portal-detail-mobile-cta" role="toolbar" aria-label="Aktionen">
             <div className="portal-detail-mobile-cta__inner">{footer}</div>
           </div>,
           document.body
@@ -474,11 +453,6 @@ export function PortalDetailLayout({
     <PortalDetailLayoutFooterContext.Provider value={footer ?? null}>
       <div className="flex flex-col">
         <div className="portal-detail-layout space-y-5 pb-2">{children}</div>
-        {footer && !useHybrid ? (
-          <div className="mt-5 border-t border-[var(--p2-line)] px-4 py-4 lg:hidden">
-            {footer}
-          </div>
-        ) : null}
         {mobileBar}
       </div>
     </PortalDetailLayoutFooterContext.Provider>

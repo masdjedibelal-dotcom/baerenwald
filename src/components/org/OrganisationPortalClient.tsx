@@ -96,6 +96,8 @@ import {
   type HvDashboardAuftragSlice,
 } from "@/lib/portal2/hv-dashboard";
 import { filterPortalListableLeads } from "@/lib/portal/portal-lead-sichtbarkeit";
+import { fetchObjektHmDelegierbar } from "@/lib/org/fetch-objekt-hm-delegierbar";
+import { resolveHvDashboardActions } from "@/lib/portal2/dashboard-actions";
 import {
   compareByNewestCreated,
   PORTAL_DASHBOARD_RECENT_LIMIT,
@@ -503,6 +505,65 @@ export function OrganisationPortalClient({
       });
   }, [allLeadsForFlow, angebote, auftraege, vorgaengeItems]);
 
+  const [hmDelegierbarByObjektId, setHmDelegierbarByObjektId] = useState<
+    Record<string, boolean>
+  >({});
+
+  useEffect(() => {
+    const ids = new Set<string>();
+    for (const l of [...leads, ...eingang]) {
+      if (
+        (l.hv_meldung_status ?? "").trim().toLowerCase() === "neu" &&
+        l.kunde_objekt_id?.trim()
+      ) {
+        ids.add(l.kunde_objekt_id.trim());
+      }
+    }
+    if (ids.size === 0) {
+      setHmDelegierbarByObjektId({});
+      return;
+    }
+    let cancelled = false;
+    void (async () => {
+      const entries = await Promise.all(
+        Array.from(ids).map(async (oid) => {
+          const r = await fetchObjektHmDelegierbar(oid);
+          return [oid, r.canDelegate] as const;
+        })
+      );
+      if (!cancelled) {
+        setHmDelegierbarByObjektId(Object.fromEntries(entries));
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [leads, eingang]);
+
+  const hvActionSlides = useMemo(
+    () =>
+      resolveHvDashboardActions({
+        leads,
+        eingang,
+        items: vorgaengeItems,
+        angebote: angebote as HvDashboardAngebotSlice[],
+        auftraege: auftraege as Array<{ id: string; lead_id?: string | null }>,
+        kunde,
+        objekte,
+        hmDelegierbarByObjektId,
+      }),
+    [
+      leads,
+      eingang,
+      vorgaengeItems,
+      angebote,
+      auftraege,
+      kunde,
+      objekte,
+      hmDelegierbarByObjektId,
+    ]
+  );
+
   const showWlGate = orgWhitelabelGateVisible(kunde, mitgliedRolle);
   const canCompleteWlGate = orgWhitelabelGateCanComplete(mitgliedRolle);
 
@@ -580,6 +641,8 @@ export function OrganisationPortalClient({
                 orgName={displayName}
                 kpis={hvKpis}
                 recent={recentItems}
+                actionSlides={hvActionSlides}
+                onActionRefresh={refresh}
                 heroImageUrl={portalHeaderHeroSrc("hv")}
                 onOpenFilter={openVorgaenge}
                 onOpenItem={(id) => openVorgangDetail(id)}

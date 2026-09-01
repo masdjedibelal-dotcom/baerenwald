@@ -4,6 +4,7 @@ import { useMemo, useState, useTransition } from "react";
 
 import { PortalModalShell } from "@/components/shared/PortalModalShell";
 import { portalToastError } from "@/lib/shared/portal-toast";
+import { cn } from "@/lib/utils";
 
 type ZeitraumPreset = "laufendes_jahr" | "letztes_jahr" | "12_monate" | "custom";
 
@@ -97,7 +98,7 @@ export function OrganisationVersammlungsberichtSheet({
       <div className="space-y-5">
         <div>
           <p className="portal-text-label mb-2 text-text-secondary">Zeitraum</p>
-          <div className="mb-3 flex flex-wrap gap-2">
+          <div className="portal-sheet-chips mb-3">
             {(
               [
                 ["laufendes_jahr", "Laufendes Jahr"],
@@ -110,11 +111,10 @@ export function OrganisationVersammlungsberichtSheet({
                 key={id}
                 type="button"
                 onClick={() => applyPreset(id)}
-                className={`rounded-full border px-3 py-1 text-[13px] ${
-                  preset === id
-                    ? "border-primary bg-primary/10 text-primary"
-                    : "border-border-light text-text-secondary"
-                }`}
+                className={cn(
+                  "portal-sheet-chip",
+                  preset === id && "is-active"
+                )}
               >
                 {label}
               </button>
@@ -164,7 +164,7 @@ export function OrganisationVersammlungsberichtSheet({
               checked={einzelpreise}
               onChange={(e) => setEinzelpreise(e.target.checked)}
             />
-            <span className="text-[13px] text-text-secondary">
+            <span className="portal-text-body text-text-secondary">
               Einzelpreise in der Maßnahmenliste anzeigen
             </span>
           </label>

@@ -1302,12 +1302,7 @@ export function OrganisationHvVorgangDetail({
         coverUrl={coverUrl}
         onBack={onBack}
         backLabel={onBack ? "← Vorgänge" : undefined}
-        className={cn(
-          "portal-detail-cover--bleed",
-          !onBack && "h-[150px] sm:h-[150px]"
-        )}
-        statusLabel={statusLabel}
-        statusColor={PORTAL_STATUS[displayFlowStatus].color}
+        className={cn("portal-detail-cover--bleed", !onBack && "portal-detail-hero--compact")}
         title={titel}
       />
 

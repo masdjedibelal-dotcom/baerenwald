@@ -31,6 +31,7 @@ import { PortalListeFilterBar } from "@/components/shared/PortalListeFilterBar";
 import { PortalLegalFooter } from "@/components/shared/PortalLegalFooter";
 import { PortalShell } from "@/components/shared/PortalShell";
 import { PortalHeaderSearch } from "@/components/shared/PortalHeaderSearch";
+import { usePortalRefresh } from "@/components/shared/usePortalRefresh";
 import { PortalEmptyState } from "@/components/shared/PortalStateView";
 import { buildKundeVorgaenge } from "@/lib/portal/build-kunde-vorgaenge";
 import { findKundeVorgangByQueryId } from "@/lib/portal/portal-detail-item";
@@ -42,6 +43,7 @@ import {
   portalFlowSortRank,
 } from "@/lib/portal/portal-vorgang-sort";
 import { portalListStackClass } from "@/lib/portal2/layout-chrome";
+import { resolveKundeDashboardActions } from "@/lib/portal2/dashboard-actions";
 import type {
   EigentuemerPortalEinheit,
   EigentuemerPortalMieter,
@@ -65,7 +67,10 @@ import {
 } from "@/lib/portal2/eigentuemer";
 import { buildPortalShellNav } from "@/lib/portal2/nav-items";
 import type { PortalMockStatusId } from "@/lib/portal2/status";
-import { PORTAL_STATUS, portalStatusChipStyle } from "@/lib/portal2/status";
+import {
+  portalListeStatusChipStyle,
+  portalListeStatusLabel,
+} from "@/lib/portal2/liste-status";
 
 type SectionId = "uebersicht" | "vorgaenge" | "objekte";
 
@@ -133,6 +138,7 @@ export function EigentuemerPortalClient({
   const pendingDetailIdRef = useRef<string | null>(null);
 
   const { hold, release, flash } = usePortalBusy();
+  const { refreshFlash } = usePortalRefresh();
   const detailHoldRef = useRef(false);
 
   function flashPageBusy(ms = PORTAL_BUSY_MIN_MS) {
@@ -360,6 +366,11 @@ export function EigentuemerPortalClient({
     [vorgaengeItems, flowByItemId]
   );
 
+  const kundeActionSlides = useMemo(
+    () => resolveKundeDashboardActions(vorgaengeItems),
+    [vorgaengeItems]
+  );
+
   const selectedItem = selectedId
     ? findKundeVorgangByQueryId(vorgaengeItems, selectedId)
     : null;
@@ -476,6 +487,8 @@ export function EigentuemerPortalClient({
           kundeTyp="privat"
           roleLabel={EIGENTUEMER_DASHBOARD_ROLE}
           focusRole="eigentuemer"
+          actionSlides={kundeActionSlides}
+          onActionRefresh={() => refreshFlash()}
           kpis={privatKpis}
           recent={recentItems}
           heroImageUrl={portalHeaderHeroSrc("eigentuemer")}
@@ -562,9 +575,9 @@ export function EigentuemerPortalClient({
                     selected={false}
                     title={row.title}
                     subtitle={row.subtitle}
-                    statusLabel={PORTAL_STATUS[flow].label}
+                    statusLabel={portalListeStatusLabel(flow, "privat")}
                     statusPillClass=""
-                    statusPillStyle={portalStatusChipStyle(flow)}
+                    statusPillStyle={portalListeStatusChipStyle(flow, "privat")}
                     accent={row.accent}
                     meta={row.meta}
                     showChevron

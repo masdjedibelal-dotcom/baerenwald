@@ -6,6 +6,7 @@ import { ChevronDown } from "lucide-react";
 import type { ObjektFinanzPortalPayload } from "@/lib/org/objektakte/load-objekt-finanz-portal";
 import { OrganisationVersammlungsberichtSheet } from "@/components/org/OrganisationVersammlungsberichtSheet";
 import { EinstellungenSectionCard } from "@/components/shared/PortalEinstellungenUi";
+import { PortalInlineLoading } from "@/components/shared/PortalInlineLoading";
 import { portalToastError } from "@/lib/shared/portal-toast";
 import { PORTAL_VAR } from "@/lib/portal2/tokens";
 import { cn } from "@/lib/utils";
@@ -196,7 +197,7 @@ export function OrganisationObjektFinanzPanel({ objektId }: Props) {
       ) : null}
 
       {loading ? (
-        <p className="portal-text-meta text-text-tertiary">Wird geladen …</p>
+        <PortalInlineLoading label="Kosten werden geladen" />
       ) : (
         <>
           <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-4">

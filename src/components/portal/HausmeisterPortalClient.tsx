@@ -32,6 +32,7 @@ import { PortalLegalFooter } from "@/components/shared/PortalLegalFooter";
 import { PortalRoleBadge } from "@/components/shared/PortalRoleBadge";
 import { PortalShell } from "@/components/shared/PortalShell";
 import { PortalHeaderSearch } from "@/components/shared/PortalHeaderSearch";
+import { usePortalRefresh } from "@/components/shared/usePortalRefresh";
 import { buildKundeVorgaenge } from "@/lib/portal/build-kunde-vorgaenge";
 import { findKundeVorgangByQueryId } from "@/lib/portal/portal-detail-item";
 import { buildKundeVorgangCardRows } from "@/lib/portal/portal-list-mappers";
@@ -42,6 +43,7 @@ import {
   portalFlowSortRank,
 } from "@/lib/portal/portal-vorgang-sort";
 import { portalListStackClass } from "@/lib/portal2/layout-chrome";
+import { resolveHausmeisterDashboardActions } from "@/lib/portal2/dashboard-actions";
 import type { HausmeisterPortalObjekt } from "@/lib/portal/get-hausmeister-portal-data";
 import type { MieterHvBrand } from "@/lib/portal/load-mieter-hv-brand";
 import {
@@ -66,7 +68,10 @@ import {
 } from "@/lib/portal2/hausmeister";
 import { buildPortalShellNav } from "@/lib/portal2/nav-items";
 import type { PortalMockStatusId } from "@/lib/portal2/status";
-import { PORTAL_STATUS, portalStatusChipStyle } from "@/lib/portal2/status";
+import {
+  portalListeStatusChipStyle,
+  portalListeStatusLabel,
+} from "@/lib/portal2/liste-status";
 import {
   formatObjektAdresse,
   formatObjektPlzOrt,
@@ -125,6 +130,7 @@ export function HausmeisterPortalClient({
   const pendingDetailIdRef = useRef<string | null>(null);
   const detailOpeningTimerRef = useRef<number | null>(null);
   const { hold, release, flash, busy: ctxBusy } = usePortalBusy();
+  const { refreshFlash } = usePortalRefresh();
   const detailHoldRef = useRef(false);
 
   function flashPageBusy(ms = PORTAL_BUSY_MIN_MS) {
@@ -290,6 +296,11 @@ export function HausmeisterPortalClient({
           notfall: false,
         })),
     [vorgaengeItems, flowByItemId]
+  );
+
+  const hmActionSlides = useMemo(
+    () => resolveHausmeisterDashboardActions(vorgaengeItems),
+    [vorgaengeItems]
   );
 
   const selectedItem = useMemo(
@@ -476,6 +487,8 @@ export function HausmeisterPortalClient({
             roleLabel={HAUSMEISTER_DASHBOARD_ROLE}
             focusRole="hausmeister"
             kundeTyp="privat"
+            actionSlides={hmActionSlides}
+            onActionRefresh={() => refreshFlash()}
             kpis={privatKpis}
             recent={recentItems}
             heroImageUrl={portalHeaderHeroSrc("hausmeister")}
@@ -561,9 +574,9 @@ export function HausmeisterPortalClient({
                       selected={false}
                       title={row.title}
                       subtitle={row.subtitle}
-                      statusLabel={PORTAL_STATUS[flow].label}
+                      statusLabel={portalListeStatusLabel(flow, "privat")}
                       statusPillClass=""
-                      statusPillStyle={portalStatusChipStyle(flow)}
+                      statusPillStyle={portalListeStatusChipStyle(flow, "privat")}
                       accent={row.accent}
                       meta={row.meta}
                       showChevron

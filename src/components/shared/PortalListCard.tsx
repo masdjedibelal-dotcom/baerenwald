@@ -283,9 +283,9 @@ export function PortalListCard({
       <div
         className={cn(
           "flex w-full items-stretch gap-3.5",
-          hasMedia && variant === "card" && "px-[18px] py-[17px]",
+          hasMedia && variant === "card" && "px-4 py-[15px]",
           responsiveMedia &&
-            "px-[18px] py-[17px] lg:min-w-0 lg:flex-1 lg:py-[17px] lg:pr-[18px] lg:pl-0"
+            "px-4 py-[15px] lg:min-w-0 lg:flex-1 lg:py-[15px] lg:pr-4 lg:pl-0"
         )}
       >
         {showCheckbox ? (

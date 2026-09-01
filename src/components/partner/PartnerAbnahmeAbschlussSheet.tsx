@@ -8,6 +8,7 @@ import { PortalDetailError } from "@/components/shared/PortalDetailUi";
 import { PartnerKiKorrekturField } from "@/components/partner/PartnerKiKorrekturField";
 import { PortalContentBusy } from "@/components/shared/PortalContentBusy";
 import { PortalModalShell } from "@/components/shared/PortalModalShell";
+import { PortalSheetStepProgress } from "@/components/shared/PortalSheetUi";
 import { usePortalRefresh } from "@/components/shared/usePortalRefresh";
 import { SignatureCanvas } from "@/components/shared/SignatureCanvas";
 import {
@@ -65,33 +66,6 @@ const ERGEBNIS_OPTIONS: PortalAbnahmeErgebnis[] = [
   "mit_vorbehalt",
   "verweigert",
 ];
-
-function StepProgress({ stepIndex }: { stepIndex: number }) {
-  return (
-    <div className="mb-4 flex items-center gap-1.5" aria-hidden>
-      {STEPS.map((s, i) => {
-        const done = i < stepIndex;
-        const act = i === stepIndex;
-        return (
-          <div key={s.id} className="flex min-w-0 flex-1 flex-col items-center gap-1">
-            <div
-              className="h-1 w-full rounded-full"
-              style={{
-                background: done || act ? PORTAL_VAR.primary : PORTAL_VAR.line,
-              }}
-            />
-            <span
-              className="hidden truncate text-[10px] font-semibold sm:block"
-              style={{ color: act ? PORTAL_VAR.ink : PORTAL_VAR.faint }}
-            >
-              {s.label}
-            </span>
-          </div>
-        );
-      })}
-    </div>
-  );
-}
 
 export function PartnerAbnahmeAbschlussSheet({
   open,
@@ -455,7 +429,7 @@ export function PartnerAbnahmeAbschlussSheet({
         />
       ) : (
         <div className="flex min-h-0 flex-1 flex-col">
-          <StepProgress stepIndex={stepIndex} />
+          <PortalSheetStepProgress steps={STEPS} stepIndex={stepIndex} />
 
           <div className="min-h-0 flex-1 space-y-4 overflow-y-auto pb-2">
             {error ? <PortalDetailError message={error} /> : null}
@@ -463,10 +437,7 @@ export function PartnerAbnahmeAbschlussSheet({
             {step === "leistungen" ? (
               <>
                 {undokumentiertePositionen.length > 0 ? (
-                  <p
-                    className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2.5 text-[12.5px] leading-snug text-amber-950"
-                    role="status"
-                  >
+                  <p className="portal-sheet-notice portal-sheet-notice--warn" role="status">
                     {undokumentiertePositionen.length === 1
                       ? "1 Position noch nicht dokumentiert."
                       : `${undokumentiertePositionen.length} Positionen noch nicht dokumentiert.`}{" "}
@@ -475,16 +446,15 @@ export function PartnerAbnahmeAbschlussSheet({
                 ) : null}
 
                 <div className="flex items-center justify-between gap-2">
-                  <p className="text-[13px]" style={{ color: PORTAL_VAR.sub }}>
+                  <p className="portal-text-meta">
                     {punkte.length === 0
                       ? "Erledigte Positionen werden vorausgefüllt."
                       : `${punkte.length} Leistung${punkte.length === 1 ? "" : "en"} im Protokoll`}
                   </p>
                   <button
                     type="button"
-                    className="inline-flex items-center gap-1 rounded-full border px-3 py-1.5 text-[12.5px] font-semibold"
+                    className="portal-sheet-chip"
                     style={{
-                      borderColor: PORTAL_VAR.line,
                       color: PORTAL_VAR.primary,
                     }}
                     onClick={() => setAddMode("wahl")}
@@ -509,7 +479,7 @@ export function PartnerAbnahmeAbschlussSheet({
                       return (
                         <li
                           key={p.id}
-                          className="rounded-xl border border-border-light bg-white px-3 py-2.5"
+                          className="portal-sheet-card"
                         >
                           <div className="flex items-start gap-2">
                             <input
@@ -540,7 +510,7 @@ export function PartnerAbnahmeAbschlussSheet({
                           </div>
                           <button
                             type="button"
-                            className="mt-1.5 text-[12px] font-semibold"
+                            className="portal-text-meta mt-1.5"
                             style={{ color: PORTAL_VAR.primary }}
                             onClick={() =>
                               setExpandedPunktId(openDetail ? null : p.id)
@@ -580,7 +550,7 @@ export function PartnerAbnahmeAbschlussSheet({
 
             {step === "maengel" ? (
               <>
-                <p className="text-[13px] leading-snug" style={{ color: PORTAL_VAR.sub }}>
+                <p className="portal-text-meta leading-snug">
                   Optional. Ohne Mängel läuft die Abnahme ohne Vorbehalt.
                 </p>
 
@@ -597,7 +567,7 @@ export function PartnerAbnahmeAbschlussSheet({
                   </p>
                   <button
                     type="button"
-                    className="inline-flex items-center gap-1 rounded-full border px-3 py-1.5 text-[12.5px] font-semibold"
+                    className="portal-sheet-chip"
                     style={{
                       borderColor: PORTAL_VAR.line,
                       color: PORTAL_VAR.primary,
@@ -647,12 +617,12 @@ export function PartnerAbnahmeAbschlussSheet({
                           </button>
                         </div>
                         {m.beschreibung?.trim() ? (
-                          <p className="mt-1.5 text-[12.5px] leading-snug text-text-secondary">
+                          <p className="portal-text-meta mt-1.5 leading-snug text-text-secondary">
                             {m.beschreibung}
                           </p>
                         ) : null}
                         {m.frist ? (
-                          <p className="mt-1 text-[12px] text-text-tertiary">
+                          <p className="portal-text-meta mt-1 text-text-tertiary">
                             Frist: {m.frist}
                           </p>
                         ) : null}
@@ -666,7 +636,7 @@ export function PartnerAbnahmeAbschlussSheet({
             {step === "angaben" ? (
               <div className="space-y-3.5">
                 <label className="block space-y-1">
-                  <span className="text-[12px] font-semibold text-text-tertiary">
+                  <span className="portal-sheet-field-label">
                     Projekt *
                   </span>
                   <input
@@ -680,7 +650,7 @@ export function PartnerAbnahmeAbschlussSheet({
 
                 <div className="grid grid-cols-1 gap-3">
                   <label className="block space-y-1">
-                    <span className="text-[12px] font-semibold text-text-tertiary">
+                    <span className="portal-sheet-field-label">
                       Datum *
                     </span>
                     <input
@@ -692,7 +662,7 @@ export function PartnerAbnahmeAbschlussSheet({
                     />
                   </label>
                   <label className="block space-y-1">
-                    <span className="text-[12px] font-semibold text-text-tertiary">
+                    <span className="portal-sheet-field-label">
                       Ort *
                     </span>
                     <input
@@ -706,7 +676,7 @@ export function PartnerAbnahmeAbschlussSheet({
                 </div>
 
                 <label className="block space-y-1">
-                  <span className="text-[12px] font-semibold text-text-tertiary">
+                  <span className="portal-sheet-field-label">
                     Handwerker vor Ort *
                   </span>
                   <input
@@ -719,7 +689,7 @@ export function PartnerAbnahmeAbschlussSheet({
                 </label>
 
                 <fieldset className="space-y-2">
-                  <legend className="text-[12px] font-semibold text-text-tertiary">
+                  <legend className="portal-sheet-field-label">
                     Ergebnis
                   </legend>
                   <div className="flex flex-col gap-2">
@@ -763,7 +733,7 @@ export function PartnerAbnahmeAbschlussSheet({
                 ) : (
                   <button
                     type="button"
-                    className="text-[13px] font-semibold"
+                    className="portal-text-body font-semibold"
                     style={{ color: PORTAL_VAR.primary }}
                     onClick={() => setShowNotiz(true)}
                   >
@@ -775,11 +745,11 @@ export function PartnerAbnahmeAbschlussSheet({
 
             {step === "sig_hw" ? (
               <div className="space-y-4">
-                <p className="text-[13px] leading-snug" style={{ color: PORTAL_VAR.sub }}>
+                <p className="portal-text-meta leading-snug">
                   Bitte mit dem Namen unterschreiben, der im Protokoll erscheint.
                 </p>
                 <label className="block space-y-1.5">
-                  <span className="text-[12px] font-semibold text-text-tertiary">
+                  <span className="portal-sheet-field-label">
                     Handwerker vor Ort *
                   </span>
                   <input
@@ -790,7 +760,7 @@ export function PartnerAbnahmeAbschlussSheet({
                   />
                 </label>
                 <div>
-                  <p className="mb-1.5 text-[12px] font-semibold text-text-tertiary">
+                  <p className="mb-1.5 portal-sheet-field-label">
                     Signatur Handwerker *
                   </p>
                   <SignatureCanvas
@@ -805,11 +775,11 @@ export function PartnerAbnahmeAbschlussSheet({
 
             {step === "sig_kunde" ? (
               <div className="space-y-4">
-                <p className="text-[13px] leading-snug" style={{ color: PORTAL_VAR.sub }}>
+                <p className="portal-text-meta leading-snug">
                   Gerät dem Kunden geben — Name und Unterschrift vor Ort.
                 </p>
                 <label className="block space-y-1.5">
-                  <span className="text-[12px] font-semibold text-text-tertiary">
+                  <span className="portal-sheet-field-label">
                     Kunde vor Ort *
                   </span>
                   <input
@@ -820,7 +790,7 @@ export function PartnerAbnahmeAbschlussSheet({
                   />
                 </label>
                 <div>
-                  <p className="mb-1.5 text-[12px] font-semibold text-text-tertiary">
+                  <p className="mb-1.5 portal-sheet-field-label">
                     Signatur Kunde vor Ort *
                   </p>
                   <SignatureCanvas
@@ -872,7 +842,7 @@ export function PartnerAbnahmeAbschlussSheet({
             </div>
             {step === "sig_kunde" && !canSubmit ? (
               <p
-                className="mt-2 text-center text-[12px]"
+                className="portal-text-meta mt-2 text-center"
                 style={{ color: PORTAL_VAR.faint }}
               >
                 {submitBlockReason() ??
@@ -927,7 +897,7 @@ export function PartnerAbnahmeAbschlussSheet({
               </div>
             ) : null}
             {addMode === "wahl" && !availableLeistungen.length ? (
-              <p className="text-[12px] text-text-tertiary">
+              <p className="portal-text-meta text-text-tertiary">
                 Alle zugewiesenen Leistungen sind bereits hinzugefügt.
               </p>
             ) : null}
@@ -935,7 +905,7 @@ export function PartnerAbnahmeAbschlussSheet({
             {addMode === "leer" || addMode === "mangel" ? (
               <div className="space-y-3">
                 <label className="block space-y-1">
-                  <span className="text-[12px] font-semibold text-text-tertiary">
+                  <span className="portal-sheet-field-label">
                     Titel *
                   </span>
                   <input
@@ -956,7 +926,7 @@ export function PartnerAbnahmeAbschlussSheet({
                 />
                 {addMode === "mangel" ? (
                   <label className="block space-y-1">
-                    <span className="text-[12px] font-semibold text-text-tertiary">
+                    <span className="portal-sheet-field-label">
                       Frist (optional)
                     </span>
                     <input
@@ -992,10 +962,8 @@ export function PartnerAbnahmeAbschlussSheet({
                       <button
                         type="button"
                         className={cn(
-                          "w-full rounded-lg border px-3 py-2.5 text-left text-[13.5px] font-semibold",
-                          draftLeistungId === l.id
-                            ? "border-accent bg-accent-light"
-                            : "border-border-light bg-white"
+                          "portal-sheet-card portal-sheet-card--selectable",
+                          draftLeistungId === l.id && "is-active"
                         )}
                         onClick={() => {
                           setDraftLeistungId(l.id);
@@ -1003,10 +971,10 @@ export function PartnerAbnahmeAbschlussSheet({
                           setDraftBeschreibung(l.beschreibung?.trim() || "");
                         }}
                       >
-                        {l.leistung_name}
+                        <span className="portal-text-card-title">{l.leistung_name}</span>
                         {String(l.leistung_status ?? "").toLowerCase() ===
                         "erledigt" ? (
-                          <span className="mt-0.5 block text-[11.5px] font-medium text-text-tertiary">
+                          <span className="portal-text-meta mt-0.5 block text-text-tertiary">
                             dokumentiert
                           </span>
                         ) : null}
@@ -1017,7 +985,7 @@ export function PartnerAbnahmeAbschlussSheet({
                 {draftLeistungId ? (
                   <>
                     <label className="block space-y-1">
-                      <span className="text-[12px] font-semibold text-text-tertiary">
+                      <span className="portal-sheet-field-label">
                         Titel
                       </span>
                       <input

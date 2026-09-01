@@ -15,6 +15,7 @@ import { PartnerProfilPanel } from "@/components/partner/PartnerProfilPanel";
 import { VorgangCard } from "@/components/partner/VorgangCard";
 import { PortalListCard } from "@/components/shared/PortalListCard";
 import { portalListStackClass } from "@/lib/portal2/layout-chrome";
+import { resolvePartnerDashboardActions } from "@/lib/portal2/dashboard-actions";
 import {
   PARTNER_LIST_PAGE_SIZE,
   PartnerListPagination,
@@ -325,6 +326,11 @@ export function PartnerClient({
       .slice(0, 4)
       .map((v) => mapVorgangToCard(v));
   }, [vorgaengeState]);
+
+  const partnerActionSlides = useMemo(
+    () => resolvePartnerDashboardActions(vorgaengeState),
+    [vorgaengeState]
+  );
 
   useEffect(() => {
     const rawSection = searchParams.get("section")?.trim();
@@ -918,6 +924,8 @@ export function PartnerClient({
             <PartnerHwDashboard
               firmName={partnerFooter}
               heroImageUrl={portalHeaderHeroSrc("handwerker")}
+              actionSlides={partnerActionSlides}
+              onActionRefresh={() => refreshFlash()}
               beforeTiles={
                 <PartnerOnboardingReminderBanner
                   handwerker={handwerker}

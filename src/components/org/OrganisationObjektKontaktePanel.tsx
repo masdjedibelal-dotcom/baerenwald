@@ -11,6 +11,7 @@ import {
   EinstellungenSectionCard,
 } from "@/components/shared/PortalEinstellungenUi";
 import { PortalInboxEmpty } from "@/components/shared/PortalEmptyState";
+import { PortalInlineLoading } from "@/components/shared/PortalInlineLoading";
 import { orgPortalToast, portalToastError } from "@/lib/shared/portal-toast";
 
 export type ObjektKontaktVorOrt = {
@@ -203,7 +204,7 @@ export function OrganisationObjektKontaktePanel({ objektId }: Props) {
         addLabel="Kontakt hinzufügen"
       >
         {loading ? (
-          <p className="text-[13px] text-text-secondary">Laden…</p>
+          <PortalInlineLoading label="Kontakte werden geladen" />
         ) : items.length === 0 ? (
           <PortalInboxEmpty title="Noch keine Kontakte" compact />
         ) : (

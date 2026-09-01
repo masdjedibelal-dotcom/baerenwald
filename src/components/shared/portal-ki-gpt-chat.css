@@ -27,7 +27,7 @@
 .portal-ki-gpt-ai-label {
   margin: 0;
   padding: 0.55rem 1rem 0;
-  font-size: 12px;
+  font-size: calc(12px * var(--p2-type-scale, 1.1));
   line-height: 1.35;
   color: #5c6b64;
   font-weight: 600;
@@ -63,7 +63,7 @@
   border-radius: 9999px;
   background: #fff;
   padding: 0.45rem 0.85rem;
-  font-size: 13px;
+  font-size: calc(13px * var(--p2-type-scale, 1.1));
   font-weight: 600;
   color: #1e1c1a;
   cursor: pointer;
@@ -78,7 +78,7 @@
   max-width: min(92%, 34rem);
   border-radius: 1.1rem;
   padding: 0.7rem 0.9rem;
-  font-size: 14px;
+  font-size: calc(14px * var(--p2-type-scale, 1.1));
   line-height: 1.45;
 }
 
@@ -154,7 +154,7 @@
   display: inline-flex;
   align-items: center;
   gap: 0.45rem;
-  font-size: 12.5px;
+  font-size: calc(12.5px * var(--p2-type-scale, 1.1));
   color: #5b6470;
 }
 
@@ -168,7 +168,7 @@
 
 .portal-ki-gpt-draft-label {
   margin: 0 0 0.35rem;
-  font-size: 11px;
+  font-size: calc(11px * var(--p2-type-scale, 1.1));
   font-weight: 700;
   letter-spacing: 0.04em;
   text-transform: uppercase;
@@ -177,7 +177,7 @@
 
 .portal-ki-gpt-draft-text {
   margin: 0 0 0.75rem;
-  font-size: 13.5px;
+  font-size: calc(13.5px * var(--p2-type-scale, 1.1));
   line-height: 1.45;
   color: #1e1c1a;
 }
@@ -197,7 +197,7 @@
 
 .portal-ki-gpt-error {
   margin: 0 1rem 0.5rem;
-  font-size: 12.5px;
+  font-size: calc(12.5px * var(--p2-type-scale, 1.1));
   font-weight: 600;
   color: #b42318;
 }
@@ -244,7 +244,7 @@
   background: transparent;
   padding: 0.4rem 0.25rem;
   font: inherit;
-  font-size: 15px;
+  font-size: calc(15px * var(--p2-type-scale, 1.1));
   line-height: 22px;
   color: #1e1c1a;
   outline: none;

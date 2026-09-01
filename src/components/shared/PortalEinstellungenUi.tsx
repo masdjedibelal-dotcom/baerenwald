@@ -545,9 +545,7 @@ export function EinstellungenSheetCard({
   return (
     <div
       className={cn(
-        nested
-          ? PORTAL_NESTED_PANEL_CLASS
-          : "rounded-[11px] border border-border-default bg-[var(--p2-panel,#fff)] px-3.5 py-[13px] shadow-sm"
+        nested ? PORTAL_NESTED_PANEL_CLASS : "portal-section-card px-4 py-3.5"
       )}
     >
       <p className="portal-text-card-title">{title}</p>

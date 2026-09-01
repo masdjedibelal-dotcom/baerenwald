@@ -104,6 +104,7 @@ import {
   resolveLeadPortalFlowStatus,
 } from "@/lib/portal2/hv-dashboard";
 import { hvListeChipMatches } from "@/lib/portal2/hv-liste";
+import { resolveKundeDashboardActions } from "@/lib/portal2/dashboard-actions";
 import {
   buildPrivatDashboardKpis,
   PRIVAT_LISTE_CHIPS,
@@ -121,9 +122,11 @@ import {
 import { buildPortalShellNav } from "@/lib/portal2/nav-items";
 import { portalDetailStatusPillClass } from "@/lib/shared/portal-detail-format";
 import {
-  PORTAL_STATUS,
+  portalListeStatusChipStyle,
+  portalListeStatusLabel,
+} from "@/lib/portal2/liste-status";
+import {
   portalMieterStatusLabel,
-  portalStatusChipStyle,
   type PortalMockStatusId,
 } from "@/lib/portal2/status";
 import type { MieterHvBrand } from "@/lib/portal/load-mieter-hv-brand";
@@ -469,6 +472,11 @@ export function PortalClient({
 
   const needsActionCount = useMemo(
     () => countKundeVorgaengeNeedsAction(vorgaengeItems),
+    [vorgaengeItems]
+  );
+
+  const kundeActionSlides = useMemo(
+    () => resolveKundeDashboardActions(vorgaengeItems),
     [vorgaengeItems]
   );
 
@@ -986,14 +994,17 @@ export function PortalClient({
     const flow = flowByItemId.get(row.id);
     const mockListe = hvPortalMode || (isPrivatLike && !hvPortalMode);
     const mieterStatus = Boolean(row.hvMieterView);
+    const listVariant = hvPortalMode ? "hv" : "privat";
     const statusLabel =
       mieterStatus
         ? row.statusLabel
         : mockListe && flow
-          ? PORTAL_STATUS[flow].label
+          ? portalListeStatusLabel(flow, listVariant)
           : row.statusLabel;
     const statusPillStyle =
-      mockListe && flow ? portalStatusChipStyle(flow) : undefined;
+      mockListe && flow
+        ? portalListeStatusChipStyle(flow, listVariant)
+        : undefined;
 
     const leadKey = row.leadId ?? row.id;
     const rowBt = mergeBautagebuchForListRow(row, bautagebuchByLeadId);
@@ -1318,6 +1329,8 @@ export function PortalClient({
               profileName={kunde.name?.trim() || "MeinBärenwald"}
               kundeTyp={kundeTyp === "gewerbe" ? "gewerbe" : "privat"}
               focusRole={whiteLabelPortal ? "mieter" : "privat"}
+              actionSlides={kundeActionSlides}
+              onActionRefresh={() => refreshFlash()}
               roleLabel={
                 whiteLabelPortal
                   ? "Mieter"
@@ -1355,6 +1368,8 @@ export function PortalClient({
               profileName={kunde.name?.trim() || "MeinBärenwald"}
               kundeTyp="privat"
               focusRole="privat"
+              actionSlides={kundeActionSlides}
+              onActionRefresh={() => refreshFlash()}
               roleLabel="Privatkunde"
               kpis={privatKpis}
               recent={recentItems}

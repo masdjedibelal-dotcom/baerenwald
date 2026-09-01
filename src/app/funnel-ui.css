@@ -77,7 +77,7 @@
 }
 
 .funnel-tile-emoji {
-  font-size: 22px;
+  font-size: calc(22px * var(--p2-type-scale, 1.1));
   line-height: 1;
   margin-bottom: 4px;
   display: block;
@@ -99,14 +99,14 @@
 }
 
 .funnel-tile-label {
-  font-size: 14px;
+  font-size: calc(14px * var(--p2-type-scale, 1.1));
   font-weight: 600;
   color: var(--fl-text);
   margin: 0;
 }
 
 .funnel-tile-hint {
-  font-size: 12px;
+  font-size: calc(12px * var(--p2-type-scale, 1.1));
   font-weight: 400;
   color: var(--fl-text-2);
   line-height: 1.4;
@@ -150,7 +150,7 @@
   border: 1.5px solid var(--fl-border);
   border-radius: 12px;
   padding: 12px 14px;
-  font-size: 16px;
+  font-size: calc(16px * var(--p2-type-scale, 1.1));
   font-weight: 400;
   font-family: var(--fl-font-sans);
   color: var(--fl-text);
@@ -175,7 +175,7 @@
   border: 1px solid var(--fl-border);
   border-radius: 12px;
   padding: 12px 14px;
-  font-size: 16px;
+  font-size: calc(16px * var(--p2-type-scale, 1.1));
   font-family: var(--fl-font-sans);
   color: var(--fl-text);
   background: var(--fl-bg-card);
@@ -236,7 +236,7 @@
   border-radius: 14px;
   background: #f9faf9;
   border: 1px solid rgba(20, 32, 25, 0.1);
-  font-size: 15px;
+  font-size: calc(15px * var(--p2-type-scale, 1.1));
   font-weight: 600;
   box-shadow: none;
 }
@@ -440,7 +440,7 @@
   border: none;
   border-radius: 999px;
   padding: 10px 20px;
-  font-size: 14px;
+  font-size: calc(14px * var(--p2-type-scale, 1.1));
   font-weight: 700;
   font-family: var(--fl-font-sans, system-ui, sans-serif);
   cursor: pointer;
@@ -465,7 +465,7 @@
   flex-wrap: wrap;
   padding-top: 2px;
   margin-top: 2px;
-  font-size: 10px;
+  font-size: calc(10px * var(--p2-type-scale, 1.1));
   color: var(--fl-text-3, #7a746c);
 }
 
@@ -497,7 +497,7 @@
   border: 1.5px solid var(--fl-border, rgba(30, 28, 26, 0.08));
   border-radius: 999px;
   padding: 9px 18px;
-  font-size: 13px;
+  font-size: calc(13px * var(--p2-type-scale, 1.1));
   font-weight: 600;
   font-family: var(--fl-font-sans, system-ui, sans-serif);
   color: var(--fl-text-2, #524e4a);

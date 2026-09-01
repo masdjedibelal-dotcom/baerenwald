@@ -34,7 +34,7 @@ import {
   portalToastError,
 } from "@/lib/shared/portal-toast";
 import { usePortalBusy } from "@/components/shared/PortalBusyContext";
-import { PortalContentBusy } from "@/components/shared/PortalContentBusy";
+import { PortalInlineLoading } from "@/components/shared/PortalInlineLoading";
 
 type Einheit = {
   id: string;
@@ -668,11 +668,7 @@ export function OrganisationObjektEinheitenTab({
         addLabel="Einheit hinzufügen"
       >
       {loading ? (
-        <PortalContentBusy
-          title="Einheiten werden geladen…"
-          body="Einen Moment bitte."
-          className="!min-h-[12rem] !py-8"
-        />
+        <PortalInlineLoading label="Einheiten werden geladen" />
       ) : einheiten.length === 0 ? (
         <PortalInboxEmpty title="Noch keine Einheiten" compact />
       ) : (

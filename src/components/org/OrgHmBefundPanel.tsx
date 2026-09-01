@@ -19,9 +19,16 @@ import {
   type LeadBefundPunktStatus,
   type LeadBefundRow,
 } from "@/app/actions/lead-befund";
-import { PortalContentBusy } from "@/components/shared/PortalContentBusy";
+import { PortalInlineLoading } from "@/components/shared/PortalInlineLoading";
 import { PortalKiAssistField } from "@/components/shared/PortalKiAssistField";
 import { PortalModalShell } from "@/components/shared/PortalModalShell";
+import {
+  PortalSheetBack,
+  PortalSheetLead,
+  PortalSheetOption,
+  PortalSheetStack,
+  PortalSheetStepProgress,
+} from "@/components/shared/PortalSheetUi";
 import { FileUploadField } from "@/components/shared/FileUploadField";
 import { usePortalBusy } from "@/components/shared/PortalBusyContext";
 import { PortalActionMenu } from "@/components/shared/PortalActionMenu";
@@ -106,33 +113,6 @@ function ergebnisLabel(ergebnis: LeadBefundErgebnis): string {
   if (ergebnis === "selbst_erledigt") return "Selbst erledigt";
   if (ergebnis === "fachfirma_akut") return "Fachfirma — Akut";
   return "Fachfirma — Angebot";
-}
-
-function StepChrome({ stepIndex }: { stepIndex: number }) {
-  return (
-    <div className="mb-4 flex items-center gap-1.5" aria-hidden>
-      {SHEET_STEPS.map((s, i) => {
-        const done = i < stepIndex;
-        const act = i === stepIndex;
-        return (
-          <div key={s.id} className="flex min-w-0 flex-1 flex-col items-center gap-1">
-            <div
-              className="h-1 w-full rounded-full"
-              style={{
-                background: done || act ? PORTAL_VAR.primary : PORTAL_VAR.line,
-              }}
-            />
-            <span
-              className="hidden truncate text-[10px] font-semibold sm:block"
-              style={{ color: act ? PORTAL_VAR.ink : PORTAL_VAR.faint }}
-            >
-              {s.label}
-            </span>
-          </div>
-        );
-      })}
-    </div>
-  );
 }
 
 function StatusChip({
@@ -598,10 +578,7 @@ export function OrgHmBefundPanel({
   return (
     <div className="space-y-3.5">
       {loading ? (
-        <PortalContentBusy
-          title="Befund wird geladen…"
-          body="Einen Moment — wir laden die Prüfpunkte."
-        />
+        <PortalInlineLoading label="Befund wird geladen" />
       ) : null}
       {error ? (
         <p className="portal-text-meta font-semibold text-red-700" role="alert">
@@ -968,99 +945,61 @@ export function OrgHmBefundPanel({
         title="Prüfung abschließen"
         subtitle="Selbst erledigt oder Fachfirma nötig"
       >
-        <StepChrome stepIndex={stepIndex} />
+        <PortalSheetStepProgress steps={SHEET_STEPS} stepIndex={stepIndex} />
 
         {sheetStep === "wahl" ? (
-          <div className="space-y-3">
-            <p className="text-[13px]" style={{ color: PORTAL_VAR.sub }}>
-              Wie soll der Vorgang weiterlaufen?
-            </p>
-            <button
-              type="button"
-              className={cn(
-                "w-full rounded-xl border px-4 py-3 text-left text-[13px] font-semibold"
-              )}
-              style={{ borderColor: PORTAL_VAR.line }}
-              onClick={() => {
-                setPendingErgebnis("selbst_erledigt");
-                setSheetStep("bestaetigen");
-              }}
-            >
-              Selbst erledigt
-              <span
-                className="mt-0.5 block text-[12px] font-normal"
-                style={{ color: PORTAL_VAR.sub }}
-              >
-                Kein Auftrag an Bärenwald — Vorgang wird geschlossen.
-              </span>
-            </button>
-            <button
-              type="button"
-              className="w-full rounded-xl border px-4 py-3 text-left text-[13px] font-semibold"
-              style={{ borderColor: PORTAL_VAR.line }}
-              onClick={() => setSheetStep("fachfirma")}
-            >
-              An Bärenwald weitergeben
-              <span
-                className="mt-0.5 block text-[12px] font-normal"
-                style={{ color: PORTAL_VAR.sub }}
-              >
-                Fachfirma nötig — Bärenwald übernimmt.
-              </span>
-            </button>
-          </div>
+          <>
+            <PortalSheetLead>Wie soll der Vorgang weiterlaufen?</PortalSheetLead>
+            <PortalSheetStack>
+              <PortalSheetOption
+                title="Selbst erledigt"
+                subtitle="Kein Auftrag an Bärenwald — Vorgang wird geschlossen."
+                onClick={() => {
+                  setPendingErgebnis("selbst_erledigt");
+                  setSheetStep("bestaetigen");
+                }}
+              />
+              <PortalSheetOption
+                title="An Bärenwald weitergeben"
+                subtitle="Fachfirma nötig — Bärenwald übernimmt."
+                onClick={() => setSheetStep("fachfirma")}
+              />
+            </PortalSheetStack>
+          </>
         ) : null}
 
         {sheetStep === "fachfirma" ? (
-          <div className="space-y-3">
-            <button
-              type="button"
-              className="text-[12.5px] font-semibold"
-              style={{ color: PORTAL_VAR.primary }}
-              onClick={() => setSheetStep("wahl")}
-            >
-              ← Zurück
-            </button>
-            <button
-              type="button"
-              className="w-full rounded-xl border px-4 py-3 text-left text-[13px] font-semibold"
-              style={{ borderColor: PORTAL_VAR.line }}
-              onClick={() => {
-                setPendingErgebnis("fachfirma_angebot");
-                setSheetStep("bestaetigen");
-              }}
-            >
-              Angebot einholen
-            </button>
-            <button
-              type="button"
-              className="w-full rounded-xl border px-4 py-3 text-left text-[13px] font-semibold"
-              style={{ borderColor: PORTAL_VAR.line }}
-              onClick={() => {
-                setPendingErgebnis("fachfirma_akut");
-                setSheetStep("bestaetigen");
-              }}
-            >
-              Akut — sofortiger Einsatz
-            </button>
-          </div>
+          <>
+            <PortalSheetBack onClick={() => setSheetStep("wahl")} />
+            <PortalSheetStack>
+              <PortalSheetOption
+                title="Angebot einholen"
+                onClick={() => {
+                  setPendingErgebnis("fachfirma_angebot");
+                  setSheetStep("bestaetigen");
+                }}
+              />
+              <PortalSheetOption
+                title="Akut — sofortiger Einsatz"
+                onClick={() => {
+                  setPendingErgebnis("fachfirma_akut");
+                  setSheetStep("bestaetigen");
+                }}
+              />
+            </PortalSheetStack>
+          </>
         ) : null}
 
         {sheetStep === "bestaetigen" && pendingErgebnis ? (
           <div className="space-y-4">
-            <button
-              type="button"
-              className="text-[12.5px] font-semibold"
-              style={{ color: PORTAL_VAR.primary }}
+            <PortalSheetBack
               onClick={() =>
                 setSheetStep(
                   pendingErgebnis === "selbst_erledigt" ? "wahl" : "fachfirma"
                 )
               }
-            >
-              ← Zurück
-            </button>
-            <p className="text-[13px]" style={{ color: PORTAL_VAR.ink }}>
+            />
+            <p className="portal-text-body font-semibold text-text-primary">
               {pendingErgebnis === "selbst_erledigt"
                 ? "Vorgang als vom Hausmeister erledigt abschließen?"
                 : pendingErgebnis === "fachfirma_akut"

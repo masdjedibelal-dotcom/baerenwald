@@ -22,10 +22,10 @@ export type PortalDetailChrome = "card" | "flat" | "responsive";
 export const PORTAL_LIST_VARIANT_DEFAULT: PortalListVariant = "responsive";
 export const PORTAL_DETAIL_CHROME_DEFAULT: PortalDetailChrome = "responsive";
 
-/** Wrapper um Vorgangslisten — gestapelte weiße Karten mit Abstand. */
+/** Wrapper um Vorgangslisten — gestapelte weiße Karten mit Abstand (wie Dashboard „Zuletzt“). */
 export function portalListStackClass(variant: PortalListVariant = "responsive"): string {
   if (variant === "row") return "portal-list-panel portal-list-rows";
-  return "portal-list-stack flex flex-col gap-3.5";
+  return "portal-list-stack flex flex-col";
 }
 
 /** Klassen für eine Listenzeile/-karte. */
@@ -42,7 +42,7 @@ export function portalListItemClass(
     );
   }
   return cn(
-    "portal-list-card flex w-full items-stretch gap-3.5 rounded-[20px] border-0 px-[18px] py-[17px] text-left transition-shadow",
+    "portal-list-card flex w-full items-stretch gap-3 border-0 bg-white px-4 py-[15px] text-left transition-shadow rounded-[18px]",
     selected
       ? "ring-2 ring-[var(--org-primary,var(--p2-primary))]/25"
       : "hover:shadow-[var(--p2-shadow-hover)]"

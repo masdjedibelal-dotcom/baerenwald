@@ -14,17 +14,15 @@ export type PortalDetailCoverProps = {
   children?: ReactNode;
   className?: string;
   editLabel?: string;
-  /** Deep Green: Status-Glas-Pill + Titel im Cover */
+  /** @deprecated Status nur noch in Kopfkarte / Timeline — nicht im Hero. */
   statusLabel?: string | null;
+  /** @deprecated */
   statusColor?: string | null;
   title?: string | null;
 };
 
-const COVER_FALLBACK_GRADIENT =
-  "linear-gradient(135deg, #1A3D2B 0%, #2E7D52 60%, #0f766e 100%)";
-
 /**
- * Detail-Cover 200 px — Deep Green Overlay, Zurück-Pill, Status+Titel unten.
+ * Detail-Hero — gleiche Vorlage wie Dashboard (grün + dezentes Cover-Bild).
  */
 export function PortalDetailCover({
   coverUrl,
@@ -34,8 +32,6 @@ export function PortalDetailCover({
   children,
   className,
   editLabel = "Bearbeiten",
-  statusLabel,
-  statusColor,
   title,
 }: PortalDetailCoverProps) {
   const src = resolveObjektCoverSrc(coverUrl);
@@ -45,33 +41,24 @@ export function PortalDetailCover({
     setFailed(false);
   }, [src]);
 
-  const showCaption = Boolean(title?.trim() || statusLabel?.trim());
+  const showTitle = Boolean(title?.trim());
 
   return (
-    <div
+    <section
       className={cn(
-        "portal-detail-cover relative w-full shrink-0 overflow-hidden",
+        "portal-dash-hero portal-detail-hero relative w-full shrink-0 overflow-hidden",
         className
       )}
     >
-      {!failed ? (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img
-          key={src}
-          src={src}
-          alt=""
-          className="absolute inset-0 h-full w-full object-cover"
-          onError={() => setFailed(true)}
-        />
-      ) : (
+      {src && !failed ? (
         <div
-          className="absolute inset-0"
-          style={{ background: COVER_FALLBACK_GRADIENT }}
+          className="portal-dash-hero-bg"
+          style={{ backgroundImage: `url(${src})` }}
           aria-hidden
         />
-      )}
+      ) : null}
 
-      <div className="portal-detail-cover-overlay" aria-hidden />
+      <div className="portal-dash-hero-scrim" aria-hidden />
 
       {onBack ? (
         <button
@@ -95,27 +82,13 @@ export function PortalDetailCover({
         </button>
       ) : null}
 
-      {children ? (
-        <div className="portal-detail-cover-caption">{children}</div>
-      ) : showCaption ? (
-        <div className="portal-detail-cover-caption">
-          {statusLabel?.trim() ? (
-            <span className="portal-detail-cover-status">
-              <span
-                className="portal-detail-cover-status-dot"
-                style={{
-                  background: statusColor || "var(--p2-primary, #2e7d52)",
-                }}
-                aria-hidden
-              />
-              {statusLabel}
-            </span>
-          ) : null}
-          {title?.trim() ? (
-            <h1 className="portal-detail-cover-title">{title}</h1>
-          ) : null}
-        </div>
-      ) : null}
-    </div>
+      <div className="portal-detail-hero-inner">
+        {children ? (
+          children
+        ) : showTitle ? (
+          <h1 className="portal-dash-hero-name">{title}</h1>
+        ) : null}
+      </div>
+    </section>
   );
 }

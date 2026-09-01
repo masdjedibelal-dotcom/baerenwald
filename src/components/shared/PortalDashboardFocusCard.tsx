@@ -172,14 +172,14 @@ export function PortalServiceVersprechenStrip({
       </p>
       <div className="portal-dash-sla-metrics">
         <div className="portal-dash-sla-metric">
-          <MockIcon n="zap" ctx="nav" size={14} className="text-white/70" />
+          <MockIcon n="zap" ctx="sidebar" size={14} />
           <span className="portal-dash-sla-value">4 Std.</span>
           <span className="portal-dash-sla-label">
             bis zur ersten Bearbeitung
           </span>
         </div>
         <div className="portal-dash-sla-metric">
-          <MockIcon n="check" ctx="nav" size={14} className="text-white/70" />
+          <MockIcon n="check" ctx="sidebar" size={14} />
           <span className="portal-dash-sla-value">6 Tage</span>
           <span className="portal-dash-sla-label">bis zur Erledigung</span>
         </div>

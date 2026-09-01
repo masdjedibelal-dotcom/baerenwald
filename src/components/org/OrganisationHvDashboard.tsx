@@ -10,8 +10,9 @@ import {
   HV_DASHBOARD_ROLE_LABEL,
   type HvDashboardKpiValues,
 } from "@/lib/portal2/hv-dashboard";
-import { buildPortalDashboardFocus } from "@/lib/portal2/dashboard-focus";
-import { PORTAL_STATUS, type PortalMockStatusId } from "@/lib/portal2/status";
+import type { PortalDashboardActionSlide } from "@/lib/portal2/dashboard-actions/types";
+import { portalListeStatusColor, portalListeStatusLabel } from "@/lib/portal2/liste-status";
+import type { PortalMockStatusId } from "@/lib/portal2/status";
 import type { OrgVorgangFilter } from "@/lib/org/org-vorgang-filter";
 
 export type HvDashboardRecentItem = {
@@ -26,6 +27,8 @@ type Props = {
   orgName: string;
   kpis: HvDashboardKpiValues;
   recent: HvDashboardRecentItem[];
+  actionSlides?: PortalDashboardActionSlide[];
+  onActionRefresh?: () => void | Promise<void>;
   onOpenFilter: (filter: OrgVorgangFilter) => void;
   onOpenItem: (id: string) => void;
   heroImageUrl?: string | null;
@@ -36,22 +39,12 @@ export function OrganisationHvDashboard({
   orgName,
   kpis,
   recent,
+  actionSlides = [],
+  onActionRefresh,
   onOpenFilter,
   onOpenItem,
   heroImageUrl,
 }: Props) {
-  const top = recent[0];
-  const focus = buildPortalDashboardFocus(
-    "hv",
-    top
-      ? {
-          title: top.titel,
-          subtitle: top.objekt,
-          onOpen: () => onOpenItem(top.id),
-        }
-      : null
-  );
-
   return (
     <PortalScreenDashboard
       roleLabel={HV_DASHBOARD_ROLE_LABEL}
@@ -65,19 +58,18 @@ export function OrganisationHvDashboard({
         value: kpis[def.id],
         onClick: () => onOpenFilter(def.filter),
       }))}
-      focus={focus}
+      actionSlides={actionSlides}
+      onOpenActionItem={onOpenItem}
+      onActionRefresh={onActionRefresh ?? (() => {})}
       afterFocus={<PortalServiceVersprechenStrip />}
-      recent={recent.slice(0, 4).map((v) => {
-        const st = PORTAL_STATUS[v.flowStatus];
-        return {
-          id: v.id,
-          titel: v.titel,
-          objekt: v.objekt,
-          statusLabel: st.label,
-          statusColor: st.color,
-          notfall: v.notfall,
-        };
-      })}
+      recent={recent.slice(0, 4).map((v) => ({
+        id: v.id,
+        titel: v.titel,
+        objekt: v.objekt,
+        statusLabel: portalListeStatusLabel(v.flowStatus, "hv"),
+        statusColor: portalListeStatusColor(v.flowStatus, "hv"),
+        notfall: v.notfall,
+      }))}
       onOpenAll={() => onOpenFilter("alle")}
       onOpenItem={onOpenItem}
       recentTitle={HV_DASHBOARD_RECENT_TITLE}
