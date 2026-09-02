@@ -106,8 +106,8 @@ function PhaseCard({
 }
 
 /**
- * Versicherung — zwei Phasen-PDFs (Meldung / Ursache).
- * Kein Ja/Nein, keine Rechnung (bleibt unter Dokumente).
+ * Versicherungs-PDFs (Schadenmeldung / Schadenursache) — Inhalt des Tabs „Versicherungsakte“.
+ * Ja/Nein und Policen-Nr. liegen in `OrganisationVersicherungsakteTab`.
  */
 export function OrganisationVersicherungBlock({ leadId, onSaved }: Props) {
   const [readiness, setReadiness] = useState<Readiness | null>(null);

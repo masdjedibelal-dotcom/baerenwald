@@ -21,8 +21,7 @@ import {
 } from "@/components/shared/PortalDetailUi";
 import { VorgangDetailSectionNav } from "@/components/shared/VorgangDetailSectionNav";
 import { HvFreigabeInfoBanner } from "@/components/org/HvFreigabeInfoBanner";
-import { OrganisationVersicherungBlock } from "@/components/org/OrganisationVersicherungBlock";
-import { KostentraegerSelector } from "@/components/org/KostentraegerSelector";
+import { OrganisationVersicherungsakteTab } from "@/components/org/OrganisationVersicherungsakteTab";
 import { OrgHmBefundPanel } from "@/components/org/OrgHmBefundPanel";
 import {
   hvFreigabeEntfaellt,
@@ -554,17 +553,11 @@ export function OrganisationHvVorgangDetail({
     actionKindRaw === "freigabe" &&
     hvStatusNorm !== "hm_pruefung" &&
     hvStatusNorm !== "hm_erledigt";
-  const showVersicherungTab =
+  const showVersicherungsakteTab =
     detailRole === "hv" &&
     !mieterStatusMode &&
     !hausmeisterActor &&
-    Boolean(leadId) &&
-    String(kostentraeger ?? "").trim().toLowerCase() === "versicherung";
-  const showKostentraegerEdit =
-    detailRole === "hv" && !mieterStatusMode && !hausmeisterActor && Boolean(leadId);
-  const versicherungBlock = showVersicherungTab ? (
-    <OrganisationVersicherungBlock leadId={leadId} onSaved={onUpdated} />
-  ) : null;
+    Boolean(leadId);
   const empfohlen = pickEmpfohlenesAngebot(offers);
   const statusLabel =
     statusLabelOverride?.trim() || PORTAL_STATUS[displayFlowStatus].label;
@@ -793,11 +786,9 @@ export function OrganisationHvVorgangDetail({
           strasse: meldeStrasse,
           plz: meldePlz,
           ort: meldeOrt,
-          kostentraeger: showKostentraegerEdit ? null : kostentraeger,
-          kostentraeger_vorgeschlagen: showKostentraegerEdit
-            ? false
-            : kostentraegerVorgeschlagen,
-          versicherungs_nr: showKostentraegerEdit ? null : versicherungsNr,
+          kostentraeger: kostentraeger,
+          kostentraeger_vorgeschlagen: kostentraegerVorgeschlagen,
+          versicherungs_nr: versicherungsNr,
           org_freigabe_status: orgFreigabeStatus,
           hv_meldung_status: hvMeldungStatus,
         },
@@ -838,16 +829,15 @@ export function OrganisationHvVorgangDetail({
       orgFreigabeStatus,
       hvMeldungStatus,
       mieterStatusMode,
-      showKostentraegerEdit,
     ]
   );
 
   const uebersichtVm = useMemo(
     () =>
-      actionKind === "angebot"
+      angebotVorgelegt
         ? { ...detailVm, detailsLeistungen: null }
         : detailVm,
-    [actionKind, detailVm]
+    [angebotVorgelegt, detailVm]
   );
 
   const derivedPositionen: HvDetailPosition[] = useMemo(() => {
@@ -986,80 +976,44 @@ export function OrganisationHvVorgangDetail({
 
   const hmSelbstErledigt = hvStatusNorm === "hm_erledigt";
 
-  const rolePanel = (() => {
-    if (actionKind === "privat_auto") {
-      // Privatkunde: kein Freigabe-/Auftraggeber-Hinweis
-      return null;
-    }
-    if (actionKind === "freigabe") {
-      // CTAs inline in Details (Übersicht).
-      return null;
-    }
-    if (actionKind === "angebot") {
-      // Nur Leistungen & Preise — kein „Empfohlenes Angebot“ (es gibt nur eins).
-      // Annehmen/Ablehnen nur oberhalb der Schwelle (Sticky-Footer + ggf. hier).
-      return (
-        <DetailCard title={HV_DETAIL_COPY.empfohlenDetail}>
-          {derivedPositionen.length ? (
-            <PositionenTable positionen={derivedPositionen} sum={sum} />
-          ) : sum.brutto > 0 ? (
-            <p className="portal-text-meta mb-3" style={{ color: PORTAL_VAR.sub }}>
-              Gesamt: {moneyEur(sum.brutto)}
-            </p>
-          ) : (
-            <p className="portal-text-meta" style={{ color: PORTAL_VAR.faint }}>
-              Noch kein Angebot hinterlegt.
-            </p>
-          )}
-          {accepted ? (
-            <p
-              className="portal-text-meta mt-3 font-semibold"
-              style={{ color: PORTAL_VAR.primary }}
-            >
-              Angebot angenommen — Auftrag wird vorbereitet.
-            </p>
-          ) : rejected || displayFlowStatus === "abgelehnt" ? (
-            <p
-              className="portal-text-meta mt-3 font-semibold"
-              style={{ color: PORTAL_STATUS.abgelehnt.color }}
-            >
-              Angebot abgelehnt.
-            </p>
-          ) : null}
-        </DetailCard>
-      );
-    }
-    if (actionKind === "auftrag") {
-      return null;
-    }
-    if (actionKind === "abschluss") {
-      if (hmSelbstErledigt) return null;
-      return mieterStatusMode ? null : abschlussCard;
-    }
-    if (actionKind === "rechnung") {
-      return mieterStatusMode ? null : abschlussCard;
-    }
-    if (actionKind === "bezahlt") {
-      return (
-        <DetailCard title={HV_DETAIL_COPY.abgeschlossenTitle}>{null}</DetailCard>
-      );
-    }
-    return null;
-  })();
+  /** Angebot-Tab: Leistungen & Preise — in allen Phasen sichtbar, sobald Angebotsdaten da sind. */
+  const angebotTabPanel = angebotVorgelegt ? (
+    <DetailCard title={HV_DETAIL_COPY.empfohlenDetail}>
+      {derivedPositionen.length ? (
+        <PositionenTable positionen={derivedPositionen} sum={sum} />
+      ) : sum.brutto > 0 ? (
+        <p className="portal-text-meta mb-3" style={{ color: PORTAL_VAR.sub }}>
+          Gesamt: {moneyEur(sum.brutto)}
+        </p>
+      ) : (
+        <p className="portal-text-meta" style={{ color: PORTAL_VAR.faint }}>
+          Noch kein Angebot hinterlegt.
+        </p>
+      )}
+      {accepted ? (
+        <p
+          className="portal-text-meta mt-3 font-semibold"
+          style={{ color: PORTAL_VAR.primary }}
+        >
+          Angebot angenommen — Auftrag wird vorbereitet.
+        </p>
+      ) : rejected || displayFlowStatus === "abgelehnt" ? (
+        <p
+          className="portal-text-meta mt-3 font-semibold"
+          style={{ color: PORTAL_STATUS.abgelehnt.color }}
+        >
+          Angebot abgelehnt.
+        </p>
+      ) : null}
+    </DetailCard>
+  ) : null;
 
   const showBautagebuch =
     ["auftrag", "abschluss", "rechnung", "bezahlt"].includes(displayFlowStatus) ||
     bautagebuch.length > 0;
 
-  const showAngebotSection = !mieterStatusMode && Boolean(rolePanel);
-  const angebotSectionLabel =
-    actionKind === "abschluss" ||
-    actionKind === "rechnung" ||
-    actionKind === "bezahlt"
-      ? HV_DETAIL_COPY.abnahmeTitle
-      : actionKind === "freigabe"
-        ? "Freigabe"
-        : "Angebot";
+  const showAngebotSection = Boolean(angebotTabPanel);
+  const angebotSectionLabel = "Angebot";
 
   useEffect(() => {
     if (!showBautagebuch) {
@@ -1168,7 +1122,7 @@ export function OrganisationHvVorgangDetail({
       },
       {
         id: "versicherung" as const,
-        hidden: !showVersicherungTab,
+        hidden: !showVersicherungsakteTab,
       },
       { id: "dokumente" as const },
     ],
@@ -1176,7 +1130,7 @@ export function OrganisationHvVorgangDetail({
       showAngebotSection,
       showBautagebuch,
       showHmTab,
-      showVersicherungTab,
+      showVersicherungsakteTab,
       btUnread,
       angebotSectionLabel,
     ]
@@ -1335,7 +1289,7 @@ export function OrganisationHvVorgangDetail({
 
       </div>
 
-      <div className="flex flex-col gap-4 px-1 pb-6 pt-4 sm:px-0 sm:pt-5">
+      <div className="portal-detail-body-pad flex flex-col gap-4 pb-6 pt-4 sm:pt-5">
         <VorgangDetailSectionNav
           items={navItems}
           mode="tabs"
@@ -1353,32 +1307,26 @@ export function OrganisationHvVorgangDetail({
               {!mieterStatusMode &&
               (actionKind === "abschluss" ||
                 actionKind === "rechnung" ||
-                actionKind === "bezahlt") &&
-              !showAngebotSection
+                actionKind === "bezahlt")
                 ? abschlussCard
                 : null}
               <VorgangDetailBlocks vm={uebersichtVm} />
-              {showKostentraegerEdit ? (
-                <DetailCard title="Kostenträger">
-                  <KostentraegerSelector
-                    leadId={leadId}
-                    value={kostentraeger}
-                    vorgeschlagen={kostentraegerVorgeschlagen}
-                    versicherungsNr={versicherungsNr ?? objektPolicenNr}
-                    onSaved={onUpdated}
-                  />
-                </DetailCard>
-              ) : null}
             </section>
           ) : null}
 
-          {activeSection === "versicherung" && showVersicherungTab ? (
+          {activeSection === "versicherung" && showVersicherungsakteTab ? (
             <section
               id="vorgang-panel-versicherung"
               role="tabpanel"
               className="space-y-3.5"
             >
-              {versicherungBlock}
+              <OrganisationVersicherungsakteTab
+                leadId={leadId}
+                kostentraeger={kostentraeger}
+                versicherungsNr={versicherungsNr}
+                objektPolicenNr={objektPolicenNr}
+                onSaved={onUpdated}
+              />
             </section>
           ) : null}
 
@@ -1388,7 +1336,7 @@ export function OrganisationHvVorgangDetail({
               className="space-y-3.5"
               role="tabpanel"
             >
-              {rolePanel}
+              {angebotTabPanel}
               {error ? (
                 <p className="portal-text-meta font-semibold text-red-700" role="alert">
                   {error}

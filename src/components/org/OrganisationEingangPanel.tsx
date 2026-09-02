@@ -60,10 +60,8 @@ import {
   orgAngebotPdfZeilen,
   type OrgFreigabeAngebot,
 } from "@/components/org/OrgAngebotFreigabeInhalt";
-import { VersicherungsakteButton } from "@/components/org/VersicherungsakteButton";
 import { VorgangKommentareThread } from "@/components/org/VorgangKommentareThread";
 import { VorgangStornoDialog } from "@/components/org/VorgangStornoDialog";
-import { KostentraegerSelector } from "@/components/org/KostentraegerSelector";
 type Props = {
   kunde: OrganisationKunde;
   eingang: OrganisationLead[];
@@ -443,19 +441,6 @@ function MeldungDetail({
         hvFeedback={hvFeedback}
         onSubmitted={onRefresh}
       />
-
-      <KostentraegerSelector
-        leadId={lead.id}
-        value={lead.kostentraeger}
-        vorgeschlagen={lead.kostentraeger_vorgeschlagen ?? false}
-        versicherungsNr={lead.versicherungs_nr}
-        onSaved={onRefresh}
-      />
-
-      {auftragId &&
-      (lead.kostentraeger === "versicherung") ? (
-        <VersicherungsakteButton auftragId={auftragId} />
-      ) : null}
 
       <VorgangKommentareThread leadId={lead.id} />
 

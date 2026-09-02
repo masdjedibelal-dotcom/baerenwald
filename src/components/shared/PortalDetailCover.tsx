@@ -46,7 +46,7 @@ export function PortalDetailCover({
   return (
     <section
       className={cn(
-        "portal-dash-hero portal-detail-hero relative w-full shrink-0 overflow-hidden",
+        "portal-dash-hero portal-detail-hero relative shrink-0 overflow-hidden",
         className
       )}
     >

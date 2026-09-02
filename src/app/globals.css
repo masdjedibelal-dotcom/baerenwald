@@ -186,6 +186,17 @@
   line-height: 1.5;
 
   /*
+   * Topbar trägt ggf. auch .portal-ui (Legacy) — dann schlägt .portal-ui { background }
+   * die grüne Topbar (gleiche Spezifität / Unlayered vs. @layer components).
+   * Deshalb hier mit höherer Spezifität und außerhalb von @layer.
+   */
+  &.portal-topbar,
+  .portal-topbar {
+    background: var(--org-primary-dk, var(--p2-primary-dk, #1a3d2b));
+    color: #fff;
+  }
+
+  /*
    * Hardcodierte Mikro-Typo auf die Portal-Skala heben
    * (HV/Mieter/Handwerker identisch — Mobil und Desktop).
    */
@@ -1316,6 +1327,7 @@ h3 {
     gap: 12px;
     padding: 14px 18px 16px;
     overflow: visible;
+    /* background/color: siehe .portal-ui.portal-topbar (Cascade-Fix) */
     background: var(--org-primary-dk, var(--p2-primary-dk, #1a3d2b));
     color: #fff;
     border-bottom: none;
@@ -2221,14 +2233,39 @@ h3 {
   }
 
   /* Deep Green Detail — Hero wie Dashboard-Startseite */
+  .portal-detail-layout,
+  .portal-entity-detail {
+    background: var(--p2-bg, #f5f6f4);
+    margin-inline: -18px;
+    margin-top: -8px;
+  }
+
+  /* Nested: Entity liegt schon im Layout-Bleed — nicht nochmal ziehen */
+  .portal-detail-layout .portal-entity-detail {
+    margin-inline: 0;
+    margin-top: 0;
+    background: transparent;
+  }
+
+  @media (min-width: 1024px) {
+    .portal-detail-layout,
+    .portal-entity-detail {
+      margin-inline: 0;
+      margin-top: 0;
+    }
+  }
+
   .portal-detail-hero {
-    padding: 52px 20px 36px;
+    /* Platz für Back-Pill + Abstand zum Titel; unten Luft für Abrundung */
+    padding: 72px 20px 64px;
     min-height: 0;
+    border-radius: 0 0 30px 30px;
   }
 
   @media (min-width: 1024px) {
     .portal-detail-hero {
-      padding: 56px 30px 32px;
+      padding: 56px 30px 40px;
+      border-radius: 26px;
     }
   }
 
@@ -2243,11 +2280,15 @@ h3 {
   }
 
   .portal-detail-hero--compact {
-    padding-bottom: 28px;
+    padding-bottom: 40px;
   }
 
+  /*
+   * Parent (.portal-detail-layout / .portal-entity-detail) ist bereits full-bleed.
+   * Kein zusätzliches margin-inline + w-full — das wurde rechts abgeschnitten.
+   */
   .portal-detail-cover--bleed {
-    margin-inline: -18px;
+    margin-inline: 0;
     border-radius: 0 0 30px 30px;
   }
 
@@ -2260,8 +2301,8 @@ h3 {
 
   .portal-detail-cover-back {
     position: absolute;
-    left: 14px;
-    top: 14px;
+    left: 20px;
+    top: 16px;
     z-index: 10;
     display: inline-flex;
     align-items: center;
@@ -2278,8 +2319,8 @@ h3 {
 
   .portal-detail-cover-edit {
     position: absolute;
-    right: 14px;
-    top: 14px;
+    right: 20px;
+    top: 16px;
     z-index: 10;
     display: inline-flex;
     align-items: center;
@@ -2293,10 +2334,11 @@ h3 {
     cursor: pointer;
   }
 
+  /* Kopfkarte: etwas tiefer (weniger Overlap), horizontal inset wie Dashboard-Fokus */
   .portal-detail-kopfkarte {
     position: relative;
     z-index: 1;
-    margin: -28px 0 0;
+    margin: -20px 18px 0;
     padding: 20px;
     border-radius: 22px;
     background: #fff;
@@ -2305,7 +2347,17 @@ h3 {
 
   @media (min-width: 1024px) {
     .portal-detail-kopfkarte {
-      margin-top: 16px;
+      margin: 16px 0 0;
+    }
+  }
+
+  .portal-detail-body-pad {
+    padding-inline: 18px;
+  }
+
+  @media (min-width: 1024px) {
+    .portal-detail-body-pad {
+      padding-inline: 0;
     }
   }
 
@@ -2364,7 +2416,13 @@ h3 {
   }
 
   .portal-entity-detail-body {
-    padding: 16px 0 24px;
+    padding: 16px 18px 24px;
+  }
+
+  @media (min-width: 1024px) {
+    .portal-entity-detail-body {
+      padding-inline: 0;
+    }
   }
 
   .portal-flow-timeline-bars {

@@ -7,7 +7,7 @@ import type { PortalDashboardActionSlide } from "@/lib/portal2/dashboard-actions
 import { partnerStatusChipStyle } from "@/lib/partner/partner-list-mappers";
 
 export type PartnerHwDashboardKpis = {
-  neueAnfragen: number;
+  offen: number;
   inAusfuehrung: number;
   erledigt: number;
 };
@@ -25,7 +25,7 @@ const KPI_DEFS: Array<{
   id: keyof PartnerHwDashboardKpis;
   label: string;
 }> = [
-  { id: "neueAnfragen", label: "Neue Anfragen" },
+  { id: "offen", label: "Offen" },
   { id: "inAusfuehrung", label: "In Arbeit" },
   { id: "erledigt", label: "Erledigt" },
 ];
@@ -84,7 +84,7 @@ export function PartnerHwDashboard({
       onOpenItem={onOpenItem}
       recentTitle="Zuletzt"
       recentAllLabel="Alle ansehen"
-      recentEmpty="Noch keine Vorgänge — neue Anfragen erscheinen hier."
+      recentEmpty="Noch keine Vorgänge — offene Vorgänge erscheinen hier."
     />
   );
 }

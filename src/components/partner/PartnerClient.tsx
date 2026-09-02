@@ -934,7 +934,7 @@ export function PartnerClient({
                 />
               }
               kpis={{
-                neueAnfragen: vorgaengeState.filter(
+                offen: vorgaengeState.filter(
                   (v) => v.state === "neu" || v.state === "geaendert"
                 ).length,
                 inAusfuehrung: vorgaengeState.filter(

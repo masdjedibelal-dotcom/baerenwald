@@ -102,7 +102,7 @@ export const PORTAL_DETAIL_SECTION_LABELS: Record<
   angebot: "Angebot",
   hm_pruefung: "Checkliste",
   bautagebuch: "Updates",
-  versicherung: "Versicherung",
+  versicherung: "Versicherungsakte",
   dokumente: "Dokumente",
   verlauf: "Verlauf",
 };
