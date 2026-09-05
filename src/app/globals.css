@@ -1386,7 +1386,7 @@ h3 {
 
   /**
    * Suchfeld mit Icon links — Padding muss Icon-Platz freilassen.
-   * Topbar: weiß auf Grün; sonst Tertiary auf hellem Grund.
+   * Topbar: weißes Feld, Icon/Text grün.
    */
   .portal-search {
     position: relative;
@@ -1556,7 +1556,11 @@ h3 {
       position: relative;
     }
 
-    /* Marke links oben — Spalte = Sidebar-Breite */
+    /*
+     * Desktop: Marke nur in der Sidebar.
+     * Topbar-Brand bleibt im Grid (Sidebar-Spalte), aber unsichtbar —
+     * sonst rutscht Suche/Glocke in die Sidebar-Spalte.
+     */
     .portal-topbar-brand {
       display: flex;
       width: 100%;
@@ -1565,6 +1569,8 @@ h3 {
       padding-left: 6px;
       padding-right: 8px;
       box-sizing: border-box;
+      visibility: hidden;
+      pointer-events: none;
     }
 
     .portal-topbar-divider,
@@ -1577,11 +1583,6 @@ h3 {
       margin-left: 0;
       width: 100%;
       min-width: 0;
-    }
-
-    /* Kein Doppel-Brand in der Sidebar — Topbar trägt Marke */
-    .portal-shell-brand {
-      display: none;
     }
   }
 
@@ -1619,15 +1620,15 @@ h3 {
     overflow: visible;
   }
 
-  /* Glocke — Outline + Icon weiß auf Topbar (auch mobil / content-bleed) */
+  /* Glocke — weiße Pill, Icon grün (wie Suchfeld) */
   .portal-bell-trigger {
     width: 44px;
     height: 44px;
     border-radius: 999px;
-    border: 1.5px solid rgba(255, 255, 255, 0.85);
-    background: transparent;
-    color: #fff;
-    box-shadow: none;
+    border: 1px solid rgba(255, 255, 255, 0.95);
+    background: #fff;
+    color: var(--org-primary, var(--p2-primary, #2e7d52));
+    box-shadow: 0 2px 10px rgba(16, 32, 24, 0.1);
   }
 
   .portal-ui .portal-bell-trigger .mock-icon,
@@ -1635,15 +1636,22 @@ h3 {
   .portal-ui .portal-bell-trigger .mock-icon--sidebar,
   .portal-ui .portal-bell-trigger .portal-bell-icon,
   .portal-topbar .portal-bell-trigger .mock-icon {
-    color: #fff !important;
+    color: var(--org-primary, var(--p2-primary, #2e7d52)) !important;
   }
 
   .portal-bell-trigger:hover,
   .portal-bell[data-open="true"] .portal-bell-trigger,
   .portal-bell:has([aria-expanded="true"]) .portal-bell-trigger {
-    background: rgba(255, 255, 255, 0.12);
+    background: #fff;
     border-color: #fff;
-    color: #fff;
+    color: var(--org-primary-dk, var(--p2-primary-dk, #1a3d2b));
+    box-shadow: 0 2px 12px rgba(16, 32, 24, 0.14);
+  }
+
+  .portal-bell-trigger:hover .mock-icon,
+  .portal-bell[data-open="true"] .portal-bell-trigger .mock-icon,
+  .portal-bell:has([aria-expanded="true"]) .portal-bell-trigger .mock-icon {
+    color: var(--org-primary-dk, var(--p2-primary-dk, #1a3d2b)) !important;
   }
 
   .portal-bell .portal-count-badge--corner {
@@ -1656,11 +1664,15 @@ h3 {
       height: 42px;
     }
 
-    /* Auch über Hero (content-bleed): Glocke bleibt weiß */
-    .portal-shell[data-content-bleed="true"] .portal-bell-trigger,
+    /* Auch über Hero (content-bleed): weiße Pill, Icon grün */
+    .portal-shell[data-content-bleed="true"] .portal-bell-trigger {
+      background: #fff !important;
+      border-color: #fff !important;
+      color: var(--org-primary, var(--p2-primary, #2e7d52)) !important;
+    }
+
     .portal-shell[data-content-bleed="true"] .portal-bell-trigger .mock-icon {
-      color: #fff !important;
-      border-color: rgba(255, 255, 255, 0.9);
+      color: var(--org-primary, var(--p2-primary, #2e7d52)) !important;
     }
   }
 
@@ -1670,32 +1682,36 @@ h3 {
     display: none !important;
   }
 
-  /* Topbar-Suche — Outline wie Glocke */
+  /* Topbar-Suche — komplett weiß, Text/Icon grün */
   .portal-topbar .portal-search-input {
-    border: 1.5px solid rgba(255, 255, 255, 0.85);
-    background: transparent;
-    color: #fff;
-    box-shadow: none;
+    border: 1px solid rgba(255, 255, 255, 0.95);
+    background: #fff;
+    color: var(--org-primary, var(--p2-primary, #2e7d52));
+    box-shadow: 0 2px 10px rgba(16, 32, 24, 0.1);
     min-height: 44px;
     padding: 11px 16px 11px 44px;
     font-size: calc(15px * var(--p2-type-scale, 1.1));
   }
 
   .portal-topbar .portal-search-input::placeholder {
-    color: rgba(255, 255, 255, 0.62);
+    color: color-mix(
+      in srgb,
+      var(--org-primary, var(--p2-primary, #2e7d52)) 55%,
+      transparent
+    );
   }
 
   .portal-topbar .portal-search-input:focus {
     border-color: #fff;
-    box-shadow: none;
-    background: rgba(255, 255, 255, 0.12);
+    box-shadow: 0 2px 12px rgba(16, 32, 24, 0.14);
+    background: #fff;
   }
 
   .portal-topbar .portal-search-icon {
     left: 15px;
     width: 18px;
     height: 18px;
-    color: #fff;
+    color: var(--org-primary, var(--p2-primary, #2e7d52));
   }
 
   @media (max-width: 1023px) {
@@ -4572,9 +4588,11 @@ h3 {
     background: var(--p2-bg, #f5f6f4);
   }
 
+  /* Einheitlicher Abstand Header → erste Card (Listen, Dashboard, Details) */
   .portal-shell-main--padded {
     --portal-pad-x: 18px;
-    padding: var(--portal-pad-x) var(--portal-pad-x) var(--portal-mobile-nav-pad);
+    --portal-main-pad-top: 22px;
+    padding: var(--portal-main-pad-top) var(--portal-pad-x) var(--portal-mobile-nav-pad);
   }
 
   .portal-shell-main--chrome-hidden {
@@ -4584,11 +4602,13 @@ h3 {
   @media (min-width: 1024px) {
     .portal-shell-main--padded {
       --portal-pad-x: 32px;
-      padding: 16px var(--portal-pad-x) 40px;
+      --portal-main-pad-top: 28px;
+      padding: var(--portal-main-pad-top) var(--portal-pad-x) 40px;
     }
     .portal-shell-main--chrome-hidden {
       --portal-pad-x: 32px;
-      padding: 16px var(--portal-pad-x) 40px;
+      --portal-main-pad-top: 28px;
+      padding: var(--portal-main-pad-top) var(--portal-pad-x) 40px;
     }
   }
 
@@ -4643,12 +4663,19 @@ h3 {
     }
   }
 
+  /* Sidebar-Brand: Desktop + Mobil (Drawer) — einzige sichtbare Marke ab Desktop */
   .portal-shell-brand {
     display: flex;
     align-items: center;
     gap: 11px;
     padding: 2px 6px 16px;
     min-width: 0;
+  }
+
+  @media (min-width: 1024px) {
+    .portal-shell-brand {
+      display: flex;
+    }
   }
 
   .portal-shell-brand-avatar {

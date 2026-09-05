@@ -533,8 +533,11 @@ export function PartnerAuftragDetail({
                 auftragTitel={titel}
                 anfrageId={btAnfrageId}
                 preferredPositionIds={preferredPositionIds}
-                autoOpenPreferred={autoOpenPreferred && !isErledigt}
+                autoOpenPreferred={
+                  autoOpenPreferred && !isErledigt && !focusBautagebuch
+                }
                 readOnly={isErledigt}
+                initialView={focusBautagebuch ? "tagebuch" : "leistungen"}
                 positionen={item.positionen.map((p) => ({
                   id: p.id,
                   leistung_name: p.leistung_name,

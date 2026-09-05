@@ -34,7 +34,7 @@ export function PartnerKiKorrekturField({
   name = "beschreibung",
   value,
   onChange,
-  rows = 3,
+  rows = 6,
   singleLine = false,
   required,
   placeholder,
@@ -97,7 +97,7 @@ export function PartnerKiKorrekturField({
             value={value}
             onChange={(e) => onTextChange(e.target.value)}
             placeholder={placeholder}
-            className="portal-input w-full rounded-xl border border-border-default px-3 py-2.5"
+            className="portal-input w-full min-h-[160px] resize-y rounded-xl border border-border-default px-3 py-3 text-[15px] leading-relaxed"
           />
         )}
       </PortalKiAssistField>

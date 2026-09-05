@@ -11,7 +11,7 @@ type Props = {
 
 /**
  * Kompakte Header-Suche (Privat / Eigentümer / Partner).
- * Visuell wie OrganisationSuche — Icon-Farbe steuert Topbar-CSS (weiß auf Grün).
+ * Topbar: weißes Feld, Icon/Text grün.
  */
 export function PortalHeaderSearch({
   placeholder = "Suchen…",

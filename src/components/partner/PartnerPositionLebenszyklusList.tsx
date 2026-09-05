@@ -17,9 +17,12 @@ import {
   completePartnerPosition,
   createPartnerTagebuchEintrag,
   createPartnerWeitereArbeit,
+  listPartnerAuftragTagebuchEintraege,
   markPartnerPositionenErledigt,
   startPartnerPosition,
+  type PartnerTagebuchListenEintrag,
 } from "@/app/actions/partner-position-eintraege";
+import { BautagebuchCardFeed } from "@/components/shared/BautagebuchCardFeed";
 import { normalizePartnerCameraPhoto } from "@/lib/partner/normalize-camera-photo";
 import {
   formatZeitMinuten,
@@ -57,6 +60,8 @@ type Props = {
   autoOpenPreferred?: boolean;
   /** Erledigter Auftrag: nur lesen, keine Start-/Update-/Nachtrag-Aktionen. */
   readOnly?: boolean;
+  /** Deep-Link / CRM-Anforderung: direkt Tagebuch-Tab */
+  initialView?: "leistungen" | "tagebuch";
 };
 
 function formatEuro(n: number): string {
@@ -146,7 +151,13 @@ export function PartnerPositionLebenszyklusList({
   auftragTitel,
   autoOpenPreferred = false,
   readOnly = false,
+  initialView = "leistungen",
 }: Props) {
+  const [view, setView] = useState<"leistungen" | "tagebuch">(initialView);
+  const [tagebuchEintraege, setTagebuchEintraege] = useState<
+    PartnerTagebuchListenEintrag[]
+  >([]);
+  const [tagebuchLoading, setTagebuchLoading] = useState(false);
   const [sheet, setSheet] = useState<{
     mode: SheetMode;
     position: LebenszyklusPosition;
@@ -167,7 +178,7 @@ export function PartnerPositionLebenszyklusList({
   const [nachtragFotos, setNachtragFotos] = useState<File[]>([]);
   const [submitting, setSubmitting] = useState(false);
   const [beschreibung, setBeschreibung] = useState("");
-  const [erledigtFotos, setErledigtFotos] = useState<File[]>([]);
+  const [sheetFotos, setSheetFotos] = useState<File[]>([]);
   const autoOpenedRef = useRef(false);
   const sheetFormRef = useRef<HTMLFormElement>(null);
   const { runBusy } = usePortalBusy();
@@ -217,6 +228,36 @@ export function PartnerPositionLebenszyklusList({
   );
 
   useEffect(() => {
+    setView(initialView);
+  }, [initialView]);
+
+  useEffect(() => {
+    if (initialView !== "tagebuch" || readOnly) return;
+    if (!preferredPositionIds.length) return;
+    setTbSelected(
+      preferredPositionIds.filter((id) =>
+        positionen.some((p) => p.id === id)
+      )
+    );
+    setTagebuchOpen(true);
+  }, [initialView, preferredPositionIds, positionen, readOnly]);
+
+  async function reloadTagebuch() {
+    setTagebuchLoading(true);
+    try {
+      const list = await listPartnerAuftragTagebuchEintraege(auftragId);
+      setTagebuchEintraege(list);
+    } finally {
+      setTagebuchLoading(false);
+    }
+  }
+
+  useEffect(() => {
+    void reloadTagebuch();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [auftragId]);
+
+  useEffect(() => {
     if (!autoOpenPreferred || autoOpenedRef.current || !preferredSet.size) return;
     const target = sortedPositionen.find(
       (p) => preferredSet.has(p.id) && p.leistung_status !== "erledigt"
@@ -232,7 +273,7 @@ export function PartnerPositionLebenszyklusList({
 
   useEffect(() => {
     setBeschreibung("");
-    setErledigtFotos([]);
+    setSheetFotos([]);
   }, [sheet?.position.id, sheet?.mode]);
 
   function toggleBulk(id: string) {
@@ -316,6 +357,7 @@ export function PartnerPositionLebenszyklusList({
           }
           portalToastSuccess("Tagebuch-Eintrag gespeichert.");
           closeTagebuch();
+          await reloadTagebuch();
           await onDone?.();
         }, Math.max(PORTAL_BUSY_MIN_MS, 600));
       } finally {
@@ -348,7 +390,7 @@ export function PartnerPositionLebenszyklusList({
     if (!raw.length) return true;
     formData.delete("fotos");
     try {
-      for (const f of raw.slice(0, 5)) {
+      for (const f of raw.slice(0, 12)) {
         formData.append("fotos", await normalizePartnerCameraPhoto(f));
       }
       return true;
@@ -425,11 +467,11 @@ export function PartnerPositionLebenszyklusList({
           const hasEnde =
             endeFoto instanceof File && endeFoto.size > 0 && sheetIsRegie;
 
-          if (mode === "erledigt" && !sheetIsRegie && erledigtFotos.length) {
+          if (!sheetIsRegie && sheetFotos.length > 0) {
             formData.delete("fotos");
             formData.delete("foto");
             try {
-              for (const f of erledigtFotos.slice(0, 5)) {
+              for (const f of sheetFotos.slice(0, 12)) {
                 formData.append("fotos", await normalizePartnerCameraPhoto(f));
               }
             } catch {
@@ -513,7 +555,7 @@ export function PartnerPositionLebenszyklusList({
           await onDone?.();
           setSheet(null);
           setBeschreibung("");
-          setErledigtFotos([]);
+          setSheetFotos([]);
         }, Math.max(PORTAL_BUSY_MIN_MS, 600));
       } catch {
         portalToastError("Speichern fehlgeschlagen. Bitte erneut versuchen.");
@@ -559,7 +601,7 @@ export function PartnerPositionLebenszyklusList({
       try {
         await runBusy(async () => {
           try {
-            for (const f of nachtragFotos.slice(0, 5)) {
+            for (const f of nachtragFotos.slice(0, 12)) {
               formData.append("fotos", await normalizePartnerCameraPhoto(f));
             }
           } catch {
@@ -595,7 +637,7 @@ export function PartnerPositionLebenszyklusList({
     if (submitting) return;
     setSheet(null);
     setBeschreibung("");
-    setErledigtFotos([]);
+    setSheetFotos([]);
   }
 
   return (
@@ -610,7 +652,91 @@ export function PartnerPositionLebenszyklusList({
         >
           {HW_DOKU_STORY.title}
         </h3>
-        <div className="mt-2 flex items-center justify-between gap-2">
+
+        <div
+          className="mt-3 flex rounded-xl border border-border-light bg-[var(--p2-line2,#eef1ef)] p-0.5"
+          role="tablist"
+          aria-label="Ansicht"
+        >
+          <button
+            type="button"
+            role="tab"
+            aria-selected={view === "leistungen"}
+            className={cn(
+              "flex-1 rounded-[10px] px-3 py-2 text-[13px] font-semibold transition-colors",
+              view === "leistungen"
+                ? "bg-white text-text-primary shadow-sm"
+                : "text-text-tertiary"
+            )}
+            onClick={() => setView("leistungen")}
+          >
+            Leistungen
+          </button>
+          <button
+            type="button"
+            role="tab"
+            aria-selected={view === "tagebuch"}
+            className={cn(
+              "flex flex-1 items-center justify-center gap-1.5 rounded-[10px] px-3 py-2 text-[13px] font-semibold transition-colors",
+              view === "tagebuch"
+                ? "bg-white text-text-primary shadow-sm"
+                : "text-text-tertiary"
+            )}
+            onClick={() => setView("tagebuch")}
+          >
+            Tagebuch
+            {tagebuchEintraege.length > 0 ? (
+              <span className="rounded-full bg-[var(--p2-primary-soft,#dce8e0)] px-1.5 py-0.5 text-[11px] font-bold tabular-nums text-[var(--p2-primary,#2E7D52)]">
+                {tagebuchEintraege.length}
+              </span>
+            ) : null}
+          </button>
+        </div>
+      </div>
+
+      {view === "tagebuch" ? (
+        <div className="space-y-3">
+          {!readOnly ? (
+            <button
+              type="button"
+              className="w-full rounded-[10px] border border-dashed px-3 py-3 text-[13.5px] font-semibold text-text-primary"
+              style={{ borderColor: PORTAL_VAR.line, background: "#fff" }}
+              onClick={() => setTagebuchOpen(true)}
+            >
+              + Tagebuch-Eintrag
+            </button>
+          ) : null}
+          {tagebuchLoading && tagebuchEintraege.length === 0 ? (
+            <p className="portal-text-body py-6 text-center text-text-tertiary">
+              Einträge werden geladen…
+            </p>
+          ) : (
+            <BautagebuchCardFeed
+              heading=""
+              className="!border-t-0 !pt-0"
+              emptyText="Noch keine Tagebuch-Einträge — CRM und Handwerker erscheinen hier."
+              eintraege={tagebuchEintraege.map((e) => ({
+                id: e.id,
+                datum: e.datum,
+                titel: e.titel,
+                beschreibung: [
+                  e.quelleLabel,
+                  e.leistungNames.length
+                    ? e.leistungNames.join(", ")
+                    : null,
+                  e.beschreibung,
+                ]
+                  .filter(Boolean)
+                  .join(" · "),
+                fotos: e.fotos,
+              }))}
+            />
+          )}
+        </div>
+      ) : (
+        <>
+      <div>
+        <div className="mt-0 flex items-center justify-between gap-2">
           <p className="text-[12.5px] font-semibold" style={{ color: PORTAL_VAR.sub }}>
             Fortschritt
           </p>
@@ -882,24 +1008,18 @@ export function PartnerPositionLebenszyklusList({
             type="button"
             className="w-full rounded-[10px] border border-dashed px-3 py-3 text-[13.5px] font-semibold text-text-primary"
             style={{ borderColor: PORTAL_VAR.line, background: "#fff" }}
-            onClick={() => setTagebuchOpen(true)}
-          >
-            + Tagebuch-Eintrag
-          </button>
-          <button
-            type="button"
-            className="w-full rounded-[10px] border border-dashed px-3 py-3 text-[13.5px] font-semibold text-text-primary"
-            style={{ borderColor: PORTAL_VAR.line, background: "#fff" }}
             onClick={() => setNachtragOpen(true)}
           >
             + Nachtrag / Regie
           </button>
           <p className="text-[11.5px] leading-relaxed text-text-tertiary">
-            Tagebuch: Update mit 0–n Leistungen. Nachtrag: zusätzliche Arbeit erst
-            melden — Bärenwald prüft.
+            Zusätzliche Arbeit erst melden — Bärenwald prüft. Tagebuch-Einträge
+            unter dem Tab „Tagebuch“.
           </p>
         </div>
       ) : null}
+        </>
+      )}
 
       {sheet ? (
         <PortalModalShell
@@ -922,7 +1042,7 @@ export function PartnerPositionLebenszyklusList({
           dirty={
             !submitting &&
             (beschreibung.trim().length > 0 ||
-              erledigtFotos.length > 0 ||
+              sheetFotos.length > 0 ||
               sheet.mode !== "erledigt")
           }
           closeOnBackdrop={!submitting}
@@ -942,7 +1062,6 @@ export function PartnerPositionLebenszyklusList({
               sheetIsRegie &&
               (sheet.mode === "start" || sheet.mode === "erledigt");
             const textPflicht = fotoPflicht;
-            const erledigtMulti = sheet.mode === "erledigt" && !sheetIsRegie;
             return (
           <form
             ref={sheetFormRef}
@@ -973,15 +1092,18 @@ export function PartnerPositionLebenszyklusList({
                 label="Ende-Foto"
                 required
               />
-            ) : erledigtMulti ? (
-              <PartnerMultiFotoSlot
-                label="Ergebnis-Foto"
-                required={false}
-                value={erledigtFotos}
-                onChange={setErledigtFotos}
-              />
             ) : (
-              <PartnerDirektKameraSlot required={false} label="Foto" />
+              <PartnerMultiFotoSlot
+                label={
+                  sheet.mode === "erledigt"
+                    ? "Ergebnis-Fotos"
+                    : "Fotos (optional)"
+                }
+                required={false}
+                value={sheetFotos}
+                onChange={setSheetFotos}
+                disabled={submitting}
+              />
             )}
 
             <div className="mt-4">
@@ -990,7 +1112,7 @@ export function PartnerPositionLebenszyklusList({
                 label="Beschreibung"
                 value={beschreibung}
                 onChange={setBeschreibung}
-                rows={3}
+                rows={8}
                 required={textPflicht}
                 leistungName={sheet.position.leistung_name}
                 auftragTitel={auftragTitel}
@@ -1186,7 +1308,7 @@ export function PartnerPositionLebenszyklusList({
             label="Beschreibung"
             value={tbBeschreibung}
             onChange={setTbBeschreibung}
-            rows={3}
+            rows={8}
             auftragTitel={auftragTitel}
             placeholder="Was ist auf der Baustelle passiert?"
           />
@@ -1195,6 +1317,7 @@ export function PartnerPositionLebenszyklusList({
             required={false}
             value={tbFotos}
             onChange={setTbFotos}
+            disabled={submitting}
           />
           <button
             type="button"
@@ -1233,6 +1356,7 @@ export function PartnerPositionLebenszyklusList({
             required={false}
             value={nachtragFotos}
             onChange={setNachtragFotos}
+            disabled={submitting}
           />
           <label className="flex flex-col gap-1">
             <span className="text-[11.5px] font-bold tracking-wide text-text-tertiary">
@@ -1256,9 +1380,9 @@ export function PartnerPositionLebenszyklusList({
               onChange={(e) => setNachtragBegruendung(e.target.value)}
               required
               minLength={8}
-              rows={3}
+              rows={8}
               placeholder="Warum nötig? Was wurde vorgefunden?"
-              className="portal-input w-full rounded-xl border border-border-default px-3 py-2.5"
+              className="portal-input w-full min-h-[160px] resize-y rounded-xl border border-border-default px-3 py-3 text-[15px] leading-relaxed"
             />
           </label>
           <div className="grid grid-cols-2 gap-2">

@@ -8,7 +8,7 @@ import {
   zeitMinutenFromStdMin,
   type EintragTyp,
 } from "@/lib/partner/position-lebenszyklus";
-import { uploadPartnerEintragFoto } from "@/lib/partner/partner-storage";
+import { uploadPartnerEintragFoto, resolvePartnerFileUrl } from "@/lib/partner/partner-storage";
 import {
   markPartnerBautagebuchAnfrageErledigt,
   syncPartnerPositionEintragToKundeTimeline,
@@ -259,7 +259,7 @@ function parseFotoFromForm(formData: FormData): {
   return { file: photo, captureAt, nachgereicht, nachreichGrund };
 }
 
-/** Bis zu 5 Ergebnis-Fotos: `fotos` (mehrfach) + Legacy `foto`. */
+/** Bis zu 12 Fotos: `fotos` (mehrfach) + Legacy `foto`. */
 function parseFotosFromForm(formData: FormData): File[] {
   const out: File[] = [];
   for (const entry of formData.getAll("fotos")) {
@@ -272,7 +272,7 @@ function parseFotosFromForm(formData: FormData): File[] {
     );
     if (!already) out.unshift(single);
   }
-  return out.slice(0, 5);
+  return out.slice(0, 12);
 }
 
 /** OFFEN → Start (bei Regie: Start-Foto + Beschreibung Pflicht). */
@@ -312,12 +312,13 @@ export async function startPartnerPosition(
   }
 
   const foto = parseFotoFromForm(formData);
+  const fotos = parseFotosFromForm(formData);
   const isRegie =
     String(pos.typ ?? "").toLowerCase() === "regie" ||
     String(pos.verguetung ?? "").toLowerCase() === "aufwand";
 
   if (isRegie) {
-    if (!foto.file) {
+    if (!foto.file && fotos.length === 0) {
       return { ok: false, error: "Bei Regie ist das Start-Foto Pflicht." };
     }
     if (!beschreibung?.trim()) {
@@ -341,13 +342,20 @@ export async function startPartnerPosition(
   });
   if (!eintrag.ok) return eintrag;
 
-  if (foto.file) {
+  const allFotos = [
+    ...fotos,
+    ...(foto.file &&
+    !fotos.some((f) => f.name === foto.file!.name && f.size === foto.file!.size)
+      ? [foto.file]
+      : []),
+  ];
+  for (const file of allFotos) {
     const attached = await attachFoto({
       eintragId: eintrag.id,
       handwerkerId: auth.handwerkerId,
       auftragId: String(pos.auftrag_id),
       positionId,
-      file: foto.file,
+      file,
       captureAt: foto.captureAt,
       nachgereicht: foto.nachgereicht,
       nachreichGrund: foto.nachreichGrund,
@@ -425,10 +433,11 @@ export async function addPartnerPositionFortschritt(
   }
 
   const foto = parseFotoFromForm(formData);
+  const fotos = parseFotosFromForm(formData);
   if (foto.nachgereicht && !foto.nachreichGrund) {
     return { ok: false, error: "Bitte Grund für nachgereichtes Foto angeben." };
   }
-  if (!foto.file && !beschreibung?.trim()) {
+  if (!foto.file && fotos.length === 0 && !beschreibung?.trim()) {
     return {
       ok: false,
       error: "Bitte kurz beschreiben oder ein Foto anhängen.",
@@ -451,13 +460,20 @@ export async function addPartnerPositionFortschritt(
   });
   if (!eintrag.ok) return eintrag;
 
-  if (foto.file) {
+  const allFotos = [
+    ...fotos,
+    ...(foto.file &&
+    !fotos.some((f) => f.name === foto.file!.name && f.size === foto.file!.size)
+      ? [foto.file]
+      : []),
+  ];
+  for (const file of allFotos) {
     const attached = await attachFoto({
       eintragId: eintrag.id,
       handwerkerId: auth.handwerkerId,
       auftragId: String(pos.auftrag_id),
       positionId,
-      file: foto.file,
+      file,
       captureAt: foto.captureAt,
       nachgereicht: foto.nachgereicht,
       nachreichGrund: foto.nachreichGrund,
@@ -1050,6 +1066,198 @@ export async function markPartnerPositionenErledigt(
 
   revalidatePath("/partner");
   return { ok: true, count: unique.length };
+}
+
+export type PartnerTagebuchListenEintrag = {
+  id: string;
+  titel: string;
+  beschreibung: string | null;
+  datum: string;
+  fotos: string[];
+  /** crm_intern | partner_app | … */
+  quelleLabel: string;
+  leistungNames: string[];
+};
+
+/**
+ * Alle Tagebuch-/Positions-Einträge am Auftrag (CRM + Partner), für HW-Tab.
+ */
+export async function listPartnerAuftragTagebuchEintraege(
+  auftragId: string
+): Promise<PartnerTagebuchListenEintrag[]> {
+  const auth = await partnerAuth();
+  if (!auth.ok) return [];
+
+  const aid = auftragId?.trim();
+  if (!aid) return [];
+  if (!(await assertPartnerAuftragAccess(auth.handwerkerId, aid))) return [];
+
+  const { data: posRows } = await supabaseAdmin
+    .from("auftrag_positionen")
+    .select("id, leistung_name")
+    .eq("auftrag_id", aid);
+  const posMeta = new Map<string, string>();
+  for (const p of posRows ?? []) {
+    posMeta.set(
+      String(p.id),
+      String(p.leistung_name ?? "").trim() || "Leistung"
+    );
+  }
+  const positionIds = Array.from(posMeta.keys());
+
+  let query = supabaseAdmin
+    .from("position_eintraege")
+    .select("id, position_id, auftrag_id, typ, beschreibung, erfasst_von, ereignis_zeit, created_at")
+    .order("ereignis_zeit", { ascending: false });
+
+  if (positionIds.length > 0) {
+    query = query.or(
+      `auftrag_id.eq.${aid},position_id.in.(${positionIds.join(",")})`
+    );
+  } else {
+    query = query.eq("auftrag_id", aid);
+  }
+
+  const { data: rows, error } = await query;
+  if (error) {
+    if (/position_eintraege|does not exist/i.test(error.message)) return [];
+    console.warn("[listPartnerAuftragTagebuchEintraege]", error.message);
+    return [];
+  }
+
+  const eintragIds = (rows ?? []).map((r) => String(r.id));
+  const junctionByEintrag = new Map<string, string[]>();
+  if (eintragIds.length > 0) {
+    const { data: junction } = await supabaseAdmin
+      .from("position_eintrag_leistungen")
+      .select("eintrag_id, position_id")
+      .in("eintrag_id", eintragIds);
+    for (const j of junction ?? []) {
+      const eid = String(j.eintrag_id);
+      const list = junctionByEintrag.get(eid) ?? [];
+      list.push(String(j.position_id));
+      junctionByEintrag.set(eid, list);
+    }
+  }
+
+  const fotosByEintrag = new Map<string, string[]>();
+  if (eintragIds.length > 0) {
+    const { data: fotos } = await supabaseAdmin
+      .from("eintrag_fotos")
+      .select("eintrag_id, storage_path")
+      .in("eintrag_id", eintragIds);
+    for (const f of fotos ?? []) {
+      const eid = String(f.eintrag_id);
+      const path = String(f.storage_path ?? "").trim();
+      if (!path) continue;
+      const list = fotosByEintrag.get(eid) ?? [];
+      list.push(path);
+      fotosByEintrag.set(eid, list);
+    }
+  }
+
+  const allPaths = Array.from(
+    new Set(Array.from(fotosByEintrag.values()).flat())
+  );
+  const urlByPath = new Map<string, string>();
+  await Promise.all(
+    allPaths.map(async (p) => {
+      const url = await resolvePartnerFileUrl(p);
+      if (url) urlByPath.set(p, url);
+      else if (/^https?:\/\//i.test(p)) urlByPath.set(p, p);
+    })
+  );
+
+  const out: PartnerTagebuchListenEintrag[] = [];
+  for (const row of rows ?? []) {
+    const eid = String(row.id);
+    const primaryPos =
+      row.position_id != null ? String(row.position_id) : null;
+    const junctionIds = junctionByEintrag.get(eid) ?? [];
+    const leistungIds = Array.from(
+      new Set([...(primaryPos ? [primaryPos] : []), ...junctionIds])
+    );
+    const leistungNames = leistungIds
+      .map((id) => posMeta.get(id))
+      .filter((n): n is string => Boolean(n));
+
+    const body = String(row.beschreibung ?? "").trim();
+    const lines = body.split(/\n+/).map((l) => l.trim()).filter(Boolean);
+    const titel =
+      lines[0]?.slice(0, 72) ||
+      (String(row.typ) === "notiz" ? "Notiz" : "Update");
+    const beschreibungText =
+      lines.length > 1
+        ? lines.slice(1).join("\n")
+        : lines[0] && lines[0].length > 72
+          ? body
+          : null;
+
+    const when =
+      (row.ereignis_zeit as string | null) ||
+      (row.created_at as string | null) ||
+      "";
+    const erfasst = String(row.erfasst_von ?? "");
+    const quelleLabel = erfasst.includes("crm")
+      ? "CRM"
+      : erfasst.includes("partner") || erfasst.includes("eigenbetrieb")
+        ? "Handwerker"
+        : "Eintrag";
+
+    out.push({
+      id: eid,
+      titel,
+      beschreibung: beschreibungText,
+      datum: when,
+      fotos: (fotosByEintrag.get(eid) ?? [])
+        .map((p) => urlByPath.get(p))
+        .filter((u): u is string => Boolean(u)),
+      quelleLabel,
+      leistungNames,
+    });
+  }
+
+  // Legacy-Tabelle (ältere Einträge / CRM-Alt)
+  const { data: legacy } = await supabaseAdmin
+    .from("auftrag_bautagebuch_eintraege")
+    .select(
+      "id, titel, beschreibung, datum, foto_urls, handwerker_id, eintrag_typ"
+    )
+    .eq("auftrag_id", aid)
+    .order("datum", { ascending: false });
+
+  for (const r of legacy ?? []) {
+    if (String(r.eintrag_typ ?? "") === "befund") continue;
+    const id = `legacy-${r.id}`;
+    if (out.some((e) => e.id === String(r.id))) continue;
+    const paths = Array.isArray(r.foto_urls)
+      ? (r.foto_urls as string[]).map((s) => String(s).trim()).filter(Boolean)
+      : [];
+    const fotos: string[] = [];
+    for (const p of paths) {
+      const url =
+        (await resolvePartnerFileUrl(p)) ??
+        (/^https?:\/\//i.test(p) ? p : null);
+      if (url) fotos.push(url);
+    }
+    out.push({
+      id,
+      titel: String(r.titel ?? "Update").trim() || "Update",
+      beschreibung: (r.beschreibung as string | null) ?? null,
+      datum: String(r.datum ?? ""),
+      fotos,
+      quelleLabel:
+        String(r.handwerker_id ?? "") === auth.handwerkerId
+          ? "Handwerker"
+          : r.handwerker_id
+            ? "Handwerker"
+            : "CRM",
+      leistungNames: [],
+    });
+  }
+
+  out.sort((a, b) => (b.datum || "").localeCompare(a.datum || ""));
+  return out;
 }
 
 async function assertPartnerAuftragAccess(
