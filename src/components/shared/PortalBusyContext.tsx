@@ -9,23 +9,46 @@ import {
   useState,
   type ReactNode,
 } from "react";
+import { flushSync } from "react-dom";
 
 type PortalBusyApi = {
   busy: boolean;
-  /** Kurz Loading zeigen (z. B. nach Nav / Refresh). */
+  /** Läuft hold/runBusy (auch verschachtelt). */
+  isHeld: () => boolean;
+  /** Kurz Loading zeigen (z. B. nach Nav ohne Detail-Fetch). */
   flash: (ms?: number) => void;
+  /** Busy halten bis release() — für Klick → Zielseite. */
+  hold: () => void;
+  /** Hold beenden (mind. minMs seit erstem hold). */
+  release: (msMin?: number) => void;
   /** Busy während async Arbeit. */
   runBusy: <T>(fn: () => Promise<T>, msMin?: number) => Promise<T>;
 };
 
 const PortalBusyContext = createContext<PortalBusyApi | null>(null);
 
-const DEFAULT_FLASH_MS = 320;
+/** Mindestanzeige für kurze Portal-Übergänge (Nav, Vorgang öffnen, Refresh). */
+export const PORTAL_BUSY_MIN_MS = 320;
+
+const DEFAULT_FLASH_MS = PORTAL_BUSY_MIN_MS;
+
+/**
+ * Busy-State sofort painten — vor `router.replace` / schwerem Detail-Mount.
+ * In allen Portalen beim Vorgang-Klick nutzen.
+ */
+export function paintPortalBusyNow(
+  ...setters: Array<(busy: boolean) => void>
+): void {
+  flushSync(() => {
+    for (const set of setters) set(true);
+  });
+}
 
 export function PortalBusyProvider({ children }: { children: ReactNode }) {
   const [busy, setBusy] = useState(false);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const holdRef = useRef(0);
+  const holdStartedAtRef = useRef(0);
 
   const clearTimer = useCallback(() => {
     if (timerRef.current != null) {
@@ -34,10 +57,48 @@ export function PortalBusyProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
+  const hold = useCallback(() => {
+    holdRef.current += 1;
+    if (holdRef.current === 1) {
+      holdStartedAtRef.current = Date.now();
+    }
+    clearTimer();
+    flushSync(() => {
+      setBusy(true);
+    });
+  }, [clearTimer]);
+
+  const release = useCallback(
+    (msMin = DEFAULT_FLASH_MS) => {
+      if (holdRef.current <= 0) {
+        clearTimer();
+        setBusy(false);
+        return;
+      }
+      if (holdRef.current > 1) {
+        holdRef.current -= 1;
+        return;
+      }
+      const elapsed = Date.now() - holdStartedAtRef.current;
+      const wait = Math.max(0, msMin - elapsed);
+      clearTimer();
+      timerRef.current = setTimeout(() => {
+        timerRef.current = null;
+        holdRef.current = 0;
+        setBusy(false);
+      }, wait);
+    },
+    [clearTimer]
+  );
+
   const flash = useCallback(
     (ms = DEFAULT_FLASH_MS) => {
+      // Während Hold nicht per Flash abschalten
+      if (holdRef.current > 0) return;
       clearTimer();
-      setBusy(true);
+      flushSync(() => {
+        setBusy(true);
+      });
       timerRef.current = setTimeout(() => {
         timerRef.current = null;
         if (holdRef.current === 0) setBusy(false);
@@ -48,25 +109,21 @@ export function PortalBusyProvider({ children }: { children: ReactNode }) {
 
   const runBusy = useCallback(
     async <T,>(fn: () => Promise<T>, msMin = DEFAULT_FLASH_MS): Promise<T> => {
-      holdRef.current += 1;
-      clearTimer();
-      setBusy(true);
-      const started = Date.now();
+      hold();
       try {
         return await fn();
       } finally {
-        const wait = Math.max(0, msMin - (Date.now() - started));
-        await new Promise((r) => setTimeout(r, wait));
-        holdRef.current = Math.max(0, holdRef.current - 1);
-        if (holdRef.current === 0) setBusy(false);
+        release(msMin);
       }
     },
-    [clearTimer]
+    [hold, release]
   );
 
+  const isHeld = useCallback(() => holdRef.current > 0, []);
+
   const api = useMemo(
-    () => ({ busy, flash, runBusy }),
-    [busy, flash, runBusy]
+    () => ({ busy, isHeld, flash, hold, release, runBusy }),
+    [busy, isHeld, flash, hold, release, runBusy]
   );
 
   return (
@@ -74,14 +131,15 @@ export function PortalBusyProvider({ children }: { children: ReactNode }) {
   );
 }
 
+const NOOP_API: PortalBusyApi = {
+  busy: false,
+  isHeld: () => false,
+  flash: () => undefined,
+  hold: () => undefined,
+  release: () => undefined,
+  runBusy: async (fn) => fn(),
+};
+
 export function usePortalBusy(): PortalBusyApi {
-  const ctx = useContext(PortalBusyContext);
-  if (!ctx) {
-    return {
-      busy: false,
-      flash: () => undefined,
-      runBusy: async (fn) => fn(),
-    };
-  }
-  return ctx;
+  return useContext(PortalBusyContext) ?? NOOP_API;
 }

@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 
+import { usePortalBusy } from "@/components/shared/PortalBusyContext";
 import { HV_ANGEBOT_ACTIONS } from "@/lib/portal2/hv-liste";
 import { orgPortalToast } from "@/lib/shared/portal-toast";
 import { track } from "@/lib/analytics";
@@ -13,33 +14,40 @@ type Props = {
 };
 
 /**
- * Mock Listen-Aktionen Angebots-Freigabe: Freigeben · Ablehnen
- * → POST /api/org/freigabe (`actAngebotAnnehmen` / Ablehnen)
+ * Listen-Aktionen Angebots-Freigabe: Ablehnen · Freigeben
+ * (links negativ, rechts positiv)
+ * → POST /api/org/freigabe
  */
 export function HvAngebotListActions({ leadId, onUpdated }: Props) {
   const [busy, setBusy] = useState(false);
+  const [busyId, setBusyId] = useState<"freigegeben" | "abgelehnt" | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const { runBusy } = usePortalBusy();
 
   const act = async (aktion: "freigegeben" | "abgelehnt") => {
     setBusy(true);
+    setBusyId(aktion);
     setError(null);
     try {
-      const res = await fetch("/api/org/freigabe", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ leadId, aktion }),
-      });
-      const json = (await res.json().catch(() => ({}))) as { error?: string };
-      if (!res.ok) {
-        setError(json.error ?? "Aktion fehlgeschlagen.");
-        return;
-      }
-      track.orgFreigabe(aktion);
-      if (aktion === "freigegeben") orgPortalToast.freigegeben();
-      else orgPortalToast.freigabeAbgelehnt();
-      onUpdated();
+      await runBusy(async () => {
+        const res = await fetch("/api/org/freigabe", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ leadId, aktion }),
+        });
+        const json = (await res.json().catch(() => ({}))) as { error?: string };
+        if (!res.ok) {
+          setError(json.error ?? "Aktion fehlgeschlagen.");
+          return;
+        }
+        track.orgFreigabe(aktion);
+        if (aktion === "freigegeben") orgPortalToast.freigegeben();
+        else orgPortalToast.freigabeAbgelehnt();
+        onUpdated();
+      }, 480);
     } finally {
       setBusy(false);
+      setBusyId(null);
     }
   };
 
@@ -58,7 +66,11 @@ export function HvAngebotListActions({ leadId, onUpdated }: Props) {
             className="rounded-lg px-3.5 py-2 text-[12.5px] font-semibold disabled:opacity-60"
             style={
               a.variant === "danger"
-                ? { border: "none", background: PORTAL_VAR.dangerSoft, color: PORTAL_VAR.danger }
+                ? {
+                    border: "none",
+                    background: PORTAL_VAR.dangerSoft,
+                    color: PORTAL_VAR.danger,
+                  }
                 : {
                     border: "none",
                     background: PORTAL_VAR.primary,
@@ -66,7 +78,7 @@ export function HvAngebotListActions({ leadId, onUpdated }: Props) {
                   }
             }
           >
-            {a.label}
+            {busyId === a.id ? "Wird geladen…" : a.label}
           </button>
         ))}
       </div>

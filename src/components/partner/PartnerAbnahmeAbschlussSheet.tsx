@@ -1,14 +1,15 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
-import { Plus, Trash2 } from "lucide-react";
+import { ChevronLeft, Plus, Trash2 } from "lucide-react";
 
 import { submitPartnerAbnahmeNachSignatur } from "@/app/actions/partner-abnahmeprotokoll";
-import { PartnerDetailError } from "@/components/partner/PartnerDetailUi";
+import { PortalDetailError } from "@/components/shared/PortalDetailUi";
 import { PartnerKiKorrekturField } from "@/components/partner/PartnerKiKorrekturField";
 import { PortalContentBusy } from "@/components/shared/PortalContentBusy";
 import { PortalModalShell } from "@/components/shared/PortalModalShell";
+import { PortalSheetStepProgress } from "@/components/shared/PortalSheetUi";
+import { usePortalRefresh } from "@/components/shared/usePortalRefresh";
 import { SignatureCanvas } from "@/components/shared/SignatureCanvas";
 import {
   autoAbnahmeErgebnis,
@@ -32,7 +33,15 @@ type LeistungOption = {
   leistung_status?: string | null;
 };
 
-type Step = "leistungen" | "signatur";
+const STEPS = [
+  { id: "leistungen", label: "Leistungen" },
+  { id: "maengel", label: "Mängel" },
+  { id: "angaben", label: "Angaben" },
+  { id: "sig_hw", label: "Handwerker vor Ort" },
+  { id: "sig_kunde", label: "Kunde vor Ort" },
+] as const;
+
+type Step = (typeof STEPS)[number]["id"];
 
 type Props = {
   open: boolean;
@@ -45,6 +54,8 @@ type Props = {
     vollstaendig: boolean;
     pdf_url: string | null;
     protokoll_id: string | null;
+    punkte_count: number;
+    maengel_count: number;
   }) => void;
 };
 
@@ -65,7 +76,7 @@ export function PartnerAbnahmeAbschlussSheet({
   onClose,
   onSuccess,
 }: Props) {
-  const router = useRouter();
+  const { refresh } = usePortalRefresh();
   const [step, setStep] = useState<Step>("leistungen");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -83,12 +94,14 @@ export function PartnerAbnahmeAbschlussSheet({
   const [ergebnis, setErgebnis] = useState<PortalAbnahmeErgebnis>("abgenommen");
   const [ergebnisTouched, setErgebnisTouched] = useState(false);
   const [notizen, setNotizen] = useState("");
+  const [showNotiz, setShowNotiz] = useState(false);
 
   const [addMode, setAddMode] = useState<AddMode>(null);
   const [draftTitel, setDraftTitel] = useState("");
   const [draftBeschreibung, setDraftBeschreibung] = useState("");
   const [draftFrist, setDraftFrist] = useState("");
   const [draftLeistungId, setDraftLeistungId] = useState<string | null>(null);
+  const [expandedPunktId, setExpandedPunktId] = useState<string | null>(null);
 
   const [hwName, setHwName] = useState("");
   const [kundeName, setKundeName] = useState("");
@@ -96,6 +109,9 @@ export function PartnerAbnahmeAbschlussSheet({
   const [hwHasSig, setHwHasSig] = useState(false);
   const [kundeSig, setKundeSig] = useState<string | null>(null);
   const [kundeHasSig, setKundeHasSig] = useState(false);
+
+  const stepIndex = STEPS.findIndex((s) => s.id === step);
+  const stepMeta = STEPS[stepIndex] ?? STEPS[0];
 
   const undokumentiertePositionen = useMemo(
     () =>
@@ -106,7 +122,11 @@ export function PartnerAbnahmeAbschlussSheet({
   );
 
   useEffect(() => {
-    if (!open) return;
+    if (!open) {
+      setLoading(false);
+      setError(null);
+      return;
+    }
     setStep("leistungen");
     setLoading(false);
     setError(null);
@@ -122,7 +142,9 @@ export function PartnerAbnahmeAbschlussSheet({
     setErgebnis(autoAbnahmeErgebnis(0));
     setErgebnisTouched(false);
     setNotizen("");
+    setShowNotiz(false);
     setAddMode(null);
+    setExpandedPunktId(null);
     setHwName("");
     setKundeName("");
     setHwSig(null);
@@ -235,30 +257,58 @@ export function PartnerAbnahmeAbschlussSheet({
     return true;
   }
 
-  function goSignatur() {
-    if (!punkte.length) {
-      setError("Mindestens eine abgeschlossene Leistung hinzufügen.");
-      return;
-    }
-    if (!projektbezeichnung.trim()) {
-      setError("Projektbezeichnung ist Pflicht.");
-      return;
-    }
-    if (!abnahmeDatum.trim()) {
-      setError("Abnahmedatum fehlt.");
-      return;
-    }
-    if (!ort.trim()) {
-      setError("Ort der Abnahme ist Pflicht.");
-      return;
-    }
-    if (!vertreter.trim()) {
-      setError("Vertreter (Auftragnehmer) ist Pflicht.");
-      return;
-    }
+  function goNext() {
     setError(null);
-    if (!hwName.trim()) setHwName(vertreter.trim());
-    setStep("signatur");
+    if (step === "leistungen") {
+      if (!punkte.length) {
+        setError("Mindestens eine abgeschlossene Leistung hinzufügen.");
+        return;
+      }
+      setStep("maengel");
+      return;
+    }
+    if (step === "maengel") {
+      setStep("angaben");
+      return;
+    }
+    if (step === "angaben") {
+      if (!projektbezeichnung.trim()) {
+        setError("Projektbezeichnung ist Pflicht.");
+        return;
+      }
+      if (!abnahmeDatum.trim()) {
+        setError("Abnahmedatum fehlt.");
+        return;
+      }
+      if (!ort.trim()) {
+        setError("Ort der Abnahme ist Pflicht.");
+        return;
+      }
+      if (!vertreter.trim()) {
+        setError("Handwerker vor Ort (Name) ist Pflicht.");
+        return;
+      }
+      if (!hwName.trim()) setHwName(vertreter.trim());
+      setStep("sig_hw");
+      return;
+    }
+    if (step === "sig_hw") {
+      if (hwName.trim().length < 3) {
+        setError("Bitte den vollen Namen ausschreiben (mind. 3 Zeichen).");
+        return;
+      }
+      if (!hwHasSig || !hwSig?.trim()) {
+        setError("Bitte Ihre Signatur zeichnen.");
+        return;
+      }
+      setStep("sig_kunde");
+    }
+  }
+
+  function goBack() {
+    setError(null);
+    const prev = STEPS[stepIndex - 1];
+    if (prev) setStep(prev.id);
   }
 
   const hwNameOk = hwName.trim().length >= 3;
@@ -272,9 +322,13 @@ export function PartnerAbnahmeAbschlussSheet({
     Boolean(kundeSig?.trim());
 
   function submitBlockReason(): string | null {
-    if (!hwNameOk) return "Bitte den vollen Namen des Handwerkers ausschreiben (mind. 3 Zeichen).";
+    if (!hwNameOk) {
+      return "Bitte den vollen Namen des Handwerkers ausschreiben (mind. 3 Zeichen).";
+    }
     if (!hwHasSig || !hwSig?.trim()) return "Bitte die Handwerker-Signatur zeichnen.";
-    if (!kundeNameOk) return "Bitte den vollen Namen des Kunden ausschreiben (mind. 3 Zeichen).";
+    if (!kundeNameOk) {
+      return "Bitte den vollen Namen des Kunden ausschreiben (mind. 3 Zeichen).";
+    }
     if (!kundeHasSig || !kundeSig?.trim()) return "Bitte die Kunden-Signatur erfassen.";
     return null;
   }
@@ -309,13 +363,17 @@ export function PartnerAbnahmeAbschlussSheet({
         return;
       }
       partnerPortalToast.abschlussSigniert();
-      router.refresh();
+      // Busy vom Modal sofort lösen — sonst hält PortalModalShell den
+      // globalen Shell-Busy fest, wenn open=false und loading noch true.
+      setLoading(false);
       onSuccess({
         vollstaendig: res.vollstaendig,
         pdf_url: res.pdf_url,
         protokoll_id: res.protokoll_id,
+        punkte_count: res.punkte_count,
+        maengel_count: res.maengel_count,
       });
-      // Loading bleibt bis Sheet schließt — kein Formular-Flackern.
+      void refresh();
     } catch {
       setError("Abschluss fehlgeschlagen. Bitte erneut versuchen.");
       setLoading(false);
@@ -332,23 +390,27 @@ export function PartnerAbnahmeAbschlussSheet({
       hwHasSig ||
       kundeHasSig);
 
+  const title = loading
+    ? "Protokoll wird erstellt"
+    : step === "leistungen"
+      ? "Leistungen prüfen"
+      : step === "maengel"
+        ? "Mängel"
+        : step === "angaben"
+          ? "Abnahme-Angaben"
+          : step === "sig_hw"
+            ? "Handwerker vor Ort"
+            : "Kunde vor Ort";
+
+  const subtitle = loading
+    ? "Bitte warten — danach kehren Sie zum Vorgang zurück"
+    : `Schritt ${stepIndex + 1} von ${STEPS.length}: ${stepMeta.label}`;
+
   return (
     <PortalModalShell
       open={open}
-      title={
-        loading
-          ? "Protokoll wird erstellt"
-          : step === "leistungen"
-            ? "Teilabnahme abschließen"
-            : "Kunden-Signatur"
-      }
-      subtitle={
-        loading
-          ? "Bitte warten — danach kehren Sie zum Vorgang zurück"
-          : step === "leistungen"
-            ? "Ihre Leistungen und optional Mängel — danach Freigabe durch Bärenwald"
-            : "Kunde und Handwerker unterschreiben vor Ort"
-      }
+      title={title}
+      subtitle={subtitle}
       onClose={() => {
         if (loading) return;
         onClose();
@@ -356,6 +418,9 @@ export function PartnerAbnahmeAbschlussSheet({
       variant="funnel"
       dirty={dirty}
       closeOnBackdrop={!loading}
+      busy={loading}
+      busyTitle="Abnahmedokument wird abgeschlossen…"
+      busyBody="Signaturen werden gespeichert und das Protokoll erstellt."
     >
       {loading ? (
         <PortalContentBusy
@@ -363,364 +428,429 @@ export function PartnerAbnahmeAbschlussSheet({
           body="Signaturen werden gespeichert und das Protokoll erstellt. Danach öffnet sich der Vorgang mit dem neuen Status."
         />
       ) : (
-      <div className="space-y-5 pb-4">
-        {error ? <PartnerDetailError message={error} /> : null}
+        <div className="flex min-h-0 flex-1 flex-col">
+          <PortalSheetStepProgress steps={STEPS} stepIndex={stepIndex} />
 
-        {step === "leistungen" ? (
-          <>
-            {undokumentiertePositionen.length > 0 ? (
-              <p
-                className="rounded-xl border border-amber-200 bg-amber-50 px-3.5 py-3 text-[13px] leading-relaxed text-amber-950"
-                role="status"
-              >
-                {undokumentiertePositionen.length === 1
-                  ? "1 Position ist noch nicht erledigt/dokumentiert."
-                  : `${undokumentiertePositionen.length} Positionen sind noch nicht erledigt/dokumentiert.`}{" "}
-                Sie können trotzdem abschließen — bitte prüfen, ob alle Leistungen
-                im Protokoll stehen.
-              </p>
-            ) : null}
+          <div className="min-h-0 flex-1 space-y-4 overflow-y-auto pb-2">
+            {error ? <PortalDetailError message={error} /> : null}
 
-            <section className="space-y-3">
-              <div className="flex items-center justify-between gap-2">
-                <h3
-                  className="text-[15px] font-bold"
-                  style={{ color: PORTAL_VAR.ink }}
-                >
-                  Abgeschlossene Leistungen
-                </h3>
-                <button
-                  type="button"
-                  className="inline-flex items-center gap-1 rounded-full border px-3 py-1.5 text-[12.5px] font-semibold"
-                  style={{ borderColor: PORTAL_VAR.line, color: PORTAL_VAR.primary }}
-                  onClick={() => setAddMode("wahl")}
-                >
-                  <Plus className="h-3.5 w-3.5" aria-hidden />
-                  Hinzufügen
-                </button>
-              </div>
+            {step === "leistungen" ? (
+              <>
+                {undokumentiertePositionen.length > 0 ? (
+                  <p className="portal-sheet-notice portal-sheet-notice--warn" role="status">
+                    {undokumentiertePositionen.length === 1
+                      ? "1 Position noch nicht dokumentiert."
+                      : `${undokumentiertePositionen.length} Positionen noch nicht dokumentiert.`}{" "}
+                    Abschluss trotzdem möglich.
+                  </p>
+                ) : null}
 
-              {punkte.length === 0 ? (
-                <p className="text-[13px]" style={{ color: PORTAL_VAR.sub }}>
-                  Erledigte Positionen werden vorausgefüllt. Sonst:
-                  einsprechen oder tippen → hinzufügen.
-                </p>
-              ) : (
-                <ul className="space-y-2">
-                  {punkte.map((p) => (
-                    <li
-                      key={p.id}
-                      className="rounded-xl border border-border-light bg-white px-3 py-3"
-                    >
-                      <div className="flex items-start justify-between gap-2">
-                        <input
-                          value={p.leistung_name}
-                          onChange={(e) =>
-                            setPunkte((prev) =>
-                              prev.map((x) =>
-                                x.id === p.id
-                                  ? { ...x, leistung_name: e.target.value }
-                                  : x
-                              )
-                            )
-                          }
-                          className="portal-input w-full rounded-lg border border-border-default px-2 py-1.5 text-[14px] font-semibold"
-                        />
-                        <button
-                          type="button"
-                          aria-label="Entfernen"
-                          className="shrink-0 p-1 text-text-tertiary"
-                          onClick={() =>
-                            setPunkte((prev) => prev.filter((x) => x.id !== p.id))
-                          }
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </button>
-                      </div>
-                      <PartnerKiKorrekturField
-                        scope="abnahmeprotokoll"
-                        className="mt-2"
-                        value={p.beschreibung}
-                        onChange={(v) =>
-                          setPunkte((prev) =>
-                            prev.map((x) =>
-                              x.id === p.id ? { ...x, beschreibung: v } : x
-                            )
-                          )
-                        }
-                        rows={2}
-                        auftragTitel={auftragTitel}
-                        leistungName={p.leistung_name}
-                        placeholder="Beschreibung (optional)"
-                      />
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </section>
-
-            <section className="space-y-3 border-t border-border-light pt-4">
-              <div className="flex items-center justify-between gap-2">
-                <h3
-                  className="text-[15px] font-bold"
-                  style={{ color: PORTAL_VAR.ink }}
-                >
-                  Mängel
-                </h3>
-                <button
-                  type="button"
-                  className="inline-flex items-center gap-1 rounded-full border px-3 py-1.5 text-[12.5px] font-semibold"
-                  style={{ borderColor: PORTAL_VAR.line, color: PORTAL_VAR.primary }}
-                  onClick={() => {
-                    resetDraft();
-                    setAddMode("mangel");
-                  }}
-                >
-                  <Plus className="h-3.5 w-3.5" aria-hidden />
-                  Hinzufügen
-                </button>
-              </div>
-              {maengel.length === 0 ? (
-                <p className="text-[13px]" style={{ color: PORTAL_VAR.sub }}>
-                  Keine Mängel — Abnahme ohne Vorbehalt ist in Ordnung.
-                </p>
-              ) : (
-                <ul className="space-y-2">
-                  {maengel.map((m) => (
-                    <li
-                      key={m.id}
-                      className="rounded-xl border border-amber-200 bg-amber-50/40 px-3 py-3"
-                    >
-                      <div className="flex items-start justify-between gap-2">
-                        <input
-                          value={m.titel}
-                          onChange={(e) =>
-                            setMaengel((prev) =>
-                              prev.map((x) =>
-                                x.id === m.id
-                                  ? { ...x, titel: e.target.value }
-                                  : x
-                              )
-                            )
-                          }
-                          className="portal-input w-full rounded-lg border border-border-default bg-white px-2 py-1.5 text-[14px] font-semibold"
-                        />
-                        <button
-                          type="button"
-                          aria-label="Entfernen"
-                          className="shrink-0 p-1 text-text-tertiary"
-                          onClick={() =>
-                            setMaengel((prev) => prev.filter((x) => x.id !== m.id))
-                          }
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </button>
-                      </div>
-                      <PartnerKiKorrekturField
-                        scope="abnahmeprotokoll"
-                        className="mt-2"
-                        value={m.beschreibung}
-                        onChange={(v) =>
-                          setMaengel((prev) =>
-                            prev.map((x) =>
-                              x.id === m.id ? { ...x, beschreibung: v } : x
-                            )
-                          )
-                        }
-                        rows={2}
-                        auftragTitel={auftragTitel}
-                        leistungName={m.titel}
-                        placeholder="Mangel beschreiben — einsprechen oder tippen"
-                      />
-                      {m.frist ? (
-                        <p className="mt-1 text-[12px] text-text-tertiary">
-                          Frist: {m.frist}
-                        </p>
-                      ) : null}
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </section>
-
-            <label className="block space-y-1">
-              <span className="text-[12px] font-semibold text-text-tertiary">
-                Projektbezeichnung *
-              </span>
-              <input
-                value={projektbezeichnung}
-                onChange={(e) => setProjektbezeichnung(e.target.value)}
-                placeholder="z. B. Auftrags- oder Objektname"
-                className="portal-input w-full rounded-xl border border-border-default px-3 py-2.5"
-                required
-              />
-            </label>
-
-            <div className="grid gap-3 sm:grid-cols-2">
-              <label className="block space-y-1">
-                <span className="text-[12px] font-semibold text-text-tertiary">
-                  Abnahmedatum *
-                </span>
-                <input
-                  type="date"
-                  value={abnahmeDatum}
-                  onChange={(e) => setAbnahmeDatum(e.target.value)}
-                  className="portal-input w-full rounded-xl border border-border-default px-3 py-2.5"
-                  required
-                />
-              </label>
-              <label className="block space-y-1">
-                <span className="text-[12px] font-semibold text-text-tertiary">
-                  Ort *
-                </span>
-                <input
-                  value={ort}
-                  onChange={(e) => setOrt(e.target.value)}
-                  placeholder="Ort der Abnahme"
-                  className="portal-input w-full rounded-xl border border-border-default px-3 py-2.5"
-                  required
-                />
-              </label>
-            </div>
-
-            <label className="block space-y-1">
-              <span className="text-[12px] font-semibold text-text-tertiary">
-                Vertreter (Auftragnehmer) *
-              </span>
-              <input
-                value={vertreter}
-                onChange={(e) => setVertreter(e.target.value)}
-                placeholder="Name des Vertreters vor Ort"
-                className="portal-input w-full rounded-xl border border-border-default px-3 py-2.5"
-                required
-              />
-            </label>
-
-            <fieldset className="space-y-2">
-              <legend className="text-[12px] font-semibold text-text-tertiary">
-                Ergebnis (optional)
-              </legend>
-              <div className="flex flex-wrap gap-2">
-                {ERGEBNIS_OPTIONS.map((key) => (
-                  <label
-                    key={key}
-                    className={cn(
-                      "inline-flex cursor-pointer items-center gap-2 rounded-full border px-3 py-1.5 text-[12.5px] font-semibold",
-                      ergebnis === key
-                        ? "border-accent bg-accent-light text-text-primary"
-                        : "border-border-light bg-white text-text-secondary"
-                    )}
+                <div className="flex items-center justify-between gap-2">
+                  <p className="portal-text-meta">
+                    {punkte.length === 0
+                      ? "Erledigte Positionen werden vorausgefüllt."
+                      : `${punkte.length} Leistung${punkte.length === 1 ? "" : "en"} im Protokoll`}
+                  </p>
+                  <button
+                    type="button"
+                    className="portal-sheet-chip"
+                    style={{
+                      color: PORTAL_VAR.primary,
+                    }}
+                    onClick={() => setAddMode("wahl")}
                   >
+                    <Plus className="h-3.5 w-3.5" aria-hidden />
+                    Hinzufügen
+                  </button>
+                </div>
+
+                {punkte.length === 0 ? (
+                  <button
+                    type="button"
+                    className="portal-action-btn portal-action-btn--secondary portal-action-btn--block"
+                    onClick={() => setAddMode("wahl")}
+                  >
+                    Erste Leistung hinzufügen
+                  </button>
+                ) : (
+                  <ul className="space-y-2">
+                    {punkte.map((p) => {
+                      const openDetail = expandedPunktId === p.id;
+                      return (
+                        <li
+                          key={p.id}
+                          className="portal-sheet-card"
+                        >
+                          <div className="flex items-start gap-2">
+                            <input
+                              value={p.leistung_name}
+                              onChange={(e) =>
+                                setPunkte((prev) =>
+                                  prev.map((x) =>
+                                    x.id === p.id
+                                      ? { ...x, leistung_name: e.target.value }
+                                      : x
+                                  )
+                                )
+                              }
+                              className="portal-input min-w-0 flex-1 rounded-lg border border-border-default px-2.5 py-2 text-[14px] font-semibold"
+                            />
+                            <button
+                              type="button"
+                              aria-label="Entfernen"
+                              className="shrink-0 p-2 text-text-tertiary"
+                              onClick={() =>
+                                setPunkte((prev) =>
+                                  prev.filter((x) => x.id !== p.id)
+                                )
+                              }
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </button>
+                          </div>
+                          <button
+                            type="button"
+                            className="portal-text-meta mt-1.5"
+                            style={{ color: PORTAL_VAR.primary }}
+                            onClick={() =>
+                              setExpandedPunktId(openDetail ? null : p.id)
+                            }
+                          >
+                            {openDetail
+                              ? "Beschreibung ausblenden"
+                              : p.beschreibung?.trim()
+                                ? "Beschreibung bearbeiten"
+                                : "Beschreibung (optional)"}
+                          </button>
+                          {openDetail ? (
+                            <PartnerKiKorrekturField
+                              scope="abnahmeprotokoll"
+                              className="mt-2"
+                              value={p.beschreibung}
+                              onChange={(v) =>
+                                setPunkte((prev) =>
+                                  prev.map((x) =>
+                                    x.id === p.id ? { ...x, beschreibung: v } : x
+                                  )
+                                )
+                              }
+                              rows={2}
+                              auftragTitel={auftragTitel}
+                              leistungName={p.leistung_name}
+                              placeholder="Kurz beschreiben oder einsprechen"
+                            />
+                          ) : null}
+                        </li>
+                      );
+                    })}
+                  </ul>
+                )}
+              </>
+            ) : null}
+
+            {step === "maengel" ? (
+              <>
+                <p className="portal-text-meta leading-snug">
+                  Optional. Ohne Mängel läuft die Abnahme ohne Vorbehalt.
+                </p>
+
+                <div className="flex items-center justify-between gap-2">
+                  <p
+                    className="text-[14px] font-semibold"
+                    style={{ color: PORTAL_VAR.ink }}
+                  >
+                    {maengel.length === 0
+                      ? "Keine Mängel"
+                      : maengel.length === 1
+                        ? "1 Mangel"
+                        : `${maengel.length} Mängel`}
+                  </p>
+                  <button
+                    type="button"
+                    className="portal-sheet-chip"
+                    style={{
+                      borderColor: PORTAL_VAR.line,
+                      color: PORTAL_VAR.primary,
+                    }}
+                    onClick={() => {
+                      resetDraft();
+                      setAddMode("mangel");
+                    }}
+                  >
+                    <Plus className="h-3.5 w-3.5" aria-hidden />
+                    Mangel
+                  </button>
+                </div>
+
+                {maengel.length > 0 ? (
+                  <ul className="space-y-2">
+                    {maengel.map((m) => (
+                      <li
+                        key={m.id}
+                        className="rounded-xl border border-amber-200 bg-amber-50/40 px-3 py-2.5"
+                      >
+                        <div className="flex items-start gap-2">
+                          <input
+                            value={m.titel}
+                            onChange={(e) =>
+                              setMaengel((prev) =>
+                                prev.map((x) =>
+                                  x.id === m.id
+                                    ? { ...x, titel: e.target.value }
+                                    : x
+                                )
+                              )
+                            }
+                            className="portal-input min-w-0 flex-1 rounded-lg border border-border-default bg-white px-2.5 py-2 text-[14px] font-semibold"
+                          />
+                          <button
+                            type="button"
+                            aria-label="Entfernen"
+                            className="shrink-0 p-2 text-text-tertiary"
+                            onClick={() =>
+                              setMaengel((prev) =>
+                                prev.filter((x) => x.id !== m.id)
+                              )
+                            }
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </button>
+                        </div>
+                        {m.beschreibung?.trim() ? (
+                          <p className="portal-text-meta mt-1.5 leading-snug text-text-secondary">
+                            {m.beschreibung}
+                          </p>
+                        ) : null}
+                        {m.frist ? (
+                          <p className="portal-text-meta mt-1 text-text-tertiary">
+                            Frist: {m.frist}
+                          </p>
+                        ) : null}
+                      </li>
+                    ))}
+                  </ul>
+                ) : null}
+              </>
+            ) : null}
+
+            {step === "angaben" ? (
+              <div className="space-y-3.5">
+                <label className="block space-y-1">
+                  <span className="portal-sheet-field-label">
+                    Projekt *
+                  </span>
+                  <input
+                    value={projektbezeichnung}
+                    onChange={(e) => setProjektbezeichnung(e.target.value)}
+                    placeholder="Objekt- oder Auftragsname"
+                    className="portal-input w-full rounded-xl border border-border-default px-3 py-3 text-[15px]"
+                    required
+                  />
+                </label>
+
+                <div className="grid grid-cols-1 gap-3">
+                  <label className="block space-y-1">
+                    <span className="portal-sheet-field-label">
+                      Datum *
+                    </span>
                     <input
-                      type="radio"
-                      name="abnahme_ergebnis"
-                      value={key}
-                      checked={ergebnis === key}
-                      className="sr-only"
-                      onChange={() => {
-                        setErgebnisTouched(true);
-                        setErgebnis(key);
-                      }}
+                      type="date"
+                      value={abnahmeDatum}
+                      onChange={(e) => setAbnahmeDatum(e.target.value)}
+                      className="portal-input w-full rounded-xl border border-border-default px-3 py-3 text-[15px]"
+                      required
                     />
-                    {PORTAL_ABNAHME_ERGEBNIS_LABEL[key]}
                   </label>
-                ))}
+                  <label className="block space-y-1">
+                    <span className="portal-sheet-field-label">
+                      Ort *
+                    </span>
+                    <input
+                      value={ort}
+                      onChange={(e) => setOrt(e.target.value)}
+                      placeholder="Ort der Abnahme"
+                      className="portal-input w-full rounded-xl border border-border-default px-3 py-3 text-[15px]"
+                      required
+                    />
+                  </label>
+                </div>
+
+                <label className="block space-y-1">
+                  <span className="portal-sheet-field-label">
+                    Handwerker vor Ort *
+                  </span>
+                  <input
+                    value={vertreter}
+                    onChange={(e) => setVertreter(e.target.value)}
+                    placeholder="Name des Handwerkers"
+                    className="portal-input w-full rounded-xl border border-border-default px-3 py-3 text-[15px]"
+                    required
+                  />
+                </label>
+
+                <fieldset className="space-y-2">
+                  <legend className="portal-sheet-field-label">
+                    Ergebnis
+                  </legend>
+                  <div className="flex flex-col gap-2">
+                    {ERGEBNIS_OPTIONS.map((key) => (
+                      <label
+                        key={key}
+                        className={cn(
+                          "flex cursor-pointer items-center gap-3 rounded-xl border px-3.5 py-3 text-[14px] font-semibold",
+                          ergebnis === key
+                            ? "border-accent bg-accent-light text-text-primary"
+                            : "border-border-light bg-white text-text-secondary"
+                        )}
+                      >
+                        <input
+                          type="radio"
+                          name="abnahme_ergebnis"
+                          value={key}
+                          checked={ergebnis === key}
+                          className="h-4 w-4 accent-[var(--portal-primary,#1f6a3f)]"
+                          onChange={() => {
+                            setErgebnisTouched(true);
+                            setErgebnis(key);
+                          }}
+                        />
+                        {PORTAL_ABNAHME_ERGEBNIS_LABEL[key]}
+                      </label>
+                    ))}
+                  </div>
+                </fieldset>
+
+                {showNotiz || notizen.trim() ? (
+                  <PartnerKiKorrekturField
+                    scope="abnahmeprotokoll"
+                    label="Interne Notiz (optional)"
+                    value={notizen}
+                    onChange={setNotizen}
+                    rows={2}
+                    auftragTitel={auftragTitel}
+                    placeholder="Kurz notieren oder einsprechen"
+                  />
+                ) : (
+                  <button
+                    type="button"
+                    className="portal-text-body font-semibold"
+                    style={{ color: PORTAL_VAR.primary }}
+                    onClick={() => setShowNotiz(true)}
+                  >
+                    + Interne Notiz hinzufügen
+                  </button>
+                )}
               </div>
-              <p className="text-[12px]" style={{ color: PORTAL_VAR.faint }}>
-                Standard aus Mängeln:{" "}
-                {PORTAL_ABNAHME_ERGEBNIS_LABEL[autoAbnahmeErgebnis(maengel.length)]}
-              </p>
-            </fieldset>
+            ) : null}
 
-            <PartnerKiKorrekturField
-              scope="abnahmeprotokoll"
-              label="Interne Notiz (optional)"
-              value={notizen}
-              onChange={setNotizen}
-              rows={2}
-              auftragTitel={auftragTitel}
-              placeholder="Kurz notieren oder einsprechen"
-            />
+            {step === "sig_hw" ? (
+              <div className="space-y-4">
+                <p className="portal-text-meta leading-snug">
+                  Bitte mit dem Namen unterschreiben, der im Protokoll erscheint.
+                </p>
+                <label className="block space-y-1.5">
+                  <span className="portal-sheet-field-label">
+                    Handwerker vor Ort *
+                  </span>
+                  <input
+                    value={hwName}
+                    onChange={(e) => setHwName(e.target.value)}
+                    className="portal-input w-full rounded-xl border border-border-default px-3 py-3 text-[15px]"
+                    autoComplete="name"
+                  />
+                </label>
+                <div>
+                  <p className="mb-1.5 portal-sheet-field-label">
+                    Signatur Handwerker *
+                  </p>
+                  <SignatureCanvas
+                    onChange={(has, url) => {
+                      setHwHasSig(has);
+                      setHwSig(url);
+                    }}
+                  />
+                </div>
+              </div>
+            ) : null}
 
-            <button
-              type="button"
-              className="portal-action-btn portal-action-btn--primary portal-action-btn--block"
-              onClick={goSignatur}
-            >
-              Zur Kunden-Signatur
-            </button>
-          </>
-        ) : (
-          <>
-            <button
-              type="button"
-              className="text-[13px] font-semibold text-text-secondary underline"
-              onClick={() => setStep("leistungen")}
-            >
-              ← Zurück zu Leistungen
-            </button>
+            {step === "sig_kunde" ? (
+              <div className="space-y-4">
+                <p className="portal-text-meta leading-snug">
+                  Gerät dem Kunden geben — Name und Unterschrift vor Ort.
+                </p>
+                <label className="block space-y-1.5">
+                  <span className="portal-sheet-field-label">
+                    Kunde vor Ort *
+                  </span>
+                  <input
+                    value={kundeName}
+                    onChange={(e) => setKundeName(e.target.value)}
+                    className="portal-input w-full rounded-xl border border-border-default px-3 py-3 text-[15px]"
+                    autoComplete="name"
+                  />
+                </label>
+                <div>
+                  <p className="mb-1.5 portal-sheet-field-label">
+                    Signatur Kunde vor Ort *
+                  </p>
+                  <SignatureCanvas
+                    onChange={(has, url) => {
+                      setKundeHasSig(has);
+                      setKundeSig(url);
+                    }}
+                  />
+                </div>
+              </div>
+            ) : null}
+          </div>
 
-            <label className="block space-y-1.5">
-              <span className="text-[12px] font-semibold text-text-tertiary">
-                Name Handwerker *
-              </span>
-              <input
-                value={hwName}
-                onChange={(e) => setHwName(e.target.value)}
-                className="portal-input w-full rounded-xl border border-border-default px-3 py-2.5"
-              />
-            </label>
-            <div>
-              <p className="mb-1.5 text-[12px] font-semibold text-text-tertiary">
-                Signatur Handwerker *
-              </p>
-              <SignatureCanvas
-                onChange={(has, url) => {
-                  setHwHasSig(has);
-                  setHwSig(url);
-                }}
-              />
+          <div
+            className="-mx-1 mt-3 border-t bg-[var(--portal-surface,#fff)] px-1 pt-3"
+            style={{ borderColor: PORTAL_VAR.line }}
+          >
+            <div className="portal-action-row">
+              {stepIndex > 0 ? (
+                <button
+                  type="button"
+                  className="portal-action-btn portal-action-btn--secondary"
+                  onClick={goBack}
+                >
+                  <ChevronLeft className="h-4 w-4 shrink-0" aria-hidden />
+                  Zurück
+                </button>
+              ) : null}
+              {step === "sig_kunde" ? (
+                <button
+                  type="button"
+                  className="portal-action-btn portal-action-btn--primary"
+                  disabled={!canSubmit}
+                  onClick={() => void submit()}
+                >
+                  Protokoll abschließen
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  className="portal-action-btn portal-action-btn--primary"
+                  onClick={goNext}
+                >
+                  {step === "maengel" && maengel.length === 0
+                    ? "Keine Mängel — weiter"
+                    : "Weiter"}
+                </button>
+              )}
             </div>
-
-            <label className="block space-y-1.5">
-              <span className="text-[12px] font-semibold text-text-tertiary">
-                Name Kunde *
-              </span>
-              <input
-                value={kundeName}
-                onChange={(e) => setKundeName(e.target.value)}
-                className="portal-input w-full rounded-xl border border-border-default px-3 py-2.5"
-              />
-            </label>
-            <div>
-              <p className="mb-1.5 text-[12px] font-semibold text-text-tertiary">
-                Signatur Kunde *
-              </p>
-              <SignatureCanvas
-                onChange={(has, url) => {
-                  setKundeHasSig(has);
-                  setKundeSig(url);
-                }}
-              />
-            </div>
-
-            <button
-              type="button"
-              className="portal-action-btn portal-action-btn--primary portal-action-btn--block"
-              disabled={!canSubmit}
-              onClick={() => void submit()}
-            >
-              Signatur abschließen
-            </button>
-            {!canSubmit ? (
-              <p className="text-center text-[12px]" style={{ color: PORTAL_VAR.faint }}>
+            {step === "sig_kunde" && !canSubmit ? (
+              <p
+                className="portal-text-meta mt-2 text-center"
+                style={{ color: PORTAL_VAR.faint }}
+              >
                 {submitBlockReason() ??
-                  "Namen und beide Signaturen sind nötig, bevor Sie abschließen können."}
+                  "Name und Signatur des Kunden fehlen noch."}
               </p>
             ) : null}
-          </>
-        )}
-      </div>
+          </div>
+        </div>
       )}
 
       {addMode && !loading ? (
@@ -744,10 +874,10 @@ export function PartnerAbnahmeAbschlussSheet({
         >
           <div className="space-y-3">
             {addMode === "wahl" ? (
-              <div className="space-y-2">
+              <div className="portal-action-row">
                 <button
                   type="button"
-                  className="portal-action-btn portal-action-btn--secondary portal-action-btn--block"
+                  className="portal-action-btn portal-action-btn--secondary"
                   onClick={() => {
                     setDraftTitel("");
                     setDraftBeschreibung("");
@@ -758,30 +888,30 @@ export function PartnerAbnahmeAbschlussSheet({
                 </button>
                 <button
                   type="button"
-                  className="portal-action-btn portal-action-btn--primary portal-action-btn--block"
+                  className="portal-action-btn portal-action-btn--primary"
                   disabled={!availableLeistungen.length}
                   onClick={() => setAddMode("erkannt")}
                 >
                   Erkannt — aus Auftrag
                 </button>
-                {!availableLeistungen.length ? (
-                  <p className="text-[12px] text-text-tertiary">
-                    Alle zugewiesenen Leistungen sind bereits hinzugefügt.
-                  </p>
-                ) : null}
               </div>
+            ) : null}
+            {addMode === "wahl" && !availableLeistungen.length ? (
+              <p className="portal-text-meta text-text-tertiary">
+                Alle zugewiesenen Leistungen sind bereits hinzugefügt.
+              </p>
             ) : null}
 
             {addMode === "leer" || addMode === "mangel" ? (
               <div className="space-y-3">
                 <label className="block space-y-1">
-                  <span className="text-[12px] font-semibold text-text-tertiary">
+                  <span className="portal-sheet-field-label">
                     Titel *
                   </span>
                   <input
                     value={draftTitel}
                     onChange={(e) => setDraftTitel(e.target.value)}
-                    className="portal-input w-full rounded-xl border border-border-default px-3 py-2.5"
+                    className="portal-input w-full rounded-xl border border-border-default px-3 py-3 text-[15px]"
                   />
                 </label>
                 <PartnerKiKorrekturField
@@ -792,41 +922,33 @@ export function PartnerAbnahmeAbschlussSheet({
                   rows={3}
                   auftragTitel={auftragTitel}
                   leistungName={draftTitel}
-                  placeholder="Einsprechen oder tippen — KI formuliert kundenfertig"
+                  placeholder="Tippen — KI formuliert kundenfertig"
                 />
                 {addMode === "mangel" ? (
                   <label className="block space-y-1">
-                    <span className="text-[12px] font-semibold text-text-tertiary">
+                    <span className="portal-sheet-field-label">
                       Frist (optional)
                     </span>
                     <input
                       type="date"
                       value={draftFrist}
                       onChange={(e) => setDraftFrist(e.target.value)}
-                      className="portal-input w-full rounded-xl border border-border-default px-3 py-2.5"
+                      className="portal-input w-full rounded-xl border border-border-default px-3 py-3"
                     />
                   </label>
                 ) : null}
-                <div className="flex flex-col gap-2">
+                <div className="mt-1">
                   <button
                     type="button"
                     className="portal-action-btn portal-action-btn--primary portal-action-btn--block"
-                    onClick={() =>
-                      addMode === "mangel" ? addMangel() : addLeerLeistung()
-                    }
-                  >
-                    Hinzufügen &amp; nächste
-                  </button>
-                  <button
-                    type="button"
-                    className="portal-action-btn portal-action-btn--secondary portal-action-btn--block"
+                    disabled={draftTitel.trim().length < 2}
                     onClick={() => {
                       const ok =
                         addMode === "mangel" ? addMangel() : addLeerLeistung();
                       if (ok) resetDraft();
                     }}
                   >
-                    Hinzufügen &amp; fertig
+                    Hinzufügen
                   </button>
                 </div>
               </div>
@@ -840,10 +962,8 @@ export function PartnerAbnahmeAbschlussSheet({
                       <button
                         type="button"
                         className={cn(
-                          "w-full rounded-lg border px-3 py-2.5 text-left text-[13.5px] font-semibold",
-                          draftLeistungId === l.id
-                            ? "border-accent bg-accent-light"
-                            : "border-border-light bg-white"
+                          "portal-sheet-card portal-sheet-card--selectable",
+                          draftLeistungId === l.id && "is-active"
                         )}
                         onClick={() => {
                           setDraftLeistungId(l.id);
@@ -851,10 +971,10 @@ export function PartnerAbnahmeAbschlussSheet({
                           setDraftBeschreibung(l.beschreibung?.trim() || "");
                         }}
                       >
-                        {l.leistung_name}
+                        <span className="portal-text-card-title">{l.leistung_name}</span>
                         {String(l.leistung_status ?? "").toLowerCase() ===
                         "erledigt" ? (
-                          <span className="mt-0.5 block text-[11.5px] font-medium text-text-tertiary">
+                          <span className="portal-text-meta mt-0.5 block text-text-tertiary">
                             dokumentiert
                           </span>
                         ) : null}
@@ -865,13 +985,13 @@ export function PartnerAbnahmeAbschlussSheet({
                 {draftLeistungId ? (
                   <>
                     <label className="block space-y-1">
-                      <span className="text-[12px] font-semibold text-text-tertiary">
+                      <span className="portal-sheet-field-label">
                         Titel
                       </span>
                       <input
                         value={draftTitel}
                         onChange={(e) => setDraftTitel(e.target.value)}
-                        className="portal-input w-full rounded-xl border border-border-default px-3 py-2.5"
+                        className="portal-input w-full rounded-xl border border-border-default px-3 py-3"
                       />
                     </label>
                     <PartnerKiKorrekturField
@@ -882,24 +1002,18 @@ export function PartnerAbnahmeAbschlussSheet({
                       rows={3}
                       auftragTitel={auftragTitel}
                       leistungName={draftTitel}
-                      placeholder="Einsprechen oder tippen — KI formuliert kundenfertig"
+                      placeholder="Tippen — KI formuliert kundenfertig"
                     />
-                    <div className="flex flex-col gap-2">
+                    <div className="mt-1">
                       <button
                         type="button"
                         className="portal-action-btn portal-action-btn--primary portal-action-btn--block"
-                        onClick={addErkanntLeistung}
-                      >
-                        Hinzufügen &amp; nächste
-                      </button>
-                      <button
-                        type="button"
-                        className="portal-action-btn portal-action-btn--secondary portal-action-btn--block"
+                        disabled={draftTitel.trim().length < 2}
                         onClick={() => {
                           if (addErkanntLeistung()) resetDraft();
                         }}
                       >
-                        Hinzufügen &amp; fertig
+                        Hinzufügen
                       </button>
                     </div>
                   </>

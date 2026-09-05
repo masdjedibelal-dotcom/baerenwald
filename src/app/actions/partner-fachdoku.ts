@@ -7,30 +7,15 @@ import { linkPortalHandwerkerToAuthUser } from "@/lib/partner/link-portal-handwe
 import { uploadPartnerFachdokuDoc } from "@/lib/partner/partner-storage";
 import { createClient } from "@/lib/supabase/server";
 import { isSupabaseConfigured, supabaseAdmin } from "@/lib/supabase";
+import { assertPartnerAktiveZuweisung } from "@/lib/partner/partner-zuweisung-access";
 import type { FachdokuSlotView } from "@/lib/partner/fachdoku-slots";
 
 export type PartnerFachdokuResult =
   | { ok: true; slots: FachdokuSlotView[] }
   | { ok: false; error: string };
 
-async function assertPartnerAuftrag(
-  handwerkerId: string,
-  auftragId: string
-): Promise<boolean> {
-  const { data: zuweisung } = await supabaseAdmin
-    .from("auftrag_handwerker")
-    .select("id")
-    .eq("auftrag_id", auftragId)
-    .eq("handwerker_id", handwerkerId)
-    .maybeSingle();
-  if (zuweisung) return true;
-  const { data: pos } = await supabaseAdmin
-    .from("auftrag_positionen")
-    .select("id")
-    .eq("auftrag_id", auftragId)
-    .eq("handwerker_id", handwerkerId)
-    .limit(1);
-  return Boolean(pos?.length);
+async function assertPartnerAuftrag(handwerkerId: string, auftragId: string) {
+  return assertPartnerAktiveZuweisung(handwerkerId, auftragId);
 }
 
 async function gewerkeForAuftrag(auftragId: string): Promise<string[]> {
@@ -144,6 +129,17 @@ export async function uploadPartnerFachdokuSlot(formData: FormData): Promise<
     .eq("auftrag_id", auftragId);
 
   if (error) return { ok: false, error: error.message };
+
+  void import("@/lib/partner/notify-crm-partner-dokument").then(
+    ({ notifyCrmPartnerDokumentUpload }) =>
+      notifyCrmPartnerDokumentUpload({
+        typ: "fachdoku",
+        handwerkerId: link.handwerkerId,
+        auftragId,
+        slotId,
+        titel: String(slot.label ?? slot.slot_code ?? "Fachnachweis").trim(),
+      })
+  );
 
   revalidatePath("/partner");
   const gewerke = await gewerkeForAuftrag(auftragId);

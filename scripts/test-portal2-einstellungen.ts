@@ -96,7 +96,11 @@ assert("hw section bank", HW_FIRMEN_SECTIONS.bank.includes("BANKVERBINDUNG"));
 assert(
   "hw nav inkl. Stammunterlagen",
   EINSTELLUNGEN_NAV_HW.map((n) => n.id).join(",") ===
-    "anschrift,steuer,bank,stamm"
+    "anschrift,stamm,benachrichtigungen"
+);
+assert(
+  "hw nav label daten",
+  EINSTELLUNGEN_NAV_HW.find((n) => n.id === "anschrift")?.label === "Daten"
 );
 assert(
   "hw nav label stamm",

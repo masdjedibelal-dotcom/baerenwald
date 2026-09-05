@@ -1,6 +1,12 @@
 import { writeAuditEvent } from "@/lib/audit/write-audit-event";
-import { generateVersicherungsaktePdf } from "@/lib/org/generate-versicherungsakte-pdf";
-import { kostentraegerLabel } from "@/lib/vorgang/kostentraeger";
+import { generateVersicherungsTeilPdf } from "@/lib/org/generate-versicherungsakte-pdf";
+import { buildVersicherungsakteSchadenAngaben } from "@/lib/org/versicherungsakte-schaden-angaben";
+import {
+  phaseStoragePath,
+  resolveVersicherungPdfReadiness,
+  type VersicherungPdfPhase,
+  type VersicherungPdfReadiness,
+} from "@/lib/org/versicherung-pdf-readiness";
 import { supabaseAdmin } from "@/lib/supabase";
 
 const BUCKET = "protokolle";
@@ -16,126 +22,327 @@ function adresseFrom(parts: {
   return line || undefined;
 }
 
-function hergangFromLead(lead: {
-  kontakt_nachricht?: string | null;
-  notizen?: string | null;
-  situation?: string | null;
-  melder_name?: string | null;
-  created_at?: string | null;
-}): string {
-  const bits: string[] = [];
-  if (lead.created_at) {
-    const d = new Date(lead.created_at).toLocaleDateString("de-DE");
-    bits.push(
-      `Am ${d} wurde der Schaden gemeldet` +
-        (lead.melder_name ? ` (${lead.melder_name})` : "") +
-        "."
+type EnsureOpts = {
+  actorId?: string | null;
+  actorRolle?: string | null;
+  phase?: VersicherungPdfPhase;
+};
+
+type LeadSignals = {
+  hasHmBefund: boolean;
+  hasHwBefund: boolean;
+  hasHwUpdate: boolean;
+  hmPathTaken: boolean;
+  hasAuftrag: boolean;
+  befundZeilen: Array<{
+    datum: string;
+    titel: string;
+    text: string;
+    fotoCount: number;
+  }>;
+  chronologie: Array<{ datum: string; text: string }>;
+};
+
+async function loadLeadSignals(leadId: string): Promise<LeadSignals> {
+  const befundZeilen: LeadSignals["befundZeilen"] = [];
+  const chronologie: LeadSignals["chronologie"] = [];
+  let hasHmBefund = false;
+  let hasHwBefund = false;
+  let hasHwUpdate = false;
+
+  const { data: leadBefund, error: befundErr } = await supabaseAdmin
+    .from("lead_befunde")
+    .select("id, durchgefuehrt_von, durchgefuehrt_am, ergebnis, vorlage_key")
+    .eq("lead_id", leadId)
+    .maybeSingle();
+
+  if (!befundErr && leadBefund?.id) {
+    const { data: punkte } = await supabaseAdmin
+      .from("lead_befund_punkte")
+      .select("titel, status, notiz, foto_refs, sort_order")
+      .eq("befund_id", leadBefund.id)
+      .order("sort_order", { ascending: true });
+
+    const lines: string[] = [];
+    let fotoCount = 0;
+    let substance = Boolean(
+      leadBefund.durchgefuehrt_am || leadBefund.ergebnis || leadBefund.durchgefuehrt_von
     );
+    for (const p of punkte ?? []) {
+      const st = String(p.status ?? "").trim() || "offen";
+      const notiz = String(p.notiz ?? "").trim();
+      lines.push(`• ${p.titel} [${st}]${notiz ? ` — ${notiz}` : ""}`);
+      if (Array.isArray(p.foto_refs) && p.foto_refs.length) {
+        fotoCount += p.foto_refs.length;
+        substance = true;
+      }
+      if (notiz || (st && st !== "offen")) substance = true;
+    }
+    if (substance || lines.length > 0) {
+      hasHmBefund = substance || lines.length > 0;
+      const datum =
+        String(leadBefund.durchgefuehrt_am ?? "").slice(0, 10) ||
+        new Date().toISOString().slice(0, 10);
+      const header = [
+        leadBefund.durchgefuehrt_von
+          ? `Durchgeführt von: ${leadBefund.durchgefuehrt_von}`
+          : null,
+        leadBefund.ergebnis ? `Ergebnis: ${leadBefund.ergebnis}` : null,
+      ]
+        .filter(Boolean)
+        .join(" · ");
+      befundZeilen.push({
+        datum,
+        titel: "Hausmeister-Vorbefund",
+        text: [header, ...lines].filter(Boolean).join("\n"),
+        fotoCount,
+      });
+      chronologie.push({ datum, text: "Hausmeister-Vorbefund" });
+    }
   }
-  const body =
-    lead.kontakt_nachricht?.trim() ||
-    lead.notizen?.trim() ||
-    lead.situation?.trim();
-  if (body) bits.push(body);
-  return bits.join(" ") || "Schadenmeldung aus dem Vorgang.";
+
+  const { data: auftraege } = await supabaseAdmin
+    .from("auftraege")
+    .select("id, created_at")
+    .eq("lead_id", leadId)
+    .order("created_at", { ascending: false });
+
+  const hasAuftrag = (auftraege ?? []).length > 0;
+
+  for (const auftrag of auftraege ?? []) {
+    const auftragId = String(auftrag.id);
+    const { data: btRows } = await supabaseAdmin
+      .from("auftrag_bautagebuch_eintraege")
+      .select("titel, beschreibung, datum, foto_urls, eintrag_typ")
+      .eq("auftrag_id", auftragId)
+      .order("datum", { ascending: true })
+      .limit(40);
+
+    for (const row of btRows ?? []) {
+      const typ = String(row.eintrag_typ ?? "");
+      if (typ === "befund") {
+        hasHwBefund = true;
+        befundZeilen.push({
+          datum: String(row.datum ?? ""),
+          titel: String(row.titel ?? "Schadenbefund"),
+          text: String(row.beschreibung ?? "").trim(),
+          fotoCount: Array.isArray(row.foto_urls) ? row.foto_urls.length : 0,
+        });
+      } else {
+        hasHwUpdate = true;
+      }
+      chronologie.push({
+        datum: String(row.datum ?? ""),
+        text: `${String(row.titel ?? "Eintrag")}${
+          typ === "befund" ? " (Befund)" : ""
+        }`,
+      });
+    }
+
+    const { data: posRows, error: posErr } = await supabaseAdmin
+      .from("auftrag_positionen")
+      .select("id, leistung_name")
+      .eq("auftrag_id", auftragId);
+
+    if (!posErr && posRows?.length) {
+      const posIds = posRows.map((p) => String(p.id));
+      const nameById = new Map(
+        posRows.map((p) => [String(p.id), String(p.leistung_name ?? "Leistung")])
+      );
+      const { data: eintraege } = await supabaseAdmin
+        .from("position_eintraege")
+        .select("position_id, typ, beschreibung, created_at, ereignis_zeit")
+        .in("position_id", posIds)
+        .order("created_at", { ascending: true })
+        .limit(80);
+
+      for (const e of eintraege ?? []) {
+        hasHwUpdate = true;
+        const typ = String(e.typ ?? "");
+        const label =
+          typ === "start"
+            ? "Update"
+            : typ === "fortschritt"
+              ? "Fortschritt"
+              : typ === "ergebnis"
+                ? "Ergebnis"
+                : typ;
+        chronologie.push({
+          datum: String(e.ereignis_zeit ?? e.created_at ?? ""),
+          text: `${nameById.get(String(e.position_id)) ?? "Position"} — ${label}${
+            e.beschreibung ? `: ${String(e.beschreibung).slice(0, 120)}` : ""
+          }`,
+        });
+      }
+    }
+  }
+
+  chronologie.sort((a, b) => a.datum.localeCompare(b.datum));
+
+  return {
+    hasHmBefund,
+    hasHwBefund,
+    hasHwUpdate,
+    hmPathTaken: false, // set by caller from hv status
+    hasAuftrag,
+    befundZeilen,
+    chronologie,
+  };
+}
+
+/** Readiness für UI / API — lädt Signale aus DB. */
+export async function getVersicherungPdfReadinessForLead(
+  leadId: string
+): Promise<VersicherungPdfReadiness | { error: string }> {
+  const id = leadId?.trim();
+  if (!id) return { error: "Lead fehlt." };
+
+  const { data: lead, error } = await supabaseAdmin
+    .from("leads")
+    .select("id, kostentraeger, hv_meldung_status")
+    .eq("id", id)
+    .maybeSingle();
+
+  if (error || !lead) {
+    return { error: error?.message ?? "Vorgang nicht gefunden." };
+  }
+
+  const signals = await loadLeadSignals(id);
+  const hv = String(lead.hv_meldung_status ?? "")
+    .trim()
+    .toLowerCase();
+  const hmPathTaken =
+    hv === "hm_pruefung" || hv === "hm_erledigt" || signals.hasHmBefund;
+
+  return resolveVersicherungPdfReadiness({
+    kostentraeger: lead.kostentraeger,
+    hvMeldungStatus: lead.hv_meldung_status,
+    hasHmBefund: signals.hasHmBefund,
+    hasHwBefund: signals.hasHwBefund,
+    hasHwUpdate: signals.hasHwUpdate,
+    hmPathTaken,
+    hasAuftrag: signals.hasAuftrag,
+  });
+}
+
+/** Während HM-Prüfung: Ursache-PDF gesperrt. */
+export async function isVersicherungsakteBlockedByHmBefund(
+  leadId: string
+): Promise<boolean> {
+  const id = leadId?.trim();
+  if (!id) return false;
+  const { data: lead } = await supabaseAdmin
+    .from("leads")
+    .select("hv_meldung_status")
+    .eq("id", id)
+    .maybeSingle();
+  return (
+    String(lead?.hv_meldung_status ?? "")
+      .trim()
+      .toLowerCase() === "hm_pruefung"
+  );
 }
 
 /**
- * Erzeugt/aktualisiert die Schadenakte (PDF) am Auftrag und setzt versicherungsakte_pdf_url.
- * No-op wenn Kostenträger nicht Versicherung.
+ * Erzeugt Teil-PDF (meldung | ursache) und legt es in Storage ab.
+ * Default phase = meldung (Auto-Schadenakte / Legacy).
  */
-export async function ensureVersicherungsakteForAuftrag(
-  auftragId: string,
-  opts?: { actorId?: string | null; actorRolle?: string | null }
-): Promise<{ ok: true; url: string } | { ok: false; message: string }> {
-  const id = auftragId?.trim();
-  if (!id) return { ok: false, message: "Auftrag fehlt." };
+export async function ensureVersicherungsakteForLead(
+  leadId: string,
+  opts?: EnsureOpts
+): Promise<{ ok: true; url: string; phase: VersicherungPdfPhase } | { ok: false; message: string }> {
+  const id = leadId?.trim();
+  if (!id) return { ok: false, message: "Lead fehlt." };
+  const phase: VersicherungPdfPhase = opts?.phase ?? "meldung";
 
-  const { data: auftrag, error } = await supabaseAdmin
-    .from("auftraege")
+  const readiness = await getVersicherungPdfReadinessForLead(id);
+  if ("error" in readiness) return { ok: false, message: readiness.error };
+
+  const phaseStatus = phase === "meldung" ? readiness.meldung : readiness.ursache;
+  if (!phaseStatus.ready) {
+    return {
+      ok: false,
+      message: phaseStatus.blockers[0] ?? "PDF noch nicht freigeschaltet.",
+    };
+  }
+
+  const { data: lead, error: leadErr } = await supabaseAdmin
+    .from("leads")
     .select(
-      "id, kunde_id, lead_id, titel, kostentraeger, versicherungs_nr, abnahme_protokoll_url, abnahme_datum, created_at"
+      "id, auftraggeber_kunde_id, kunde_id, kunde_objekt_id, kostentraeger, versicherungs_nr, schaden_nr, kontakt_name, kontakt_nachricht, notizen, situation, bereiche, zeitraum, melder_name, melder_einheit, melder_telefon, melder_email, created_at, strasse, hausnummer, plz, ort, funnel_daten"
     )
     .eq("id", id)
     .maybeSingle();
 
-  if (error || !auftrag) {
-    return { ok: false, message: error?.message ?? "Auftrag nicht gefunden." };
+  if (leadErr || !lead) {
+    return { ok: false, message: leadErr?.message ?? "Vorgang nicht gefunden." };
   }
 
-  let lead: Record<string, unknown> | null = null;
-  if (auftrag.lead_id) {
-    const { data } = await supabaseAdmin
-      .from("leads")
-      .select(
-        "id, kostentraeger, versicherungs_nr, kontakt_nachricht, notizen, situation, melder_name, created_at, strasse, hausnummer, plz, kunde_objekt_id, auftraggeber_kunde_id"
-      )
-      .eq("id", auftrag.lead_id)
-      .maybeSingle();
-    lead = data;
-  }
-
-  const kt =
-    String(auftrag.kostentraeger ?? lead?.kostentraeger ?? "").trim() || null;
-  if (kt !== "versicherung") {
-    return { ok: false, message: "Kostenträger ist nicht Versicherung." };
-  }
-
-  let versNr =
-    String(auftrag.versicherungs_nr ?? lead?.versicherungs_nr ?? "").trim() ||
-    null;
-  let selbstbehaltEur: number | null = null;
-
+  let versNr = String(lead.versicherungs_nr ?? "").trim() || null;
   let orgName = "Verwaltung";
-  const kundeId = auftrag.kunde_id
-    ? String(auftrag.kunde_id)
-    : lead?.auftraggeber_kunde_id
-      ? String(lead.auftraggeber_kunde_id)
+  const absenderZeilen: string[] = [];
+  let absenderTel: string | null = null;
+  let absenderEmail: string | null = null;
+
+  const kundeId = lead.auftraggeber_kunde_id
+    ? String(lead.auftraggeber_kunde_id)
+    : lead.kunde_id
+      ? String(lead.kunde_id)
       : null;
+
   if (kundeId) {
     const { data: kunde } = await supabaseAdmin
       .from("kunden")
-      .select("name")
+      .select(
+        "name, org_anzeigename, email, org_telefon, org_strasse, org_hausnummer, org_plz, org_ort, strasse, hausnummer, plz, ort"
+      )
       .eq("id", kundeId)
       .maybeSingle();
-    if (kunde?.name) orgName = String(kunde.name);
+    if (kunde) {
+      orgName =
+        String(kunde.org_anzeigename ?? "").trim() ||
+        String(kunde.name ?? "").trim() ||
+        orgName;
+      const street = [
+        kunde.org_strasse ?? kunde.strasse,
+        kunde.org_hausnummer ?? kunde.hausnummer,
+      ]
+        .filter(Boolean)
+        .join(" ")
+        .trim();
+      const plzOrt = [
+        kunde.org_plz ?? kunde.plz,
+        kunde.org_ort ?? kunde.ort,
+      ]
+        .filter(Boolean)
+        .join(" ")
+        .trim();
+      if (street) absenderZeilen.push(street);
+      if (plzOrt) absenderZeilen.push(plzOrt);
+      absenderTel = String(kunde.org_telefon ?? "").trim() || null;
+      absenderEmail = String(kunde.email ?? "").trim() || null;
+    }
   }
 
-  let objektTitel = String(auftrag.titel ?? "Objekt");
+  let objektTitel = "Objekt";
   let objektAdresse: string | undefined = adresseFrom({
-    strasse: lead?.strasse as string | null,
-    hausnummer: lead?.hausnummer as string | null,
-    plz: lead?.plz as string | null,
+    strasse: lead.strasse,
+    hausnummer: lead.hausnummer,
+    plz: lead.plz,
   });
-  const objektId = lead?.kunde_objekt_id
-    ? String(lead.kunde_objekt_id)
-    : null;
+  let objektForAngaben: {
+    name: string;
+    strasse: string | null;
+    plz: string | null;
+    ort: string | null;
+  } | null = null;
+  const objektId = lead.kunde_objekt_id ? String(lead.kunde_objekt_id) : null;
   if (objektId) {
-    const firstObj = await supabaseAdmin
+    const { data: obj } = await supabaseAdmin
       .from("kunden_objekte")
-      .select(
-        "titel, strasse, hausnummer, plz, versicherer, versicherungs_nr, selbstbehalt_eur"
-      )
+      .select("titel, strasse, hausnummer, plz, ort, versicherungs_nr")
       .eq("id", objektId)
       .maybeSingle();
-    let obj: {
-      titel?: string | null;
-      strasse?: string | null;
-      hausnummer?: string | null;
-      plz?: string | null;
-      versicherer?: string | null;
-      versicherungs_nr?: string | null;
-      selbstbehalt_eur?: number | null;
-    } | null = firstObj.data;
-    const objErr = firstObj.error;
-    if (objErr && /versicherer|versicherungs_nr|selbstbehalt/i.test(objErr.message)) {
-      const fallback = await supabaseAdmin
-        .from("kunden_objekte")
-        .select("titel, strasse, hausnummer, plz")
-        .eq("id", objektId)
-        .maybeSingle();
-      obj = fallback.data;
-    }
     if (obj?.titel) objektTitel = String(obj.titel);
     objektAdresse =
       adresseFrom({
@@ -146,122 +353,68 @@ export async function ensureVersicherungsakteForAuftrag(
     if (!versNr && obj?.versicherungs_nr) {
       versNr = String(obj.versicherungs_nr).trim() || null;
     }
-    selbstbehaltEur =
-      obj?.selbstbehalt_eur != null ? Number(obj.selbstbehalt_eur) : null;
-  }
-
-  const { data: befundRows } = await supabaseAdmin
-    .from("auftrag_bautagebuch_eintraege")
-    .select("titel, beschreibung, datum, foto_urls, eintrag_typ")
-    .eq("auftrag_id", id)
-    .order("datum", { ascending: true })
-    .limit(40);
-
-  const befundZeilen = (befundRows ?? [])
-    .filter((r) => String(r.eintrag_typ ?? "") === "befund")
-    .map((row) => ({
-      datum: String(row.datum ?? ""),
-      titel: String(row.titel ?? "Schadenbefund"),
-      text: String(row.beschreibung ?? "").trim(),
-      fotoCount: Array.isArray(row.foto_urls) ? row.foto_urls.length : 0,
-    }));
-
-  // Dual-Read: neue Positions-Einträge (Start/Fortschritt/Ergebnis) + Alt-BT
-  const chronologie: Array<{ datum: string; text: string }> = [];
-  const { data: posRows, error: posErr } = await supabaseAdmin
-    .from("auftrag_positionen")
-    .select("id, leistung_name")
-    .eq("auftrag_id", id);
-
-  if (!posErr && posRows?.length) {
-    const posIds = posRows.map((p) => String(p.id));
-    const nameById = new Map(
-      posRows.map((p) => [String(p.id), String(p.leistung_name ?? "Leistung")])
-    );
-    const { data: eintraege } = await supabaseAdmin
-      .from("position_eintraege")
-      .select("position_id, typ, beschreibung, created_at, ereignis_zeit")
-      .in("position_id", posIds)
-      .order("created_at", { ascending: true })
-      .limit(80);
-
-    for (const e of eintraege ?? []) {
-      const typ = String(e.typ ?? "");
-      const label =
-        typ === "start"
-          ? "Start"
-          : typ === "fortschritt"
-            ? "Fortschritt"
-            : typ === "ergebnis"
-              ? "Ergebnis"
-              : typ;
-      chronologie.push({
-        datum: String(e.ereignis_zeit ?? e.created_at ?? ""),
-        text: `${nameById.get(String(e.position_id)) ?? "Position"} — ${label}${
-          e.beschreibung ? `: ${String(e.beschreibung).slice(0, 120)}` : ""
-        }`,
-      });
+    if (obj) {
+      objektForAngaben = {
+        name: String(obj.titel ?? "Objekt"),
+        strasse:
+          [obj.strasse, obj.hausnummer].filter(Boolean).join(" ").trim() ||
+          null,
+        plz: obj.plz ? String(obj.plz) : null,
+        ort: obj.ort ? String(obj.ort) : null,
+      };
     }
   }
 
-  for (const row of befundRows ?? []) {
-    chronologie.push({
-      datum: String(row.datum ?? ""),
-      text: `${String(row.titel ?? "Eintrag")}${
-        row.eintrag_typ === "befund" ? " (Befund)" : ""
-      }`,
-    });
-  }
+  const signals = await loadLeadSignals(id);
 
-  chronologie.sort((a, b) => a.datum.localeCompare(b.datum));
+  const funnel = lead.funnel_daten as { fotos?: unknown } | null | undefined;
+  const fotos = Array.isArray(funnel?.fotos) ? funnel.fotos : [];
+  const fotoHinweis =
+    fotos.length > 0
+      ? `${fotos.length} Melde-Foto${fotos.length === 1 ? "" : "s"} im Vorgang hinterlegt.`
+      : null;
 
-  const { data: rechnungen } = await supabaseAdmin
-    .from("rechnungen")
-    .select("rechnungsnummer, status, pdf_url")
-    .eq("auftrag_id", id)
-    .order("created_at", { ascending: false })
-    .limit(3);
+  const schadenAngaben = buildVersicherungsakteSchadenAngaben({
+    situation: lead.situation as string | null | undefined,
+    bereiche: Array.isArray(lead.bereiche)
+      ? (lead.bereiche as string[])
+      : null,
+    zeitraum: lead.zeitraum as string | null | undefined,
+    plz: lead.plz as string | null | undefined,
+    strasse: lead.strasse as string | null | undefined,
+    hausnummer: lead.hausnummer as string | null | undefined,
+    ort: lead.ort as string | null | undefined,
+    melder_name: lead.melder_name as string | null | undefined,
+    melder_einheit: lead.melder_einheit as string | null | undefined,
+    melder_telefon: lead.melder_telefon as string | null | undefined,
+    melder_email: lead.melder_email as string | null | undefined,
+    kontakt_name: lead.kontakt_name as string | null | undefined,
+    kontakt_nachricht: lead.kontakt_nachricht as string | null | undefined,
+    notizen: lead.notizen as string | null | undefined,
+    funnel_daten: lead.funnel_daten,
+    objekt: objektForAngaben,
+  });
 
-  const rechnungHinweis =
-    (rechnungen ?? [])
-      .map((r) => {
-        const nr = r.rechnungsnummer?.trim() || "ohne Nr.";
-        return `Rechnung ${nr} (Status: ${r.status ?? "—"})`;
-      })
-      .join("; ") || null;
-
-  const abnahmeHinweis = auftrag.abnahme_protokoll_url
-    ? `Abnahmeprotokoll vorhanden${
-        auftrag.abnahme_datum ? ` (${auftrag.abnahme_datum})` : ""
-      }.`
-    : null;
-
-  const pdfBytes = await generateVersicherungsaktePdf({
-    orgName,
+  const pdfBytes = await generateVersicherungsTeilPdf({
+    phase,
+    absender: {
+      name: orgName,
+      zeilen: absenderZeilen,
+      telefon: absenderTel,
+      email: absenderEmail,
+    },
     objektTitel,
     objektAdresse,
     versicherungsNr: versNr,
-    schadenNr: versNr,
-    schadendatum:
-      (lead?.created_at as string | undefined) ??
-      (auftrag.created_at as string | undefined) ??
-      null,
-    kostentraegerLabel: kostentraegerLabel(kt),
-    hergang: hergangFromLead({
-      kontakt_nachricht: lead?.kontakt_nachricht as string | null,
-      notizen: lead?.notizen as string | null,
-      situation: lead?.situation as string | null,
-      melder_name: lead?.melder_name as string | null,
-      created_at: lead?.created_at as string | null,
-    }),
-    chronologie,
-    befundZeilen,
-    abnahmeHinweis,
-    rechnungHinweis,
-    selbstbehaltEur,
+    schadenNr: String(lead.schaden_nr ?? "").trim() || null,
+    schadendatum: (lead.created_at as string | undefined) ?? null,
+    schadenAngaben,
+    chronologie: phase === "ursache" ? signals.chronologie : [],
+    befundZeilen: phase === "ursache" ? signals.befundZeilen : [],
+    fotoHinweis: phase === "meldung" ? fotoHinweis : null,
   });
 
-  const path = `versicherungsakten/${id}.pdf`;
+  const path = phaseStoragePath(id, phase);
   const { error: upErr } = await supabaseAdmin.storage
     .from(BUCKET)
     .upload(path, pdfBytes, { upsert: true, contentType: "application/pdf" });
@@ -270,39 +423,125 @@ export async function ensureVersicherungsakteForAuftrag(
 
   const { data: pub } = supabaseAdmin.storage.from(BUCKET).getPublicUrl(path);
   const url = pub.publicUrl;
+  const now = new Date().toISOString();
 
-  const patch: Record<string, unknown> = {
-    versicherungsakte_pdf_url: url,
-    kostentraeger: "versicherung",
-  };
-  if (versNr) patch.versicherungs_nr = versNr;
+  // Legacy-Spalte: Meldung als „aktuelle“ Akte pflegen
+  if (phase === "meldung") {
+    const leadPatch: Record<string, unknown> = {
+      versicherungsakte_pdf_url: url,
+      versicherungsakte_erstellt_am: now,
+      kostentraeger: "versicherung",
+    };
+    if (versNr) leadPatch.versicherungs_nr = versNr;
+    const { error: leadUpErr } = await supabaseAdmin
+      .from("leads")
+      .update(leadPatch)
+      .eq("id", id);
+    if (leadUpErr && /versicherungsakte_pdf_url/i.test(leadUpErr.message)) {
+      const { versicherungsakte_pdf_url: _u, ...without } = leadPatch;
+      await supabaseAdmin.from("leads").update(without).eq("id", id);
+    } else if (leadUpErr) {
+      return { ok: false, message: leadUpErr.message };
+    }
 
-  await supabaseAdmin.from("auftraege").update(patch).eq("id", id);
+    const { data: auftraege } = await supabaseAdmin
+      .from("auftraege")
+      .select("id")
+      .eq("lead_id", id);
+    for (const a of auftraege ?? []) {
+      const auftragPatch: Record<string, unknown> = {
+        versicherungsakte_pdf_url: url,
+        kostentraeger: "versicherung",
+      };
+      if (versNr) auftragPatch.versicherungs_nr = versNr;
+      await supabaseAdmin.from("auftraege").update(auftragPatch).eq("id", a.id);
+    }
+  }
 
   await writeAuditEvent({
-    entityType: "auftrag",
+    entityType: "lead",
     entityId: id,
     aktion: "versicherungsakte_erstellt",
     actorId: opts?.actorId ?? null,
     actorRolle: opts?.actorRolle ?? null,
     kundeId,
-    payload: { url, versicherungs_nr: versNr },
+    payload: { url, phase, versicherungs_nr: versNr },
   });
 
-  return { ok: true, url };
+  return { ok: true, url, phase };
 }
 
-/** Alle Aufträge eines Leads aktualisieren (nach Kostenträger-Setzen). */
-export async function ensureVersicherungsakteForLead(
-  leadId: string,
-  opts?: { actorId?: string | null; actorRolle?: string | null }
-): Promise<void> {
-  const { data: rows } = await supabaseAdmin
-    .from("auftraege")
-    .select("id")
-    .eq("lead_id", leadId);
+export async function ensureVersicherungsakteForAuftrag(
+  auftragId: string,
+  opts?: EnsureOpts
+): Promise<{ ok: true; url: string; phase: VersicherungPdfPhase } | { ok: false; message: string }> {
+  const id = auftragId?.trim();
+  if (!id) return { ok: false, message: "Auftrag fehlt." };
 
-  for (const row of rows ?? []) {
-    await ensureVersicherungsakteForAuftrag(String(row.id), opts);
+  const { data: auftrag, error } = await supabaseAdmin
+    .from("auftraege")
+    .select("id, lead_id, kostentraeger")
+    .eq("id", id)
+    .maybeSingle();
+
+  if (error || !auftrag) {
+    return { ok: false, message: error?.message ?? "Auftrag nicht gefunden." };
+  }
+
+  if (auftrag.lead_id) {
+    return ensureVersicherungsakteForLead(String(auftrag.lead_id), opts);
+  }
+
+  return { ok: false, message: "Auftrag ohne Lead — Schadenakte nicht möglich." };
+}
+
+/**
+ * Objekt-Schalter: Kostenträger Versicherung + Schadenmeldung-PDF.
+ * Ursache-PDF entsteht erst bei Readiness (nicht hier).
+ */
+export async function applyAutomatischeSchadenakteIfEnabled(
+  leadId: string,
+  opts?: EnsureOpts
+): Promise<void> {
+  const id = leadId?.trim();
+  if (!id) return;
+
+  const { data: lead } = await supabaseAdmin
+    .from("leads")
+    .select("id, anlass, kunde_objekt_id, kostentraeger, hv_meldung_status")
+    .eq("id", id)
+    .maybeSingle();
+
+  if (!lead?.kunde_objekt_id) return;
+  if (String(lead.anlass ?? "") !== "meldung") return;
+
+  const { data: obj, error: objErr } = await supabaseAdmin
+    .from("kunden_objekte")
+    .select("automatische_schadenakte, versicherungs_nr")
+    .eq("id", lead.kunde_objekt_id)
+    .maybeSingle();
+
+  if (objErr) {
+    if (/automatische_schadenakte/i.test(objErr.message)) return;
+    console.warn("[applyAutomatischeSchadenakte] objekt:", objErr.message);
+    return;
+  }
+  if (!obj || obj.automatische_schadenakte !== true) return;
+
+  const versNr = String(obj.versicherungs_nr ?? "").trim() || null;
+  const patch: Record<string, unknown> = {
+    kostentraeger: "versicherung",
+    kostentraeger_vorgeschlagen: false,
+  };
+  if (versNr) patch.versicherungs_nr = versNr;
+
+  await supabaseAdmin.from("leads").update(patch).eq("id", id);
+
+  const result = await ensureVersicherungsakteForLead(id, {
+    ...opts,
+    phase: "meldung",
+  });
+  if (!result.ok) {
+    console.warn("[applyAutomatischeSchadenakte]", result.message, { leadId: id });
   }
 }

@@ -1,4 +1,4 @@
-import { labelSituation, labelZeitraum, labelBereich } from "@/lib/lead-funnel-labels";
+import { labelSituation, labelBereich } from "@/lib/lead-funnel-labels";
 import {
   fachdetailRowsFromFunnelDaten,
   normalizeFunnelDaten,
@@ -8,7 +8,10 @@ import {
   buildAnfrageCardMeta,
   buildAnfragePortalSections,
   formatAnfrageStrasseHausnummer,
+  formatAnfrageZeitraum,
   formatMockVorgangListSubtitle,
+  resolveAnfrageAdresse,
+  resolveAnfrageMelder,
   type PortalAnfrageLeadSource,
 } from "@/lib/portal/portal-anfrage-display";
 import {
@@ -31,13 +34,21 @@ import {
   type PortalAnsprechpartner,
 } from "@/lib/portal/portal-ansprechpartner";
 import type { PortalDokument } from "@/lib/portal/portal-dokumente";
-import { filterPortalDokumenteForViewer } from "@/lib/portal/portal-dokumente";
+import {
+  isAngebotPortalAnnehmbar,
+  isAngebotPortalSichtbar,
+} from "@/lib/portal/portal-angebot-sichtbarkeit";
+import { isLeadPortalListbar } from "@/lib/portal/portal-lead-sichtbarkeit";
+import {
+  collectVorgangDokumente,
+  excludeMeldeFunnelFotosFromDokumente,
+  filterPortalDokumenteForViewer,
+} from "@/lib/portal/portal-dokumente";
 import { buildPortalAbnahmeCheckliste } from "@/lib/portal/abnahme-checkliste";
 import type { PortalAbnahmeCheckliste } from "@/lib/portal/portal-detail-item";
 import {
   type KundePortalDetailItem,
   type PortalBautagebuchEntry,
-  objektPlzOrt,
 } from "@/lib/portal/portal-detail-item";
 import { sanitizeCustomerText } from "@/lib/portal/portal-display";
 import { vorgangFeedbackBereit } from "@/lib/portal/vorgang-feedback-eligibility";
@@ -59,15 +70,8 @@ import { formatPreisspanneDisplay } from "@/lib/org/hv-meldung-workflow";
 import {
   buildMeldeVorgangTitel,
   leadIstMeldeTitelQuelle,
+  titelFromFunnelLeistungen,
 } from "@/lib/org/melde-vorgang-titel";
-
-function meldeOrtFromFunnel(funnelDaten: unknown): string | null {
-  if (!funnelDaten || typeof funnelDaten !== "object" || Array.isArray(funnelDaten)) {
-    return null;
-  }
-  const ort = (funnelDaten as Record<string, unknown>).ort;
-  return typeof ort === "string" && ort.trim() ? ort.trim() : null;
-}
 
 function meldeFotosFromFunnel(funnelDaten: unknown): string[] {
   const fd = funnelDaten as { fotos?: unknown } | null | undefined;
@@ -90,6 +94,7 @@ type PortalLead = PortalAnfrageLeadSource & {
   anlass?: string | null;
   kanal?: string | null;
   auftraggeber_kunde_id?: string | null;
+  kunde_objekt_id?: string | null;
   hv_meldung_status?: string | null;
   org_freigabe_status?: string | null;
   freigabe_bypass_grund?: string | null;
@@ -102,6 +107,11 @@ type PortalLead = PortalAnfrageLeadSource & {
   kostentraeger?: string | null;
   kostentraeger_vorgeschlagen?: boolean | null;
   versicherungs_nr?: string | null;
+  versicherungsakte_pdf_url?: string | null;
+  schaden_nr?: string | null;
+  schaden_nr_geaendert_am?: string | null;
+  versicherungs_nr_geaendert_am?: string | null;
+  versicherungsakte_erstellt_am?: string | null;
   erfassung_von?: string | null;
   funnel_daten?: unknown;
   kontakt_nachricht?: string | null;
@@ -149,6 +159,7 @@ type PortalAngebot = {
   created_at?: string | null;
   gesendet_am?: string | null;
   gesendet_kunde_at?: string | null;
+  pdf_url?: string | null;
   dokumente?: PortalDokument[];
   /** D11: angebote.herkunft */
   herkunft?: string | null;
@@ -161,6 +172,8 @@ type PortalAuftrag = {
   angebot_id?: string | null;
   linkedLead?: PortalAnfrageLeadSource | null;
   ansprechpartner?: PortalAnsprechpartner;
+  /** Zugewiesene Partner-Firma(n) für Ausführung · Handwerker. */
+  handwerkerLabel?: string | null;
   objekt?: PortalObjekt | null;
   status?: string | null;
   fortschritt?: number | null;
@@ -186,6 +199,10 @@ type PortalAuftrag = {
     created_at?: string | null;
     updated_at?: string | null;
     gesendet_at?: string | null;
+    brutto?: number | null;
+    rechnung_art?: string | null;
+    abschlag_index?: number | null;
+    bezahlt_at?: string | null;
   }>;
 };
 
@@ -225,12 +242,26 @@ function resolveVorgangStatusForLead(
     hvPortalMode: opts.hvPortalMode,
   });
   const terminSlots = auftrag?.terminSlots ?? [];
+  const angebotStatus = angebot?.status_einfach ?? angebot?.status;
+  const angebotEntscheidbar = Boolean(
+    angebot &&
+      !auftrag &&
+      isAngebotPortalAnnehmbar({
+        status: angebot.status,
+        status_einfach: angebot.status_einfach,
+        pdf_url: angebot.pdf_url,
+        angebotsnr: angebot.angebotsnr,
+        gesendet_am: angebot.gesendet_am,
+        gesendet_kunde_at: angebot.gesendet_kunde_at,
+      })
+  );
   const legacy = resolveKundeVorgangStatus({
     leadStatus: lead.status,
     leadVorgangPhase: lead.vorgang_phase,
     hv_meldung_status: lead.hv_meldung_status,
     org_freigabe_status: lead.org_freigabe_status,
-    angebotStatus: angebot?.status_einfach ?? angebot?.status,
+    angebotStatus,
+    angebotEntscheidbar,
     auftragStatus: auftrag?.status,
     auftragFortschritt: auftrag?.fortschritt,
     hasAngebotRecord: Boolean(angebot),
@@ -289,7 +320,13 @@ function formatAnfrageGewerk(bereiche?: string[] | null): string | undefined {
 function anfrageTitleFromLead(
   lead: Pick<
     PortalLead,
-    "situation" | "bereiche" | "anlass" | "kanal" | "funnel_daten" | "kontakt_nachricht"
+    | "situation"
+    | "bereiche"
+    | "anlass"
+    | "kanal"
+    | "funnel_daten"
+    | "kontakt_nachricht"
+    | "erfassung_von"
   > & { notizen?: string | null }
 ): {
   title: string;
@@ -305,6 +342,7 @@ function anfrageTitleFromLead(
       anlass: lead.anlass,
       kanal: lead.kanal,
       funnelDaten: lead.funnel_daten,
+      erfassung_von: lead.erfassung_von,
     })
   ) {
     const title = buildMeldeVorgangTitel({
@@ -319,31 +357,66 @@ function anfrageTitleFromLead(
     return { title, anfrageVorhaben: vorhaben, anfrageGewerk: gewerk };
   }
 
-  /** Nicht-Melde: Situation · Gewerk — nie Kunden-/Meldername. */
-  const title = [vorhaben, gewerk].filter(Boolean).join(" · ") || "Vorgang";
+  /** HV-selbst / normale Anfrage: Situation · Gewerk — nie „Meldung“. */
+  const fromFunnel = titelFromFunnelLeistungen(lead.funnel_daten);
+  const title =
+    [vorhaben, gewerk].filter(Boolean).join(" · ") ||
+    fromFunnel ||
+    "Vorgang";
   return { title, anfrageVorhaben: vorhaben, anfrageGewerk: gewerk };
 }
 
-/** Card-Titel: CRM-Angebotstitel, sonst sprechender Melde-/Anfrage-Titel. */
+/** CRM-Angebotstitel nur nutzen, wenn er echt sprechend ist (nicht Name/Kategorie). */
+function normalizeAngebotListenTitel(angebotTitel: string): string | null {
+  const t = angebotTitel.trim();
+  if (!t) return null;
+  if (/^angebot$/i.test(t)) return null;
+  if (/^angebot\s+[A-Z0-9][\w./-]{0,48}$/i.test(t)) return null;
+  const withoutPrefix = t.replace(/^angebot\s*[—\-|:·]?\s*/i, "").trim();
+  return withoutPrefix || null;
+}
+
+function isUsableAngebotTitel(
+  angebotTitel: string,
+  lead: PortalLead
+): boolean {
+  const usable = normalizeAngebotListenTitel(angebotTitel);
+  if (!usable) return false;
+  if (/^(notfall|reparatur|schaden|sonstiges|meldung|vorgang)\b/i.test(usable)) {
+    return false;
+  }
+  if (/^(notfall|reparatur|schaden|sonstiges)\s*[·|—-]/i.test(usable)) {
+    return false;
+  }
+  const melder = (lead.melder_name ?? lead.kontakt_name ?? "").trim();
+  if (melder && usable.toLowerCase() === melder.toLowerCase()) return false;
+  // Kurzer Buchstabensalat ohne Leerzeichen (Tippfehler-Namen als Titel)
+  if (usable.length <= 24 && !/\s/.test(usable) && !/[.,;:!?/]/.test(usable)) {
+    return false;
+  }
+  return true;
+}
+
+/**
+ * Einheitlicher Vorgangs-Titel für Startseite · Liste · Detail.
+ * Melde-Vorgänge: immer sprechender Melde-Titel (z. B. „Wasser am Heizkörper“).
+ */
 function resolveListCardTitle(
   lead: PortalLead,
   angebot: PortalAngebot | null
 ): string {
-  const angebotTitel = sanitizeCustomerText(angebot?.titel, 200)?.trim();
-  // Generische CRM-Titel („Reparatur · Bad“) durch Melde-Sprache ersetzen
   const meldeQuelle = leadIstMeldeTitelQuelle({
     anlass: lead.anlass,
     kanal: lead.kanal,
     funnelDaten: lead.funnel_daten,
+    erfassung_von: lead.erfassung_von,
   });
-  if (
-    angebotTitel &&
-    !(
-      meldeQuelle &&
-      /^(notfall|reparatur|schaden|sonstiges)\s*[·|—-]/i.test(angebotTitel)
-    )
-  ) {
-    return angebotTitel;
+  if (meldeQuelle) {
+    return anfrageTitleFromLead(lead).title;
+  }
+  const angebotTitel = sanitizeCustomerText(angebot?.titel, 200)?.trim();
+  if (angebotTitel && isUsableAngebotTitel(angebotTitel, lead)) {
+    return normalizeAngebotListenTitel(angebotTitel) ?? angebotTitel;
   }
   return anfrageTitleFromLead(lead).title;
 }
@@ -362,63 +435,82 @@ function buildItemFromLead(
 ): KundePortalDetailItem {
   const { anfrageVorhaben, anfrageGewerk } = anfrageTitleFromLead(lead);
   const title = resolveListCardTitle(lead, angebot);
-  const { plz, ort } = objektPlzOrt(lead.objekt, lead.plz);
+  const addr = resolveAnfrageAdresse(lead);
+  const melder = resolveAnfrageMelder(lead);
   const hidePreise = Boolean(mieterStatusMode && isHvPortalLead(lead));
   const hvMieterView = Boolean(mieterStatusMode && isHvPortalLead(lead));
   const melderStatusUrl = resolveMelderStatusUrl(lead);
-  const meldeStrasse =
-    formatAnfrageStrasseHausnummer(lead) ||
-    lead.objekt?.strasse?.trim() ||
-    null;
-  const meldePlz =
-    lead.plz?.trim() ||
-    lead.objekt?.plz?.trim() ||
-    (plz !== "—" ? plz : null) ||
-    null;
-  const meldeOrt =
-    lead.ort?.trim() ||
-    lead.objekt?.ort?.trim() ||
-    meldeOrtFromFunnel(lead.funnel_daten) ||
-    (ort !== "—" ? ort : null) ||
-    null;
+  const meldeStrasse = addr.strasseZeile || null;
+  const meldePlz = addr.plz || null;
+  const meldeOrt = addr.ort || null;
+  const norm = normalizeFunnelDaten(lead.funnel_daten, lead.bereiche);
+  const situationSlug = norm.situation || lead.situation || undefined;
+  const situationLabel =
+    situationSlug && labelSituation(situationSlug) !== "—"
+      ? labelSituation(situationSlug)
+      : null;
   const meldeBereich =
-    (lead.bereiche ?? [])
+    (lead.bereiche ?? norm.bereiche ?? [])
       .map((b) => labelBereich(b))
       .filter((b) => b && b !== "—")
       .join(", ") || null;
+  const meldeFotos = meldeFotosFromFunnel(lead.funnel_daten);
   const detailKontext = {
     coverUrl:
       lead.objekt?.cover_url?.trim() ||
       auftrag?.objekt?.cover_url?.trim() ||
       angebot?.objekt?.cover_url?.trim() ||
       null,
-    melderName: lead.melder_name ?? lead.kontakt_name ?? null,
-    melderEinheit: lead.melder_einheit ?? null,
-    melderTelefon: lead.melder_telefon ?? null,
-    melderEmail: lead.melder_email ?? null,
+    melderName: melder.name ?? lead.kontakt_name ?? null,
+    melderEinheit: melder.einheit ?? null,
+    melderTelefon: melder.telefon ?? null,
+    melderEmail: melder.email ?? null,
     kostentraeger: lead.kostentraeger ?? null,
     kostentraegerVorgeschlagen: Boolean(lead.kostentraeger_vorgeschlagen),
     versicherungsNr: lead.versicherungs_nr ?? null,
-    meldeFotos: meldeFotosFromFunnel(lead.funnel_daten),
+    schadenNr: lead.schaden_nr ?? null,
+    versicherungsaktePdfUrl: lead.versicherungsakte_pdf_url ?? null,
+    versicherungsakteErstelltAm: lead.versicherungsakte_erstellt_am ?? null,
+    schadenNrGeaendertAm: lead.schaden_nr_geaendert_am ?? null,
+    versicherungsNrGeaendertAm: lead.versicherungs_nr_geaendert_am ?? null,
+    objektVersicherungsNr:
+      (lead.objekt as { versicherungs_nr?: string | null } | null | undefined)
+        ?.versicherungs_nr ?? null,
+    meldeFotos,
     orgFreigabeStatus: lead.org_freigabe_status ?? null,
     freigabeBypassGrund: lead.freigabe_bypass_grund ?? null,
+    funnelDirektauftrag:
+      lead.funnel_daten &&
+      typeof lead.funnel_daten === "object" &&
+      !Array.isArray(lead.funnel_daten) &&
+      (lead.funnel_daten as { direktauftrag?: unknown }).direktauftrag === true
+        ? true
+        : false,
     hvMeldungStatus: lead.hv_meldung_status ?? null,
+    kundeObjektId:
+      (lead.kunde_objekt_id != null
+        ? String(lead.kunde_objekt_id).trim()
+        : "") ||
+      (lead.objekt &&
+      typeof lead.objekt === "object" &&
+      "id" in lead.objekt &&
+      lead.objekt.id != null
+        ? String(lead.objekt.id).trim()
+        : "") ||
+      null,
     meldeStrasse,
-    meldeHausnummer: lead.hausnummer?.trim() || null,
+    meldeHausnummer: addr.hausnummer || null,
     meldePlz,
     meldeOrt,
-    meldeSituation: lead.situation
-      ? labelSituation(lead.situation)
-      : null,
+    meldeSituation: situationLabel,
     meldeBereich,
-    meldeZeitraum: lead.zeitraum ? labelZeitraum(lead.zeitraum) : null,
+    meldeZeitraum: formatAnfrageZeitraum(lead) ?? null,
     meldeFachdetails: fachdetailRowsFromFunnelDaten(
       lead.funnel_daten,
       lead.bereiche
     ),
     meldeFachdetailAnswers:
-      normalizeFunnelDaten(lead.funnel_daten, lead.bereiche).fachdetails
-        .fachdetailAnswers ?? undefined,
+      norm.fachdetails.fachdetailAnswers ?? undefined,
     meldeUrsachenCheck: parseMeldeUrsachenCheck(lead.funnel_daten),
     meldePreisIndikation: meldePreisIndikationFromLead(lead, hvMieterView),
   };
@@ -431,17 +523,10 @@ function buildItemFromLead(
     positionen: auftrag?.positionen,
   });
   const mieterFeedback = mieterFeedbackByLeadId?.get(leadId) ?? null;
-  const hvListMeta = Boolean(
-    lead.melder_name || lead.melder_einheit || lead.hv_meldung_status
-  );
-  const cardSubtitle = hvListMeta
-    ? formatMockVorgangListSubtitle(lead)
-    : [
-        formatAnfrageStrasseHausnummer(lead),
-        anfrageGewerk,
-      ]
-        .filter(Boolean)
-        .join(" · ") || formatMockVorgangListSubtitle(lead);
+  const cardSubtitle =
+    formatMockVorgangListSubtitle(lead) ||
+    formatAnfrageStrasseHausnummer(lead) ||
+    undefined;
 
   const wartetAufHw =
     !hvMieterView && !eigentuemerView
@@ -455,12 +540,15 @@ function buildItemFromLead(
   const wartetAufHwLabel = wartetAufHw?.label ?? null;
 
   const filterDocs = (docs: PortalDokument[]) =>
-    filterVorgangDokumente(docs, {
-      /** Dokumente: Mieter bei HV-Lead — nur Abnahme. */
-      hvMieterView,
-      eigentuemerView,
-      erledigt: vorgangStatus.phase === "abgeschlossen",
-    });
+    excludeMeldeFunnelFotosFromDokumente(
+      filterVorgangDokumente(docs, {
+        /** Dokumente: Mieter bei HV-Lead — nur Abnahme. */
+        hvMieterView,
+        eigentuemerView,
+        erledigt: vorgangStatus.phase === "abgeschlossen",
+      }),
+      meldeFotos
+    );
 
   if (auftrag) {
     const leadSource: PortalAnfrageLeadSource = {
@@ -494,24 +582,41 @@ function buildItemFromLead(
       statusPillKey: vorgangStatus.pillKey,
       sections: buildAuftragPortalSections({ lead: leadSource, objekt: auftrag.objekt }),
       ansprechpartner: auftrag.ansprechpartner ?? portalAnsprechpartnerFallback(),
-      dokumente: filterDocs(auftrag.dokumente ?? lead.dokumente ?? []),
-      bautagebuch: hvMieterView ? undefined : auftrag.bautagebuch ?? [],
+      handwerkerName: auftrag.handwerkerLabel?.trim() || null,
+      dokumente: filterDocs(
+        collectVorgangDokumente({
+          leadDocs: lead.dokumente,
+          angebotDocs: angebot?.dokumente,
+          auftragDocs: auftrag.dokumente,
+        })
+      ),
+      bautagebuch: auftrag.bautagebuch ?? [],
       auftragPositionen: hvMieterView ? undefined : auftragPositionen,
+      /** Fallback für Preisübersicht / Angebot-Tab (wenn Auftrag schon existiert). */
+      angebotPositionen: hvMieterView
+        ? undefined
+        : angebot?.positionenDisplay?.length
+          ? angebot.positionenDisplay
+          : undefined,
       abnahmeCheckliste: hvMieterView ? undefined : abnahmeCheckliste,
-      gesamtBrutto: hvMieterView ? undefined : auftragGesamtBrutto,
+      gesamtBrutto: hvMieterView
+        ? undefined
+        : auftragGesamtBrutto ?? angebot?.gesamtBrutto,
+      rechnungen: hvMieterView ? undefined : auftrag.rechnungen ?? [],
       hidePreise,
       hvMieterView,
-      terminAuftragId: hvMieterView ? auftrag.id : undefined,
-      terminSlots: hvMieterView ? auftrag.terminSlots ?? [] : undefined,
-      infoHint:
-        hvMieterView && vorgangStatus.needsAction
-          ? "Terminvorschlag wählen."
-          : !hvMieterView && pendingAenderung
-            ? "Leistungsänderungen prüfen und annehmen."
-            : undefined,
+      terminAuftragId: auftrag.id,
+      terminSlots: auftrag.terminSlots ?? [],
+      infoHint: eigentuemerView
+        ? undefined
+        : !hvMieterView && pendingAenderung
+          ? "Leistungsänderungen prüfen und annehmen."
+          : undefined,
       vorgangPhase: vorgangStatus.phase,
-      needsAction: vorgangStatus.needsAction,
-      actionHint: vorgangStatus.resolverActionHint ?? undefined,
+      needsAction: eigentuemerView ? false : vorgangStatus.needsAction,
+      actionHint: eigentuemerView
+        ? undefined
+        : vorgangStatus.resolverActionHint ?? undefined,
       feedbackBereit,
       mieterFeedback,
       melderStatusUrl: hvMieterView ? undefined : melderStatusUrl,
@@ -542,11 +647,18 @@ function buildItemFromLead(
       status: vorgangStatus.label,
       statusPillKey: vorgangStatus.pillKey,
       sections: buildAngebotPortalSections({ lead: leadSource, objekt: angebot.objekt }),
-      dokumente: filterDocs(angebot.dokumente ?? lead.dokumente ?? []),
+      dokumente: filterDocs(
+        collectVorgangDokumente({
+          leadDocs: lead.dokumente,
+          angebotDocs: angebot.dokumente,
+        })
+      ),
       infoHint: undefined,
       vorgangPhase: vorgangStatus.phase,
-      needsAction: vorgangStatus.needsAction,
-      actionHint: vorgangStatus.resolverActionHint ?? undefined,
+      needsAction: eigentuemerView ? false : vorgangStatus.needsAction,
+      actionHint: eigentuemerView
+        ? undefined
+        : vorgangStatus.resolverActionHint ?? undefined,
       feedbackBereit,
       mieterFeedback,
       melderStatusUrl: hvMieterView ? undefined : melderStatusUrl,
@@ -562,17 +674,23 @@ function buildItemFromLead(
     title,
     anfrageGewerk,
     anfrageVorhaben,
-    plz,
-    ort,
+    plz: addr.plz,
+    ort: addr.ort,
     cardSubtitle,
     cardMeta: buildAnfrageCardMeta(lead),
     status: vorgangStatus.label,
     statusPillKey: vorgangStatus.pillKey,
     sections: buildAnfragePortalSections(lead),
-    dokumente: filterDocs(lead.dokumente ?? []),
+    dokumente: filterDocs(
+      collectVorgangDokumente({
+        leadDocs: lead.dokumente,
+      })
+    ),
     vorgangPhase: vorgangStatus.phase,
-    needsAction: vorgangStatus.needsAction,
-    actionHint: vorgangStatus.resolverActionHint ?? undefined,
+    needsAction: eigentuemerView ? false : vorgangStatus.needsAction,
+    actionHint: eigentuemerView
+      ? undefined
+      : vorgangStatus.resolverActionHint ?? undefined,
     hidePreise,
     hvMieterView,
     feedbackBereit,
@@ -639,6 +757,7 @@ export function buildKundeVorgaenge(input: {
 }): KundePortalDetailItem[] {
   const angeboteByLeadId = new Map<string, PortalAngebot[]>();
   for (const a of input.angebote) {
+    if (!isAngebotPortalSichtbar(a)) continue;
     const leadId = normPortalId(a.lead_id);
     if (!leadId) continue;
     const list = angeboteByLeadId.get(leadId) ?? [];
@@ -648,6 +767,7 @@ export function buildKundeVorgaenge(input: {
 
   const angebotByLead = new Map<string, PortalAngebot>();
   for (const [leadId, list] of Array.from(angeboteByLeadId.entries())) {
+    if (!list.length) continue;
     angebotByLead.set(leadId, pickPreferredAngebot(list));
   }
 
@@ -672,6 +792,14 @@ export function buildKundeVorgaenge(input: {
   for (const lead of input.leads) {
     const leadId = normPortalId(lead.id);
     if (!leadId) continue;
+    if (
+      !isLeadPortalListbar(lead, {
+        angebote: input.angebote,
+        auftraege: input.auftraege,
+      })
+    ) {
+      continue;
+    }
     usedLeadIds.add(leadId);
 
     const angebot = angebotByLead.get(leadId) ?? null;

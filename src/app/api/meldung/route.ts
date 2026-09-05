@@ -1,10 +1,10 @@
 import { NextResponse } from "next/server";
 
 import {
-  buildOrgNeueMeldungHtml,
-  buildOrgNeueMeldungSubject,
-} from "@/lib/email/meldung-mail-templates";
-import { parseMeldeBereichId, persistMeldungLead } from "@/lib/org/persist-meldung-lead";
+  findRecentDuplicateMeldungLead,
+  parseMeldeBereichId,
+  persistMeldungLead,
+} from "@/lib/org/persist-meldung-lead";
 import { addressesMatch } from "@/lib/org/match-lead-objekt";
 import { MELDE_ALLGEMEIN_SLUG } from "@/lib/org/melde-url";
 import { resolveMeldeKontext } from "@/lib/org/resolve-melde-kontext";
@@ -14,7 +14,6 @@ import { checkRateLimit } from "@/lib/rate-limit";
 import { isValidEmail, isValidName } from "@/lib/validation";
 import { meldeStatusUrl } from "@/lib/melde/melde-tracking";
 import { supabaseAdmin } from "@/lib/supabase";
-import { Resend } from "resend";
 import { randomUUID } from "crypto";
 
 export const runtime = "nodejs";
@@ -44,6 +43,7 @@ type MeldungBody = {
     }>;
   } | null;
   notfall?: boolean | null;
+  direktauftrag?: boolean | null;
   terminwunsch?: string | null;
   dringlichkeit?: string | null;
   beschreibung?: string;
@@ -140,7 +140,6 @@ export async function POST(req: Request) {
 
   /** Ohne Objekt-Link: gleiche Anschrift wie bestehendes Objekt → zuordnen. */
   let matchedObjektId = objekt?.id ?? null;
-  let matchedObjektTitel = objekt?.titel?.trim() || null;
   if (!matchedObjektId && leadStrasse && leadHausnummer) {
     const { data: orgObjekte } = await supabaseAdmin
       .from("kunden_objekte")
@@ -159,39 +158,27 @@ export async function POST(req: Request) {
     );
     if (hit) {
       matchedObjektId = hit.id;
-      matchedObjektTitel = hit.titel?.trim() || matchedObjektTitel;
     }
   }
 
-  const objektTitel =
-    matchedObjektTitel ||
-    orgRow.org_anzeigename?.trim() ||
-    orgRow.name?.trim() ||
-    "Objekt";
-
-  if (matchedObjektId) {
-    const since = new Date(Date.now() - 15 * 60 * 1000).toISOString();
-    const { data: recent } = await supabaseAdmin
-      .from("leads")
-      .select("id, melde_tracking_token")
-      .eq("kunde_objekt_id", matchedObjektId)
-      .eq("auftraggeber_kunde_id", orgRow.id)
-      .gte("created_at", since)
-      .in("kanal", ["hv_melder_link", "hv_direkt"])
-      .order("created_at", { ascending: false })
-      .limit(1);
-    if (recent?.[0]?.id) {
-      return NextResponse.json({
-        ok: true,
-        id: recent[0].id,
-        duplicateWarning:
-          "Eine ähnliche Meldung wurde in den letzten 15 Minuten bereits erfasst.",
-        statusLink: recent[0].melde_tracking_token
-          ? meldeStatusUrl(String(recent[0].melde_tracking_token))
-          : undefined,
-        reused: true,
-      });
-    }
+  // Doppel-Submit / Retry: gleicher Melder + Beschreibung innerhalb 60s → bestehendes Lead.
+  const dup = await findRecentDuplicateMeldungLead({
+    auftraggeber_kunde_id: orgRow.id,
+    kunde_objekt_id: matchedObjektId,
+    name,
+    email: isValidEmail(email) ? email : null,
+    telefon: telefon || null,
+    beschreibung,
+  });
+  if (dup) {
+    const trackingToken = dup.meldeTrackingToken || undefined;
+    return NextResponse.json({
+      ok: true,
+      id: dup.id,
+      statusLink: trackingToken ? meldeStatusUrl(trackingToken) : undefined,
+      meldeTrackingToken: trackingToken,
+      reused: true,
+    });
   }
 
   const result = await persistMeldungLead({
@@ -205,6 +192,7 @@ export async function POST(req: Request) {
     fachdetailAnswers: body.fachdetailAnswers,
     fachfragen: body.fachfragen ?? null,
     notfall: body.notfall ?? null,
+    direktauftrag: body.direktauftrag ?? body.notfall ?? null,
     terminwunsch: body.terminwunsch?.trim() || null,
     dringlichkeit: body.dringlichkeit,
     fotos,
@@ -229,43 +217,8 @@ export async function POST(req: Request) {
       : undefined;
   const statusLink = trackingToken ? meldeStatusUrl(trackingToken) : undefined;
 
-  const resendKey = process.env.RESEND_API_KEY;
-  if (resendKey) {
-    const { data: orgKunde } = await supabaseAdmin
-      .from("kunden")
-      .select("email")
-      .eq("id", orgRow.id)
-      .maybeSingle();
-    const orgEmail = String(orgKunde?.email ?? "").trim();
-    if (orgEmail && isValidEmail(orgEmail)) {
-      const resend = new Resend(resendKey);
-      try {
-        await resend.emails.send({
-          from:
-            process.env.RESEND_FROM_SYSTEM ??
-            "System <system@baerenwaldmuenchen.de>",
-          to: orgEmail,
-          subject: buildOrgNeueMeldungSubject(objektTitel),
-          html: buildOrgNeueMeldungHtml({
-            objektTitel,
-            melderName: name,
-            melderEinheit: einheit,
-            melderTelefon: telefon || undefined,
-            melderEmail: isValidEmail(email) ? email : undefined,
-            kategorie,
-            bereichId,
-            beschreibung,
-            fotoCount: fotos.length,
-            dringlichkeit: body.dringlichkeit,
-            quelle: "mieter",
-            portalPath: `/portal?section=freigabe&id=${result.id}`,
-          }),
-        });
-      } catch (e) {
-        console.error("[meldung] org mail:", e);
-      }
-    }
-  }
+  // HV-Mail nur über notifyHvNeueMeldung (persistMeldungLead) —
+  // kein zweites „Neuer Vorgang“-Template mit Summary-Tabelle.
 
   return NextResponse.json({
     ok: true,

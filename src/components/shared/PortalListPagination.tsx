@@ -6,6 +6,8 @@ type PortalListPaginationProps = {
   currentPage: number;
   totalPages: number;
   onPageChange: (page: number) => void;
+  /** Sichtbare Treffer auf der Seite (Deep Green: „X von Y Vorgängen“) */
+  visibleCount?: number;
 };
 
 export function PortalListPagination({
@@ -14,50 +16,50 @@ export function PortalListPagination({
   currentPage,
   totalPages,
   onPageChange,
+  visibleCount,
 }: PortalListPaginationProps) {
-  const safePage = Math.min(Math.max(1, currentPage), totalPages);
+  const safePage = Math.min(Math.max(1, currentPage), Math.max(1, totalPages));
+  const shown = visibleCount ?? totalItems;
 
   return (
-    <div className="flex flex-wrap items-center justify-between gap-2 border-t border-border-light px-3 py-3 sm:px-4">
-      <p className="portal-text-meta text-text-secondary">
-        <span className="font-medium text-text-primary">{totalItems}</span>{" "}
-        {itemLabel}
+    <div className="portal-list-pagination">
+      <p className="portal-list-pagination-count">
+        {shown} von {totalItems} {itemLabel}
         {totalPages > 1 ? (
-          <span className="text-text-tertiary">
+          <span className="portal-list-pagination-pages">
             {" "}
             · Seite {safePage} / {totalPages}
           </span>
         ) : null}
       </p>
-      <div className="portal-text-meta inline-flex items-center gap-2 rounded-full border border-border-default bg-surface-card px-2 py-1">
-        <button
-          type="button"
-          onClick={() => onPageChange(Math.max(1, safePage - 1))}
-          disabled={safePage <= 1}
-          className="portal-touch-target grid place-items-center rounded-full text-text-secondary transition hover:bg-muted hover:text-text-primary disabled:cursor-not-allowed disabled:opacity-40"
-          aria-label="Vorherige Seite"
-        >
-          <span aria-hidden>←</span>
-        </button>
-        <span className="min-w-[84px] text-center font-medium text-text-secondary">
-          {safePage} / {totalPages}
-        </span>
-        <button
-          type="button"
-          onClick={() => onPageChange(Math.min(totalPages, safePage + 1))}
-          disabled={safePage >= totalPages}
-          className="portal-touch-target grid place-items-center rounded-full text-text-secondary transition hover:bg-muted hover:text-text-primary disabled:cursor-not-allowed disabled:opacity-40"
-          aria-label="Nächste Seite"
-        >
-          <span aria-hidden>→</span>
-        </button>
-      </div>
+      {totalPages > 1 ? (
+        <div className="portal-list-pagination-nav">
+          <button
+            type="button"
+            onClick={() => onPageChange(Math.max(1, safePage - 1))}
+            disabled={safePage <= 1}
+            aria-label="Vorherige Seite"
+          >
+            ←
+          </button>
+          <span>
+            {safePage} / {totalPages}
+          </span>
+          <button
+            type="button"
+            onClick={() => onPageChange(Math.min(totalPages, safePage + 1))}
+            disabled={safePage >= totalPages}
+            aria-label="Nächste Seite"
+          >
+            →
+          </button>
+        </div>
+      ) : null}
     </div>
   );
 }
 
 export const PORTAL_LIST_PAGE_SIZE = 10;
-
 
 /** Übersicht (Startseite): maximal 4 Karten pro Tab. */
 export const PORTAL_OVERVIEW_PAGE_SIZE = 4;

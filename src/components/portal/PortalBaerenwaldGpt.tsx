@@ -23,6 +23,7 @@ export function PortalBaerenwaldGpt({
     <GptStudioChat
       locked={false}
       priceHandoff
+      anrede="sie"
       onPreisBereit={() => router.push("/portal-tools/rechner?modus=ki")}
       onBeratungBereit={() => router.push("/portal-tools/rechner?modus=ki")}
     />
@@ -33,7 +34,6 @@ export function PortalBaerenwaldGpt({
       <div className="portal-gpt-shell portal-gpt-shell--embedded">
         {onClose ? (
           <div className="portal-gpt-shell-bar">
-            <p className="portal-gpt-shell-title">Bärenwald GPT</p>
             <button
               type="button"
               onClick={onClose}
@@ -42,6 +42,7 @@ export function PortalBaerenwaldGpt({
             >
               <X className="h-5 w-5" />
             </button>
+            <p className="portal-gpt-shell-title">KI-Assistent · BärenwaldGPT</p>
           </div>
         ) : null}
         <div className="portal-gpt-body portal-gpt-chat-active">{chat}</div>
@@ -50,7 +51,7 @@ export function PortalBaerenwaldGpt({
   }
 
   return (
-    <div className="portal-gpt-shell portal-gpt-shell--overlay fixed inset-0 z-[140] bg-black/45 lg:hidden">
+    <div className="portal-gpt-shell portal-gpt-shell--overlay fixed inset-0 z-[210] bg-black/45 lg:hidden">
       <button
         type="button"
         className="absolute inset-0"
@@ -63,7 +64,6 @@ export function PortalBaerenwaldGpt({
         )}
       >
         <div className="portal-gpt-shell-bar">
-          <p className="portal-gpt-shell-title">Bärenwald GPT</p>
           <button
             type="button"
             onClick={onClose}
@@ -72,6 +72,7 @@ export function PortalBaerenwaldGpt({
           >
             <X className="h-5 w-5" />
           </button>
+          <p className="portal-gpt-shell-title">KI-Assistent · BärenwaldGPT</p>
         </div>
         <div className="portal-gpt-body portal-gpt-chat-active min-h-0 flex-1 overflow-hidden">
           {chat}

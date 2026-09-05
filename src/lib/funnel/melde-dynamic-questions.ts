@@ -14,7 +14,12 @@ type ShowWhen = (a: MeldeAnswers) => boolean;
 type MeldeQDef = {
   id: string;
   frage: string;
-  optionen: Array<{ value: string; label: string }>;
+  optionen: Array<{
+    value: string;
+    label: string;
+    hint?: string;
+    icon?: string;
+  }>;
   /** Wenn gesetzt: Frage nur zeigen, wenn true. */
   showWhen?: ShowWhen;
 };
@@ -54,6 +59,192 @@ function problemIs(a: MeldeAnswers, ...ids: string[]): boolean {
   return ids.includes(ans(a, "melde_problem"));
 }
 
+/**
+ * Wasser-Problem auf kanonische IDs (inkl. Legacy-Antworten).
+ * - wasser_austritt | von_decke_wand | verstopfung | feucht_ohne_lauf | sonstiges
+ */
+export function normalizeMeldeWasserProblem(raw: string): string {
+  const p = raw.trim().toLowerCase();
+  if (
+    p === "tropft" ||
+    p === "laeuft" ||
+    p === "laeuft_stark" ||
+    p === "ueberschwemmt"
+  ) {
+    return "wasser_austritt";
+  }
+  if (p === "von_decke" || p === "von_oben") return "von_decke_wand";
+  if (p === "wc_verstopft" || p === "waschbecken_verstopft") return "verstopfung";
+  if (p === "feuchte_wand") return "feucht_ohne_lauf";
+  if (
+    p === "wasser_austritt" ||
+    p === "von_decke_wand" ||
+    p === "verstopfung" ||
+    p === "feucht_ohne_lauf" ||
+    p === "sonstiges"
+  ) {
+    return p;
+  }
+  return p || "sonstiges";
+}
+
+/**
+ * Heizung-Problem auf kanonische IDs (inkl. Legacy).
+ * - wohnung_kalt | kein_warmwasser | wasser_am_hk | geraeusche | sonstiges
+ */
+export function normalizeMeldeHeizungProblem(raw: string): string {
+  const p = raw.trim().toLowerCase();
+  if (p === "kalt" || p === "nicht_warm") return "wohnung_kalt";
+  if (p === "kein_ww") return "kein_warmwasser";
+  if (p === "tropft_hk" || p === "wasser_aus") return "wasser_am_hk";
+  if (
+    p === "wohnung_kalt" ||
+    p === "kein_warmwasser" ||
+    p === "wasser_am_hk" ||
+    p === "geraeusche" ||
+    p === "sonstiges"
+  ) {
+    return p;
+  }
+  return p || "sonstiges";
+}
+
+/**
+ * Strom-Problem auf kanonische IDs (inkl. Legacy).
+ * - kein_strom | fi_sicherung | einzelner_punkt | klingel | garagentor | sonstiges
+ */
+export function normalizeMeldeStromProblem(raw: string): string {
+  const p = raw.trim().toLowerCase();
+  if (p === "steckdose" || p === "licht" || p === "schalter") {
+    return "einzelner_punkt";
+  }
+  if (p === "garagentor_fb") return "garagentor";
+  if (
+    p === "kein_strom" ||
+    p === "fi_sicherung" ||
+    p === "einzelner_punkt" ||
+    p === "klingel" ||
+    p === "garagentor" ||
+    p === "sonstiges"
+  ) {
+    return p;
+  }
+  return p || "sonstiges";
+}
+
+/** Fenster/Tür → kanonische IDs. */
+export function normalizeMeldeFensterProblem(raw: string): string {
+  const p = raw.trim().toLowerCase();
+  if (
+    p === "fenster_geht_nicht" ||
+    p === "fenster_klemmt" ||
+    p === "fenster_undicht" ||
+    p === "dichtung"
+  ) {
+    return "fenster_klemmt_undicht";
+  }
+  if (p === "glas") return "scheibe_kaputt";
+  if (p === "tuer_problem" || p === "tuer_klemmt" || p === "schloss") {
+    return "tuer_schloss";
+  }
+  if (
+    p === "fenster_klemmt_undicht" ||
+    p === "scheibe_kaputt" ||
+    p === "tuer_schloss" ||
+    p === "sonstiges"
+  ) {
+    return p;
+  }
+  return p || "sonstiges";
+}
+
+/** Dach → kanonische IDs. */
+export function normalizeMeldeDachProblem(raw: string): string {
+  const p = raw.trim().toLowerCase();
+  if (p === "rinne" || p === "dachrinne") return "regenrinne_ueber";
+  if (p === "fallrohr") return "wasser_fassade";
+  if (p === "ziegel") return "ziegel_boden";
+  if (p === "dach_undicht") return "sonstiges";
+  if (
+    p === "regenrinne_ueber" ||
+    p === "wasser_fassade" ||
+    p === "ziegel_boden" ||
+    p === "sonstiges"
+  ) {
+    return p;
+  }
+  return p || "sonstiges";
+}
+
+/** Schimmel → kanonische IDs (Fassade/Graffiti → sonstiges). */
+export function normalizeMeldeSchimmelProblem(raw: string): string {
+  const p = raw.trim().toLowerCase();
+  if (
+    p === "wand_ecke" ||
+    p === "bad" ||
+    p === "grossflaechig" ||
+    p === "feuchte_wand"
+  ) {
+    return "schimmel_feucht";
+  }
+  if (p === "fassade" || p === "graffiti") return "sonstiges";
+  if (p === "schimmel_feucht" || p === "sonstiges") return p;
+  return p || "sonstiges";
+}
+
+/** Labels für Alt-Antworten (Anzeige HV), die nicht mehr im Fragebaum stehen. */
+const MELDE_WASSER_LEGACY_LABELS: Record<string, string> = {
+  tropft: "Wasser tropft",
+  laeuft: "Wasser läuft",
+  laeuft_stark: "Wasser läuft stark",
+  ueberschwemmt: "Überschwemmter Bereich",
+  von_decke: "Wasser kommt von der Decke",
+  von_oben: "Wasser von oben",
+  wc_verstopft: "WC verstopft",
+  waschbecken_verstopft: "Waschbecken verstopft",
+  feuchte_wand: "Feuchte Wand",
+  balkon: "Balkon",
+  garage: "Garage",
+  flur: "Flur",
+  // Heizung legacy
+  kalt: "Heizung / Wohnung bleibt kalt",
+  nicht_warm: "Heizung wird nicht warm",
+  kein_ww: "Kein Warmwasser",
+  tropft_hk: "Wasser am Heizkörper",
+  wasser_aus: "Wasser am Heizkörper",
+  // Strom legacy
+  steckdose: "Steckdose funktioniert nicht",
+  licht: "Licht funktioniert nicht",
+  schalter: "Schalter defekt",
+  garagentor_fb: "Garagentor",
+  // Fenster legacy
+  fenster_geht_nicht: "Fenster geht nicht richtig",
+  fenster_klemmt: "Fenster klemmt",
+  fenster_undicht: "Fenster undicht",
+  glas: "Fensterglas beschädigt",
+  tuer_problem: "Tür-Problem",
+  tuer_klemmt: "Tür klemmt",
+  schloss: "Schloss defekt",
+  dichtung: "Dichtung defekt",
+  // Dach / Schimmel legacy
+  dach_undicht: "Dach undicht",
+  rinne: "Dachrinne",
+  fallrohr: "Fallrohr",
+  ziegel: "Dachziegel",
+  fassade: "Fassade / Putz",
+  graffiti: "Graffiti",
+  // Sonstiges / Baum legacy
+  ast_baum: "Ast oder Baum blockiert den Weg",
+  astbruch: "Astbruch",
+  hecke: "Hecke versperrt den Weg",
+  platten: "Gehwegplatten locker",
+  laub: "Laub / Schmutz auf dem Weg",
+  ungeziefer: "Ungeziefer",
+  gemeinschaft: "Gemeinschaftsfläche",
+};
+
+const MELDE_LEGACY_ANSWER_LABELS = MELDE_WASSER_LEGACY_LABELS;
+
 /** Fragebäume je Melde-Bereich (Reihenfolge = Anzeige). */
 const TREES: Record<MeldeBereichId, MeldeQDef[]> = {
   wasser: [
@@ -61,14 +252,36 @@ const TREES: Record<MeldeBereichId, MeldeQDef[]> = {
       id: "melde_problem",
       frage: "Was ist das Problem?",
       optionen: [
-        { value: "tropft", label: "Wasser tropft" },
-        { value: "laeuft", label: "Wasser läuft" },
-        { value: "wc_verstopft", label: "WC verstopft" },
-        { value: "waschbecken_verstopft", label: "Waschbecken verstopft" },
-        { value: "von_decke", label: "Wasser kommt von der Decke" },
-        { value: "feuchte_wand", label: "Feuchte Wand" },
-        { value: "ueberschwemmt", label: "Überschwemmter Bereich" },
-        { value: "sonstiges", label: "Sonstiges" },
+        {
+          value: "wasser_austritt",
+          label: "Wasser tritt aus / läuft / tropft",
+          hint: "Leck, tropfender Hahn, nasse Stelle",
+          icon: "08-bad",
+        },
+        {
+          value: "von_decke_wand",
+          label: "Wasser aus Decke oder Wand",
+          hint: "von oben, Flecken, tropft herunter",
+          icon: "08-bad",
+        },
+        {
+          value: "verstopfung",
+          label: "WC oder Abfluss verstopft",
+          hint: "läuft nicht ab, steht, stinkt",
+          icon: "08-bad",
+        },
+        {
+          value: "feucht_ohne_lauf",
+          label: "Nur feucht — kein laufendes Wasser",
+          hint: "Feuchtigkeit, Schimmelgefahr",
+          icon: "02-reparatur",
+        },
+        {
+          value: "sonstiges",
+          label: "Etwas anderes",
+          hint: "kurz beschreiben im nächsten Schritt",
+          icon: "02-reparatur",
+        },
       ],
     },
     {
@@ -79,30 +292,24 @@ const TREES: Record<MeldeBereichId, MeldeQDef[]> = {
         { value: "bad", label: "Bad" },
         { value: "wc", label: "WC" },
         { value: "keller", label: "Keller" },
-        { value: "balkon", label: "Balkon" },
-        { value: "garage", label: "Garage" },
-        { value: "flur", label: "Flur" },
         { value: "sonstiges", label: "Sonstiges" },
       ],
     },
     {
-      id: "melde_seit_wann",
-      frage: "Seit wann besteht das Problem?",
-      optionen: [...SEIT_WANN],
-    },
-    {
       id: "melde_laeuft_noch",
-      frage: "Läuft aktuell Wasser?",
+      frage: "Kommt gerade aktiv Wasser?",
       optionen: [...JA_NEIN_WEISS],
       showWhen: (a) =>
         problemIs(
           a,
+          "wasser_austritt",
+          "von_decke_wand",
+          "sonstiges",
+          // Legacy
           "tropft",
           "laeuft",
-          "von_decke",
           "ueberschwemmt",
-          "sonstiges",
-          // legacy
+          "von_decke",
           "laeuft_stark",
           "von_oben"
         ),
@@ -113,7 +320,7 @@ const TREES: Record<MeldeBereichId, MeldeQDef[]> = {
       optionen: [...JA_NEIN_WEISS],
       showWhen: (a) =>
         ans(a, "melde_laeuft_noch") === "ja" ||
-        problemIs(a, "laeuft", "ueberschwemmt", "laeuft_stark"),
+        ans(a, "melde_laeuft_noch") === "weiss_nicht",
     },
     {
       id: "melde_gefahr",
@@ -124,14 +331,9 @@ const TREES: Record<MeldeBereichId, MeldeQDef[]> = {
         { value: "keine", label: "Keine Gefahr" },
       ],
       showWhen: (a) =>
-        problemIs(
-          a,
-          "laeuft",
-          "ueberschwemmt",
-          "von_decke",
-          "laeuft_stark",
-          "von_oben"
-        ) || ans(a, "melde_laeuft_noch") === "ja",
+        ans(a, "melde_laeuft_noch") === "ja" ||
+        ans(a, "melde_laeuft_noch") === "weiss_nicht" ||
+        problemIs(a, "von_decke_wand", "von_decke", "von_oben"),
     },
   ],
 
@@ -140,53 +342,54 @@ const TREES: Record<MeldeBereichId, MeldeQDef[]> = {
       id: "melde_problem",
       frage: "Was ist das Problem?",
       optionen: [
-        { value: "kalt", label: "Heizung / Wohnung bleibt kalt" },
-        { value: "kein_ww", label: "Kein Warmwasser" },
-        { value: "geraeusche", label: "Heizkörper machen Geräusche" },
         {
-          value: "tropft_hk",
-          label: "Es tropft oder läuft Wasser am Heizkörper",
+          value: "wohnung_kalt",
+          label: "Wohnung / Heizung bleibt kalt",
+          hint: "Heizkörper oder ganze Wohnung",
+          icon: "05-heizung",
         },
-        { value: "sonstiges", label: "Sonstiges" },
-        // Legacy
-        { value: "nicht_warm", label: "Heizung wird nicht warm" },
-      ],
-    },
-    {
-      id: "melde_betrifft",
-      frage: "Betrifft das:",
-      optionen: [
-        { value: "wohnung", label: "Nur meine Wohnung" },
-        { value: "mehrere", label: "Mehrere Wohnungen (soweit ich weiß)" },
-        { value: "weiss_nicht", label: "Weiß ich nicht" },
-      ],
-    },
-    {
-      id: "melde_seit_wann",
-      frage: "Seit wann?",
-      optionen: [
-        { value: "gerade_eben", label: "Gerade eben" },
-        { value: "heute", label: "Heute" },
-        { value: "mehrere_tage", label: "Seit mehreren Tagen" },
-        { value: "immer_wieder", label: "Immer wieder" },
+        {
+          value: "kein_warmwasser",
+          label: "Kein Warmwasser (Dusche/Hahn kalt)",
+          hint: "Warmwasser geht nicht",
+          icon: "05-heizung",
+        },
+        {
+          value: "wasser_am_hk",
+          label: "Wasser tropft oder läuft am Heizkörper",
+          hint: "Leck am Heizkörper oder Ventil",
+          icon: "05-heizung",
+        },
+        {
+          value: "geraeusche",
+          label: "Knacken / Gluckern / laute Geräusche",
+          hint: "ungewöhnliche Geräusche",
+          icon: "05-heizung",
+        },
+        {
+          value: "sonstiges",
+          label: "Etwas anderes",
+          hint: "kurz beschreiben im nächsten Schritt",
+          icon: "02-reparatur",
+        },
       ],
     },
     {
       id: "melde_heizung_kalt",
-      frage: "Ist die ganze Wohnung kalt?",
+      frage: "Wie weit ist es kalt?",
       optionen: [
-        { value: "ja", label: "Ja, alles kalt" },
-        { value: "einzelne", label: "Nur einzelne Zimmer / Heizkörper" },
-        { value: "teilweise", label: "Teilweise warm" },
+        { value: "ja", label: "Alles kalt" },
+        { value: "einzelne", label: "Nur einzelne Heizkörper" },
+        { value: "weiss_nicht", label: "Weiß nicht" },
       ],
-      showWhen: (a) => problemIs(a, "kalt", "nicht_warm"),
+      showWhen: (a) =>
+        problemIs(a, "wohnung_kalt", "kalt", "nicht_warm"),
     },
     {
-      id: "melde_warmwasser",
-      frage: "Kommt aus dem Hahn noch Warmwasser?",
+      id: "melde_laeuft_noch",
+      frage: "Kommt gerade aktiv Wasser am Heizkörper?",
       optionen: [...JA_NEIN_WEISS],
-      showWhen: (a) =>
-        problemIs(a, "kalt", "nicht_warm", "geraeusche", "tropft_hk"),
+      showWhen: (a) => problemIs(a, "wasser_am_hk", "tropft_hk", "wasser_aus"),
     },
   ],
 
@@ -195,62 +398,53 @@ const TREES: Record<MeldeBereichId, MeldeQDef[]> = {
       id: "melde_problem",
       frage: "Was ist das Problem?",
       optionen: [
-        { value: "kein_strom", label: "Kein Strom in der Wohnung" },
-        { value: "steckdose", label: "Eine Steckdose funktioniert nicht" },
-        { value: "licht", label: "Licht funktioniert nicht" },
+        {
+          value: "kein_strom",
+          label: "Kein Strom in der Wohnung / im Bereich",
+          hint: "dunkel, nichts geht",
+          icon: "06-elektrik",
+        },
+        {
+          value: "fi_sicherung",
+          label: "Sicherung oder FI fliegt raus",
+          hint: "springt raus, bleibt nicht an",
+          icon: "06-elektrik",
+        },
+        {
+          value: "einzelner_punkt",
+          label: "Nur Steckdose, Licht oder Schalter defekt",
+          hint: "einzelner Punkt betroffen",
+          icon: "06-elektrik",
+        },
         {
           value: "klingel",
-          label: "Klingel oder Türsprecher funktioniert nicht",
+          label: "Klingel / Türsprecher",
+          hint: "klingelt nicht, keine Verbindung",
+          icon: "06-elektrik",
         },
         {
           value: "garagentor",
           label: "Garagentor öffnet oder schließt nicht",
+          hint: "Tor, Antrieb, Fernbedienung",
+          icon: "06-elektrik",
         },
-        { value: "sonstiges", label: "Sonstiges" },
-        // Legacy
-        { value: "fi_sicherung", label: "Sicherung oder FI-Schalter löst aus" },
-        { value: "schalter", label: "Schalter defekt" },
-      ],
-    },
-    {
-      id: "melde_betrifft",
-      frage: "Betrifft das:",
-      optionen: [
-        { value: "wohnung", label: "Nur meine Wohnung" },
-        { value: "treppenhaus", label: "Treppenhaus" },
-        { value: "tiefgarage", label: "Tiefgarage" },
-        { value: "aussen", label: "Außenbereich" },
-      ],
-    },
-    {
-      id: "melde_seit_wann",
-      frage: "Seit wann?",
-      optionen: [
-        { value: "gerade_eben", label: "Gerade eben" },
-        { value: "heute", label: "Heute" },
-        { value: "mehrere_tage", label: "Seit mehreren Tagen" },
-        { value: "immer_wieder", label: "Immer wieder" },
+        {
+          value: "sonstiges",
+          label: "Etwas anderes",
+          hint: "kurz beschreiben im nächsten Schritt",
+          icon: "02-reparatur",
+        },
       ],
     },
     {
       id: "melde_sicherung_raus",
-      frage:
-        "Im Sicherungskasten: Ist etwas rausgeflogen oder ausgeschaltet?",
+      frage: "Ist im Sicherungskasten etwas rausgeflogen oder ausgeschaltet?",
       optionen: [
         { value: "ja", label: "Ja" },
         { value: "nein", label: "Nein" },
-        { value: "weiss_nicht", label: "Weiß ich nicht / schaue nicht nach" },
+        { value: "weiss_nicht", label: "Weiß nicht / schaue nicht nach" },
       ],
-      showWhen: (a) =>
-        problemIs(
-          a,
-          "kein_strom",
-          "fi_sicherung",
-          "steckdose",
-          "licht",
-          "schalter",
-          "sonstiges"
-        ),
+      showWhen: (a) => problemIs(a, "kein_strom", "fi_sicherung"),
     },
     {
       id: "melde_wieder_raus",
@@ -259,17 +453,11 @@ const TREES: Record<MeldeBereichId, MeldeQDef[]> = {
       optionen: [
         { value: "ja", label: "Ja, wieder rausgeflogen" },
         { value: "nein", label: "Nein, bleibt an / Strom ist wieder da" },
-        { value: "weiss_nicht", label: "Weiß ich nicht / nicht versucht" },
+        { value: "weiss_nicht", label: "Nicht versucht / weiß nicht" },
       ],
       showWhen: (a) =>
         problemIs(a, "kein_strom", "fi_sicherung") &&
         ans(a, "melde_sicherung_raus") === "ja",
-    },
-    {
-      id: "melde_nachbarn_strom",
-      frage: "Haben Nachbarn oder das Haus auch keinen Strom?",
-      optionen: [...JA_NEIN_WEISS],
-      showWhen: (a) => problemIs(a, "kein_strom", "fi_sicherung"),
     },
   ],
 
@@ -279,153 +467,69 @@ const TREES: Record<MeldeBereichId, MeldeQDef[]> = {
       frage: "Was ist das Problem?",
       optionen: [
         {
-          value: "fenster_geht_nicht",
-          label:
-            "Fenster geht nicht richtig (öffnet/schließt schlecht oder schließt nicht dicht)",
+          value: "fenster_klemmt_undicht",
+          label: "Fenster klemmt oder schließt nicht dicht",
+          hint: "schließt nicht, zieht, klemmt",
+          icon: "11-fenster",
         },
         {
           value: "scheibe_kaputt",
           label: "Fensterscheibe ist kaputt oder gesprungen",
+          hint: "Riss, Bruch, Scheibe",
+          icon: "11-fenster",
         },
         {
-          value: "tuer_problem",
-          label:
-            "Tür-Problem (schließt nicht, lässt sich nicht absperren, Schlüssel)",
+          value: "tuer_schloss",
+          label: "Tür, Schloss oder Schlüssel-Problem",
+          hint: "Schloss, Klinke, schließt nicht",
+          icon: "11-fenster",
         },
-        { value: "sonstiges", label: "Sonstiges" },
-        // Legacy
-        { value: "fenster_klemmt", label: "Fenster klemmt" },
-        { value: "fenster_undicht", label: "Fenster undicht" },
-        { value: "glas", label: "Fensterglas beschädigt" },
-        { value: "tuer_klemmt", label: "Tür klemmt / schließt nicht" },
-        { value: "schloss", label: "Schloss / Zylinder defekt" },
-        { value: "dichtung", label: "Dichtung defekt" },
+        {
+          value: "sonstiges",
+          label: "Etwas anderes",
+          hint: "kurz beschreiben im nächsten Schritt",
+          icon: "02-reparatur",
+        },
       ],
     },
     {
-      id: "melde_tuer_detail",
-      frage: "Was genau ist mit der Tür?",
+      id: "melde_ort_tuer",
+      frage: "Wo ist die Tür?",
       optionen: [
-        {
-          value: "schließt",
-          label: "Tür schließt nicht richtig / klemmt",
-        },
-        {
-          value: "absperren",
-          label: "Tür lässt sich nicht absperren",
-        },
-        {
-          value: "schluessel",
-          label: "Schlüssel steckt fest oder ist abgebrochen",
-        },
-      ],
-      showWhen: (a) => problemIs(a, "tuer_problem"),
-    },
-    {
-      id: "melde_ort",
-      frage: "Wo ist das?",
-      optionen: [
-        { value: "zimmerfenster", label: "Fenster im Zimmer" },
+        { value: "wohnungstuer", label: "Wohnungstür" },
+        { value: "haustuer", label: "Haustür (Haus)" },
         { value: "balkontuer", label: "Balkontür" },
-        { value: "kellerfenster", label: "Kellerfenster" },
         { value: "sonstiges", label: "Sonstiges" },
       ],
       showWhen: (a) =>
         problemIs(
           a,
-          "fenster_geht_nicht",
-          "scheibe_kaputt",
-          "fenster_klemmt",
-          "fenster_undicht",
-          "glas",
-          "dichtung"
+          "tuer_schloss",
+          "tuer_problem",
+          "tuer_klemmt",
+          "schloss"
         ),
-    },
-    {
-      id: "melde_ort_tuer",
-      frage: "Wo ist das?",
-      optionen: [
-        { value: "wohnungstuer", label: "Wohnungstür" },
-        { value: "haustuer", label: "Haustür (Haus)" },
-        { value: "balkontuer", label: "Balkontür" },
-        { value: "kellertuer", label: "Kellertür" },
-        { value: "sonstiges", label: "Sonstiges" },
-      ],
-      showWhen: (a) =>
-        problemIs(a, "tuer_klemmt") ||
-        (problemIs(a, "tuer_problem") &&
-          (ans(a, "melde_tuer_detail") === "schließt" ||
-            ans(a, "melde_tuer_detail") === "absperren")),
-    },
-    {
-      id: "melde_ort_schluessel",
-      frage: "Wo ist das?",
-      optionen: [
-        { value: "wohnungstuer", label: "Wohnungstür" },
-        { value: "haustuer", label: "Haustür (Haus)" },
-        { value: "kellertuer", label: "Kellertür" },
-      ],
-      showWhen: (a) =>
-        (problemIs(a, "tuer_problem") &&
-          ans(a, "melde_tuer_detail") === "schluessel") ||
-        problemIs(a, "schloss"),
-    },
-    {
-      id: "melde_seit_wann",
-      frage: "Seit wann?",
-      optionen: [
-        { value: "gerade_eben", label: "Gerade eben" },
-        { value: "heute", label: "Heute" },
-        { value: "mehrere_tage", label: "Seit mehreren Tagen" },
-        { value: "schon_laenger", label: "Schon länger" },
-      ],
-      showWhen: (a) =>
-        !(
-          (problemIs(a, "tuer_problem") &&
-            ans(a, "melde_tuer_detail") === "schluessel") ||
-          problemIs(a, "schloss")
-        ),
-    },
-    {
-      id: "melde_seit_wann_akut",
-      frage: "Seit wann?",
-      optionen: [
-        { value: "gerade_eben", label: "Gerade eben" },
-        { value: "heute", label: "Heute" },
-      ],
-      showWhen: (a) =>
-        (problemIs(a, "tuer_problem") &&
-          ans(a, "melde_tuer_detail") === "schluessel") ||
-        problemIs(a, "schloss"),
     },
     {
       id: "melde_geht_zu",
-      frage: "Geht es noch zu / lässt es sich absperren?",
+      frage: "Können Sie noch richtig schließen bzw. absperren?",
       optionen: [
         { value: "ja", label: "Ja" },
         { value: "nein", label: "Nein" },
         { value: "mit_kraft", label: "Nur mit Kraft" },
       ],
-      showWhen: (a) => {
-        if (problemIs(a, "scheibe_kaputt", "glas")) return false;
-        if (
-          (problemIs(a, "tuer_problem") &&
-            ans(a, "melde_tuer_detail") === "schluessel") ||
-          problemIs(a, "schloss")
-        ) {
-          return false;
-        }
-        return problemIs(
+      showWhen: (a) =>
+        problemIs(
           a,
-          "fenster_geht_nicht",
+          "tuer_schloss",
           "tuer_problem",
-          "sonstiges",
-          "fenster_klemmt",
-          "fenster_undicht",
           "tuer_klemmt",
-          "dichtung"
-        );
-      },
+          "schloss",
+          "fenster_klemmt_undicht",
+          "fenster_geht_nicht",
+          "fenster_klemmt",
+          "fenster_undicht"
+        ),
     },
   ],
 
@@ -437,80 +541,33 @@ const TREES: Record<MeldeBereichId, MeldeQDef[]> = {
         {
           value: "regenrinne_ueber",
           label: "Die Regenrinne läuft über",
+          hint: "überläuft, verstopft",
+          icon: "12-dach",
         },
         {
           value: "wasser_fassade",
-          label:
-            "Am Haus (Fassade / Ecke) kommt bei Regen Wasser falsch runter",
+          label: "Bei Regen kommt Wasser falsch an der Fassade runter",
+          hint: "Wasser an der Wand / Fassade",
+          icon: "12-dach",
         },
         {
           value: "ziegel_boden",
           label: "Dachziegel liegen am Boden oder fehlen",
+          hint: "Ziegel, Dachschaden",
+          icon: "12-dach",
         },
-        { value: "sonstiges", label: "Sonstiges" },
-        // Legacy
-        { value: "dach_undicht", label: "Dach undicht / Wasser dringt ein" },
-        { value: "rinne", label: "Dachrinne verstopft oder undicht" },
-        { value: "fallrohr", label: "Fallrohr verstopft oder undicht" },
-        { value: "ziegel", label: "Dachziegel lose / beschädigt" },
-      ],
-    },
-    {
-      id: "melde_ort",
-      frage: "Wo merkst du das?",
-      optionen: [
-        { value: "fassade", label: "An der Hausfassade" },
-        { value: "eingang", label: "Eingangsbereich" },
-        { value: "balkon", label: "Balkon" },
-        { value: "garage", label: "Garage / Hof" },
-        { value: "sonstiges", label: "Sonstiges" },
-      ],
-      showWhen: (a) =>
-        problemIs(
-          a,
-          "regenrinne_ueber",
-          "wasser_fassade",
-          "rinne",
-          "fallrohr",
-          "dach_undicht",
-          "sonstiges"
-        ),
-    },
-    {
-      id: "melde_ort_ziegel",
-      frage: "Wo merkst du das?",
-      optionen: [
-        { value: "gehweg", label: "Eingangsbereich / Gehweg" },
-        { value: "aussen", label: "Hof / Außenbereich" },
-        { value: "garage", label: "Garage" },
-        { value: "sonstiges", label: "Sonstiges" },
-      ],
-      showWhen: (a) => problemIs(a, "ziegel_boden", "ziegel"),
-    },
-    {
-      id: "melde_seit_wann",
-      frage: "Seit wann?",
-      optionen: [
-        { value: "gerade_eben", label: "Gerade eben" },
-        { value: "heute", label: "Heute" },
-        { value: "mehrere_tage", label: "Seit mehreren Tagen" },
-        { value: "bei_regen", label: "Immer wieder bei Regen" },
+        {
+          value: "sonstiges",
+          label: "Etwas anderes",
+          hint: "kurz beschreiben im nächsten Schritt",
+          icon: "02-reparatur",
+        },
       ],
     },
     {
       id: "melde_bei_regen",
-      frage: "Passiert es vor allem bei Regen oder Wind?",
+      frage: "Passiert es gerade oder vor allem bei Regen?",
       optionen: [...JA_NEIN_WEISS],
-      showWhen: (a) =>
-        problemIs(
-          a,
-          "regenrinne_ueber",
-          "wasser_fassade",
-          "sonstiges",
-          "rinne",
-          "fallrohr",
-          "dach_undicht"
-        ),
     },
   ],
 
@@ -522,20 +579,15 @@ const TREES: Record<MeldeBereichId, MeldeQDef[]> = {
         {
           value: "schimmel_feucht",
           label: "Schimmel oder feuchte Stellen an Wand / Decke",
+          hint: "Flecken, muffig, feucht",
+          icon: "02-reparatur",
         },
         {
-          value: "fassade",
-          label: "An der Hausfassade: Putz, Risse oder Farbe kaputt",
+          value: "sonstiges",
+          label: "Etwas anderes (Feuchte)",
+          hint: "kurz beschreiben im nächsten Schritt",
+          icon: "02-reparatur",
         },
-        {
-          value: "graffiti",
-          label: "Schmiererei / Graffiti an der Wand",
-        },
-        { value: "sonstiges", label: "Sonstiges" },
-        // Legacy
-        { value: "wand_ecke", label: "Wand / Ecke" },
-        { value: "bad", label: "Bad / feuchter Raum" },
-        { value: "grossflaechig", label: "Größere Fläche" },
       ],
     },
     {
@@ -543,195 +595,14 @@ const TREES: Record<MeldeBereichId, MeldeQDef[]> = {
       frage: "Wo ist das?",
       optionen: [
         { value: "bad", label: "Bad" },
-        { value: "kueche", label: "Küche" },
-        { value: "schlafzimmer", label: "Schlafzimmer" },
-        { value: "wohnzimmer", label: "Wohnzimmer" },
+        { value: "wohnraum", label: "Wohn- / Schlafzimmer" },
         { value: "keller", label: "Keller" },
-        { value: "treppenhaus", label: "Treppenhaus" },
         { value: "sonstiges", label: "Sonstiges" },
       ],
-      showWhen: (a) =>
-        problemIs(
-          a,
-          "schimmel_feucht",
-          "wand_ecke",
-          "bad",
-          "grossflaechig",
-          "sonstiges"
-        ),
-    },
-    {
-      id: "melde_ort_fassade",
-      frage: "Wo ist das?",
-      optionen: [
-        { value: "aussenfassade", label: "Außenfassade" },
-        { value: "eingang", label: "Eingang / Hof" },
-        { value: "garage", label: "Garage" },
-        { value: "sonstiges", label: "Sonstiges" },
-      ],
-      showWhen: (a) => problemIs(a, "fassade"),
-    },
-    {
-      id: "melde_ort_graffiti",
-      frage: "Wo ist das?",
-      optionen: [
-        { value: "aussenfassade", label: "Außenfassade" },
-        { value: "eingang", label: "Eingang / Hof" },
-        { value: "garage", label: "Garage" },
-        { value: "treppenhaus", label: "Treppenhaus" },
-        { value: "sonstiges", label: "Sonstiges" },
-      ],
-      showWhen: (a) => problemIs(a, "graffiti"),
-    },
-    {
-      id: "melde_seit_wann",
-      frage: "Seit wann?",
-      optionen: [
-        { value: "heute", label: "Heute entdeckt" },
-        { value: "einige_tage", label: "Seit einigen Tagen" },
-        { value: "mehrere_wochen", label: "Seit mehreren Wochen" },
-        { value: "schon_laenger", label: "Schon länger" },
-      ],
-    },
-    {
-      id: "melde_groesse",
-      frage: "Ungefähr wie groß?",
-      optionen: [
-        { value: "klein", label: "Klein (etwa handgroß / bis ~1 m²)" },
-        { value: "mittel", label: "Mittel" },
-        { value: "gross", label: "Groß (größere Fläche)" },
-      ],
-      showWhen: (a) =>
-        problemIs(
-          a,
-          "schimmel_feucht",
-          "fassade",
-          "graffiti",
-          "wand_ecke",
-          "bad",
-          "grossflaechig"
-        ),
     },
   ],
 
-  baum_notfall: [
-    {
-      id: "melde_problem",
-      frage: "Was ist das Problem?",
-      optionen: [
-        {
-          value: "ast_baum",
-          label: "Ast oder Baum hängt runter oder blockiert den Weg",
-        },
-        {
-          value: "hecke",
-          label: "Hecke oder Sträucher versperren den Weg",
-        },
-        {
-          value: "platten",
-          label: "Gehwegplatten sind locker oder kaputt",
-        },
-        {
-          value: "laub",
-          label: "Weg ist voller Laub oder Schmutz",
-        },
-        { value: "sonstiges", label: "Sonstiges" },
-        // Legacy
-        { value: "astbruch", label: "Astbruch / herunterhängende Äste" },
-        { value: "weg", label: "Weg / Durchgang eingeschränkt" },
-      ],
-    },
-    {
-      id: "melde_ort",
-      frage: "Wo ist das?",
-      optionen: [
-        { value: "gehweg", label: "Gehweg" },
-        { value: "hof", label: "Hof" },
-        { value: "garten", label: "Garten" },
-        { value: "parkplatz", label: "Parkplatz" },
-        { value: "zufahrt", label: "Zufahrt" },
-        { value: "spielplatz", label: "Spielplatz" },
-        { value: "sonstiges", label: "Sonstiges" },
-      ],
-      showWhen: (a) => problemIs(a, "ast_baum", "astbruch", "weg", "sonstiges"),
-    },
-    {
-      id: "melde_ort_hecke",
-      frage: "Wo ist das?",
-      optionen: [
-        { value: "gehweg", label: "Gehweg" },
-        { value: "zufahrt", label: "Zufahrt" },
-        { value: "parkplatz", label: "Parkplatz" },
-        { value: "hof", label: "Hof" },
-        { value: "sonstiges", label: "Sonstiges" },
-      ],
-      showWhen: (a) => problemIs(a, "hecke"),
-    },
-    {
-      id: "melde_ort_platten",
-      frage: "Wo ist das?",
-      optionen: [
-        { value: "gehweg", label: "Gehweg" },
-        { value: "hof", label: "Hof" },
-        { value: "zufahrt", label: "Zufahrt" },
-        { value: "spielplatz", label: "Spielplatz" },
-        { value: "sonstiges", label: "Sonstiges" },
-      ],
-      showWhen: (a) => problemIs(a, "platten"),
-    },
-    {
-      id: "melde_ort_laub",
-      frage: "Wo ist das?",
-      optionen: [
-        { value: "gehweg", label: "Gehweg" },
-        { value: "hof", label: "Hof" },
-        { value: "zufahrt", label: "Zufahrt" },
-        { value: "parkplatz", label: "Parkplatz" },
-        { value: "sonstiges", label: "Sonstiges" },
-      ],
-      showWhen: (a) => problemIs(a, "laub"),
-    },
-    {
-      id: "melde_seit_wann",
-      frage: "Seit wann?",
-      optionen: [
-        { value: "gerade_eben", label: "Gerade eben" },
-        { value: "heute", label: "Heute" },
-        { value: "mehrere_tage", label: "Seit mehreren Tagen" },
-        { value: "schon_laenger", label: "Schon länger" },
-      ],
-      showWhen: (a) => !problemIs(a, "ast_baum", "astbruch", "weg"),
-    },
-    {
-      id: "melde_seit_wann_akut",
-      frage: "Seit wann?",
-      optionen: [
-        { value: "gerade_eben", label: "Gerade eben" },
-        { value: "heute", label: "Heute" },
-        { value: "mehrere_tage", label: "Seit mehreren Tagen" },
-      ],
-      showWhen: (a) => problemIs(a, "ast_baum", "astbruch", "weg"),
-    },
-    {
-      id: "melde_passierbar",
-      frage: "Kann man noch vorbeigehen / vorbeifahren?",
-      optionen: [
-        { value: "ja", label: "Ja" },
-        { value: "nein", label: "Nein" },
-        { value: "schwer", label: "Nur schwer / ausweichen" },
-      ],
-      showWhen: (a) =>
-        problemIs(
-          a,
-          "ast_baum",
-          "hecke",
-          "platten",
-          "sonstiges",
-          "astbruch",
-          "weg"
-        ),
-    },
-  ],
+  baum_notfall: [], // Legacy-ID — Fragen laufen über sonstiges (siehe getMeldeDynamicQuestions)
 
   sonstiges: [
     {
@@ -740,78 +611,46 @@ const TREES: Record<MeldeBereichId, MeldeQDef[]> = {
       optionen: [
         {
           value: "muell",
-          label: "Mülltonnen voll oder Müll liegt daneben / im Bereich",
+          label: "Mülltonnen voll oder Müll liegt daneben",
+          hint: "Müllplatz, Überfüllung",
+          icon: "17-gebauedereinigung",
         },
         {
           value: "treppenhaus_schmutz",
-          label: "Treppenhaus oder Gemeinschaftsbereich ist schmutzig",
+          label: "Treppenhaus / Gemeinschaftsbereich schmutzig",
+          hint: "Reinigung, Gemeinschaftsfläche",
+          icon: "17-gebauedereinigung",
         },
         {
           value: "wespen",
-          label: "Wespennest oder Insektennest (sichtbar)",
+          label: "Wespennest oder Insektennest",
+          hint: "Wespen, Insekten",
+          icon: "19-notfall",
         },
-        { value: "sonstiges", label: "Sonstiges" },
-        // Legacy
-        { value: "klingel", label: "Klingel / Gegensprechanlage" },
-        { value: "gemeinschaft", label: "Gemeinschaftsfläche" },
-        { value: "ungeziefer", label: "Ungeziefer" },
+        {
+          value: "weg_aussen",
+          label: "Ast, Baum oder Weg draußen blockiert / beschädigt",
+          hint: "Außenanlage, Weg, Ast",
+          icon: "15-gartenpflege",
+        },
+        {
+          value: "sonstiges",
+          label: "Etwas anderes",
+          hint: "kurz beschreiben im nächsten Schritt",
+          icon: "02-reparatur",
+        },
       ],
     },
     {
       id: "melde_ort",
       frage: "Wo ist das?",
       optionen: [
-        { value: "muellraum", label: "Müllraum" },
-        { value: "muellplatz", label: "Müllplatz" },
-        { value: "aussen", label: "Außenanlage" },
-        { value: "sonstiges", label: "Sonstiges" },
-      ],
-      showWhen: (a) => problemIs(a, "muell"),
-    },
-    {
-      id: "melde_ort_treppe",
-      frage: "Wo ist das?",
-      optionen: [
-        { value: "treppenhaus", label: "Treppenhaus" },
-        { value: "eingang", label: "Eingangsbereich" },
+        { value: "muellplatz", label: "Müllplatz / Müllraum" },
+        { value: "treppenhaus", label: "Treppenhaus / Eingang" },
+        { value: "aussen", label: "Hof / Gehweg / Außenanlage" },
         { value: "keller", label: "Keller" },
         { value: "sonstiges", label: "Sonstiges" },
       ],
-      showWhen: (a) =>
-        problemIs(a, "treppenhaus_schmutz", "gemeinschaft", "sonstiges", "klingel"),
-    },
-    {
-      id: "melde_ort_wespen",
-      frage: "Wo ist das?",
-      optionen: [
-        { value: "aussen", label: "Außenanlage" },
-        { value: "eingang", label: "Eingangsbereich" },
-        { value: "muellplatz", label: "Müllplatz" },
-        { value: "keller", label: "Keller" },
-        { value: "sonstiges", label: "Sonstiges" },
-      ],
-      showWhen: (a) => problemIs(a, "wespen", "ungeziefer"),
-    },
-    {
-      id: "melde_seit_wann",
-      frage: "Seit wann?",
-      optionen: [
-        { value: "heute", label: "Heute" },
-        { value: "einige_tage", label: "Seit einigen Tagen" },
-        { value: "eine_woche", label: "Seit einer Woche" },
-        { value: "schon_laenger", label: "Schon länger" },
-      ],
-    },
-    {
-      id: "melde_staerke",
-      frage: "Wie stark ist die Verschmutzung?",
-      optionen: [
-        { value: "leicht", label: "Leicht" },
-        { value: "mittel", label: "Mittel" },
-        { value: "stark", label: "Stark" },
-      ],
-      showWhen: (a) =>
-        problemIs(a, "muell", "treppenhaus_schmutz", "gemeinschaft"),
     },
   ],
 };
@@ -826,7 +665,10 @@ export function getMeldeDynamicQuestions(
   answers: MeldeAnswers | undefined
 ): MeldeFachfrageUi[] {
   const bereichId = kaputtBereichToMeldeId(bereichFunnelValue);
-  const tree = TREES[bereichId] ?? TREES.sonstiges;
+  const tree =
+    bereichId === "baum_notfall"
+      ? TREES.sonstiges
+      : (TREES[bereichId] ?? TREES.sonstiges);
   const a = answers ?? {};
   return tree.filter((q) => !q.showWhen || q.showWhen(a)).map(toUi);
 }
@@ -910,6 +752,7 @@ export function meldeAnswerDisplayLabel(
     const opt = q.optionen.find((o) => o.value === raw);
     if (opt) return opt.label;
   }
+  if (MELDE_LEGACY_ANSWER_LABELS[raw]) return MELDE_LEGACY_ANSWER_LABELS[raw];
   // Rohdaten-Fallback: keine technischen Slugs mit Unterstrichen
   if (raw.includes("_") || /^melde_/i.test(raw)) {
     return humanizeMeldeRawKey(raw);

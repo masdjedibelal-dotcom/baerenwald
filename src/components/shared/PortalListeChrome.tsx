@@ -4,34 +4,17 @@ import { PORTAL_VAR } from "@/lib/portal2/tokens";
 import { cn } from "@/lib/utils";
 import type { ReactNode } from "react";
 
-/** Listen-Eyebrow im HV-Stil (PORTAL_C). */
+/** Listen-Eyebrow — Deep Green 11.5/800 Uppercase `#7A857F`. */
 export function PortalListeEyebrow({ children }: { children: ReactNode }) {
-  return (
-    <p
-      className="portal-text-label mb-1"
-      style={{ color: PORTAL_VAR.faint }}
-    >
-      {children}
-    </p>
-  );
+  return <p className="portal-liste-eyebrow">{children}</p>;
 }
 
-/** Listen-Seitentitel im HV-Stil (PORTAL_C). */
+/** Listen-Seitentitel — Deep Green H1 30/800. */
 export function PortalListeTitle({ children }: { children: ReactNode }) {
-  return (
-    <h1
-      className="text-[25px] font-bold"
-      style={{
-        color: PORTAL_VAR.ink,
-        fontFamily: "var(--p2-font-head, " + PORTAL_VAR.head + ")",
-      }}
-    >
-      {children}
-    </h1>
-  );
+  return <h1 className="portal-liste-title">{children}</h1>;
 }
 
-/** Filter-Chip im HV-Stil (PORTAL_VAR.greenDark aktiv). */
+/** Filter-Chip — aktiv `#1A3D2B`, inaktiv weiß ohne Border. */
 export function PortalListeFilterChip({
   active,
   onClick,
@@ -42,37 +25,37 @@ export function PortalListeFilterChip({
   active: boolean;
   onClick: () => void;
   children: ReactNode;
-  /** Einfache Zählung in Klammern, z. B. „(3)“. */
   count?: number;
-  /** HV-Stil: runder Count-Badge statt Klammer. */
   countBadge?: number | null;
 }) {
   const showBadge = countBadge != null && countBadge > 0;
+
   return (
     <button
       type="button"
       onClick={onClick}
       className={cn(
-        "portal-text-meta inline-flex shrink-0 items-center gap-1.5 rounded-full px-3.5 py-2 font-semibold"
+        "portal-liste-chip",
+        active && "portal-liste-chip--active"
       )}
-      style={{
-        border: `1px solid ${active ? "transparent" : PORTAL_VAR.line}`,
-        background: active ? PORTAL_VAR.greenDark : "#fff",
-        color: active ? "#fff" : PORTAL_VAR.sub,
-      }}
     >
       {children}
       {count != null ? (
-        <span style={{ color: active ? "rgba(255,255,255,0.7)" : PORTAL_VAR.faint }}>
+        <span
+          className="portal-liste-chip-count"
+          style={{
+            color: active ? "rgba(255,255,255,0.7)" : PORTAL_VAR.faint,
+          }}
+        >
           ({count})
         </span>
       ) : null}
       {showBadge ? (
         <span
-          className="rounded-full px-1.5 py-px text-[10.5px] font-bold"
+          className="portal-liste-chip-badge"
           style={{
-            color: active ? PORTAL_VAR.greenDark : "#fff",
-            background: active ? "#fff" : PORTAL_VAR.primary,
+            color: active ? PORTAL_VAR.greenDark : "#1a2e1f",
+            background: active ? "#fff" : "var(--p2-sand, #e8b04b)",
           }}
         >
           {countBadge}

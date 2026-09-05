@@ -19,7 +19,6 @@ import {
   type MeldeUrsachenCheckState,
 } from "@/lib/org/melde-ursachen";
 import { portalToastError, portalToastSuccess } from "@/lib/shared/portal-toast";
-import { PORTAL_VAR } from "@/lib/portal2/tokens";
 import { cn } from "@/lib/utils";
 
 const MELDE_ROW_ORDER = [
@@ -149,14 +148,14 @@ export function MeldeUrsachenWasserPanel({
             <MeldeRowsList rows={meldeRows} />
           </div>
         ) : (
-          <p className="mb-3 text-[13.5px] font-semibold text-text-primary">
+          <p className="mb-3 portal-text-body font-semibold text-text-primary">
             {schaden}
           </p>
         )}
-        <dl className="space-y-2 border-t border-border-light pt-3 text-[13.5px]">
-          <div className="flex justify-between gap-3">
-            <dt className="text-text-secondary">Ursache</dt>
-            <dd className="text-right font-semibold text-text-primary">
+        <dl className="mt-3 divide-y divide-border-light border-t border-border-light">
+          <div className="flex justify-between gap-3 py-2.5">
+            <dt className="portal-text-meta text-text-secondary">Ursache</dt>
+            <dd className="portal-text-body text-right font-semibold text-text-primary">
               {meldeUrsacheLabel(bereich, initial.selectedUrsacheId)}
               {initial.selectedUrsacheId === "sonstiges" &&
               initial.sonstigesText
@@ -164,9 +163,9 @@ export function MeldeUrsachenWasserPanel({
                 : null}
             </dd>
           </div>
-          <div className="flex justify-between gap-3">
-            <dt className="text-text-secondary">Einschätzung</dt>
-            <dd className="text-right font-semibold text-text-primary">
+          <div className="flex justify-between gap-3 py-2.5">
+            <dt className="portal-text-meta text-text-secondary">Einschätzung</dt>
+            <dd className="portal-text-body text-right font-semibold text-text-primary">
               {initial.entscheidung === "hm_geloest"
                 ? "Hausmeister hat gelöst"
                 : "Fachfirma notwendig"}
@@ -206,7 +205,7 @@ export function MeldeUrsachenWasserPanel({
       )}
     >
       <h3 className="portal-text-section">Meldung & Ursache</h3>
-      <p className="mt-1 text-[12px]" style={{ color: PORTAL_VAR.faint }}>
+      <p className="portal-text-meta mt-1 text-text-secondary">
         Angaben aus dem Melde-Funnel. Ursache dokumentieren — ohne Einfluss auf
         Freigabe oder Angebot.
       </p>
@@ -221,7 +220,7 @@ export function MeldeUrsachenWasserPanel({
 
       <div className="mt-4 border-t border-border-light pt-3">
         <p className="portal-text-label">Ursache (nach Wahrscheinlichkeit)</p>
-        <ul className="mt-2 space-y-1.5">
+        <ul className="mt-2 divide-y divide-border-light border-y border-border-light">
           {ursachen.map((u, i) => {
             const on = selected === u.id;
             return (
@@ -230,10 +229,10 @@ export function MeldeUrsachenWasserPanel({
                   type="button"
                   onClick={() => setSelected(u.id)}
                   className={cn(
-                    "flex w-full items-center gap-2 rounded-lg border px-3 py-2.5 text-left text-[13.5px] font-semibold transition-colors",
+                    "flex w-full items-center gap-2.5 px-0 py-3 text-left transition-colors",
                     on
-                      ? "border-[var(--org-primary,#2e7d52)] bg-[var(--org-primary-soft,#e7f1e9)] text-[var(--org-primary,#2e7d52)]"
-                      : "border-border-light bg-white text-text-primary hover:bg-[var(--p2-hover,#f7f8fa)]"
+                      ? "text-[var(--org-primary,#2e7d52)]"
+                      : "text-text-primary hover:bg-[var(--p2-hover,#f7f8fa)]"
                   )}
                 >
                   <span
@@ -247,7 +246,7 @@ export function MeldeUrsachenWasserPanel({
                   >
                     {i + 1}
                   </span>
-                  {u.label}
+                  <span className="portal-text-body font-semibold">{u.label}</span>
                 </button>
               </li>
             );
@@ -269,7 +268,7 @@ export function MeldeUrsachenWasserPanel({
             type="button"
             onClick={() => setEntscheidung("hm_geloest")}
             className={cn(
-              "flex-1 rounded-lg border px-3 py-2.5 text-[13px] font-semibold",
+              "portal-text-body flex-1 rounded-lg border px-3 py-2.5 font-semibold",
               entscheidung === "hm_geloest"
                 ? "border-emerald-600 bg-emerald-50 text-emerald-900"
                 : "border-border-light text-text-secondary"
@@ -281,7 +280,7 @@ export function MeldeUrsachenWasserPanel({
             type="button"
             onClick={() => setEntscheidung("fachfirma")}
             className={cn(
-              "flex-1 rounded-lg border px-3 py-2.5 text-[13px] font-semibold",
+              "portal-text-body flex-1 rounded-lg border px-3 py-2.5 font-semibold",
               entscheidung === "fachfirma"
                 ? "border-amber-600 bg-amber-50 text-amber-950"
                 : "border-border-light text-text-secondary"
@@ -327,7 +326,7 @@ export function MeldeUrsachenWasserPanel({
           type="button"
           disabled={busy || !selected || !entscheidung}
           onClick={() => void onSave()}
-          className="mt-4 w-full rounded-lg border border-border-default bg-[var(--p2-selected,#f0f2f0)] px-3 py-2.5 text-[13px] font-semibold text-text-primary disabled:opacity-50"
+          className="portal-text-body mt-4 w-full rounded-lg border border-border-default bg-white px-3 py-2.5 font-semibold text-text-primary disabled:opacity-50"
         >
           {busy
             ? "Speichern…"
@@ -342,11 +341,14 @@ export function MeldeUrsachenWasserPanel({
 
 function MeldeRowsList({ rows }: { rows: MeldeRow[] }) {
   return (
-    <dl className="space-y-1.5 text-[13.5px]">
+    <dl className="divide-y divide-border-light border-y border-border-light">
       {rows.map((row) => (
-        <div key={row.label} className="flex justify-between gap-3">
-          <dt className="text-text-secondary">{row.label}</dt>
-          <dd className="text-right font-medium text-text-primary">
+        <div
+          key={row.label}
+          className="flex justify-between gap-3 py-2.5"
+        >
+          <dt className="portal-text-meta text-text-secondary">{row.label}</dt>
+          <dd className="portal-text-body text-right font-semibold text-text-primary">
             {row.value}
           </dd>
         </div>

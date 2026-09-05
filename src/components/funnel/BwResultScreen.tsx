@@ -43,7 +43,7 @@ function ResultSituationBanner({ state }: { state: FunnelState }) {
     return (
       <div className="mb-5 rounded-xl border border-emerald-200 bg-emerald-50/95 px-4 py-3 text-sm leading-snug text-emerald-950 shadow-sm">
         <p className="font-semibold text-emerald-950">
-          Dein schlüsselfertiges Projekt-Angebot
+          Ihr schlüsselfertiges Projekt-Angebot
         </p>
         <p className="mt-2 text-emerald-900/95">
           Dieser Preis umfasst die komplette Ausführung inkl. Bauleitung,
@@ -61,7 +61,7 @@ function ResultSituationBanner({ state }: { state: FunnelState }) {
           Sorgenfreie Immobilien-Pflege
         </p>
         <p className="mt-2 text-teal-900/95">
-          Dein Pauschalpreis für regelmäßige Qualität und Werterhalt deiner
+          Ihr Pauschalpreis für regelmäßige Qualität und Werterhalt Ihrer
           Immobilie.
         </p>
       </div>
@@ -375,7 +375,7 @@ function validateKomplexTelefon(raw: string): string | undefined {
   const tel = raw.replace(/[\s\-]/g, "");
   if (!tel) return "Telefonnummer wird benötigt.";
   if (!/^(\+49|0)[1-9]\d{6,13}$/.test(tel)) {
-    return "Bitte gib eine gültige Telefonnummer ein.";
+    return "Bitte geben Sie eine gültige Telefonnummer ein.";
   }
   return undefined;
 }
@@ -384,7 +384,7 @@ function validateKomplexEmail(raw: string): string | undefined {
   const e = raw.trim();
   if (!e) return undefined;
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e)) {
-    return "Bitte gib eine gültige E-Mail-Adresse ein.";
+    return "Bitte geben Sie eine gültige E-Mail-Adresse ein.";
   }
   return undefined;
 }
@@ -512,7 +512,7 @@ function ZuKomplexScreen({
         setSubmitStatus("error");
         setErrorMessage(
           result.error ??
-            "Versuch es bitte erneut oder ruf uns direkt an."
+            "Versuchen Sie es bitte erneut oder rufen Sie uns direkt an."
         );
         return;
       }
@@ -520,7 +520,7 @@ function ZuKomplexScreen({
     } catch {
       setSubmitStatus("error");
       setErrorMessage(
-        "Netzwerkfehler. Bitte versuche es erneut oder nutze den Anruf-Button."
+        "Netzwerkfehler. Bitte versuchen Sie es erneut oder nutzen Sie den Anruf-Button."
       );
     }
   }, [
@@ -545,7 +545,7 @@ function ZuKomplexScreen({
           <h2>Gewerbliches Projekt?</h2>
           <p>
             Ob Büro, Praxis, Laden oder Gastronomie — wir planen individuell
-            mit dir. Melde dich kurz und wir melden uns{" "}
+            mit Ihnen. Melden Sie sich kurz und wir melden uns{" "}
             {SITE_CONFIG.responseSlaWithin}.
           </p>
           <button
@@ -562,7 +562,7 @@ function ZuKomplexScreen({
           <p>
             Großprojekte wie Anbau oder Garage erfordern eine individuelle
             statische Prüfung und Architektenplanung. Unser GU-Team kontaktiert
-            dich für ein persönliches Beratungsgespräch und eine
+            Sie für ein persönliches Beratungsgespräch und eine
             Vor-Ort-Analyse.
           </p>
           <button
@@ -575,11 +575,11 @@ function ZuKomplexScreen({
         </div>
       ) : karteOhneAutomatpreis ? (
         <div className="komplex-card">
-          <h2>Das planen wir persönlich mit dir.</h2>
+          <h2>Das planen wir persönlich mit Ihnen.</h2>
           <p>
             Für dieses Projekt gibt es zu viele individuelle Faktoren für eine
             automatische Kalkulation. Wir schauen es uns gemeinsam an und
-            erstellen dir ein konkretes Angebot — kostenlos und unverbindlich.
+            erstellen Ihnen ein konkretes Angebot — kostenlos und unverbindlich.
           </p>
           <button
             type="button"
@@ -611,14 +611,14 @@ function ZuKomplexScreen({
           <h2 className="komplex-headline">
             {showPreisAb ? (
               <>
-                Dein Projekt startet ab ca.{" "}
+                Ihr Projekt startet ab ca.{" "}
                 {formatCurrencyEUR(preisPreview.min)}.
               </>
             ) : (
               <>
                 Für diese Auswahl gibt es keinen verlässlichen unverbindlichen
                 Online-Preisrahmen — Aufwand und Budget klären wir persönlich
-                mit dir.
+                mit Ihnen.
               </>
             )}
           </h2>
@@ -629,7 +629,7 @@ function ZuKomplexScreen({
           {komplexActiveFeatures.length > 0 ? (
             <div className="bw-active-features bw-active-features--komplex">
               <p className="bw-active-features-title">
-                Deine Auswahl im Überblick
+                Ihre Auswahl im Überblick
               </p>
               <ul className="bw-active-features-list">
                 {komplexActiveFeatures.map((label, idx) => (
@@ -740,7 +740,7 @@ function ZuKomplexScreen({
             }
           >
             <textarea
-              placeholder="Kurze Beschreibung deines Projekts (optional)"
+              placeholder="Kurze Beschreibung Ihres Projekts (optional)"
               className="funnel-textarea"
               rows={3}
               value={beschreibung}
@@ -828,7 +828,7 @@ export function BwResultScreen({
       setSaveEmailSent(true);
     } catch {
       setSaveEmailError(
-        "Senden fehlgeschlagen — bitte versuche es erneut."
+        "Senden fehlgeschlagen — bitte versuchen Sie es erneut."
       );
     }
   }, [
@@ -875,7 +875,7 @@ export function BwResultScreen({
       {resultModus === "notfall_akut" ? (
         <div className="mb-5 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm leading-snug text-red-950 shadow-sm">
           <p className="font-semibold text-red-950">
-            Akuter Notfall — wir priorisieren deine Anfrage.
+            Akuter Notfall — wir priorisieren Ihre Anfrage.
           </p>
           <a
             href={SITE_CONFIG.phoneHref}
@@ -894,7 +894,7 @@ export function BwResultScreen({
           )}
         >
           <p className="preis-karte-kicker">
-            {hasFixedPreis ? "Dein Preis" : "Dein unverbindlicher Preisrahmen"}
+            {hasFixedPreis ? "Ihr Preis" : "Ihr unverbindlicher Preisrahmen"}
           </p>
           <div className="preis-karte-range">
             <span className="preis-karte-zahl">
@@ -926,8 +926,8 @@ export function BwResultScreen({
 
           {state.istFallback ? (
             <p className="preis-karte-fallback">
-              Für deine Auswahl nutzen wir unsere Projekterfahrung in München als
-              unverbindliche Preisindikation — beim Vor-Ort-Termin nennen wir dir
+              Für Ihre Auswahl nutzen wir unsere Projekterfahrung in München als
+              unverbindliche Preisindikation — beim Vor-Ort-Termin nennen wir Ihnen
               einen genauen Preis.
             </p>
           ) : null}
@@ -946,7 +946,7 @@ export function BwResultScreen({
         </div>
       ) : (
         <div className="rounded-[18px] border border-border-default bg-muted p-5 text-center text-sm text-text-secondary">
-          Für deine Angaben ergibt sich kein automatischer Preisrahmen — wir
+          Für Ihre Angaben ergibt sich kein automatischer Preisrahmen — wir
           melden uns persönlich.
         </div>
       )}
@@ -1015,7 +1015,7 @@ export function BwResultScreen({
           ) : (
             <div className="preis-save-form">
               <p className="preis-save-label">
-                Wir schicken dir den unverbindlichen Preisrahmen zu — kein Spam.
+                Wir schicken Ihnen den unverbindlichen Preisrahmen zu — kein Spam.
               </p>
               <div className="preis-save-row">
                 <input
@@ -1024,7 +1024,7 @@ export function BwResultScreen({
                   autoComplete="email"
                   autoCapitalize="none"
                   autoCorrect="off"
-                  placeholder="deine@email.de"
+                  placeholder="ihre@email.de"
                   className="funnel-input"
                   value={saveEmail}
                   onChange={(e) => {

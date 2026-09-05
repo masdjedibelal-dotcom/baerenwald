@@ -1,4 +1,5 @@
 import { SITE_CONFIG } from "@/lib/config";
+import { MAIL_LOGO_URL_GREEN } from "@/lib/email/mail-logo-inline";
 import {
   buildBreakdownRows,
   buildGroessenRows,
@@ -37,7 +38,7 @@ const FOOTER_DOMAIN_LABEL = "baerenwaldmuenchen.de";
 
 /** Betreff für Kunden-Mail „Preis per E-Mail“ (Resend subject, nicht HTML). */
 export const SAVE_PRICE_CUSTOMER_EMAIL_SUBJECT =
-  "Deine Preisindikation — Bärenwald München";
+  "Ihre Preisindikation — Bärenwald München";
 
 function phoneDisplayMunichLandline(): string {
   const p = SITE_CONFIG.phone.replace(/\s/g, "");
@@ -47,7 +48,7 @@ function phoneDisplayMunichLandline(): string {
   return SITE_CONFIG.phone;
 }
 
-const LOGO_MARK_URL = `${SITE_CONFIG.url}/logo-mark-green.png`;
+const LOGO_MARK_URL = MAIL_LOGO_URL_GREEN;
 
 /**
  * Vorhaben für Kunden-Mails (z. B. „Bad erneuern“).
@@ -131,7 +132,7 @@ export function buildKundeBestaetigung(
           text-transform:uppercase;
           letter-spacing:1px;
           color:#9CA3AF;">
-          Deine Anfrage${plzSuffix}
+          Ihre Anfrage${plzSuffix}
         </p>
         <p style="margin:0 0 4px;
           font-size:18px;
@@ -232,7 +233,7 @@ export function buildKundeBestaetigung(
       font-weight:800;
       color:#111827;
       line-height:1.3;">
-      Danke für deine Anfrage.
+      Danke für Ihre Anfrage.
     </h1>
   </td>
 </tr>
@@ -243,8 +244,8 @@ export function buildKundeBestaetigung(
       font-size:15px;
       color:#6B7280;
       line-height:1.7;">
-      Hallo ${halloName},<br/><br/>
-      deine Anfrage ist bei uns
+      Guten Tag ${halloName},<br/><br/>
+      Ihre Anfrage ist bei uns
       eingegangen. Wir schauen sie
       uns an und melden uns
       ${SITE_CONFIG.responseSlaWithin}
@@ -263,8 +264,8 @@ ${kastenHtml}
       color:#374151;
       line-height:1.7;">
       Bis bald.<br/><br/>
-      Viele Grüße<br/>
-      <strong>Dein Bärenwald Team</strong>
+      Mit freundlichen Grüßen<br/>
+      <strong>Ihr Bärenwald Team</strong>
     </p>
   </td>
 </tr>
@@ -294,9 +295,9 @@ ${kastenHtml}
     <p style="margin:8px 0 0;
       font-size:11px;
       color:#D1D5DB;">
-      Du erhältst diese Mail weil
-      du eine Anfrage über unsere
-      Webseite gestellt hast.
+      Sie erhalten diese Mail, weil
+      Sie eine Anfrage über unsere
+      Webseite gestellt haben.
     </p>
   </td>
 </tr>
@@ -666,7 +667,7 @@ export function buildSavePriceCustomerHtml(
       font-weight:800;
       color:#111827;
       line-height:1.3;">
-      Deine erste Einschätzung.
+      Ihre erste Einschätzung.
     </h1>
   </td>
 </tr>
@@ -680,7 +681,7 @@ export function buildSavePriceCustomerHtml(
       Auf Basis unserer Erfahrung
       aus Münchner Projekten haben
       wir eine erste Preisindikation
-      für dich zusammengestellt.
+      für Sie zusammengestellt.
     </p>
   </td>
 </tr>
@@ -696,7 +697,7 @@ ${kastenHtml}
       Das ist eine unverbindliche
       Einschätzung — kein Angebot.
       Nach einem kurzen Vor-Ort-Termin
-      nennen wir dir einen
+      nennen wir Ihnen einen
       konkreten Preis.
     </p>
   </td>
@@ -709,8 +710,8 @@ ${kastenHtml}
       color:#374151;
       line-height:1.7;">
       Wir melden uns bald.<br/><br/>
-      Viele Grüße<br/>
-      <strong>Dein Bärenwald Team</strong>
+      Mit freundlichen Grüßen<br/>
+      <strong>Ihr Bärenwald Team</strong>
     </p>
   </td>
 </tr>

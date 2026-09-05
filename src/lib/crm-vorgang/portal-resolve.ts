@@ -169,6 +169,19 @@ export function resolvePortalKundeVorgangStatus(input: {
   const display = resolveVorgangDisplay(resolved, input.role ?? "kunde");
   const pillKey = PILL_FROM_DISPLAY[display.pillKind] ?? input.legacy.pillKey;
 
+  // Legacy terminal (z. B. hm_erledigt) nicht mit Anfrage-„Neu“ überschreiben
+  if (
+    input.legacy.phase === "abgeschlossen" ||
+    input.legacy.phase === "abgelehnt"
+  ) {
+    return {
+      ...input.legacy,
+      resolverPhaseLabel: input.legacy.label,
+      resolverUnterstatusLabel: display.unterstatusLabel,
+      resolverActionHint: null,
+    };
+  }
+
   return {
     ...input.legacy,
     label: display.phaseLabel,

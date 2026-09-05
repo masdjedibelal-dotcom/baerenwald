@@ -21,7 +21,6 @@ import {
 } from "@/lib/partner/hw-abnahme";
 import { PORTAL_VAR } from "@/lib/portal2/tokens";
 import { partnerPortalToast } from "@/lib/shared/portal-toast";
-import { cn } from "@/lib/utils";
 
 const STEPS = [
   { id: "checkliste", label: "Checkliste" },
@@ -209,6 +208,7 @@ export function PartnerAbschlussModal({
       maxWidth={560}
       closeOnBackdrop={false}
       dirty={stepIndex > 0}
+      busy={loading}
     >
       <div className="flex min-h-0 flex-1 flex-col">
         <div className="mb-4 flex items-center gap-2">
@@ -373,7 +373,7 @@ export function PartnerAbschlussModal({
                   className="text-[12px] font-semibold"
                   style={{ color: PORTAL_VAR.sub }}
                 >
-                  Handwerker / Ausführender Betrieb *
+                  Handwerker vor Ort *
                 </span>
                 <input
                   required
@@ -397,7 +397,7 @@ export function PartnerAbschlussModal({
                   className="text-[12px] font-semibold"
                   style={{ color: PORTAL_VAR.sub }}
                 >
-                  Kunde / Auftraggeber vor Ort *
+                  Kunde vor Ort *
                 </span>
                 <input
                   required
@@ -426,7 +426,7 @@ export function PartnerAbschlussModal({
         </div>
 
         <div
-          className="flex shrink-0 flex-wrap gap-2 border-t pt-3"
+          className="portal-action-row shrink-0 border-t pt-3"
           style={{ borderColor: PORTAL_VAR.line2 }}
         >
           {stepIndex > 0 ? (
@@ -434,30 +434,11 @@ export function PartnerAbschlussModal({
               type="button"
               disabled={loading}
               onClick={goBack}
-              className="rounded-[9px] border px-4 py-2.5 text-[13px] font-semibold"
-              style={{
-                borderColor: PORTAL_VAR.line,
-                color: PORTAL_VAR.sub,
-                background: "#fff",
-              }}
+              className="portal-action-btn portal-action-btn--secondary"
             >
               Zurück
             </button>
-          ) : (
-            <button
-              type="button"
-              disabled={loading}
-              onClick={resetAndClose}
-              className="rounded-[9px] border px-4 py-2.5 text-[13px] font-semibold"
-              style={{
-                borderColor: PORTAL_VAR.line,
-                color: PORTAL_VAR.sub,
-                background: "#fff",
-              }}
-            >
-              Abbrechen
-            </button>
-          )}
+          ) : null}
           <button
             type="button"
             disabled={
@@ -470,10 +451,7 @@ export function PartnerAbschlussModal({
               if (step === "signatur") void onSubmit();
               else goNext();
             }}
-            className={cn(
-              "ml-auto flex-1 rounded-[9px] px-4 py-2.5 text-[13.5px] font-semibold text-white disabled:opacity-50 sm:flex-none"
-            )}
-            style={{ background: PORTAL_VAR.primary }}
+            className="portal-action-btn portal-action-btn--primary"
           >
             {primaryLabel}
           </button>

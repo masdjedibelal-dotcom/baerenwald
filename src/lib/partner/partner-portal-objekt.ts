@@ -1,5 +1,8 @@
 import type { PortalAnfrageLeadSource } from "@/lib/portal/portal-anfrage-display";
-import { formatAnfrageStrasseHausnummer } from "@/lib/portal/portal-anfrage-display";
+import {
+  formatAnfrageStrasseHausnummer,
+  resolveAnfrageAdresse,
+} from "@/lib/portal/portal-anfrage-display";
 import type { PortalDetailSection } from "@/lib/portal/portal-display";
 import {
   portalObjektFromKundenObjekt,
@@ -19,7 +22,7 @@ type KundenObjektRow = {
 
 type PartnerLeistungsortLead = Pick<
   PortalAnfrageLeadSource,
-  "plz" | "strasse" | "hausnummer" | "funnel_daten" | "objekt"
+  "plz" | "ort" | "strasse" | "hausnummer" | "funnel_daten" | "objekt"
 >;
 
 /** Objekt + Lead (Funnel/Straße) zu einem vollständigen Leistungsort zusammenführen. */
@@ -28,15 +31,22 @@ export function mergePartnerLeistungsort(
   lead?: PartnerLeistungsortLead | null,
   fallback?: { kundePlz?: string | null; kundeOrt?: string | null }
 ): PortalObjekt | null {
-  const leadStrasse = lead ? formatAnfrageStrasseHausnummer(lead) : undefined;
+  const addr = lead ? resolveAnfrageAdresse(lead) : null;
+  const leadStrasse =
+    (lead ? formatAnfrageStrasseHausnummer(lead) : undefined) ||
+    addr?.strasseZeile ||
+    undefined;
   const plz =
     objekt?.plz?.trim() ||
+    addr?.plz?.trim() ||
     lead?.plz?.trim() ||
     lead?.objekt?.plz?.trim() ||
     fallback?.kundePlz?.trim() ||
     null;
   const ort =
     objekt?.ort?.trim() ||
+    addr?.ort?.trim() ||
+    lead?.ort?.trim() ||
     lead?.objekt?.ort?.trim() ||
     fallback?.kundeOrt?.trim() ||
     null;

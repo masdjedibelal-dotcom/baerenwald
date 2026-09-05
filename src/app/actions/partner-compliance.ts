@@ -6,11 +6,16 @@ import { linkPortalHandwerkerToAuthUser } from "@/lib/partner/link-portal-handwe
 import { uploadPartnerComplianceDoc } from "@/lib/partner/partner-storage";
 import { createClient } from "@/lib/supabase/server";
 import { isSupabaseConfigured, supabaseAdmin } from "@/lib/supabase";
+import { assertPartnerAktiveZuweisung } from "@/lib/partner/partner-zuweisung-access";
 
 export type PartnerComplianceUploadResult =
   | { ok: true }
   | { ok: false; error: string };
 
+/**
+ * Soft-Delete: Status „geloescht“, Datei bleibt für CRM-Vorschau.
+ * Hard-Delete macht das CRM („Endgültig löschen“).
+ */
 export async function deletePartnerComplianceDokument(input: {
   dokumentId: string;
   auftragId?: string | null;
@@ -33,7 +38,7 @@ export async function deletePartnerComplianceDokument(input: {
 
   const { data: row } = await supabaseAdmin
     .from("partner_dokumente")
-    .select("id, handwerker_id, auftrag_id, status")
+    .select("id, handwerker_id, auftrag_id, status, bezeichnung, typ")
     .eq("id", input.dokumentId)
     .maybeSingle();
 
@@ -43,25 +48,16 @@ export async function deletePartnerComplianceDokument(input: {
   }
 
   const st = String(row.status ?? "").toLowerCase();
-  if (st === "erledigt") {
+  if (st === "freigegeben" || st === "genehmigt" || st === "erledigt") {
     return { ok: false, error: "Bestätigte Dokumente können nicht gelöscht werden." };
+  }
+  if (st === "geloescht") {
+    return { ok: true };
   }
 
   if (input.auftragId?.trim()) {
     const aid = input.auftragId.trim();
-    const { data: zuweisung } = await supabaseAdmin
-      .from("auftrag_handwerker")
-      .select("id")
-      .eq("auftrag_id", aid)
-      .eq("handwerker_id", link.handwerkerId)
-      .maybeSingle();
-    const { data: pos } = await supabaseAdmin
-      .from("auftrag_positionen")
-      .select("id")
-      .eq("auftrag_id", aid)
-      .eq("handwerker_id", link.handwerkerId)
-      .limit(1);
-    if (!zuweisung && !(pos?.length ?? 0)) {
+    if (!(await assertPartnerAktiveZuweisung(link.handwerkerId, aid))) {
       return { ok: false, error: "Keine Berechtigung für diesen Auftrag." };
     }
     if (row.auftrag_id && String(row.auftrag_id) !== aid) {
@@ -69,13 +65,29 @@ export async function deletePartnerComplianceDokument(input: {
     }
   }
 
+  const now = new Date().toISOString();
   const { error } = await supabaseAdmin
     .from("partner_dokumente")
-    .delete()
+    .update({
+      status: "geloescht",
+      geloescht_am: now,
+      geloescht_von: "partner",
+    })
     .eq("id", input.dokumentId)
     .eq("handwerker_id", link.handwerkerId);
 
   if (error) return { ok: false, error: error.message };
+
+  void import("@/lib/partner/notify-crm-partner-dokument").then(
+    ({ notifyCrmPartnerDokumentUpload }) =>
+      notifyCrmPartnerDokumentUpload({
+        typ: "compliance_delete",
+        handwerkerId: link.handwerkerId,
+        auftragId: row.auftrag_id ? String(row.auftrag_id) : null,
+        dokumentId: String(row.id),
+        titel: String(row.bezeichnung ?? row.typ ?? "Dokument").trim() || "Dokument",
+      })
+  );
 
   revalidatePath("/partner");
   return { ok: true };
@@ -116,19 +128,7 @@ export async function uploadPartnerComplianceDokument(
   }
 
   if (auftragId) {
-    const { data: zuweisung } = await supabaseAdmin
-      .from("auftrag_handwerker")
-      .select("id")
-      .eq("auftrag_id", auftragId)
-      .eq("handwerker_id", link.handwerkerId)
-      .maybeSingle();
-    const { data: pos } = await supabaseAdmin
-      .from("auftrag_positionen")
-      .select("id")
-      .eq("auftrag_id", auftragId)
-      .eq("handwerker_id", link.handwerkerId)
-      .limit(1);
-    if (!zuweisung && !(pos?.length ?? 0)) {
+    if (!(await assertPartnerAktiveZuweisung(link.handwerkerId, auftragId))) {
       return { ok: false, error: "Keine Berechtigung für diesen Auftrag." };
     }
   }
@@ -159,23 +159,42 @@ export async function uploadPartnerComplianceDokument(
     }
   }
 
-  const { error } = await supabaseAdmin.from("partner_dokumente").insert({
-    handwerker_id: link.handwerkerId,
-    auftrag_id: auftragId,
-    typ,
-    bezeichnung: (() => {
-      const base =
-        bezeichnungRaw ||
-        (typRow as { bezeichnung?: string } | null)?.bezeichnung ||
-        typ;
-      return beschreibung ? `${base}\n${beschreibung}` : base;
-    })(),
-    gueltig_bis: gueltigBis,
-    datei_url: up.path,
-    status: "in_pruefung",
-  });
+  const { data: inserted, error } = await supabaseAdmin
+    .from("partner_dokumente")
+    .insert({
+      handwerker_id: link.handwerkerId,
+      auftrag_id: auftragId,
+      typ,
+      bezeichnung: (() => {
+        const base =
+          bezeichnungRaw ||
+          (typRow as { bezeichnung?: string } | null)?.bezeichnung ||
+          typ;
+        return beschreibung ? `${base}\n${beschreibung}` : base;
+      })(),
+      gueltig_bis: gueltigBis,
+      datei_url: up.path,
+      status: "in_pruefung",
+      geloescht_am: null,
+      geloescht_von: null,
+    })
+    .select("id, bezeichnung")
+    .maybeSingle();
 
   if (error) return { ok: false, error: error.message };
+
+  void import("@/lib/partner/notify-crm-partner-dokument").then(
+    ({ notifyCrmPartnerDokumentUpload }) =>
+      notifyCrmPartnerDokumentUpload({
+        typ: "compliance",
+        handwerkerId: link.handwerkerId,
+        auftragId,
+        dokumentId: inserted?.id ? String(inserted.id) : null,
+        titel: String(
+          inserted?.bezeichnung ?? (bezeichnungRaw || typ)
+        ).trim() || typ,
+      })
+  );
 
   revalidatePath("/partner");
   return { ok: true };

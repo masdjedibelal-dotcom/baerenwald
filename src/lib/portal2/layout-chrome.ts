@@ -1,6 +1,7 @@
 /**
- * C1 — Layout-Contract: Mobile Cards / Desktop flach.
- * Listen & Detail-Sections nutzen dieselben Tokens.
+ * C1 — Layout-Contract: Listen = weiße Karten auf Page-BG (CRM-Mobil-Parität).
+ * Detail-Sections: card / responsive = portal-section-card; flat = ohne Rahmen.
+ * Card-in-Card-Regeln: section-card-contract.ts
  */
 
 import type { CSSProperties } from "react";
@@ -13,24 +14,18 @@ export type PortalListVariant = "row" | "card" | "responsive";
 
 /**
  * Detail-Section-Chrome:
- * - `card` = Border-Card (Mobile / interaktive Blöcke)
- * - `flat` = ohne Border (Desktop-Sections)
- * - `responsive` = card &lt; lg, flat ab lg
+ * - `card` / `responsive` = weiße Section-Card (mobil + Desktop)
+ * - `flat` = ohne Border (seltene Ausnahmen)
  */
 export type PortalDetailChrome = "card" | "flat" | "responsive";
 
 export const PORTAL_LIST_VARIANT_DEFAULT: PortalListVariant = "responsive";
 export const PORTAL_DETAIL_CHROME_DEFAULT: PortalDetailChrome = "responsive";
 
-/** Wrapper um Vorgangslisten (gap mobil, Panel ab lg). */
+/** Wrapper um Vorgangslisten — gestapelte weiße Karten mit Abstand (wie Dashboard „Zuletzt“). */
 export function portalListStackClass(variant: PortalListVariant = "responsive"): string {
-  if (variant === "card") return "flex flex-col gap-2.5";
   if (variant === "row") return "portal-list-panel portal-list-rows";
-  return cn(
-    "flex flex-col gap-2.5",
-    "lg:gap-0 lg:overflow-hidden lg:rounded-[var(--p2-radius-md,12px)] lg:border lg:bg-[var(--p2-panel,#fff)]",
-    "lg:divide-y lg:divide-[var(--p2-line2)]"
-  );
+  return "portal-list-stack flex flex-col";
 }
 
 /** Klassen für eine Listenzeile/-karte. */
@@ -39,14 +34,6 @@ export function portalListItemClass(
   opts?: { selected?: boolean }
 ): string {
   const selected = opts?.selected;
-  if (variant === "card") {
-    return cn(
-      "flex w-full items-start gap-3 rounded-[var(--p2-radius-md,12px)] border bg-[var(--p2-panel,#fff)] px-3.5 py-3.5 text-left shadow-sm transition-shadow sm:px-4",
-      selected
-        ? "ring-2 ring-[var(--org-primary,var(--p2-primary))]/25"
-        : "hover:shadow-md"
-    );
-  }
   if (variant === "row") {
     return cn(
       "relative w-full bg-transparent text-left transition-colors hover:bg-[var(--p2-hover,#f7f8fa)]",
@@ -55,12 +42,10 @@ export function portalListItemClass(
     );
   }
   return cn(
-    "flex w-full items-start gap-3 text-left transition-colors",
-    "rounded-[var(--p2-radius-md,12px)] border bg-[var(--p2-panel,#fff)] px-3.5 py-3.5 shadow-sm sm:px-4",
-    "lg:rounded-none lg:border-0 lg:border-transparent lg:bg-transparent lg:shadow-none lg:px-4 lg:py-3.5",
+    "portal-list-card flex w-full items-stretch gap-3 border-0 bg-white px-4 py-[15px] text-left transition-shadow rounded-[18px]",
     selected
-      ? "ring-2 ring-[var(--org-primary,var(--p2-primary))]/25 lg:ring-0 lg:bg-[var(--p2-selected,#f0f2f0)]"
-      : "hover:shadow-md lg:hover:shadow-none lg:hover:bg-[var(--p2-hover,#f7f8fa)]"
+      ? "ring-2 ring-[var(--org-primary,var(--p2-primary))]/25"
+      : "hover:shadow-[var(--p2-shadow-hover)]"
   );
 }
 
@@ -68,40 +53,40 @@ export function portalListItemBorderStyle(
   variant: PortalListVariant = "responsive"
 ): CSSProperties | undefined {
   if (variant === "row") return undefined;
-  return { borderColor: PORTAL_VAR.line };
+  return {
+    border: "none",
+    boxShadow: "var(--p2-shadow, 0 2px 10px rgba(16,32,24,0.05))",
+  };
 }
 
-/** Klassen für Detail-Sections (Übersicht, BT, Docs, …). */
+/** Detail-Section-Chrome: `card` / `responsive` = weiße Section-Card; `flat` = ohne Rahmen. */
 export function portalDetailSectionClass(
   chrome: PortalDetailChrome = "responsive"
 ): string {
   if (chrome === "flat") {
     return "space-y-3 rounded-none border-0 bg-transparent p-0 shadow-none";
   }
-  if (chrome === "card") {
-    return cn(
-      "space-y-3 rounded-[var(--p2-radius-lg,16px)] border bg-[var(--p2-panel,#fff)] p-4 shadow-sm",
-      "border-[var(--p2-line)]"
-    );
-  }
-  return cn(
-    "space-y-3 rounded-[var(--p2-radius-lg,16px)] border bg-[var(--p2-panel,#fff)] p-4 shadow-sm border-[var(--p2-line)]",
-    "lg:rounded-none lg:border-0 lg:bg-transparent lg:p-0 lg:shadow-none"
-  );
+  return cn("portal-section-card space-y-3 p-5");
 }
 
 export function portalDetailSectionBorderStyle(
   chrome: PortalDetailChrome = "responsive"
 ): CSSProperties | undefined {
   if (chrome === "flat") return undefined;
-  return { borderColor: PORTAL_VAR.line };
+  return {
+    border: "none",
+    boxShadow: "var(--p2-shadow, 0 2px 10px rgba(16,32,24,0.05))",
+    borderRadius: "22px",
+  };
 }
 
 /** C2 — HV-Detail Section-Nav (Reihenfolge = Tab-Reihenfolge). */
 export const PORTAL_DETAIL_SECTION_IDS = [
   "uebersicht",
   "angebot",
+  "hm_pruefung",
   "bautagebuch",
+  "versicherung",
   "dokumente",
   "verlauf",
 ] as const;
@@ -115,7 +100,9 @@ export const PORTAL_DETAIL_SECTION_LABELS: Record<
   /** Nicht „Übersicht“ — Shell-Nav nutzt das schon. */
   uebersicht: "Details",
   angebot: "Angebot",
-  bautagebuch: "Bautagebuch",
+  hm_pruefung: "Checkliste",
+  bautagebuch: "Updates",
+  versicherung: "Versicherungsakte",
   dokumente: "Dokumente",
   verlauf: "Verlauf",
 };

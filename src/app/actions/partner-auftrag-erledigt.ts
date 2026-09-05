@@ -2,8 +2,6 @@
 
 import { revalidatePath } from "next/cache";
 
-import { notifyHvPartnerErledigt } from "@/lib/org/notify-hv-partner-erledigt";
-import { allePositionenPortalErledigt } from "@/lib/portal/vorgang-erledigt";
 import { linkPortalHandwerkerToAuthUser } from "@/lib/partner/link-portal-handwerker";
 import {
   positionHandwerkerAbgeschlossen,
@@ -12,27 +10,12 @@ import {
 import { sendPartnerInternalErledigtMail } from "@/lib/partner/partner-mail";
 import { createClient } from "@/lib/supabase/server";
 import { isSupabaseConfigured, supabaseAdmin } from "@/lib/supabase";
+import { assertPartnerAktiveZuweisung } from "@/lib/partner/partner-zuweisung-access";
 
 export type PartnerAuftragErledigtResult = { ok: true } | { ok: false; error: string };
 
 async function assertPartnerAuftrag(handwerkerId: string, auftragId: string) {
-  const { data: hw } = await supabaseAdmin
-    .from("auftrag_handwerker")
-    .select("auftrag_id")
-    .eq("auftrag_id", auftragId)
-    .eq("handwerker_id", handwerkerId)
-    .limit(1);
-
-  if (hw?.length) return true;
-
-  const { data: pos } = await supabaseAdmin
-    .from("auftrag_positionen")
-    .select("auftrag_id")
-    .eq("auftrag_id", auftragId)
-    .eq("handwerker_id", handwerkerId)
-    .limit(1);
-
-  return Boolean(pos?.length);
+  return assertPartnerAktiveZuweisung(handwerkerId, auftragId);
 }
 
 async function partnerAuth() {
@@ -131,15 +114,6 @@ export async function markPartnerAuftragErledigt(
     return { ok: false, error: "Leistungen konnten nicht aktualisiert werden." };
   }
 
-  const { data: allePositionen } = await supabaseAdmin
-    .from("auftrag_positionen")
-    .select("handwerker_id, handwerker_status, leistung_status, aenderung_typ")
-    .eq("auftrag_id", id);
-
-  const auftragVollstaendigErledigt = allePositionenPortalErledigt(
-    allePositionen ?? []
-  );
-
   const { data: hw } = await supabaseAdmin
     .from("handwerker")
     .select("name, firma")
@@ -159,15 +133,7 @@ export async function markPartnerAuftragErledigt(
     leistungen,
   });
 
-  if (auftrag.lead_id) {
-    await notifyHvPartnerErledigt({
-      auftragId: id,
-      leadId: String(auftrag.lead_id),
-      handwerkerName,
-      leistungen,
-      vollstaendig: auftragVollstaendigErledigt,
-    });
-  }
+  // HV-Notify erst nach CRM-Freigabe des Abnahmeprotokolls.
 
   revalidatePath("/partner");
   return { ok: true };

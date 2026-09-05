@@ -152,11 +152,11 @@ export function GptRaumVisualisierung({
 
   const handleRender = useCallback(async () => {
     if (!wunschText.trim()) {
-      setError("Bitte beschreibe deinen Wunsch.");
+      setError("Bitte beschreiben Sie Ihren Wunsch.");
       return;
     }
     if (istUrls.length === 0) {
-      setError("Für die Visualisierung wird ein Foto deines Raums benötigt.");
+      setError("Für die Visualisierung wird ein Foto Ihres Raums benötigt.");
       return;
     }
     const id = sid ?? (await ensureSession());
@@ -232,7 +232,7 @@ export function GptRaumVisualisierung({
     einstieg === "inspiration" && !zielBildUrl
       ? "Inspirationsbild hochladen"
       : istUrls.length === 0
-        ? "Foto deines Raums hochladen"
+        ? "Foto Ihres Raums hochladen"
         : "Raumfoto ersetzen";
 
   const showUpload =
@@ -287,7 +287,7 @@ export function GptRaumVisualisierung({
           {istUrls[0] ? (
             <div className="gpt-viz-dual-preview" style={{ marginTop: "0.75rem" }}>
               <div>
-                <p className="gpt-viz-preview-label">Dein Raum (Ist)</p>
+                <p className="gpt-viz-preview-label">Ihr Raum (Ist)</p>
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img src={istUrls[0]} alt="Raumfoto" className="gpt-viz-preview-img" />
               </div>
@@ -343,7 +343,7 @@ export function GptRaumVisualisierung({
 
       {step === "wunsch" ? (
         <div>
-          <h2 className="gpt-viz-step-title">Dein Wunsch</h2>
+          <h2 className="gpt-viz-step-title">Ihr Wunsch</h2>
           <GptVizWunschEditor
             wunschText={wunschText}
             onWunschChange={setWunschText}
@@ -362,7 +362,7 @@ export function GptRaumVisualisierung({
               ) : null}
               {istUrls[0] ? (
                 <div>
-                  <p className="gpt-viz-preview-label">Dein Raum (Ist)</p>
+                  <p className="gpt-viz-preview-label">Ihr Raum (Ist)</p>
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img src={istUrls[0]} alt="Raumfoto" className="gpt-viz-preview-img" />
                 </div>
@@ -394,7 +394,7 @@ export function GptRaumVisualisierung({
 
       {(step === "render" || step === "erklaerung") && ergebnisUrl ? (
         <div>
-          <h2 className="gpt-viz-step-title">Deine Visualisierung</h2>
+          <h2 className="gpt-viz-step-title">KI-generierte Visualisierung</h2>
           <GptVizBeforeAfter
             ergebnisUrl={ergebnisUrl}
             historie={historie}

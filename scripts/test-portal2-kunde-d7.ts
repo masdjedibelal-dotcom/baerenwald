@@ -75,10 +75,12 @@ assert("kpi erledigt", kpis.erledigt === 2);
 
 assert("4 chips", PRIVAT_LISTE_CHIPS.length === 4);
 assert("chip offen gemeldet", privatListeChipMatches("offen", "gemeldet"));
-assert("chip arbeit", privatListeChipMatches("arbeit", "auftrag"));
+assert("chip in_arbeit", privatListeChipMatches("in_arbeit", "auftrag"));
+assert("chip erledigt", privatListeChipMatches("erledigt", "bezahlt"));
 assert(
-  "chip done",
-  privatListeChipMatches("abgeschlossen", "bezahlt")
+  "chip labels",
+  PRIVAT_LISTE_CHIPS.map((c) => c.label).join(" · ") ===
+    "Alle · Offen · In Arbeit · Erledigt"
 );
 
 assert(

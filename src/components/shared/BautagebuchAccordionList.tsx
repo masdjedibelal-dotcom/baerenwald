@@ -49,11 +49,11 @@ export function BautagebuchAccordionList({
         {headerAction}
       </div>
       {eintraege.length === 0 ? (
-        <p className="portal-text-body rounded-xl border border-dashed border-border-light bg-muted/20 px-3 py-5 text-center text-text-secondary">
+        <p className="portal-text-body px-0 py-5 text-center text-text-secondary">
           {emptyText}
         </p>
       ) : (
-        <ul className="overflow-hidden rounded-xl border border-border-light divide-y divide-border-light">
+        <ul className="divide-y divide-border-light">
           {eintraege.map((e) => {
             const open = openId === e.id;
             return (
@@ -61,7 +61,7 @@ export function BautagebuchAccordionList({
                 <button
                   type="button"
                   onClick={() => setOpenId(open ? null : e.id)}
-                  className="flex min-h-[52px] w-full items-center gap-3 px-3 py-3.5 text-left transition-colors hover:bg-muted/30"
+                  className="flex min-h-[52px] w-full items-center gap-3 px-0 py-3.5 text-left transition-colors hover:bg-muted/30"
                   aria-expanded={open}
                 >
                   <span className="portal-text-meta min-w-[5.5rem] shrink-0 tabular-nums text-text-tertiary">
@@ -82,7 +82,7 @@ export function BautagebuchAccordionList({
                   />
                 </button>
                 {open ? (
-                  <div className="portal-text-body space-y-3 border-t border-border-light bg-muted/15 px-3 py-4">
+                  <div className="portal-text-body space-y-3 border-t border-border-light bg-white px-0 py-4">
                     {e.badges ? (
                       <div className="flex flex-wrap gap-1 sm:hidden">{e.badges}</div>
                     ) : null}

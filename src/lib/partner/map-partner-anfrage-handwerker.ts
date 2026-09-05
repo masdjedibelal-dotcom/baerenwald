@@ -14,6 +14,7 @@ import { parseWizardMetaFromNotizen, resolveAngebotTitel } from "@/lib/portal/po
 import { parsePartnerHwKonditionen } from "@/lib/partner/partner-konditionen";
 
 export const PARTNER_LEAD_EMBED = `
+  id,
   situation,
   bereiche,
   plz,
@@ -21,6 +22,8 @@ export const PARTNER_LEAD_EMBED = `
   hausnummer,
   zeitraum,
   funnel_daten,
+  anlass,
+  kanal,
   preis_min,
   preis_max,
   budget_ca,
@@ -33,7 +36,8 @@ export const PARTNER_LEAD_EMBED = `
   melder_name,
   melder_einheit,
   melder_telefon,
-  melder_email
+  melder_email,
+  geloescht_am
 `;
 
 export const PARTNER_ANGEBOT_EMBED = `
@@ -44,7 +48,10 @@ export const PARTNER_ANGEBOT_EMBED = `
   gesamt_fix,
   gesamt_min,
   gesamt_max,
+  leistungsumfang,
+  projektbeschreibung,
   kunde_objekt_id,
+  ist_partner_einholung,
   kunden(plz, ort, name),
   leads(${PARTNER_LEAD_EMBED})
 `;
@@ -66,7 +73,8 @@ export async function mapAngebotHandwerkerRow(
   row: Record<string, unknown>,
   objektById: Map<string, PartnerKundenObjektRow>,
   mapHwAngebotAnhaenge: (raw: Record<string, unknown>) => Promise<AnhaengeFields>,
-  resolveRechnungUrl: (path: string | null) => Promise<string | null>
+  resolveRechnungUrl: (path: string | null) => Promise<string | null>,
+  opts?: { lvVorgabePositionen?: unknown; lvLeistungsumfang?: string | null }
 ): Promise<PartnerAnfrageItem> {
   const angebote = one(row.angebote) as {
     angebotsnr?: string | null;
@@ -75,7 +83,10 @@ export async function mapAngebotHandwerkerRow(
     gesamt_fix?: number | null;
     gesamt_min?: number | null;
     gesamt_max?: number | null;
+    leistungsumfang?: string | null;
+    projektbeschreibung?: string | null;
     kunde_objekt_id?: string | null;
+    ist_partner_einholung?: boolean | null;
     kunden: unknown;
     leads: unknown;
   } | null;
@@ -95,7 +106,15 @@ export async function mapAngebotHandwerkerRow(
     kundeOrt: kunde?.ort,
     objektById,
   });
-  const pos = parseAngebotPositionen(angebote?.positionen).filter((p) => {
+  const ohneLv = Boolean(row.ohne_lv);
+  const internGehaeuse = angebote?.ist_partner_einholung === true;
+  const lvVorgabeRaw = ohneLv
+    ? internGehaeuse
+      ? angebote?.positionen
+      : opts?.lvVorgabePositionen ?? null
+    : angebote?.positionen;
+  const pos = parseAngebotPositionen(lvVorgabeRaw).filter((p) => {
+    if (ohneLv) return true;
     if (gewerkId && p.gewerk_id && p.gewerk_id !== gewerkId) return false;
     if (handwerkerId && p.handwerker_id && p.handwerker_id !== handwerkerId) {
       return false;
@@ -125,10 +144,17 @@ export async function mapAngebotHandwerkerRow(
     plz,
     ort,
     lead,
-    fallbackTitel: angebot_titel,
+    fallbackTitel:
+      parseWizardMetaFromNotizen(angebote?.notizen)?.titel?.trim() ||
+      opts?.lvLeistungsumfang?.trim() ||
+      angebote?.leistungsumfang?.trim() ||
+      angebot_titel,
   });
   const crm_leistungsumfang =
-    parseWizardMetaFromNotizen(angebote?.notizen)?.leistungsumfang ?? null;
+    (ohneLv ? opts?.lvLeistungsumfang?.trim() : null) ||
+    angebote?.leistungsumfang?.trim() ||
+    parseWizardMetaFromNotizen(angebote?.notizen)?.leistungsumfang ||
+    null;
 
   return {
     id: String(row.id),
@@ -153,16 +179,19 @@ export async function mapAngebotHandwerkerRow(
         p.beschreibung && p.beschreibung !== p.leistung ? p.beschreibung : undefined,
       menge: p.menge,
       einheit: p.einheit,
+      gewerk_name: p.gewerk_name,
     })),
     lead,
-    crm_positionen_raw: angebote?.positionen,
+    crm_positionen_raw: ohneLv ? lvVorgabeRaw : angebote?.positionen,
     crm_gesamt_fix:
-      angebote?.gesamt_fix != null ? Number(angebote.gesamt_fix) : null,
+      ohneLv || angebote?.gesamt_fix == null ? null : Number(angebote.gesamt_fix),
     crm_gesamt_min:
-      angebote?.gesamt_min != null ? Number(angebote.gesamt_min) : null,
+      ohneLv || angebote?.gesamt_min == null ? null : Number(angebote.gesamt_min),
     crm_gesamt_max:
-      angebote?.gesamt_max != null ? Number(angebote.gesamt_max) : null,
+      ohneLv || angebote?.gesamt_max == null ? null : Number(angebote.gesamt_max),
     crm_leistungsumfang,
+    crm_projektbeschreibung: angebote?.projektbeschreibung?.trim() || null,
+    ohne_lv: ohneLv,
     hw_status: (row.hw_status as string | null) ?? undefined,
     hw_eingereicht_at: (row.hw_eingereicht_at as string | null) ?? undefined,
     bestaetigt_at: (row.bestaetigt_at as string | null) ?? undefined,

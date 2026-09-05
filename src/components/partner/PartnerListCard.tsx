@@ -1,3 +1,4 @@
+/** @deprecated Prefer `@/components/shared/PortalListCard`. */
 export {
   Calendar,
   Hammer,

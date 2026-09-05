@@ -1,9 +1,14 @@
+import { createPartnerNotification } from "@/lib/partner/create-partner-notification";
 import {
   sendHandwerkerLeistungZuweisungMail,
   type LeistungZuweisungMailLeistung,
   type PartnerAuftragMailVariant,
 } from "@/lib/partner/partner-mail";
 import { resolveZuweisungPortalUrl } from "@/lib/partner/resolve-partner-portal-link";
+import {
+  partnerVorgangPortalPath,
+  resolvePartnerNotificationLink,
+} from "@/lib/partner/partner-site-url";
 import { isSupabaseConfigured, supabaseAdmin } from "@/lib/supabase";
 
 function one<T>(x: T | T[] | null | undefined): T | null {
@@ -35,14 +40,14 @@ function adresseZeile(kunde: {
   return parts.join(", ") || plzOrt || "München";
 }
 
-/** CRM → Partner-Mail nach Zuweisung einer oder mehrerer Leistungen. */
+/** CRM → Partner-Mail + In-App-Glocke nach Zuweisung einer oder mehrerer Leistungen. */
 export async function notifyHandwerkerLeistungZuweisung(input: {
   auftragId: string;
   handwerkerId: string;
   positionId?: string;
   positionIds?: string[];
   variant?: PartnerAuftragMailVariant;
-}): Promise<{ ok: boolean; error?: string }> {
+}): Promise<{ ok: boolean; error?: string; mailSent?: boolean }> {
   if (!isSupabaseConfigured()) {
     return { ok: false, error: "Datenbank nicht konfiguriert." };
   }
@@ -70,11 +75,6 @@ export async function notifyHandwerkerLeistungZuweisung(input: {
   }
   if (hw.aktiv === false) {
     return { ok: false, error: "Handwerker ist nicht aktiv." };
-  }
-
-  const to = (hw.email as string | null)?.trim();
-  if (!to) {
-    return { ok: false, error: "Handwerker hat keine E-Mail." };
   }
 
   const { data: auftrag, error: aErr } = await supabaseAdmin
@@ -185,7 +185,31 @@ export async function notifyHandwerkerLeistungZuweisung(input: {
     angebotHandwerker,
   });
 
-  return sendHandwerkerLeistungZuweisungMail({
+  const notifLink =
+    resolvePartnerNotificationLink(portalLink) ||
+    partnerVorgangPortalPath(
+      angebotHandwerker?.id?.trim() || auftragId
+    );
+
+  const notifyTyp = input.variant === "aenderung" ? "geaendert" : "neu";
+  const notify = await createPartnerNotification({
+    handwerkerId,
+    typ: notifyTyp,
+    projektName: auftragTitel,
+    leistungName: leistungen[0]?.leistung_name ?? null,
+    link: notifLink,
+    sendMail: false,
+  });
+
+  const to = (hw.email as string | null)?.trim();
+  if (!to) {
+    // Glocke trotzdem — Mail optional
+    return notify.ok
+      ? { ok: true, mailSent: false, error: "Handwerker hat keine E-Mail." }
+      : { ok: false, error: notify.error ?? "Handwerker hat keine E-Mail." };
+  }
+
+  const mail = await sendHandwerkerLeistungZuweisungMail({
     to,
     handwerkerName: (hw.name as string)?.trim() || "Partner",
     auftragId,
@@ -200,4 +224,14 @@ export async function notifyHandwerkerLeistungZuweisung(input: {
     portalLink,
     variant: input.variant,
   });
+
+  if (!mail.ok && !notify.ok) {
+    return { ok: false, error: mail.error ?? notify.error };
+  }
+
+  return {
+    ok: true,
+    mailSent: mail.ok,
+    ...(mail.ok ? {} : { error: mail.error }),
+  };
 }

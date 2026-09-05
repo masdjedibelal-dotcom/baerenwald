@@ -101,7 +101,7 @@ export function PortalPhotoGallery({
             key={`${src}-${i}`}
             type="button"
             onClick={() => setIndex(i)}
-            className="group relative aspect-square overflow-hidden rounded-lg border border-border-light bg-muted/20 text-left focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--org-primary,#2E7D52)]"
+            className="group relative aspect-square overflow-hidden rounded-lg border border-border-light bg-white text-left focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--org-primary,#2E7D52)]"
             aria-label={`Foto ${i + 1} vergrößern`}
           >
             {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -123,36 +123,34 @@ export function PortalPhotoGallery({
           onClick={close}
         >
           <div
-            className="flex shrink-0 items-center justify-between gap-2 px-3 py-3 text-white sm:px-5"
+            className="flex shrink-0 items-center gap-2 px-3 py-3 text-white sm:px-5"
             onClick={(e) => e.stopPropagation()}
           >
-            <p className="text-[13px] font-semibold">
+            <button
+              type="button"
+              className="grid h-10 w-10 shrink-0 place-items-center rounded-lg bg-white/15 hover:bg-white/25"
+              aria-label="Schließen"
+              onClick={close}
+            >
+              <X className="h-5 w-5" aria-hidden />
+            </button>
+            <p className="min-w-0 flex-1 text-[13px] font-semibold">
               Foto {index! + 1} / {list.length}
             </p>
-            <div className="flex items-center gap-2">
-              <button
-                type="button"
-                disabled={downloading}
-                className="inline-flex items-center gap-1.5 rounded-lg bg-white/15 px-3 py-2 text-[13px] font-semibold hover:bg-white/25 disabled:opacity-60"
-                onClick={() => {
-                  setDownloading(true);
-                  void downloadFoto(current, index!).finally(() =>
-                    setDownloading(false)
-                  );
-                }}
-              >
-                <Download className="h-4 w-4" aria-hidden />
-                {downloading ? "…" : "Download"}
-              </button>
-              <button
-                type="button"
-                className="grid h-10 w-10 place-items-center rounded-lg bg-white/15 hover:bg-white/25"
-                aria-label="Schließen"
-                onClick={close}
-              >
-                <X className="h-5 w-5" aria-hidden />
-              </button>
-            </div>
+            <button
+              type="button"
+              disabled={downloading}
+              className="inline-flex shrink-0 items-center gap-1.5 rounded-lg bg-white/15 px-3 py-2 text-[13px] font-semibold hover:bg-white/25 disabled:opacity-60"
+              onClick={() => {
+                setDownloading(true);
+                void downloadFoto(current, index!).finally(() =>
+                  setDownloading(false)
+                );
+              }}
+            >
+              <Download className="h-4 w-4" aria-hidden />
+              {downloading ? "…" : "Download"}
+            </button>
           </div>
 
           <div

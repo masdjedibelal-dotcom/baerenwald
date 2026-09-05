@@ -16,20 +16,24 @@ export type PortalModalSizeLegacy = "default" | "funnel";
 /** Default `maxW` laut Mock (edit). */
 export const PORTAL_MODAL_DEFAULT_MAX_W = 460;
 
-/** Preview Side-Over / Sheet etwas breiter. */
-export const PORTAL_MODAL_PREVIEW_MAX_W = 640;
+/** Preview Side-Over / Sheet — etwas schmaler, weniger Leerraum. */
+export const PORTAL_MODAL_PREVIEW_MAX_W = 520;
 
 /** Funnel Desktop-Breite. */
-export const PORTAL_MODAL_FUNNEL_MAX_W = 1360;
+export const PORTAL_MODAL_FUNNEL_MAX_W = 1100;
 
 /** Confirm kompakt. */
 export const PORTAL_MODAL_CONFIRM_MAX_W = 420;
 
-/** Overlay z-index (unter docViewer 220). */
+/**
+ * Overlay z-index (unter docViewer 220).
+ * Nesting: PortalModalShell addiert +10 pro Ebene (KI im Sheet → 210).
+ * GPT-Overlay liegt bei 210 — über WhatsApp-Float (150) und Bottom-Nav (50).
+ */
 export const PORTAL_MODAL_Z_INDEX = 200;
 
-/** Scrim-Farbe Mock. */
-export const PORTAL_MODAL_SCRIM = "rgba(16,25,20,.42)";
+/** Scrim hinter Modal / Slide-over — klarer Kontrast zur Seite. */
+export const PORTAL_MODAL_SCRIM = "rgba(16,25,20,0.60)";
 
 export function resolvePortalModalVariant(
   variant: PortalModalVariant | undefined,

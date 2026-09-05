@@ -2,7 +2,13 @@
 
 import type { ReactNode } from "react";
 import type { LucideIcon } from "lucide-react";
-import { ChevronRight } from "lucide-react";
+import {
+  AlertTriangle,
+  Calendar,
+  ChevronRight,
+  Hammer,
+  MapPin,
+} from "lucide-react";
 
 import {
   portalListItemBorderStyle,
@@ -10,13 +16,28 @@ import {
   type PortalListVariant,
 } from "@/lib/portal2/layout-chrome";
 import { PORTAL_VAR } from "@/lib/portal2/tokens";
+import { PortalCountBadge } from "@/components/shared/PortalNavCountBadge";
 import { cn } from "@/lib/utils";
 
 export type PortalListCardAccent = "anfrage" | "angebot" | "auftrag";
 
+/** String-Keys — Lucide-Komponenten dürfen nicht Server→Client serialisiert werden. */
+export type PortalListCardMetaIcon =
+  | "map-pin"
+  | "calendar"
+  | "hammer"
+  | "alert-triangle";
+
 export type PortalListCardMeta = {
-  icon?: LucideIcon;
+  icon?: PortalListCardMetaIcon;
   text: string;
+};
+
+const META_ICONS: Record<PortalListCardMetaIcon, LucideIcon> = {
+  "map-pin": MapPin,
+  calendar: Calendar,
+  hammer: Hammer,
+  "alert-triangle": AlertTriangle,
 };
 
 /** @deprecated Prefer PortalListVariant from layout-chrome */
@@ -49,15 +70,15 @@ export type PortalListCardProps = {
   /** Mock-Liste: Chevron rechts */
   showChevron?: boolean;
   /**
-   * `responsive` = mobile card / lg+ flat (C1 Default).
-   * `card` = immer Karte · `row` = immer flache Zeile.
+   * `responsive` = weiße Karte (Default, wie CRM Mobil).
+   * `card` = identisch · `row` = flache Zeile in Panel.
    */
   variant?: PortalListVariant;
   /** Checkbox links (Mock) — Klick stoppt Propagation. */
   showCheckbox?: boolean;
   checked?: boolean;
   onCheckedChange?: (checked: boolean) => void;
-  /** Attention-Badge (z. B. ungelesenes Bautagebuch) */
+  /** Attention-Badge (z. B. ungelesene Updates) — oben rechts, rot/weiß */
   attentionBadge?: number | null;
 };
 
@@ -67,7 +88,7 @@ const ACCENT_CLASS: Record<PortalListCardAccent, string> = {
   auftrag: "border-l-blue-600",
 };
 
-function StatusPill({
+function StatusWord({
   statusLabel,
   statusPillClass,
   statusPillStyle,
@@ -76,13 +97,18 @@ function StatusPill({
   statusPillClass: string;
   statusPillStyle?: { color: string; backgroundColor: string };
 }) {
+  if (!statusLabel.trim()) return null;
   return (
     <span
       className={cn(
-        "portal-status-pill",
+        "portal-status-word",
         !statusPillStyle && statusPillClass
       )}
-      style={statusPillStyle}
+      style={
+        statusPillStyle
+          ? { color: statusPillStyle.color }
+          : undefined
+      }
     >
       {statusLabel}
     </span>
@@ -101,15 +127,20 @@ function TrailingActionsSlot({ children }: { children: ReactNode }) {
   );
 }
 
+/** Klassische Notif-Badge: oben rechts, rot mit weißer Zahl. */
+function AttentionCornerBadge({ count }: { count: number }) {
+  return <PortalCountBadge count={count} variant="corner" className="z-10" />;
+}
+
 /**
- * Vorgangs-Listenzeile — C1: mobile card / lg+ flat bei `responsive`.
+ * Vorgangs-Listenzeile — C1: weiße Karte auf Page-BG (`card` / `responsive`).
  */
 export function PortalListCard({
   selected,
   onClick,
   title,
   subtitle,
-  idLabel,
+  idLabel: _idLabel,
   statusLabel,
   statusPillClass,
   statusPillStyle,
@@ -127,18 +158,24 @@ export function PortalListCard({
   onCheckedChange,
   attentionBadge,
 }: PortalListCardProps) {
+  const showAttention = Boolean(attentionBadge && attentionBadge > 0);
+
   if (variant === "row") {
     return (
       <button
         type="button"
         onClick={onClick}
         className={cn(
+          "relative",
           portalListItemClass("row", { selected }),
           showLeftAccent ? "border-l-4 pl-3 sm:pl-4" : "px-4",
           showLeftAccent && ACCENT_CLASS[accent],
           media && "flex items-start gap-3"
         )}
       >
+        {showAttention ? (
+          <AttentionCornerBadge count={attentionBadge!} />
+        ) : null}
         {media ? (
           <div
             className="w-20 shrink-0 overflow-hidden rounded-lg"
@@ -151,39 +188,23 @@ export function PortalListCard({
         <div className="min-w-0 flex-1">
           <div className="flex items-start justify-between gap-2">
             <div className="min-w-0 flex-1">
-              {idLabel ? (
-                <p className="portal-text-label mb-0.5 normal-case tracking-wide text-text-tertiary">
-                  {idLabel}
-                </p>
-              ) : null}
-              <p className="portal-text-card-title line-clamp-2">{title}</p>
+              {/* Deep Green: Vorgangsnummer (idLabel) entfällt in Listen */}
+              <StatusWord
+                statusLabel={statusLabel}
+                statusPillClass={statusPillClass}
+                statusPillStyle={statusPillStyle}
+              />
+              <p className="portal-text-card-title mt-1 line-clamp-2">{title}</p>
               {subtitle ? (
                 <p className="portal-text-meta mt-1 line-clamp-2 text-text-secondary">
                   {subtitle}
                 </p>
               ) : null}
             </div>
-            <div className="flex shrink-0 items-center gap-1.5">
-              {attentionBadge && attentionBadge > 0 ? (
-                <span
-                  className="inline-flex h-6 min-w-[1.5rem] items-center justify-center rounded-full px-1.5 text-xs font-bold"
-                  style={{
-                    background: PORTAL_VAR.dangerSoft,
-                    color: PORTAL_VAR.danger,
-                  }}
-                  title="Neues Bautagebuch"
-                >
-                  {attentionBadge > 9 ? "9+" : attentionBadge}
-                </span>
-              ) : null}
-              <StatusPill
-                statusLabel={statusLabel}
-                statusPillClass={statusPillClass}
-                statusPillStyle={statusPillStyle}
-              />
+            <div className="flex shrink-0 items-center gap-1.5 self-center pt-3.5">
               {showChevron ? (
                 <ChevronRight
-                  className="h-5 w-5 text-text-tertiary"
+                  className="h-5 w-5 text-[var(--p2-faint2,#9aa39e)]"
                   aria-hidden
                 />
               ) : null}
@@ -193,7 +214,7 @@ export function PortalListCard({
           {meta.length > 0 ? (
             <ul className="mt-2 space-y-1">
               {meta.map((m, i) => {
-                const Icon = m.icon;
+                const Icon = m.icon ? META_ICONS[m.icon] : null;
                 return (
                   <li
                     key={`${m.text}-${i}`}
@@ -227,18 +248,31 @@ export function PortalListCard({
   // card | responsive
   const isCardShell = variant === "card" || variant === "responsive";
   const hasMedia = Boolean(media);
+  const responsiveMedia = variant === "responsive" && hasMedia;
 
   return (
     <div
       className={cn(
+        "relative",
         portalListItemClass(variant, { selected }),
-        hasMedia && "flex-col !gap-0 overflow-hidden !p-0"
+        hasMedia && variant === "card" && "flex-col !gap-0 overflow-hidden !p-0",
+        responsiveMedia &&
+          "flex-col !gap-0 overflow-hidden !p-0 lg:flex-row lg:items-stretch lg:!gap-3 lg:!p-0 lg:pl-0"
       )}
       style={isCardShell ? portalListItemBorderStyle(variant) : undefined}
     >
+      {showAttention ? (
+        <AttentionCornerBadge count={attentionBadge!} />
+      ) : null}
       {hasMedia ? (
         <div
-          className="w-full shrink-0"
+          className={cn(
+            "shrink-0 overflow-hidden",
+            variant === "card" &&
+              "h-[140px] w-full [&>div]:h-full [&>img]:h-full [&>img]:w-full [&>img]:object-cover",
+            responsiveMedia &&
+              "h-[140px] w-full [&>div]:h-full [&>img]:h-full [&>img]:w-full [&>img]:object-cover lg:h-auto lg:w-24 lg:self-stretch lg:rounded-none lg:[&>div]:h-full lg:[&>div]:min-h-[4.5rem] lg:[&>div]:rounded-none"
+          )}
           onClick={(e) => e.stopPropagation()}
           onKeyDown={(e) => e.stopPropagation()}
         >
@@ -248,8 +282,10 @@ export function PortalListCard({
 
       <div
         className={cn(
-          "flex w-full items-start gap-3",
-          hasMedia && "px-3.5 py-3.5 sm:px-4"
+          "flex w-full items-stretch gap-3.5",
+          hasMedia && variant === "card" && "px-4 py-[15px]",
+          responsiveMedia &&
+            "px-4 py-[15px] lg:min-w-0 lg:flex-1 lg:py-[15px] lg:pr-4 lg:pl-0"
         )}
       >
         {showCheckbox ? (
@@ -266,30 +302,31 @@ export function PortalListCard({
           />
         ) : null}
 
+        {!hasMedia ? (
+          <span className="portal-list-card-edge" aria-hidden />
+        ) : null}
+
         <div className="min-w-0 flex-1">
           <button
             type="button"
             onClick={onClick}
-            className="flex w-full min-w-0 items-start justify-between gap-3 text-left"
+            className="flex w-full min-w-0 items-start gap-3.5 text-left"
           >
             <div className="min-w-0 flex-1">
-              {idLabel ? (
-                <p
-                  className="portal-text-label mb-0.5 normal-case tracking-wide"
-                  style={{ color: PORTAL_VAR.faint }}
-                >
-                  {idLabel}
-                </p>
-              ) : null}
+              <StatusWord
+                statusLabel={statusLabel}
+                statusPillClass={statusPillClass}
+                statusPillStyle={statusPillStyle}
+              />
               <p
-                className="portal-text-card-title line-clamp-2"
+                className="portal-list-card-title mt-1 line-clamp-2"
                 style={{ color: PORTAL_VAR.ink }}
               >
                 {title}
               </p>
               {subtitle ? (
                 <p
-                  className="portal-text-meta mt-1 line-clamp-2"
+                  className="portal-list-card-sub mt-1 line-clamp-2"
                   style={{ color: PORTAL_VAR.sub }}
                 >
                   {subtitle}
@@ -297,7 +334,7 @@ export function PortalListCard({
               ) : null}
               {meta.length > 0 ? (
                 <p
-                  className="portal-text-meta mt-1.5 line-clamp-2"
+                  className="portal-list-card-meta mt-1.5 line-clamp-2"
                   style={{ color: PORTAL_VAR.faint }}
                 >
                   {meta.map((m) => m.text).join(" · ")}
@@ -305,7 +342,7 @@ export function PortalListCard({
               ) : null}
               {hint ? (
                 <p
-                  className="portal-text-meta mt-1.5"
+                  className="portal-list-card-meta mt-1.5"
                   style={{ color: PORTAL_VAR.faint }}
                 >
                   {hint}
@@ -313,32 +350,12 @@ export function PortalListCard({
               ) : null}
             </div>
 
-            <div className="flex shrink-0 items-center gap-1.5 pt-0.5">
-              {attentionBadge && attentionBadge > 0 ? (
-                <span
-                  className="inline-flex h-6 min-w-[1.5rem] items-center justify-center rounded-full px-1.5 text-xs font-bold"
-                  style={{
-                    background: PORTAL_VAR.dangerSoft,
-                    color: PORTAL_VAR.danger,
-                  }}
-                  title="Neues Bautagebuch"
-                >
-                  {attentionBadge > 9 ? "9+" : attentionBadge}
-                </span>
-              ) : null}
-              <StatusPill
-                statusLabel={statusLabel}
-                statusPillClass={statusPillClass}
-                statusPillStyle={statusPillStyle}
+            {showChevron ? (
+              <ChevronRight
+                className="portal-list-card-chevron shrink-0"
+                aria-hidden
               />
-              {showChevron ? (
-                <ChevronRight
-                  className="h-5 w-5 shrink-0"
-                  style={{ color: PORTAL_VAR.faint2 }}
-                  aria-hidden
-                />
-              ) : null}
-            </div>
+            ) : null}
           </button>
 
           {footer ? <div className="mt-2">{footer}</div> : null}

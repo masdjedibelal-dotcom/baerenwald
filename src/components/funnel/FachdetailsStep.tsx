@@ -52,6 +52,7 @@ export type FachdetailsStepProps = {
   banner?: ReactNode;
   /** Keine Termin-/SLA-Infoboxen unter den Optionen (Melde/HV). */
   stripInfoBoxes?: boolean;
+  layout?: "page" | "modal";
 };
 
 export function FachdetailsStep({
@@ -64,6 +65,7 @@ export function FachdetailsStep({
   animateKey = 0,
   banner,
   stripInfoBoxes = false,
+  layout = "page",
 }: FachdetailsStepProps) {
   const question = useMemo(
     () => resolveFachdetailQuestionForUi(state, questionId),
@@ -111,6 +113,7 @@ export function FachdetailsStep({
 
   return (
     <StepWrapper
+      layout={layout}
       stepLabel="Details"
       question={question.frage}
       subtext={question.subtext}
@@ -120,7 +123,7 @@ export function FachdetailsStep({
     >
       {showOmitHint ? (
         <p className="mb-3 rounded-lg border border-border-default bg-surface-muted px-3 py-2 text-sm text-text-secondary">
-          Du hast viele Bereiche gewählt — wir gehen die wichtigsten Schritte
+          Sie haben viele Bereiche gewählt — wir gehen die wichtigsten Schritte
           nacheinander durch.
         </p>
       ) : null}
@@ -130,7 +133,7 @@ export function FachdetailsStep({
         </p>
       ) : null}
 
-      <div className="space-y-3">
+      <div className="flex flex-col gap-2">
         {question.optionen.map((opt) => {
           const libOpt = asLibOpt(opt, stripInfoBoxes);
           const selected = multi

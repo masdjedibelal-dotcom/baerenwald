@@ -4,6 +4,11 @@ import { randomBytes } from "crypto";
 import { revalidatePath } from "next/cache";
 
 import { linkPortalKundeToAuthUser } from "@/lib/portal/link-portal-kunde";
+import { notifyCrmOrgPortal } from "@/lib/org/notify-crm-org";
+import { funnelDirektauftragFromDaten } from "@/lib/org/freigabe-bypass";
+import { orgFreigabeBlockiertPartner } from "@/lib/org/org-freigabe-status";
+import { angebotPositionenJsonToAuftragRows } from "@/lib/portal/copy-angebot-positionen-to-auftrag";
+import { isAngebotPortalAnnehmbar } from "@/lib/portal/portal-angebot-sichtbarkeit";
 import { createClient } from "@/lib/supabase/server";
 import { isSupabaseConfigured, supabaseAdmin } from "@/lib/supabase";
 
@@ -46,7 +51,7 @@ export async function acceptKundeAngebot(
   } = await supabase.auth.getUser();
 
   if (!user?.email) {
-    return { ok: false, error: "Bitte melde dich an." };
+    return { ok: false, error: "Bitte melden Sie sich an." };
   }
 
   const link = await linkPortalKundeToAuthUser({
@@ -57,7 +62,9 @@ export async function acceptKundeAngebot(
 
   const { data: angebot, error: loadErr } = await supabaseAdmin
     .from("angebote")
-    .select("id, lead_id, kunde_id, status, status_einfach")
+    .select(
+      "id, lead_id, kunde_id, status, status_einfach, angebotsnr, gesendet_am, gesendet_kunde_at, pdf_url, positionen"
+    )
     .eq("id", id)
     .maybeSingle();
 
@@ -71,23 +78,60 @@ export async function acceptKundeAngebot(
   const leadId = angebot.lead_id != null ? String(angebot.lead_id) : null;
 
   let belongsToKunde = angebotKundeId === kundeId;
-  if (!belongsToKunde && leadId) {
+  let leadRow: {
+    kunde_id?: string | null;
+    auftraggeber_kunde_id?: string | null;
+    org_freigabe_status?: string | null;
+    hv_meldung_status?: string | null;
+    freigabe_bypass_grund?: string | null;
+    funnel_daten?: unknown;
+  } | null = null;
+
+  if (leadId) {
     const { data: lead } = await supabaseAdmin
       .from("leads")
-      .select("kunde_id, auftraggeber_kunde_id")
+      .select(
+        "kunde_id, auftraggeber_kunde_id, org_freigabe_status, hv_meldung_status, freigabe_bypass_grund, funnel_daten"
+      )
       .eq("id", leadId)
       .maybeSingle();
-    const leadKunde =
-      lead?.auftraggeber_kunde_id != null
-        ? String(lead.auftraggeber_kunde_id)
-        : lead?.kunde_id != null
-          ? String(lead.kunde_id)
-          : null;
-    belongsToKunde = leadKunde === kundeId;
+    leadRow = lead;
+    if (!belongsToKunde) {
+      const leadKunde =
+        lead?.auftraggeber_kunde_id != null
+          ? String(lead.auftraggeber_kunde_id)
+          : lead?.kunde_id != null
+            ? String(lead.kunde_id)
+            : null;
+      belongsToKunde = leadKunde === kundeId;
+    }
   }
 
   if (!belongsToKunde) {
-    return { ok: false, error: "Du hast keinen Zugriff auf dieses Angebot." };
+    return { ok: false, error: "Sie haben keinen Zugriff auf dieses Angebot." };
+  }
+
+  if (leadRow?.auftraggeber_kunde_id) {
+    const bypass = String(leadRow.freigabe_bypass_grund ?? "")
+      .trim()
+      .toLowerCase();
+    const akut =
+      bypass === "akut" || funnelDirektauftragFromDaten(leadRow.funnel_daten);
+    if (
+      !akut &&
+      orgFreigabeBlockiertPartner(
+        leadRow.org_freigabe_status,
+        leadRow.hv_meldung_status
+      )
+    ) {
+      return {
+        ok: false,
+        error:
+          leadRow.org_freigabe_status === "abgelehnt"
+            ? "Die Kostenfreigabe wurde abgelehnt."
+            : "Erst Freigabe erteilen — die Hausverwaltung muss das Angebot freigeben.",
+      };
+    }
   }
 
   const statusEinfach = normalizeStatus(angebot.status_einfach);
@@ -96,8 +140,21 @@ export async function acceptKundeAngebot(
     statusEinfach === "angenommen" ||
     statusEinfach === "kunde_akzeptiert" ||
     statusFein === "kunde_akzeptiert";
-  const waitingForAccept =
-    statusEinfach === "gesendet" || statusFein === "gesendet_kunde";
+  // Erst nach CRM-Senden (nicht bloß Entwurf + PDF).
+  const waitingForAccept = isAngebotPortalAnnehmbar({
+    status: angebot.status,
+    status_einfach: angebot.status_einfach,
+    pdf_url: angebot.pdf_url,
+    angebotsnr: angebot.angebotsnr,
+    gesendet_am: angebot.gesendet_am,
+    gesendet_kunde_at: angebot.gesendet_kunde_at,
+  });
+  if (!alreadyAccepted && !waitingForAccept) {
+    return {
+      ok: false,
+      error: "Dieses Angebot ist noch nicht freigegeben bzw. nicht annehmbar.",
+    };
+  }
 
   const { data: existingAuftrag } = await supabaseAdmin
     .from("auftraege")
@@ -106,16 +163,34 @@ export async function acceptKundeAngebot(
     .maybeSingle();
 
   if (existingAuftrag?.id) {
-    return { ok: true, auftragId: String(existingAuftrag.id) };
+    const existingId = String(existingAuftrag.id);
+    /* Nachziehen, falls Portal früher ohne Positionen angelegt hat. */
+    const { count } = await supabaseAdmin
+      .from("auftrag_positionen")
+      .select("id", { count: "exact", head: true })
+      .eq("auftrag_id", existingId);
+    if (!count) {
+      const posRows = angebotPositionenJsonToAuftragRows(
+        existingId,
+        angebot.positionen
+      );
+      if (posRows.length) {
+        const { error: posErr } = await supabaseAdmin
+          .from("auftrag_positionen")
+          .insert(posRows);
+        if (posErr) {
+          console.error(
+            "[acceptKundeAngebot] auftrag_positionen nachziehen",
+            posErr.message
+          );
+        }
+      }
+    }
+    return { ok: true, auftragId: existingId };
   }
 
   if (alreadyAccepted) {
     // Status schon gesetzt, Auftrag fehlt noch → nachziehen
-  } else if (!waitingForAccept) {
-    return {
-      ok: false,
-      error: "Dieses Angebot kann derzeit nicht angenommen werden.",
-    };
   }
 
   const now = new Date().toISOString();
@@ -133,17 +208,61 @@ export async function acceptKundeAngebot(
     return { ok: false, error: "Annahme konnte nicht gespeichert werden." };
   }
 
-  // Andere Angebote am Lead als abgelehnt markieren (wie CRM)
+  // Andere Angebote am Lead entwerten (inkl. frühere Annahmen) — eine aktive Version.
   if (leadId) {
-    await supabaseAdmin
+    const { data: siblings } = await supabaseAdmin
       .from("angebote")
-      .update({
-        status_einfach: "abgelehnt",
-        updated_at: now,
-      })
+      .select("id, status, status_einfach")
       .eq("lead_id", leadId)
-      .neq("id", id)
-      .in("status_einfach", ["gesendet", "entwurf"]);
+      .neq("id", id);
+
+    for (const row of siblings ?? []) {
+      const st = String(row.status_einfach ?? "")
+        .trim()
+        .toLowerCase();
+      const statusFein = String(row.status ?? "")
+        .trim()
+        .toLowerCase();
+      // Mehrere Angebote ok — bei Annahme nur konkurrierende entwerten.
+      // Bereits abgelehnt/ersetzt bleiben; angenommen/gesendet/entwurf → ersetzt.
+      if (st === "ersetzt" || st === "abgelehnt") continue;
+      if (statusFein === "abgelehnt" && !st) continue;
+
+      const patch: Record<string, unknown> = {
+        status_einfach: "ersetzt",
+        status: "abgelehnt",
+        ersetzt_durch: id,
+        updated_at: now,
+      };
+      const { error: sibErr } = await supabaseAdmin
+        .from("angebote")
+        .update(patch)
+        .eq("id", row.id as string);
+      if (sibErr && /ersetzt_durch|column|schema cache/i.test(sibErr.message)) {
+        delete patch.ersetzt_durch;
+        await supabaseAdmin.from("angebote").update(patch).eq("id", row.id as string);
+      }
+    }
+  }
+
+  // Bereits Auftrag zu anderem Angebot am Lead? → kein zweiter Auftrag.
+  if (leadId) {
+    const { data: leadAuftraege } = await supabaseAdmin
+      .from("auftraege")
+      .select("id, angebot_id, status")
+      .eq("lead_id", leadId)
+      .neq("status", "storniert")
+      .limit(10);
+    const anderer = (leadAuftraege ?? []).find(
+      (a) => String(a.angebot_id ?? "") !== id
+    );
+    if (anderer?.id) {
+      return {
+        ok: false,
+        error:
+          "Zu diesem Vorgang existiert bereits ein Auftrag. Bitte den bestehenden Auftrag nutzen.",
+      };
+    }
   }
 
   let resolvedKundeId = angebotKundeId ?? kundeId;
@@ -215,12 +334,25 @@ export async function acceptKundeAngebot(
     };
   }
 
+  const auftragId = String(auftrag.id);
+  const posRows = angebotPositionenJsonToAuftragRows(auftragId, angebot.positionen);
+  if (posRows.length) {
+    const { error: posErr } = await supabaseAdmin
+      .from("auftrag_positionen")
+      .insert(posRows);
+    if (posErr) {
+      console.error("[acceptKundeAngebot] auftrag_positionen", posErr.message);
+    }
+  }
+
   if (leadId) {
     await supabaseAdmin
       .from("leads")
       .update({
         status: "auftrag",
         vorgang_phase: "beauftragt",
+        /* Annahme im Portal = Freigabe erledigt — sonst bleibt CRM auf „wartet auf Freigabe“. */
+        org_freigabe_status: "freigegeben",
         updated_at: now,
       })
       .eq("id", leadId);
@@ -233,10 +365,24 @@ export async function acceptKundeAngebot(
       beschreibung: "Über das Kunden-/HV-Portal angenommen.",
       erstellt_von: user.id,
     });
+
+    const crmNotify = await notifyCrmOrgPortal({
+      leadId,
+      typ: "angebot_entscheidung",
+      aktion: "angenommen",
+      notiz: "Angebot im Portal angenommen — Auftrag erstellt.",
+    });
+    if (!crmNotify.ok) {
+      console.warn(
+        "[acceptKundeAngebot] CRM-Notify fehlgeschlagen:",
+        crmNotify.error,
+        { leadId, skipped: crmNotify.skipped === true }
+      );
+    }
   }
 
   revalidatePath("/portal");
-  return { ok: true, auftragId: String(auftrag.id) };
+  return { ok: true, auftragId };
 }
 
 export type RejectKundeAngebotResult =
@@ -263,7 +409,7 @@ export async function rejectKundeAngebot(
   } = await supabase.auth.getUser();
 
   if (!user?.email) {
-    return { ok: false, error: "Bitte melde dich an." };
+    return { ok: false, error: "Bitte melden Sie sich an." };
   }
 
   const link = await linkPortalKundeToAuthUser({
@@ -274,7 +420,9 @@ export async function rejectKundeAngebot(
 
   const { data: angebot, error: loadErr } = await supabaseAdmin
     .from("angebote")
-    .select("id, lead_id, kunde_id, status, status_einfach")
+    .select(
+      "id, lead_id, kunde_id, status, status_einfach, angebotsnr, gesendet_am, gesendet_kunde_at, pdf_url"
+    )
     .eq("id", id)
     .maybeSingle();
 
@@ -304,7 +452,7 @@ export async function rejectKundeAngebot(
   }
 
   if (!belongsToKunde) {
-    return { ok: false, error: "Du hast keinen Zugriff auf dieses Angebot." };
+    return { ok: false, error: "Sie haben keinen Zugriff auf dieses Angebot." };
   }
 
   const statusEinfach = normalizeStatus(angebot.status_einfach);
@@ -313,12 +461,19 @@ export async function rejectKundeAngebot(
     return { ok: true };
   }
 
-  const waitingForAccept =
-    statusEinfach === "gesendet" || statusFein === "gesendet_kunde";
-  if (!waitingForAccept) {
+  if (
+    !isAngebotPortalAnnehmbar({
+      status: angebot.status,
+      status_einfach: angebot.status_einfach,
+      pdf_url: angebot.pdf_url,
+      angebotsnr: angebot.angebotsnr,
+      gesendet_am: angebot.gesendet_am,
+      gesendet_kunde_at: angebot.gesendet_kunde_at,
+    })
+  ) {
     return {
       ok: false,
-      error: "Dieses Angebot kann derzeit nicht abgelehnt werden.",
+      error: "Dieses Angebot ist noch nicht freigegeben bzw. nicht ablehnbar.",
     };
   }
 
@@ -352,6 +507,14 @@ export async function rejectKundeAngebot(
   }
 
   if (leadId) {
+    await supabaseAdmin
+      .from("leads")
+      .update({
+        vorgang_phase: "abgelehnt",
+        updated_at: now,
+      })
+      .eq("id", leadId);
+
     await supabaseAdmin.from("lead_timeline").insert({
       lead_id: leadId,
       angebot_id: id,
@@ -362,6 +525,22 @@ export async function rejectKundeAngebot(
         : "Über das Kundenportal abgelehnt.",
       erstellt_von: user.id,
     });
+
+    const crmNotify = await notifyCrmOrgPortal({
+      leadId,
+      typ: "angebot_entscheidung",
+      aktion: "abgelehnt",
+      notiz: grundTrim
+        ? `Angebot im Portal abgelehnt. Grund: ${grundTrim}`
+        : "Angebot im Portal abgelehnt.",
+    });
+    if (!crmNotify.ok) {
+      console.warn(
+        "[rejectKundeAngebot] CRM-Notify fehlgeschlagen:",
+        crmNotify.error,
+        { leadId, skipped: crmNotify.skipped === true }
+      );
+    }
   }
 
   revalidatePath("/portal");

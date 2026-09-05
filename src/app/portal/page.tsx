@@ -5,6 +5,7 @@ import { OrganisationPortalClient } from "@/components/org/OrganisationPortalCli
 import { EigentuemerPortalClient } from "@/components/portal/EigentuemerPortalClient";
 import { PortalClient } from "@/components/portal/PortalClient";
 import { PortalAuthShell } from "@/components/portal/PortalAuthShell";
+import { PortalContentBusy } from "@/components/shared/PortalContentBusy";
 import { SITE_CONFIG } from "@/lib/config";
 import { resolveOrgMitgliedRolle } from "@/lib/org/org-rbac";
 import { getOrganisationPortalData } from "@/lib/org/get-organisation-portal-data";
@@ -27,7 +28,11 @@ export const metadata = {
   robots: { index: false, follow: false },
 };
 
-export default async function PortalDashboardPage() {
+export default async function PortalDashboardPage({
+  searchParams,
+}: {
+  searchParams?: Promise<{ view?: string }>;
+}) {
   if (!isSupabaseConfigured()) {
     return (
       <PortalAuthShell title="Portal nicht verfügbar">
@@ -37,6 +42,12 @@ export default async function PortalDashboardPage() {
       </PortalAuthShell>
     );
   }
+
+  const sp = searchParams ? await searchParams : {};
+  const forceHausmeisterView =
+    String(sp.view ?? "")
+      .trim()
+      .toLowerCase() === "hausmeister";
 
   const supabase = await createClient();
   const {
@@ -52,12 +63,31 @@ export default async function PortalDashboardPage() {
     redirect("/portal/login?hint=confirm");
   }
 
-  const meta = user.user_metadata as { name?: string; telefon?: string };
+  const meta = user.user_metadata as {
+    name?: string;
+    telefon?: string;
+    vorname?: string;
+    nachname?: string;
+    firma?: string;
+    strasse?: string;
+    hausnummer?: string;
+    plz?: string;
+    ort?: string;
+    kundentyp?: string;
+  };
   const link = await linkPortalKundeToAuthUser({
     userId: user.id,
     email: user.email,
     name: meta?.name,
     telefon: meta?.telefon,
+    typ: meta?.kundentyp,
+    vorname: meta?.vorname,
+    nachname: meta?.nachname,
+    firma: meta?.firma,
+    strasse: meta?.strasse,
+    hausnummer: meta?.hausnummer,
+    plz: meta?.plz,
+    ort: meta?.ort,
   });
 
   if (!link.ok) {
@@ -88,10 +118,101 @@ export default async function PortalDashboardPage() {
     );
   }
 
+  // Offene HM-/Bewohner-Einladungen zur Login-E-Mail (Auth existiert schon → ohne Redeem nur privat)
+  const {
+    tryRedeemOpenHausmeisterInvitesForAuthUser,
+    tryRedeemOpenBewohnerInvitesForAuthUser,
+  } = await import("@/lib/portal2/portal-einladungen-server");
+
+  const { data: linkKundeRow } = await supabaseAdmin
+    .from("kunden")
+    .select("id, portal_modus, typ")
+    .eq("id", link.kundeId)
+    .maybeSingle();
+  const linkIsOrg =
+    String(linkKundeRow?.portal_modus ?? "").toLowerCase() === "organisation" ||
+    ["hausverwaltung", "hv"].includes(
+      String(linkKundeRow?.typ ?? "").toLowerCase()
+    );
+
+  // HM-Redeem darf Org-/HV-Login nicht überschreiben — nur bei ?view=hausmeister
+  // oder wenn kein Organisations-Konto verknüpft ist.
+  let portalKundeId = link.kundeId;
+  if (forceHausmeisterView || !linkIsOrg) {
+    const hmRedeem = await tryRedeemOpenHausmeisterInvitesForAuthUser({
+      authUserId: user.id,
+      email: user.email,
+      name: meta?.name,
+      telefon: meta?.telefon,
+    });
+    if (hmRedeem.portalKundeId) {
+      portalKundeId = hmRedeem.portalKundeId;
+    } else if (!linkIsOrg) {
+      const bewRedeem = await tryRedeemOpenBewohnerInvitesForAuthUser({
+        authUserId: user.id,
+        email: user.email,
+        name: meta?.name,
+        telefon: meta?.telefon,
+      });
+      if (bewRedeem.portalKundeId) {
+        portalKundeId = bewRedeem.portalKundeId;
+      }
+    }
+  }
+
+  const { isBaerenwaldPrimaryStaffEmail } = await import(
+    "@/lib/auth/baerenwald-primary-staff"
+  );
+  const { ensureHausmeisterPortalActivation } = await import(
+    "@/lib/org/ensure-hausmeister-portal"
+  );
+
+  // Team-Mail: bei ?view=hausmeister (CRM-Login) HM-Stub auflösen / aktivieren
+  if (forceHausmeisterView && isBaerenwaldPrimaryStaffEmail(user.email)) {
+    const { data: hmRows } = await supabaseAdmin
+      .from("org_hausmeister")
+      .select("id, org_kunde_id, portal_kunde_id, portal_zugang")
+      .ilike("email", user.email.trim().toLowerCase())
+      .eq("portal_zugang", true)
+      .limit(5);
+    for (const row of hmRows ?? []) {
+      const hmId = String(row.id ?? "");
+      const orgId = String(row.org_kunde_id ?? "");
+      if (!hmId || !orgId) continue;
+      if (row.portal_kunde_id) {
+        portalKundeId = String(row.portal_kunde_id);
+        break;
+      }
+      const act = await ensureHausmeisterPortalActivation({
+        orgHausmeisterId: hmId,
+        orgKundeId: orgId,
+      });
+      if (act.ok) {
+        portalKundeId = act.portalKundeId;
+        break;
+      }
+    }
+  }
+
+  // Ohne view=hausmeister: wenn zur E-Mail ein Org-Konto existiert, immer dorthin
+  if (!forceHausmeisterView) {
+    const { data: orgKunde } = await supabaseAdmin
+      .from("kunden")
+      .select("id")
+      .ilike("email", user.email.trim().toLowerCase())
+      .eq("portal_modus", "organisation")
+      .order("created_at", { ascending: true })
+      .limit(1)
+      .maybeSingle();
+    if (orgKunde?.id) {
+      portalKundeId = String(orgKunde.id);
+    }
+  }
+
   const { data: kundeMeta } = await supabaseAdmin
     .from("kunden")
     .select("portal_modus, typ")
-    .eq("id", link.kundeId)
+    .eq("id", portalKundeId)
     .maybeSingle();
 
   let portalModus =
@@ -103,15 +224,19 @@ export default async function PortalDashboardPage() {
     const { data: fallback } = await supabaseAdmin
       .from("kunden")
       .select("portal_modus")
-      .eq("id", link.kundeId)
+      .eq("id", portalKundeId)
       .maybeSingle();
     portalModus = (fallback?.portal_modus as string | undefined) ?? "privat";
     kundeTypField = null;
   }
 
+  if (forceHausmeisterView) {
+    portalModus = "hausmeister";
+  }
+
   /** D8 — eigene Rolle / Client */
   if (portalModus === "eigentuemer") {
-    const eigData = await getEigentuemerPortalData(link.kundeId);
+    const eigData = await getEigentuemerPortalData(portalKundeId);
     if (!eigData) {
       return (
         <PortalAuthShell title="Keine Kundendaten">
@@ -122,14 +247,64 @@ export default async function PortalDashboardPage() {
       );
     }
     return (
-      <Suspense fallback={<p className="px-4 py-8 text-center">Portal wird geladen…</p>}>
+      <Suspense
+        fallback={
+          <PortalContentBusy
+            variant="page"
+            title="Portal wird geladen…"
+            body="Einen Moment — wir bereiten Ihre Übersicht vor."
+          />
+        }
+      >
         <EigentuemerPortalClient
           kunde={eigData.kunde}
           schwelleEur={eigData.schwelleEur}
           objekte={eigData.objekte}
+          einheiten={eigData.einheiten}
+          mieterByObjektId={eigData.mieterByObjektId}
+          hausverwaltungBrand={eigData.hausverwaltungBrand}
           leads={eigData.leads}
           angebote={eigData.angebote}
           auftraege={eigData.auftraege}
+        />
+      </Suspense>
+    );
+  }
+
+  if (portalModus === "hausmeister") {
+    const { getHausmeisterPortalData } = await import(
+      "@/lib/portal/get-hausmeister-portal-data"
+    );
+    const { HausmeisterPortalClient } = await import(
+      "@/components/portal/HausmeisterPortalClient"
+    );
+    const hmData = await getHausmeisterPortalData(portalKundeId);
+    if (!hmData) {
+      return (
+        <PortalAuthShell title="Keine Kundendaten">
+          <p className="portal-text-body text-text-secondary">
+            Hausmeister-Daten konnten nicht geladen werden.
+          </p>
+        </PortalAuthShell>
+      );
+    }
+    return (
+      <Suspense
+        fallback={
+          <PortalContentBusy
+            variant="page"
+            title="Portal wird geladen…"
+            body="Einen Moment — wir bereiten Ihre Übersicht vor."
+          />
+        }
+      >
+        <HausmeisterPortalClient
+          kunde={hmData.kunde}
+          objekte={hmData.objekte}
+          hausverwaltungBrand={hmData.hausverwaltungBrand}
+          leads={hmData.leads}
+          angebote={hmData.angebote}
+          auftraege={hmData.auftraege}
         />
       </Suspense>
     );
@@ -142,8 +317,8 @@ export default async function PortalDashboardPage() {
 
   if (kundeTyp === "hv" || portalModus === "organisation") {
     const [orgData, mitgliedRolle] = await Promise.all([
-      getOrganisationPortalData(link.kundeId),
-      resolveOrgMitgliedRolle(user.id, link.kundeId),
+      getOrganisationPortalData(portalKundeId),
+      resolveOrgMitgliedRolle(user.id, portalKundeId),
     ]);
     if (!orgData) {
       return (
@@ -174,7 +349,15 @@ export default async function PortalDashboardPage() {
     }));
 
     return (
-      <Suspense fallback={<p className="px-4 py-8 text-center">Portal wird geladen…</p>}>
+      <Suspense
+        fallback={
+          <PortalContentBusy
+            variant="page"
+            title="Portal wird geladen…"
+            body="Einen Moment — wir bereiten Ihre Übersicht vor."
+          />
+        }
+      >
         <OrganisationPortalClient
           kunde={orgData.kunde}
           objekte={orgData.objekte}
@@ -184,7 +367,6 @@ export default async function PortalDashboardPage() {
           auftraege={slimOrg.auftraege as typeof orgData.auftraege}
           initialVorgaenge={slimOrg.initialVorgaenge}
           mitgliedRolle={mitgliedRolle}
-          partnerBefundByLeadId={orgData.partnerBefundByLeadId}
           bautagebuchByLeadId={orgData.bautagebuchByLeadId}
           hwErledigtByLeadId={orgData.hwErledigtByLeadId}
           feedbackBereitByLeadId={orgData.feedbackBereitByLeadId}
@@ -198,13 +380,13 @@ export default async function PortalDashboardPage() {
     );
   }
 
-  const data = await getPortalDataForKunde(link.kundeId, { mode: "list" });
+  const data = await getPortalDataForKunde(portalKundeId, { mode: "list" });
   if (!data) {
     return (
       <PortalAuthShell title="Keine Kundendaten">
         <p className="portal-text-body text-text-secondary">
-          Dein Konto ist aktiv, aber es wurden keine Daten gefunden. Bitte wende
-          dich an uns.
+          Ihr Konto ist aktiv, aber es wurden keine Daten gefunden. Bitte wenden
+          Sie sich an uns.
         </p>
       </PortalAuthShell>
     );
@@ -222,9 +404,11 @@ export default async function PortalDashboardPage() {
   return (
     <Suspense
       fallback={
-        <p className="px-4 py-8 text-center portal-text-body text-text-secondary">
-          Portal wird geladen…
-        </p>
+        <PortalContentBusy
+          variant="page"
+          title="Portal wird geladen…"
+          body="Einen Moment — wir bereiten Ihre Übersicht vor."
+        />
       }
     >
       <PortalClient
@@ -234,6 +418,7 @@ export default async function PortalDashboardPage() {
         leads={slim.leads as typeof data.leads}
         initialVorgaenge={slim.initialVorgaenge}
         mieterFeedbackByLeadId={data.mieterFeedbackByLeadId ?? {}}
+        hausverwaltungBrand={data.hausverwaltungBrand}
         kundeTyp={kundeTyp === "gewerbe" ? "gewerbe" : "privat"}
       />
     </Suspense>

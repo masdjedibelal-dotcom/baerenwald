@@ -23,6 +23,8 @@ export type MieterWlFrameProps = {
   className?: string;
   /** Footer ausblenden */
   hideFooter?: boolean;
+  datenschutzHref?: string | null;
+  impressumHref?: string | null;
   /**
    * Flaches Funnel-Layout wie /rechner (kein Desktop-Kartenrahmen).
    * Standard für MeldeFormular.
@@ -40,6 +42,8 @@ export function MieterWlFrame({
   compact,
   className,
   hideFooter,
+  datenschutzHref,
+  impressumHref,
   variant = "default",
 }: MieterWlFrameProps) {
   return (
@@ -56,7 +60,13 @@ export function MieterWlFrame({
       <div className={cn("mieter-wl-shell", compact && "mieter-wl-shell--compact")}>
         <MieterWlHeader brand={brand} />
         <div className="mieter-wl-body">{children}</div>
-        {!hideFooter ? <MieterWlFooter brand={brand} /> : null}
+        {!hideFooter ? (
+          <MieterWlFooter
+            brand={brand}
+            datenschutzHref={datenschutzHref}
+            impressumHref={impressumHref}
+          />
+        ) : null}
       </div>
     </PortalBrandRoot>
   );
@@ -90,11 +100,30 @@ export function MieterWlHeader({ brand }: { brand: MieterWlBrand }) {
   );
 }
 
-export function MieterWlFooter({ brand }: { brand: MieterWlBrand }) {
+export function MieterWlFooter({
+  brand,
+  datenschutzHref,
+  impressumHref,
+}: {
+  brand: MieterWlBrand;
+  datenschutzHref?: string | null;
+  impressumHref?: string | null;
+}) {
+  const ds = datenschutzHref?.trim() || "/datenschutz";
+  const im = impressumHref?.trim() || "/impressum";
   return (
     <footer className="mieter-wl-footer">
       <p>{formatMieterWlFooterContact(brand, "de")}</p>
       <p className="mieter-wl-footer-noreply">{mieterWlFooterNoreply("de")}</p>
+      <p className="mieter-wl-footer-legal mt-2">
+        <a href={ds} className="underline">
+          Datenschutz
+        </a>
+        {" · "}
+        <a href={im} className="underline">
+          Impressum
+        </a>
+      </p>
     </footer>
   );
 }

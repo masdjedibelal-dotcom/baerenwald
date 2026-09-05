@@ -204,7 +204,7 @@ export function PartnerAbnahmeprotokollForm({
           </p>
           <label className="block space-y-1.5">
             <span className="portal-text-meta font-medium text-text-secondary">
-              Handwerker / Ausführender Betrieb *
+              Handwerker vor Ort *
             </span>
             <input
               required
@@ -224,7 +224,7 @@ export function PartnerAbnahmeprotokollForm({
           </label>
           <label className="block space-y-1.5">
             <span className="portal-text-meta font-medium text-text-secondary">
-              Kunde / Auftraggeber vor Ort *
+              Kunde vor Ort *
             </span>
             <input
               required

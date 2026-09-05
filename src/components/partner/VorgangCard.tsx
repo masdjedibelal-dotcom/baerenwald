@@ -3,12 +3,30 @@
 import { PartnerAuftragAnfrageDetail } from "@/components/partner/PartnerAuftragAnfrageDetail";
 import { PartnerAuftragDetail } from "@/components/partner/PartnerAuftragDetail";
 import { PartnerOffenDetail } from "@/components/partner/PartnerOffenDetail";
+import { PartnerEinholungDetail } from "@/components/partner/PartnerEinholungDetail";
 import type { PartnerVorgangItem } from "@/lib/partner/build-partner-vorgaenge";
+import type { PartnerHandwerkerProfil } from "@/lib/partner/get-partner-data";
 import {
   enrichPartnerOffenAngebot,
   type PartnerOffenAngebotItem,
 } from "@/lib/partner/partner-offen-status";
 import type { VorgangState } from "@/lib/partner/vorgang-state";
+
+type VorgangCardHandwerker = Pick<
+  PartnerHandwerkerProfil,
+  | "firma"
+  | "name"
+  | "strasse"
+  | "hausnummer"
+  | "plz"
+  | "ort"
+  | "adresse"
+  | "telefon"
+  | "steuernummer"
+  | "ustid"
+  | "iban"
+  | "kleinunternehmer"
+>;
 
 function toOffenAngebotItem(vorgang: PartnerVorgangItem): PartnerOffenAngebotItem {
   const anfrage = vorgang.anfrage!;
@@ -62,43 +80,75 @@ function resolveOffenDetailItem(
 
 export function VorgangCard({
   vorgang,
+  handwerker,
   onUpdated,
   onBack,
   focusBautagebuch,
   anfrageId,
   focusAbnahme,
+  focusAblehnen,
   protokollId,
 }: {
   vorgang: PartnerVorgangItem;
-  onUpdated?: (id: string) => void;
+  handwerker?: VorgangCardHandwerker | null;
+  onUpdated?: (id: string, opts?: { declined?: boolean }) => void;
   onBack?: () => void;
   focusBautagebuch?: boolean;
   anfrageId?: string | null;
   focusAbnahme?: boolean;
+  focusAblehnen?: boolean;
   protokollId?: string | null;
 }) {
   const { state, auftrag } = vorgang;
   const vorgangState = state as VorgangState;
 
-  if (auftrag.lead?.hv_meldung_status === "notmassnahme") {
+  /**
+   * Partner-Einholung / Angebots-Stub ohne echten Auftrag:
+   * auch nach LV-Einreichung (state erledigt) bei EinholungDetail bleiben —
+   * sonst AuftragDetail mit Stub-ID → „Vorgang wird geladen…“.
+   */
+  const anfrageOnlyStub =
+    Boolean(vorgang.anfrage) &&
+    auftrag.portalPhase === "anfrage" &&
+    auftrag.id === vorgang.anfrage!.id;
+
+  if (anfrageOnlyStub && vorgang.anfrage?.ohne_lv) {
     return (
-      <PartnerAuftragDetail
-        item={auftrag}
-        vorgangState="in_bearbeitung"
+      <PartnerEinholungDetail
+        item={enrichPartnerOffenAngebot(vorgang.anfrage)}
         onBack={onBack}
-        focusBautagebuch={focusBautagebuch}
-        deepLinkAnfrageId={anfrageId}
-        focusAbnahme={focusAbnahme}
-        deepLinkProtokollId={protokollId}
+        onConfirmed={onUpdated}
+        focusAblehnen={focusAblehnen}
       />
     );
   }
 
-  if (state === "in_bearbeitung" || state === "erledigt") {
+  if (anfrageOnlyStub && vorgang.anfrage) {
+    const offenItem = toOffenAngebotItem(vorgang);
+    return (
+      <PartnerOffenDetail
+        item={offenItem}
+        vorgangState={vorgangState}
+        onBack={onBack}
+        onConfirmed={onUpdated}
+        focusAblehnen={focusAblehnen}
+      />
+    );
+  }
+
+  // Direktauftrag / Notmaßnahme: HV braucht keine Freigabe — Handwerker muss
+  // trotzdem annehmen/ablehnen (wie jeder andere Vorgang).
+
+  if (
+    state === "in_bearbeitung" ||
+    state === "erledigt" ||
+    state === "abgelehnt"
+  ) {
     return (
       <PartnerAuftragDetail
         item={auftrag}
         vorgangState={vorgangState}
+        handwerker={handwerker}
         onBack={onBack}
         focusBautagebuch={focusBautagebuch}
         deepLinkAnfrageId={anfrageId}
@@ -110,12 +160,23 @@ export function VorgangCard({
 
   const offenItem = resolveOffenDetailItem(vorgang);
   if (offenItem && (state === "geaendert" || state === "neu")) {
+    if (offenItem.ohne_lv) {
+      return (
+        <PartnerEinholungDetail
+          item={offenItem}
+          onBack={onBack}
+          onConfirmed={onUpdated}
+          focusAblehnen={focusAblehnen}
+        />
+      );
+    }
     return (
       <PartnerOffenDetail
         item={offenItem}
         vorgangState={vorgangState}
         onBack={onBack}
         onConfirmed={onUpdated}
+        focusAblehnen={focusAblehnen}
       />
     );
   }

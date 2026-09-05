@@ -1,0 +1,73 @@
+import { buildPushPayloadFromNotif } from "@/lib/push/payload";
+import { resolveOrgAuthUserIds } from "@/lib/push/resolve-recipients";
+import { scheduleWebPushToUsers } from "@/lib/push/send-web-push";
+import { supabaseAdmin } from "@/lib/supabase";
+
+export type CreateHvNotificationInput = {
+  kundeId: string;
+  typ: string;
+  titel: string;
+  body: string;
+  link: string;
+};
+
+/**
+ * HV-Glocke nur für:
+ * - neuer Vorgang (`neue_meldung`)
+ * - neues Angebot (`angebot`)
+ * - abgeschlossen (`abgeschlossen` / Partner- oder HM-Selbstabschluss)
+ * - Hausmeister-Befund fertig (`hm_befund` — selbst erledigt / Fachfirma)
+ */
+export const HV_NOTIFICATION_ALLOWED_TYPES = new Set([
+  "neue_meldung",
+  "angebot",
+  "abgeschlossen",
+  "hm_befund",
+]);
+
+/**
+ * HV-Glocke + Web-Push an alle Org-Auth-User (Haupt + Mitglieder).
+ * Fail-soft beim Push. Andere Typen werden still verworfen.
+ */
+export async function createHvNotification(
+  input: CreateHvNotificationInput
+): Promise<{ ok: true } | { ok: false; error: string } | { ok: true; skipped: true }> {
+  const kundeId = input.kundeId.trim();
+  if (!kundeId) return { ok: false, error: "kundeId fehlt." };
+
+  const titel = input.titel.trim();
+  const body = input.body.trim();
+  const link = input.link.trim();
+  const typ = input.typ.trim() || "info";
+
+  if (!HV_NOTIFICATION_ALLOWED_TYPES.has(typ)) {
+    return { ok: true, skipped: true };
+  }
+
+  const { error } = await supabaseAdmin.from("hv_notifications").insert({
+    kunde_id: kundeId,
+    typ,
+    titel,
+    body,
+    link,
+  });
+  if (error) return { ok: false, error: error.message };
+
+  void resolveOrgAuthUserIds(kundeId)
+    .then((userIds) => {
+      if (!userIds.length) return;
+      scheduleWebPushToUsers(
+        userIds,
+        buildPushPayloadFromNotif({
+          typ,
+          titel,
+          body,
+          link,
+          defaultUrl: "/portal",
+        })
+      );
+    })
+    .catch((e) => console.error("[createHvNotification] push:", e));
+
+  return { ok: true };
+}
