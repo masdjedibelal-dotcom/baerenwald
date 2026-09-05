@@ -54,7 +54,7 @@ import {
 import {
   type PortalDetailSectionId,
 } from "@/lib/portal2/layout-chrome";
-import { PORTAL_STATUS, type PortalMockStatusId } from "@/lib/portal2/status";
+import { PORTAL_STATUS, portalFlowTimelineVariantForRole, type PortalFlowTimelineVariant, type PortalMockStatusId } from "@/lib/portal2/status";
 import { PORTAL_VAR } from "@/lib/portal2/tokens";
 import { kundePortalToast, orgPortalToast } from "@/lib/shared/portal-toast";
 import type { PortalBautagebuchEntry } from "@/lib/portal/portal-detail-item";
@@ -147,6 +147,11 @@ export type OrganisationHvVorgangDetailProps = {
   meldeZeitraum?: string | null;
   meldeFachdetails?: Array<{ label: string; value: string }>;
   detailRole?: "hv" | "kunde" | "mieter" | "hausmeister";
+  /**
+   * Timeline-Labels. Default aus `detailRole`.
+   * Eigentümer: explizit `privat` (kein Freigabe — HV gibt frei; eigene Anfragen = Angebot annehmen).
+   */
+  flowTimelineVariant?: PortalFlowTimelineVariant;
   /** Hausmeister-Portal: Befund im Tab editierbar, ohne HV-only CTAs. */
   hausmeisterActor?: boolean;
   /**
@@ -154,7 +159,7 @@ export type OrganisationHvVorgangDetailProps = {
    * statt „Angebot“).
    */
   statusLabelOverride?: string | null;
-  /** Mieter: Timeline ohne Angebot, „Auftrag“ → „Bestätigung“. */
+  /** Mieter: Preise/Freigabe aus; Timeline via flowTimelineVariant. */
   mieterStatusMode?: boolean;
   /** @deprecated Nicht mehr im Detail-Head (nur Titel + eine Subline). */
   wartetAufHwLabel?: string | null;
@@ -377,10 +382,13 @@ export function OrganisationHvVorgangDetail({
   terminVon,
   terminBis,
   detailRole = "hv",
+  flowTimelineVariant,
   hausmeisterActor = false,
   statusLabelOverride,
   mieterStatusMode = false,
 }: OrganisationHvVorgangDetailProps) {
+  const timelineVariant =
+    flowTimelineVariant ?? portalFlowTimelineVariantForRole(detailRole);
   const searchParams = useSearchParams();
   const { runBusy } = usePortalBusy();
   const deepLinkAppliedRef = useRef(false);
@@ -487,6 +495,7 @@ export function OrganisationHvVorgangDetail({
       flowStatus !== "abgelehnt" &&
       (offers?.length ||
         positionenBrutto?.length ||
+        auftragPositionen?.length ||
         (typeof gesamtBrutto === "number" && gesamtBrutto > 0) ||
         canAcceptAngebot ||
         dokumente.some((d) => d.art === "angebot"))
@@ -842,7 +851,14 @@ export function OrganisationHvVorgangDetail({
 
   const derivedPositionen: HvDetailPosition[] = useMemo(() => {
     if (positionen.length) return positionen;
-    return positionenBrutto.map((p) => {
+    /** Auftrag-Positionen sind aktueller; sonst Angebots-Zeilen (Privat oft nur Auftrag). */
+    const source =
+      auftragPositionen.length > 0
+        ? auftragPositionen
+        : positionenBrutto.length > 0
+          ? positionenBrutto
+          : [];
+    return source.map((p) => {
       const netto =
         typeof p.preisNetto === "number" && p.preisNetto > 0
           ? p.preisNetto
@@ -857,7 +873,7 @@ export function OrganisationHvVorgangDetail({
         einzel: mengeNum > 0 ? netto / mengeNum : netto,
       };
     });
-  }, [positionen, positionenBrutto]);
+  }, [positionen, positionenBrutto, auftragPositionen]);
 
   const sum = useMemo(() => {
     if (derivedPositionen.length) {
@@ -1266,7 +1282,10 @@ export function OrganisationHvVorgangDetail({
           hideTitle
           metaLine={objekt?.trim() || undefined}
           timeline={
-            <PortalFlowTimeline flowStatus={displayFlowStatus} />
+            <PortalFlowTimeline
+              flowStatus={displayFlowStatus}
+              variant={timelineVariant}
+            />
           }
         />
 

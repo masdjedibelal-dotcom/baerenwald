@@ -1331,13 +1331,7 @@ export function PortalClient({
               focusRole={whiteLabelPortal ? "mieter" : "privat"}
               actionSlides={kundeActionSlides}
               onActionRefresh={() => refreshFlash()}
-              roleLabel={
-                whiteLabelPortal
-                  ? "Mieter"
-                  : kundeTyp === "gewerbe"
-                    ? "Gewerbe"
-                    : "Privatkunde"
-              }
+              roleLabel={whiteLabelPortal ? "Mieter" : undefined}
               kpis={privatKpis}
               recent={recentItems}
               heroImageUrl={portalHeaderHeroSrc(
@@ -1370,7 +1364,6 @@ export function PortalClient({
               focusRole="privat"
               actionSlides={kundeActionSlides}
               onActionRefresh={() => refreshFlash()}
-              roleLabel="Privatkunde"
               kpis={privatKpis}
               recent={recentItems}
               heroImageUrl={portalHeaderHeroSrc("mieter")}

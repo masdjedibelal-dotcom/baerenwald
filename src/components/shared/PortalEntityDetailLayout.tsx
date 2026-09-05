@@ -9,7 +9,7 @@ import {
   type PortalDetailTab,
 } from "@/components/shared/PortalDetailTabs";
 import { PortalDetailHead } from "@/components/shared/PortalDetailUi";
-import type { PortalMockStatusId } from "@/lib/portal2/status";
+import type { PortalFlowTimelineVariant, PortalMockStatusId } from "@/lib/portal2/status";
 import { cn } from "@/lib/utils";
 
 export type PortalEntityDetailLayoutProps = {
@@ -26,6 +26,8 @@ export type PortalEntityDetailLayoutProps = {
   statusPillStyle?: { color: string; backgroundColor: string };
   /** Deep Green Flow-Timeline */
   flowStatus?: PortalMockStatusId | null;
+  /** Timeline-Labels je Portal-Typ (Default hv). */
+  flowTimelineVariant?: PortalFlowTimelineVariant;
   actions?: ReactNode;
   tabs?: readonly PortalDetailTab[];
   activeTab?: string;
@@ -49,6 +51,7 @@ export function PortalEntityDetailLayout({
   title,
   metaLine,
   flowStatus,
+  flowTimelineVariant = "hv",
   actions,
   tabs,
   activeTab,
@@ -81,7 +84,12 @@ export function PortalEntityDetailLayout({
           hideTitle
           metaLine={metaLine}
           timeline={
-            flowStatus ? <PortalFlowTimeline flowStatus={flowStatus} /> : null
+            flowStatus ? (
+              <PortalFlowTimeline
+                flowStatus={flowStatus}
+                variant={flowTimelineVariant}
+              />
+            ) : null
           }
           actions={actions}
         />

@@ -7,6 +7,7 @@ import { flushSync } from "react-dom";
 import { PortalUserNotificationBell } from "@/components/portal/PortalUserNotificationBell";
 import { PortalVorgangDetail } from "@/components/portal/PortalVorgangDetail";
 import { PortalKundePrivatDashboard } from "@/components/portal/PortalKundePrivatDashboard";
+import { PortalCreateFunnelModal } from "@/components/portal/PortalCreateFunnelModal";
 import { portalHeaderHeroSrc } from "@/lib/portal2/portal-media";
 import { emitPortalNotificationsChanged } from "@/lib/portal2/notif-refresh";
 import {
@@ -64,14 +65,16 @@ import {
 import {
   EIGENTUEMER_DASHBOARD_ROLE,
   EIGENTUEMER_PAGE_HEAD,
+  filterEigentuemerVorgaengeByScope,
 } from "@/lib/portal2/eigentuemer";
+import { portalCreateLabel } from "@/lib/portal2/create";
 import { buildPortalShellNav } from "@/lib/portal2/nav-items";
 import type { PortalMockStatusId } from "@/lib/portal2/status";
 import {
   portalListeStatusChipStyle,
   portalListeStatusLabel,
 } from "@/lib/portal2/liste-status";
-
+import type { PortalFunnelObjekt } from "@/components/funnel/PortalFunnelHost";
 type SectionId = "uebersicht" | "vorgaenge" | "objekte";
 
 type Props = {
@@ -126,6 +129,9 @@ export function EigentuemerPortalClient({
     searchParams.get("id")?.trim() || null
   );
   const [listPage, setListPage] = useState(1);
+  const [filterObjektId, setFilterObjektId] = useState("");
+  const [filterEinheitId, setFilterEinheitId] = useState("");
+  const [createOpen, setCreateOpen] = useState(false);
   const [einheitDetailId, setEinheitDetailId] = useState<string | null>(null);
   const [pageBusy, setPageBusy] = useState(false);
   const [detailOpening, setDetailOpening] = useState(() =>
@@ -315,13 +321,76 @@ export function EigentuemerPortalClient({
     return buildPrivatDashboardKpis(flowCounts);
   }, [leads, angebote, auftraege]);
 
+  const createAllowedEinheiten = useMemo(
+    () => einheiten.filter((e) => e.createAllowed),
+    [einheiten]
+  );
+
+  const funnelObjekte = useMemo((): PortalFunnelObjekt[] => {
+    const byObjekt = new Map<string, PortalFunnelObjekt>();
+    for (const e of createAllowedEinheiten) {
+      const oid = e.kunde_objekt_id;
+      const existing = byObjekt.get(oid);
+      const unit = {
+        id: e.id,
+        label: e.bezeichnung,
+        etage: e.etage,
+      };
+      if (existing) {
+        existing.einheiten = [...(existing.einheiten ?? []), unit];
+        continue;
+      }
+      const o = objekte.find((x) => x.id === oid);
+      byObjekt.set(oid, {
+        id: oid,
+        titel: o?.titel?.trim() || e.objektTitel || "Objekt",
+        strasse: o?.strasse ?? null,
+        hausnummer: o?.hausnummer ?? null,
+        plz: o?.plz ?? null,
+        ort: o?.ort ?? null,
+        einheiten: [unit],
+      });
+    }
+    return Array.from(byObjekt.values());
+  }, [createAllowedEinheiten, objekte]);
+
+  const createAction = useMemo(
+    () => ({
+      label: portalCreateLabel("eigentuemer"),
+      onClick: () => setCreateOpen(true),
+    }),
+    []
+  );
+
+  const filterEinheitLabel = useMemo(() => {
+    if (!filterEinheitId) return null;
+    return (
+      einheiten.find((e) => e.id === filterEinheitId)?.bezeichnung?.trim() ||
+      null
+    );
+  }, [einheiten, filterEinheitId]);
+
+  const scopedVorgaenge = useMemo(
+    () =>
+      filterEigentuemerVorgaengeByScope(vorgaengeItems, {
+        objektId: filterObjektId || null,
+        einheitLabel: filterEinheitLabel,
+      }),
+    [vorgaengeItems, filterObjektId, filterEinheitLabel]
+  );
+
+  const filterEinheitenOptions = useMemo(() => {
+    if (!filterObjektId) return einheiten;
+    return einheiten.filter((e) => e.kunde_objekt_id === filterObjektId);
+  }, [einheiten, filterObjektId]);
+
   const filteredItems = useMemo(
     () =>
-      vorgaengeItems.filter((item) => {
+      scopedVorgaenge.filter((item) => {
         const flow = flowByItemId.get(item.id) ?? "gemeldet";
         return privatListeChipMatches(listeChip, flow);
       }),
-    [vorgaengeItems, listeChip, flowByItemId]
+    [scopedVorgaenge, listeChip, flowByItemId]
   );
 
   const cardRows = useMemo(() => {
@@ -442,6 +511,7 @@ export function EigentuemerPortalClient({
       }
       onNavChange={(id) => switchSection(id as SectionId)}
       nav={buildPortalShellNav("eigentuemer", "eigentuemer")}
+      createAction={createAction}
       headerSearch={
         <PortalHeaderSearch
           onSubmit={() => {
@@ -523,7 +593,8 @@ export function EigentuemerPortalClient({
               item={selectedItem}
               privatkunde
               showHvAbnahme
-              mieterStatusMode
+              mieterStatusMode={false}
+              flowTimelineVariant="privat"
               flowStatusOverride={
                 flowByItemId.get(selectedItem.id) ?? "gemeldet"
               }
@@ -548,6 +619,51 @@ export function EigentuemerPortalClient({
               <PortalListeTitle>Meine Wohnung</PortalListeTitle>
             </div>
 
+            {(objekte.length > 0 || einheiten.length > 0) && (
+              <div className="mb-3 flex flex-wrap gap-2 px-0.5">
+                <label className="sr-only" htmlFor="eg-filter-objekt">
+                  Objekt filtern
+                </label>
+                <select
+                  id="eg-filter-objekt"
+                  className="portal-input min-w-[10rem] flex-1"
+                  value={filterObjektId}
+                  onChange={(e) => {
+                    setFilterObjektId(e.target.value);
+                    setFilterEinheitId("");
+                    setListPage(1);
+                  }}
+                >
+                  <option value="">Alle Objekte</option>
+                  {objekte.map((o) => (
+                    <option key={o.id} value={o.id}>
+                      {o.titel || "Objekt"}
+                    </option>
+                  ))}
+                </select>
+                <label className="sr-only" htmlFor="eg-filter-einheit">
+                  Einheit filtern
+                </label>
+                <select
+                  id="eg-filter-einheit"
+                  className="portal-input min-w-[10rem] flex-1"
+                  value={filterEinheitId}
+                  onChange={(e) => {
+                    setFilterEinheitId(e.target.value);
+                    setListPage(1);
+                  }}
+                >
+                  <option value="">Alle Einheiten</option>
+                  {filterEinheitenOptions.map((e) => (
+                    <option key={e.id} value={e.id}>
+                      {e.bezeichnung}
+                      {!e.createAllowed ? " (SE-Verwaltung)" : ""}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
+
             <PortalListeFilterBar
               value={listeChip}
               onChange={(id) => {
@@ -562,7 +678,13 @@ export function EigentuemerPortalClient({
             />
 
             {pageRows.length === 0 ? (
-              <PortalEmptyState role="eigentuemer" compact canCreate={false} />
+              <PortalEmptyState
+                role="eigentuemer"
+                compact
+                canCreate
+                createLabel={portalCreateLabel("eigentuemer")}
+                onPrimary={() => setCreateOpen(true)}
+              />
             ) : (
               <div className={portalListStackClass("responsive")}>
                 {pageRows.map((row) => {
@@ -634,6 +756,14 @@ export function EigentuemerPortalClient({
                         .join(" · "),
                     },
                     {
+                      label: "Sondereigentum",
+                      value: activeEinheit.sondereigentumVerwaltung
+                        ? "Verwaltung führt SE — Anfragen nur über HV"
+                        : activeEinheit.objektEigen
+                          ? "Eigenes Objekt — Anfragen möglich"
+                          : "SE selbst — Anfragen möglich",
+                    },
+                    {
                       label: "Mieter",
                       value:
                         mieterAnEinheit.length === 0 ? (
@@ -674,7 +804,7 @@ export function EigentuemerPortalClient({
               {einheiten.length === 0 ? (
                 <PortalInboxEmpty
                   title="Keine Einheiten"
-                  description="Noch keine Einheiten zugeordnet."
+                  description="Noch keine Einheiten zugeordnet. Über „Anfrage erstellen“ kannst du ein eigenes Objekt anlegen."
                   compact
                 />
               ) : (
@@ -692,9 +822,15 @@ export function EigentuemerPortalClient({
                       ]
                         .filter(Boolean)
                         .join(" · ")}
-                      statusLabel=""
+                      statusLabel={
+                        e.createAllowed
+                          ? e.objektEigen
+                            ? "Eigenes Objekt"
+                            : "Anfragen möglich"
+                          : "SE-Verwaltung"
+                      }
                       statusPillClass=""
-                      accent="anfrage"
+                      accent={e.createAllowed ? "anfrage" : "angebot"}
                       meta={[]}
                       showChevron
                       onClick={() => setEinheitDetailId(e.id)}
@@ -709,6 +845,22 @@ export function EigentuemerPortalClient({
 
       <PortalLegalFooter variant="kunde" showServiceBy />
     </PortalShell>
+
+    <PortalCreateFunnelModal
+      open={createOpen}
+      channel="portal_eigentuemer"
+      title={portalCreateLabel("eigentuemer")}
+      objekte={funnelObjekte}
+      prefill={{
+        name: kunde.name?.trim() || undefined,
+        email: kunde.email?.trim() || undefined,
+      }}
+      onClose={() => setCreateOpen(false)}
+      onDone={() => {
+        setCreateOpen(false);
+        refreshFlash();
+      }}
+    />
     </>
   );
 }

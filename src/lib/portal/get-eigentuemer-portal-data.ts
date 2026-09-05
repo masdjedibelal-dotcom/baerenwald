@@ -6,6 +6,7 @@ import {
 import { resolvePortalObjekt } from "@/lib/portal/portal-objekt";
 import {
   EIGENTUEMER_DEFAULT_SCHWELLE_EUR,
+  eigentuemerEinheitCreateAllowed,
   filterLeadsByEigentuemerObjekte,
 } from "@/lib/portal2/eigentuemer";
 import type { OrganisationObjekt } from "@/lib/org/types";
@@ -47,6 +48,12 @@ export type EigentuemerPortalEinheit = {
   objektTitel: string;
   objektStrasse: string;
   objektPlzOrt: string;
+  /** HV führt Sondereigentum → kein Create durch Eigentümer. */
+  sondereigentumVerwaltung: boolean;
+  /** Objekt gehört dem Eigentümer-Stamm (ohne HV). */
+  objektEigen: boolean;
+  /** Create erlaubt (SE aus oder eigenes Objekt). */
+  createAllowed: boolean;
 };
 
 type PortalData = NonNullable<Awaited<ReturnType<typeof getPortalDataForKunde>>>;
@@ -149,26 +156,49 @@ async function loadEinheitenForEigentuemerPortal(
   einheiten: EigentuemerPortalEinheit[];
   objektIdsFromEinheiten: string[];
 }> {
-  const { data: bewRows, error } = await supabaseAdmin
-    .from("einheit_bewohner")
-    .select("objekt_einheit_id")
-    .eq("portal_kunde_id", portalKundeId)
-    .eq("rolle", "eigentuemer")
-    .eq("aktiv", true)
-    .is("anonymisiert_am", null);
+  let bewRows: Array<{
+    objekt_einheit_id?: string;
+    sondereigentum_verwaltung?: boolean | null;
+  }> | null = null;
+  let error: { message: string } | null = null;
+
+  {
+    const res = await supabaseAdmin
+      .from("einheit_bewohner")
+      .select("objekt_einheit_id, sondereigentum_verwaltung")
+      .eq("portal_kunde_id", portalKundeId)
+      .eq("rolle", "eigentuemer")
+      .eq("aktiv", true)
+      .is("anonymisiert_am", null);
+    bewRows = res.data;
+    error = res.error;
+  }
+
+  if (error && /sondereigentum/i.test(error.message)) {
+    const fb = await supabaseAdmin
+      .from("einheit_bewohner")
+      .select("objekt_einheit_id")
+      .eq("portal_kunde_id", portalKundeId)
+      .eq("rolle", "eigentuemer")
+      .eq("aktiv", true)
+      .is("anonymisiert_am", null);
+    bewRows = fb.data;
+    error = fb.error;
+  }
 
   if (error) {
     console.warn("[eigentuemer-portal] einheiten bewohner:", error.message);
     return { einheiten: [], objektIdsFromEinheiten: [] };
   }
 
-  const einheitIds = Array.from(
-    new Set(
-      (bewRows ?? [])
-        .map((r) => String((r as { objekt_einheit_id?: string }).objekt_einheit_id ?? "").trim())
-        .filter(Boolean)
-    )
-  );
+  const seByEinheit = new Map<string, boolean>();
+  for (const r of bewRows ?? []) {
+    const eid = String(r.objekt_einheit_id ?? "").trim();
+    if (!eid) continue;
+    seByEinheit.set(eid, Boolean(r.sondereigentum_verwaltung));
+  }
+
+  const einheitIds = Array.from(seByEinheit.keys());
   if (!einheitIds.length) {
     return { einheiten: [], objektIdsFromEinheiten: [] };
   }
@@ -193,12 +223,13 @@ async function loadEinheitenForEigentuemerPortal(
       titel: string;
       strasse: string;
       plzOrt: string;
+      kundeId: string;
     }
   >();
   if (objektIds.length) {
     const { data: objs } = await supabaseAdmin
       .from("kunden_objekte")
-      .select("id, titel, strasse, hausnummer, plz, ort")
+      .select("id, titel, strasse, hausnummer, plz, ort, kunde_id")
       .in("id", objektIds);
     for (const o of objs ?? []) {
       const strasse = [o.strasse, o.hausnummer]
@@ -213,6 +244,7 @@ async function loadEinheitenForEigentuemerPortal(
         titel: String(o.titel ?? "").trim() || "Objekt",
         strasse,
         plzOrt,
+        kundeId: String(o.kunde_id ?? ""),
       });
     }
   }
@@ -221,6 +253,8 @@ async function loadEinheitenForEigentuemerPortal(
     .map((e) => {
       const oid = String(e.kunde_objekt_id ?? "");
       const obj = objektById.get(oid);
+      const se = seByEinheit.get(String(e.id)) ?? false;
+      const objektEigen = obj?.kundeId === portalKundeId;
       return {
         id: String(e.id),
         bezeichnung: String(e.bezeichnung ?? "").trim() || "Einheit",
@@ -233,6 +267,12 @@ async function loadEinheitenForEigentuemerPortal(
         objektTitel: obj?.titel ?? "Objekt",
         objektStrasse: obj?.strasse ?? "",
         objektPlzOrt: obj?.plzOrt ?? "",
+        sondereigentumVerwaltung: se,
+        objektEigen,
+        createAllowed: eigentuemerEinheitCreateAllowed({
+          sondereigentumVerwaltung: se,
+          objektEigen,
+        }),
       };
     })
     .sort((a, b) => {

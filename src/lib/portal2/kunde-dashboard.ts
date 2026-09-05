@@ -6,7 +6,8 @@ import type { PortalMockStatusId } from "@/lib/portal2/status";
 import type { HvFlowCountMap } from "@/lib/portal2/hv-dashboard";
 
 export const PRIVAT_DASHBOARD_ROLE_LABEL = "" as const;
-export const GEWERBE_DASHBOARD_ROLE_LABEL = "Gewerbe" as const;
+/** Kein Kundentyp im Hero — irritiert Endkunden. */
+export const GEWERBE_DASHBOARD_ROLE_LABEL = "" as const;
 
 export const PRIVAT_DASHBOARD_RECENT_TITLE = "Zuletzt" as const;
 export const PRIVAT_DASHBOARD_RECENT_ALL = "Alle ansehen" as const;

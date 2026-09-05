@@ -44,7 +44,7 @@ import {
   portalDeepLinkTabForSimpleNav,
   PORTAL_DETAIL_TAB_QUERY,
 } from "@/lib/portal2/portal-detail-deep-link";
-import type { PortalMockStatusId } from "@/lib/portal2/status";
+import type { PortalFlowTimelineVariant, PortalMockStatusId } from "@/lib/portal2/status";
 import { portalMieterStatusLabel } from "@/lib/portal2/status";
 
 function extractProjektbeschreibung(item: KundePortalDetailItem): string {
@@ -113,6 +113,7 @@ export function PortalVorgangDetail({
   privatkunde = false,
   flowStatusOverride,
   mieterStatusMode = false,
+  flowTimelineVariant,
 }: {
   item: KundePortalDetailItem;
   showAnlassBadge?: boolean;
@@ -144,6 +145,11 @@ export function PortalVorgangDetail({
   flowStatusOverride?: PortalMockStatusId;
   /** Mieter (HV-Lead): Status ohne Angebots-/Handwerker-Wording. */
   mieterStatusMode?: boolean;
+  /**
+   * Timeline-Labels. Default aus detailRole.
+   * Eigentümer: `privat` (HV gibt frei; eigene Anfragen = Angebot annehmen — Produktklärung offen).
+   */
+  flowTimelineVariant?: PortalFlowTimelineVariant;
 }) {
   const router = useRouter();
   const { refresh } = usePortalRefresh();
@@ -322,6 +328,7 @@ export function PortalVorgangDetail({
                 ? "kunde"
                 : "hv"
         }
+        flowTimelineVariant={flowTimelineVariant}
         hausmeisterActor={hausmeisterActor}
         mieterStatusMode={mieterStatusMode || Boolean(item.hvMieterView)}
         statusLabelOverride={

@@ -525,6 +525,7 @@ export function HausmeisterPortalClient({
                 showHvAbnahme
                 hausmeisterActor
                 mieterStatusMode={false}
+                flowTimelineVariant="hausmeister"
                 flowStatusOverride={
                   flowByItemId.get(selectedItem.id) ?? "gemeldet"
                 }

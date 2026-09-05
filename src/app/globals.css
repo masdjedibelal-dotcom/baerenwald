@@ -1030,11 +1030,11 @@ h3 {
     pointer-events: none;
   }
 
-  /* Glocke: 19 px + 2-px-Rahmen in Content-BG */
+  /* Glocke: Badge-Rahmen = Topbar-Grün (Outline-Icon) */
   .portal-header-notifications .portal-count-badge--corner {
     height: 19px;
     min-width: 19px;
-    border: 2px solid var(--p2-bg, #f5f6f4);
+    border: 2px solid var(--org-primary-dk, var(--p2-primary-dk, #1a3d2b));
   }
 
   /* Kurzer Inhalt: Footer am Viewport-Boden; langer Inhalt: danach mitscrollen. */
@@ -1440,32 +1440,38 @@ h3 {
     overflow: visible;
   }
 
-  /* Glocke — weiße Kreisfläche (mobil + Desktop, auf grüner Topbar) */
+  /* Glocke — Outline-Icon auf grüner Topbar (weiß Rand + Icon) */
   .portal-bell-trigger {
     width: 42px;
     height: 42px;
     border-radius: 999px;
-    border: none;
-    background: #fff;
-    color: var(--p2-sub, #55615b);
-    box-shadow: 0 2px 10px rgba(16, 32, 24, 0.06);
+    border: 1.5px solid rgba(255, 255, 255, 0.85);
+    background: transparent;
+    color: #fff;
+    box-shadow: none;
+  }
+
+  .portal-bell-trigger .mock-icon,
+  .portal-bell-trigger .mock-icon--emphasis {
+    color: #fff;
   }
 
   .portal-bell-trigger:hover,
   .portal-bell[data-open="true"] .portal-bell-trigger,
   .portal-bell:has([aria-expanded="true"]) .portal-bell-trigger {
-    background: var(--org-primary-soft, var(--p2-primary-soft, #eef4f0));
-    color: var(--org-primary-dk, var(--p2-primary-dk, #1a3d2b));
+    background: rgba(255, 255, 255, 0.12);
+    border-color: #fff;
+    color: #fff;
+  }
+
+  .portal-bell .portal-count-badge--corner {
+    border-color: var(--org-primary-dk, var(--p2-primary-dk, #1a3d2b));
   }
 
   @media (max-width: 1023px) {
     .portal-bell-trigger {
       width: 36px;
       height: 36px;
-    }
-
-    .portal-bell .portal-count-badge--corner {
-      border-color: var(--org-primary-dk, var(--p2-primary-dk, #1a3d2b));
     }
   }
 
@@ -1485,7 +1491,28 @@ h3 {
     }
   }
 
-  /* Mobil: Suche schmaler — gleiche weiße Pill wie Desktop */
+  /* Topbar-Suche — Outline wie Glocke (weiß Rand + Icon/Text) */
+  .portal-topbar .portal-search-input {
+    border: 1.5px solid rgba(255, 255, 255, 0.85);
+    background: transparent;
+    color: #fff;
+    box-shadow: none;
+  }
+
+  .portal-topbar .portal-search-input::placeholder {
+    color: rgba(255, 255, 255, 0.65);
+  }
+
+  .portal-topbar .portal-search-input:focus {
+    border-color: #fff;
+    box-shadow: none;
+    background: rgba(255, 255, 255, 0.12);
+  }
+
+  .portal-topbar .portal-search svg {
+    color: #fff;
+  }
+
   @media (max-width: 1023px) {
     .portal-header-search {
       flex: 1;
@@ -1494,20 +1521,8 @@ h3 {
     }
 
     .portal-topbar .portal-search-input {
-      border: none;
-      background: #fff;
-      color: var(--p2-ink, #142019);
-      box-shadow: 0 2px 10px rgba(16, 32, 24, 0.06);
       padding: 9px 12px 9px 36px;
       font-size: calc(13px * var(--p2-type-scale, 1.1));
-    }
-
-    .portal-topbar .portal-search-input::placeholder {
-      color: var(--p2-faint, #8a938e);
-    }
-
-    .portal-topbar .portal-search svg {
-      color: var(--p2-faint, #8a938e);
     }
 
     .portal-header-user {
@@ -1595,11 +1610,11 @@ h3 {
     }
   }
 
-  /* Deep Green Dashboard */
+  /* Deep Green Dashboard — negativer Top-Bleed = shell-main--padded (18px) */
   .portal-dash {
     background: var(--p2-bg, #f5f6f4);
     margin-inline: -18px;
-    margin-top: -8px;
+    margin-top: -18px;
     padding-bottom: 8px;
   }
 
@@ -2232,12 +2247,12 @@ h3 {
     box-shadow: var(--p2-shadow, 0 2px 10px rgba(16, 32, 24, 0.05));
   }
 
-  /* Deep Green Detail — Hero wie Dashboard-Startseite */
+  /* Deep Green Detail — Hero wie Dashboard; Top-Bleed = shell-main--padded (18px) */
   .portal-detail-layout,
   .portal-entity-detail {
     background: var(--p2-bg, #f5f6f4);
     margin-inline: -18px;
-    margin-top: -8px;
+    margin-top: -18px;
   }
 
   /* Nested: Entity liegt schon im Layout-Bleed — nicht nochmal ziehen */

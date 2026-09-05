@@ -2,12 +2,10 @@
 
 import { PortalScreenDashboard } from "@/components/shared/PortalScreenDashboard";
 import {
-  GEWERBE_DASHBOARD_ROLE_LABEL,
   PRIVAT_DASHBOARD_EMPTY_RECENT,
   PRIVAT_DASHBOARD_KPI_DEFS,
   PRIVAT_DASHBOARD_RECENT_ALL,
   PRIVAT_DASHBOARD_RECENT_TITLE,
-  PRIVAT_DASHBOARD_ROLE_LABEL,
   type PrivatDashboardKpiId,
 } from "@/lib/portal2/kunde-dashboard";
 import type { PortalFocusRole } from "@/lib/portal2/dashboard-focus";
@@ -85,12 +83,7 @@ export function PortalKundePrivatDashboard({
   heroImageUrl,
   profileName,
 }: Props) {
-  const roleLabel =
-    roleLabelProp?.trim() ||
-    (kundeTyp === "gewerbe"
-      ? GEWERBE_DASHBOARD_ROLE_LABEL
-      : PRIVAT_DASHBOARD_ROLE_LABEL);
-
+  const roleLabel = roleLabelProp?.trim() || "";
   const nameForProfile = (profileName?.trim() || hello.replace(/^Hallo\s+/i, "")).trim();
   const focusRole = resolveFocusRole(focusRoleProp, roleLabel, kundeTyp);
 

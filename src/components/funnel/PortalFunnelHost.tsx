@@ -90,6 +90,8 @@ export type PortalFunnelObjekt = {
   plz?: string | null;
   ort?: string | null;
   melde_slug?: string | null;
+  /** Optional: Einheiten für SE-Gate / Auswahl (Eigentümer-Portal). */
+  einheiten?: Array<{ id: string; label: string; etage?: string | null }>;
 };
 
 export type PortalFunnelMeldeCtx = {
@@ -1191,7 +1193,11 @@ export function PortalFunnelHost({
     setNeuBusy(true);
     setError(null);
     try {
-      const res = await fetch("/api/org/objekte", {
+      const endpoint =
+        channel === "portal_eigentuemer"
+          ? "/api/portal/eigentuemer/objekte"
+          : "/api/org/objekte";
+      const res = await fetch(endpoint, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -1200,7 +1206,8 @@ export function PortalFunnelHost({
           hausnummer: neuHausnummer.trim() || undefined,
           plz: neuPlz.trim(),
           ort: neuOrt.trim() || undefined,
-          melde_aktiv: true,
+          melde_aktiv: channel === "portal_hv",
+          einheit: einheit.trim() || undefined,
         }),
       });
       const json = (await res.json()) as {
@@ -1574,7 +1581,83 @@ export function PortalFunnelHost({
         return;
       }
 
-      /* privat / eigentuemer / portal_mieter (registriert ohne melde) */
+      if (channel === "portal_eigentuemer") {
+        if (!objektId) {
+          setError("Bitte ein Objekt wählen.");
+          return;
+        }
+        if (!state.situation) {
+          setError("Bitte ein Anliegen wählen.");
+          return;
+        }
+        const einheitTrim = einheit.trim();
+        const matchedEinheit =
+          objekt?.einheiten?.find(
+            (e) =>
+              e.id === einheitTrim ||
+              e.label.trim().toLowerCase() === einheitTrim.toLowerCase()
+          ) ?? null;
+        const res = await fetch("/api/portal/eigentuemer/anfrage", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            objektId,
+            einheitId: matchedEinheit?.id || undefined,
+            einheitLabel: matchedEinheit?.label || einheitTrim || undefined,
+            situation: state.situation,
+            bereiche: state.bereiche,
+            preis_min: reliablePrice && price ? price.min : null,
+            preis_max: reliablePrice && price ? price.max : null,
+            zeitraum: state.dringlichkeit || state.zeitraum || null,
+            name:
+              state.name.trim() ||
+              mieterVollname ||
+              prefill?.name ||
+              undefined,
+            email:
+              state.email.trim() ||
+              mieterEmail.trim() ||
+              prefill?.email ||
+              undefined,
+            telefon:
+              state.telefon.trim() ||
+              mieterTel.trim() ||
+              prefill?.telefon ||
+              undefined,
+            beschreibung: [
+              state.leadBeschreibung.trim(),
+              objekt ? `Objekt: ${objekt.titel}` : "",
+              einheitTrim ? `Einheit: ${einheitTrim}` : "",
+            ]
+              .filter(Boolean)
+              .join("\n"),
+            funnel_daten: {
+              channel,
+              fachdetails: state.fachdetails,
+              dringlichkeit: state.dringlichkeit,
+              fotos_count: state.photos.length,
+              ...(objekt?.ort ? { ort: objekt.ort } : {}),
+            },
+          }),
+        });
+        let json: { error?: string } = {};
+        try {
+          json = (await res.json()) as { error?: string };
+        } catch {
+          json = { error: "Antwort vom Server ungültig." };
+        }
+        if (!res.ok) {
+          const msg = json.error ?? "Absenden fehlgeschlagen.";
+          setError(msg);
+          portalToastError("Anfrage nicht erstellt", msg);
+          return;
+        }
+        portalToastSuccess("Anfrage gesendet");
+        onDone();
+        return;
+      }
+
+      /* privat / portal_mieter (registriert ohne melde) */
       const plz =
         state.plz.trim() ||
         objekt?.plz?.trim() ||
@@ -1941,12 +2024,28 @@ export function PortalFunnelHost({
               </div>
             ) : null}
             {cfg.prefix.einheit ? (
-              <input
-                className="funnel-input mt-2 w-full"
-                placeholder="Einheit / Wohnung (optional)"
-                value={einheit}
-                onChange={(e) => setEinheit(e.target.value)}
-              />
+              objekt?.einheiten && objekt.einheiten.length > 0 ? (
+                <select
+                  className="funnel-input mt-2 w-full"
+                  value={einheit}
+                  onChange={(e) => setEinheit(e.target.value)}
+                >
+                  <option value="">Einheit / Wohnung wählen</option>
+                  {objekt.einheiten.map((eh) => (
+                    <option key={eh.id} value={eh.label}>
+                      {eh.label}
+                      {eh.etage ? ` (Etage ${eh.etage})` : ""}
+                    </option>
+                  ))}
+                </select>
+              ) : (
+                <input
+                  className="funnel-input mt-2 w-full"
+                  placeholder="Einheit / Wohnung (optional)"
+                  value={einheit}
+                  onChange={(e) => setEinheit(e.target.value)}
+                />
+              )
             ) : null}
           </div>
           )}

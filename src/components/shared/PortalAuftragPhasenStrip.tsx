@@ -1,6 +1,9 @@
 "use client";
 
-import type { PortalMockStatusId } from "@/lib/portal2/status";
+import type {
+  PortalFlowTimelineVariant,
+  PortalMockStatusId,
+} from "@/lib/portal2/status";
 import { PortalFlowTimeline } from "@/components/shared/PortalFlowTimeline";
 import {
   PORTAL_AUFTRAG_PHASEN,
@@ -10,6 +13,7 @@ import { cn } from "@/lib/utils";
 
 type FlowProps = {
   flowStatus: PortalMockStatusId;
+  flowTimelineVariant?: PortalFlowTimelineVariant;
   className?: string;
   /** @deprecated ignoriert — Deep Green Flow-Timeline */
   states?: never;
@@ -19,6 +23,7 @@ type FlowProps = {
 
 type BauProps = {
   flowStatus?: undefined;
+  flowTimelineVariant?: never;
   states: Record<(typeof PORTAL_AUFTRAG_PHASEN)[number]["id"], PortalAuftragPhaseState>;
   aktuellePhase?: string;
   fortschritt?: number;
@@ -26,7 +31,7 @@ type BauProps = {
 };
 
 /**
- * Deep Green: mit `flowStatus` = Vorgangs-Timeline (Gemeldet…Rechnung).
+ * Deep Green: mit `flowStatus` = Vorgangs-Timeline (rollenspezifische Labels).
  * Legacy: mit `states` = Bauphasen.
  */
 export function PortalAuftragPhasenStrip(props: FlowProps | BauProps) {
@@ -34,6 +39,7 @@ export function PortalAuftragPhasenStrip(props: FlowProps | BauProps) {
     return (
       <PortalFlowTimeline
         flowStatus={props.flowStatus}
+        variant={props.flowTimelineVariant ?? "hv"}
         className={props.className}
       />
     );

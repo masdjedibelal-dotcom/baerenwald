@@ -583,8 +583,16 @@ function buildItemFromLead(
       ),
       bautagebuch: auftrag.bautagebuch ?? [],
       auftragPositionen: hvMieterView ? undefined : auftragPositionen,
+      /** Fallback für Preisübersicht / Angebot-Tab (wenn Auftrag schon existiert). */
+      angebotPositionen: hvMieterView
+        ? undefined
+        : angebot?.positionenDisplay?.length
+          ? angebot.positionenDisplay
+          : undefined,
       abnahmeCheckliste: hvMieterView ? undefined : abnahmeCheckliste,
-      gesamtBrutto: hvMieterView ? undefined : auftragGesamtBrutto,
+      gesamtBrutto: hvMieterView
+        ? undefined
+        : auftragGesamtBrutto ?? angebot?.gesamtBrutto,
       rechnungen: hvMieterView ? undefined : auftrag.rechnungen ?? [],
       hidePreise,
       hvMieterView,

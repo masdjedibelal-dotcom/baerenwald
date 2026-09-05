@@ -109,6 +109,95 @@ export const PORTAL_FLOW_TIMELINE: readonly PortalMockStatusId[] = [
   "rechnung",
 ] as const;
 
+/**
+ * Timeline-Variante pro Portal-Typ (Labels + Mieter = STG).
+ * - hv: mit Freigabe
+ * - privat / eigentümer: ohne Freigabe-Wording (D7)
+ * - hausmeister: ohne Freigabe, Ausführungs-Fokus
+ * - mieter: MIETER_STG (5 Stufen)
+ */
+export type PortalFlowTimelineVariant =
+  | "hv"
+  | "privat"
+  | "mieter"
+  | "hausmeister";
+
+const FLOW_LABELS_HV_DESKTOP = [
+  "Gemeldet",
+  "Freigegeben",
+  "Angebot",
+  "Auftrag",
+  "Rechnung",
+] as const;
+
+const FLOW_LABELS_HV_MOBILE = [
+  "Neu",
+  "Freigabe",
+  "Angebot",
+  "Auftrag",
+  "Rechnung",
+] as const;
+
+/** Privat / Eigentümer — kein HV-Freigabe-Schritt (D7). */
+const FLOW_LABELS_PRIVAT_DESKTOP = [
+  "Anfrage",
+  "In Bearbeitung",
+  "Angebot",
+  "Auftrag",
+  "Rechnung",
+] as const;
+
+const FLOW_LABELS_PRIVAT_MOBILE = [
+  "Neu",
+  "Aktiv",
+  "Angebot",
+  "Auftrag",
+  "Rechnung",
+] as const;
+
+const FLOW_LABELS_HM_DESKTOP = [
+  "Gemeldet",
+  "In Prüfung",
+  "Beauftragt",
+  "Ausführung",
+  "Erledigt",
+] as const;
+
+const FLOW_LABELS_HM_MOBILE = [
+  "Neu",
+  "Prüfung",
+  "Auftrag",
+  "Vor Ort",
+  "Fertig",
+] as const;
+
+export function portalFlowTimelineLabels(
+  variant: PortalFlowTimelineVariant,
+  mobile = false
+): readonly string[] {
+  if (variant === "mieter") {
+    return MIETER_STG.map((s) => s.title_de);
+  }
+  if (variant === "privat") {
+    return mobile ? FLOW_LABELS_PRIVAT_MOBILE : FLOW_LABELS_PRIVAT_DESKTOP;
+  }
+  if (variant === "hausmeister") {
+    return mobile ? FLOW_LABELS_HM_MOBILE : FLOW_LABELS_HM_DESKTOP;
+  }
+  return mobile ? FLOW_LABELS_HV_MOBILE : FLOW_LABELS_HV_DESKTOP;
+}
+
+/** detailRole → Timeline-Variante (Eigentümer bewusst wie privat, siehe Kommentar im UI). */
+export function portalFlowTimelineVariantForRole(
+  role: "hv" | "kunde" | "mieter" | "hausmeister" | "eigentuemer" | null | undefined
+): PortalFlowTimelineVariant {
+  if (role === "mieter") return "mieter";
+  if (role === "hausmeister") return "hausmeister";
+  if (role === "hv") return "hv";
+  // kunde + eigentuemer: ohne Freigabe-Label
+  return "privat";
+}
+
 export function portalStatusMeta(id: PortalMockStatusId): PortalMockStatusMeta {
   return PORTAL_STATUS[id];
 }

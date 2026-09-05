@@ -38,8 +38,8 @@ export function portalCreateChannel(
 
 /**
  * Create-Kanal für MeinBärenwald-PortalClient (ohne HV-Embedded).
- * Privat/Mieter-Stamm → immer Melde-Flow (Reparatur & Notfall).
- * Gewerbe behält den vollen Privat-Funnel.
+ * Privat = Website-Flow mit Preis (`portal_privat`).
+ * Gewerbe teilt denselben Kanal. Mieter-WL bleibt `portal_mieter`.
  */
 export function portalClientCreateChannel(opts: {
   hvPortalMode?: boolean;
@@ -49,8 +49,9 @@ export function portalClientCreateChannel(opts: {
   FunnelChannel,
   "portal_privat" | "portal_eigentuemer" | "portal_mieter"
 > {
-  if (!opts.hvPortalMode && opts.kundeTyp === "privat") {
-    return "portal_mieter";
+  if (opts.hvPortalMode) return "portal_mieter";
+  if (opts.kundeTyp === "privat" || opts.kundeTyp === "gewerbe") {
+    return "portal_privat";
   }
   return portalCreateChannel(opts.navRole);
 }
