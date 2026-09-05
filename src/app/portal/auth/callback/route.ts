@@ -19,28 +19,12 @@ export async function GET(request: Request) {
         const meta = user.user_metadata as {
           name?: string;
           telefon?: string;
-          vorname?: string;
-          nachname?: string;
-          firma?: string;
-          strasse?: string;
-          hausnummer?: string;
-          plz?: string;
-          ort?: string;
-          kundentyp?: string;
         };
         const link = await linkPortalKundeToAuthUser({
           userId: user.id,
           email: user.email,
           name: meta?.name ?? user.email.split("@")[0],
           telefon: meta?.telefon,
-          typ: meta?.kundentyp,
-          vorname: meta?.vorname,
-          nachname: meta?.nachname,
-          firma: meta?.firma,
-          strasse: meta?.strasse,
-          hausnummer: meta?.hausnummer,
-          plz: meta?.plz,
-          ort: meta?.ort,
         });
         if (!link.ok) {
           console.error("[portal/auth/callback] link failed:", link.error);

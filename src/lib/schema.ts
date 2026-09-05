@@ -12,7 +12,7 @@ export function localBusinessSchema(): Record<string, unknown> {
       "Generalunternehmer für Handwerk in München — ein Ansprechpartner für alle Gewerke von der Einzelreparatur bis zur Komplettrenovierung.",
     url: BASE_URL,
     telephone: "+4989999733904",
-    email: SITE_CONFIG.email,
+    email: "info@baerenwaldmuenchen.de",
     address: {
       "@type": "PostalAddress",
       streetAddress: `${SITE_CONFIG.addressStreet} ${SITE_CONFIG.addressHouseNumber}`,

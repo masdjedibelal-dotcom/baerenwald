@@ -1,6 +1,9 @@
 import { NextResponse } from "next/server";
 
 import { notifyHandwerkerLeistungZuweisung } from "@/lib/partner/notify-partner-zuweisung";
+import { createPartnerNotification } from "@/lib/partner/create-partner-notification";
+import { partnerOffenPortalPath, partnerVorgangPortalPath } from "@/lib/partner/partner-site-url";
+import { supabaseAdmin } from "@/lib/supabase";
 
 function authorize(request: Request): boolean {
   const secret = process.env.PARTNER_INTERNAL_API_SECRET?.trim();
@@ -37,14 +40,38 @@ export async function POST(request: Request) {
     positionIds: body.positionIds,
   });
 
-  // Glocke wird in notifyHandwerkerLeistungZuweisung geschrieben (auch ohne E-Mail).
   if (!result.ok) {
     return NextResponse.json(result, { status: 422 });
   }
 
-  return NextResponse.json({
-    ok: true,
-    deprecated: true,
-    mailSent: result.mailSent ?? false,
-  });
+  const auftragId = String(body.auftragId ?? "").trim();
+  const handwerkerId = String(body.handwerkerId ?? "").trim();
+  if (handwerkerId && auftragId) {
+    const { data: auftrag } = await supabaseAdmin
+      .from("auftraege")
+      .select("angebot_id, angebote(notizen)")
+      .eq("id", auftragId)
+      .maybeSingle();
+    const angebotId = auftrag?.angebot_id ? String(auftrag.angebot_id) : null;
+    let link = partnerVorgangPortalPath(auftragId);
+    if (angebotId) {
+      const { data: hw } = await supabaseAdmin
+        .from("angebot_handwerker")
+        .select("id")
+        .eq("angebot_id", angebotId)
+        .eq("handwerker_id", handwerkerId)
+        .maybeSingle();
+      if (hw?.id) link = partnerOffenPortalPath(String(hw.id));
+    }
+    await createPartnerNotification({
+      handwerkerId,
+      typ: "neu",
+      projektName: "Neue Leistung",
+      link,
+      // Mail kommt schon von notifyHandwerkerLeistungZuweisung
+      sendMail: false,
+    });
+  }
+
+  return NextResponse.json({ ok: true, deprecated: true });
 }

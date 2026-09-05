@@ -1,13 +1,7 @@
 import { NextResponse } from "next/server";
 
-import { canOfferKleinreparatur } from "@/lib/org/hv-meldung-workflow";
 import { notifyCrmOrgPortal } from "@/lib/org/notify-crm-org";
-import { notifyHausmeisterPruefung } from "@/lib/org/notify-hausmeister-pruefung";
-import { notifyHvMieterEvent } from "@/lib/org/notify-hv-mieter-event";
-import {
-  assertHausmeisterDelegierbar,
-  loadObjektHausmeisterKontakt,
-} from "@/lib/org/objekt-hausmeister";
+import { canOfferKleinreparatur } from "@/lib/org/hv-meldung-workflow";
 import { requireOrganisationSession } from "@/lib/org/require-org-session";
 import { requireOrgWrite } from "@/lib/org/assert-org-objekt";
 import { supabaseAdmin } from "@/lib/supabase";
@@ -18,8 +12,6 @@ export const runtime = "nodejs";
 
 type Aktion =
   | "angebot_einfordern"
-  | "direkt_baerenwald"
-  | "hm_begutachten"
   | "ablehnen"
   | "kleinreparatur_freigeben";
 
@@ -29,10 +21,7 @@ type Body = {
 };
 
 /**
- * HV-Aktion auf Meldung:
- * - hm_begutachten (neu → hm_pruefung; Objekt-HM + aktives Portal-Konto Pflicht)
- * - direkt_baerenwald / angebot_einfordern (neu|hm_pruefung → angebot_eingefordert)
- * - ablehnen / kleinreparatur (Legacy)
+ * HV-Aktion auf neuer Meldung: Angebot einfordern / Ablehnen / (Legacy) Kleinreparatur.
  */
 export async function POST(req: Request) {
   const session = await requireOrganisationSession();
@@ -47,14 +36,12 @@ export async function POST(req: Request) {
   const body = (await req.json()) as Body;
   const leadId = String(body.leadId ?? "").trim();
   const aktion = body.aktion;
-  const allowed: Aktion[] = [
-    "angebot_einfordern",
-    "direkt_baerenwald",
-    "hm_begutachten",
-    "ablehnen",
-    "kleinreparatur_freigeben",
-  ];
-  if (!leadId || !allowed.includes(aktion)) {
+  if (
+    !leadId ||
+    !["angebot_einfordern", "ablehnen", "kleinreparatur_freigeben"].includes(
+      aktion
+    )
+  ) {
     return NextResponse.json({ error: "Ungültige Anfrage." }, { status: 400 });
   }
 
@@ -62,7 +49,7 @@ export async function POST(req: Request) {
   const { data: lead } = await supabaseAdmin
     .from("leads")
     .select(
-      "id, auftraggeber_kunde_id, kunde_objekt_id, hv_meldung_status, anlass, preis_max, preis_unsicher, melder_name, melder_email, funnel_daten, org_freigabe_status, freigabe_bypass_grund"
+      "id, auftraggeber_kunde_id, kunde_objekt_id, hv_meldung_status, anlass, preis_max, preis_unsicher, melder_name, melder_email, funnel_daten"
     )
     .eq("id", leadId)
     .maybeSingle();
@@ -73,228 +60,9 @@ export async function POST(req: Request) {
   if (lead.anlass !== "meldung") {
     return NextResponse.json({ error: "Kein Meldungs-Vorgang." }, { status: 400 });
   }
-
-  const hvStatus = (lead.hv_meldung_status ?? "neu").trim().toLowerCase();
-
-  // --- hm_begutachten -------------------------------------------------------
-  if (aktion === "hm_begutachten") {
-    if (hvStatus !== "neu") {
-      return NextResponse.json(
-        { error: "Hausmeister-Prüfung nur aus Status „Neu“ möglich." },
-        { status: 409 }
-      );
-    }
-
-    const { hvFreigabeEntfaellt } = await import("@/lib/org/freigabe-bypass");
-    const funnelDa =
-      lead.funnel_daten &&
-      typeof lead.funnel_daten === "object" &&
-      !Array.isArray(lead.funnel_daten)
-        ? (lead.funnel_daten as { direktauftrag?: unknown }).direktauftrag ===
-          true
-        : false;
-    if (
-      hvFreigabeEntfaellt({
-        orgFreigabeStatus: lead.org_freigabe_status,
-        bypassGrund: lead.freigabe_bypass_grund,
-        funnelDirektauftrag: funnelDa,
-        hvMeldungStatus: lead.hv_meldung_status,
-        angebotZugestellt: false,
-      })
-    ) {
-      return NextResponse.json(
-        { error: "Akut-Pfad — Hausmeister-Prüfung entfällt." },
-        { status: 409 }
-      );
-    }
-
-    const hmGate = assertHausmeisterDelegierbar(
-      await loadObjektHausmeisterKontakt(lead.kunde_objekt_id)
-    );
-    if (!hmGate.ok) {
-      return NextResponse.json({ error: hmGate.error }, { status: 409 });
-    }
-    const hm = hmGate.hm;
-
-    const { error: updErr } = await supabaseAdmin
-      .from("leads")
-      .update({
-        hv_meldung_status: "hm_pruefung",
-        // Vorzeitige Akte verwerfen — neu nach Befund
-        versicherungsakte_pdf_url: null,
-      })
-      .eq("id", leadId);
-    if (updErr) {
-      if (/versicherungsakte_pdf_url/i.test(updErr.message)) {
-        const { error: retryErr } = await supabaseAdmin
-          .from("leads")
-          .update({ hv_meldung_status: "hm_pruefung" })
-          .eq("id", leadId);
-        if (retryErr) {
-          return NextResponse.json({ error: retryErr.message }, { status: 500 });
-        }
-      } else {
-        return NextResponse.json({ error: updErr.message }, { status: 500 });
-      }
-    }
-
-    // Kostenträger Versicherung vormerken (PDF erst nach Befund)
-    void import("@/lib/org/ensure-versicherungsakte").then(
-      ({ applyAutomatischeSchadenakteIfEnabled }) =>
-        applyAutomatischeSchadenakteIfEnabled(leadId).catch((e) =>
-          console.warn("[meldung-aktion] schadenakte-kt:", e)
-        )
-    );
-
-    const { insertLeadBefundIfMissing } = await import(
-      "@/lib/org/lead-befund-create"
-    );
-    const befundRes = await insertLeadBefundIfMissing({
-      leadId,
-      durchgefuehrtVon: hm.name,
-      createdByKundeId: session.kunde.id,
-    });
-    if (!befundRes.ok) {
-      console.warn("[meldung-aktion] befund:", befundRes.error);
-    }
-
-    if (hm.email) {
-      const hmMail = await notifyHausmeisterPruefung({
-        leadId,
-        toEmail: hm.email,
-        kontaktName: hm.name,
-      });
-      if (!hmMail.ok && !hmMail.skipped) {
-        console.warn("[meldung-aktion] HM-Mail:", hmMail.error);
-      }
-    }
-
-    try {
-      const { notifyPortalHausmeisterNeuerVorgang } = await import(
-        "@/lib/portal/notify-portal-hausmeister"
-      );
-      await notifyPortalHausmeisterNeuerVorgang({
-        leadId,
-        kundeObjektId: lead.kunde_objekt_id,
-      });
-    } catch (e) {
-      console.warn("[meldung-aktion] hm portal notify:", e);
-    }
-
-    try {
-      const { notifyHvWirKuemmernUns } = await import(
-        "@/lib/org/notify-hv-wir-kuemmern"
-      );
-      await notifyHvWirKuemmernUns({ leadId });
-    } catch (e) {
-      console.warn("[meldung-aktion] hv wir-kuemmern:", e);
-    }
-
-    return NextResponse.json({
-      ok: true,
-      status: "hm_pruefung",
-      befundId: befundRes.ok ? befundRes.befundId : null,
-    });
-  }
-
-  // --- direkt_baerenwald / angebot_einfordern (Override aus hm_pruefung) ----
-  if (aktion === "direkt_baerenwald" || aktion === "angebot_einfordern") {
-    if (hvStatus !== "neu" && hvStatus !== "hm_pruefung") {
-      return NextResponse.json(
-        { error: "Für diese Meldung ist die Aktion nicht mehr möglich." },
-        { status: 409 }
-      );
-    }
-
-    if (hvStatus === "neu") {
-      const { hvFreigabeEntfaellt } = await import("@/lib/org/freigabe-bypass");
-      const funnelDa =
-        lead.funnel_daten &&
-        typeof lead.funnel_daten === "object" &&
-        !Array.isArray(lead.funnel_daten)
-          ? (lead.funnel_daten as { direktauftrag?: unknown }).direktauftrag ===
-            true
-          : false;
-      if (
-        hvFreigabeEntfaellt({
-          orgFreigabeStatus: lead.org_freigabe_status,
-          bypassGrund: lead.freigabe_bypass_grund,
-          funnelDirektauftrag: funnelDa,
-          hvMeldungStatus: lead.hv_meldung_status,
-          angebotZugestellt: false,
-        })
-      ) {
-        return NextResponse.json(
-          { error: "Keine Freigabe notwendig (Akut oder unter Schwelle)." },
-          { status: 409 }
-        );
-      }
-    }
-
-    const { error: updErr } = await supabaseAdmin
-      .from("leads")
-      .update({ hv_meldung_status: "angebot_eingefordert" })
-      .eq("id", leadId);
-    if (updErr) {
-      return NextResponse.json({ error: updErr.message }, { status: 500 });
-    }
-
-    // HM übersprungen → Schadenakte ohne Befund (wie Direktweg ohne HM)
-    void import("@/lib/org/ensure-versicherungsakte").then(
-      ({ applyAutomatischeSchadenakteIfEnabled }) =>
-        applyAutomatischeSchadenakteIfEnabled(leadId).catch((e) =>
-          console.warn("[meldung-aktion] schadenakte:", e)
-        )
-    );
-
-    const crmNotify = await notifyCrmOrgPortal({ leadId, typ: "meldung" });
-    if (!crmNotify.ok) {
-      console.warn("[meldung-aktion] CRM-Notify:", crmNotify.error, {
-        leadId,
-        skipped: crmNotify.skipped === true,
-      });
-    }
-
-    if (aktion === "direkt_baerenwald") {
-      try {
-        const { notifyHvWirKuemmernUns } = await import(
-          "@/lib/org/notify-hv-wir-kuemmern"
-        );
-        await notifyHvWirKuemmernUns({ leadId });
-      } catch (e) {
-        console.warn("[meldung-aktion] hv wir-kuemmern:", e);
-      }
-    }
-
-    return NextResponse.json({ ok: true, status: "angebot_eingefordert" });
-  }
-
-  // --- ablehnen / kleinreparatur (nur aus neu) ------------------------------
-  if (hvStatus !== "neu") {
+  if ((lead.hv_meldung_status ?? "neu") !== "neu") {
     return NextResponse.json(
       { error: "Für diese Meldung ist die Aktion nicht mehr möglich." },
-      { status: 409 }
-    );
-  }
-
-  const { hvFreigabeEntfaellt } = await import("@/lib/org/freigabe-bypass");
-  const funnelDa =
-    lead.funnel_daten &&
-    typeof lead.funnel_daten === "object" &&
-    !Array.isArray(lead.funnel_daten)
-      ? (lead.funnel_daten as { direktauftrag?: unknown }).direktauftrag === true
-      : false;
-  if (
-    hvFreigabeEntfaellt({
-      orgFreigabeStatus: lead.org_freigabe_status,
-      bypassGrund: lead.freigabe_bypass_grund,
-      funnelDirektauftrag: funnelDa,
-      hvMeldungStatus: lead.hv_meldung_status,
-      angebotZugestellt: false,
-    })
-  ) {
-    return NextResponse.json(
-      { error: "Keine Freigabe notwendig (Akut oder unter Schwelle)." },
       { status: 409 }
     );
   }
@@ -312,11 +80,16 @@ export async function POST(req: Request) {
     );
   }
 
-  const status = aktion === "ablehnen" ? "abgelehnt" : "kleinreparatur";
+  const status =
+    aktion === "angebot_einfordern"
+      ? "angebot_eingefordert"
+      : aktion === "ablehnen"
+        ? "abgelehnt"
+        : "kleinreparatur";
+
   const patch: Record<string, string> = { hv_meldung_status: status };
   if (aktion === "ablehnen") {
     patch.org_freigabe_status = "abgelehnt";
-    patch.vorgang_phase = "abgelehnt";
   }
 
   const { error: updErr } = await supabaseAdmin
@@ -325,28 +98,6 @@ export async function POST(req: Request) {
     .eq("id", leadId);
   if (updErr) {
     return NextResponse.json({ error: updErr.message }, { status: 500 });
-  }
-
-  if (aktion === "ablehnen") {
-    try {
-      const melder = lead.melder_name ? String(lead.melder_name) : "Mieter";
-      await notifyHvMieterEvent({
-        leadId,
-        typ: "meldung_abgelehnt",
-        titel: "Meldung abgelehnt",
-        body: `Die Meldung von ${melder} wurde abgelehnt und abgeschlossen. Bitte informieren Sie den Mieter bei Bedarf.`,
-      });
-    } catch (e) {
-      console.warn("[meldung-aktion] notifyHvMieterEvent:", e);
-    }
-
-    const crmNotify = await notifyCrmOrgPortal({ leadId, typ: "meldung" });
-    if (!crmNotify.ok) {
-      console.warn("[meldung-aktion] CRM-Notify:", crmNotify.error, {
-        leadId,
-        skipped: crmNotify.skipped === true,
-      });
-    }
   }
 
   let objektTitel = "Objekt";
@@ -359,11 +110,8 @@ export async function POST(req: Request) {
     objektTitel = String(obj?.titel ?? "Objekt");
   }
 
-  if (aktion === "kleinreparatur_freigeben") {
-    const crmNotify = await notifyCrmOrgPortal({ leadId, typ: "meldung" });
-    if (!crmNotify.ok) {
-      console.warn("[meldung-aktion] CRM-Notify:", crmNotify.error);
-    }
+  if (aktion === "angebot_einfordern" || aktion === "kleinreparatur_freigeben") {
+    void notifyCrmOrgPortal({ leadId, typ: "meldung" });
   }
 
   const resendKey = process.env.RESEND_API_KEY;
@@ -390,6 +138,9 @@ export async function POST(req: Request) {
       console.error("[meldung-aktion] org mail:", e);
     }
   }
+
+  // Keine HV-Glocke für eigene Aktionen (Freigeben/Ablehnen) —
+  // sonst landet z. B. „Angebot“ obwohl noch keines gesendet wurde.
 
   return NextResponse.json({ ok: true, status });
 }

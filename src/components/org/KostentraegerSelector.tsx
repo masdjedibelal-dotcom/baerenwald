@@ -18,10 +18,6 @@ type Props = {
   readOnly?: boolean;
 };
 
-/**
- * Kostenträger-Auswahl (Chips) — ohne Ja/Nein-Versicherungscard.
- * Versicherungs-PDFs liegen im Tab „Versicherung“.
- */
 export function KostentraegerSelector({
   leadId,
   value,
@@ -50,18 +46,13 @@ export function KostentraegerSelector({
               : undefined,
         }),
       });
-      const data = (await res.json()) as {
-        error?: string;
-        schadenakteWarning?: string;
-      };
+      const data = (await res.json()) as { error?: string };
       if (!res.ok) throw new Error(data.error ?? "Speichern fehlgeschlagen");
-      if (data.schadenakteWarning) {
-        portalToastSuccess(
-          "Kostenträger gespeichert. " + data.schadenakteWarning
-        );
-      } else {
-        portalToastSuccess("Kostenträger gespeichert.");
-      }
+      portalToastSuccess(
+        chosen === "versicherung"
+          ? "Versicherung gesetzt — Schadenakte wird aktualisiert."
+          : "Kostenträger gespeichert."
+      );
       onSaved?.();
     } catch (e) {
       portalToastError(e instanceof Error ? e.message : "Fehler");
@@ -82,43 +73,86 @@ export function KostentraegerSelector({
   const isVersicherung = kt === "versicherung" || value === "versicherung";
 
   return (
-    <div className="space-y-2">
-      <p className="portal-text-meta font-semibold text-text-secondary">
-        Kostenträger
-        {vorgeschlagen ? (
-          <span className="ml-2 font-normal text-accent">(Vorschlag)</span>
-        ) : null}
-      </p>
-      <div className="flex flex-wrap gap-2">
-        {KOSTENTRAEGER.map((k) => (
+    <div className="space-y-3 rounded-xl border border-border-default bg-muted/30 p-3">
+      <div className="space-y-2">
+        <p className="portal-text-meta font-semibold text-text-secondary">
+          Abrechnung über Versicherung?
+        </p>
+        <div className="flex flex-wrap gap-2">
           <button
-            key={k}
             type="button"
             disabled={busy || readOnly}
             onClick={() => {
-              setKt(k);
-              void speichern(k);
+              setKt("versicherung");
+              void speichern("versicherung");
             }}
             className={
-              kt === k || value === k
+              isVersicherung
                 ? "btn-pill-primary portal-btn-compact"
                 : "btn-pill-outline portal-btn-compact"
             }
           >
-            {KOSTENTRAEGER_LABELS[k]}
+            Ja
           </button>
-        ))}
+          <button
+            type="button"
+            disabled={busy || readOnly || !isVersicherung}
+            onClick={() => {
+              setKt("unklar");
+              void speichern("unklar");
+            }}
+            className={
+              !isVersicherung && kt
+                ? "btn-pill-primary portal-btn-compact"
+                : "btn-pill-outline portal-btn-compact"
+            }
+          >
+            Nein
+          </button>
+        </div>
+        <p className="text-xs text-text-tertiary">
+          Bei Ja erstellen wir die Schadenakte automatisch für die Einreichung.
+        </p>
       </div>
-      {isVersicherung && !readOnly ? (
-        <input
-          type="text"
-          value={versNr}
-          onChange={(e) => setVersNr(e.target.value)}
-          onBlur={() => void speichern("versicherung")}
-          placeholder="Versicherungs- / Policen-Nr."
-          className="portal-field w-full max-w-md"
-        />
-      ) : null}
+
+      <div className="space-y-2 border-t border-border-light pt-3">
+        <p className="portal-text-meta font-semibold text-text-secondary">
+          Kostenträger
+          {vorgeschlagen ? (
+            <span className="ml-2 font-normal text-accent">(Vorschlag)</span>
+          ) : null}
+        </p>
+        <div className="flex flex-wrap gap-2">
+          {KOSTENTRAEGER.map((k) => (
+            <button
+              key={k}
+              type="button"
+              disabled={busy || readOnly}
+              onClick={() => {
+                setKt(k);
+                void speichern(k);
+              }}
+              className={
+                kt === k || value === k
+                  ? "btn-pill-primary portal-btn-compact"
+                  : "btn-pill-outline portal-btn-compact"
+              }
+            >
+              {KOSTENTRAEGER_LABELS[k]}
+            </button>
+          ))}
+        </div>
+        {isVersicherung && !readOnly ? (
+          <input
+            type="text"
+            value={versNr}
+            onChange={(e) => setVersNr(e.target.value)}
+            onBlur={() => void speichern("versicherung")}
+            placeholder="Policen- / Versicherungsnummer"
+            className="input-field w-full max-w-xs"
+          />
+        ) : null}
+      </div>
     </div>
   );
 }

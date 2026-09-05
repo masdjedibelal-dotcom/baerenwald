@@ -63,12 +63,16 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Objekt nicht gefunden." }, { status: 404 });
   }
 
+  const schwelle =
+    objekt.freigabe_schwelle_eur != null
+      ? Number(objekt.freigabe_schwelle_eur)
+      : session.kunde.freigabe_schwelle_eur ?? 2500;
   const freigabeModus = session.kunde.freigabe_modus ?? "freigabe";
   const initial = initialHvMeldungState();
-  // Keine Schwellen-Entscheidung über Manuell-Preisindikation —
-  // Bypass „schwelle“ setzt erst das CRM nach zugestelltem Angebot.
   const orgFreigabe =
-    freigabeModus !== "freigabe" ? "nicht_noetig" : initial.org_freigabe_status;
+    freigabeModus !== "freigabe" || preisNetto <= schwelle
+      ? "nicht_noetig"
+      : "ausstehend";
 
   const result = await persistLead({
     kunde_id: session.kunde.id,
@@ -116,33 +120,6 @@ export async function POST(req: Request) {
   }
 
   await supabaseAdmin.from("leads").update(leadPatch).eq("id", result.id);
-
-  const { finalizeOrgSelfCreatedLead } = await import(
-    "@/lib/org/finalize-org-self-created-lead"
-  );
-  await finalizeOrgSelfCreatedLead(result.id);
-
-  if (kostentraeger === "versicherung") {
-    void import("@/lib/org/ensure-versicherungsakte").then(
-      ({ ensureVersicherungsakteForLead }) =>
-        ensureVersicherungsakteForLead(result.id, {
-          actorId: session.userId,
-          actorRolle: session.rolle,
-        }).catch((e) =>
-          console.warn("[vorgang-manuell] schadenakte:", e)
-        )
-    );
-  } else {
-    void import("@/lib/org/ensure-versicherungsakte").then(
-      ({ applyAutomatischeSchadenakteIfEnabled }) =>
-        applyAutomatischeSchadenakteIfEnabled(result.id, {
-          actorId: session.userId,
-          actorRolle: session.rolle,
-        }).catch((e) =>
-          console.warn("[vorgang-manuell] auto-schadenakte:", e)
-        )
-    );
-  }
 
   await writeAuditEvent({
     entityType: "lead",

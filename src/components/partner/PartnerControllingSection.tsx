@@ -11,12 +11,8 @@ export function PartnerControllingSection({
   vorgaenge: PartnerVorgangItem[];
 }) {
   const stats = useMemo(() => {
-    const offen = vorgaenge.filter(
-      (v) => v.state !== "erledigt" && v.state !== "abgelehnt"
-    ).length;
-    const erledigt = vorgaenge.filter(
-      (v) => v.state === "erledigt" || v.state === "abgelehnt"
-    ).length;
+    const offen = vorgaenge.filter((v) => v.state !== "erledigt").length;
+    const erledigt = vorgaenge.filter((v) => v.state === "erledigt").length;
     const inBearbeitung = vorgaenge.filter(
       (v) => v.state === "in_bearbeitung"
     ).length;

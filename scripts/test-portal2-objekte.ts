@@ -186,18 +186,12 @@ assert(
 );
 
 const counts = countOffeneByObjektId([
-  { id: "1", kunde_objekt_id: "a", status: "neu" },
-  { id: "2", kunde_objekt_id: "a", vorgang_phase: "abgeschlossen" },
-  { id: "3", kunde_objekt_id: "b", status: "storniert" },
+  { kunde_objekt_id: "a", status: "neu" },
+  { kunde_objekt_id: "a", vorgang_phase: "abgeschlossen" },
+  { kunde_objekt_id: "b", status: "storniert" },
 ]);
 assert("count a=1", counts.a === 1);
 assert("count b missing", counts.b === undefined);
-
-const dupCounts = countOffeneByObjektId([
-  { id: "same", kunde_objekt_id: "a", status: "neu" },
-  { id: "same", kunde_objekt_id: "a", status: "neu" },
-]);
-assert("dedupe same id", dupCounts.a === 1);
 
 assert("delete blocked", objektHasActiveVorgaenge(2));
 assert("delete ok", !objektHasActiveVorgaenge(0));

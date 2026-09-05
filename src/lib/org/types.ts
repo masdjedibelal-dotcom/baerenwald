@@ -1,9 +1,4 @@
-export type PortalModus =
-  | "privat"
-  | "organisation"
-  | "eigentuemer"
-  | "mieter"
-  | "hausmeister";
+export type PortalModus = "privat" | "organisation" | "eigentuemer";
 
 export type LeadAnlass =
   | "meldung"
@@ -20,7 +15,6 @@ export type EinladungStatus = "offen" | "ergaenzt" | "entfallen";
 export type OrgFreigabeStatus =
   | "nicht_noetig"
   | "ausstehend"
-  | "beschluss_ausstehend"
   | "freigegeben"
   | "abgelehnt";
 
@@ -49,11 +43,7 @@ export type OrganisationKunde = {
   freigabe_modus: FreigabeModus;
   freigabe_schwelle_eur: number | null;
   notfall_direkt: boolean;
-  /** Whitelist Sofortmaßnahme-Fall-IDs; leer = nichts geht direkt. */
-  akut_fall_ids?: string[] | null;
   kleinreparatur_aktiv: boolean;
-  /** Neue Meldungen automatisch an Objekt-Hausmeister (hm_pruefung). */
-  hm_auto_zuweisen?: boolean;
   org_primary_color?: string | null;
   org_primary_color_dk?: string | null;
   org_primary_color_soft?: string | null;
@@ -61,14 +51,7 @@ export type OrganisationKunde = {
   org_sub?: string | null;
   org_telefon?: string | null;
   org_strasse?: string | null;
-  org_hausnummer?: string | null;
-  org_plz?: string | null;
   org_ort?: string | null;
-  /** Fallback aus CRM-Registrierung (kunden.strasse …). */
-  strasse?: string | null;
-  hausnummer?: string | null;
-  plz?: string | null;
-  ort?: string | null;
   mieter_kontakt_telefon?: string | null;
   mieter_kontakt_email?: string | null;
   mieter_kontakt_hinweis?: string | null;
@@ -114,8 +97,6 @@ export type OrganisationObjekt = {
   /** Policen-Nr. am Objekt. */
   versicherungs_nr?: string | null;
   selbstbehalt_eur?: number | null;
-  /** Bei Meldungen: Kostenträger Versicherung + Schadenakte automatisch. */
-  automatische_schadenakte?: boolean | null;
   /** Dekoratives Gebäudefoto (öffentlich). */
   cover_url?: string | null;
   created_at?: string | null;
@@ -136,8 +117,6 @@ export type OrganisationLead = {
   einladung_token?: string | null;
   einladung_status?: EinladungStatus | null;
   org_freigabe_status?: OrgFreigabeStatus | null;
-  beschluss_versammlung_am?: string | null;
-  beschluss_protokoll_url?: string | null;
   freigabe_bypass_grund?: FreigabeBypassGrund | null;
   mieter_vor_ort_at?: string | null;
   hv_meldung_status?: HvMeldungStatus | null;
@@ -153,11 +132,6 @@ export type OrganisationLead = {
   kostentraeger?: string | null;
   kostentraeger_vorgeschlagen?: boolean | null;
   versicherungs_nr?: string | null;
-  versicherungsakte_pdf_url?: string | null;
-  schaden_nr?: string | null;
-  schaden_nr_geaendert_am?: string | null;
-  versicherungs_nr_geaendert_am?: string | null;
-  versicherungsakte_erstellt_am?: string | null;
   vorgang_phase?: string | null;
   plz?: string | null;
   strasse?: string | null;
@@ -165,15 +139,8 @@ export type OrganisationLead = {
   zeitraum?: string | null;
   kontakt_name?: string | null;
   objekt?: {
-    /** PortalObjekt.name oder Legacy-Titel */
-    name?: string;
-    titel?: string;
-    strasse?: string | null;
+    titel: string;
     adresseZeile?: string;
-    plz?: string | null;
-    ort?: string | null;
     plzOrt?: string;
-    cover_url?: string | null;
-    versicherungs_nr?: string | null;
   } | null;
 };

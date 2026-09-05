@@ -36,15 +36,7 @@ assert(
 
 assert(
   "find preset",
-  findBrandPresetByPrimary("#2E7D52")?.id === "gruen"
-);
-
-const defaultPalette = resolveBrandPalette({});
-assert(
-  "default palette baerenwald green",
-  defaultPalette.primary === "#2E7D52" &&
-    defaultPalette.primaryDk === "#1A3D2B" &&
-    defaultPalette.soft === "#E7F1E9"
+  findBrandPresetByPrimary("#2E6B4F")?.id === "gruen"
 );
 
 const brand = orgBrandFromKunde({

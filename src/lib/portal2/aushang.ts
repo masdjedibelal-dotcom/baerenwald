@@ -76,7 +76,6 @@ export const AUSHANG_FOOTER_CONTACT = "Wir sind erreichbar unter";
 /** Hinweis: Aushang im Namen der HV, Abwicklung über Partner. */
 export const AUSHANG_FOOTER_PARTNER =
   "Ihre Meldung läuft über unseren Partner Bärenwald.";
-/** @deprecated — Aushang zeigt klickbare Impressum-/Datenschutz-URLs der HV. */
 export const AUSHANG_FOOTER_DATENSCHUTZ =
   "Datenschutz & Impressum: nach dem Scan im Formular";
 

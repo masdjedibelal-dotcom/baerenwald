@@ -144,20 +144,10 @@ export function buildKundeAuftragPositionenDisplay(
         ? bruttoFromNetto(altNetto)
         : preisBrutto;
 
-    const menge = pos.menge != null && pos.menge > 0 ? pos.menge : undefined;
-    const gewerk = pos.gewerk_name?.trim() || undefined;
-    const mengeLabel =
-      menge != null
-        ? String(menge).replace(".", ",")
-        : undefined;
-
     out.push({
       id: pos.id,
       title,
       beschreibung,
-      gewerk,
-      menge,
-      mengeLabel,
       preisBrutto: displayBrutto,
       preisBruttoAlt,
       aenderungBadge: typ ?? undefined,

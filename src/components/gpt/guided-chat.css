@@ -12,7 +12,7 @@
   --gd-radius-md: 18px;
   --gd-radius-lg: 22px;
   --gd-radius-pill: 999px;
-  --gd-accent: var(--org-primary, var(--p2-primary, #2e7d52));
+  --gd-accent: #2e7d52;
   --gd-accent-soft: rgba(46, 125, 82, 0.1);
   --gd-text: #1c1c1e;
   --gd-text-secondary: rgba(60, 60, 67, 0.72);
@@ -827,7 +827,7 @@
 .gpt-guided-viz-option-label {
   font-size: 14px;
   font-weight: 600;
-  color: var(--org-primary-dk, var(--p2-green-dark, #1a3d2b));
+  color: #1a3d2b;
 }
 
 .gpt-guided-viz-option-hint {
@@ -953,8 +953,6 @@
   border: 1px solid rgba(0, 0, 0, 0.08);
   background: rgba(255, 255, 255, 0.95);
   font-size: 16px;
-  line-height: 1.35;
-  padding: 8px 12px;
   letter-spacing: -0.01em;
   transition: border-color 0.2s var(--gd-ease), box-shadow 0.2s var(--gd-ease);
 }

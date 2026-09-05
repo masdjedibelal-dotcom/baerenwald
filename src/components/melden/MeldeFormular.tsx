@@ -1,11 +1,9 @@
 "use client";
 
-import { useEffect, useMemo } from "react";
+import { useMemo } from "react";
 import { useRouter } from "next/navigation";
 
-import { useCookieConsent } from "@/components/consent/CookieConsentContext";
 import { PortalFunnelHost } from "@/components/funnel/PortalFunnelHost";
-import { MeldeHinweisBanner } from "@/components/melden/MeldeHinweisBanner";
 import { MieterWlFrame } from "@/components/melden/MieterWlFrame";
 import { MELDE_ALLGEMEIN_SLUG } from "@/lib/org/melde-url";
 import type { MieterWlBrand } from "@/lib/portal2/mieter-wl";
@@ -21,8 +19,6 @@ type Props = {
   mieterKontaktTelefon?: string | null;
   mieterKontaktEmail?: string | null;
   mieterKontaktHinweis?: string | null;
-  /** Hinweis über dem Funnel (z. B. objekt_nicht_gefunden). */
-  hinweis?: string | null;
   objektTitel: string;
   objektAdresse?: string;
   objektPlzOrt?: string;
@@ -42,8 +38,6 @@ type Props = {
    * Objekt-Link/Aushang: Objekt ist fest — kein Sprung zur HV-Objektliste.
    */
   objektLocked?: boolean;
-  /** HV-Whitelist Sofortmaßnahme (leer = nichts geht direkt). */
-  akutFallIds?: readonly string[];
   prefill?: {
     name?: string;
     email?: string;
@@ -80,23 +74,9 @@ export function MeldeFormular({
   mode = "melden",
   einladungToken,
   objektLocked = false,
-  akutFallIds = [],
   prefill,
-  hinweis,
 }: Props) {
   const router = useRouter();
-  const { setLegalLinks } = useCookieConsent();
-
-  useEffect(() => {
-    if (datenschutzHref && impressumHref) {
-      setLegalLinks({
-        datenschutz: datenschutzHref,
-        impressum: impressumHref,
-      });
-      return () => setLegalLinks(null);
-    }
-    return undefined;
-  }, [datenschutzHref, impressumHref, setLegalLinks]);
 
   const brand: MieterWlBrand = useMemo(
     () => ({
@@ -161,7 +141,6 @@ export function MeldeFormular({
 
   return (
     <MieterWlFrame brand={brand} variant="funnel" hideFooter>
-      {hinweis?.trim() ? <MeldeHinweisBanner text={hinweis.trim()} /> : null}
       <PortalFunnelHost
         channel="melde_anon"
         layout="page"
@@ -188,7 +167,6 @@ export function MeldeFormular({
             : [objektAdresse, objektPlzOrt].filter(Boolean).join(" · ") || null,
           datenschutzHref,
           impressumHref,
-          akutFallIds,
         }}
         onClose={() => {
           if (mode === "ergaenzen") {

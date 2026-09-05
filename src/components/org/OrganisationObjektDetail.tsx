@@ -1,74 +1,51 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { AlertTriangle } from "lucide-react";
 
-import { OrganisationObjektFinanzPanel } from "@/components/org/OrganisationObjektFinanzPanel";
-import { OrganisationObjektPruefpflichtenPanel } from "@/components/org/OrganisationObjektPruefpflichtenPanel";
-import { OrganisationObjektAnlagenPanel } from "@/components/org/OrganisationObjektAnlagenPanel";
 import { OrganisationObjektDokumentePanel } from "@/components/org/OrganisationObjektDokumentePanel";
-import { OrganisationObjektEinheitenTab } from "@/components/org/OrganisationObjektEinheitenTab";
-import { OrganisationObjektHistoriePanel } from "@/components/org/OrganisationObjektHistoriePanel";
-import { OrganisationObjektHausmeisterMenu } from "@/components/org/OrganisationObjektHausmeisterMenu";
-import { OrganisationObjektKontaktePanel } from "@/components/org/OrganisationObjektKontaktePanel";
-import { PortalConfirmDialog } from "@/components/shared/PortalDetailUi";
+import { OrganisationObjektMieterTab } from "@/components/org/OrganisationObjektMieterTab";
 import {
-  PortalInviteMailtoSheet,
-  type PortalInviteMailtoReady,
-} from "@/components/shared/PortalInviteMailtoSheet";
+  buildAushangActionItems,
+  PortalActionMenu,
+} from "@/components/shared/PortalActionMenu";
 import { PortalDetailCover } from "@/components/shared/PortalDetailCover";
 import { PortalDetailHead } from "@/components/shared/PortalDetailUi";
 import { PortalDetailTabs } from "@/components/shared/PortalDetailTabs";
-import { PortalEntityList } from "@/components/shared/PortalEntityList";
-import { PortalInboxEmpty } from "@/components/shared/PortalEmptyState";
-import { PortalInlineLoading } from "@/components/shared/PortalInlineLoading";
-import { usePortalBusy } from "@/components/shared/PortalBusyContext";
 import {
-  EinstellungenEdField,
-  EinstellungenEditModal,
+  EinstellungenCard,
   EinstellungenEuroSlider,
-  EinstellungenPfList,
-  EinstellungenPfRow,
-  EinstellungenSectionCard,
   EinstellungenToggle,
 } from "@/components/shared/PortalEinstellungenUi";
-import {
-  SofortmassnahmeAkutTitle,
-  SofortmassnahmeFaelleEinstellungenLink,
-} from "@/components/org/SofortmassnahmeFaelleLink";
 import { PortalListCard } from "@/components/shared/PortalListCard";
+import { cn } from "@/lib/utils";
 import { leadBelongsToObjekt } from "@/lib/org/match-lead-objekt";
 import { meldeKategorieLabel } from "@/lib/org/melde-kategorien";
-import { meldeKategorieFromLead } from "@/lib/org/org-eingang-utils";
-import type { ObjektAktePortalPayload } from "@/lib/org/objektakte/types";
-import type { OrganisationLead, OrganisationObjekt } from "@/lib/org/types";
-import { portalListStackClass } from "@/lib/portal2/layout-chrome";
-import type { PortalEinladungHvBlock } from "@/lib/portal2/portal-einladungen";
 import {
-  EINSTELLUNGEN_SCHWELLE_BETRAG_TITLE,
+  isMeldeNotfall,
+  meldeKategorieFromLead,
+} from "@/lib/org/org-eingang-utils";
+import type { OrganisationLead, OrganisationObjekt } from "@/lib/org/types";
+import {
   EINSTELLUNGEN_SCHWELLE_SLIDER_MAX,
   EINSTELLUNGEN_SCHWELLE_SLIDER_MIN,
   EINSTELLUNGEN_SCHWELLE_SLIDER_STEP,
-  EINSTELLUNGEN_SCHWELLE_TITLE,
-  EINSTELLUNGEN_UNTER_SCHWELLE_INTRO,
-  EINSTELLUNGEN_UNTER_SCHWELLE_TITLE,
   formatEinstellungenSchwelle,
   snapEinstellungenSchwelle,
 } from "@/lib/portal2/einstellungen";
 import {
   decodeObjektMeta,
+  encodeObjektMeta,
   formatObjektPlzOrt,
   formatObjektStrasse,
   formatObjektTypLine,
   OBJ_DETAIL_TABS,
+  OBJ_SCHWELLE_WIZARD_TITLE,
   parseEinheitenCount,
   type ObjDetailTabId,
 } from "@/lib/portal2/objekte";
-import type { PortalDetailTab } from "@/components/shared/PortalDetailTabs";
+import { PORTAL_VAR } from "@/lib/portal2/tokens";
 import { orgPortalToast, portalToastError } from "@/lib/shared/portal-toast";
-import {
-  HAUSMEISTER_PORTAL_STATUS_LABEL,
-  resolveHausmeisterPortalStatus,
-} from "@/lib/org/objekt-hausmeister";
 import {
   plattformStatusLabel,
   plattformStatusPillClass,
@@ -79,13 +56,18 @@ type Props = {
   objekt: OrganisationObjekt;
   leads: OrganisationLead[];
   offenCount: number;
+  canAushang: boolean;
   onBack: () => void;
+  onCopyMeldeLink: () => void;
+  onOpenAushangPdf: () => void;
+  onOpenQrCode: () => void;
   onEdit: () => void;
+  onCopy: () => void;
+  onDelete: () => void;
+  onEinladen: () => void;
   onRefresh: () => void;
   /** Öffnet den Vorgang in der Listenansicht (Vorgänge). */
   onOpenVorgang?: (leadId: string) => void;
-  orgAnzeigename?: string | null;
-  hv?: PortalEinladungHvBlock | null;
   dokumenteByLeadId?: Record<
     string,
     Array<{
@@ -98,36 +80,83 @@ type Props = {
   >;
 };
 
-function dash(v: string) {
-  return v.trim() || "—";
+function ObjCard({
+  title,
+  children,
+}: {
+  title?: string | null;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="mb-3.5 rounded-xl border border-border-default bg-white p-4">
+      {title ? <p className="portal-text-section mb-3">{title}</p> : null}
+      {children}
+    </div>
+  );
+}
+
+function ObjRow({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="flex items-center justify-between gap-3 border-b border-border-default py-2 text-[13.5px] last:border-b-0">
+      <span className="shrink-0 text-text-secondary">{label}</span>
+      <span className="min-w-0 text-right font-semibold text-text-primary">
+        {value}
+      </span>
+    </div>
+  );
+}
+
+function ObjEditRow({
+  label,
+  value,
+  onChange,
+  placeholder,
+  type = "text",
+  autoComplete,
+}: {
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+  placeholder?: string;
+  type?: string;
+  autoComplete?: string;
+}) {
+  return (
+    <div className="flex items-center justify-between gap-3 border-b border-border-default py-1.5 text-[13.5px] last:border-b-0">
+      <span className="shrink-0 text-text-secondary">{label}</span>
+      <input
+        type={type}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder={placeholder}
+        autoComplete={autoComplete}
+        className="min-w-0 max-w-[65%] flex-1 rounded-lg border border-transparent bg-transparent px-2 py-1.5 text-right font-semibold text-text-primary outline-none placeholder:font-normal placeholder:text-text-tertiary focus:border-border-default focus:bg-white"
+      />
+    </div>
+  );
 }
 
 export function OrganisationObjektDetail({
   objekt,
   leads,
   offenCount,
+  canAushang,
   onBack,
+  onCopyMeldeLink,
+  onOpenAushangPdf,
+  onOpenQrCode,
   onEdit,
+  onCopy,
+  onDelete,
+  onEinladen,
   onRefresh,
   onOpenVorgang,
-  orgAnzeigename,
-  hv,
   dokumenteByLeadId = {},
 }: Props) {
-  const { runBusy } = usePortalBusy();
-  const [inviteMailtoReady, setInviteMailtoReady] =
-    useState<PortalInviteMailtoReady | null>(null);
   const [tab, setTab] = useState<ObjDetailTabId>("stamm");
-  const [pruefpflichtBadge, setPruefpflichtBadge] = useState(0);
-  const [schwelleAktiv, setSchwelleAktiv] = useState(
-    () =>
-      objekt.freigabe_schwelle_eur != null &&
-      Number(objekt.freigabe_schwelle_eur) > 0
-  );
   const [schwelle, setSchwelle] = useState(() =>
     snapEinstellungenSchwelle(
-      objekt.freigabe_schwelle_eur != null &&
-        Number(objekt.freigabe_schwelle_eur) > 0
+      objekt.freigabe_schwelle_eur != null
         ? Number(objekt.freigabe_schwelle_eur)
         : 500
     )
@@ -135,187 +164,34 @@ export function OrganisationObjektDetail({
   const [akutDirekt, setAkutDirekt] = useState(
     objekt.notfall_direkt == null ? true : Boolean(objekt.notfall_direkt)
   );
-  const [freigabeEditOpen, setFreigabeEditOpen] = useState(false);
-  const [editSchwelle, setEditSchwelle] = useState(schwelle);
-  const [editSchwelleAktiv, setEditSchwelleAktiv] = useState(schwelleAktiv);
-  const [editAkut, setEditAkut] = useState(akutDirekt);
-  const [freigabeSaving, setFreigabeSaving] = useState(false);
+  const schwelleTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const meta = useMemo(
     () => decodeObjektMeta(objekt.notizen_intern),
     [objekt.notizen_intern]
   );
 
-  const detailTabs = useMemo((): readonly PortalDetailTab[] => {
-    return OBJ_DETAIL_TABS.map((t) =>
-      t.id === "pruefpflichten" && pruefpflichtBadge > 0
-        ? { ...t, badge: pruefpflichtBadge }
-        : t
-    );
-  }, [pruefpflichtBadge]);
-
-  useEffect(() => {
-    let cancelled = false;
-    void fetch(
-      `/api/org/objekte/pruefpflichten-summary`
-    )
-      .then(async (res) => {
-        if (!res.ok) return null;
-        return (await res.json()) as { byObjektId?: Record<string, number> };
-      })
-      .then((json) => {
-        if (!cancelled) {
-          setPruefpflichtBadge(json?.byObjektId?.[objekt.id] ?? 0);
-        }
-      })
-      .catch(() => undefined);
-    return () => {
-      cancelled = true;
-    };
-  }, [objekt.id]);
-
-  const [hmOptions, setHmOptions] = useState<
-    Array<{
-      id: string;
-      name: string;
-      email?: string | null;
-      portal_zugang?: boolean;
-    }>
-  >([]);
-  const [hmAmObjekt, setHmAmObjekt] = useState<{
-    id: string;
-    name: string;
-    email?: string | null;
-    portal_zugang?: boolean;
-  } | null>(null);
-  const [hmEditOpen, setHmEditOpen] = useState(false);
-  const [hmMode, setHmMode] = useState<"existing" | "new">("existing");
-  const [editHmId, setEditHmId] = useState("");
-  const [editHmName, setEditHmName] = useState("");
-  const [editHmEmail, setEditHmEmail] = useState("");
-  const [editHmPortal, setEditHmPortal] = useState(false);
-  const [hmSaving, setHmSaving] = useState(false);
-  const [hmConfirmRemove, setHmConfirmRemove] = useState(false);
-  const [hmLoading, setHmLoading] = useState(true);
-
+  const [kontaktName, setKontaktName] = useState(meta.kontakt ?? "");
+  const [kontaktTel, setKontaktTel] = useState(meta.tel ?? "");
+  const [kontaktEmail, setKontaktEmail] = useState(meta.email ?? "");
+  const kontaktTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [versicherer, setVersicherer] = useState(objekt.versicherer ?? "");
   const [objVersNr, setObjVersNr] = useState(objekt.versicherungs_nr ?? "");
-  const [autoSchadenakte, setAutoSchadenakte] = useState(
-    Boolean(objekt.automatische_schadenakte)
+  const [selbstbehalt, setSelbstbehalt] = useState(
+    objekt.selbstbehalt_eur != null ? String(objekt.selbstbehalt_eur) : ""
   );
-  const [versEditOpen, setVersEditOpen] = useState(false);
-  const [editVersicherer, setEditVersicherer] = useState("");
-  const [editVersNr, setEditVersNr] = useState("");
-  const [editAutoSchadenakte, setEditAutoSchadenakte] = useState(false);
-  const [versSaving, setVersSaving] = useState(false);
-
-  const [akte, setAkte] = useState<ObjektAktePortalPayload | null>(null);
-  const [akteLoading, setAkteLoading] = useState(true);
+  const versTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
-    let cancelled = false;
-    setHmLoading(true);
-    void fetch(
-      `/api/org/hausmeister?objektId=${encodeURIComponent(objekt.id)}`
-    )
-      .then((r) => r.json())
-      .then(
-        (j: {
-          hausmeister?: Array<{
-            id: string;
-            name: string;
-            email?: string | null;
-            portal_zugang?: boolean;
-          }>;
-          amObjekt?: {
-            id: string;
-            name: string;
-            email?: string | null;
-            portal_zugang?: boolean;
-          } | null;
-        }) => {
-          if (cancelled) return;
-          setHmOptions(j.hausmeister ?? []);
-          setHmAmObjekt(j.amObjekt ?? null);
-        }
-      )
-      .catch(() => {
-        if (!cancelled) {
-          setHmOptions([]);
-          setHmAmObjekt(null);
-        }
-      })
-      .finally(() => {
-        if (!cancelled) setHmLoading(false);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [objekt.id]);
+    setKontaktName(meta.kontakt ?? "");
+    setKontaktTel(meta.tel ?? "");
+    setKontaktEmail(meta.email ?? "");
+  }, [meta.kontakt, meta.tel, meta.email, objekt.id]);
 
   useEffect(() => {
-    let cancelled = false;
-    setAkteLoading(true);
-    void fetch(`/api/org/objekte/akte?objektId=${encodeURIComponent(objekt.id)}`)
-      .then((r) => r.json())
-      .then((j: ObjektAktePortalPayload & { error?: string }) => {
-        if (cancelled) return;
-        if ("error" in j && j.error) {
-          setAkte({ anlagen: [], historie: [], kpis: {
-            vorgaengeGesamt: 0,
-            offenInArbeit: 0,
-            kostenLaufendesJahr: 0,
-            kostenOhneAngabeImJahr: 0,
-            anlagenAnzahl: 0,
-            nachGewerk: [],
-          }});
-          return;
-        }
-        setAkte({
-          anlagen: j.anlagen ?? [],
-          historie: j.historie ?? [],
-          kpis: j.kpis ?? {
-            vorgaengeGesamt: 0,
-            offenInArbeit: 0,
-            kostenLaufendesJahr: 0,
-            kostenOhneAngabeImJahr: 0,
-            anlagenAnzahl: 0,
-            nachGewerk: [],
-          },
-        });
-      })
-      .catch(() => {
-        if (!cancelled) {
-          setAkte({
-            anlagen: [],
-            historie: [],
-            kpis: {
-              vorgaengeGesamt: 0,
-              offenInArbeit: 0,
-              kostenLaufendesJahr: 0,
-              kostenOhneAngabeImJahr: 0,
-              anlagenAnzahl: 0,
-              nachGewerk: [],
-            },
-          });
-        }
-      })
-      .finally(() => {
-        if (!cancelled) setAkteLoading(false);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [objekt.id]);
-
-  useEffect(() => {
-    const aktiv =
-      objekt.freigabe_schwelle_eur != null &&
-      Number(objekt.freigabe_schwelle_eur) > 0;
-    setSchwelleAktiv(aktiv);
     setSchwelle(
       snapEinstellungenSchwelle(
-        aktiv && objekt.freigabe_schwelle_eur != null
+        objekt.freigabe_schwelle_eur != null
           ? Number(objekt.freigabe_schwelle_eur)
           : 500
       )
@@ -325,15 +201,25 @@ export function OrganisationObjektDetail({
     );
     setVersicherer(objekt.versicherer ?? "");
     setObjVersNr(objekt.versicherungs_nr ?? "");
-    setAutoSchadenakte(Boolean(objekt.automatische_schadenakte));
+    setSelbstbehalt(
+      objekt.selbstbehalt_eur != null ? String(objekt.selbstbehalt_eur) : ""
+    );
   }, [
     objekt.freigabe_schwelle_eur,
     objekt.notfall_direkt,
     objekt.versicherer,
     objekt.versicherungs_nr,
-    objekt.automatische_schadenakte,
+    objekt.selbstbehalt_eur,
     objekt.id,
   ]);
+
+  useEffect(() => {
+    return () => {
+      if (kontaktTimer.current) clearTimeout(kontaktTimer.current);
+      if (schwelleTimer.current) clearTimeout(schwelleTimer.current);
+      if (versTimer.current) clearTimeout(versTimer.current);
+    };
+  }, []);
 
   const typLine = formatObjektTypLine(objekt);
   const plzOrt = formatObjektPlzOrt(objekt) || "—";
@@ -351,205 +237,119 @@ export function OrganisationObjektDetail({
     [leads, objekt]
   );
 
-  function openHmEdit() {
-    if (hmAmObjekt?.id) {
-      setHmMode("existing");
-      setEditHmId(hmAmObjekt.id);
-      setEditHmName(hmAmObjekt.name);
-      setEditHmEmail(hmAmObjekt.email ?? "");
-      setEditHmPortal(Boolean(hmAmObjekt.portal_zugang));
-    } else {
-      setHmMode("new");
-      setEditHmId("");
-      setEditHmName("");
-      setEditHmEmail("");
-      setEditHmPortal(false);
-    }
-    setHmEditOpen(true);
-  }
-
-  function closeHmEdit() {
-    if (hmSaving) return;
-    setHmEditOpen(false);
-  }
-
-  async function saveHmEdit() {
-    const name = editHmName.trim();
-    if (!name && hmMode === "new") {
-      portalToastError("Name fehlt");
-      return;
-    }
-    if (editHmPortal && !editHmEmail.trim()) {
-      portalToastError(
-        "E-Mail fehlt",
-        "Für Portal-Zugang bitte eine E-Mail angeben."
-      );
-      return;
-    }
-    setHmSaving(true);
+  const saveAnsprechpartner = async (next: {
+    kontakt: string;
+    tel: string;
+    email: string;
+  }) => {
     try {
-      const body =
-        hmMode === "existing" && editHmId
-          ? {
-              objektId: objekt.id,
-              hausmeisterId: editHmId,
-              name: name || undefined,
-              email: editHmEmail.trim() || null,
-              portalZugang: editHmPortal,
-              invite: false,
-            }
-          : {
-              objektId: objekt.id,
-              name,
-              email: editHmPortal ? editHmEmail.trim() : editHmEmail.trim() || null,
-              portalZugang: editHmPortal,
-              invite: editHmPortal,
-            };
-      const willInvite = Boolean(
-        body.invite && (body.email as string | null | undefined)?.toString().trim()
+      const notizen_intern = encodeObjektMeta(
+        {
+          typ: meta.typ,
+          kontakt: next.kontakt.trim() || undefined,
+          tel: next.tel.trim() || undefined,
+          email: next.email.trim() || undefined,
+        },
+        objekt.notizen_intern
       );
-      const run = async () => {
-        const res = await fetch("/api/org/hausmeister", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(body),
-        });
-        const json = (await res.json()) as {
-          error?: string;
-          inviteMailto?: string | null;
-          inviteUrl?: string | null;
-        };
-        if (!res.ok) {
-          portalToastError("Hausmeister nicht gespeichert", json.error);
-          return;
-        }
-        setHmEditOpen(false);
-        orgPortalToast.objektAktualisiert();
-        if (json.inviteMailto) {
-          setInviteMailtoReady({
-            mailto: json.inviteMailto,
-            url: json.inviteUrl,
-            rolle: "Hausmeister",
-            toEmail: editHmEmail.trim() || hmAmObjekt?.email || null,
-          });
-        }
-        onRefresh();
-        const reload = await fetch(
-          `/api/org/hausmeister?objektId=${encodeURIComponent(objekt.id)}`
-        );
-        const j = (await reload.json()) as {
-          hausmeister?: typeof hmOptions;
-          amObjekt?: typeof hmAmObjekt;
-        };
-        setHmOptions(j.hausmeister ?? []);
-        setHmAmObjekt(j.amObjekt ?? null);
-      };
-      if (willInvite) await runBusy(run, 500);
-      else await run();
-    } catch {
-      portalToastError("Hausmeister nicht gespeichert");
-    } finally {
-      setHmSaving(false);
-    }
-  }
-
-  async function inviteHausmeister() {
-    if (!hmAmObjekt?.id) return;
-    if (!hmAmObjekt.email?.trim()) {
-      portalToastError(
-        "Portal-Link nicht möglich",
-        "Bitte zuerst eine E-Mail beim Hausmeister hinterlegen."
-      );
-      return;
-    }
-    await runBusy(async () => {
-      const res = await fetch("/api/org/hausmeister", {
-        method: "POST",
+      const res = await fetch("/api/org/objekte", {
+        method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          objektId: objekt.id,
-          hausmeisterId: hmAmObjekt.id,
-          portalZugang: true,
-          invite: true,
-        }),
+        body: JSON.stringify({ id: objekt.id, notizen_intern }),
       });
-      const json = (await res.json()) as {
-        error?: string;
-        inviteMailto?: string | null;
-        inviteUrl?: string | null;
-      };
+      const json = (await res.json()) as { error?: string };
       if (!res.ok) {
-        portalToastError("Einladung fehlgeschlagen", json.error);
+        portalToastError("Ansprechpartner nicht gespeichert", json.error);
         return;
       }
-      if (json.inviteMailto) {
-        setInviteMailtoReady({
-          mailto: json.inviteMailto,
-          url: json.inviteUrl,
-          rolle: "Hausmeister",
-          toEmail: hmAmObjekt.email,
-        });
-      } else {
-        orgPortalToast.portalLinkGesendet({ rolle: "Hausmeister" });
-      }
-      const reload = await fetch(
-        `/api/org/hausmeister?objektId=${encodeURIComponent(objekt.id)}`
-      );
-      const j = (await reload.json()) as {
-        hausmeister?: typeof hmOptions;
-        amObjekt?: typeof hmAmObjekt;
-      };
-      setHmOptions(j.hausmeister ?? []);
-      setHmAmObjekt(j.amObjekt ?? null);
-    }, 500);
-  }
-
-  async function removeHausmeister() {
-    setHmSaving(true);
-    try {
-      await runBusy(async () => {
-        const res = await fetch(
-          `/api/org/hausmeister?objektId=${encodeURIComponent(objekt.id)}`,
-          { method: "DELETE" }
-        );
-        const json = (await res.json()) as { error?: string };
-        if (!res.ok) {
-          portalToastError("Hausmeister nicht entfernt", json.error);
-          return;
-        }
-        setHmAmObjekt(null);
-        setHmConfirmRemove(false);
-        orgPortalToast.objektAktualisiert();
-        onRefresh();
-      });
-    } finally {
-      setHmSaving(false);
+      orgPortalToast.objektAktualisiert();
+      onRefresh();
+    } catch {
+      portalToastError("Ansprechpartner nicht gespeichert");
     }
-  }
+  };
 
-  function openVersEdit() {
-    setEditVersicherer(versicherer);
-    setEditVersNr(objVersNr);
-    setEditAutoSchadenakte(autoSchadenakte);
-    setVersEditOpen(true);
-  }
+  const scheduleAnsprechpartner = (patch: {
+    kontakt?: string;
+    tel?: string;
+    email?: string;
+  }) => {
+    const next = {
+      kontakt: patch.kontakt ?? kontaktName,
+      tel: patch.tel ?? kontaktTel,
+      email: patch.email ?? kontaktEmail,
+    };
+    if (patch.kontakt !== undefined) setKontaktName(patch.kontakt);
+    if (patch.tel !== undefined) setKontaktTel(patch.tel);
+    if (patch.email !== undefined) setKontaktEmail(patch.email);
+    if (kontaktTimer.current) clearTimeout(kontaktTimer.current);
+    kontaktTimer.current = setTimeout(() => {
+      void saveAnsprechpartner(next);
+    }, 550);
+  };
 
-  function closeVersEdit() {
-    if (versSaving) return;
-    setVersEditOpen(false);
-  }
-
-  async function saveVersEdit() {
-    setVersSaving(true);
+  const saveSchwelle = async (value: number) => {
     try {
       const res = await fetch("/api/org/objekte", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           id: objekt.id,
-          versicherer: editVersicherer.trim() || null,
-          versicherungs_nr: editVersNr.trim() || null,
-          automatische_schadenakte: editAutoSchadenakte,
+          freigabe_schwelle_eur: value,
+        }),
+      });
+      const json = (await res.json()) as { error?: string };
+      if (!res.ok) {
+        portalToastError("Schwelle nicht gespeichert", json.error);
+        return;
+      }
+      orgPortalToast.objektAktualisiert();
+      onRefresh();
+    } catch {
+      portalToastError("Schwelle nicht gespeichert");
+    }
+  };
+
+  const saveAkutDirekt = async (value: boolean) => {
+    setAkutDirekt(value);
+    try {
+      const res = await fetch("/api/org/objekte", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          id: objekt.id,
+          notfall_direkt: value,
+        }),
+      });
+      const json = (await res.json()) as { error?: string };
+      if (!res.ok) {
+        portalToastError("Akut-Regel nicht gespeichert", json.error);
+        return;
+      }
+      orgPortalToast.objektAktualisiert();
+      onRefresh();
+    } catch {
+      portalToastError("Akut-Regel nicht gespeichert");
+    }
+  };
+
+  const saveVersicherung = async (next: {
+    versicherer: string;
+    versicherungs_nr: string;
+    selbstbehalt: string;
+  }) => {
+    try {
+      const sb = next.selbstbehalt.trim()
+        ? Number(next.selbstbehalt.replace(",", "."))
+        : null;
+      const res = await fetch("/api/org/objekte", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          id: objekt.id,
+          versicherer: next.versicherer.trim() || null,
+          versicherungs_nr: next.versicherungs_nr.trim() || null,
+          selbstbehalt_eur: Number.isFinite(sb as number) ? sb : null,
         }),
       });
       const json = (await res.json()) as { error?: string };
@@ -557,444 +357,199 @@ export function OrganisationObjektDetail({
         portalToastError("Versicherung nicht gespeichert", json.error);
         return;
       }
-      setVersicherer(editVersicherer.trim());
-      setObjVersNr(editVersNr.trim());
-      setAutoSchadenakte(editAutoSchadenakte);
-      setVersEditOpen(false);
       orgPortalToast.objektAktualisiert();
       onRefresh();
     } catch {
       portalToastError("Versicherung nicht gespeichert");
-    } finally {
-      setVersSaving(false);
     }
-  }
+  };
 
-  function openFreigabeEdit() {
-    setEditSchwelle(schwelle);
-    setEditSchwelleAktiv(schwelleAktiv);
-    setEditAkut(akutDirekt);
-    setFreigabeEditOpen(true);
-  }
+  const scheduleVersicherung = (patch: {
+    versicherer?: string;
+    versicherungs_nr?: string;
+    selbstbehalt?: string;
+  }) => {
+    const next = {
+      versicherer: patch.versicherer ?? versicherer,
+      versicherungs_nr: patch.versicherungs_nr ?? objVersNr,
+      selbstbehalt: patch.selbstbehalt ?? selbstbehalt,
+    };
+    if (patch.versicherer !== undefined) setVersicherer(patch.versicherer);
+    if (patch.versicherungs_nr !== undefined) setObjVersNr(patch.versicherungs_nr);
+    if (patch.selbstbehalt !== undefined) setSelbstbehalt(patch.selbstbehalt);
+    if (versTimer.current) clearTimeout(versTimer.current);
+    versTimer.current = setTimeout(() => {
+      void saveVersicherung(next);
+    }, 550);
+  };
 
-  function closeFreigabeEdit() {
-    if (freigabeSaving) return;
-    setFreigabeEditOpen(false);
-  }
-
-  function onToggleUnterSchwelle(next: boolean) {
-    setEditSchwelleAktiv(next);
-    if (next && editSchwelle <= 0) {
-      setEditSchwelle(500);
-    }
-  }
-
-  async function saveFreigabeEdit() {
-    setFreigabeSaving(true);
-    try {
-      const nextSchwelle = editSchwelleAktiv
-        ? snapEinstellungenSchwelle(Math.max(editSchwelle, 500))
-        : null;
-      const res = await fetch("/api/org/objekte", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          id: objekt.id,
-          freigabe_schwelle_eur: nextSchwelle,
-          notfall_direkt: editAkut,
-        }),
-      });
-      const json = (await res.json()) as { error?: string };
-      if (!res.ok) {
-        portalToastError("Freigabe-Regeln nicht gespeichert", json.error);
-        return;
-      }
-      setSchwelleAktiv(editSchwelleAktiv);
-      if (editSchwelleAktiv && nextSchwelle != null) setSchwelle(nextSchwelle);
-      setAkutDirekt(editAkut);
-      setFreigabeEditOpen(false);
-      orgPortalToast.objektAktualisiert();
-      onRefresh();
-    } catch {
-      portalToastError("Freigabe-Regeln nicht gespeichert");
-    } finally {
-      setFreigabeSaving(false);
-    }
-  }
+  const onSchwelleChange = (raw: number) => {
+    const value = snapEinstellungenSchwelle(raw);
+    setSchwelle(value);
+    if (schwelleTimer.current) clearTimeout(schwelleTimer.current);
+    schwelleTimer.current = setTimeout(() => {
+      void saveSchwelle(value);
+    }, 450);
+  };
 
   let body: React.ReactNode = null;
 
   if (tab === "stamm") {
     body = (
-      <div className="flex flex-col gap-3">
-        {akteLoading ? (
-          <PortalInlineLoading label="Kennzahlen werden geladen" />
-        ) : akte ? (
-          <OrganisationObjektFinanzPanel objektId={objekt.id} />
-        ) : null}
-
-        <EinstellungenSectionCard title="Objektdaten" onEdit={onEdit}>
-          <EinstellungenPfList>
-            <EinstellungenPfRow label="Bezeichnung" value={dash(objekt.titel)} />
-            <EinstellungenPfRow label="Typ" value={dash(typLine)} />
-            <EinstellungenPfRow
-              label="Adresse"
-              value={
-                [strasse, plzOrt].filter((x) => x && x !== "—").join(", ") || "—"
-              }
-            />
-            <EinstellungenPfRow
-              label="Einheiten"
-              value={we === 1 ? "1 Einheit" : `${we} Einheiten`}
-            />
-          </EinstellungenPfList>
-        </EinstellungenSectionCard>
-
-        <EinstellungenSectionCard
-          title={hmAmObjekt ? "Hausmeister · 1" : "Hausmeister"}
-          onAdd={hmLoading || hmAmObjekt ? undefined : openHmEdit}
-          addLabel="Hausmeister hinzufügen"
-        >
-          {hmLoading ? (
-            <PortalInlineLoading label="Hausmeister wird geladen" />
-          ) : hmAmObjekt ? (
-            <PortalEntityList
-              ariaLabel="Hausmeister"
-              columns={[
-                { key: "name", label: "Name", width: "minmax(0, 1.2fr)" },
-                { key: "status", label: "Status", width: "minmax(0, 0.9fr)" },
-                { key: "kontakt", label: "Kontakt", width: "minmax(0, 1.4fr)" },
-              ]}
-              rows={[
-                {
-                  id: hmAmObjekt.id ?? "hm",
-                  title: hmAmObjekt.name,
-                  meta: (
-                    <div className="space-y-0.5">
-                      <p>
-                        Portal:{" "}
-                        {
-                          HAUSMEISTER_PORTAL_STATUS_LABEL[
-                            resolveHausmeisterPortalStatus(hmAmObjekt)
-                          ]
-                        }
-                      </p>
-                      {hmAmObjekt.email?.trim() ? (
-                        <p>{hmAmObjekt.email.trim()}</p>
-                      ) : null}
-                    </div>
-                  ),
-                  cells: [
-                    hmAmObjekt.name,
-                    HAUSMEISTER_PORTAL_STATUS_LABEL[
-                      resolveHausmeisterPortalStatus(hmAmObjekt)
-                    ],
-                    hmAmObjekt.email?.trim() || "—",
-                  ],
-                  onClick: openHmEdit,
-                  menu: (
-                    <OrganisationObjektHausmeisterMenu
-                      canEinladen={Boolean(hmAmObjekt.email?.trim())}
-                      onEinladen={() => void inviteHausmeister()}
-                      onBearbeiten={openHmEdit}
-                      onEntfernen={() => setHmConfirmRemove(true)}
-                    />
-                  ),
-                },
-              ]}
-            />
-          ) : (
-            <PortalInboxEmpty title="Noch kein Hausmeister" compact />
-          )}
-          <EinstellungenEditModal
-            open={hmEditOpen}
-            title={hmAmObjekt ? "Hausmeister bearbeiten" : "Hausmeister hinzufügen"}
-            onClose={closeHmEdit}
-            onSave={() => void saveHmEdit()}
-            saving={hmSaving}
-          >
-            <label className="block">
-              <span className="portal-text-label mb-1.5 block text-text-secondary">
-                Hausmeister
-              </span>
-              <select
-                className="portal-field w-full"
-                value={hmMode === "new" ? "__new__" : editHmId}
-                onChange={(e) => {
-                  const v = e.target.value;
-                  if (v === "__new__") {
-                    setHmMode("new");
-                    setEditHmId("");
-                    setEditHmName("");
-                    setEditHmEmail("");
-                    setEditHmPortal(false);
-                  } else {
-                    setHmMode("existing");
-                    setEditHmId(v);
-                    const found = hmOptions.find((h) => h.id === v);
-                    if (found) {
-                      setEditHmName(found.name);
-                      setEditHmEmail(found.email ?? "");
-                      setEditHmPortal(Boolean(found.portal_zugang));
-                    }
-                  }
-                }}
-              >
-                <option value="">Bitte wählen…</option>
-                {hmOptions.map((h) => (
-                  <option key={h.id} value={h.id}>
-                    {h.name}
-                  </option>
-                ))}
-                <option value="__new__">＋ Neu anlegen</option>
-              </select>
-            </label>
-            <EinstellungenEdField
-              label="Name"
-              value={editHmName}
-              onChange={setEditHmName}
-              placeholder="Max Mustermann"
-              autoComplete="name"
-            />
-            <EinstellungenEdField
-              label="E-Mail"
-              type="email"
-              value={editHmEmail}
-              onChange={setEditHmEmail}
-              placeholder="name@firma.de"
-              autoComplete="email"
-            />
-            <label className="flex items-start gap-3 rounded-[10px] border border-border-light bg-white p-3">
-              <input
-                type="checkbox"
-                className="mt-0.5"
-                checked={editHmPortal}
-                onChange={(e) => setEditHmPortal(e.target.checked)}
-              />
-              <span className="text-[13px] text-text-secondary">
-                {hmMode === "new"
-                  ? "Portal einladen — Konto ist erst nach Registrierung über den Link aktiv"
-                  : "Portal-Zugang — Einladung über das Menü (⋯) möglich"}
-              </span>
-            </label>
-          </EinstellungenEditModal>
-          <PortalConfirmDialog
-            open={hmConfirmRemove}
-            title="Hausmeister entfernen?"
-            description={
-              hmAmObjekt
-                ? `${hmAmObjekt.name} wird von diesem Objekt entfernt. Die Person bleibt für andere Objekte erhalten.`
-                : "Hausmeister von diesem Objekt entfernen?"
-            }
-            confirmLabel="Entfernen"
-            confirmVariant="danger"
-            loading={hmSaving}
-            onCancel={() => setHmConfirmRemove(false)}
-            onConfirm={() => void removeHausmeister()}
+      <div className="grid gap-3.5 md:grid-cols-2">
+        <ObjCard title="Ansprechpartner">
+          <ObjEditRow
+            label="Name"
+            value={kontaktName}
+            onChange={(v) => scheduleAnsprechpartner({ kontakt: v })}
+            placeholder="Max Mustermann"
+            autoComplete="name"
           />
-        </EinstellungenSectionCard>
-
-        <OrganisationObjektKontaktePanel objektId={objekt.id} />
-
-        <EinstellungenSectionCard
-          title="Gebäudeversicherung"
-          onEdit={openVersEdit}
-        >
-          <EinstellungenPfList>
-            <EinstellungenPfRow label="Versicherer" value={dash(versicherer)} />
-            <EinstellungenPfRow label="Policen-Nr." value={dash(objVersNr)} />
-            <EinstellungenPfRow
-              label="Automatische Schadenakte"
-              value={autoSchadenakte ? "Ein" : "Aus"}
-            />
-          </EinstellungenPfList>
-          <EinstellungenEditModal
-            open={versEditOpen}
-            title="Gebäudeversicherung bearbeiten"
-            onClose={closeVersEdit}
-            onSave={() => void saveVersEdit()}
-            saving={versSaving}
-          >
-            <EinstellungenEdField
-              label="Versicherer"
-              value={editVersicherer}
-              onChange={setEditVersicherer}
-              placeholder="z. B. Allianz"
-            />
-            <EinstellungenEdField
-              label="Policen-Nr."
-              value={editVersNr}
-              onChange={setEditVersNr}
-              placeholder="Police / Vertragsnummer"
-            />
-            <EinstellungenToggle
-              checked={editAutoSchadenakte}
-              onChange={setEditAutoSchadenakte}
-              title="Automatische Schadenakte"
-              description={
-                editAutoSchadenakte
-                  ? "Ein: Bei Schadenmeldung wird der Kostenträger Versicherung gesetzt und die Schadenmeldung-PDF erzeugt."
-                  : "Aus: Keine automatische Schadenmeldung-PDF."
-              }
-            />
-          </EinstellungenEditModal>
-        </EinstellungenSectionCard>
+          <ObjEditRow
+            label="Telefon"
+            type="tel"
+            value={kontaktTel}
+            onChange={(v) => scheduleAnsprechpartner({ tel: v })}
+            placeholder="089 / …"
+            autoComplete="tel"
+          />
+          <ObjEditRow
+            label="E-Mail"
+            type="email"
+            value={kontaktEmail}
+            onChange={(v) => scheduleAnsprechpartner({ email: v })}
+            placeholder="name@firma.de"
+            autoComplete="email"
+          />
+        </ObjCard>
+        <ObjCard title="Objektdaten">
+          <ObjRow label="Bezeichnung" value={objekt.titel} />
+          <ObjRow label="Typ" value={typLine} />
+          <ObjRow
+            label="Adresse"
+            value={
+              [strasse, plzOrt].filter((x) => x && x !== "—").join(", ") || "—"
+            }
+          />
+          <ObjRow
+            label="Einheiten"
+            value={we === 1 ? "1 Einheit" : `${we} Einheiten`}
+          />
+        </ObjCard>
+        <ObjCard title="Gebäudeversicherung">
+          <ObjEditRow
+            label="Versicherer"
+            value={versicherer}
+            onChange={(v) => scheduleVersicherung({ versicherer: v })}
+            placeholder="z. B. Allianz"
+          />
+          <ObjEditRow
+            label="Policen-Nr."
+            value={objVersNr}
+            onChange={(v) => scheduleVersicherung({ versicherungs_nr: v })}
+            placeholder="Police / Vertragsnummer"
+          />
+          <ObjEditRow
+            label="Selbstbehalt (€)"
+            value={selbstbehalt}
+            onChange={(v) => scheduleVersicherung({ selbstbehalt: v })}
+            placeholder="0"
+          />
+          <p className="mt-2 text-[12px] leading-relaxed text-text-tertiary">
+            Einmal hinterlegt — jede Schadenmeldung übernimmt diese Daten
+            automatisch.
+          </p>
+        </ObjCard>
       </div>
     );
-  } else if (tab === "anlagen") {
-    body = akteLoading ? (
-      <PortalInlineLoading label="Anlagen werden geladen" />
-    ) : (
-      <OrganisationObjektAnlagenPanel anlagen={akte?.anlagen ?? []} />
-    );
-  } else if (tab === "pruefpflichten") {
-    body = <OrganisationObjektPruefpflichtenPanel objektId={objekt.id} />;
-  } else if (tab === "historie") {
-    body = akteLoading ? (
-      <PortalInlineLoading label="Historie wird geladen" />
-    ) : (
-      <OrganisationObjektHistoriePanel
-        rows={akte?.historie ?? []}
-        anlagen={akte?.anlagen ?? []}
-        onOpenVorgang={onOpenVorgang}
-      />
-    );
-  } else if (tab === "einheiten") {
+  } else if (tab === "mieter") {
     body = (
-      <OrganisationObjektEinheitenTab
+      <OrganisationObjektMieterTab
         objektId={objekt.id}
-        objektLabel={objekt.titel?.trim() || "Objekt"}
-        orgAnzeigename={orgAnzeigename}
-        hv={hv}
+        leads={objektLeads}
+        defaultStrasse={objekt.strasse}
+        defaultHausnummer={objekt.hausnummer}
+        onEinladen={onEinladen}
         onGotoVorgaenge={() => setTab("vorgaenge")}
-        onEinheitenChange={onRefresh}
       />
     );
   } else if (tab === "vorgaenge") {
     body = (
-      <div className="space-y-3">
+      <div className="space-y-2.5">
         <div className="flex items-baseline justify-between gap-2 px-0.5">
           <p className="portal-text-section">
             Vorgänge ({objektLeads.length})
           </p>
-          <p className="portal-text-meta text-text-tertiary">{offenCount} offen</p>
+          <p className="text-xs text-text-tertiary">{offenCount} offen</p>
         </div>
         {objektLeads.length === 0 ? (
-          <PortalInboxEmpty title="Noch keine Daten" compact />
-        ) : (
-          <div className={portalListStackClass("card")}>
-            {objektLeads.map((l) => {
-              const kat = meldeKategorieLabel(
-                meldeKategorieFromLead(l) ?? undefined
-              );
-              const adresse = [l.strasse, l.hausnummer]
-                .filter(Boolean)
-                .join(" ");
-              const weLabel = l.melder_einheit?.trim()
-                ? /^(WE|Whg)/i.test(l.melder_einheit.trim())
-                  ? l.melder_einheit.trim()
-                  : `WE ${l.melder_einheit.trim()}`
-                : undefined;
-              const person = l.melder_name?.trim() || undefined;
-              const subtitle = [
-                adresse || objekt.titel || "Objekt",
-                weLabel,
-                person,
-              ]
-                .filter(Boolean)
-                .join(" · ");
-              return (
-                <PortalListCard
-                  key={l.id}
-                  variant="card"
-                  selected={false}
-                  onClick={() => onOpenVorgang?.(l.id)}
-                  title={kat}
-                  subtitle={subtitle}
-                  statusLabel={plattformStatusLabel(resolvePlattformStatus(l))}
-                  statusPillClass={plattformStatusPillClass(
-                    resolvePlattformStatus(l)
-                  )}
-                  accent="anfrage"
-                  meta={[]}
-                  showChevron
-                />
-              );
-            })}
+          <div className="rounded-xl border border-border-default bg-white px-4 py-8 text-center text-[13px] text-text-secondary">
+            Keine Vorgänge an diesem Objekt.
           </div>
+        ) : (
+          objektLeads.map((l) => {
+            const kat = meldeKategorieLabel(
+              meldeKategorieFromLead(l) ?? undefined
+            );
+            const notfall = isMeldeNotfall(l);
+            const adresse = [l.strasse, l.hausnummer]
+              .filter(Boolean)
+              .join(" ");
+            const we = l.melder_einheit?.trim()
+              ? /^(WE|Whg)/i.test(l.melder_einheit.trim())
+                ? l.melder_einheit.trim()
+                : `WE ${l.melder_einheit.trim()}`
+              : undefined;
+            const person = l.melder_name?.trim() || undefined;
+            const subtitle = [
+              adresse || objekt.titel || "Objekt",
+              we,
+              person,
+            ]
+              .filter(Boolean)
+              .join(" · ");
+            return (
+              <PortalListCard
+                key={l.id}
+                variant="card"
+                selected={false}
+                onClick={() => onOpenVorgang?.(l.id)}
+                title={kat}
+                subtitle={subtitle}
+                statusLabel={plattformStatusLabel(resolvePlattformStatus(l))}
+                statusPillClass={plattformStatusPillClass(
+                  resolvePlattformStatus(l)
+                )}
+                accent="anfrage"
+                meta={
+                  notfall ? [{ icon: AlertTriangle, text: "Notfall" }] : []
+                }
+                showChevron
+              />
+            );
+          })
         )}
       </div>
     );
   } else if (tab === "regeln") {
     body = (
-      <EinstellungenSectionCard
-        title={EINSTELLUNGEN_SCHWELLE_TITLE}
-        onEdit={openFreigabeEdit}
-      >
-        <EinstellungenPfList>
-          <EinstellungenPfRow
-            label={<SofortmassnahmeAkutTitle />}
-            value={akutDirekt ? "Ja" : "Nein"}
-          />
-          <EinstellungenPfRow
-            label={EINSTELLUNGEN_UNTER_SCHWELLE_TITLE}
-            value={schwelleAktiv ? "Ja" : "Nein"}
-          />
-          {schwelleAktiv ? (
-            <EinstellungenPfRow
-              label={EINSTELLUNGEN_SCHWELLE_BETRAG_TITLE}
-              value={formatEinstellungenSchwelle(schwelle)}
-            />
-          ) : null}
-        </EinstellungenPfList>
-
-        <EinstellungenEditModal
-          open={freigabeEditOpen}
-          title={EINSTELLUNGEN_SCHWELLE_TITLE}
-          onClose={closeFreigabeEdit}
-          onSave={() => void saveFreigabeEdit()}
-          saving={freigabeSaving}
-        >
-          <EinstellungenToggle
-            checked={editAkut}
-            onChange={setEditAkut}
-            title={<SofortmassnahmeAkutTitle />}
-            description={
-              editAkut ? (
-                <>
-                  Aktiv: Ausgewählte Fälle ohne Freigabe (nur Info).{" "}
-                  <SofortmassnahmeFaelleEinstellungenLink />
-                </>
-              ) : (
-                "Aus: Auch Sofortmaßnahmen an diesem Objekt brauchen Freigabe."
-              )
-            }
+      <EinstellungenCard title={OBJ_SCHWELLE_WIZARD_TITLE}>
+        <div className="flex flex-col gap-3">
+          <EinstellungenEuroSlider
+            value={schwelle}
+            min={EINSTELLUNGEN_SCHWELLE_SLIDER_MIN}
+            max={EINSTELLUNGEN_SCHWELLE_SLIDER_MAX}
+            step={EINSTELLUNGEN_SCHWELLE_SLIDER_STEP}
+            formatValue={formatEinstellungenSchwelle}
+            onChange={onSchwelleChange}
           />
           <EinstellungenToggle
-            checked={editSchwelleAktiv}
-            onChange={onToggleUnterSchwelle}
-            title={EINSTELLUNGEN_UNTER_SCHWELLE_TITLE}
-            description={
-              editSchwelleAktiv
-                ? EINSTELLUNGEN_UNTER_SCHWELLE_INTRO
-                : "Aus: Jedes Angebot braucht Ihre Freigabe, unabhängig vom Betrag."
-            }
-          >
-            {editSchwelleAktiv ? (
-              <EinstellungenEuroSlider
-                value={editSchwelle}
-                min={Math.max(EINSTELLUNGEN_SCHWELLE_SLIDER_MIN, 500)}
-                max={EINSTELLUNGEN_SCHWELLE_SLIDER_MAX}
-                step={EINSTELLUNGEN_SCHWELLE_SLIDER_STEP}
-                formatValue={formatEinstellungenSchwelle}
-                onChange={(v) =>
-                  setEditSchwelle(snapEinstellungenSchwelle(Math.max(v, 500)))
-                }
-              />
-            ) : null}
-          </EinstellungenToggle>
-        </EinstellungenEditModal>
-      </EinstellungenSectionCard>
+            checked={akutDirekt}
+            onChange={(v) => void saveAkutDirekt(v)}
+            title="Akut/Notfall ohne Freigabe"
+          />
+        </div>
+      </EinstellungenCard>
     );
   } else {
     body = (
@@ -1008,28 +563,60 @@ export function OrganisationObjektDetail({
     );
   }
 
+  const ctaClass =
+    "rounded-[9px] border border-border-default bg-white px-3.5 py-2 text-[13px] font-semibold text-text-secondary";
+
   return (
-    <div className="-mx-4 -mt-5 min-w-0 lg:-mx-6 lg:-mt-7">
-      <PortalInviteMailtoSheet
-        open={Boolean(inviteMailtoReady)}
-        payload={inviteMailtoReady}
-        onClose={() => setInviteMailtoReady(null)}
-      />
+    <div className="space-y-0">
       <PortalDetailCover
         coverUrl={objekt.cover_url}
         onBack={onBack}
         backLabel="← Objekte"
         onEdit={onEdit}
+        className="-mx-4 -mt-5 lg:-mx-6 lg:-mt-7"
       />
 
-      <div className="mt-4 mb-5 space-y-4 px-4 lg:px-6">
+      <div className="mt-4 mb-5 space-y-4">
         <PortalDetailHead
           title={objekt.titel}
           metaLine={adresseLine || undefined}
+          actions={
+            <>
+              {canAushang ? (
+                <PortalActionMenu
+                  title="Aushang"
+                  trigger="Aushang"
+                  triggerClassName={cn(
+                    ctaClass,
+                    "!border-accent !bg-accent-light !text-accent"
+                  )}
+                  items={buildAushangActionItems({
+                    onCopyLink: onCopyMeldeLink,
+                    onQr: onOpenQrCode,
+                    onPdf: onOpenAushangPdf,
+                  })}
+                />
+              ) : null}
+              <button
+                type="button"
+                className={ctaClass}
+                onClick={onCopy}
+              >
+                Kopieren
+              </button>
+              <button
+                type="button"
+                className={cn("portal-danger", ctaClass)}
+                onClick={onDelete}
+              >
+                Löschen
+              </button>
+            </>
+          }
         />
 
         <PortalDetailTabs
-          tabs={detailTabs}
+          tabs={OBJ_DETAIL_TABS}
           activeId={tab}
           onChange={(id) => setTab(id as ObjDetailTabId)}
           navLabel="Objekt-Abschnitte"

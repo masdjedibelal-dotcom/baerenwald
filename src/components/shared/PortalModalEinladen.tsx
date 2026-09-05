@@ -15,9 +15,7 @@ import {
   PORTAL_EINLADEN_TITLE,
 } from "@/lib/portal2/modal-einladen";
 import { buildPortalEinladungMailto } from "@/lib/portal2/portal-einladungen";
-import type { PortalEinladungHvBlock } from "@/lib/portal2/portal-einladungen";
 import { orgPortalToast, portalToastError } from "@/lib/shared/portal-toast";
-import { usePortalBusy } from "@/components/shared/PortalBusyContext";
 
 export type PortalModalEinladenProps = {
   open?: boolean;
@@ -27,10 +25,6 @@ export type PortalModalEinladenProps = {
   /** Vorauswahl */
   initialObjektId?: string | null;
   orgAnzeigename?: string | null;
-  hv?: PortalEinladungHvBlock | null;
-  /** Optional: Empfänger für mailto An-Feld */
-  toEmail?: string | null;
-  rolle?: "mieter" | "eigentuemer" | null;
 };
 
 type EinheitOpt = { id: string; bezeichnung: string };
@@ -46,9 +40,6 @@ export function PortalModalEinladen({
   objekte,
   initialObjektId,
   orgAnzeigename,
-  hv,
-  toEmail,
-  rolle,
 }: PortalModalEinladenProps) {
   const kennung = orgKennung.trim().toLowerCase();
   const [objektId, setObjektId] = useState(
@@ -60,7 +51,6 @@ export function PortalModalEinladen({
   const [busy, setBusy] = useState(false);
   const [copied, setCopied] = useState(false);
   const [qrOpen, setQrOpen] = useState(false);
-  const { runBusy } = usePortalBusy();
 
   const objekt = useMemo(
     () => objekte.find((o) => o.id === objektId) ?? null,
@@ -75,8 +65,7 @@ export function PortalModalEinladen({
   const einheitLabel =
     einheiten.find((e) => e.id === einheitId)?.bezeichnung?.trim() || null;
 
-  const hvName =
-    orgAnzeigename?.trim() || hv?.name?.trim() || "Ihre Verwaltung";
+  const hvName = orgAnzeigename?.trim() || "Ihre Verwaltung";
 
   const loadEinheiten = useCallback(async (oid: string) => {
     if (!oid) {
@@ -99,33 +88,31 @@ export function PortalModalEinladen({
       setBusy(true);
       setLink("");
       try {
-        await runBusy(async () => {
-          const res = await fetch("/api/org/portal-einladungen", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              objektId: oid,
-              einheitId: eid || null,
-              einheitRef: ref,
-            }),
-          });
-          const json = (await res.json()) as { error?: string; url?: string };
-          if (!res.ok || !json.url) {
-            portalToastError(
-              "Einladung nicht erstellt",
-              json.error ??
-                "Migration noch nicht freigegeben oder Serverfehler."
-            );
-            return;
-          }
-          setLink(json.url);
-          setQrOpen(true);
-        }, 400);
+        const res = await fetch("/api/org/portal-einladungen", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            objektId: oid,
+            einheitId: eid || null,
+            einheitRef: ref,
+          }),
+        });
+        const json = (await res.json()) as { error?: string; url?: string };
+        if (!res.ok || !json.url) {
+          portalToastError(
+            "Einladung nicht erstellt",
+            json.error ??
+              "Migration noch nicht freigegeben oder Serverfehler."
+          );
+          return;
+        }
+        setLink(json.url);
+        setQrOpen(true);
       } finally {
         setBusy(false);
       }
     },
-    [runBusy]
+    []
   );
 
   useEffect(() => {
@@ -169,9 +156,6 @@ export function PortalModalEinladen({
       subtitle={PORTAL_EINLADEN_SUBTITLE}
       onClose={onClose}
       variant="edit"
-      busy={busy}
-      busyTitle="Einladung wird erstellt…"
-      busyBody="Einen Moment bitte."
     >
       {!kennung ? (
         <p className="portal-einladen-warn">
@@ -254,34 +238,12 @@ export function PortalModalEinladen({
                       hvName,
                       objektLabel,
                       einheitRef: einheitLabel,
-                      toEmail: toEmail ?? null,
-                      rolle: rolle ?? "mieter",
-                      hv: {
-                        name: hvName,
-                        strasse: hv?.strasse,
-                        hausnummer: hv?.hausnummer,
-                        plz: hv?.plz,
-                        ort: hv?.ort,
-                        telefon: hv?.telefon,
-                        email: hv?.email,
-                      },
                     })
                   : undefined
               }
               aria-disabled={!link}
               onClick={(e) => {
-                if (!link) {
-                  e.preventDefault();
-                  return;
-                }
-                orgPortalToast.portalLinkGesendet({
-                  rolle:
-                    rolle === "eigentuemer"
-                      ? "Eigentümer"
-                      : rolle === "mieter"
-                        ? "Mieter"
-                        : undefined,
-                });
+                if (!link) e.preventDefault();
               }}
             >
               {PORTAL_EINLADEN_MAIL}

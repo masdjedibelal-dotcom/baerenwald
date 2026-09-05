@@ -5,7 +5,6 @@ import type {
 import { pickPrimaryAngebotHandwerkerAnfrage } from "@/lib/partner/pick-primary-angebot-handwerker";
 import {
   isPartnerAnfrageAktionErforderlich,
-  isPartnerAnfrageHwEingereicht,
   isPartnerAuftragAnfrageAktionErforderlich,
   isPartnerVorgangAusgeblendet,
 } from "@/lib/partner/partner-anfrage-status";
@@ -64,8 +63,7 @@ export function stubAuftragFromAnfrage(
     positionen: anfrage.crm_auftrag_positionen ?? [],
     bautagebuch: [],
     portalPhase: "anfrage",
-    /** Kein Auftrag — `angebot_handwerker.status` nicht als Zuweisungs-Status missbrauchen. */
-    hwStatus: "angefragt",
+    hwStatus: anfrage.status || "angefragt",
     angebotHandwerkerId: anfrage.id,
     angebotHwStatus: anfrage.hw_status ?? null,
     angebotHwEingereichtAt: anfrage.hw_eingereicht_at ?? null,
@@ -100,8 +98,6 @@ export function buildPartnerVorgaenge(input: {
       handwerker_bestaetigt_at: auftrag.handwerker_bestaetigt_at,
       projektvertrag_bestaetigt_am: auftrag.projektvertrag_bestaetigt_am,
       angebot_bestaetigt_at: anfrage?.bestaetigt_at ?? null,
-      angebotHwStatus: auftrag.angebotHwStatus ?? anfrage?.hw_status ?? null,
-      hwStatus: auftrag.hwStatus,
     });
 
     if (
@@ -124,8 +120,6 @@ export function buildPartnerVorgaenge(input: {
       positionen: auftrag.positionen,
       offeneNachreichungPositionIds: auftrag.nachreichungOpenPositionIds,
       anfrageAktionNoetig,
-      hwStatus: auftrag.hwStatus,
-      anfrageStatus: anfrage?.status ?? null,
     });
 
     items.push({
@@ -152,21 +146,14 @@ export function buildPartnerVorgaenge(input: {
       continue;
     }
 
-    const anfrageAbgelehnt =
-      String(anfrage.status ?? "").trim().toLowerCase() === "abgelehnt";
-    const hwEingereicht = isPartnerAnfrageHwEingereicht(anfrage);
-    // Offene Aktionen, abgelehnt, ODER eingereicht (sonst Detail-URL → endlos „wird geladen“)
-    if (
-      !isPartnerAnfrageAktionErforderlich(anfrage) &&
-      !anfrageAbgelehnt &&
-      !hwEingereicht
-    ) {
-      continue;
-    }
+    if (!isPartnerAnfrageAktionErforderlich(anfrage)) continue;
 
     const auftrag = stubAuftragFromAnfrage(anfrage);
-    /** Stub ohne echten Auftrag: kein Fake-„crm-angenommen“ über status=akzeptiert. */
-    const handwerker_bestaetigt_at = anfrage.bestaetigt_at?.trim() || null;
+    const handwerker_bestaetigt_at = resolveHandwerkerBestaetigtAt({
+      handwerker_bestaetigt_at: auftrag.handwerker_bestaetigt_at,
+      projektvertrag_bestaetigt_am: auftrag.projektvertrag_bestaetigt_am,
+      angebot_bestaetigt_at: anfrage.bestaetigt_at ?? null,
+    });
 
     if (
       isPartnerVorgangAusgeblendet({
@@ -178,19 +165,13 @@ export function buildPartnerVorgaenge(input: {
       continue;
     }
 
-    const state = anfrageAbgelehnt
-      ? ("abgelehnt" as const)
-      : hwEingereicht
-        ? ("erledigt" as const)
-        : ableitenVorgangState({
-            auftragStatus: auftrag.status,
-            handwerkerBestaetigtAt: handwerker_bestaetigt_at,
-            positionen: auftrag.positionen,
-            offeneNachreichungPositionIds: auftrag.nachreichungOpenPositionIds,
-            anfrageAktionNoetig: isPartnerAnfrageAktionErforderlich(anfrage),
-            hwStatus: auftrag.hwStatus,
-            anfrageStatus: anfrage.status,
-          });
+    const state = ableitenVorgangState({
+      auftragStatus: auftrag.status,
+      handwerkerBestaetigtAt: handwerker_bestaetigt_at,
+      positionen: auftrag.positionen,
+      offeneNachreichungPositionIds: auftrag.nachreichungOpenPositionIds,
+      anfrageAktionNoetig: true,
+    });
 
     items.push({
       id: anfrage.id,
@@ -204,16 +185,6 @@ export function buildPartnerVorgaenge(input: {
   return items.sort((a, b) => {
     return partnerVorgangLastActivityAt(b) - partnerVorgangLastActivityAt(a);
   });
-}
-
-/** Erstellzeitpunkt des Vorgangs (Auftrag bzw. Anfrage) — für Dashboard „Zuletzt“. */
-export function partnerVorgangCreatedAt(v: PartnerVorgangItem): number {
-  const raw =
-    v.auftrag.created_at?.trim() ||
-    v.anfrage?.gesendet_at?.trim() ||
-    "";
-  const t = raw ? new Date(raw).getTime() : 0;
-  return Number.isFinite(t) ? t : 0;
 }
 
 /** Neuester Zeitstempel aus Status, Anpassungen, Positionen, Tagebuch usw. */

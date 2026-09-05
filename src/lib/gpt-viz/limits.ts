@@ -119,7 +119,7 @@ export async function checkRenderLimit(
         allowed: false,
         code: "portal_monthly",
         message:
-          "Ihr monatliches Visualisierungs-Kontingent im Portal ist aufgebraucht. Nächsten Monat geht es weiter — oder schreiben Sie uns direkt.",
+          "Dein monatliches Visualisierungs-Kontingent im Portal ist aufgebraucht. Nächsten Monat geht es weiter — oder schreib uns direkt.",
         max_renders: maxRenders,
         renders_remaining: 0,
       };
@@ -146,7 +146,7 @@ export async function checkRenderLimit(
         allowed: false,
         code: "guest_needs_lead",
         message:
-          "Sie haben Ihre kostenlose Visualisierung genutzt. Senden Sie Ihr Projekt — dann können Sie noch zweimal anpassen. Oder registrieren Sie sich kostenlos im Portal.",
+          "Du hast deine kostenlose Visualisierung genutzt. Sende dein Projekt — dann kannst du noch zweimal anpassen. Oder registriere dich kostenlos im Portal.",
         max_renders: maxRenders,
         renders_remaining: 0,
       };
@@ -155,7 +155,7 @@ export async function checkRenderLimit(
       allowed: false,
       code: "guest_exhausted",
       message:
-        "Sie haben alle Visualisierungen für dieses Projekt genutzt. Registrieren Sie sich kostenlos im Portal für weitere Projekte.",
+        "Du hast alle Visualisierungen für dieses Projekt genutzt. Registriere dich kostenlos im Portal für weitere Projekte.",
       max_renders: maxRenders,
       renders_remaining: 0,
     };

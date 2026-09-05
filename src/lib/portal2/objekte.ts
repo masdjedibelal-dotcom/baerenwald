@@ -3,17 +3,11 @@
  */
 
 import { resolveLeadObjektId } from "@/lib/org/match-lead-objekt";
-import {
-  pickPreferredAngebotForPortalFlow,
-  resolveLeadPortalFlowStatus,
-  type HvDashboardAngebotSlice,
-  type HvDashboardAuftragSlice,
-} from "@/lib/portal2/hv-dashboard";
 
 export const OBJ_WIZ_STEPS = [
   ["stamm", "Stammdaten"],
   ["einheiten", "Einheiten"],
-  ["verwaltung", "Hausmeister"],
+  ["verwaltung", "Kontakt"],
   ["regeln", "Freigabe"],
   ["fertig", "Prüfen"],
 ] as const;
@@ -38,17 +32,9 @@ export type ObjWizDraft = {
   we?: number | string;
   /** @deprecated Nicht mehr im Wizard — HV ist die eingeloggte Organisation */
   hv?: string;
-  /** @deprecated → Hausmeister-Felder */
   kontakt?: string;
   email?: string;
   tel?: string;
-  /** Bestehender org_hausmeister.id */
-  hmId?: string | null;
-  hmName?: string;
-  hmEmail?: string;
-  hmPortalZugang?: boolean;
-  /** existing = Select, new = Name eingeben */
-  hmMode?: "existing" | "new";
   schwelle?: number | string | null;
   /** UI only — Persistenz objektbezogen = OFFENE-PUNKTE (kein DB-Feld). */
   autopass?: boolean;
@@ -57,13 +43,12 @@ export type ObjWizDraft = {
 export const OBJ_WIZ_ERRORS: Record<string, string> = {
   stamm: "Bitte Bezeichnung, Typ, Straße, Hausnummer, PLZ und Ort ausfüllen.",
   einheiten: "Bitte mindestens 1 Einheit angeben.",
-  verwaltung: "Bitte einen Hausmeister wählen oder neu anlegen (Name).",
 };
 
 export const OBJ_WIZ_TITLES: Record<ObjWizStepId, string> = {
   stamm: "Stammdaten",
   einheiten: "Wie viele Einheiten?",
-  verwaltung: "Hausmeister",
+  verwaltung: "Ansprechpartner (optional)",
   regeln: "Freigabeschwelle",
   fertig: "Prüfen & anlegen",
 };
@@ -71,10 +56,7 @@ export const OBJ_WIZ_TITLES: Record<ObjWizStepId, string> = {
 /** Mock-Detail-Tabs (`screenObjektDetail`). */
 export const OBJ_DETAIL_TABS = [
   { id: "stamm", label: "Stammdaten" },
-  { id: "einheiten", label: "Einheiten" },
-  { id: "anlagen", label: "Anlagen" },
-  { id: "pruefpflichten", label: "Prüfpflichten" },
-  { id: "historie", label: "Historie" },
+  { id: "mieter", label: "Mieter" },
   { id: "vorgaenge", label: "Vorgänge" },
   { id: "regeln", label: "Freigabe" },
   { id: "dokumente", label: "Dokumente" },
@@ -205,8 +187,6 @@ export type ObjCardModel = {
   typLine: string;
   einheitenLabel: string;
   offen: number;
-  /** Überfällig + bald fällig (Prüfpflichten). */
-  pruefpflichtFaellig?: number;
   coverUrl?: string | null;
 };
 
@@ -225,8 +205,7 @@ export function buildObjCardModel(
     einheitenCount?: number | null;
     cover_url?: string | null;
   },
-  offen = 0,
-  pruefpflichtFaellig = 0
+  offen = 0
 ): ObjCardModel {
   return {
     id: o.id,
@@ -238,7 +217,6 @@ export function buildObjCardModel(
       o.einheitenCount
     ),
     offen,
-    pruefpflichtFaellig: pruefpflichtFaellig > 0 ? pruefpflichtFaellig : undefined,
     coverUrl: o.cover_url ?? null,
   };
 }
@@ -281,14 +259,7 @@ export function objWizValid(step: ObjWizStepId, d: ObjWizDraft): boolean {
     return Number.isFinite(we) && we >= 1;
   }
   if (step === "verwaltung") {
-    if (d.hmMode === "existing" || d.hmId) {
-      return Boolean(d.hmId?.trim());
-    }
-    const nameOk = Boolean(d.hmName?.trim() || d.kontakt?.trim());
-    if (!nameOk) return false;
-    if (d.hmPortalZugang) {
-      return Boolean(d.hmEmail?.trim() || d.email?.trim());
-    }
+    // Alles optional — Ansprechpartner nur bei Bedarf
     return true;
   }
   return true;
@@ -434,12 +405,11 @@ export const OBJ_SCHWELLE_INFO = (_value: number) => "";
 
 /** Mock `objMieterMenu` Labels. */
 export const OBJ_MIETER_MENU = {
-  einladen: "Portal-Link senden",
-  /** @deprecated Alias — immer „Portal-Link senden“. */
-  erneut: "Portal-Link senden",
+  einladen: "Zum Portal einladen",
+  erneut: "Portal-Link erneut senden",
   bearbeiten: "Bearbeiten",
   vorgaenge: "Vorgänge ansehen",
-  entfernen: "Entfernen",
+  entfernen: "Mieter entfernen",
 } as const;
 
 export const OBJ_MIETER_PORTAL_STATUS = {
@@ -511,11 +481,8 @@ export function resolveObjMieterPortalStatus(input: {
   return "nicht";
 }
 
-/**
- * Lead noch aktiv am Objekt (Lösch-Schutz) — nicht storniert/erledigt.
- * Breiter als Badge „offen“ (inkl. In Arbeit).
- */
-export function leadIsAktivAmObjekt(lead: {
+/** Lead gilt als „offen“ für Objekt-Badge / Lösch-Schutz. */
+export function leadIsOffenAmObjekt(lead: {
   status?: string | null;
   vorgang_phase?: string | null;
   hv_meldung_status?: string | null;
@@ -533,149 +500,33 @@ export function leadIsAktivAmObjekt(lead: {
   return true;
 }
 
-/**
- * Badge „offen“ = Portal-Flow `gemeldet` | `angebot` (wie Vorgänge-KPI Offen).
- * Ohne Angebot/Auftrag fällt resolve auf Lead-Signale zurück.
- */
-export function leadIsOffenAmObjekt(
-  lead: {
-    id?: string;
+export function countOffeneByObjektId(
+  leads: Array<{
+    kunde_objekt_id?: string | null;
     status?: string | null;
     vorgang_phase?: string | null;
     hv_meldung_status?: string | null;
-    org_freigabe_status?: string | null;
-    situation?: string | null;
+    strasse?: string | null;
+    hausnummer?: string | null;
+    plz?: string | null;
     funnel_daten?: unknown;
-    kanal?: string | null;
-  },
-  opts?: {
-    angebot?: HvDashboardAngebotSlice | null;
-    auftrag?: HvDashboardAuftragSlice | null;
-  }
-): boolean {
-  if (!leadIsAktivAmObjekt(lead)) return false;
-  const flow = resolveLeadPortalFlowStatus({
-    lead: {
-      id: lead.id?.trim() || "_",
-      status: lead.status,
-      situation: lead.situation,
-      funnel_daten: lead.funnel_daten,
-      kanal: lead.kanal,
-      org_freigabe_status: lead.org_freigabe_status,
-      hv_meldung_status: lead.hv_meldung_status,
-    },
-    angebot: opts?.angebot ?? null,
-    auftrag: opts?.auftrag ?? null,
-  });
-  return flow === "gemeldet" || flow === "angebot";
-}
-
-function dedupeLeadsById<T extends { id?: string }>(leads: T[]): T[] {
-  const byId = new Map<string, T>();
-  const withoutId: T[] = [];
+  }>,
+  objekte?: Array<{
+    id: string;
+    strasse?: string | null;
+    hausnummer?: string | null;
+    plz?: string | null;
+    ort?: string | null;
+  }>
+): Record<string, number> {
+  const out: Record<string, number> = {};
+  const list = objekte ?? [];
   for (const lead of leads) {
-    const id = lead.id?.trim();
-    if (!id) {
-      withoutId.push(lead);
-      continue;
-    }
-    byId.set(id, lead);
-  }
-  return [...Array.from(byId.values()), ...withoutId];
-}
-
-type ObjektCountLead = {
-  id?: string;
-  kunde_objekt_id?: string | null;
-  status?: string | null;
-  vorgang_phase?: string | null;
-  hv_meldung_status?: string | null;
-  org_freigabe_status?: string | null;
-  situation?: string | null;
-  funnel_daten?: unknown;
-  kanal?: string | null;
-  strasse?: string | null;
-  hausnummer?: string | null;
-  plz?: string | null;
-};
-
-type ObjektCountObjekt = {
-  id: string;
-  strasse?: string | null;
-  hausnummer?: string | null;
-  plz?: string | null;
-  ort?: string | null;
-};
-
-function resolveOidForCount(
-  lead: ObjektCountLead,
-  objekte: ObjektCountObjekt[]
-): string | null {
-  return objekte.length > 0
-    ? resolveLeadObjektId(lead, objekte)
-    : lead.kunde_objekt_id?.trim() || null;
-}
-
-/** Offene Vorgänge pro Objekt (Flow gemeldet) — IDs dedupliziert. */
-export function countOffeneByObjektId(
-  leads: ObjektCountLead[],
-  objekte?: ObjektCountObjekt[],
-  opts?: {
-    angebote?: HvDashboardAngebotSlice[];
-    auftraege?: HvDashboardAuftragSlice[];
-  }
-): Record<string, number> {
-  const out: Record<string, number> = {};
-  const list = objekte ?? [];
-  const unique = dedupeLeadsById(leads);
-
-  const angeboteByLead = new Map<string, HvDashboardAngebotSlice[]>();
-  for (const a of opts?.angebote ?? []) {
-    const lid = a.lead_id?.trim();
-    if (!lid) continue;
-    const arr = angeboteByLead.get(lid) ?? [];
-    arr.push(a);
-    angeboteByLead.set(lid, arr);
-  }
-  const angebotByLead = new Map<string, HvDashboardAngebotSlice>();
-  for (const [lid, arr] of Array.from(angeboteByLead.entries())) {
-    const preferred = pickPreferredAngebotForPortalFlow(arr);
-    if (preferred) angebotByLead.set(lid, preferred);
-  }
-  const auftragByLead = new Map<string, HvDashboardAuftragSlice>();
-  for (const a of opts?.auftraege ?? []) {
-    const lid = a.lead_id?.trim();
-    if (!lid) continue;
-    if (!auftragByLead.has(lid)) auftragByLead.set(lid, a);
-  }
-
-  for (const lead of unique) {
-    const lid = lead.id?.trim() || "";
-    if (
-      !leadIsOffenAmObjekt(lead, {
-        angebot: lid ? angebotByLead.get(lid) ?? null : null,
-        auftrag: lid ? auftragByLead.get(lid) ?? null : null,
-      })
-    ) {
-      continue;
-    }
-    const oid = resolveOidForCount(lead, list);
-    if (!oid) continue;
-    out[oid] = (out[oid] ?? 0) + 1;
-  }
-  return out;
-}
-
-/** Aktive (nicht erledigte) Vorgänge — für Lösch-Schutz. */
-export function countAktiveByObjektId(
-  leads: ObjektCountLead[],
-  objekte?: ObjektCountObjekt[]
-): Record<string, number> {
-  const out: Record<string, number> = {};
-  const list = objekte ?? [];
-  for (const lead of dedupeLeadsById(leads)) {
-    if (!leadIsAktivAmObjekt(lead)) continue;
-    const oid = resolveOidForCount(lead, list);
+    if (!leadIsOffenAmObjekt(lead)) continue;
+    const oid =
+      list.length > 0
+        ? resolveLeadObjektId(lead, list)
+        : lead.kunde_objekt_id?.trim() || null;
     if (!oid) continue;
     out[oid] = (out[oid] ?? 0) + 1;
   }

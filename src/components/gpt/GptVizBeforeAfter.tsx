@@ -37,7 +37,7 @@ export function GptVizBeforeAfter({
       <GptChatImageCard
         image={{
           url: ergebnisUrl,
-          label: "KI-generierte Visualisierung",
+          label: "Deine Visualisierung",
           downloadName: "baerenwald-visualisierung.jpg",
         }}
       />

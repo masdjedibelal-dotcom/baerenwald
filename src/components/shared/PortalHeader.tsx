@@ -1,4 +1,4 @@
-'use client';
+"use client";
 
 import type { ReactNode } from "react";
 
@@ -15,13 +15,10 @@ export type PortalHeaderUser = {
    * Sonst: Portal-Primary-Soft / Primary.
    */
   useOrgAvatarColors?: boolean;
-  /** Unter dem Namen — Rollenlabel (11/800 Uppercase), Farbe aus role-badge */
-  roleLabel?: string | null;
-  roleColor?: string | null;
 };
 
 export type PortalHeaderProps = {
-  /** Mobil: Suchleiste; Desktop: zentriert. */
+  /** Mobil: Suchleiste links (über Header-Bild). */
   search?: ReactNode;
   /** Glocke (+ Abmelden Desktop). */
   notifications?: ReactNode;
@@ -33,8 +30,8 @@ export type PortalHeaderProps = {
 
 /**
  * Portal-Header-Cluster:
- * Mobil: Suche (breit) · Glocke
- * Desktop: Suche zentriert · Glocke · Avatar + Name
+ * Mobil: Suche · Glocke · Avatar
+ * Desktop: (Suche) · Glocke · Avatar + Name · Actions
  */
 export function PortalHeader({
   search,
@@ -47,53 +44,33 @@ export function PortalHeader({
   const initials =
     user?.initials?.trim() ||
     (name ? portalHeaderInitials(name) : "");
-  const roleLabel = user?.roleLabel?.trim() || "";
-  const hasEnd = Boolean(notifications || (user && name) || actions);
 
   return (
     <div className={cn("portal-header", className)} data-portal-header="">
       {search ? (
         <div className="portal-header-search">{search}</div>
-      ) : (
-        <div className="portal-header-search portal-header-search--empty" aria-hidden />
-      )}
+      ) : null}
 
-      {hasEnd ? (
-        <div className="portal-header-end">
-          {notifications ? (
-            <div className="portal-header-notifications">{notifications}</div>
-          ) : null}
+      {notifications ? (
+        <div className="portal-header-notifications">{notifications}</div>
+      ) : null}
 
-          {user && name ? (
-            <div className="portal-header-user" data-portal-header-user="">
-              <div
-                className={cn(
-                  "portal-header-avatar",
-                  user.useOrgAvatarColors && "portal-header-avatar--org"
-                )}
-                aria-hidden
-              >
-                {initials}
-              </div>
-              <div className="portal-header-user-text">
-                <span className="portal-header-user-name">{name}</span>
-                {roleLabel ? (
-                  <span
-                    className="portal-header-user-role"
-                    style={
-                      user.roleColor ? { color: user.roleColor } : undefined
-                    }
-                  >
-                    {roleLabel}
-                  </span>
-                ) : null}
-              </div>
-            </div>
-          ) : null}
-
-          {actions ? <div className="portal-header-actions">{actions}</div> : null}
+      {user && name ? (
+        <div className="portal-header-user" data-portal-header-user="">
+          <div
+            className={cn(
+              "portal-header-avatar",
+              user.useOrgAvatarColors && "portal-header-avatar--org"
+            )}
+            aria-hidden
+          >
+            {initials}
+          </div>
+          <span className="portal-header-user-name">{name}</span>
         </div>
       ) : null}
+
+      {actions ? <div className="portal-header-actions">{actions}</div> : null}
     </div>
   );
 }

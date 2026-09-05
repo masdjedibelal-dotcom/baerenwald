@@ -52,9 +52,7 @@ function MieterStgRow({
       className={cn(
         "mieter-stg-row",
         step.done && "mieter-stg-row--done",
-        // Terminal „Erledigt“: done+active — Active-Stil (weiß) darf Done (grün) nicht überschreiben
-        step.active && !step.done && "mieter-stg-row--active",
-        step.active && step.done && "mieter-stg-row--complete"
+        step.active && "mieter-stg-row--active"
       )}
     >
       <div className="mieter-stg-rail">

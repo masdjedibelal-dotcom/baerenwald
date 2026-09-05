@@ -5,7 +5,7 @@
 
 import type { MeldeAnswers } from "@/lib/funnel/melde-dynamic-questions";
 import { normalizeFunnelDaten } from "@/lib/lead-funnel-daten";
-import { labelBereich, labelSituation } from "@/lib/lead-funnel-labels";
+import { labelBereich } from "@/lib/lead-funnel-labels";
 import {
   isMeldeBereichId,
   meldeBereichLabel,
@@ -111,10 +111,6 @@ function firstMeaningfulLine(text: string | null | undefined): string | null {
     .trim();
   if (!line || line.length < 4) return null;
   if (GENERIC_TITEL.has(line.toLowerCase())) return null;
-  // Einzelwort ohne Leerzeichen / Interpunktion → oft Tippfehler-Name, kein Titel
-  if (line.length <= 24 && !/\s/.test(line) && !/[.,;:!?/]/.test(line)) {
-    return null;
-  }
   return line.length > 72 ? `${line.slice(0, 69).trimEnd()}…` : line;
 }
 
@@ -129,15 +125,6 @@ function isGenericTitel(t: string): boolean {
   return false;
 }
 
-/** Bereichs-Labels wie „Wasser / Rohr / WC“ sind kein Vorgangs-Titel. */
-function isMeldeBereichFallbackTitel(t: string): boolean {
-  const n = t.trim().toLowerCase();
-  if (!n) return false;
-  if (n.includes(" / ")) return true;
-  if (n === "wasser / rohr / wc" || n.includes("rohr / wc")) return true;
-  return false;
-}
-
 export type MeldeVorgangTitelInput = {
   situation?: string | null;
   bereiche?: string[] | null;
@@ -148,7 +135,7 @@ export type MeldeVorgangTitelInput = {
 };
 
 /**
- * Sprechender List-/Detail-Titel für Melde-Vorgänge (Mieter-Melde-Flow).
+ * Sprechender List-/Detail-Titel für Melde-Vorgänge.
  * Dringlichkeit bleibt am Status-Chip (NOTFALL) — nicht im Titel wiederholen.
  */
 export function buildMeldeVorgangTitel(input: MeldeVorgangTitelInput): string {
@@ -158,34 +145,22 @@ export function buildMeldeVorgangTitel(input: MeldeVorgangTitelInput): string {
     ? meldeBereichLabel(bereichId)
     : formatAnfrageGewerk(input.bereiche);
 
-  // Expliziter Melde-Bereich hat Vorrang (vermeidet tropft→Heizung-Kollision)
-  const ursachenBereich =
-    bereichId ??
-    resolveMeldeUrsachenBereich({
-      answers,
-      bereichLabel,
-      bereiche: input.bereiche,
-    });
+  const ursachenBereich = resolveMeldeUrsachenBereich({
+    answers,
+    bereichLabel,
+    bereiche: input.bereiche,
+  });
 
   let core = "";
   if (ursachenBereich) {
     core = meldeSchadenKurz(ursachenBereich, answers).trim();
   }
 
-  if (!core || isGenericTitel(core) || isMeldeBereichFallbackTitel(core)) {
-    const vorhaben = formatVorhabenTitel(
-      input.situation,
-      input.bereiche,
-      input.funnelDaten
-    );
+  if (!core || isGenericTitel(core)) {
     core =
       firstMeaningfulLine(input.beschreibung) ||
-      (bereichLabel && !isMeldeBereichFallbackTitel(bereichLabel)
-        ? bereichLabel
-        : null) ||
-      (vorhaben !== "Vorgang" ? vorhaben : null) ||
-      titelFromFunnelLeistungen(input.funnelDaten) ||
-      "Vorgang";
+      bereichLabel ||
+      "Meldung";
   }
 
   // Alte „·“-Joins aus SchadenKurz auf natürliche Sprache ziehen
@@ -204,104 +179,18 @@ function formatAnfrageGewerk(bereiche?: string[] | null): string | undefined {
   return parts.length ? parts.join(", ") : undefined;
 }
 
-/** Leistungstitel aus Funnel (CRM was_zeilen / Positionen) — Fallback statt „Vorgang“. */
-export function titelFromFunnelLeistungen(funnelDaten: unknown): string | null {
-  if (funnelDaten == null) return null;
-
-  const pools: unknown[] = [];
-  if (Array.isArray(funnelDaten)) {
-    pools.push(...funnelDaten);
-  } else if (typeof funnelDaten === "object") {
-    const f = funnelDaten as Record<string, unknown>;
-    if (Array.isArray(f.was_zeilen)) pools.push(...f.was_zeilen);
-    if (Array.isArray(f.positionen)) pools.push(...f.positionen);
-    if (Array.isArray(f.leistungen)) pools.push(...f.leistungen);
-    for (const key of ["items", "zeilen"] as const) {
-      if (Array.isArray(f[key])) pools.push(...(f[key] as unknown[]));
-    }
-  } else {
-    return null;
-  }
-
-  const titles: string[] = [];
-  for (const row of pools) {
-    if (!row || typeof row !== "object") continue;
-    const t = String(
-      (row as { titel?: unknown; title?: unknown; leistung?: unknown }).titel ??
-        (row as { title?: unknown }).title ??
-        (row as { leistung?: unknown }).leistung ??
-        ""
-    ).trim();
-    if (t && !isGenericTitel(t)) titles.push(t);
-  }
-  if (!titles.length) return null;
-  if (titles.length === 1) return titles[0]!.slice(0, 80);
-  return `${titles[0]!.slice(0, 50)} (+${titles.length - 1})`;
-}
-
-/** Situation · Gewerk — wie normale Anfragen / HV-selbst angelegte Vorgänge. */
-export function formatVorhabenTitel(
-  situation?: string | null,
-  bereiche?: string[] | null,
-  funnelDaten?: unknown
-): string {
-  const vorhabenLabel = labelSituation(situation);
-  const vorhaben = vorhabenLabel !== "—" ? vorhabenLabel : undefined;
-  const gewerk = formatAnfrageGewerk(bereiche);
-  const fromFunnel = titelFromFunnelLeistungen(funnelDaten);
-  return (
-    [vorhaben, gewerk].filter(Boolean).join(" · ") ||
-    fromFunnel ||
-    "Vorgang"
-  );
-}
-
-/**
- * Ob Lead eine echte Mieter-Meldung ist (sprechender Melde-Titel).
- * HV-eigene Erfassung (Neuer Vorgang) → false → Vorhaben-Titel wie Anfragen.
- */
+/** Ob Lead eine Melde-Meldung ist (Titel aus Funnel ableiten). */
 export function leadIstMeldeTitelQuelle(lead: {
   anlass?: string | null;
   kanal?: string | null;
   funnelDaten?: unknown;
-  erfassung_von?: string | null;
 }): boolean {
-  const erfassung = (lead.erfassung_von ?? "").toLowerCase().trim();
-  if (erfassung === "organisation") return false;
-
-  const kanal = (lead.kanal ?? "").toLowerCase().trim();
-  /** HV/Org legt selbst an — kein Melde-Titel („Meldung“). */
-  if (
-    kanal === "hv_direkt" ||
-    kanal === "hv_manuell" ||
-    kanal === "hv_katalog" ||
-    kanal === "org_service"
-  ) {
-    return false;
-  }
-
-  if (kanal === "hv_melder_link" || kanal === "hv_einladung") return true;
-  if (erfassung === "melder") return true;
   if (lead.anlass === "meldung") return true;
-
+  const kanal = (lead.kanal ?? "").toLowerCase();
+  if (kanal.startsWith("hv_")) return true;
   if (lead.funnelDaten && typeof lead.funnelDaten === "object") {
     const f = lead.funnelDaten as Record<string, unknown>;
-    const quelle = String(f.quelle ?? "").toLowerCase();
-    if (
-      quelle === "hv_direkt" ||
-      quelle === "hv_manuell" ||
-      quelle === "hv_katalog" ||
-      quelle === "org_service"
-    ) {
-      return false;
-    }
-    if (f.melde_bereich || f.melde_kategorie) return true;
-    if (f.answers || f.antworten) return true;
-    const fd = f.fachdetails;
-    if (fd && typeof fd === "object" && !Array.isArray(fd)) {
-      const nested = (fd as { fachdetailAnswers?: unknown }).fachdetailAnswers;
-      if (nested && typeof nested === "object") return true;
-    }
+    if (f.melde_bereich || f.melde_kategorie || f.fachdetailAnswers) return true;
   }
   return false;
 }
@@ -322,18 +211,9 @@ export function formatMeldeNotifTitel(
 }
 
 export const MELDE_NOTIF_COPY = {
-  neueMeldung: "Neue Meldung: {titel}",
-  meldungEingegangen: "Ihre Meldung ist eingegangen",
-  meldungEingegangenBody:
-    "Wir haben Ihre Meldung erhalten und kümmern uns darum.",
-  statusWechsel: "Status: {titel}",
   neuesAngebot: "Angebot bereit: {titel}",
-  neuesAngebotBody:
-    "„{titel}“ liegt im Portal bereit — bitte annehmen oder ablehnen.",
-  neuesAngebotUnterSchwelleBody:
-    "„{titel}“ liegt unter Ihrer Freigabeschwelle — wir kümmern uns direkt um den Auftrag.",
+  neuesAngebotBody: "„{titel}“ liegt im Portal zur Prüfung bereit.",
   partnerErledigt: "Erledigt: {titel}",
   partnerTeilabschluss: "Teilabschluss: {titel}",
   bautagebuch: "Update: {titel}",
-  kostenfreigabe: "Kostenfreigabe nötig",
 } as const;

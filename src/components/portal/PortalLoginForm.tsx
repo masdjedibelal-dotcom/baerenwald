@@ -11,8 +11,7 @@ import {
   AuthLink,
 } from "@/components/portal/auth/AuthPrimitives";
 import { PortalAuthBusy } from "@/components/portal/auth/PortalAuthBusy";
-import { PortalSignupOtpStep } from "@/components/portal/PortalSignupOtpStep";
-import { StagingAuthHint } from "@/components/portal/auth/StagingAuthHint";
+import { PortalResendConfirmation } from "@/components/portal/PortalResendConfirmation";
 import { assertPortalEmailAllowed } from "@/app/actions/assert-portal-email-allowed";
 import { AUTH_LOGIN, type AuthPortalRole } from "@/lib/portal2/auth";
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
@@ -53,8 +52,6 @@ export function PortalLoginForm({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [hashBusy, setHashBusy] = useState(true);
-  const [awaitingOtp, setAwaitingOtp] = useState(false);
-  const [otpConfirmed, setOtpConfirmed] = useState(false);
 
   useEffect(() => {
     const prefillEmail = searchParams.get("email")?.trim();
@@ -106,12 +103,12 @@ export function PortalLoginForm({
       if (signInError) {
         const msg = signInError.message.toLowerCase();
         if (msg.includes("email not confirmed")) {
-          setAwaitingOtp(true);
-          setLoading(false);
-          return;
+          setError(
+            "Bitte bestätigen Sie zuerst Ihre E-Mail — wir haben Ihnen einen Link geschickt."
+          );
         } else if (msg.includes("banned") || msg.includes("user is banned")) {
           setError(
-            "Diese Kontaktadresse ist gesperrt. Bitte wenden Sie sich an uns, wenn Sie Hilfe brauchen."
+            "Diese Kontaktadresse ist gesperrt. Bitte wende dich an uns, wenn du Hilfe brauchst."
           );
         } else {
           setError("E-Mail oder Passwort ist ungültig.");
@@ -146,76 +143,25 @@ export function PortalLoginForm({
     );
   }
 
-  if (awaitingOtp || (hint === "confirm" && !otpConfirmed)) {
-    return (
-      <div className="space-y-4">
-        <PortalSignupOtpStep
-          email={email.trim()}
-          brand="meinbaerenwald"
-          onVerified={async () => {
-            if (password.length >= 8) {
-              const supabase = getSupabaseBrowserClient();
-              const { error: signErr } = await supabase.auth.signInWithPassword({
-                email: email.trim(),
-                password,
-              });
-              if (signErr) {
-                setAwaitingOtp(false);
-                setOtpConfirmed(true);
-                throw new Error(
-                  "Konto bestätigt — bitte erneut mit Passwort anmelden."
-                );
-              }
-              router.replace(next);
-              router.refresh();
-              return;
-            }
-            setAwaitingOtp(false);
-            setOtpConfirmed(true);
-          }}
-        />
-      </div>
-    );
-  }
-
   return (
     <form onSubmit={(e) => void onSubmit(e)} className="space-y-0">
-      <StagingAuthHint variant="kunde" />
-      {otpConfirmed ? (
-        <p className="mb-4 rounded-lg bg-accent-light/60 px-3 py-3 text-sm text-accent">
-          E-Mail bestätigt. Sie können sich jetzt anmelden.
-        </p>
-      ) : null}
       {hint === "signed_out" ? (
         <p className="mb-4 rounded-lg bg-accent-light/60 px-3 py-3 text-sm text-accent">
           Sie sind abgemeldet.
         </p>
       ) : null}
+      {hint === "confirm" ? (
+        <div className="mb-4 space-y-3 rounded-lg bg-amber-50 px-3 py-3 text-sm text-amber-900">
+          <p>
+            Bitte bestätigen Sie Ihre E-Mail über den Link in unserer Nachricht,
+            danach können Sie sich anmelden.
+          </p>
+          <PortalResendConfirmation defaultEmail={email} className="text-left" />
+        </div>
+      ) : null}
       {hint === "password-updated" ? (
         <p className="mb-4 rounded-lg bg-accent-light/60 px-3 py-3 text-sm text-accent">
           Ihr Passwort wurde gespeichert. Sie können sich jetzt anmelden.
-        </p>
-      ) : null}
-      {hint === "crm_enter_invalid" ? (
-        <p className="mb-4 rounded-lg bg-red-50 px-3 py-3 text-sm text-red-800">
-          Der CRM-Portal-Link ist ungültig oder abgelaufen. Bitte im CRM erneut
-          „Login“ / „Portal öffnen“ klicken. Prüfen Sie lokal, dass
-          PARTNER_INTERNAL_API_SECRET in CRM und Portal identisch gesetzt ist.
-        </p>
-      ) : null}
-      {hint === "crm_enter_failed" ? (
-        <p className="mb-4 rounded-lg bg-red-50 px-3 py-3 text-sm text-red-800">
-          Automatische Anmeldung aus dem CRM ist fehlgeschlagen
-          {searchParams.get("msg")
-            ? `: ${decodeURIComponent(searchParams.get("msg") || "")}`
-            : "."}{" "}
-          Bitte erneut versuchen oder manuell anmelden.
-        </p>
-      ) : null}
-      {hint === "session_mismatch" ? (
-        <p className="mb-4 rounded-lg bg-amber-50 px-3 py-3 text-sm text-amber-900">
-          Die Sitzung passt nicht zu einem Kundenkonto. Bitte mit der im CRM
-          hinterlegten E-Mail anmelden.
         </p>
       ) : null}
       {authError ? (

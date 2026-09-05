@@ -7,7 +7,6 @@ import {
   isPortalDefaultMediaUrl,
   resolveObjektCoverSrc,
 } from "@/lib/portal2/portal-media";
-import { usePortalUploadBusy } from "@/components/shared/usePortalUploadBusy";
 import { orgPortalToast, portalToastError } from "@/lib/shared/portal-toast";
 import { cn } from "@/lib/utils";
 
@@ -37,7 +36,7 @@ export function OrganisationObjektCover({
   canUpload = true,
 }: Props) {
   const inputRef = useRef<HTMLInputElement>(null);
-  const { uploadBusy: busy, runUpload } = usePortalUploadBusy();
+  const [busy, setBusy] = useState(false);
   const [preview, setPreview] = useState<string | null>(null);
   const [dragging, setDragging] = useState(false);
   const [imgFailed, setImgFailed] = useState(false);
@@ -58,7 +57,8 @@ export function OrganisationObjektCover({
       portalToastError("Nur Bilder erlaubt");
       return;
     }
-    await runUpload(async () => {
+    setBusy(true);
+    try {
       const local = URL.createObjectURL(file);
       setPreview(local);
       setImgFailed(false);
@@ -78,10 +78,12 @@ export function OrganisationObjektCover({
       setPreview(json.cover_url);
       onUploaded?.(json.cover_url);
       orgPortalToast.saved();
-    }).catch(() => {
+    } catch {
       setPreview(null);
       portalToastError("Upload fehlgeschlagen");
-    });
+    } finally {
+      setBusy(false);
+    }
   };
 
   const onDrop = (e: DragEvent) => {
@@ -92,7 +94,7 @@ export function OrganisationObjektCover({
     if (f) void upload(f);
   };
 
-  const height = variant === "card" ? "h-[152px]" : "h-[66px] w-24";
+  const height = variant === "card" ? "h-[140px]" : "h-[66px] w-24";
   const editLabel = hasCustom
     ? "Gebäudefoto ersetzen"
     : "Gebäudefoto hochladen";
@@ -101,7 +103,7 @@ export function OrganisationObjektCover({
     <div
       className={cn(
         "relative overflow-hidden bg-muted",
-        variant === "card" ? "w-full rounded-none" : "shrink-0 rounded-[10px]",
+        variant === "card" ? "w-full rounded-t-xl" : "shrink-0 rounded-[10px]",
         height,
         className
       )}
@@ -121,7 +123,7 @@ export function OrganisationObjektCover({
           src={src}
           alt=""
           className={cn(
-            "absolute inset-0 h-full w-full object-cover",
+            "h-full w-full object-cover",
             !hasCustom && "opacity-90"
           )}
           onError={() => setImgFailed(true)}

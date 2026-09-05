@@ -13,7 +13,6 @@ import {
   PortalListTableCell,
   PortalListTableRow,
 } from "@/components/shared/PortalListTable";
-import { PortalInlineLoading } from "@/components/shared/PortalInlineLoading";
 import { PORTAL_VAR } from "@/lib/portal2/tokens";
 import { orgPortalToast, portalToastError } from "@/lib/shared/portal-toast";
 import { cn } from "@/lib/utils";
@@ -181,9 +180,12 @@ export function OrganisationObjektEinheitenBewohnerPanel({
         }
       >
         {loading ? (
-          <div className="px-3.5 py-4">
-            <PortalInlineLoading label="Bewohner werden geladen" />
-          </div>
+          <p
+            className="px-3.5 py-4 text-[13px]"
+            style={{ color: PORTAL_VAR.sub }}
+          >
+            Lade Bewohner …
+          </p>
         ) : (
           bewohner.map((b) => {
             const wohnungLabel =

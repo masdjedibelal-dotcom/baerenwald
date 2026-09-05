@@ -9,46 +9,6 @@ export type HwKalkPosition = {
   gewerk: string;
 };
 
-/** Maße für Positions-Menge — analog CRM `POSITION_MENGE_EINHEITEN`, ohne Dubletten. */
-export const HW_MENGE_EINHEITEN = [
-  "Stk.",
-  "m²",
-  "m",
-  "lfm",
-  "Std.",
-  "Tag",
-  "kg",
-  "Psch.",
-] as const;
-
-export type HwMengeEinheit = (typeof HW_MENGE_EINHEITEN)[number];
-
-function normalizeHwEinheit(raw: string): string {
-  const e = raw.trim();
-  const k = e.toLowerCase().replace(/\s+/g, " ");
-  if (!k) return "Stk.";
-  if (k === "stück" || k === "stk" || k === "stk.") return "Stk.";
-  if (k === "m2" || k === "qm" || k === "m²") return "m²";
-  if (k === "lfd. m" || k === "lfd.m" || k === "lfd m" || k === "lfm") return "lfm";
-  if (k === "h" || k === "std" || k === "std.") return "Std.";
-  if (k === "pauschal" || k === "psch" || k === "psch.") return "Psch.";
-  if ((HW_MENGE_EINHEITEN as readonly string[]).includes(e)) return e;
-  return e;
-}
-
-export function splitHwMenge(menge: string): { faktor: string; einheit: string } {
-  const raw = String(menge ?? "").trim();
-  const m = raw.match(/^(\d+(?:[.,]\d+)?)\s*(.*)$/);
-  const faktor = m?.[1]?.replace(".", ",") ?? "1";
-  const einheit = normalizeHwEinheit(m?.[2] ?? "Stk.");
-  return { faktor, einheit };
-}
-
-export function joinHwMenge(faktor: string, einheit: string): string {
-  const n = String(faktor ?? "").trim().replace(".", ",") || "1";
-  return `${n} ${normalizeHwEinheit(einheit)}`;
-}
-
 /** Mock `DEFAULT_POSITIONEN` 1:1. */
 export const DEFAULT_HW_POSITIONEN: HwKalkPosition[] = [
   {

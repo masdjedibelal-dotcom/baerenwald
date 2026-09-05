@@ -4,7 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 
 import { cn } from "@/lib/utils";
 
-const VERMITTLUNG_EMAIL = "info@baerenwald-muenchen.de";
+const VERMITTLUNG_EMAIL = "info@baerenwaldmuenchen.de";
 
 const VERMITTLUNG_KARTEN = [
   {

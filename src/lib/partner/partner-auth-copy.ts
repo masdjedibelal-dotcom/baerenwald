@@ -56,5 +56,5 @@ export const PARTNER_AUTH_COPY = {
   },
 
   confirmEmailSuccess:
-    "Wir haben dir einen 4-stelligen Code per E-Mail geschickt. Gib ihn hier ein — danach kannst du dich im Partner-Portal anmelden.",
+    "Wir haben dir eine Bestätigungs-E-Mail geschickt. Nach dem Klick auf den Link kannst du dich im Partner-Portal anmelden.",
 } as const;

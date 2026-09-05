@@ -67,10 +67,11 @@ export function resolveAngebotHandwerkerPhase(
     return "anfrage";
   }
 
-  /** HW hat CRM-Einigung bestätigt — Tab Aufträge (Rechnung unabhängig vom Projektvertrag). */
-  if (hwSt === "uebernommen" || hwSt === "bestaetigt") {
+  /** HW hat CRM-Einigung bestätigt — Tab Angebote (PDF, Vertrag). */
+  if (hwSt === "uebernommen") {
     if (hasPartnerKonditionenNachreichungAusstehend(item)) return "anfrage";
-    return "auftrag";
+    if (item.projektvertrag_bestaetigt_am) return "auftrag";
+    return "angebot";
   }
 
   /** Preiseinigung noch offen → Tab Anfragen. */
@@ -150,7 +151,7 @@ export function isAuftragAnfrageListItem(item: {
   return !HW_BEANTWORTET.has(h);
 }
 
-/** Auftrag in „Aufträge“ — nach CRM-Freigabe/Annahme (kein Projektvertrag nötig). */
+/** Auftrag in „Aufträge“ — nach CRM-Bestätigung + verbindlicher Vertragsannahme. */
 export function isAuftragAuftraegeListItem(item: {
   portalPhase: PartnerPortalPhase;
   angebotHandwerkerId?: string | null;
@@ -160,6 +161,9 @@ export function isAuftragAuftraegeListItem(item: {
   if (item.portalPhase !== "auftrag") return false;
   const h = item.hwStatus.toLowerCase();
   if (h === "akzeptiert") return false;
+  /** Noch Angebot/Vertragspaket offen → Tab Angebote. */
+  if (item.angebotHandwerkerId) return false;
+  if (!item.projektvertrag_bestaetigt_am) return false;
   return true;
 }
 

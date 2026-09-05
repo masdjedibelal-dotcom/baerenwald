@@ -1,9 +1,8 @@
-import { PDFDocument, StandardFonts, rgb, type PDFFont, type PDFPage } from "pdf-lib";
+import { PDFDocument, StandardFonts, rgb } from "pdf-lib";
 
 export type BautagebuchVersicherungPdfInput = {
   orgName: string;
   objektTitel: string;
-  objektAdresse?: string | null;
   versicherungsNr?: string | null;
   schadenNr?: string | null;
   eintraege: Array<{
@@ -15,16 +14,9 @@ export type BautagebuchVersicherungPdfInput = {
   }>;
 };
 
-const PAGE_W = 595;
-const PAGE_H = 842;
-const MARGIN = 48;
-const CONTENT_W = PAGE_W - MARGIN * 2;
-
-const ACCENT = rgb(0.1, 0.24, 0.17);
-const TEXT = rgb(0.07, 0.07, 0.07);
-const MUTED = rgb(0.42, 0.45, 0.44);
-const LINE = rgb(0.82, 0.84, 0.82);
-const SOFT = rgb(0.95, 0.96, 0.95);
+const green = rgb(0.1, 0.24, 0.17);
+const gray = rgb(0.35, 0.42, 0.39);
+const margin = 48;
 
 function fmtDatum(iso: string): string {
   const d = new Date(iso);
@@ -53,231 +45,117 @@ function wrapText(text: string, maxChars: number): string[] {
   return lines.length ? lines : ["—"];
 }
 
-type DrawCtx = {
-  pdf: PDFDocument;
-  page: PDFPage;
-  font: PDFFont;
-  fontBold: PDFFont;
-  y: number;
-  policenNr: string;
-  orgName: string;
-  erstelltAm: string;
-};
-
-function drawFooter(ctx: DrawCtx) {
-  ctx.page.drawLine({
-    start: { x: MARGIN, y: 52 },
-    end: { x: PAGE_W - MARGIN, y: 52 },
-    thickness: 0.5,
-    color: LINE,
-  });
-  const left = `${ctx.orgName} · Erstellt ${ctx.erstelltAm}`;
-  ctx.page.drawText(left.slice(0, 70), {
-    x: MARGIN,
-    y: 38,
-    size: 8,
-    font: ctx.font,
-    color: MUTED,
-  });
-  const right = ctx.policenNr.trim()
-    ? `Policen-Nr. ${ctx.policenNr.trim()}`
-    : "";
-  if (right) {
-    const rw = ctx.font.widthOfTextAtSize(right, 8);
-    ctx.page.drawText(right, {
-      x: PAGE_W - MARGIN - rw,
-      y: 38,
-      size: 8,
-      font: ctx.font,
-      color: MUTED,
-    });
-  }
-}
-
-function ensureSpace(ctx: DrawCtx, need: number) {
-  if (ctx.y < need) {
-    drawFooter(ctx);
-    ctx.page = ctx.pdf.addPage([PAGE_W, PAGE_H]);
-    ctx.y = PAGE_H - 56;
-  }
-}
-
-function drawText(
-  ctx: DrawCtx,
-  text: string,
-  opts?: { bold?: boolean; size?: number; color?: ReturnType<typeof rgb> }
-) {
-  const size = opts?.size ?? 10;
-  ensureSpace(ctx, size + 28);
-  ctx.page.drawText(text.slice(0, 110), {
-    x: MARGIN,
-    y: ctx.y,
-    size,
-    font: opts?.bold ? ctx.fontBold : ctx.font,
-    color: opts?.color ?? MUTED,
-  });
-  ctx.y -= size + 5;
-}
-
-function drawHr(ctx: DrawCtx, accent = false) {
-  ensureSpace(ctx, 20);
-  ctx.page.drawLine({
-    start: { x: MARGIN, y: ctx.y + 4 },
-    end: { x: PAGE_W - MARGIN, y: ctx.y + 4 },
-    thickness: accent ? 1.5 : 0.6,
-    color: accent ? ACCENT : LINE,
-  });
-  ctx.y -= 14;
-}
-
-function drawMetaBar(
-  ctx: DrawCtx,
-  cells: Array<{ label: string; value: string }>
-) {
-  const usable = cells.filter((c) => c.value.trim());
-  if (!usable.length) return;
-  const rowH = 36;
-  ensureSpace(ctx, rowH + 16);
-  const top = ctx.y + 4;
-  const bottom = top - rowH;
-  ctx.page.drawRectangle({
-    x: MARGIN,
-    y: bottom,
-    width: CONTENT_W,
-    height: rowH,
-    color: SOFT,
-    borderColor: LINE,
-    borderWidth: 0.6,
-  });
-  const colW = CONTENT_W / usable.length;
-  usable.forEach((c, i) => {
-    const x = MARGIN + i * colW + 10;
-    if (i > 0) {
-      ctx.page.drawLine({
-        start: { x: MARGIN + i * colW, y: bottom + 6 },
-        end: { x: MARGIN + i * colW, y: top - 6 },
-        thickness: 0.5,
-        color: LINE,
-      });
-    }
-    ctx.page.drawText(c.label.toUpperCase().slice(0, 22), {
-      x,
-      y: top - 14,
-      size: 7,
-      font: ctx.font,
-      color: MUTED,
-    });
-    ctx.page.drawText(c.value.slice(0, 28), {
-      x,
-      y: top - 28,
-      size: 9.5,
-      font: ctx.fontBold,
-      color: TEXT,
-    });
-  });
-  ctx.y = bottom - 14;
-}
-
-/** Bautagebuch-Export für die Versicherung — gleiche Briefkopf-/Meta-Struktur wie Schadenakte. */
+/** Bautagebuch-Export für die Versicherung (Helvetica-grün). */
 export async function generateBautagebuchVersicherungPdf(
   input: BautagebuchVersicherungPdfInput
 ): Promise<Uint8Array> {
   const pdf = await PDFDocument.create();
   const font = await pdf.embedFont(StandardFonts.Helvetica);
   const fontBold = await pdf.embedFont(StandardFonts.HelveticaBold);
-  const policenNr = input.versicherungsNr?.trim() || "";
-  const erstelltAm = new Date().toLocaleDateString("de-DE", {
-    day: "2-digit",
-    month: "2-digit",
-    year: "numeric",
-  });
-  const orgName = input.orgName?.trim() || "Hausverwaltung";
+  let page = pdf.addPage([595, 842]);
+  let y = 780;
+  const schadenNr =
+    input.schadenNr?.trim() ||
+    input.versicherungsNr?.trim() ||
+    "ohne Nr.";
 
-  const ctx: DrawCtx = {
-    pdf,
-    page: pdf.addPage([PAGE_W, PAGE_H]),
-    font,
-    fontBold,
-    y: PAGE_H - 56,
-    policenNr,
-    orgName,
-    erstelltAm,
+  const ensureSpace = (need: number) => {
+    if (y < need) {
+      page.drawText(`Schaden-Nr. ${schadenNr}`, {
+        x: margin,
+        y: 36,
+        size: 8,
+        font,
+        color: gray,
+      });
+      page = pdf.addPage([595, 842]);
+      y = 780;
+    }
   };
 
-  drawText(ctx, orgName, { bold: true, size: 12, color: ACCENT });
-  ctx.y -= 2;
-  drawHr(ctx, true);
-
-  drawText(ctx, "Export für die Versicherung", {
-    bold: true,
-    size: 16,
-    color: ACCENT,
+  page.drawText("Bautagebuch — Export Versicherung", {
+    x: margin,
+    y,
+    size: 18,
+    font: fontBold,
+    color: green,
   });
-  ctx.y -= 4;
-
-  drawText(ctx, input.objektTitel, { bold: true, size: 11, color: TEXT });
-  if (input.objektAdresse?.trim()) {
-    drawText(ctx, input.objektAdresse.trim(), { size: 10, color: MUTED });
-  }
-
-  drawMetaBar(ctx, [
-    { label: "Policen-Nr.", value: policenNr || "—" },
-    {
-      label: "Einträge",
-      value: String(input.eintraege.length),
-    },
-  ]);
-
-  ctx.y -= 2;
-  drawText(ctx, "1. Dokumentation vor Ort", {
-    bold: true,
+  y -= 26;
+  page.drawText(input.orgName, {
+    x: margin,
+    y,
     size: 11,
-    color: ACCENT,
+    font: fontBold,
+    color: green,
   });
-  ctx.page.drawLine({
-    start: { x: MARGIN, y: ctx.y + 8 },
-    end: { x: PAGE_W - MARGIN, y: ctx.y + 8 },
-    thickness: 1.2,
-    color: ACCENT,
+  y -= 16;
+  page.drawText(input.objektTitel, {
+    x: margin,
+    y,
+    size: 11,
+    font,
+    color: gray,
   });
-  ctx.y -= 6;
+  y -= 16;
+  page.drawText(`Policen-Nr.: ${input.versicherungsNr?.trim() || "—"}`, {
+    x: margin,
+    y,
+    size: 10,
+    font,
+    color: gray,
+  });
+  y -= 24;
 
   if (input.eintraege.length === 0) {
-    drawText(ctx, "Keine Bautagebuch-Einträge vorhanden.", {
-      size: 10,
-      color: MUTED,
+    page.drawText("Keine Bautagebuch-Einträge vorhanden.", {
+      x: margin,
+      y,
+      size: 11,
+      font,
+      color: gray,
     });
   } else {
-    input.eintraege.forEach((e, idx) => {
-      ensureSpace(ctx, 72);
+    for (const e of input.eintraege) {
+      ensureSpace(100);
       const typ =
-        e.typ === "befund"
-          ? "Befund"
-          : e.typ?.trim()
-            ? e.typ.trim()
-            : null;
-      const headline = `${idx + 1}. ${fmtDatum(e.datum)} — ${e.titel}${
-        typ ? ` (${typ})` : ""
-      }`;
-      drawText(ctx, headline.slice(0, 95), {
-        bold: true,
-        size: 10,
-        color: ACCENT,
+        e.typ === "befund" ? " (Befund)" : e.typ ? ` (${e.typ})` : "";
+      page.drawText(`${fmtDatum(e.datum)} — ${e.titel}${typ}`.slice(0, 95), {
+        x: margin,
+        y,
+        size: 11,
+        font: fontBold,
+        color: green,
       });
+      y -= 16;
       for (const line of wrapText(e.text || "—", 88)) {
-        drawText(ctx, line, { size: 10, color: TEXT });
+        ensureSpace(50);
+        page.drawText(line, { x: margin, y, size: 10, font, color: gray });
+        y -= 13;
       }
-      drawText(
-        ctx,
+      page.drawText(
         e.fotoCount > 0
           ? `Anhänge/Fotos: ${e.fotoCount}`
           : "Anhänge/Fotos: —",
-        { size: 9, color: MUTED }
+        { x: margin, y, size: 9, font, color: gray }
       );
-      ctx.y -= 6;
-    });
+      y -= 20;
+    }
   }
 
-  drawFooter(ctx);
+  page.drawText("Erstellt über Bärenwald Verwaltungs-Plattform", {
+    x: margin,
+    y: 52,
+    size: 9,
+    font,
+    color: gray,
+  });
+  page.drawText(`Schaden-Nr. ${schadenNr}`, {
+    x: margin,
+    y: 36,
+    size: 8,
+    font,
+    color: gray,
+  });
+
   return pdf.save();
 }

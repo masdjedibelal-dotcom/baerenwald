@@ -34,7 +34,7 @@ export function PartnerRegisterStepNav({ current }: { current: StepId }) {
                     "flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs font-semibold transition-colors",
                     done && "bg-accent text-white",
                     active && !done && "bg-accent text-white ring-2 ring-accent/25",
-                    !done && !active && "border border-border-default bg-white text-text-tertiary"
+                    !done && !active && "bg-muted text-text-tertiary"
                   )}
                 >
                   {done ? <Check className="h-3.5 w-3.5" strokeWidth={3} /> : s.id}

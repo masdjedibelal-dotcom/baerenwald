@@ -40,93 +40,49 @@ function isRegiePos(p: {
   return typ === "regie" || verg === "aufwand";
 }
 
-function sumZeitForTyp(
-  eintraege: Array<{ typ?: string | null; zeit_minuten?: number | null }>,
-  typ: string
-): number {
-  const t = typ.toLowerCase();
-  return eintraege.reduce((sum, e) => {
-    if (String(e.typ ?? "").toLowerCase() !== t) return sum;
-    return sum + (Number(e.zeit_minuten) || 0);
-  }, 0);
-}
-
-/**
- * Tatsächliche Zeit (Ergebnis) vor Schätzung (Anmeldung/Menge).
- * Kein Aufsummieren von Schätzung + Erledigt.
- */
-function resolveRegieZeitMinuten(
-  eintraege: Array<{ typ?: string | null; zeit_minuten?: number | null }>,
-  mengeStd: number | null | undefined
-): number {
-  const ergebnis = sumZeitForTyp(eintraege, "ergebnis");
-  if (ergebnis > 0) return ergebnis;
-  const fortschritt = sumZeitForTyp(eintraege, "fortschritt");
-  if (fortschritt > 0) return fortschritt;
-  const schaetzung = sumZeitForTyp(eintraege, "weitere_arbeit");
-  if (schaetzung > 0) return schaetzung;
-  const menge = Number(mengeStd) || 0;
-  if (menge > 0) return Math.round(menge * 60);
-  return 0;
-}
-
-/** Stundensatz: Spalte stundensatz, sonst preis_partner bei Std/h (Legacy). */
-function resolveRegieStundensatz(opts: {
-  override?: number | null;
-  stundensatz: number | null;
-  preisPartner: number | null;
-  einheit: string | null;
-}): number {
-  const fromOv = Number(opts.override) || 0;
-  if (fromOv > 0) return fromOv;
-  const fromCol = Number(opts.stundensatz) || 0;
-  if (fromCol > 0) return fromCol;
-  const einheit = String(opts.einheit ?? "").toLowerCase();
-  const fromPreis = Number(opts.preisPartner) || 0;
-  if (
-    fromPreis > 0 &&
-    (einheit === "std" || einheit === "h" || einheit === "stunden" || !einheit)
-  ) {
-    return fromPreis;
-  }
-  return 0;
-}
-
-function beschreibungAusEintraegen(
+function aggregateBeschreibung(
   eintraege: Array<{
+    position_id?: string | null;
     beschreibung?: string | null;
     zeit_minuten?: number | null;
     created_at?: string | null;
   }>
-): string {
+): Map<string, { text: string; zeit: number }> {
+  const byPos = new Map<string, { lines: string[]; zeit: number }>();
   const sorted = [...eintraege].sort((a, b) =>
     String(a.created_at ?? "").localeCompare(String(b.created_at ?? ""))
   );
-  const lines: string[] = [];
   for (const e of sorted) {
-    const text = e.beschreibung?.trim();
-    if (!text) continue;
+    const pid = String(e.position_id ?? "").trim();
+    if (!pid) continue;
+    const cur = byPos.get(pid) ?? { lines: [], zeit: 0 };
     const zeit = Number(e.zeit_minuten) || 0;
-    const zeitLabel =
-      zeit > 0
-        ? ` (${Math.floor(zeit / 60)}:${String(zeit % 60).padStart(2, "0")} Std.)`
-        : "";
-    lines.push(`• ${text}${zeitLabel}`);
+    cur.zeit += zeit;
+    const text = e.beschreibung?.trim();
+    if (text) {
+      const zeitLabel =
+        zeit > 0
+          ? ` (${Math.floor(zeit / 60)}:${String(zeit % 60).padStart(2, "0")} Std.)`
+          : "";
+      cur.lines.push(`• ${text}${zeitLabel}`);
+    }
+    byPos.set(pid, cur);
   }
-  return lines.join("\n");
+  const out = new Map<string, { text: string; zeit: number }>();
+  for (const [pid, v] of Array.from(byPos.entries())) {
+    out.set(pid, { text: v.lines.join("\n"), zeit: v.zeit });
+  }
+  return out;
 }
 
 /**
  * Positionen für Auto-Angebot/Rechnung.
- * Festpreis aus hw_konditionen bzw. preis_partner am Auftrag;
- * Regie = erfasste Zeit × Stundensatz (bereits bei Anmeldung + Erledigt gesetzt — keine erneute Abfrage).
+ * Festpreis aus hw_konditionen; Regie = Zeit × Stundensatz (Titel/Beschreibung aus Position/Einträgen).
  */
 export async function buildPartnerAutoDocPositionen(opts: {
   handwerkerId: string;
-  angebotId?: string | null;
-  /** Direktauftrag: Positionen ohne Umweg über Angebot laden. */
-  auftragId?: string | null;
-  hwKonditionen?: unknown;
+  angebotId: string | null;
+  hwKonditionen: unknown;
   art: "angebot" | "rechnung";
   overrides?: AutoDocRegieOverride[];
 }): Promise<{
@@ -141,8 +97,8 @@ export async function buildPartnerAutoDocPositionen(opts: {
   const kond = parsePartnerHwKonditionen(opts.hwKonditionen);
   const kondPos = kond?.positionen ?? [];
 
-  let auftragId = opts.auftragId?.trim() || null;
-  if (!auftragId && opts.angebotId) {
+  let auftragId: string | null = null;
+  if (opts.angebotId) {
     const { data: auf } = await supabaseAdmin
       .from("auftraege")
       .select("id")
@@ -163,54 +119,50 @@ export async function buildPartnerAutoDocPositionen(opts: {
     preis_partner: number | null;
     menge: number | null;
     einheit: string | null;
+    zeit_minuten_summe: number | null;
   };
 
   let auftragPos: PosRow[] = [];
   if (auftragId) {
-    const { data, error: posErr } = await supabaseAdmin
+    const { data } = await supabaseAdmin
       .from("auftrag_positionen")
       .select(
-        "id, leistung_name, beschreibung, typ, verguetung, stundensatz, preis_partner, menge, einheit"
+        "id, leistung_name, typ, verguetung, stundensatz, preis_partner, menge, einheit, zeit_minuten_summe"
       )
       .eq("auftrag_id", auftragId)
       .eq("handwerker_id", opts.handwerkerId);
-    if (posErr) {
-      console.warn("[partner] auto-doc positionen:", posErr.message);
-    }
     auftragPos = ((data ?? []) as Array<Record<string, unknown>>).map((p) => ({
       id: String(p.id),
       leistung_name: (p.leistung_name as string | null) ?? null,
-      beschreibung: (p.beschreibung as string | null) ?? null,
+      beschreibung: null,
       typ: (p.typ as string | null) ?? null,
       verguetung: (p.verguetung as string | null) ?? null,
       stundensatz: p.stundensatz != null ? Number(p.stundensatz) : null,
       preis_partner: p.preis_partner != null ? Number(p.preis_partner) : null,
       menge: p.menge != null ? Number(p.menge) : null,
       einheit: (p.einheit as string | null) ?? null,
+      zeit_minuten_summe:
+        p.zeit_minuten_summe != null ? Number(p.zeit_minuten_summe) : null,
     }));
   }
 
-  type EintragRow = {
-    position_id?: string | null;
-    typ?: string | null;
-    beschreibung?: string | null;
-    zeit_minuten?: number | null;
-    created_at?: string | null;
-  };
-
-  const eintraegeByPos = new Map<string, EintragRow[]>();
+  const eintragAgg = new Map<string, { text: string; zeit: number }>();
   if (auftragPos.length) {
     const ids = auftragPos.map((p) => p.id);
     const { data: eintraege } = await supabaseAdmin
       .from("position_eintraege")
-      .select("position_id, typ, beschreibung, zeit_minuten, created_at")
+      .select("position_id, beschreibung, zeit_minuten, created_at")
       .in("position_id", ids);
-    for (const e of (eintraege ?? []) as EintragRow[]) {
-      const pid = String(e.position_id ?? "").trim();
-      if (!pid) continue;
-      const list = eintraegeByPos.get(pid) ?? [];
-      list.push(e);
-      eintraegeByPos.set(pid, list);
+    const agg = aggregateBeschreibung(
+      (eintraege ?? []) as Array<{
+        position_id?: string | null;
+        beschreibung?: string | null;
+        zeit_minuten?: number | null;
+        created_at?: string | null;
+      }>
+    );
+    for (const [pid, v] of Array.from(agg.entries())) {
+      eintragAgg.set(pid, v);
     }
   }
 
@@ -225,30 +177,20 @@ export async function buildPartnerAutoDocPositionen(opts: {
         ov?.titel?.trim() ||
         String(p.leistung_name ?? "").trim() ||
         "Leistung";
-      const entries = eintraegeByPos.get(p.id) ?? [];
-      const beschreibungAgg = beschreibungAusEintraegen(entries);
-      const zeitMin =
-        ov?.zeitMinuten != null && ov.zeitMinuten > 0
-          ? ov.zeitMinuten
-          : resolveRegieZeitMinuten(entries, p.menge);
-      const satzResolved = resolveRegieStundensatz({
-        override: ov?.stundensatz,
-        stundensatz: p.stundensatz,
-        preisPartner: p.preis_partner,
-        einheit: p.einheit,
-      });
-      const stundensatz =
-        satzResolved > 0
-          ? satzResolved
-          : null;
+      const agg = eintragAgg.get(p.id);
+      const zeitFromSum = Number(p.zeit_minuten_summe) || 0;
+      const zeitFromEin = agg?.zeit ?? 0;
+      const zeitMin = ov?.zeitMinuten ?? Math.max(zeitFromSum, zeitFromEin);
+      const rawSatz = Number(ov?.stundensatz ?? p.stundensatz) || 0;
+      const stundensatz = rawSatz > 0 ? rawSatz : null;
       const beschreibung =
         ov?.beschreibung?.trim() ||
-        beschreibungAgg ||
+        agg?.text ||
         String(p.beschreibung ?? "").trim() ||
         "";
 
       if (isRegiePos(p)) {
-        const needsZeit = zeitMin <= 0;
+        const needsZeit = opts.art === "rechnung" && zeitMin <= 0;
         const needsStundensatz = !stundensatz || stundensatz <= 0;
         const needsTitel = !name.trim();
         regieGaps.push({
@@ -261,29 +203,32 @@ export async function buildPartnerAutoDocPositionen(opts: {
           needsTitel,
           beschreibung,
         });
-
-        // Rechnung: Stundensatz + Zeit kommen aus Anmeldung bzw. Erledigt —
-        // keine erneute Abfrage im Auto-Rechnungs-Dialog.
-        // Angebot: nur Titel nachziehen, falls leer.
-        if (opts.art !== "rechnung") {
-          if (needsTitel) {
-            missingRegie.push({
-              key: `regie_titel_${p.id}`,
-              label: `Titel Regie: ${name || "Position"}`,
-              scope: "regie",
-              positionId: p.id,
-              kind: "text",
-            });
-          }
-          if (needsStundensatz) {
-            missingRegie.push({
-              key: `regie_satz_${p.id}`,
-              label: `Stundensatz (€) für „${name}"`,
-              scope: "regie",
-              positionId: p.id,
-              kind: "number",
-            });
-          }
+        if (needsTitel) {
+          missingRegie.push({
+            key: `regie_titel_${p.id}`,
+            label: `Titel Regie: ${name || "Position"}`,
+            scope: "regie",
+            positionId: p.id,
+            kind: "text",
+          });
+        }
+        if (needsStundensatz) {
+          missingRegie.push({
+            key: `regie_satz_${p.id}`,
+            label: `Stundensatz (€) für „${name}"`,
+            scope: "regie",
+            positionId: p.id,
+            kind: "number",
+          });
+        }
+        if (needsZeit) {
+          missingRegie.push({
+            key: `regie_zeit_${p.id}`,
+            label: `Erfasste Zeit (Minuten) für „${name}"`,
+            scope: "regie",
+            positionId: p.id,
+            kind: "number",
+          });
         }
 
         const satz = stundensatz ?? 0;

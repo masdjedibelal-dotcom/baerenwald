@@ -87,28 +87,7 @@ export function resolvePartnerAnfrageProjektStartIso(input: {
   return addDaysIso(ref, offset);
 }
 
-/**
- * True, wenn der geplante Projektstart **vorbei** ist (nicht mehr am Starttag).
- * Am Starttag selbst kann der Handwerker noch annehmen/ablehnen —
- * sonst wären Neu-Zuweisungen mit start_datum=heute sofort „Antwort abgelaufen“.
- */
 export function isProjektStartDatumErreicht(projektStartIso: string | null): boolean {
   if (!projektStartIso) return false;
-  return partnerHeuteIsoBerlin() > projektStartIso;
-}
-
-/**
- * True, wenn die Antwortfrist abgelaufen ist.
- * Nie am selben Kalendertag wie die Zuweisung/Versand — frische Anfragen bleiben offen.
- */
-export function isPartnerAntwortfristAbgelaufen(input: {
-  projektStartIso: string | null;
-  zugewiesenAmIso?: string | null;
-}): boolean {
-  if (!isProjektStartDatumErreicht(input.projektStartIso)) return false;
-  const zugewiesen = (input.zugewiesenAmIso ?? "").trim().slice(0, 10);
-  if (/^\d{4}-\d{2}-\d{2}$/.test(zugewiesen) && partnerHeuteIsoBerlin() <= zugewiesen) {
-    return false;
-  }
-  return true;
+  return partnerHeuteIsoBerlin() >= projektStartIso;
 }

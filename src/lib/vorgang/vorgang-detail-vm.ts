@@ -3,7 +3,7 @@
  * Drei Blöcke: Auftraggeber · Objekt & Melder · Ausführung
  */
 
-export type VorgangDetailRole = "hv" | "mieter" | "kunde" | "partner" | "hausmeister";
+export type VorgangDetailRole = "hv" | "mieter" | "kunde" | "partner";
 
 /** Render-Tiefe eines Blocks */
 export type BlockSight =
@@ -29,27 +29,20 @@ export const VORGANG_DETAIL_SIGHT: Record<VorgangDetailRole, VorgangDetailSight>
     hv: {
       auftraggeber: "hidden",
       objektMelder: "full",
-      ausfuehrung: "summary",
+      ausfuehrung: "hidden",
       leistungen: "vk",
     },
     mieter: {
       auftraggeber: "hidden",
       objektMelder: "safe",
-      ausfuehrung: "plain",
+      ausfuehrung: "hidden",
       leistungen: "plain",
     },
     kunde: {
       auftraggeber: "hidden",
       objektMelder: "safe",
-      ausfuehrung: "summary",
+      ausfuehrung: "hidden",
       leistungen: "vk",
-    },
-    /** Hausmeister: Melde-Details + nächster Schritt, keine Preise/Freigabe. */
-    hausmeister: {
-      auftraggeber: "hidden",
-      objektMelder: "full",
-      ausfuehrung: "plain",
-      leistungen: "hidden",
     },
     partner: {
       auftraggeber: "hidden",
@@ -110,14 +103,8 @@ export type VorgangDetailObjektMelder = {
   zeitraumLabel?: string | null;
   /** Fachfragen aus dem Melde-/Rechner-Funnel */
   fachdetailRows?: Array<{ label: string; value: string }>;
-  /** Unverbindliche Preisindikation (nur HV, nur Anfrage-Phase) */
+  /** Unverbindliche Preisindikation (nur HV) */
   preisIndikation?: string | null;
-};
-
-export type VorgangDetailsLeistungen = {
-  /** Abschnitts-Titel unter Details */
-  title: string;
-  mode: LeistungenMode;
 };
 
 export type VorgangDetailAusfuehrung = {
@@ -139,11 +126,6 @@ export type VorgangDetailVM = {
   objektMelder: VorgangDetailObjektMelder;
   ausfuehrung: VorgangDetailAusfuehrung;
   leistungen: VorgangLeistungZeile[];
-  /**
-   * Leistungen unter der Details-Card (Angebot / Rechnung).
-   * null = nicht anzeigen (noch Anfrage / keine Positionen).
-   */
-  detailsLeistungen?: VorgangDetailsLeistungen | null;
 };
 
 export function sightForRole(role: VorgangDetailRole): VorgangDetailSight {

@@ -3,7 +3,7 @@
   background: linear-gradient(
     180deg,
     var(--org-primary-soft, var(--p2-primary-soft, #e7f1e9)) 0%,
-    var(--p2-bg, #f6f7f6) 100%
+    var(--p2-bg, #e6e8e6) 100%
   );
 }
 
@@ -191,15 +191,12 @@
   background: #fff;
   /* Abstand zum sticky Footer sitzt auf .portal-funnel-host__body */
   padding: 0;
-  min-height: 0;
-  display: flex;
-  flex-direction: column;
 }
 
 @media (min-width: 720px) {
   .mieter-wl-page:not(.mieter-wl-page--funnel) {
     padding: 34px 20px 48px;
-    background: var(--p2-bg, #f6f7f6);
+    background: var(--p2-bg, #e6e8e6);
   }
   .mieter-wl-page:not(.mieter-wl-page--funnel) .mieter-wl-shell {
     max-width: 620px;
@@ -240,7 +237,7 @@
   background: var(--org-primary, var(--p2-primary, #2e7d52));
   color: #fff;
   font-weight: 700;
-  font-size: calc(16px * var(--p2-type-scale, 1.1));
+  font-size: 16px;
   display: grid;
   place-items: center;
   flex-shrink: 0;
@@ -255,7 +252,7 @@
 .mieter-wl-org-name {
   font-family: var(--font-display, system-ui);
   font-weight: 700;
-  font-size: calc(16px * var(--p2-type-scale, 1.1));
+  font-size: 16px;
   color: var(--p2-ink, #16201b);
   white-space: nowrap;
   overflow: hidden;
@@ -263,7 +260,7 @@
 }
 
 .mieter-wl-org-sub {
-  font-size: calc(12px * var(--p2-type-scale, 1.1));
+  font-size: 12px;
   font-weight: 600;
   color: var(--p2-faint2, #9aa39e);
 }
@@ -280,7 +277,7 @@
 .mieter-wl-lang-btn {
   padding: 4px 9px;
   border-radius: 6px;
-  font-size: calc(11.5px * var(--p2-type-scale, 1.1));
+  font-size: 11.5px;
   font-weight: 700;
   text-transform: uppercase;
   color: var(--p2-faint2, #9aa39e);
@@ -312,14 +309,14 @@
   border: 1px solid var(--p2-line, rgba(0, 0, 0, 0.08));
   background: var(--org-primary-soft, var(--p2-hover, #f7f8fa));
   padding: 0.75rem 1rem;
-  font-size: calc(13px * var(--p2-type-scale, 1.1));
+  font-size: 13px;
 }
 
 .mieter-wl-footer {
   padding: 16px 20px 18px;
   border-top: 1px solid var(--p2-line2, rgba(0, 0, 0, 0.05));
   background: #fff;
-  font-size: calc(11.5px * var(--p2-type-scale, 1.1));
+  font-size: 11.5px;
   color: var(--p2-faint2, #9aa39e);
   line-height: 1.6;
 }
@@ -343,7 +340,7 @@
   padding: 13px 18px;
   border-radius: 10px;
   font-weight: 600;
-  font-size: calc(14.5px * var(--p2-type-scale, 1.1));
+  font-size: 14.5px;
   cursor: pointer;
   text-align: center;
   text-decoration: none;
@@ -364,7 +361,7 @@
 
 .mieter-wl-btn--lg {
   padding: 16px 20px;
-  font-size: calc(16px * var(--p2-type-scale, 1.1));
+  font-size: 16px;
   border-radius: 12px;
 }
 
@@ -383,13 +380,13 @@
 .mieter-wl-objekt-title {
   font-family: var(--font-display, system-ui);
   font-weight: 700;
-  font-size: calc(22px * var(--p2-type-scale, 1.1));
+  font-size: 22px;
   color: var(--p2-ink, #16201b);
   margin-bottom: 5px;
 }
 
 .mieter-wl-objekt-sub {
-  font-size: calc(13.5px * var(--p2-type-scale, 1.1));
+  font-size: 13.5px;
   color: var(--p2-sub, #404a45);
   line-height: 1.5;
   margin-bottom: 16px;
@@ -422,19 +419,19 @@
   color: var(--org-primary, var(--p2-primary, #2e7d52));
   display: grid;
   place-items: center;
-  font-size: calc(20px * var(--p2-type-scale, 1.1));
+  font-size: 20px;
   flex-shrink: 0;
 }
 
 .mieter-wl-objekt-item-title {
   font-family: var(--font-display, system-ui);
   font-weight: 700;
-  font-size: calc(15px * var(--p2-type-scale, 1.1));
+  font-size: 15px;
   color: var(--p2-ink, #16201b);
 }
 
 .mieter-wl-objekt-item-meta {
-  font-size: calc(12.5px * var(--p2-type-scale, 1.1));
+  font-size: 12.5px;
   color: var(--p2-sub, #404a45);
   margin-top: 2px;
 }
@@ -468,7 +465,7 @@
   border-radius: 50%;
   display: grid;
   place-items: center;
-  font-size: calc(11px * var(--p2-type-scale, 1.1));
+  font-size: 11px;
   font-weight: 700;
   background: var(--p2-hover, #f7f8fa);
   color: var(--p2-faint2, #9aa39e);
@@ -484,14 +481,6 @@
 .mieter-stg-row--active .mieter-stg-dot {
   background: #fff;
   color: var(--org-primary, var(--p2-primary, #2e7d52));
-  border-color: var(--org-primary, var(--p2-primary, #2e7d52));
-}
-
-/* CRM/Portal „Erledigt“: letzter Schritt bleibt grün (nicht weiß wie laufende Active) */
-.mieter-stg-row--complete .mieter-stg-dot,
-.mieter-stg-row--done.mieter-stg-row--active .mieter-stg-dot {
-  background: var(--org-primary, var(--p2-primary, #2e7d52));
-  color: #fff;
   border-color: var(--org-primary, var(--p2-primary, #2e7d52));
 }
 
@@ -516,19 +505,18 @@
 }
 
 .mieter-stg-title {
-  font-size: calc(14px * var(--p2-type-scale, 1.1));
+  font-size: 14px;
   font-weight: 600;
   color: var(--p2-faint2, #9aa39e);
 }
 
 .mieter-stg-row--done .mieter-stg-title,
-.mieter-stg-row--active .mieter-stg-title,
-.mieter-stg-row--complete .mieter-stg-title {
+.mieter-stg-row--active .mieter-stg-title {
   color: var(--p2-ink, #16201b);
 }
 
 .mieter-stg-sub {
-  font-size: calc(12.5px * var(--p2-type-scale, 1.1));
+  font-size: 12.5px;
   color: var(--p2-sub, #404a45);
   margin-top: 2px;
   line-height: 1.45;
@@ -553,7 +541,7 @@
   color: #1f6a3f;
   display: grid;
   place-items: center;
-  font-size: calc(32px * var(--p2-type-scale, 1.1));
+  font-size: 32px;
   margin-bottom: 18px;
 }
 
@@ -565,20 +553,20 @@
   color: var(--p2-faint2, #9aa39e);
   display: grid;
   place-items: center;
-  font-size: calc(28px * var(--p2-type-scale, 1.1));
+  font-size: 28px;
   margin-bottom: 16px;
 }
 
 .mieter-wl-center-title {
   font-family: var(--font-display, system-ui);
   font-weight: 700;
-  font-size: calc(22px * var(--p2-type-scale, 1.1));
+  font-size: 22px;
   color: var(--p2-ink, #16201b);
   margin-bottom: 8px;
 }
 
 .mieter-wl-center-body {
-  font-size: calc(14px * var(--p2-type-scale, 1.1));
+  font-size: 14px;
   color: var(--p2-sub, #404a45);
   line-height: 1.55;
   max-width: 380px;
@@ -594,7 +582,7 @@
 }
 
 .mieter-wl-ref-label {
-  font-size: calc(11.5px * var(--p2-type-scale, 1.1));
+  font-size: 11.5px;
   color: var(--p2-faint2, #9aa39e);
   font-weight: 600;
   text-transform: uppercase;
@@ -604,7 +592,7 @@
 .mieter-wl-ref-value {
   font-family: var(--font-display, system-ui);
   font-weight: 700;
-  font-size: calc(19px * var(--p2-type-scale, 1.1));
+  font-size: 19px;
   color: var(--p2-ink, #16201b);
   letter-spacing: 0.5px;
   margin-top: 2px;

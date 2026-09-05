@@ -126,7 +126,7 @@ export const track = {
     ph("org_anfrage_gestartet", { anlass });
   },
 
-  orgFreigabe: (aktion: "freigegeben" | "abgelehnt" | "beschluss_ausstehend") => {
+  orgFreigabe: (aktion: "freigegeben" | "abgelehnt") => {
     ph("org_freigabe", { aktion });
   },
 };

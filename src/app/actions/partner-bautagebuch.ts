@@ -20,14 +20,29 @@ import {
 } from "@/lib/partner/sync-bautagebuch-kunde-timeline";
 import { createClient } from "@/lib/supabase/server";
 import { isSupabaseConfigured, supabaseAdmin } from "@/lib/supabase";
-import { assertPartnerAktiveZuweisung } from "@/lib/partner/partner-zuweisung-access";
 
 export type PartnerBautagebuchResult =
   | { ok: true }
   | { ok: false; error: string };
 
 async function assertPartnerAuftrag(handwerkerId: string, auftragId: string) {
-  return assertPartnerAktiveZuweisung(handwerkerId, auftragId);
+  const { data: hw } = await supabaseAdmin
+    .from("auftrag_handwerker")
+    .select("auftrag_id")
+    .eq("auftrag_id", auftragId)
+    .eq("handwerker_id", handwerkerId)
+    .limit(1);
+
+  if (hw?.length) return true;
+
+  const { data: pos } = await supabaseAdmin
+    .from("auftrag_positionen")
+    .select("auftrag_id")
+    .eq("auftrag_id", auftragId)
+    .eq("handwerker_id", handwerkerId)
+    .limit(1);
+
+  return Boolean(pos?.length);
 }
 
 async function partnerAuth() {
@@ -159,40 +174,28 @@ export async function createPartnerBautagebuchEintrag(
   const handwerkerName = String(hw?.name ?? "Partner");
   const auftragTitel = String(auf?.titel ?? "Auftrag").trim() || "Auftrag";
 
-  try {
-    await sendPartnerInternalBautagebuchMail({
-      handwerkerName,
-      firma: (hw?.firma as string | null) ?? null,
-      auftragTitel,
-      eintragTitel: titel,
-      datum,
-      auftragId,
-    });
-  } catch (e) {
-    console.warn("[partner-bautagebuch] interne Mail:", e);
-  }
+  void sendPartnerInternalBautagebuchMail({
+    handwerkerName,
+    firma: (hw?.firma as string | null) ?? null,
+    auftragTitel,
+    eintragTitel: titel,
+    datum,
+    auftragId,
+  });
 
-  try {
-    await notifyHvPartnerBautagebuch({
-      auftragId,
-      handwerkerName,
-      eintragTitel: titel,
-    });
-  } catch (e) {
-    console.warn("[partner-bautagebuch] HV-Notify:", e);
-  }
+  void notifyHvPartnerBautagebuch({
+    auftragId,
+    handwerkerName,
+    eintragTitel: titel,
+  });
 
   if (leadId) {
-    try {
-      await notifyMieterBautagebuchEintrag({
-        leadId,
-        handwerkerName,
-        eintragTitel: titel,
-        auftragTitel,
-      });
-    } catch (e) {
-      console.warn("[partner-bautagebuch] Mieter-Notify:", e);
-    }
+    void notifyMieterBautagebuchEintrag({
+      leadId,
+      handwerkerName,
+      eintragTitel: titel,
+      auftragTitel,
+    });
   }
 
   revalidatePath("/partner");

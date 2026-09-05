@@ -5,7 +5,6 @@ import { useEffect, useRef } from "react";
 import { PortalModalShell } from "@/components/shared/PortalModalShell";
 import { fmtPartnerEuro } from "@/lib/partner/partner-detail-format";
 import { parseHwNettoInput } from "@/lib/partner/partner-konditionen";
-import { portalToastSaved } from "@/lib/shared/portal-toast";
 import { cn } from "@/lib/utils";
 
 function formatEuroInput(n: number): string {
@@ -52,12 +51,6 @@ export function PartnerPreisBearbeitenDialog({
   const invalid = value.trim().length > 0 && parsed == null;
   const dirty = value.trim().length > 0 || notiz.trim().length > 0;
 
-  function save() {
-    if (parsed == null) return;
-    onConfirm();
-    portalToastSaved();
-  }
-
   return (
     <PortalModalShell
       open={open}
@@ -66,9 +59,6 @@ export function PartnerPreisBearbeitenDialog({
       onClose={onCancel}
       variant="edit"
       dirty={dirty}
-      onConfirm={save}
-      confirmLabel="Speichern"
-      confirmDisabled={parsed == null}
     >
       {vorschlagNetto != null && vorschlagNetto > 0 ? (
         <p className="portal-text-meta text-text-tertiary">
@@ -101,7 +91,7 @@ export function PartnerPreisBearbeitenDialog({
             value={value}
             onChange={(e) => onChange(e.target.value)}
             onKeyDown={(e) => {
-              if (e.key === "Enter" && parsed != null) save();
+              if (e.key === "Enter" && parsed != null) onConfirm();
             }}
             placeholder="0,00"
             className="min-w-0 flex-1 border-0 bg-transparent px-4 py-4 text-2xl font-semibold tabular-nums text-text-primary outline-none"
@@ -128,6 +118,24 @@ export function PartnerPreisBearbeitenDialog({
           className="portal-input mt-2 w-full resize-y rounded-xl border border-border-default bg-surface-card px-3 py-2.5 text-sm"
         />
       </label>
+
+      <div className="mt-6 flex flex-wrap justify-end gap-2">
+        <button
+          type="button"
+          onClick={onCancel}
+          className="btn-pill-outline portal-btn"
+        >
+          Abbrechen
+        </button>
+        <button
+          type="button"
+          disabled={parsed == null}
+          onClick={onConfirm}
+          className="btn-pill-primary portal-btn disabled:opacity-50"
+        >
+          Übernehmen
+        </button>
+      </div>
     </PortalModalShell>
   );
 }

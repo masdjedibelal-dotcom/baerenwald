@@ -64,7 +64,6 @@ export function PortalAuthFrame({
       <PortalLegalFooter
         variant={legalVariant}
         className="portal-auth-legal"
-        showServiceBy={wl}
       />
     </div>
   );

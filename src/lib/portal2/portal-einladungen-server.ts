@@ -22,7 +22,6 @@ export type PortalEinladungRow = {
   einheit_ref: string | null;
   einheit_id: string | null;
   bewohner_id: string | null;
-  org_hausmeister_id?: string | null;
   portal_kunde_id: string | null;
   status: string;
   expires_at: string | null;
@@ -88,14 +87,6 @@ export type ResolvedPortalEinladung = {
   objektTitel: string;
   einheitLabel: string | null;
   orgKennung: string | null;
-  /** Mieter, Eigentümer oder Hausmeister — steuert Auth-Copy & portal_modus. */
-  rolle: "mieter" | "eigentuemer" | "hausmeister";
-  /** Stammdaten vom Bewohner (Prefill, locked). */
-  prefill: {
-    name: string | null;
-    email: string | null;
-    telefon: string | null;
-  };
 };
 
 export async function resolvePortalEinladungByToken(
@@ -166,40 +157,6 @@ export async function resolvePortalEinladungByToken(
     einheitLabel = u?.bezeichnung?.trim() || null;
   }
 
-  let rolle: "mieter" | "eigentuemer" | "hausmeister" = "mieter";
-  const prefill = {
-    name: null as string | null,
-    email: null as string | null,
-    telefon: null as string | null,
-  };
-  const orgHmId = String(row.org_hausmeister_id ?? "").trim();
-  if (orgHmId) {
-    rolle = "hausmeister";
-    const { data: hm } = await supabaseAdmin
-      .from("org_hausmeister")
-      .select("name, email")
-      .eq("id", orgHmId)
-      .maybeSingle();
-    if (hm) {
-      prefill.name = String(hm.name ?? "").trim() || null;
-      prefill.email = String(hm.email ?? "").trim().toLowerCase() || null;
-    }
-  } else if (row.bewohner_id) {
-    const { data: bew } = await supabaseAdmin
-      .from("einheit_bewohner")
-      .select("name, email, telefon, rolle")
-      .eq("id", row.bewohner_id)
-      .maybeSingle();
-    if (bew) {
-      if (String(bew.rolle ?? "") === "eigentuemer") {
-        rolle = "eigentuemer";
-      }
-      prefill.name = String(bew.name ?? "").trim() || null;
-      prefill.email = String(bew.email ?? "").trim().toLowerCase() || null;
-      prefill.telefon = String(bew.telefon ?? "").trim() || null;
-    }
-  }
-
   const brand: MieterWlBrand = {
     name:
       (org as { org_anzeigename?: string }).org_anzeigename?.trim() ||
@@ -232,8 +189,6 @@ export async function resolvePortalEinladungByToken(
       objektTitel,
       einheitLabel,
       orgKennung: (org as { org_kennung?: string | null }).org_kennung ?? null,
-      rolle,
-      prefill,
     },
   };
 }
@@ -269,82 +224,7 @@ export async function redeemPortalEinladung(opts: {
   }
 
   const email = opts.email.trim().toLowerCase();
-  const name = opts.name?.trim() || email.split("@")[0] || "Nutzer";
-
-  const orgHmId = String(
-    (row as { org_hausmeister_id?: string | null }).org_hausmeister_id ?? ""
-  ).trim();
-
-  let inviteRolle: "mieter" | "eigentuemer" | "hausmeister" = "mieter";
-  if (orgHmId) {
-    inviteRolle = "hausmeister";
-  } else if (row.bewohner_id) {
-    const { data: bew } = await supabaseAdmin
-      .from("einheit_bewohner")
-      .select("rolle")
-      .eq("id", row.bewohner_id)
-      .maybeSingle();
-    if (String(bew?.rolle ?? "") === "eigentuemer") {
-      inviteRolle = "eigentuemer";
-    }
-  }
-
-  // Primary-Staff (info@baerenwald-muenchen.de): kein zweites Auth-Konto —
-  // HM-Stub aktivieren und Einladung einlösen.
-  if (inviteRolle === "hausmeister" && orgHmId) {
-    const { isBaerenwaldPrimaryStaffEmail, ensureHausmeisterPortalActivation } =
-      await import("@/lib/org/ensure-hausmeister-portal");
-    if (isBaerenwaldPrimaryStaffEmail(email)) {
-      await supabaseAdmin
-        .from("org_hausmeister")
-        .update({
-          portal_zugang: true,
-          email,
-          name,
-          updated_at: new Date().toISOString(),
-        })
-        .eq("id", orgHmId)
-        .eq("org_kunde_id", row.kunde_id);
-      const act = await ensureHausmeisterPortalActivation({
-        orgHausmeisterId: orgHmId,
-        orgKundeId: String(row.kunde_id),
-      });
-      if (!act.ok) {
-        return { ok: false, error: act.error, status: 500 };
-      }
-      if (row.objekt_id) {
-        await supabaseAdmin.from("hausmeister_objekte").upsert(
-          {
-            org_hausmeister_id: orgHmId,
-            kunde_objekt_id: row.objekt_id,
-          },
-          { onConflict: "kunde_objekt_id" }
-        );
-      }
-      const { error: updErr } = await supabaseAdmin
-        .from("portal_einladungen")
-        .update({
-          status: "eingeloest",
-          eingeloest_am: new Date().toISOString(),
-          portal_kunde_id: act.portalKundeId,
-        })
-        .eq("id", row.id)
-        .eq("status", "offen");
-      if (updErr) {
-        return { ok: false, error: updErr.message, status: 500 };
-      }
-      return { ok: true, portalKundeId: act.portalKundeId };
-    }
-  }
-
-  const portalModus =
-    inviteRolle === "eigentuemer"
-      ? "eigentuemer"
-      : inviteRolle === "hausmeister"
-        ? "hausmeister"
-        : inviteRolle === "mieter"
-          ? "mieter"
-          : "privat";
+  const name = opts.name?.trim() || email.split("@")[0] || "Mieter";
 
   // Bestehenden Kundenstamm zur E-Mail nutzen oder anlegen (kein Org-Stamm).
   let portalKundeId: string | null = null;
@@ -355,39 +235,22 @@ export async function redeemPortalEinladung(opts: {
       .ilike("email", email)
       .limit(5);
 
-    const candidates = (existing ?? []).filter((k) => {
-      const m = (k.portal_modus ?? "") as string;
-      if (m === "organisation") return false;
-      if (inviteRolle === "hausmeister") {
-        return m === "hausmeister" || !m || m === "privat";
-      }
-      return true;
-    });
-    // HM: Stub mit portal_modus=hausmeister bevorzugen
-    const hmStub = candidates.find((k) => (k.portal_modus ?? "") === "hausmeister");
+    const candidates = (existing ?? []).filter(
+      (k) => (k.portal_modus ?? "") !== "organisation"
+    );
     const linked = candidates.find((k) => k.auth_user_id === opts.authUserId);
     const free = candidates.find((k) => !k.auth_user_id);
-    const pick =
-      inviteRolle === "hausmeister"
-        ? hmStub ?? linked ?? free ?? candidates[0]
-        : linked ?? free ?? candidates[0];
+    const pick = linked ?? free ?? candidates[0];
 
     if (pick) {
       portalKundeId = String(pick.id);
-      const { data: authOccupied } = await supabaseAdmin
-        .from("kunden")
-        .select("id")
-        .eq("auth_user_id", opts.authUserId)
-        .maybeSingle();
-      const canTakeAuth =
-        !authOccupied?.id || String(authOccupied.id) === portalKundeId;
       await supabaseAdmin
         .from("kunden")
         .update({
-          ...(canTakeAuth ? { auth_user_id: opts.authUserId } : {}),
+          auth_user_id: opts.authUserId,
           name,
           email,
-          portal_modus: portalModus,
+          portal_modus: "privat",
         })
         .eq("id", portalKundeId);
     } else {
@@ -397,7 +260,7 @@ export async function redeemPortalEinladung(opts: {
           name,
           email,
           auth_user_id: opts.authUserId,
-          portal_modus: portalModus,
+          portal_modus: "privat",
           typ: "privat",
         })
         .select("id")
@@ -413,31 +276,8 @@ export async function redeemPortalEinladung(opts: {
     }
   }
 
-  if (inviteRolle === "hausmeister" && orgHmId && portalKundeId) {
-    await supabaseAdmin
-      .from("org_hausmeister")
-      .update({
-        portal_kunde_id: portalKundeId,
-        portal_zugang: true,
-        name,
-        email,
-        updated_at: new Date().toISOString(),
-      })
-      .eq("id", orgHmId)
-      .eq("org_kunde_id", row.kunde_id);
-    if (row.objekt_id) {
-      await supabaseAdmin.from("hausmeister_objekte").upsert(
-        {
-          org_hausmeister_id: orgHmId,
-          kunde_objekt_id: row.objekt_id,
-        },
-        { onConflict: "kunde_objekt_id" }
-      );
-    }
-  }
-
   // Bewohner zuordnen / anlegen
-  if (inviteRolle !== "hausmeister" && row.einheit_id) {
+  if (row.einheit_id) {
     if (row.bewohner_id) {
       await supabaseAdmin
         .from("einheit_bewohner")
@@ -446,7 +286,6 @@ export async function redeemPortalEinladung(opts: {
           name,
           telefon: opts.telefon?.trim() || null,
           aktiv: true,
-          portal_kunde_id: portalKundeId,
         })
         .eq("id", row.bewohner_id)
         .eq("kunde_id", row.kunde_id);
@@ -468,45 +307,9 @@ export async function redeemPortalEinladung(opts: {
           email,
           telefon: opts.telefon?.trim() || null,
           aktiv: true,
-          rolle: inviteRolle,
-          portal_kunde_id: portalKundeId,
         });
-      } else {
-        await supabaseAdmin
-          .from("einheit_bewohner")
-          .update({ portal_kunde_id: portalKundeId })
-          .eq("id", existingB.id);
       }
     }
-
-    // Gleiche Person (E-Mail) auf anderen Einheiten → gleiches Portal-Konto
-    if (inviteRolle === "eigentuemer" && portalKundeId && email) {
-      await supabaseAdmin
-        .from("einheit_bewohner")
-        .update({ portal_kunde_id: portalKundeId })
-        .eq("kunde_id", row.kunde_id)
-        .eq("rolle", "eigentuemer")
-        .eq("aktiv", true)
-        .ilike("email", email)
-        .is("anonymisiert_am", null);
-    }
-  }
-
-  // Eigentümer-Sicht: alle zugeordneten Objekte (nicht nur Einladungs-Objekt)
-  if (inviteRolle === "eigentuemer" && portalKundeId) {
-    const { syncEigentuemerObjekteForPortalKunde } = await import(
-      "@/lib/org/org-eigentuemer"
-    );
-    if (row.objekt_id) {
-      const { ensureEigentuemerObjektLink } = await import(
-        "@/lib/org/org-eigentuemer"
-      );
-      await ensureEigentuemerObjektLink({
-        portalKundeId,
-        objektId: row.objekt_id,
-      });
-    }
-    await syncEigentuemerObjekteForPortalKunde(portalKundeId);
   }
 
   const { error: updErr } = await supabaseAdmin
@@ -524,109 +327,4 @@ export async function redeemPortalEinladung(opts: {
   }
 
   return { ok: true, portalKundeId };
-}
-
-/**
- * Offene Hausmeister-Einladungen zur Login-E-Mail einlösen.
- * Deckt: Auth-Konto existiert schon → „Konto aktivieren“ scheitert → Login ohne
- * Einladungslink legt nur privat an und setzt portal_kunde_id nicht.
- */
-export async function tryRedeemOpenHausmeisterInvitesForAuthUser(opts: {
-  authUserId: string;
-  email: string;
-  name?: string | null;
-  telefon?: string | null;
-}): Promise<{ redeemed: boolean; portalKundeId?: string }> {
-  const email = opts.email.trim().toLowerCase();
-  if (!email || !opts.authUserId) return { redeemed: false };
-
-  const { data: hmRows, error: hmErr } = await supabaseAdmin
-    .from("org_hausmeister")
-    .select("id")
-    .ilike("email", email)
-    .eq("portal_zugang", true);
-
-  if (hmErr || !hmRows?.length) return { redeemed: false };
-
-  const hmIds = hmRows.map((r) => String(r.id)).filter(Boolean);
-  if (!hmIds.length) return { redeemed: false };
-
-  const { data: invites, error: invErr } = await supabaseAdmin
-    .from("portal_einladungen")
-    .select("token, created_at")
-    .eq("status", "offen")
-    .in("org_hausmeister_id", hmIds)
-    .order("created_at", { ascending: false });
-
-  if (invErr || !invites?.length) return { redeemed: false };
-
-  for (const inv of invites) {
-    const token = String(inv.token ?? "").trim();
-    if (!token) continue;
-    const result = await redeemPortalEinladung({
-      token,
-      authUserId: opts.authUserId,
-      email,
-      name: opts.name,
-      telefon: opts.telefon,
-    });
-    if (result.ok) {
-      return { redeemed: true, portalKundeId: result.portalKundeId };
-    }
-  }
-
-  return { redeemed: false };
-}
-
-/**
- * Offene Bewohner-Einladungen (Mieter/Eigentümer) zur Login-E-Mail einlösen.
- * Verhindert „Login ohne Link → Privatkunde in CRM-Liste“.
- */
-export async function tryRedeemOpenBewohnerInvitesForAuthUser(opts: {
-  authUserId: string;
-  email: string;
-  name?: string | null;
-  telefon?: string | null;
-}): Promise<{ redeemed: boolean; portalKundeId?: string }> {
-  const email = opts.email.trim().toLowerCase();
-  if (!email || !opts.authUserId) return { redeemed: false };
-
-  const { data: bewohner, error: bewErr } = await supabaseAdmin
-    .from("einheit_bewohner")
-    .select("id")
-    .ilike("email", email)
-    .eq("aktiv", true)
-    .is("anonymisiert_am", null)
-    .limit(40);
-
-  if (bewErr || !bewohner?.length) return { redeemed: false };
-
-  const bewIds = bewohner.map((r) => String(r.id)).filter(Boolean);
-  if (!bewIds.length) return { redeemed: false };
-
-  const { data: invites, error: invErr } = await supabaseAdmin
-    .from("portal_einladungen")
-    .select("token, created_at")
-    .eq("status", "offen")
-    .in("bewohner_id", bewIds)
-    .order("created_at", { ascending: false });
-
-  if (invErr || !invites?.length) return { redeemed: false };
-
-  for (const inv of invites) {
-    const token = String(inv.token ?? "").trim();
-    if (!token) continue;
-    const result = await redeemPortalEinladung({
-      token,
-      authUserId: opts.authUserId,
-      email,
-      name: opts.name,
-      telefon: opts.telefon,
-    });
-    if (result.ok) {
-      return { redeemed: true, portalKundeId: result.portalKundeId };
-    }
-  }
-
-  return { redeemed: false };
 }

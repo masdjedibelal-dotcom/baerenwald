@@ -39,12 +39,12 @@ export function buildOrgVorgangFilterCountsFromFlow(
 ): Record<OrgVorgangFilter, number> {
   return {
     alle,
-    /** Neu / Angebotsfreigabe — wartet auf HV. */
-    offen: flow.gemeldet + flow.angebot,
-    /** Freigegeben / HW angefragt / aktiver Auftrag. */
-    in_arbeit: flow.freigegeben + flow.angefragt + flow.auftrag,
-    erledigt:
-      flow.abschluss + flow.rechnung + flow.bezahlt + flow.abgelehnt,
+    /** Neu / wartet auf Freigabe. */
+    offen: flow.gemeldet,
+    /** Ab Handwerker-Anfrage bis aktiver Auftrag. */
+    in_arbeit:
+      flow.freigegeben + flow.angefragt + flow.angebot + flow.auftrag,
+    erledigt: flow.abschluss + flow.rechnung + flow.bezahlt,
   };
 }
 

@@ -1,7 +1,6 @@
 import QRCode from "qrcode";
 
 import { SITE_CONFIG } from "@/lib/config";
-import { isStagingDeploy, publicSiteOrigin } from "@/lib/staging";
 
 /** Slug für Meldungen ohne zugeordnetes Objekt (Org-Einstieg ohne Gebäude). */
 export const MELDE_ALLGEMEIN_SLUG = "allgemein";
@@ -13,8 +12,7 @@ const CANONICAL_PUBLIC_ORIGIN = "https://baerenwaldmuenchen.de";
  * Print/QR immer kanonische Domain — nie Preview/localhost (sonst nicht scannbar).
  */
 export function portalOrigin(opts?: { forPrint?: boolean }): string {
-  if (opts?.forPrint && !isStagingDeploy()) return CANONICAL_PUBLIC_ORIGIN;
-  if (isStagingDeploy()) return publicSiteOrigin();
+  if (opts?.forPrint) return CANONICAL_PUBLIC_ORIGIN;
   const env = process.env.NEXT_PUBLIC_SITE_URL?.trim().replace(/\/$/, "") ?? "";
   if (env) return env;
   return SITE_CONFIG.url.replace(/\/$/, "");

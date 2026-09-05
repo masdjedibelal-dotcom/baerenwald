@@ -17,7 +17,7 @@ export type PlattformStatusKey =
 
 export const PLATTFORM_STATUS_LABELS: Record<PlattformStatusKey, string> = {
   neu: "Neu",
-  wartet_freigabe: "Gesendet",
+  wartet_freigabe: "Wartet Freigabe",
   in_ausfuehrung: "In Ausführung",
   erledigt: "Erledigt",
   notfall: "Notfall",
@@ -38,8 +38,8 @@ export function resolvePlattformStatus(
 
   if (portalErledigtFromLeadAndAuftrag(lead, auftrag)) return "erledigt";
 
-  // Status „Notfall“ nur noch bei laufender Notmaßnahme / CRM-Direktauftrag — nicht pauschal aus Melde-Kategorie
-  if (lead.hv_meldung_status === "notmassnahme") {
+  const fd = lead.funnel_daten as { melde_kategorie?: string } | null;
+  if (fd?.melde_kategorie === "notfall" || lead.hv_meldung_status === "notmassnahme") {
     return "notfall";
   }
 
@@ -50,11 +50,7 @@ export function resolvePlattformStatus(
   if (hv === "abgelehnt") return "storniert";
 
   const freigabe = (lead.org_freigabe_status ?? "").trim();
-  if (
-    freigabe === "ausstehend" ||
-    freigabe === "beschluss_ausstehend" ||
-    freigabe === "angefordert"
-  ) {
+  if (freigabe === "ausstehend" || freigabe === "angefordert") {
     return "wartet_freigabe";
   }
 
@@ -75,17 +71,6 @@ export function resolvePlattformStatus(
 
 export function plattformStatusLabel(key: PlattformStatusKey): string {
   return PLATTFORM_STATUS_LABELS[key];
-}
-
-/** HV-Listen: Beschluss-Parkzustand mit eigenem Label. */
-export function plattformStatusLabelForLead(
-  key: PlattformStatusKey,
-  orgFreigabeStatus?: string | null
-): string {
-  if ((orgFreigabeStatus ?? "").trim() === "beschluss_ausstehend") {
-    return "Wartet auf Beschluss";
-  }
-  return plattformStatusLabel(key);
 }
 
 export function plattformStatusPillClass(key: PlattformStatusKey): string {
@@ -120,7 +105,7 @@ export function buildMieterStatusTimeline(stufe: string): MieterTimelineStep[] {
   const labels: Record<(typeof order)[number], string> = {
     eingegangen: "Eingegangen",
     in_bearbeitung: "In Bearbeitung",
-    beauftragt: "Beauftragt",
+    beauftragt: "Bestätigung",
     erledigt: "Erledigt",
   };
   const idx = order.indexOf(stufe as (typeof order)[number]);

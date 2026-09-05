@@ -1,12 +1,12 @@
 "use client";
 
-import { ChevronRight } from "lucide-react";
 import type { ReactNode } from "react";
 
-import { PortalDashboardActionCarousel } from "@/components/shared/PortalDashboardActionCarousel";
-import { portalDayGreetingPhrase } from "@/lib/portal2/greeting";
-import type { PortalDashboardActionSlide } from "@/lib/portal2/dashboard-actions/types";
-import { cn } from "@/lib/utils";
+import { usePortalView } from "@/hooks/use-portal-view";
+import { portalDayGreetingLabel } from "@/lib/portal2/greeting";
+import { portalHeaderInitials } from "@/lib/portal2/role-badge";
+import { isPortalMobileView } from "@/lib/portal2/viewport";
+import { PORTAL_VAR } from "@/lib/portal2/tokens";
 
 export type PortalDashboardTile = {
   id: string;
@@ -21,165 +21,125 @@ export type PortalDashboardRecentRow = {
   objekt: string;
   statusLabel: string;
   statusColor: string;
-  /** @deprecated Deep Green: Status nur als Wortfarbe */
-  statusBg?: string;
+  statusBg: string;
   notfall?: boolean;
 };
 
 type Props = {
   roleLabel: string;
-  /** Anzeigename (ohne „Hallo …“) */
+  /** Anzeigename unter der Begrüßung (Mobil) / Hero-Titel (Desktop). */
   hello: string;
   heroImageUrl?: string | null;
-  /** Marken-Kürzel mobil im Hero (Default: erster Buchstabe) */
-  brandKuerzel?: string | null;
-  /** Org-/Verwaltungsname unter dem Kürzel (Mobil-Hero) */
-  brandSubline?: string | null;
+  /** Avatar-Initialen; Default aus `hello`. */
   avatarName?: string | null;
   avatarInitials?: string | null;
   tiles: PortalDashboardTile[];
-  /** @deprecated KPIs sitzen im Hero — ignoriert */
+  /** Überschrift über den KPI-Kacheln (z. B. „Vorgänge“). */
   tilesTitle?: string;
-  /** Echte Aktionen — ersetzt die Mock-Fokus-Karte. */
-  actionSlides?: PortalDashboardActionSlide[];
-  onOpenActionItem?: (id: string, opts?: { focus?: string }) => void;
-  onActionRefresh?: () => void | Promise<void>;
-  /** Zwischen Fokus und Liste (z. B. Service-Versprechen HV) */
-  afterFocus?: ReactNode;
-  /** @deprecated Alias → afterFocus */
-  afterTiles?: ReactNode;
   recent: PortalDashboardRecentRow[];
   onOpenAll: () => void;
   onOpenItem: (id: string) => void;
   recentTitle?: string;
   recentAllLabel?: string;
   recentEmpty?: string;
-  /** @deprecated vor KPI — nicht mehr im Hero-Layout */
-  beforeTiles?: ReactNode;
+  /** Optional content strictly below mock body (avoid on start if possible). */
   after?: ReactNode;
 };
 
 /**
- * Deep Green Dashboard: Hero (Grün + KPIs) → Fokus → optional Strip → Liste.
+ * Mock `screenDashboard` — mobil: Header-Bild + Kurve + Avatar + Begrüßung;
+ * Desktop: klassischer Hero mit Overlay-Text.
  */
 export function PortalScreenDashboard({
   roleLabel,
   hello,
   heroImageUrl,
-  brandKuerzel,
-  brandSubline,
   avatarName,
+  avatarInitials,
   tiles,
-  actionSlides,
-  onOpenActionItem,
-  onActionRefresh,
+  tilesTitle,
   recent,
   onOpenAll,
   onOpenItem,
   recentTitle = "Zuletzt",
   recentAllLabel = "Alle ansehen",
-  recentEmpty = "Noch keine Vorgänge — sie erscheinen hier, sobald etwas losgeht.",
-  afterFocus,
-  afterTiles,
-  beforeTiles,
+  recentEmpty = "Noch nichts",
   after,
 }: Props) {
-  const greet = portalDayGreetingPhrase();
-  const displayName = (avatarName?.trim() || hello).trim();
-  const kuerzel = (
-    brandKuerzel?.trim() ||
-    displayName.charAt(0) ||
-    "B"
-  )
-    .slice(0, 2)
-    .toUpperCase();
-  const strip = afterFocus ?? afterTiles;
-  const mobileSub = brandSubline?.trim() || roleLabel;
+  const view = usePortalView();
+  const mobile = isPortalMobileView(view);
+  const greet = portalDayGreetingLabel();
+  const profileLabel = (avatarName?.trim() || hello).trim();
+  const initials =
+    avatarInitials?.trim() ||
+    portalHeaderInitials(profileLabel);
 
-  return (
-    <div className="portal-dash">
-      <section className="portal-dash-hero">
-        <div
-          className="portal-dash-hero-bg"
-          style={
-            heroImageUrl
-              ? { backgroundImage: `url(${heroImageUrl})` }
-              : undefined
-          }
-          aria-hidden
-        />
-        <div className="portal-dash-hero-scrim" aria-hidden />
+  if (mobile) {
+    return (
+      <div className="portal-dash -mx-4 -mt-5">
+        <div className="portal-dash-hero-mobile">
+          <div className="portal-dash-hero-media">
+            {heroImageUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={heroImageUrl} alt="" className="portal-dash-hero-img" />
+            ) : (
+              <div className="portal-dash-hero-fallback" aria-hidden />
+            )}
+          </div>
 
-        <div className="portal-dash-hero-mobile-bar lg:hidden">
-          <div className="portal-dash-hero-brand">
-            <div className="portal-dash-hero-mark" aria-hidden>
-              {kuerzel}
-            </div>
-            <div className="portal-dash-hero-brand-text">
-              <p className="portal-dash-hero-brand-role">{mobileSub}</p>
+          <div className="portal-dash-curve">
+            <svg
+              className="portal-dash-curve-svg"
+              viewBox="0 0 390 48"
+              preserveAspectRatio="none"
+              aria-hidden
+            >
+              <path
+                d="M0 48 V28 C80 4 140 0 195 0 C250 0 310 4 390 28 V48 Z"
+                fill="#fff"
+              />
+            </svg>
+
+            <div className="portal-dash-curve-body">
+              <div className="portal-dash-avatar" aria-hidden>
+                {initials.slice(0, 2)}
+              </div>
+              <p className="portal-dash-greet">{greet}</p>
+              <h1 className="portal-dash-name">{profileLabel}</h1>
             </div>
           </div>
         </div>
 
-        <div className="portal-dash-hero-inner">
-          <div className="portal-dash-hero-copy">
-            {roleLabel ? (
-              <p className="portal-dash-hero-kicker">{roleLabel}</p>
-            ) : null}
-            <p className="portal-dash-hero-greet">{greet}</p>
-            <h1 className="portal-dash-hero-name">{displayName}</h1>
-          </div>
-
-          <div className="portal-dash-hero-kpis">
-            {tiles.map((tile, idx) => {
-              const sand = idx === 0;
-              const className = cn(
-                "portal-dash-kpi",
-                sand && "portal-dash-kpi--sand"
-              );
-              const inner = (
-                <>
-                  <p className="portal-dash-kpi-value">{tile.value}</p>
-                  <p className="portal-dash-kpi-label">{tile.label}</p>
-                </>
-              );
-              if (tile.onClick) {
-                return (
-                  <button
-                    key={tile.id}
-                    type="button"
-                    onClick={tile.onClick}
-                    className={className}
-                  >
-                    {inner}
-                  </button>
-                );
-              }
+        <div className="portal-dash-tiles">
+          {tilesTitle ? (
+            <p className="portal-dash-tiles-title col-span-3">{tilesTitle}</p>
+          ) : null}
+          {tiles.map((tile) => {
+            const inner = (
+              <>
+                <p className="portal-dash-tile-value">{tile.value}</p>
+                <p className="portal-dash-tile-label">{tile.label}</p>
+              </>
+            );
+            if (tile.onClick) {
               return (
-                <div key={tile.id} className={className}>
+                <button
+                  key={tile.id}
+                  type="button"
+                  onClick={tile.onClick}
+                  className="portal-dash-tile"
+                >
                   {inner}
-                </div>
+                </button>
               );
-            })}
-          </div>
+            }
+            return (
+              <div key={tile.id} className="portal-dash-tile">
+                {inner}
+              </div>
+            );
+          })}
         </div>
-      </section>
-
-      <div className="portal-dash-body">
-        {beforeTiles ? (
-          <div className="portal-dash-before">{beforeTiles}</div>
-        ) : null}
-
-        {actionSlides && actionSlides.length > 0 && onOpenActionItem && onActionRefresh ? (
-          <PortalDashboardActionCarousel
-            slides={actionSlides}
-            onOpen={onOpenActionItem}
-            onRefresh={onActionRefresh}
-            className="portal-dash-focus--overlap"
-          />
-        ) : null}
-
-        {strip ? <div className="portal-dash-strip">{strip}</div> : null}
 
         <div className="portal-dash-recent">
           <div className="portal-dash-recent-head">
@@ -192,7 +152,6 @@ export function PortalScreenDashboard({
               {recentAllLabel}
             </button>
           </div>
-
           <div className="portal-dash-recent-list">
             {recent.length === 0 ? (
               <div className="portal-dash-recent-empty">{recentEmpty}</div>
@@ -204,21 +163,19 @@ export function PortalScreenDashboard({
                   onClick={() => onOpenItem(v.id)}
                   className="portal-dash-recent-item"
                 >
-                  <span className="portal-dash-recent-edge" aria-hidden />
+                  {v.notfall ? (
+                    <span className="portal-dash-recent-notfall">Notfall</span>
+                  ) : null}
                   <div className="portal-dash-recent-text">
                     <p className="portal-dash-recent-titel">{v.titel}</p>
                     <p className="portal-dash-recent-objekt">{v.objekt}</p>
                   </div>
                   <span
-                    className="portal-dash-recent-status"
-                    style={{ color: v.statusColor }}
+                    className="portal-dash-recent-pill"
+                    style={{ color: v.statusColor, background: v.statusBg }}
                   >
                     {v.statusLabel}
                   </span>
-                  <ChevronRight
-                    className="portal-dash-recent-chevron"
-                    aria-hidden
-                  />
                 </button>
               ))
             )}
@@ -227,6 +184,262 @@ export function PortalScreenDashboard({
 
         {after}
       </div>
+    );
+  }
+
+  return (
+    <div className="-mx-4 -mt-5 lg:-mx-6 lg:-mt-7">
+      <div className="relative w-full overflow-hidden" style={{ height: 200 }}>
+        {heroImageUrl ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={heroImageUrl}
+            alt=""
+            className="absolute inset-0 h-full w-full object-cover"
+          />
+        ) : (
+          <div
+            className="absolute inset-0"
+            style={{
+              background:
+                "linear-gradient(135deg, #1A3D2B 0%, #2E7D52 55%, #0f766e 100%)",
+            }}
+            aria-hidden
+          />
+        )}
+        <div
+          className="pointer-events-none absolute inset-0"
+          style={{
+            background:
+              "linear-gradient(180deg, rgba(16,32,24,.12) 0%, rgba(16,32,24,.30) 55%, rgba(16,32,24,.70) 100%)",
+          }}
+        />
+        <div
+          className="pointer-events-none absolute bottom-[18px] left-6 right-4"
+        >
+          {roleLabel ? (
+            <p
+              className="mb-1 font-bold uppercase"
+              style={{
+                fontSize: 11.5,
+                color: "rgba(255,255,255,.82)",
+                letterSpacing: 0.5,
+              }}
+            >
+              {roleLabel}
+            </p>
+          ) : null}
+          <h1
+            className="font-bold text-white"
+            style={{
+              fontFamily: PORTAL_VAR.head,
+              fontSize: 30,
+              lineHeight: 1.05,
+              textShadow: "0 1px 6px rgba(0,0,0,.25)",
+            }}
+          >
+            {hello}
+          </h1>
+        </div>
+      </div>
+
+      {tilesTitle ? (
+        <p
+          className="font-bold"
+          style={{
+            fontFamily: PORTAL_VAR.head,
+            fontSize: 15,
+            color: PORTAL_VAR.ink,
+            padding: "22px 24px 0",
+          }}
+        >
+          {tilesTitle}
+        </p>
+      ) : null}
+      <div
+        className="grid grid-cols-3"
+        style={{
+          gap: 12,
+          padding: tilesTitle ? "12px 24px 16px" : "28px 24px 16px",
+        }}
+      >
+        {tiles.map((tile) => {
+          const inner = (
+            <>
+              <p
+                className="font-bold leading-none"
+                style={{
+                  fontFamily: PORTAL_VAR.head,
+                  fontSize: 30,
+                  color: PORTAL_VAR.ink,
+                }}
+              >
+                {tile.value}
+              </p>
+              <p
+                className="font-semibold"
+                style={{
+                  fontSize: 12,
+                  color: PORTAL_VAR.faint,
+                  marginTop: 5,
+                }}
+              >
+                {tile.label}
+              </p>
+            </>
+          );
+          const style = {
+            background: "#fff",
+            border: `0.5px solid ${PORTAL_VAR.line}`,
+            boxShadow: PORTAL_VAR.shadow,
+            borderRadius: 14,
+            padding: "16px 16px",
+            textAlign: "left" as const,
+          };
+          if (tile.onClick) {
+            return (
+              <button
+                key={tile.id}
+                type="button"
+                onClick={tile.onClick}
+                style={style}
+              >
+                {inner}
+              </button>
+            );
+          }
+          return (
+            <div key={tile.id} style={style}>
+              {inner}
+            </div>
+          );
+        })}
+      </div>
+
+      <div style={{ padding: "10px 24px 24px" }}>
+        <div
+          className="flex items-center justify-between"
+          style={{ marginBottom: 10 }}
+        >
+          <h2
+            className="font-bold"
+            style={{
+              fontFamily: PORTAL_VAR.head,
+              fontSize: 15,
+              color: PORTAL_VAR.ink,
+            }}
+          >
+            {recentTitle}
+          </h2>
+          <button
+            type="button"
+            onClick={onOpenAll}
+            className="font-semibold"
+            style={{
+              fontSize: 12.5,
+              color: PORTAL_VAR.primary,
+              cursor: "pointer",
+              background: "none",
+              border: "none",
+              padding: 0,
+            }}
+          >
+            {recentAllLabel}
+          </button>
+        </div>
+        <div
+          style={{
+            background: "#fff",
+            borderRadius: 12,
+            border: `1px solid ${PORTAL_VAR.line}`,
+            overflow: "hidden",
+          }}
+        >
+          {recent.length === 0 ? (
+            <div
+              style={{
+                padding: 34,
+                textAlign: "center",
+                color: PORTAL_VAR.faint,
+                fontSize: 13,
+              }}
+            >
+              {recentEmpty}
+            </div>
+          ) : (
+            recent.map((v, idx) => (
+              <button
+                key={v.id}
+                type="button"
+                onClick={() => onOpenItem(v.id)}
+                className="flex w-full items-center text-left"
+                style={{
+                  gap: 10,
+                  padding: "13px 15px",
+                  borderBottom:
+                    idx < recent.length - 1
+                      ? `1px solid ${PORTAL_VAR.line2}`
+                      : "none",
+                  cursor: "pointer",
+                  background: "transparent",
+                }}
+              >
+                {v.notfall ? (
+                  <span
+                    style={{
+                      flexShrink: 0,
+                      fontSize: 10,
+                      fontWeight: 700,
+                      letterSpacing: 0.02,
+                      color: PORTAL_VAR.danger,
+                      background: PORTAL_VAR.dangerSoft,
+                      borderRadius: 4,
+                      padding: "2px 6px",
+                    }}
+                  >
+                    Notfall
+                  </span>
+                ) : null}
+                <div className="min-w-0 flex-1">
+                  <p
+                    className="truncate font-semibold"
+                    style={{
+                      fontSize: 14,
+                      color: PORTAL_VAR.ink,
+                      fontFamily: PORTAL_VAR.head,
+                    }}
+                  >
+                    {v.titel}
+                  </p>
+                  <p
+                    style={{
+                      fontSize: 12,
+                      color: PORTAL_VAR.sub,
+                      marginTop: 1,
+                    }}
+                  >
+                    {v.objekt}
+                  </p>
+                </div>
+                <span
+                  className="shrink-0 whitespace-nowrap font-semibold"
+                  style={{
+                    fontSize: 11,
+                    color: v.statusColor,
+                    background: v.statusBg,
+                    padding: "3px 9px",
+                    borderRadius: 99,
+                  }}
+                >
+                  {v.statusLabel}
+                </span>
+              </button>
+            ))
+          )}
+        </div>
+      </div>
+
+      {after}
     </div>
   );
 }

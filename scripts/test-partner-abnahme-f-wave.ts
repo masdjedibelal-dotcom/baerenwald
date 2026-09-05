@@ -11,7 +11,6 @@ import {
 import {
   partnerAbnahmeZielPositionen,
   partnerKannErledigtMelden,
-  partnerZeigtAbschlussCta,
 } from "../src/lib/partner/partner-position-erledigt";
 import { partnerAuftragKannRechnungHochladen } from "../src/lib/partner/partner-auftrag-dokumente";
 import type { PartnerAuftragItem } from "../src/lib/partner/get-partner-data";
@@ -50,25 +49,7 @@ assert.equal(
     auftragStatus: "offen",
   }),
   false,
-  "CTA disabled solange nicht alle Leistungen dokumentiert"
-);
-
-assert.equal(
-  partnerZeigtAbschlussCta({
-    positionen: [
-      basePos,
-      {
-        ...basePos,
-        id: "p2",
-        leistung_status: "in_arbeit",
-        leistung_name: "Rohr tauschen",
-      },
-    ],
-    vorgangState: "in_bearbeitung",
-    auftragStatus: "offen",
-  }),
-  true,
-  "CTA sichtbar (ausgegraut) solange Leistungen offen"
+  "kein CTA solange nicht alle Leistungen dokumentiert"
 );
 
 assert.equal(
@@ -131,7 +112,7 @@ const item = {
   angebotHandwerkerId: "a1",
   status: "offen",
   angebotHwStatus: "uebernommen",
-  projektvertrag_bestaetigt_am: null,
+  projektvertrag_bestaetigt_am: "2026-07-01",
   hw_rechnung_eingereicht_at: null,
   hw_abschluss_signiert_am: null,
   abnahme_protokoll_url: null,
@@ -140,26 +121,7 @@ const item = {
 assert.equal(
   partnerAuftragKannRechnungHochladen(item),
   false,
-  "Rechnung erst nach Abschluss"
-);
-
-assert.equal(
-  partnerAuftragKannRechnungHochladen({
-    ...item,
-    angebotHwStatus: "bestaetigt",
-    hw_abschluss_signiert_am: "2026-07-24T10:00:00Z",
-  }),
-  true,
-  "Rechnung nach CRM-Freigabe (bestaetigt) + Abschluss"
-);
-
-assert.equal(
-  partnerAuftragKannRechnungHochladen({
-    ...item,
-    angebotHwStatus: "offen",
-  }),
-  false,
-  "Rechnung ohne CRM-Freigabe/Abschluss nicht möglich"
+  "Rechnung ohne Abnahme"
 );
 
 assert.equal(
@@ -168,24 +130,7 @@ assert.equal(
     hw_abschluss_signiert_am: "2026-07-24T10:00:00Z",
   }),
   true,
-  "Rechnung nach Abschluss-Signatur möglich"
-);
-
-assert.equal(
-  partnerAuftragKannRechnungHochladen(item, { abschlussDoneLocal: true }),
-  true,
-  "Rechnung direkt nach lokalem Abschluss möglich"
-);
-
-assert.equal(
-  partnerAuftragKannRechnungHochladen({
-    ...item,
-    angebotHandwerkerId: null,
-    angebotHwStatus: "uebernommen",
-    hw_abschluss_signiert_am: "2026-07-24T10:00:00Z",
-  }),
-  true,
-  "Direktauftrag: Rechnung ohne angebotHandwerkerId möglich"
+  "Rechnung nach Abnahme"
 );
 
 console.log("audit F-wave abnahme checks passed.");

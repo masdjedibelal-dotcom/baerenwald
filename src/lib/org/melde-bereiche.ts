@@ -9,9 +9,8 @@ export type MeldeBereichId =
   | "fenster_tuer"
   | "dach"
   | "schimmel"
-  | "sonstiges"
-  /** @deprecated Nur Legacy-Leads; UI → Sonstiges */
-  | "baum_notfall";
+  | "baum_notfall"
+  | "sonstiges";
 
 export type MeldeBereichOption = {
   id: MeldeBereichId;
@@ -66,9 +65,16 @@ export const MELDE_BEREICHE: MeldeBereichOption[] = [
     icon: "02-reparatur",
   },
   {
+    id: "baum_notfall",
+    label: "Baum / Sturm",
+    hint: "Ast, umgefallen — eher Freitext/Sonstiges",
+    bereich: "baum_notfall",
+    icon: "14-gartengestaltung",
+  },
+  {
     id: "sonstiges",
-    label: "Sonstiges / Haus / Weg",
-    hint: "Müll, Treppenhaus, Wespen, Ast/Weg — kurz beschreiben",
+    label: "Müll / Treppenhaus / Wespen",
+    hint: "Müllplatz, Reinigung, Nest — kurz beschreiben",
     bereich: "sonstiges",
     icon: "02-reparatur",
   },
@@ -84,11 +90,10 @@ export function meldeBereichToFunnelBereiche(id: MeldeBereichId): string[] {
 }
 
 export function isMeldeBereichId(v: string): v is MeldeBereichId {
-  return MELDE_BEREICHE.some((o) => o.id === v) || v === "baum_notfall";
+  return MELDE_BEREICHE.some((o) => o.id === v);
 }
 
 export function meldeBereichLabel(id: string | null | undefined): string {
-  if (id === "baum_notfall") return "Sonstiges / Haus / Weg";
   const opt = MELDE_BEREICHE.find((o) => o.id === id);
   return opt?.label ?? "Sonstiges";
 }

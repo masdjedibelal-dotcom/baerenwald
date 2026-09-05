@@ -4,7 +4,7 @@ import { useCallback, useEffect, useRef, type RefObject } from "react";
 
 import { KI_TEXTAREA_MAX_LINES } from "@/lib/ki-rechner/guards";
 
-const TEXTAREA_MIN_HEIGHT_PX = 42;
+const TEXTAREA_MIN_HEIGHT_PX = 40;
 const KEYBOARD_OPEN_THRESHOLD_PX = 48;
 /** Nur auto-scrollen wenn Nutzer schon unten war (wie WhatsApp/ChatGPT). */
 const NEAR_BOTTOM_PX = 120;
@@ -57,8 +57,8 @@ export function useGptChatScroll({
     const next = Math.max(TEXTAREA_MIN_HEIGHT_PX, Math.min(ta.scrollHeight, maxHeight));
     ta.style.height = `${next}px`;
     ta.style.overflowY = ta.scrollHeight > maxHeight ? "auto" : "hidden";
-    /* Leer: oben bleiben (Placeholder sichtbar). Mit Text: ans Ende. */
-    ta.scrollTop = ta.value.trim() ? ta.scrollHeight : 0;
+    /* Nur innerhalb der Textarea scrollen — Nachrichtenliste nicht anfassen. */
+    ta.scrollTop = ta.scrollHeight;
   }, [textareaRef]);
 
   const chatPageRoot = useCallback(() => {

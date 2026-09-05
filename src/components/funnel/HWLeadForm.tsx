@@ -148,7 +148,7 @@ export function HWLeadForm({
             lineHeight: 1.5,
           }}
         >
-          Mit Weiter stimmen Sie zu, dass wir Sie zur Bearbeitung Ihrer
+          Mit Weiter stimmst du zu, dass wir dich zur Bearbeitung deiner
           Anfrage kontaktieren. Weitere Infos in unserer{" "}
           <a
             href="/datenschutz"

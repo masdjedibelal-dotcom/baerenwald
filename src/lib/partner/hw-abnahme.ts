@@ -6,26 +6,20 @@ import type { PartnerAuftragPosition } from "@/lib/partner/get-partner-data";
 import { HW_ABSCHLUSS_CHECKS, type HwAbschlussCheckId } from "@/lib/portal2/hw-kalkulation";
 
 export const HW_ABNAHME_COPY = {
-  cta: "Auftrag abschließen →",
+  cta: "Teilabnahme abschließen →",
   ctaHint:
-    "Nach den Updates zu Ihren Leistungen: Abschluss mit Signatur. Danach Rechnung erstellen oder hochladen.",
+    "Nach der Dokumentation Ihrer Leistungen: Teilabnahme mit Signatur — Bärenwald gibt frei, danach Rechnung.",
   positionEndeCta: "3. Ende — Dokumentieren",
-  positionEndeToast: "Leistung dokumentiert — bereit für den Abschluss.",
+  positionEndeToast: "Leistung dokumentiert — bereit für Abnahme.",
   positionEndeBody:
-    "Ergebnis-Foto speichert das Update. Der Abschluss folgt danach mit Signatur.",
-  rechnungTitle: "Rechnung erstellen",
-  rechnungCta: "Rechnung erstellen",
-  rechnungSecondaryCta: "Rechnung hochladen",
-  rechnungAbschlussCta: "Auftrag abschließen",
+    "Ergebnis-Foto speichert die Dokumentation. Die Teilabnahme folgt danach mit Signatur.",
+  rechnungTitle: "Rechnung prüfen & einreichen",
   rechnungBody:
-    "Rechnung aus Firmendaten und Leistungen erstellen. Rechnungsnummer kannst du in der Vorschau anpassen.",
-  rechnungDocsHint:
-    "Nach dem Abschluss: Rechnung erstellen oder eigenes PDF hochladen.",
-  rechnungFirmendatenBusy: "Firmendaten werden geprüft…",
-  rechnungFirmendatenHint:
-    "Firmendaten unvollständig (z. B. Straße) — bitte unter Einstellungen ergänzen.",
+    "Nach Ihrer Teilabnahme: Entwurf aus Firmendaten und Konditionen prüfen, dann einreichen. Bei unvollständigen Angaben erscheint ein Hinweis.",
+  rechnungBlockedOhneAbnahme:
+    "Zuerst Ihre Teilabnahme abschließen (Signatur). Danach können Sie die Rechnung einreichen.",
   kundeSigHint:
-    "Gegenzeichnung vor Ort empfohlen — Name „Kunde vor Ort“ ist Pflicht, Zeichnung bitte mit dem Kunden.",
+    "Gegenzeichnung vor Ort empfohlen — Name ist Pflicht, Zeichnung bitte mit dem Kunden.",
   kundeSigRequiredSoft: "Bitte den Kunden vor Ort gegenzeichnen lassen.",
   mobileSigHint:
     "Tipp: Querformat oder größeres Feld für die Unterschrift nutzen.",

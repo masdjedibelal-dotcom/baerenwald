@@ -42,7 +42,8 @@ export function PortalModalNeueAnfrage({
       title={PORTAL_NEUE_ANFRAGE_TITLE}
       subtitle={PORTAL_NEUE_ANFRAGE_SUBTITLE}
       onClose={onClose}
-      variant="funnel"
+      variant="confirm"
+      maxWidth={420}
     >
       {notice?.trim() ? (
         <p className="portal-neue-anfrage-notice">{notice}</p>

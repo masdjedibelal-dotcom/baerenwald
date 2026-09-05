@@ -71,13 +71,13 @@ export function PlzStep({
 
         {plzStatus === "ungueltig" && (
           <p className="plz-hint plz-hint--error">
-            Bitte geben Sie eine gültige 5-stellige PLZ ein.
+            Bitte gib eine gültige 5-stellige PLZ ein.
           </p>
         )}
 
         {plzStatus === "erlaubt" && (
           <p className="plz-hint plz-hint--ok">
-            Perfekt — wir sind in Ihrer Nähe
+            Perfekt — wir sind in deiner Nähe
           </p>
         )}
 
@@ -113,7 +113,7 @@ export function PlzStep({
                 von ca. 70 km tätig.
               </p>
               <p className="plz-ausserhalb-sub">
-                Ihre Anfrage nehmen wir trotzdem gerne entgegen — wir schauen
+                Deine Anfrage nehmen wir trotzdem gerne entgegen — wir schauen
                 ob wir helfen können.
               </p>
             </div>

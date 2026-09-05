@@ -1,14 +1,15 @@
 /**
  * Zentrale Betriebs-Konfiguration — Akzent entspricht Design-Token --acc.
  */
-import { publicSiteOrigin } from "@/lib/staging";
-
 const accentFromEnv =
   typeof process !== "undefined" && process.env.NEXT_PUBLIC_ACCENT_COLOR
     ? process.env.NEXT_PUBLIC_ACCENT_COLOR
     : "#2E7D52";
 
-const siteUrl = publicSiteOrigin();
+const siteUrl =
+  typeof process !== "undefined" && process.env.NEXT_PUBLIC_SITE_URL
+    ? process.env.NEXT_PUBLIC_SITE_URL.replace(/\/$/, "")
+    : "https://baerenwaldmuenchen.de";
 
 export const SITE_CONFIG = {
   companyName: "Bärenwald",
@@ -25,7 +26,7 @@ export const SITE_CONFIG = {
   /** Nur intern / Impressum & Pflichtangaben — nicht im allgemeinen UI */
   phoneMobil: "+49 163 7316161",
   phoneMobilHref: "tel:+491637316161",
-  email: "info@baerenwald-muenchen.de",
+  email: "info@baerenwaldmuenchen.de",
   /** Geschäftsanschrift (Impressum, Schema, Kontakt). */
   addressStreet: "Bärenwaldstraße",
   addressHouseNumber: "20",

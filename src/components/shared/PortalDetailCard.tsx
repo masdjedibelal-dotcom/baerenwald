@@ -2,7 +2,6 @@
 
 import type { ReactNode } from "react";
 
-import { PortalSectionAddButton } from "@/components/shared/PortalEinstellungenUi";
 import {
   portalDetailSectionBorderStyle,
   portalDetailSectionClass,
@@ -11,7 +10,7 @@ import {
 import { PORTAL_VAR } from "@/lib/portal2/tokens";
 import { cn } from "@/lib/utils";
 
-/** Weiße Detail-Card — `responsive` / `card` = immer Section-Card; `flat` = ohne Rahmen. */
+/** Weiße Detail-Card — C1: `responsive` = Border mobil, flach ab lg. */
 export function PortalDetailCard({
   title,
   children,
@@ -19,9 +18,6 @@ export function PortalDetailCard({
   bodyClassName,
   chrome = "responsive",
   id,
-  headerAction,
-  onAdd,
-  addLabel = "Hinzufügen",
 }: {
   title?: string;
   children: ReactNode;
@@ -29,37 +25,15 @@ export function PortalDetailCard({
   bodyClassName?: string;
   chrome?: PortalDetailChrome;
   id?: string;
-  /** Beliebige Aktion rechts vom Titel (z. B. Menü). */
-  headerAction?: ReactNode;
-  /** Accent-Plus rechts vom Titel — Section-Hinzufügen. */
-  onAdd?: () => void;
-  addLabel?: string;
 }) {
-  const trailing =
-    headerAction || onAdd ? (
-      <div className="flex shrink-0 items-center gap-1.5">
-        {headerAction}
-        {onAdd ? (
-          <PortalSectionAddButton onClick={onAdd} label={addLabel} />
-        ) : null}
-      </div>
-    ) : null;
-
   return (
     <section
       id={id}
       className={cn(portalDetailSectionClass(chrome), className)}
       style={portalDetailSectionBorderStyle(chrome)}
     >
-      {title || trailing ? (
-        <div className="mb-3 flex items-start justify-between gap-2">
-          {title ? (
-            <h3 className="portal-text-section min-w-0">{title}</h3>
-          ) : (
-            <span />
-          )}
-          {trailing}
-        </div>
+      {title ? (
+        <h3 className="portal-text-section mb-3">{title}</h3>
       ) : null}
       <div className={bodyClassName}>{children}</div>
     </section>
@@ -81,10 +55,16 @@ export function PortalDetailMetaField({
       className={cn("border-b py-2.5 last:border-b-0", className)}
       style={{ borderColor: PORTAL_VAR.line2 }}
     >
-      <p className="portal-text-label" style={{ color: PORTAL_VAR.faint }}>
+      <p
+        className="text-[10.5px] font-semibold uppercase tracking-wide"
+        style={{ color: PORTAL_VAR.faint }}
+      >
         {label}
       </p>
-      <div className="portal-text-body mt-0.5 font-semibold" style={{ color: PORTAL_VAR.ink }}>
+      <div
+        className="mt-0.5 text-[13.5px] font-semibold"
+        style={{ color: PORTAL_VAR.ink }}
+      >
         {children}
       </div>
     </div>

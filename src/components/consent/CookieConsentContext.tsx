@@ -8,7 +8,6 @@ import {
   useMemo,
   useState,
 } from "react";
-import { usePathname } from "next/navigation";
 
 import { CookieConsentPanel } from "@/components/consent/CookieConsentPanel";
 import {
@@ -19,50 +18,13 @@ import {
   initPostHogClient,
   optOutPostHogClient,
 } from "@/lib/consent/posthog-client";
-import {
-  meldeDatenschutzUrl,
-  meldeImpressumUrl,
-} from "@/lib/org/melde-legal-urls";
-
-type LegalLinks = { datenschutz: string; impressum: string };
 
 type CookieConsentContextValue = {
   openSettings: () => void;
   statisticsEnabled: boolean;
-  /** Org-Rechtstexte für Whitelabel-Melde (Cookie-Banner). */
-  setLegalLinks: (links: LegalLinks | null) => void;
 };
 
-const CookieConsentContext = createContext<CookieConsentContextValue | null>(
-  null
-);
-
-const DEFAULT_LEGAL: LegalLinks = {
-  datenschutz: "/datenschutz#cookies-tracking",
-  impressum: "/impressum",
-};
-
-/** /melden/{org}/… → Org-Rechtstexte; status/fehler/… ausgenommen. */
-function legalFromMeldePath(pathname: string | null): LegalLinks | null {
-  if (!pathname?.startsWith("/melden/")) return null;
-  const seg = pathname.split("/").filter(Boolean);
-  // melden / {slug} / …
-  const slug = seg[1];
-  if (!slug) return null;
-  const reserved = new Set([
-    "status",
-    "fehler",
-    "bestaetigung",
-    "ergaenzen",
-    "datenschutz",
-    "impressum",
-  ]);
-  if (reserved.has(slug)) return null;
-  return {
-    datenschutz: meldeDatenschutzUrl(slug),
-    impressum: meldeImpressumUrl(slug),
-  };
-}
+const CookieConsentContext = createContext<CookieConsentContextValue | null>(null);
 
 export function useCookieConsent(): CookieConsentContextValue {
   const ctx = useContext(CookieConsentContext);
@@ -79,16 +41,11 @@ export function CookieConsentProvider({
   children: React.ReactNode;
   onStatisticsChange: (enabled: boolean) => void;
 }) {
-  const pathname = usePathname();
   const [hydrated, setHydrated] = useState(false);
   const [showBanner, setShowBanner] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [statisticsDraft, setStatisticsDraft] = useState(false);
   const [statisticsEnabled, setStatisticsEnabled] = useState(false);
-  const [overrideLegal, setOverrideLegal] = useState<LegalLinks | null>(null);
-
-  const pathLegal = useMemo(() => legalFromMeldePath(pathname), [pathname]);
-  const legal = overrideLegal ?? pathLegal ?? DEFAULT_LEGAL;
 
   useEffect(() => {
     const stored = readCookieConsent();
@@ -141,13 +98,9 @@ export function CookieConsentProvider({
     setShowSettings(true);
   }, []);
 
-  const setLegalLinks = useCallback((links: LegalLinks | null) => {
-    setOverrideLegal(links);
-  }, []);
-
   const value = useMemo(
-    () => ({ openSettings, statisticsEnabled, setLegalLinks }),
-    [openSettings, statisticsEnabled, setLegalLinks]
+    () => ({ openSettings, statisticsEnabled }),
+    [openSettings, statisticsEnabled]
   );
 
   return (
@@ -156,8 +109,6 @@ export function CookieConsentProvider({
       {hydrated && showBanner ? (
         <CookieConsentPanel
           mode="banner"
-          datenschutzHref={legal.datenschutz}
-          impressumHref={legal.impressum}
           onAcceptStatistics={acceptStatistics}
           onNecessaryOnly={acceptNecessaryOnly}
         />
@@ -172,8 +123,6 @@ export function CookieConsentProvider({
           />
           <CookieConsentPanel
             mode="settings"
-            datenschutzHref={legal.datenschutz}
-            impressumHref={legal.impressum}
             statisticsDraft={statisticsDraft}
             onStatisticsDraftChange={setStatisticsDraft}
             onSave={saveSettings}

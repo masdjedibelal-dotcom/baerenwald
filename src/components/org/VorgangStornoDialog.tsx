@@ -60,9 +60,8 @@ export function VorgangStornoDialog({
         variant="edit"
         dirty={grund.trim().length > 0}
         closeOnBackdrop={!busy}
-        busy={busy}
       >
-        <form id="vorgang-storno-form" onSubmit={submit} className="space-y-4">
+        <form onSubmit={submit} className="space-y-4">
           <p className="portal-text-body text-text-secondary">
             {inAusfuehrung
               ? "Die Ausführung hat bereits begonnen. Bärenwald prüft mögliche Abbruchkosten."
@@ -77,21 +76,21 @@ export function VorgangStornoDialog({
             minLength={5}
             disabled={busy}
           />
-          <div className="portal-action-row">
+          <div className="portal-confirm-actions">
+            <button
+              type="submit"
+              className="btn-pill-outline portal-btn portal-confirm-actions-primary !border-red-200 !text-red-800"
+              disabled={busy}
+            >
+              {busy ? "Wird gespeichert…" : "Zurückziehen"}
+            </button>
             <button
               type="button"
-              className="portal-action-btn portal-action-btn--secondary"
+              className="btn-pill-outline portal-btn portal-confirm-actions-cancel"
               onClick={() => setOpen(false)}
               disabled={busy}
             >
               Abbrechen
-            </button>
-            <button
-              type="submit"
-              className="portal-action-btn portal-action-btn--danger"
-              disabled={busy}
-            >
-              {busy ? "Wird gespeichert…" : "Zurückziehen"}
             </button>
           </div>
         </form>

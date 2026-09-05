@@ -3,9 +3,8 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { cn } from "@/lib/utils";
-import { bewohnerBelegtEinheit } from "@/lib/org/einheit-bewohner-regeln";
 import { orgPortalToast, portalToastError } from "@/lib/shared/portal-toast";
-import { PortalInboxEmpty } from "@/components/shared/PortalEmptyState";
+import { PortalEmptyState } from "@/components/shared/PortalEmptyState";
 
 type Einheit = {
   id: string;
@@ -18,8 +17,6 @@ type BewohnerRow = {
   id: string;
   name: string;
   objekt_einheit_id: string;
-  rolle?: string | null;
-  selbstbewohnt?: boolean | null;
 };
 
 /**
@@ -74,9 +71,7 @@ export function OrganisationObjektEinheitenPanel({
   const occupied = useMemo(() => {
     const set = new Set<string>();
     for (const b of bewohner) {
-      if (b.objekt_einheit_id && bewohnerBelegtEinheit(b)) {
-        set.add(b.objekt_einheit_id);
-      }
+      if (b.objekt_einheit_id) set.add(b.objekt_einheit_id);
     }
     return set;
   }, [bewohner]);
@@ -254,13 +249,13 @@ export function OrganisationObjektEinheitenPanel({
       <ul className="space-y-2">
         {items.length === 0 ? (
           <li>
-            <PortalInboxEmpty title="Noch keine Einheiten." compact />
+            <PortalEmptyState title="Noch keine Einheiten." compact />
           </li>
         ) : (
           items.map((u) => (
             <li
               key={u.id}
-              className="flex items-center justify-between gap-2 rounded-xl border border-border-light bg-white px-3.5 py-3 text-sm sm:rounded-lg sm:border-transparent sm:bg-white sm:py-2"
+              className="flex items-center justify-between gap-2 rounded-xl border border-border-light bg-white px-3.5 py-3 text-sm sm:rounded-lg sm:border-transparent sm:bg-muted/30 sm:py-2"
             >
               <span>
                 {u.bezeichnung}

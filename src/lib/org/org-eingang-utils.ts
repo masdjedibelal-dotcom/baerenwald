@@ -23,9 +23,8 @@ export function meldeBereichFromLead(lead: OrganisationLead): string | null {
   return fd?.melde_bereich?.trim() || null;
 }
 
-/** @deprecated Badge „Notfall“ entfernt — nutze leadIstMeldeDirektauftrag. */
-export function isMeldeNotfall(_lead: OrganisationLead): boolean {
-  return false;
+export function isMeldeNotfall(lead: OrganisationLead): boolean {
+  return meldeKategorieFromLead(lead) === "notfall";
 }
 
 export function eingangStatusLabel(lead: OrganisationLead): string {
@@ -34,9 +33,6 @@ export function eingangStatusLabel(lead: OrganisationLead): string {
     return hvMeldungStatusLabel(lead.hv_meldung_status);
   }
   if (lead.org_freigabe_status === "ausstehend") return "Angebot zur Freigabe";
-  if (lead.org_freigabe_status === "beschluss_ausstehend") {
-    return "Wartet auf Beschluss";
-  }
   if (lead.org_freigabe_status === "abgelehnt") return "Abgelehnt";
   if (lead.org_freigabe_status === "freigegeben") return "Freigegeben";
   return lead.status?.trim() || "Neu";

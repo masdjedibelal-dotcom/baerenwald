@@ -9,7 +9,6 @@ import {
 } from "@/app/actions/partner-fachdoku";
 import { PortalDetailInfoBox } from "@/components/shared/PortalDetailUi";
 import { PortalStatusPill } from "@/components/shared/PortalStatusPill";
-import { usePortalUploadBusy } from "@/components/shared/usePortalUploadBusy";
 import type { FachdokuSlotView } from "@/lib/partner/fachdoku-slots";
 import { fachdokuOffenCount } from "@/lib/partner/fachdoku-slots";
 import { portalToastError, portalToastSuccess } from "@/lib/shared/portal-toast";
@@ -33,7 +32,6 @@ export function PartnerFachdokuSlots({
   const [slots, setSlots] = useState<FachdokuSlotView[]>([]);
   const [loading, setLoading] = useState(true);
   const [busyId, setBusyId] = useState<string | null>(null);
-  const { runUpload } = usePortalUploadBusy();
   const inputRefs = useRef<Record<string, HTMLInputElement | null>>({});
 
   const apply = useCallback(
@@ -63,23 +61,18 @@ export function PartnerFachdokuSlots({
 
   async function onUpload(slotId: string, file: File) {
     setBusyId(slotId);
-    try {
-      await runUpload(async () => {
-        const fd = new FormData();
-        fd.set("auftragId", auftragId);
-        fd.set("slotId", slotId);
-        fd.set("file", file);
-        const res = await uploadPartnerFachdokuSlot(fd);
-        if (!res.ok) {
-          portalToastError("Upload fehlgeschlagen", res.error);
-          return;
-        }
-        portalToastSuccess("Fachnachweis hochgeladen", "Der Slot ist erledigt.");
-        apply(res.slots);
-      });
-    } finally {
-      setBusyId(null);
+    const fd = new FormData();
+    fd.set("auftragId", auftragId);
+    fd.set("slotId", slotId);
+    fd.set("file", file);
+    const res = await uploadPartnerFachdokuSlot(fd);
+    setBusyId(null);
+    if (!res.ok) {
+      portalToastError("Upload fehlgeschlagen", res.error);
+      return;
     }
+    portalToastSuccess("Fachnachweis hochgeladen", "Der Slot ist erledigt.");
+    apply(res.slots);
   }
 
   if (loading) {
@@ -104,7 +97,8 @@ export function PartnerFachdokuSlots({
             Noch {offen} Fachnachweis{offen === 1 ? "" : "e"} offen
           </p>
           <p className="mt-0.5 text-[12.5px]">
-            Abschluss ist trotzdem möglich — Fachnachweise bitte nachreichen.
+            Abnahme ist trotzdem möglich — Protokoll bitte nachreichen (Tab
+            Dokumentation).
           </p>
         </PortalDetailInfoBox>
       </div>
@@ -112,19 +106,28 @@ export function PartnerFachdokuSlots({
   }
 
   return (
-    <section className={cn(className)}>
-      <div className="border-b border-border-light pb-3">
+    <section
+      className={cn("rounded-[12px] border bg-white", className)}
+      style={{ borderColor: PORTAL_VAR.line }}
+    >
+      <div className="border-b px-3.5 py-3" style={{ borderColor: PORTAL_VAR.line2 }}>
         <h3 className="portal-text-title text-[15px]">Fachnachweise</h3>
+        <p className="portal-text-meta mt-0.5">
+          {offen > 0
+            ? `${offen} offen — Abnahme wird nicht blockiert`
+            : "Alle Nachweise hochgeladen"}
+        </p>
       </div>
 
-      {/* Mobil: flache Zeilen */}
-      <ul className="divide-y divide-border-light sm:hidden">
+      {/* Mobil: Cards */}
+      <ul className="space-y-2.5 p-3 sm:hidden">
         {slots.map((s) => {
           const done = String(s.status).toLowerCase() === "erledigt";
           const href = s.signed_url?.trim();
           return (
-            <li key={s.id} className="py-3.5">
-              <div className="flex items-start justify-between gap-3">
+            <li key={s.id}>
+              <article className="rounded-xl border border-border-light bg-white px-3.5 py-3.5">
+                <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0 flex-1">
                     <p className="text-[14px] font-semibold text-text-primary">
                       {s.label}
@@ -140,7 +143,7 @@ export function PartnerFachdokuSlots({
                     tone={done ? "fertig" : "warn"}
                   />
                 </div>
-                <div className="mt-3 flex items-center justify-end gap-1 pt-1">
+                <div className="mt-3 flex items-center justify-end gap-1 border-t border-border-light pt-3">
                   {href ? (
                     <a
                       href={href}
@@ -175,6 +178,7 @@ export function PartnerFachdokuSlots({
                     {busyId === s.id ? "…" : done ? "Ersetzen" : "Upload"}
                   </button>
                 </div>
+              </article>
             </li>
           );
         })}
@@ -188,7 +192,8 @@ export function PartnerFachdokuSlots({
           return (
             <li
               key={s.id}
-              className="flex items-center gap-2 border-b border-border-light px-0 py-2.5 last:border-b-0"
+              className="flex items-center gap-2 border-b px-3.5 py-2.5 last:border-b-0"
+              style={{ borderColor: PORTAL_VAR.line2 }}
             >
               <div className="min-w-0 flex-1">
                 <p className="text-[13.5px] font-semibold text-text-primary">

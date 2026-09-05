@@ -6,7 +6,6 @@ import { writeAuditEvent } from "@/lib/audit/write-audit-event";
 import { linkPortalHandwerkerToAuthUser } from "@/lib/partner/link-portal-handwerker";
 import { createClient } from "@/lib/supabase/server";
 import { isSupabaseConfigured, supabaseAdmin } from "@/lib/supabase";
-import { assertPartnerAktiveZuweisung } from "@/lib/partner/partner-zuweisung-access";
 
 export type PartnerRueckfrageResult = { ok: true } | { ok: false; error: string };
 
@@ -28,7 +27,20 @@ async function partnerAuth() {
 }
 
 async function assertPartnerAuftrag(handwerkerId: string, auftragId: string) {
-  return assertPartnerAktiveZuweisung(handwerkerId, auftragId);
+  const { data: hw } = await supabaseAdmin
+    .from("auftrag_handwerker")
+    .select("auftrag_id")
+    .eq("auftrag_id", auftragId)
+    .eq("handwerker_id", handwerkerId)
+    .limit(1);
+  if (hw?.length) return true;
+  const { data: pos } = await supabaseAdmin
+    .from("auftrag_positionen")
+    .select("auftrag_id")
+    .eq("auftrag_id", auftragId)
+    .eq("handwerker_id", handwerkerId)
+    .limit(1);
+  return Boolean(pos?.length);
 }
 
 /** Partner stellt Rückfrage zum Auftrag. */

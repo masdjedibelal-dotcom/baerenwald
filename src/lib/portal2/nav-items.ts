@@ -18,7 +18,6 @@ export type PortalNavKey =
   | "liste"
   | "objekte"
   | "servicepakete"
-  | "marktplatz"
   | "settings"
   | "mehr";
 
@@ -26,7 +25,6 @@ export type PortalNavItemDef = {
   key: PortalNavKey;
   label: string;
   glyph: string;
-  tag?: string;
 };
 
 export const PORTAL_NAV_ITEMS: Record<PortalNavRole, readonly PortalNavItemDef[]> =
@@ -35,18 +33,7 @@ export const PORTAL_NAV_ITEMS: Record<PortalNavRole, readonly PortalNavItemDef[]
       { key: "home", label: "Dashboard", glyph: "◈" },
       { key: "liste", label: "Vorgänge", glyph: "▤" },
       { key: "objekte", label: "Objekte", glyph: "▦" },
-      {
-        key: "servicepakete",
-        label: "Serviceabos",
-        glyph: "◇",
-        tag: "In Kürze",
-      },
-      {
-        key: "marktplatz",
-        label: "Marktplatz",
-        glyph: "▣",
-        tag: "In Kürze",
-      },
+      { key: "servicepakete", label: "Servicepakete", glyph: "◇" },
       { key: "settings", label: "Einstellungen", glyph: "⚙" },
     ],
     kunde_privat: [
@@ -57,7 +44,7 @@ export const PORTAL_NAV_ITEMS: Record<PortalNavRole, readonly PortalNavItemDef[]
     eigentuemer: [
       { key: "home", label: "Dashboard", glyph: "◈" },
       { key: "liste", label: "Vorgänge", glyph: "▤" },
-      { key: "objekte", label: "Einheiten", glyph: "▦" },
+      { key: "objekte", label: "Objekte", glyph: "▦" },
     ],
     mieter: [
       { key: "home", label: "Start", glyph: "◈" },
@@ -87,20 +74,8 @@ export const PORTAL_HV_MEHR_TILES: readonly {
   key: PortalNavKey;
   label: string;
   glyph: string;
-  tag?: string;
 }[] = [
-  {
-    key: "servicepakete",
-    label: "Serviceabos",
-    glyph: "◇",
-    tag: "In Kürze",
-  },
-  {
-    key: "marktplatz",
-    label: "Marktplatz",
-    glyph: "▣",
-    tag: "In Kürze",
-  },
+  { key: "servicepakete", label: "Serviceabos", glyph: "◇" },
   { key: "settings", label: "Einstellungen", glyph: "⚙" },
 ] as const;
 
@@ -118,7 +93,6 @@ export const PORTAL_NAV_SECTION_BY_VARIANT = {
     liste: "vorgaenge",
     objekte: "objekte",
     servicepakete: "leistungen",
-    marktplatz: "marktplatz",
     settings: "profil",
     mehr: "mehr",
   },
@@ -159,8 +133,6 @@ export type PortalShellNavBuilt = {
   navKey: PortalNavKey;
   glyph: string;
   badge?: number;
-  /** z. B. „In Kürze“ — Inline-Badge hinter dem Label (Deep Green) */
-  tag?: string;
 };
 
 /** Shell-Nav aus Rolle + Variant + optionalen Badges. */
@@ -180,7 +152,6 @@ export function buildPortalShellNav(
         navKey: item.key,
         glyph: item.glyph,
         ...(badge != null && badge > 0 ? { badge } : {}),
-        ...(item.tag ? { tag: item.tag } : {}),
       },
     ];
   });

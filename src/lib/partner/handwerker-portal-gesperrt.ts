@@ -1,6 +1,5 @@
 import { supabaseAdmin } from "@/lib/supabase";
 import { PARTNER_AUTH_COPY } from "@/lib/partner/partner-auth-copy";
-import { canonicalBaerenwaldPrimaryStaffEmail } from "@/lib/auth/baerenwald-primary-staff";
 
 /** Nutzerfreundliche Meldung — Partner sollen Bärenwald kontaktieren. */
 export const HANDWERKER_PORTAL_GESPERRT_MESSAGE =
@@ -28,9 +27,7 @@ export async function isHandwerkerPortalGesperrt(opts: {
   email?: string | null;
 }): Promise<boolean> {
   const handwerkerId = opts.handwerkerId?.trim() || null;
-  const rawEmail = opts.email?.trim().toLowerCase() || "";
-  const email =
-    canonicalBaerenwaldPrimaryStaffEmail(rawEmail) ?? rawEmail;
+  const email = opts.email?.trim().toLowerCase() || "";
 
   if (handwerkerId) {
     const { data, error } = await supabaseAdmin

@@ -12,7 +12,6 @@ import {
   PartnerDetailSection,
   PartnerDetailSuccessBox,
 } from "@/components/partner/PartnerDetailUi";
-import { PortalDocOpenButton } from "@/components/shared/PortalDocOpenButton";
 import {
   type PartnerProjektvertrag,
 } from "@/lib/partner/partner-compliance";
@@ -82,14 +81,14 @@ export function PartnerProjektvertragPaket({
           hochladen.
         </p>
         {vertrag?.pdf_signed_url || vertrag?.pdf_url ? (
-          <PortalDocOpenButton
+          <a
             href={vertrag.pdf_signed_url ?? vertrag.pdf_url ?? "#"}
-            name="Projektvertrag"
-            kind="pdf"
+            target="_blank"
+            rel="noopener noreferrer"
             className="mt-2 inline-block font-medium text-emerald-800 underline-offset-2 hover:underline"
           >
             Projektvertrag öffnen
-          </PortalDocOpenButton>
+          </a>
         ) : null}
       </PartnerDetailSuccessBox>
     );
@@ -127,14 +126,14 @@ export function PartnerProjektvertragPaket({
       <PartnerDetailSection title="Projektvertrag (Leistungsvertrag)">
         <PartnerDetailKeyValues rows={vertragRows} />
         {vertrag.pdf_signed_url || vertrag.pdf_url ? (
-          <PortalDocOpenButton
+          <a
             href={vertrag.pdf_signed_url ?? vertrag.pdf_url ?? "#"}
-            name="Projektvertrag"
-            kind="pdf"
+            target="_blank"
+            rel="noopener noreferrer"
             className="btn-pill-outline portal-btn mt-3 inline-flex"
           >
             Vertrag als PDF öffnen
-          </PortalDocOpenButton>
+          </a>
         ) : null}
       </PartnerDetailSection>
 

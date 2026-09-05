@@ -3,7 +3,6 @@
  * Logo + Markenname, Begrüßung im Body, Team-Gruß, Footer.
  */
 import { SITE_CONFIG } from "@/lib/config";
-import { MAIL_LOGO_URL_GREEN } from "@/lib/email/mail-logo-inline";
 
 function esc(s: string): string {
   return s
@@ -25,8 +24,7 @@ function phoneDisplay(): string {
   return SITE_CONFIG.phone;
 }
 
-/** Immer Prod-Host — nicht SITE_CONFIG.url (Staging/Preview). */
-const LOGO_MARK_URL = MAIL_LOGO_URL_GREEN;
+const LOGO_MARK_URL = `${SITE_CONFIG.url.replace(/\/$/, "")}/logo-mark-green.png`;
 const FOOTER_DOMAIN = "baerenwaldmuenchen.de";
 
 export type StandardMailAnrede = "du" | "sie";

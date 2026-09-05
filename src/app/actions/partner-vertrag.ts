@@ -9,7 +9,6 @@ import { findHandwerkerForRegistration } from "@/lib/partner/partner-registratio
 import { PARTNER_AUTH_COPY } from "@/lib/partner/partner-auth-copy";
 import { createClient } from "@/lib/supabase/server";
 import { isSupabaseConfigured, supabaseAdmin } from "@/lib/supabase";
-import { assertPartnerAktiveZuweisung } from "@/lib/partner/partner-zuweisung-access";
 
 export type PartnerVertragConfirmResult =
   | { ok: true; vertrags_nr?: string; pdf_url?: string }
@@ -46,17 +45,23 @@ export async function confirmPartnerProjektvertrag(opts: {
   const auftragId = opts.auftragId.trim();
   if (!auftragId) return { ok: false, error: "Auftrag fehlt." };
 
-  if (!(await assertPartnerAktiveZuweisung(link.handwerkerId, auftragId))) {
-    return { ok: false, error: "Keine Berechtigung für diesen Auftrag." };
-  }
-
   const { data: zuweisung } = await supabaseAdmin
     .from("auftrag_handwerker")
-    .select("id, projektvertrag_bestaetigt_am, status")
+    .select("id, projektvertrag_bestaetigt_am")
     .eq("auftrag_id", auftragId)
     .eq("handwerker_id", link.handwerkerId)
-    .neq("status", "ersetzt")
     .maybeSingle();
+
+  const { data: posCheck } = await supabaseAdmin
+    .from("auftrag_positionen")
+    .select("id")
+    .eq("auftrag_id", auftragId)
+    .eq("handwerker_id", link.handwerkerId)
+    .limit(1);
+
+  if (!zuweisung && !(posCheck?.length ?? 0)) {
+    return { ok: false, error: "Keine Berechtigung für diesen Auftrag." };
+  }
 
   if (zuweisung?.projektvertrag_bestaetigt_am) {
     return { ok: false, error: "Vertrag wurde bereits bestätigt." };
@@ -155,8 +160,6 @@ export async function acceptPartnerRahmenvertragForEmail(opts: {
   const persisted = await persistPortalRahmenvertragAkzeptanz({
     handwerkerId: String(hw.id),
     akzeptiertAt: new Date().toISOString(),
-    vertragsNr: crm.ok ? crm.vertrags_nr : null,
-    pdfUrl: crm.ok ? crm.pdf_url : null,
   });
   if (!persisted.ok) {
     return { ok: false, error: persisted.error };
@@ -200,8 +203,6 @@ export async function acceptPartnerRahmenvertrag(opts: {
   const persisted = await persistPortalRahmenvertragAkzeptanz({
     handwerkerId: link.handwerkerId,
     authUserId: user.id,
-    vertragsNr: crm.ok ? crm.vertrags_nr : null,
-    pdfUrl: crm.ok ? crm.pdf_url : null,
   });
   if (!persisted.ok) return { ok: false, error: persisted.error };
 

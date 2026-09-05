@@ -19,17 +19,22 @@ function resolveMwstSatz(raw: Record<string, unknown>, fallback = 19): number {
 }
 
 /** Handwerker-Vergütung netto je Zeile (EK, nicht Verkaufspreis). */
-function positionPartnerNettoZeile(raw: Record<string, unknown>): number | null {
+function positionPartnerNettoZeile(raw: Record<string, unknown>): number {
   const menge = Math.max(num(raw.menge) || 1, 0.0001);
-  if (raw.einkaufspreis == null || raw.einkaufspreis === "") return null;
   const ek = num(raw.einkaufspreis);
-  if (!Number.isFinite(ek) || ek < 0) return null;
-  return Math.round(ek * menge * 100) / 100;
+  if (ek > 0) return Math.round(ek * menge * 100) / 100;
+
+  const lohn = num(raw.lohn_netto);
+  const mat = num(raw.material_netto);
+  const fromParts = (lohn + mat) * menge;
+  if (fromParts > 0) return Math.round(fromParts * 100) / 100;
+
+  return 0;
 }
 
 function positionPartnerBruttoZeile(raw: Record<string, unknown>, defaultMwst = 19): number {
   const netto = positionPartnerNettoZeile(raw);
-  if (netto == null || netto < 0) return 0;
+  if (netto <= 0) return 0;
   const mwst = resolveMwstSatz(raw, defaultMwst);
   return Math.round(netto * (1 + mwst / 100) * 100) / 100;
 }
@@ -136,21 +141,17 @@ export function buildPartnerAuftragKonditionZeilen(
     const title =
       [pos.gewerk_name, pos.leistung_name].filter(Boolean).join(" — ") || "Leistung";
     const partnerNetto =
-      pos.preis_partner != null &&
-      Number.isFinite(pos.preis_partner) &&
-      pos.preis_partner >= 0
+      pos.preis_partner != null && pos.preis_partner > 0
         ? pos.preis_partner
-        : null;
+        : (pos.lohn_fix ?? 0) + (pos.material_fix ?? 0) > 0
+          ? Math.round(((pos.lohn_fix ?? 0) + (pos.material_fix ?? 0)) * 100) / 100
+          : null;
     const typ = pos.aenderung_typ ?? null;
     const isEntfernt = typ === "entfernt";
     const isGeaendert = typ === "geaendert";
     const isNeu = typ === "neu";
     const preisAlt =
-      pos.preis_alt != null &&
-      Number.isFinite(pos.preis_alt) &&
-      pos.preis_alt >= 0
-        ? pos.preis_alt
-        : null;
+      pos.preis_alt != null && pos.preis_alt > 0 ? pos.preis_alt : null;
 
     const menge =
       pos.menge != null && Number.isFinite(pos.menge)
@@ -185,14 +186,14 @@ export function buildPartnerAuftragKonditionZeilen(
 }
 
 function auftragPositionPartnerBrutto(pos: PartnerAuftragPosition, defaultMwst = 19): number {
-  if (
-    pos.preis_partner == null ||
-    !Number.isFinite(pos.preis_partner) ||
-    pos.preis_partner < 0
-  ) {
-    return 0;
+  let netto = 0;
+  if (pos.preis_partner != null && pos.preis_partner > 0) {
+    netto = pos.preis_partner;
+  } else {
+    netto = (pos.lohn_fix ?? 0) + (pos.material_fix ?? 0);
   }
-  const netto = Math.round(pos.preis_partner * 100) / 100;
+  netto = Math.round(netto * 100) / 100;
+  if (netto <= 0) return 0;
   return Math.round(netto * (1 + defaultMwst / 100) * 100) / 100;
 }
 

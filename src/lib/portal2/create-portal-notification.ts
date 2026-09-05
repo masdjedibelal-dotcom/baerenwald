@@ -7,8 +7,6 @@ import {
   type PortalNotifTyp,
   PORTAL_NOTIF_TEMPLATES,
 } from "@/lib/portal2/notif-types";
-import { buildPushPayloadFromNotif } from "@/lib/push/payload";
-import { scheduleWebPushToUsers } from "@/lib/push/send-web-push";
 
 export type CreatePortalNotificationInput = {
   empfaengerUserId: string;
@@ -63,17 +61,5 @@ export async function createPortalNotification(
     .single();
 
   if (error) return { ok: false, error: error.message };
-
-  scheduleWebPushToUsers(
-    [input.empfaengerUserId],
-    buildPushPayloadFromNotif({
-      typ: input.typ,
-      titel,
-      body,
-      link: input.link,
-      defaultUrl: "/portal",
-    })
-  );
-
   return { ok: true, id: data.id as string };
 }

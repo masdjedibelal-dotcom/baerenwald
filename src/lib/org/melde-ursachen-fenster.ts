@@ -3,7 +3,6 @@
  */
 
 import type { MeldeAnswers } from "@/lib/funnel/melde-dynamic-questions";
-import { normalizeMeldeFensterProblem } from "@/lib/funnel/melde-dynamic-questions";
 
 export type FensterUrsacheId =
   | "beschlag_griff"
@@ -52,19 +51,21 @@ function ans(a: MeldeAnswers, id: string): string {
 /** Normalisiert Problem + Tür-Detail zu einem Matching-Key. */
 export function fensterMatchKey(answers: MeldeAnswers | undefined): string {
   const a = answers ?? {};
-  const problem = normalizeMeldeFensterProblem(ans(a, "melde_problem"));
-  const raw = ans(a, "melde_problem");
+  const problem = ans(a, "melde_problem");
   const detail = ans(a, "melde_tuer_detail");
 
-  if (problem === "scheibe_kaputt") return "scheibe_kaputt";
-  if (problem === "fenster_klemmt_undicht") return "fenster_geht_nicht";
-
-  if (problem === "tuer_schloss" || raw === "tuer_problem" || raw === "tuer_klemmt" || raw === "schloss") {
-    if (detail === "schluessel" || raw === "schloss") return "schluessel";
+  if (problem === "fenster_klemmt" || problem === "fenster_undicht") {
+    return "fenster_geht_nicht";
+  }
+  if (problem === "glas" || problem === "scheibe_kaputt") return "scheibe_kaputt";
+  if (problem === "dichtung") return "fenster_geht_nicht";
+  if (problem === "fenster_geht_nicht") return "fenster_geht_nicht";
+  if (problem === "tuer_problem" || problem === "tuer_klemmt" || problem === "schloss") {
+    if (detail === "schluessel" || problem === "schloss") return "schluessel";
     if (detail === "absperren") return "absperren";
-    if (detail === "schließt" || raw === "tuer_klemmt") return "tuer_schließt";
-    // Neue Sammel-Option ohne Detail → Tür schließt
-    return "tuer_schließt";
+    if (detail === "schließt" || problem === "tuer_klemmt") return "tuer_schließt";
+    if (problem === "tuer_problem" && !detail) return "tuer_schließt";
+    return detail || "tuer_schließt";
   }
   return problem || "sonstiges";
 }
@@ -158,10 +159,8 @@ export function fensterSchadenKurz(answers: MeldeAnswers | undefined): string {
 }
 
 const FENSTER_PROBLEM_IDS = new Set([
-  "fenster_klemmt_undicht",
-  "scheibe_kaputt",
-  "tuer_schloss",
   "fenster_geht_nicht",
+  "scheibe_kaputt",
   "tuer_problem",
   "fenster_klemmt",
   "fenster_undicht",

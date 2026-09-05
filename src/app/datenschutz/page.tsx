@@ -197,8 +197,8 @@ export default function DatenschutzPage() {
               <ul>
                 <li>An beteiligte Handwerksbetriebe zur Auftragsdurchführung</li>
                 <li>
-                  An Auftragsverarbeiter (Hosting, Datenbank, E-Mail, Analyse, KI- und
-                  Zusatzdienste) — siehe die Abschnitte 5 bis 15
+                  An Auftragsverarbeiter (Hosting, Datenbank, E-Mail, Analyse, KI-Dienst) —
+                  siehe die Abschnitte 5 bis 9
                 </li>
                 <li>Bei gesetzlicher Verpflichtung</li>
               </ul>
@@ -359,103 +359,7 @@ export default function DatenschutzPage() {
                 </a>
               </p>
 
-              <strong id="replicate">10. Bild-/KI-Visualisierung (Replicate)</strong>
-              <p>
-                Für optionale Raum- oder Visualisierungsfunktionen (z.&nbsp;B. GPT-Viz) nutzen wir
-                den Dienst Replicate, Inc. (USA). Dabei können hochgeladene Bilder und Prompt-Daten
-                an Replicate übermittelt und dort verarbeitet werden, soweit dies für die
-                Generierung erforderlich ist.
-              </p>
-              <p>
-                Rechtsgrundlage: Art. 6 Abs. 1 lit. a DSGVO (Einwilligung) bzw. Art. 6 Abs. 1
-                lit. b DSGVO, soweit die Funktion Vertragsbestandteil einer Anfrage ist.
-                <br />
-                Datenschutzerklärung Replicate:{' '}
-                <a
-                  href="https://replicate.com/privacy"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
-                  https://replicate.com/privacy
-                </a>
-              </p>
-
-              <strong id="web-push">11. Web-Push-Benachrichtigungen (VAPID)</strong>
-              <p>
-                Im Kunden- und Partner-Portal sowie im CRM können optionale Browser-Push-Nachrichten
-                (Web Push) angeboten werden. Dazu speichern wir eine Push-Subscription (Endpunkt
-                und Schlüssel) und nutzen VAPID-Schlüssel zur Authentifizierung gegenüber dem
-                Push-Dienst des Browserherstellers (z.&nbsp;B. Google FCM, Mozilla, Apple).
-              </p>
-              <p>
-                Rechtsgrundlage: Art. 6 Abs. 1 lit. a DSGVO (Einwilligung). Die Einwilligung kann
-                jederzeit in den Browser- oder Portal-Einstellungen widerrufen werden.
-              </p>
-
-              <strong id="telegram">12. Telegram-Bot</strong>
-              <p>
-                Für interne Betriebsbenachrichtigungen (z.&nbsp;B. neue Meldungen) kann ein
-                Telegram-Bot eingesetzt werden. Dabei werden Vorgangs-Metadaten und ggf.
-                Kontaktkurzinfos an die Telegram-Server (Telegram Messenger Inc. / Telegram FZ-LLC)
-                übermittelt, soweit Mitarbeitende den Bot verknüpft haben.
-              </p>
-              <p>
-                Rechtsgrundlage: Art. 6 Abs. 1 lit. f DSGVO (berechtigtes Interesse an schneller
-                betrieblicher Information). Telegram-Nutzung ist für Endkunden nicht erforderlich.
-              </p>
-
-              <strong id="maps-distance">13. Entfernungsberechnung (Google Maps Distance Matrix)</strong>
-              <p>
-                Zur Plausibilisierung von Anfahrten und Entfernungen können wir die Google Maps
-                Distance Matrix API (Google Ireland Limited / Google LLC) nutzen. Dabei werden
-                Adress- oder Koordinatenangaben an Google übermittelt.
-              </p>
-              <p>
-                Rechtsgrundlage: Art. 6 Abs. 1 lit. f DSGVO (berechtigtes Interesse an effizienter
-                Einsatzplanung) bzw. Art. 6 Abs. 1 lit. b DSGVO bei vertraglicher Notwendigkeit.
-                <br />
-                Datenschutzerklärung Google:{' '}
-                <a
-                  href="https://policies.google.com/privacy"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
-                  https://policies.google.com/privacy
-                </a>
-              </p>
-
-              <strong id="openweather">14. Wetterdaten (OpenWeatherMap)</strong>
-              <p>
-                Für wetterabhängige Hinweise (z.&nbsp;B. Außentermine) können wir OpenWeatherMap
-                (OpenWeather Ltd.) mit Standortbezug (z.&nbsp;B. PLZ/Koordinaten) abfragen. Es
-                werden keine personenbezogenen Kontaktdaten an OpenWeatherMap übermittelt.
-              </p>
-              <p>
-                Rechtsgrundlage: Art. 6 Abs. 1 lit. f DSGVO.
-                <br />
-                Datenschutzerklärung OpenWeather:{' '}
-                <a
-                  href="https://openweather.co.uk/privacy-policy"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
-                  https://openweather.co.uk/privacy-policy
-                </a>
-              </p>
-
-              <strong id="search-console">15. Google Search Console</strong>
-              <p>
-                Zur Überwachung der Sichtbarkeit unserer Website in der Google-Suche nutzen wir
-                Google Search Console. Dabei können aggregierte Such- und Indexierungsdaten
-                verarbeitet werden; es findet keine Nutzer-Tracking-Einbindung auf der Website
-                allein durch Search Console statt.
-              </p>
-              <p>
-                Rechtsgrundlage: Art. 6 Abs. 1 lit. f DSGVO (berechtigtes Interesse an
-                Suchmaschinenoptimierung und technischer Überwachung).
-              </p>
-
-              <strong>16. Speicherdauer</strong>
+              <strong>10. Speicherdauer</strong>
               <p>
                 Daten werden gelöscht, sobald der Zweck entfällt, sofern keine gesetzlichen
                 Aufbewahrungspflichten entgegenstehen.
@@ -488,7 +392,7 @@ export default function DatenschutzPage() {
                 </li>
               </ul>
 
-              <strong>17. Deine Rechte</strong>
+              <strong>11. Deine Rechte</strong>
               <p>Du hast das Recht auf:</p>
               <ul>
                 <li>Auskunft (Art. 15 DSGVO)</li>
@@ -506,7 +410,7 @@ export default function DatenschutzPage() {
                 nenne bitte die E-Mail-Adresse deines Kontos.
               </p>
 
-              <strong>18. Beschwerderecht</strong>
+              <strong>12. Beschwerderecht</strong>
               <p>Du hast das Recht, dich bei der zuständigen Aufsichtsbehörde zu beschweren:</p>
               <p>
                 Bayerisches Landesamt für Datenschutzaufsicht (BayLDA)
@@ -520,7 +424,7 @@ export default function DatenschutzPage() {
                 </a>
               </p>
 
-              <strong>19. Änderungen</strong>
+              <strong>13. Änderungen</strong>
               <p>
                 Wir behalten uns vor, diese Datenschutzerklärung bei rechtlichen oder technischen
                 Änderungen anzupassen.

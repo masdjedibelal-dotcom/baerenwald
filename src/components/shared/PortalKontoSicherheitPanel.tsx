@@ -3,9 +3,10 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
-import { EinstellungenEdField, EinstellungenSectionCard } from "@/components/shared/PortalEinstellungenUi";
+import { EinstellungenEdField } from "@/components/shared/PortalEinstellungenUi";
 import { PortalModalShell } from "@/components/shared/PortalModalShell";
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
+import { PORTAL_VAR } from "@/lib/portal2/tokens";
 import { portalToastError, portalToastSuccess } from "@/lib/shared/portal-toast";
 
 type Props = {
@@ -14,38 +15,17 @@ type Props = {
   /** Org: Konto-Löschen ausblenden / Hinweis */
   allowDelete?: boolean;
   deleteBlockedHint?: string | null;
-  /**
-   * Wenn `allowDelete` false: „Konto löschen“ als mailto-Button
-   * (z. B. Organisationskonten über Support).
-   */
-  deleteMailto?: string | null;
-  /** Abmelden-Form-Action (Default aus signOutHref abgeleitet). */
-  signOutAction?: string;
-  /** Abmelden-Button unter Konto löschen (Default an). */
-  showSignOut?: boolean;
 };
 
-function resolveSignOutAction(signOutHref: string, override?: string): string {
-  if (override) return override;
-  return signOutHref.includes("/partner")
-    ? "/partner/auth/signout"
-    : "/portal/auth/signout";
-}
-
 /**
- * B1/B3 — Passwort ändern in Section-Card;
- * Konto löschen + Abmelden flach darunter, zentriert.
+ * B1/B3 — Passwort ändern · Konto löschen (Modals).
  */
 export function PortalKontoSicherheitPanel({
   signOutHref = "/portal/login",
   allowDelete = true,
   deleteBlockedHint = null,
-  deleteMailto = null,
-  signOutAction,
-  showSignOut = true,
 }: Props) {
   const router = useRouter();
-  const logoutAction = resolveSignOutAction(signOutHref, signOutAction);
 
   const [pwOpen, setPwOpen] = useState(false);
   const [pwCurrent, setPwCurrent] = useState("");
@@ -140,51 +120,39 @@ export function PortalKontoSicherheitPanel({
     }
   }
 
-  const deleteControl = allowDelete ? (
-    <button
-      type="button"
-      className="btn-pill-outline portal-btn-compact portal-danger"
-      onClick={() => setDeleteOpen(true)}
-    >
-      Konto löschen
-    </button>
-  ) : deleteMailto ? (
-    <a
-      href={`mailto:${deleteMailto}?subject=${encodeURIComponent("Konto löschen")}`}
-      className="btn-pill-outline portal-btn-compact portal-danger"
-    >
-      Konto löschen
-    </a>
-  ) : deleteBlockedHint ? (
-    <p className="max-w-sm text-center portal-text-meta leading-relaxed text-text-secondary">
-      {deleteBlockedHint}
-    </p>
-  ) : null;
-
   return (
     <>
-      <EinstellungenSectionCard title="Konto & Sicherheit">
-        <button
-          type="button"
-          className="btn-pill-outline portal-btn-compact"
-          onClick={() => setPwOpen(true)}
+      <div className="space-y-3 border-t border-border-default pt-4">
+        <p
+          className="portal-text-label normal-case tracking-wide"
+          style={{ color: PORTAL_VAR.faint }}
         >
-          Passwort ändern
-        </button>
-      </EinstellungenSectionCard>
-
-      {(deleteControl || showSignOut) && (
-        <div className="flex flex-col items-center gap-2.5 px-2 py-1">
-          {deleteControl}
-          {showSignOut ? (
-            <form action={logoutAction} method="post">
-              <button type="submit" className="btn-pill-outline portal-btn-compact">
-                Abmelden
-              </button>
-            </form>
-          ) : null}
+          KONTO & SICHERHEIT
+        </p>
+        <div className="flex flex-col items-start gap-2">
+          <button
+            type="button"
+            className="btn-pill-outline portal-btn-compact"
+            onClick={() => setPwOpen(true)}
+          >
+            Passwort ändern
+          </button>
+          {allowDelete ? (
+            <button
+              type="button"
+              className="btn-pill-outline portal-btn-compact portal-danger"
+              onClick={() => setDeleteOpen(true)}
+            >
+              Konto löschen
+            </button>
+          ) : (
+            <p className="text-[12.5px] leading-relaxed text-text-secondary">
+              {deleteBlockedHint ||
+                "Dieses Konto kann nicht selbst gelöscht werden. Bitte Support kontaktieren."}
+            </p>
+          )}
         </div>
-      )}
+      </div>
 
       <PortalModalShell
         open={pwOpen}
@@ -193,11 +161,6 @@ export function PortalKontoSicherheitPanel({
         variant="edit"
         onClose={closePasswordModal}
         closeOnBackdrop={!pwBusy}
-        busy={pwBusy}
-        dirty={Boolean(pwCurrent || pwNew)}
-        onConfirm={() => void changePassword()}
-        confirmLabel={pwBusy ? "Speichern…" : "Passwort speichern"}
-        confirmDisabled={pwBusy || !pwCurrent || pwNew.length < 8}
       >
         <div className="flex flex-col gap-3">
           <EinstellungenEdField
@@ -214,6 +177,24 @@ export function PortalKontoSicherheitPanel({
             type="password"
             autoComplete="new-password"
           />
+          <div className="mt-2 flex flex-wrap justify-end gap-2">
+            <button
+              type="button"
+              className="btn-pill-outline portal-btn"
+              disabled={pwBusy}
+              onClick={closePasswordModal}
+            >
+              Abbrechen
+            </button>
+            <button
+              type="button"
+              className="btn-pill-primary portal-btn"
+              disabled={pwBusy || !pwCurrent || pwNew.length < 8}
+              onClick={() => void changePassword()}
+            >
+              {pwBusy ? "Speichern…" : "Passwort speichern"}
+            </button>
+          </div>
         </div>
       </PortalModalShell>
 
@@ -224,25 +205,14 @@ export function PortalKontoSicherheitPanel({
         variant="edit"
         onClose={closeDeleteModal}
         closeOnBackdrop={!deleteBusy}
-        busy={deleteBusy}
-        footer={
-          <button
-            type="button"
-            className="portal-action-btn portal-action-btn--danger portal-action-btn--block"
-            disabled={deleteBusy || deletePw.length < 6}
-            onClick={() => void deleteAccount()}
-          >
-            {deleteBusy ? "Löschen…" : "Endgültig löschen"}
-          </button>
-        }
       >
         <div className="flex flex-col gap-3">
-          <p className="portal-text-meta leading-relaxed text-text-secondary">
+          <p className="text-[13px] leading-relaxed text-text-secondary">
             Login wird gelöscht, Stammdaten anonymisiert. Offene Vorgänge können
             aus gesetzlichen Gründen erhalten bleiben.
           </p>
           {openHint ? (
-            <p className="portal-text-meta rounded-[9px] border border-amber-200 bg-amber-50 px-3 py-2 leading-relaxed text-amber-950">
+            <p className="rounded-[9px] border border-amber-200 bg-amber-50 px-3 py-2 text-[12.5px] leading-relaxed text-amber-950">
               {openHint} Tippen Sie erneut auf „Endgültig löschen“, um trotzdem
               fortzufahren.
             </p>
@@ -254,6 +224,24 @@ export function PortalKontoSicherheitPanel({
             type="password"
             autoComplete="current-password"
           />
+          <div className="mt-2 flex flex-wrap justify-end gap-2">
+            <button
+              type="button"
+              className="btn-pill-outline portal-btn"
+              disabled={deleteBusy}
+              onClick={closeDeleteModal}
+            >
+              Abbrechen
+            </button>
+            <button
+              type="button"
+              className="rounded-[9px] bg-red-700 px-4 py-2.5 text-[13px] font-semibold text-white disabled:opacity-60"
+              disabled={deleteBusy || deletePw.length < 6}
+              onClick={() => void deleteAccount()}
+            >
+              {deleteBusy ? "Löschen…" : "Endgültig löschen"}
+            </button>
+          </div>
         </div>
       </PortalModalShell>
     </>

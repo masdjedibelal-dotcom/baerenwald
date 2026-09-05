@@ -3,8 +3,8 @@
 import type { ReactNode } from "react";
 
 import { OrganisationObjektCover } from "@/components/org/OrganisationObjektCover";
+import { PortalListCard } from "@/components/shared/PortalListCard";
 import type { ObjCardModel } from "@/lib/portal2/objekte";
-import { cn } from "@/lib/utils";
 
 type Props = {
   card: ObjCardModel;
@@ -16,7 +16,7 @@ type Props = {
 };
 
 /**
- * Deep Green Objektkarte — Cover 152 px, „N offen“-Pill, Name/Adresse/Meta.
+ * Objekt-Listenkarte — gleiche Shell wie Vorgänge (PortalListCard + Cover).
  */
 export function OrganisationObjektCard({
   card,
@@ -26,71 +26,36 @@ export function OrganisationObjektCard({
   actions,
   onCoverUploaded,
 }: Props) {
-  const offenLabel =
-    card.offen === 1 ? "1 offen" : `${card.offen} offen`;
-  const metaParts = [
-    card.einheitenLabel,
-    card.pruefpflichtFaellig
-      ? `${card.pruefpflichtFaellig} fällig`
-      : null,
-  ].filter(Boolean);
-
   return (
-    <article
-      className={cn(
-        "portal-objekt-card",
-        selected && "portal-objekt-card--selected"
-      )}
-    >
-      <div className="portal-objekt-card-media">
+    <PortalListCard
+      variant="responsive"
+      accent="auftrag"
+      showLeftAccent={false}
+      selected={selected}
+      onClick={onOpen}
+      title={card.name}
+      subtitle={card.adresse}
+      statusLabel={`${card.offen} offen`}
+      statusPillClass={
+        card.offen
+          ? "bg-accent-light text-accent"
+          : "bg-[#eceef0] text-text-tertiary"
+      }
+      meta={[{ text: card.einheitenLabel }]}
+      showCheckbox
+      checked={selected}
+      onCheckedChange={() => onToggleSelect()}
+      showChevron
+      media={
         <OrganisationObjektCover
           objektId={card.id}
           coverUrl={card.coverUrl}
           variant="card"
-          className="portal-objekt-card-cover"
+          className="!rounded-none"
           onUploaded={onCoverUploaded}
         />
-        <div className="portal-objekt-card-media-fade" aria-hidden />
-        {card.offen > 0 ? (
-          <span className="portal-objekt-card-offen">{offenLabel}</span>
-        ) : null}
-        <label
-          className="portal-objekt-card-check"
-          onClick={(e) => e.stopPropagation()}
-          onKeyDown={(e) => e.stopPropagation()}
-        >
-          <input
-            type="checkbox"
-            checked={selected}
-            onChange={() => onToggleSelect()}
-            aria-label={`${card.name} auswählen`}
-          />
-        </label>
-      </div>
-
-      <button
-        type="button"
-        className="portal-objekt-card-body"
-        onClick={onOpen}
-      >
-        <span className="portal-objekt-card-name">{card.name}</span>
-        <span className="portal-objekt-card-adresse">{card.adresse}</span>
-        {metaParts.length > 0 ? (
-          <span className="portal-objekt-card-meta">
-            {metaParts.join(" · ")}
-          </span>
-        ) : null}
-      </button>
-
-      {actions ? (
-        <div
-          className="portal-objekt-card-actions"
-          onClick={(e) => e.stopPropagation()}
-          onKeyDown={(e) => e.stopPropagation()}
-        >
-          {actions}
-        </div>
-      ) : null}
-    </article>
+      }
+      trailingActions={actions}
+    />
   );
 }

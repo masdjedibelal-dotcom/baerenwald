@@ -4,10 +4,6 @@ import {
   isHandwerkerPortalGesperrt,
 } from "@/lib/partner/handwerker-portal-gesperrt";
 import { PARTNER_AUTH_COPY } from "@/lib/partner/partner-auth-copy";
-import {
-  BAERENWALD_PRIMARY_STAFF_EMAIL,
-  canonicalBaerenwaldPrimaryStaffEmail,
-} from "@/lib/auth/baerenwald-primary-staff";
 import { supabaseAdmin } from "@/lib/supabase";
 
 export type LinkPortalHandwerkerResult =
@@ -57,39 +53,7 @@ export async function linkPortalHandwerkerToAuthUser(opts: {
     return { ok: true, handwerkerId: String(byAuth.id) };
   }
 
-  // Primary-Staff-Aliase zuerst über kanonische CRM-Mail auflösen
-  const staffCanonical = canonicalBaerenwaldPrimaryStaffEmail(email);
-  const byEmail = await findHandwerkerForRegistration(staffCanonical ?? email);
-
-  if (!byEmail?.id && staffCanonical) {
-    const { data: staffHw } = await supabaseAdmin
-      .from("handwerker")
-      .select("id, email, auth_user_id, ist_portal_gesperrt")
-      .ilike("email", BAERENWALD_PRIMARY_STAFF_EMAIL)
-      .limit(1)
-      .maybeSingle();
-    if (staffHw?.id) {
-      if ((staffHw as { ist_portal_gesperrt?: boolean | null }).ist_portal_gesperrt) {
-        return {
-          ok: false,
-          error: HANDWERKER_PORTAL_GESPERRT_MESSAGE,
-          signOut: true,
-        };
-      }
-      const existingAuth = staffHw.auth_user_id as string | null | undefined;
-      if (existingAuth && existingAuth !== opts.userId) {
-        // Alias-Login → gleiches Betriebskonto freigeben
-        return { ok: true, handwerkerId: String(staffHw.id) };
-      }
-      if (!existingAuth) {
-        await supabaseAdmin
-          .from("handwerker")
-          .update({ auth_user_id: opts.userId })
-          .eq("id", staffHw.id);
-      }
-      return { ok: true, handwerkerId: String(staffHw.id) };
-    }
-  }
+  const byEmail = await findHandwerkerForRegistration(email);
 
   if (!byEmail?.id) {
     return {
@@ -108,9 +72,6 @@ export async function linkPortalHandwerkerToAuthUser(opts: {
 
   const existingAuth = byEmail.auth_user_id as string | null | undefined;
   if (existingAuth && existingAuth !== opts.userId) {
-    if (staffCanonical) {
-      return { ok: true, handwerkerId: String(byEmail.id) };
-    }
     return {
       ok: false,
       error: PARTNER_AUTH_COPY.errors.emailVerknuepft,

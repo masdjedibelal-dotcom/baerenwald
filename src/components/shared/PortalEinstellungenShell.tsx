@@ -1,6 +1,5 @@
 "use client";
 
-import { useSearchParams } from "next/navigation";
 import { useEffect, useState, type ReactNode } from "react";
 
 import {
@@ -8,17 +7,12 @@ import {
   einstellungenDefaultTab,
   einstellungenNavFor,
   einstellungenNavStorageKey,
-  normalizeEinstellungenTabId,
   type EinstellungenTabId,
 } from "@/lib/portal2/einstellungen-nav";
 import type { EinstellungenVariant } from "@/lib/portal2/einstellungen";
 import { einstellungenPageTitle } from "@/lib/portal2/einstellungen";
 import { usePortalView } from "@/hooks/use-portal-view";
 import { isPortalMobileView } from "@/lib/portal2/viewport";
-import {
-  PortalListeEyebrow,
-  PortalListeTitle,
-} from "@/components/shared/PortalListeChrome";
 import { PORTAL_VAR } from "@/lib/portal2/tokens";
 import { cn } from "@/lib/utils";
 
@@ -41,34 +35,22 @@ export function PortalEinstellungenShell({
   const view = usePortalView();
   const mobile = isPortalMobileView(view);
   const showNav = nav.length > 1;
-  const searchParams = useSearchParams();
 
   const [tab, setTab] = useState<EinstellungenTabId>(() =>
     einstellungenDefaultTab(variant)
   );
 
   useEffect(() => {
-    const fromUrl = normalizeEinstellungenTabId(
-      variant,
-      searchParams.get("tab")
-    );
-    if (fromUrl) {
-      setTab(fromUrl);
-      try {
-        sessionStorage.setItem(einstellungenNavStorageKey(variant), fromUrl);
-      } catch {
-        /* ignore */
-      }
-      return;
-    }
     try {
       const raw = sessionStorage.getItem(einstellungenNavStorageKey(variant));
-      const mapped = normalizeEinstellungenTabId(variant, raw);
-      if (mapped) setTab(mapped);
+      if (raw && nav.some((n) => n.id === raw)) {
+        setTab(raw as EinstellungenTabId);
+      }
     } catch {
       /* ignore */
     }
-  }, [variant, nav, searchParams]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- nur Variant-Wechsel
+  }, [variant]);
 
   const selectTab = (id: EinstellungenTabId) => {
     setTab(id);
@@ -84,14 +66,27 @@ export function PortalEinstellungenShell({
   return (
     <div className="-mx-4 -mt-1 flex min-w-0 flex-col lg:-mx-6 lg:px-0">
       <div className="px-4 pb-1 lg:px-6">
-        <PortalListeEyebrow>{eye}</PortalListeEyebrow>
-        <PortalListeTitle>{einstellungenPageTitle(variant)}</PortalListeTitle>
+        <p
+          className="mb-1 text-[12px] font-semibold uppercase tracking-wide"
+          style={{ color: PORTAL_VAR.faint }}
+        >
+          {eye}
+        </p>
+        <h1
+          className="text-[25px] font-bold"
+          style={{
+            color: PORTAL_VAR.ink,
+            fontFamily: "var(--p2-font-head, " + PORTAL_VAR.head + ")",
+          }}
+        >
+          {einstellungenPageTitle(variant)}
+        </h1>
       </div>
 
       <div
         className={cn(
           "mt-4 flex min-w-0 gap-0 px-4 lg:px-6",
-          showNav && !mobile ? "flex-row gap-[26px]" : "flex-col gap-3"
+          showNav && !mobile ? "flex-row gap-5" : "flex-col gap-3"
         )}
       >
         {showNav ? (
@@ -110,7 +105,7 @@ export function PortalEinstellungenShell({
                     role="tab"
                     aria-selected={on}
                     onClick={() => selectTab(item.id)}
-                    className="portal-text-meta shrink-0 rounded-full px-3.5 py-2 font-semibold"
+                    className="shrink-0 rounded-full px-3 py-1.5 text-[12.5px] font-semibold"
                     style={{
                       border: `1px solid ${on ? "transparent" : PORTAL_VAR.line}`,
                       background: on ? PORTAL_VAR.greenDark : "#fff",
@@ -124,7 +119,7 @@ export function PortalEinstellungenShell({
             </div>
           ) : (
             <nav
-              className="w-[210px] shrink-0"
+              className="w-[200px] shrink-0"
               aria-label="Einstellungen"
             >
               <ul className="flex flex-col gap-0.5">
@@ -135,16 +130,14 @@ export function PortalEinstellungenShell({
                       <button
                         type="button"
                         onClick={() => selectTab(item.id)}
-                        aria-current={on ? "page" : undefined}
-                        className={cn(
-                          "portal-text-nav w-full rounded-[14px] px-[15px] py-[13px] text-left transition-colors",
-                          on
-                            ? "bg-white font-extrabold shadow-[var(--p2-shadow)]"
-                            : "bg-transparent font-semibold hover:bg-white/70"
-                        )}
+                        className="w-full rounded-[9px] px-3 py-2.5 text-left text-[13px] font-semibold transition-colors"
                         style={{
-                          color: on ? PORTAL_VAR.greenDark : "#55615B",
-                          fontWeight: on ? 800 : 600,
+                          background: on
+                            ? "var(--org-primary-soft, " +
+                              PORTAL_VAR.primarySoft +
+                              ")"
+                            : "transparent",
+                          color: on ? PORTAL_VAR.ink : PORTAL_VAR.sub,
                         }}
                       >
                         {item.label}
@@ -159,10 +152,10 @@ export function PortalEinstellungenShell({
 
         <div className="min-w-0 flex-1">
           {/*
-            Section-Stack: je Block eine portal-section-card (Geschwister auf Page-BG).
-            Kein Outer-Card — siehe section-card-contract.ts.
+            Flat wie Listen (Aufträge): kein Outer-Card auf dem Page-BG.
+            Interaktive Inputs behalten eigene Borders — kein doppelter Surface-Wrapper.
           */}
-          <div className="portal-einstellungen-stack">
+          <div className="portal-einstellungen-stack max-w-[560px]">
             {children(tab)}
           </div>
         </div>

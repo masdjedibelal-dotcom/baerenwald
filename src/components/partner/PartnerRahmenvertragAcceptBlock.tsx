@@ -1,10 +1,6 @@
 "use client";
 
-import { useState } from "react";
-
 import { PARTNER_RAHMENVERTRAG_REGISTER_TEXT } from "@/lib/partner/partner-rahmenvertrag-text";
-import { PortalDocOpenButton } from "@/components/shared/PortalDocOpenButton";
-import { PortalModalShell } from "@/components/shared/PortalModalShell";
 import { cn } from "@/lib/utils";
 
 export function PartnerRahmenvertragAcceptBlock({
@@ -29,15 +25,19 @@ export function PartnerRahmenvertragAcceptBlock({
   /** Weichere Begriffe während der Registrierung */
   variant?: "default" | "register";
 }) {
-  const [textOpen, setTextOpen] = useState(false);
-
   if (alreadyAcceptedAt && !showCheckbox) {
     return null;
   }
 
   const isRegister = variant === "register";
   const title = isRegister ? "Geschäftsbedingungen" : "Partnerschafts-Rahmenvertrag";
+  const intro = isRegister
+    ? "Unsere Partnerschafts-Bedingungen für die Zusammenarbeit — bitte durchscrollen und unten bestätigen."
+    : "Bitte durchscrollen, PDF bei Bedarf herunterladen und unten bestätigen.";
   const ariaLabel = isRegister ? "Geschäftsbedingungen" : "Vertragstext";
+  const pdfMissingHint = isRegister
+    ? "Dein personalisiertes PDF stellt Bärenwald in Kürze bereit. Der obige Text gilt als Grundlage der Annahme."
+    : "Dein personalisiertes PDF stellt Bärenwald bereit, sobald der Rahmenvertrag erzeugt wurde. Der obige Text gilt als Grundlage der Annahme.";
   const checkboxLabel = isRegister ? (
     <>
       Ich habe die <strong>Geschäftsbedingungen</strong> gelesen und akzeptiere sie — inklusive
@@ -51,79 +51,13 @@ export function PartnerRahmenvertragAcceptBlock({
     </>
   );
 
-  const contractText = (
-    <pre className="portal-text-body whitespace-pre-wrap font-sans text-text-primary">
-      {PARTNER_RAHMENVERTRAG_REGISTER_TEXT}
-    </pre>
-  );
-
-  if (isRegister) {
-    return (
-      <div className="space-y-3">
-        <div>
-          <p className="portal-form-label">{title}</p>
-          <button
-            type="button"
-            onClick={() => setTextOpen(true)}
-            className="mt-1 portal-text-body font-medium text-accent underline-offset-2 hover:underline"
-          >
-            Partnerschafts-Rahmenvertrag anzeigen
-          </button>
-        </div>
-
-        {showCheckbox ? (
-          <label
-            className={cn(
-              "flex cursor-pointer items-start gap-3 rounded-xl border border-border-light bg-muted/20 p-3",
-              disabled && "pointer-events-none opacity-60"
-            )}
-          >
-            <input
-              type="checkbox"
-              checked={akzeptiert}
-              onChange={(e) => onAkzeptiertChange(e.target.checked)}
-              disabled={disabled}
-              className="mt-0.5 h-4 w-4 shrink-0 accent-[#2E7D52]"
-            />
-            <span className="portal-text-body text-text-primary">{checkboxLabel}</span>
-          </label>
-        ) : null}
-
-        {error ? <p className="portal-text-body text-red-700">{error}</p> : null}
-
-        <PortalModalShell
-          open={textOpen}
-          onClose={() => setTextOpen(false)}
-          title="Partnerschafts-Rahmenvertrag"
-          variant="preview"
-        >
-          <div className="space-y-4">
-            <div className="max-h-[min(60vh,28rem)] overflow-y-auto" aria-label={ariaLabel}>
-              {contractText}
-            </div>
-            {pdfUrl ? (
-              <PortalDocOpenButton
-                href={pdfUrl}
-                name="Partnerschafts-Rahmenvertrag"
-                kind="pdf"
-                className="btn-pill-outline portal-btn inline-flex"
-              >
-                PDF öffnen (inkl. Anlagen)
-              </PortalDocOpenButton>
-            ) : null}
-          </div>
-        </PortalModalShell>
-      </div>
-    );
-  }
-
   return (
     <div className="space-y-3">
       <div>
         <p className="portal-form-label">{title}</p>
         <p className="portal-text-meta mt-0.5 text-text-secondary">
-          Bitte durchscrollen, PDF bei Bedarf herunterladen und unten bestätigen.
-          {vertragsNr ? ` Vertragsnr. ${vertragsNr}` : null}
+          {intro}
+          {!isRegister && vertragsNr ? ` Vertragsnr. ${vertragsNr}` : null}
         </p>
       </div>
 
@@ -132,19 +66,23 @@ export function PartnerRahmenvertragAcceptBlock({
         tabIndex={0}
         aria-label={ariaLabel}
       >
-        {contractText}
+        <pre className="portal-text-body whitespace-pre-wrap font-sans text-text-primary">
+          {PARTNER_RAHMENVERTRAG_REGISTER_TEXT}
+        </pre>
       </div>
 
       {pdfUrl ? (
-        <PortalDocOpenButton
+        <a
           href={pdfUrl}
-          name="Partnerschafts-Rahmenvertrag"
-          kind="pdf"
+          target="_blank"
+          rel="noopener noreferrer"
           className="btn-pill-outline portal-btn inline-flex"
         >
-          PDF öffnen (inkl. Anlagen)
-        </PortalDocOpenButton>
-      ) : null}
+          PDF herunterladen (inkl. Anlagen)
+        </a>
+      ) : (
+        <p className="portal-text-meta text-text-tertiary">{pdfMissingHint}</p>
+      )}
 
       {showCheckbox ? (
         <label

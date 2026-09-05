@@ -34,8 +34,8 @@ export async function syncAngebotHandwerkerAfterAuftragAccept(opts: {
         angebot_id: angebotId,
         handwerker_id: handwerkerId,
         ...(gewerkId ? { gewerk_id: gewerkId } : {}),
-        // Noch offen — Annahme setzt confirmPartnerAuftrag auf akzeptiert.
-        status: "angefragt",
+        status: "akzeptiert",
+        antwort_at: now,
         gesendet_at: now,
         hw_status: "offen",
         token: randomBytes(32).toString("hex"),
@@ -56,23 +56,18 @@ export async function syncAngebotHandwerkerAfterAuftragAccept(opts: {
       status: String(row.status ?? ""),
       antwort_at: row.antwort_at as string | null | undefined,
       gesendet_at: (row as { gesendet_at?: string | null }).gesendet_at,
-      hw_eingereicht_at:
-        (row.hw_eingereicht_at as string | null | undefined) ?? undefined,
     });
 
     if (offen) {
-      // Zeile nur „gesendet“ halten — keine Vorab-Akzeptanz vor confirmPartnerAuftrag.
-      if (!(row as { gesendet_at?: string | null }).gesendet_at) {
-        await supabaseAdmin
-          .from("angebot_handwerker")
-          .update({
-            gesendet_at: now,
-            hw_status: "offen",
-          })
-          .eq("id", id);
-      }
-      primaryId = id;
-      continue;
+      await supabaseAdmin
+        .from("angebot_handwerker")
+        .update({
+          status: "akzeptiert",
+          antwort_at: now,
+          hw_status: "offen",
+        })
+        .eq("id", id)
+        .is("antwort_at", null);
     } else if (
       String(row.status ?? "").toLowerCase() === "akzeptiert" &&
       !row.hw_eingereicht_at
@@ -97,25 +92,13 @@ export async function syncAngebotHandwerkerAfterAuftragAccept(opts: {
     .select("id")
     .eq("angebot_id", angebotId)
     .eq("handwerker_id", handwerkerId)
-    .in("status", ["angefragt", "ausstehend", "offen", "zugewiesen"])
-    .order("gesendet_at", { ascending: false })
-    .limit(1);
-
-  const best = offen?.[0]?.id;
-  if (best) return { anfrageId: String(best) };
-
-  const { data: accepted } = await supabaseAdmin
-    .from("angebot_handwerker")
-    .select("id")
-    .eq("angebot_id", angebotId)
-    .eq("handwerker_id", handwerkerId)
     .eq("status", "akzeptiert")
     .is("hw_eingereicht_at", null)
     .order("antwort_at", { ascending: false })
     .limit(1);
 
-  const acceptedId = accepted?.[0]?.id;
-  return { anfrageId: acceptedId ? String(acceptedId) : primaryId };
+  const best = offen?.[0]?.id;
+  return { anfrageId: best ? String(best) : primaryId };
 }
 
 async function resolveGewerkIdForAuftragAccept(

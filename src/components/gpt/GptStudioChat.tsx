@@ -7,7 +7,6 @@ import { useCallback, useEffect, useRef, useState } from "react";
 
 import { GptChatBriefBar } from "@/components/gpt/GptChatBriefBar";
 import { GptChatBubble } from "@/components/gpt/GptChatBubble";
-import { GptChatVoiceRecorder } from "@/components/gpt/GptChatVoiceRecorder";
 import { GptRegistrationGate } from "@/components/gpt/GptRegistrationGate";
 import {
   messagesForClaude,
@@ -67,13 +66,9 @@ import { cn } from "@/lib/utils";
 import "./guided-chat.css";
 import "./gpt-viz.css";
 
-const INITIAL_TEXT_DU = `Hi! Ich bin ein KI-Assistent von Bärenwald — für Renovierung, Reparatur und Umbau in München.
+const INITIAL_TEXT = `Hi! Ich bin dein Handwerks-Assistent von Bärenwald — für Renovierung, Reparatur und Umbau in München.
 
-Schreib einfach los — oder wähl unten, womit wir starten sollen. Beraten, visualisieren, Preisrahmen oder direkt anfragen: alles hier im Chat.`;
-
-const INITIAL_TEXT_SIE = `Hallo! Ich bin ein KI-Assistent von Bärenwald — für Renovierung, Reparatur und Umbau in München.
-
-Schreiben Sie einfach los — oder wählen Sie unten, womit wir starten sollen. Beraten, visualisieren, Preisrahmen oder direkt anfragen: alles hier im Chat.`;
+Schreib einfach los — oder wähle unten, womit wir starten sollen. Beraten, visualisieren, Preisrahmen oder direkt anfragen: alles hier im Chat.`;
 
 type GptStudioChatProps = {
   onPreisBereit: (data: KiRechnerFunnelData) => void;
@@ -83,8 +78,6 @@ type GptStudioChatProps = {
   priceHandoff?: boolean;
   /** Raumfoto-Button in der Eingabezeile (Portal: aus). */
   showPhotoUpload?: boolean;
-  /** Marketing-Rechner: Du · Partner/Login: Sie (Leitfaden). */
-  anrede?: "du" | "sie";
 };
 
 function isActiveVizFlow(phase: GptVizPhase, flowActive: boolean): boolean {
@@ -113,7 +106,6 @@ export function GptStudioChat({
   locked = false,
   priceHandoff = false,
   showPhotoUpload = true,
-  anrede = "du",
 }: GptStudioChatProps) {
 
   const {
@@ -128,8 +120,6 @@ export function GptStudioChat({
     mergeChatVerlauf,
   } = useGptProjekt();
   const guidedHybrid = priceHandoff;
-  const initialText = anrede === "sie" ? INITIAL_TEXT_SIE : INITIAL_TEXT_DU;
-  const [voiceActive, setVoiceActive] = useState(false);
   const [guidedDraft, setGuidedDraft] = useState<GuidedFunnelDraft>(() =>
     emptyGuidedDraft()
   );
@@ -137,7 +127,7 @@ export function GptStudioChat({
     {
       id: newChatId(),
       role: "assistant",
-      text: initialText,
+      text: INITIAL_TEXT,
       blocks: guidedHybrid ? [{ type: "journey_entry" }] : undefined,
       actions: guidedHybrid
         ? undefined
@@ -376,7 +366,7 @@ export function GptStudioChat({
           ki_chat_verlauf: verlauf,
         });
         appendAssistant(
-          "Super — ich habe ein klares Bild von Ihrem Vorhaben.\n\nTippen Sie unten auf **Zum Preis**, dann sehen Sie Ihren unverbindlichen Preisrahmen."
+          "Super — ich habe ein klares Bild von deinem Vorhaben.\n\nTippe unten auf **Zum Preis**, dann siehst du deinen unverbindlichen Preisrahmen."
         );
         return;
       }
@@ -389,7 +379,7 @@ export function GptStudioChat({
         priceHandoffStateRef.current = "beratung";
         onBeratungBereit();
         appendAssistant(
-          "Für Ihr Vorhaben ist eine persönliche Beratung am sinnvollsten.\n\nTippen Sie unten auf **Zur Beratung**, dann können Sie uns Ihre Kontaktdaten hinterlassen."
+          "Für dein Vorhaben ist eine persönliche Beratung am sinnvollsten.\n\nTippe unten auf **Zur Beratung**, dann kannst du uns deine Kontaktdaten hinterlassen."
         );
       }
     },
@@ -496,7 +486,7 @@ export function GptStudioChat({
       setAwaitingLeadField(null);
       if (guidedHybrid) {
         appendAssistant(
-          "Perfekt — füllen Sie kurz die Felder aus, dann geht Ihre Anfrage direkt an **Bärenwald**.",
+          "Perfekt — fülle kurz die Felder aus, dann geht deine Anfrage direkt an **Bärenwald**.",
           { blocks: [buildLeadFormBlock(guidedDraft)] }
         );
       } else {
@@ -518,7 +508,7 @@ export function GptStudioChat({
         setAwaitingLeadField(null);
         setVizPhase("done");
         appendAssistant(
-          "Perfekt — Ihre Anfrage ist bei uns eingegangen. Wir melden uns bei Ihnen. Sie können jetzt noch **zweimal** an Ihrer Visualisierung feilen — oder einfach weiterfragen.",
+          "Perfekt — deine Anfrage ist bei uns eingegangen. Wir melden uns bei dir. Du kannst jetzt noch **zweimal** an deiner Visualisierung feilen — oder einfach weiterfragen.",
           {
             actions: [{ id: "render_again", label: "Noch anpassen" }],
           }
@@ -545,7 +535,7 @@ export function GptStudioChat({
           setAwaitingLeadField(null);
           setVizPhase("done");
           appendAssistant(
-            "Perfekt — ich habe Ihre Anfrage an **Bärenwald** gesendet. Wir melden uns bei Ihnen. Sie können jetzt noch **zweimal** an Ihrer Visualisierung feilen.",
+            "Perfekt — ich habe deine Anfrage an **Bärenwald** gesendet. Wir melden uns bei dir. Du kannst jetzt noch **zweimal** an deiner Visualisierung feilen.",
             {
               actions: [{ id: "render_again", label: "Noch anpassen" }],
             }
@@ -643,15 +633,13 @@ export function GptStudioChat({
 
       appendAssistant(
         erklaerung?.chat_kurz ??
-          (anrede === "sie"
-            ? "So könnte Ihr Raum aussehen — unten finden Sie die **KI-generierte Visualisierung** zum Herunterladen."
-            : "So könnte dein Raum aussehen — unten findest du die **KI-generierte Visualisierung** zum Herunterladen."),
+          "So könnte dein Raum aussehen — unten findest du deine **Visualisierung** zum Herunterladen.",
         {
           compare: {
             before: { url: istUrl, label: "Vorher", downloadName: "baerenwald-vorher.jpg" },
             after: {
               url: resultUrl,
-              label: "KI-generierte Visualisierung",
+              label: "Visualisierung",
               downloadName: "baerenwald-visualisierung.jpg",
             },
             erklaerung,
@@ -671,7 +659,7 @@ export function GptStudioChat({
         leadUnlocked
       );
       const canRenderAgain = postActions.some((a) => a.id === "render_again");
-      appendAssistant(claude.displayText ?? "Fragen Sie mich gern, was das für Ihr Projekt bedeutet.", {
+      appendAssistant(claude.displayText ?? "Frag mich gern, was das für dein Projekt bedeutet.", {
         blocks: guidedHybrid
           ? [
               ...(!leadUnlocked
@@ -702,7 +690,7 @@ export function GptStudioChat({
       if (!canRenderAgain && leadUnlocked) {
         const portalUrl = limits?.portal_register_url ?? "/portal/registrieren";
         const gateMsg =
-          "Sie haben alle Visualisierungen für dieses Projekt genutzt. Registrieren Sie sich kostenlos im Portal für weitere Projekte.";
+          "Du hast alle Visualisierungen für dieses Projekt genutzt. Registriere dich kostenlos im Portal für weitere Projekte.";
         const gate = gateFromLimitPayload(gateMsg, "guest_exhausted", portalUrl);
         if (gate) setRegistrationGate(gate);
       }
@@ -950,7 +938,7 @@ export function GptStudioChat({
       if (actionId === "journey_beraten") {
         append({ role: "user", text: "Ich möchte mich beraten lassen." });
         appendAssistant(
-          "Gerne — erzählen Sie mir einfach von Ihrem Vorhaben. Ich stelle Ihnen die passenden Fragen und wir finden gemeinsam den nächsten Schritt."
+          "Gerne — erzähl mir einfach von deinem Vorhaben. Ich stelle dir die passenden Fragen und wir finden gemeinsam den nächsten Schritt."
         );
         return;
       }
@@ -958,7 +946,7 @@ export function GptStudioChat({
       if (actionId === "journey_preis") {
         append({ role: "user", text: "Ich möchte einen Preisrahmen berechnen." });
         const payload = buildGuidedAssistantFromDraft(guidedDraft, {
-          prefixText: "Alles klar — ein paar kurze Angaben, dann rechnen wir Ihren Rahmen aus.",
+          prefixText: "Alles klar — ein paar kurze Angaben, dann rechnen wir deinen Rahmen aus.",
         });
         appendGuidedPayload(payload);
         return;
@@ -976,7 +964,7 @@ export function GptStudioChat({
         setPendingUpload("raum");
         append({ role: "user", text: "Ich möchte meinen Raum visualisieren." });
         appendAssistant(
-          "Gerne — schicken Sie mir zuerst ein **Foto Ihres aktuellen Raums** über Bild hochladen unten links. Davon starten wir die Visualisierung."
+          "Gerne — schick mir zuerst ein **Foto deines aktuellen Raums** über Bild hochladen unten links. Davon starten wir die Visualisierung."
         );
         return;
       }
@@ -994,7 +982,7 @@ export function GptStudioChat({
         try {
           const checkPrice = shouldCheckPriceHandoff();
           const claude = await askClaude(next, sessionId, undefined, undefined, false, checkPrice);
-          const reply = claude.displayText ?? "Erzählen Sie mir von Ihrem Vorhaben — ich bin da.";
+          const reply = claude.displayText ?? "Erzähl mir von deinem Vorhaben — ich bin da.";
           appendAssistant(reply);
           applyPriceHandoff([...next, { id: newChatId(), role: "assistant", text: reply }], claude);
         } finally {
@@ -1006,7 +994,7 @@ export function GptStudioChat({
       if (actionId === "wunsch_inspiration") {
         setPendingUpload("inspiration");
         appendAssistant(
-          "Optional: Schicken Sie mir ein **Inspirationsbild** über Bild hochladen unten links — oder beschreiben Sie Ihren Wunsch einfach hier im Chat."
+          "Optional: Schick mir ein **Inspirationsbild** über Bild hochladen unten links — oder beschreib deinen Wunsch einfach hier im Chat."
         );
         return;
       }
@@ -1075,8 +1063,8 @@ export function GptStudioChat({
     ]
   );
 
-  const handleSend = useCallback(async (overrideText?: string) => {
-    const text = (overrideText ?? input).trim();
+  const handleSend = useCallback(async () => {
+    const text = input.trim();
     if (!text || loading || locked || limitReached || registrationGate) return;
 
     const userMsg: GptChatMessage = { id: newChatId(), role: "user", text };
@@ -1130,7 +1118,7 @@ export function GptStudioChat({
       if (data.intent === "lead_start") {
         showLeadForm();
       } else {
-        const reply = data.displayText ?? "Wie kann ich Ihnen helfen?";
+        const reply = data.displayText ?? "Wie kann ich dir helfen?";
         const vizActions = actionsForIntent({
           intent: data.intent ?? null,
           istUrl: Boolean(istUrl),
@@ -1226,9 +1214,7 @@ export function GptStudioChat({
               <span className="ki-rechner-mode-label ki-rechner-mode-label--chat">BärenwaldGPT</span>
             </div>
             {!guidedHybrid || buildDraftSummaryItems(guidedDraft).length === 0 ? (
-              <div className="ki-rechner-chat-sub">
-                KI-Assistent · Beraten · Visualisieren · Preis · Anfrage
-              </div>
+              <div className="ki-rechner-chat-sub">Beraten · Visualisieren · Preis · Anfrage</div>
             ) : null}
           </div>
         </div>
@@ -1274,98 +1260,70 @@ export function GptStudioChat({
       <GptChatBriefBar brief={brief} />
 
       <div className="ki-rechner-chat-composer">
-        <div
-          className={cn(
-            "ki-rechner-chat-inputbar gpt-chat-inputbar",
-            limitReached && "ki-rechner-chat-inputbar--disabled",
-            voiceActive && "gpt-chat-inputbar--voice"
-          )}
-        >
-          {!voiceActive ? (
-            <>
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept="image/jpeg,image/png,image/webp,image/*"
-                className="sr-only"
-                onChange={(e) => {
-                  const f = e.target.files?.[0];
-                  const kind = pendingUpload ?? "raum";
-                  if (f) void handleUpload(kind, f);
-                  e.target.value = "";
-                }}
-              />
-              {showPhotoUpload ? (
-                <button
-                  type="button"
-                  className="gpt-chat-attach"
-                  disabled={inputDisabled}
-                  aria-label={
-                    pendingUpload === "inspiration"
-                      ? "Inspirationsbild"
-                      : "Raumfoto hochladen"
-                  }
-                  onClick={() => fileInputRef.current?.click()}
-                >
-                  <ImagePlus className="h-5 w-5" aria-hidden />
-                </button>
-              ) : null}
-              <textarea
-                ref={textareaRef}
-                rows={1}
-                enterKeyHint="send"
-                value={input}
-                onChange={(e) => {
-                  setInput(e.target.value);
-                  requestAnimationFrame(syncTextareaHeight);
-                }}
-                onFocus={handleInputFocus}
-                onBlur={handleInputBlur}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" && !e.shiftKey) {
-                    e.preventDefault();
-                    void handleSend();
-                  }
-                }}
-                placeholder={
-                  registrationGate
-                    ? "Registrierung erforderlich"
-                    : limitReached
-                      ? "Nachrichtenlimit erreicht"
-                      : "Nachricht schreiben…"
-                }
-                className="ki-rechner-chat-input ki-rechner-chat-textarea"
-                disabled={inputDisabled}
-                aria-label="Nachricht an den KI-Assistenten"
-              />
-            </>
-          ) : null}
-
-          {/* Eine Instanz: Mic idle / volle Waveform während Aufnahme */}
-          {voiceActive || (!input.trim() && !inputDisabled) ? (
-            <GptChatVoiceRecorder
-              disabled={inputDisabled}
-              onActiveChange={setVoiceActive}
-              onTextReady={(text) => {
-                void handleSend(text);
-              }}
-              onError={(message) => setError(message)}
-            />
-          ) : (
+        <div className={cn("ki-rechner-chat-inputbar gpt-chat-inputbar", limitReached && "ki-rechner-chat-inputbar--disabled")}>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/jpeg,image/png,image/webp,image/*"
+            className="sr-only"
+            onChange={(e) => {
+              const f = e.target.files?.[0];
+              const kind = pendingUpload ?? "raum";
+              if (f) void handleUpload(kind, f);
+              e.target.value = "";
+            }}
+          />
+          {showPhotoUpload ? (
             <button
               type="button"
-              onClick={() => void handleSend()}
-              disabled={!input.trim() || inputDisabled}
-              className="ki-rechner-chat-send"
-              aria-label="Senden"
+              className="gpt-chat-attach"
+              disabled={inputDisabled}
+              aria-label={pendingUpload === "inspiration" ? "Inspirationsbild" : "Raumfoto hochladen"}
+              onClick={() => fileInputRef.current?.click()}
             >
-              <SendMessageIcon />
+              <ImagePlus className="h-5 w-5" aria-hidden />
             </button>
-          )}
+          ) : null}
+          <textarea
+            ref={textareaRef}
+            rows={1}
+            enterKeyHint="send"
+            value={input}
+            onChange={(e) => {
+              setInput(e.target.value);
+              requestAnimationFrame(syncTextareaHeight);
+            }}
+            onFocus={handleInputFocus}
+            onBlur={handleInputBlur}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && !e.shiftKey) {
+                e.preventDefault();
+                void handleSend();
+              }
+            }}
+            placeholder={
+              registrationGate
+                ? "Registrierung erforderlich"
+                : limitReached
+                  ? "Nachrichtenlimit erreicht"
+                  : "Nachricht eingeben …"
+            }
+            className="ki-rechner-chat-input ki-rechner-chat-textarea"
+            disabled={inputDisabled}
+            aria-label="Nachricht"
+          />
+          <button
+            type="button"
+            onClick={() => void handleSend()}
+            disabled={!input.trim() || inputDisabled}
+            className="ki-rechner-chat-send"
+            aria-label="Senden"
+          >
+            <SendMessageIcon />
+          </button>
         </div>
         <p className="ki-rechner-chat-privacy">
-          KI-Assistent · Anthropic ·{' '}
-          <Link href="/datenschutz#ki-beratung">Datenschutz</Link>
+          KI-Dienst Anthropic · <Link href="/datenschutz#ki-beratung">Datenschutz</Link>
         </p>
       </div>
 

@@ -83,7 +83,7 @@ export function PartnerAngebotAuftragAnnehmen({
           type="button"
           disabled={!kannBestaetigen || loading}
           onClick={() => setConfirmOpen(true)}
-          className="btn-pill-primary portal-btn w-full sm:w-auto"
+          className="btn-pill-primary portal-btn w-full"
         >
           {loading ? "Wird gesendet…" : "Auftrag annehmen"}
         </button>

@@ -1,5 +1,4 @@
 import { PARTNER_AUTH_COPY } from "@/lib/partner/partner-auth-copy";
-import { canonicalBaerenwaldPrimaryStaffEmail } from "@/lib/auth/baerenwald-primary-staff";
 import { isSupabaseConfigured, supabaseAdmin } from "@/lib/supabase";
 
 export type PartnerRegistrationCheckResult =
@@ -17,14 +16,10 @@ export async function findHandwerkerForRegistration(email: string) {
   const normalized = normalizePartnerEmail(email);
   if (!normalized.includes("@")) return null;
 
-  // Primary-Staff: Aliase (ohne Bindestrich / @baerenwald.de) → kanonische Partner-Mail
-  const lookupEmail =
-    canonicalBaerenwaldPrimaryStaffEmail(normalized) ?? normalized;
-
   const withPortal = await supabaseAdmin
     .from("handwerker")
     .select("id, email, auth_user_id, ist_portal_gesperrt")
-    .ilike("email", lookupEmail)
+    .ilike("email", normalized)
     .not("email", "is", null)
     .limit(1)
     .maybeSingle();

@@ -1,5 +1,5 @@
 import { MeldenBestaetigungClient } from "@/components/melden/MeldenBestaetigungClient";
-import { meldeStatusPath, meldeStatusRelativePath } from "@/lib/melde/melde-tracking";
+import { meldeStatusUrl } from "@/lib/melde/melde-tracking";
 import { resolveMeldeKontext } from "@/lib/org/resolve-melde-kontext";
 import { resolveOrgSubLabel } from "@/lib/portal2/brand-presets";
 
@@ -14,7 +14,6 @@ type Props = {
     kennung?: string;
     token?: string;
     statusLink?: string;
-    ref?: string;
     /** Fallback wenn Token fehlt (Client-Redirect) */
     name?: string;
     email?: string;
@@ -73,14 +72,14 @@ export default async function MeldenBestaetigungPage({ searchParams }: Props) {
   const effectiveToken = token || tokenFromLink;
   const statusUrlFromQuery = searchParams.statusLink?.trim() || null;
   const statusUrl = statusUrlFromQuery
-    ? meldeStatusRelativePath(statusUrlFromQuery)
+    ? statusUrlFromQuery
     : effectiveToken
-      ? meldeStatusPath(effectiveToken)
+      ? meldeStatusUrl(effectiveToken)
       : null;
 
-  const referenz =
-    searchParams.ref?.trim().toUpperCase() ||
-    (effectiveToken ? effectiveToken.slice(0, 8).toUpperCase() : null);
+  const referenz = effectiveToken
+    ? effectiveToken.slice(0, 8).toUpperCase()
+    : null;
 
   return (
     <MeldenBestaetigungClient

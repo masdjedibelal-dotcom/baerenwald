@@ -1,8 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
 
-/** CRM-Notify darf Portal-Annahme/-Ablehnung nie endlos blockieren. */
-export const CRM_PARTNER_ANNAHME_TIMEOUT_MS = 7000;
-
 function dashboardBase(): string | null {
   const raw =
     process.env.NEXT_PUBLIC_DASHBOARD_URL?.trim() ||
@@ -12,50 +9,16 @@ function dashboardBase(): string | null {
   return base || null;
 }
 
-async function fetchWithTimeout(
-  url: string,
-  init: RequestInit,
-  timeoutMs: number
-): Promise<Response> {
-  const ctrl = new AbortController();
-  const timer = setTimeout(() => ctrl.abort(), timeoutMs);
-  try {
-    return await fetch(url, {
-      ...init,
-      signal: ctrl.signal,
-    });
-  } finally {
-    clearTimeout(timer);
-  }
-}
-
 async function partnerAuthHeaders(): Promise<HeadersInit | null> {
   const supabase = await createClient();
-  // getUser() lädt/validiert die Cookie-Session; getSession() allein kann in
-  // Server Actions leer sein → fälschlich „Bärenwald nicht konfiguriert“.
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return null;
   const {
     data: { session },
   } = await supabase.auth.getSession();
-  const token = session?.access_token?.trim();
-  if (!token) return null;
+  if (!session?.access_token) return null;
   return {
-    Authorization: `Bearer ${token}`,
+    Authorization: `Bearer ${session.access_token}`,
     "Content-Type": "application/json",
   };
-}
-
-function crmMissingConfigError(base: string | null, headers: HeadersInit | null): string {
-  if (!base) {
-    return "Bärenwald-Verbindung fehlt (NEXT_PUBLIC_DASHBOARD_URL).";
-  }
-  if (!headers) {
-    return "Sitzung abgelaufen — bitte neu anmelden und erneut abschließen.";
-  }
-  return "Bärenwald nicht konfiguriert.";
 }
 
 export type CrmProjektvertragPreview = {
@@ -97,7 +60,7 @@ export async function confirmCrmProjektvertrag(
   const base = dashboardBase();
   const headers = await partnerAuthHeaders();
   if (!base || !headers) {
-    return { ok: false, error: crmMissingConfigError(base, headers) };
+    return { ok: false, error: "Bärenwald-Verbindung nicht konfiguriert." };
   }
 
   try {
@@ -131,8 +94,7 @@ function internalSecretHeaders(): HeadersInit | null {
 
 /** Portal → CRM: kanonische HW-Annahme (Q2). */
 export async function submitCrmPartnerAnnahme(input: {
-  zuweisungId?: string;
-  auftragId?: string;
+  zuweisungId: string;
   handwerkerId: string;
   antwort: "akzeptiert" | "abgelehnt";
   notiz?: string | null;
@@ -152,61 +114,28 @@ export async function submitCrmPartnerAnnahme(input: {
     return { ok: true, skipped: true };
   }
 
-  const zuweisungId = input.zuweisungId?.trim() || "";
-  const auftragId = input.auftragId?.trim() || "";
-  if (!zuweisungId && !auftragId) {
-    return { ok: false, error: "zuweisungId oder auftragId fehlt." };
-  }
-
   try {
-    const res = await fetchWithTimeout(
-      `${base}/api/internal/partner-annahme`,
-      {
-        method: "POST",
-        headers,
-        body: JSON.stringify({
-          ...(zuweisungId ? { zuweisungId } : {}),
-          ...(auftragId ? { auftragId } : {}),
-          handwerkerId: input.handwerkerId,
-          antwort: input.antwort,
-          notiz: input.notiz ?? undefined,
-          grund: input.grund ?? undefined,
-        }),
-      },
-      CRM_PARTNER_ANNAHME_TIMEOUT_MS
-    );
+    const res = await fetch(`${base}/api/internal/partner-annahme`, {
+      method: "POST",
+      headers,
+      body: JSON.stringify({
+        zuweisungId: input.zuweisungId,
+        handwerkerId: input.handwerkerId,
+        antwort: input.antwort,
+        notiz: input.notiz ?? undefined,
+        grund: input.grund ?? undefined,
+      }),
+    });
     const body = (await res.json().catch(() => ({}))) as {
       ok?: boolean;
       error?: string;
       already?: boolean;
     };
     if (!res.ok || body.ok === false) {
-      const msg = body.error || `HTTP ${res.status}`;
-      console.error("[partner-crm] partner-annahme fehlgeschlagen:", msg, {
-        zuweisungId: zuweisungId || undefined,
-        auftragId: auftragId || undefined,
-        antwort: input.antwort,
-        status: res.status,
-      });
-      return { ok: false, error: msg };
+      return { ok: false, error: body.error || "Annahme fehlgeschlagen." };
     }
     return { ok: true, already: body.already === true };
-  } catch (e) {
-    const aborted =
-      e instanceof Error &&
-      (e.name === "AbortError" || /aborted/i.test(e.message));
-    if (aborted) {
-      console.warn("[partner-crm] partner-annahme Timeout", {
-        zuweisungId: zuweisungId || undefined,
-        auftragId: auftragId || undefined,
-        timeoutMs: CRM_PARTNER_ANNAHME_TIMEOUT_MS,
-      });
-      return {
-        ok: false,
-        error: `CRM-Timeout (${CRM_PARTNER_ANNAHME_TIMEOUT_MS}ms) — Portal speichert trotzdem.`,
-      };
-    }
-    console.error("[partner-crm] partner-annahme unreachable:", e);
+  } catch {
     return { ok: false, error: "Bärenwald nicht erreichbar." };
   }
 }
@@ -253,7 +182,7 @@ export async function acceptCrmRahmenvertragLoggedIn(): Promise<
   const base = dashboardBase();
   const headers = await partnerAuthHeaders();
   if (!base || !headers) {
-    return { ok: false, error: crmMissingConfigError(base, headers) };
+    return { ok: false, error: "Bärenwald-Verbindung nicht konfiguriert." };
   }
 
   try {
@@ -363,7 +292,7 @@ export async function submitCrmAbnahmeNachSignatur(
   const base = dashboardBase();
   const headers = await partnerAuthHeaders();
   if (!base || !headers) {
-    return { ok: false, error: crmMissingConfigError(base, headers) };
+    return { ok: false, error: "Bärenwald nicht konfiguriert." };
   }
 
   try {
@@ -416,7 +345,7 @@ export async function fetchCrmAbnahmeStatus(
   const base = dashboardBase();
   const headers = await partnerAuthHeaders();
   if (!base || !headers) {
-    return { ok: false, error: crmMissingConfigError(base, headers) };
+    return { ok: false, error: "Bärenwald nicht konfiguriert." };
   }
 
   try {
@@ -439,14 +368,8 @@ export async function fetchCrmAbnahmeStatus(
       protokoll_id: (body.protokoll_id as string | null) ?? null,
       pdf_url: (body.pdf_url as string | null) ?? null,
       abnahme_datum: (body.abnahme_datum as string | null) ?? null,
-      punkte_count: Number(
-        body.punkte_count ??
-          (Array.isArray(body.punkte) ? body.punkte.length : 0)
-      ),
-      maengel_count: Number(
-        body.maengel_count ??
-          (Array.isArray(body.maengel) ? body.maengel.length : 0)
-      ),
+      punkte_count: Number(body.punkte_count ?? 0),
+      maengel_count: Number(body.maengel_count ?? 0),
       an_kunde_gesendet_at: (body.an_kunde_gesendet_at as string | null) ?? null,
       handwerker_bestaetigt_at:
         (body.handwerker_bestaetigt_at as string | null) ?? null,
@@ -466,7 +389,7 @@ export async function postCrmAbnahmeAction(
   const base = dashboardBase();
   const headers = await partnerAuthHeaders();
   if (!base || !headers) {
-    return { ok: false, error: crmMissingConfigError(base, headers) };
+    return { ok: false, error: "Bärenwald nicht konfiguriert." };
   }
 
   try {

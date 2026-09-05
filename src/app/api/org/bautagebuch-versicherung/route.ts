@@ -31,18 +31,14 @@ export async function GET(req: Request) {
   }
 
   let versNr = auftrag.versicherungs_nr ? String(auftrag.versicherungs_nr) : null;
-  let schadenNr: string | null = null;
   if (auftrag.lead_id) {
     const { data: lead } = await supabaseAdmin
       .from("leads")
-      .select("versicherungs_nr, schaden_nr")
+      .select("versicherungs_nr")
       .eq("id", auftrag.lead_id)
       .maybeSingle();
     if (!versNr && lead?.versicherungs_nr) {
       versNr = String(lead.versicherungs_nr);
-    }
-    if (lead?.schaden_nr) {
-      schadenNr = String(lead.schaden_nr).trim() || null;
     }
   }
 
@@ -56,7 +52,7 @@ export async function GET(req: Request) {
     orgName: session.kunde.name?.trim() || "Verwaltung",
     objektTitel: String(auftrag.titel ?? "Vorgang"),
     versicherungsNr: versNr,
-    schadenNr,
+    schadenNr: versNr,
     eintraege: (rows ?? []).map((r) => ({
       datum: String(r.datum ?? ""),
       titel: String(r.titel ?? "Eintrag"),

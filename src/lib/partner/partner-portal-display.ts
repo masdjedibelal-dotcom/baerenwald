@@ -1,3 +1,5 @@
+import { Calendar, Hammer, MapPin } from "lucide-react";
+
 import type { PortalListCardMeta } from "@/components/shared/PortalListCard";
 import {
   buildAnfrageCardMeta,
@@ -19,30 +21,8 @@ import {
   mergeKonditionRueckfrageZeilen,
   mergeKonditionZeilenMitHw,
   type PartnerHwKonditionen,
-  type PartnerKonditionZeile,
   type PartnerNachreichungFilter,
 } from "@/lib/partner/partner-konditionen";
-
-/** CRM setzt Partner-EK auf Auftrag — Angebots-JSON kann noch leer sein. */
-function overlayAuftragPartnerEk(
-  zeilen: PartnerKonditionZeile[],
-  auftragPositionen?: PartnerAuftragPosition[]
-): PartnerKonditionZeile[] {
-  if (!auftragPositionen?.length) return zeilen;
-  const byId = new Map(auftragPositionen.map((p) => [p.id, p]));
-  return zeilen.map((z) => {
-    const ap = byId.get(z.id);
-    if (!ap) return z;
-    if (
-      ap.preis_partner != null &&
-      Number.isFinite(ap.preis_partner) &&
-      ap.preis_partner >= 0
-    ) {
-      return { ...z, vorschlagNetto: Math.round(ap.preis_partner * 100) / 100 };
-    }
-    return z;
-  });
-}
 import {
   buildAuftragCardMeta,
   formatAuftragDatumSpan,
@@ -75,17 +55,17 @@ export function buildPartnerAnfrageCardMeta(
       .filter(Boolean)
       .join(" · ") ||
     extras?.gewerk_name;
-  if (was) meta.push({ icon: "hammer", text: was });
+  if (was) meta.push({ icon: Hammer, text: was });
 
   const ortLine = lead
     ? formatAnfrageListOrtLine(lead)
     : extras
       ? "—"
       : "—";
-  if (ortLine !== "—") meta.push({ icon: "map-pin", text: ortLine });
+  if (ortLine !== "—") meta.push({ icon: MapPin, text: ortLine });
 
   const zeitraum = lead ? formatAnfrageZeitraum(lead) : undefined;
-  if (zeitraum) meta.push({ icon: "calendar", text: zeitraum });
+  if (zeitraum) meta.push({ icon: Calendar, text: zeitraum });
 
   return meta;
 }
@@ -100,10 +80,10 @@ export function buildPartnerAngebotCardMeta(
   const ortLine = lead
     ? formatAnfrageListOrtLine(lead)
     : [fallbackOrt?.plz?.trim(), fallbackOrt?.ort?.trim()].filter(Boolean).join(" ") || "—";
-  if (ortLine !== "—") meta.push({ icon: "map-pin", text: ortLine });
+  if (ortLine !== "—") meta.push({ icon: MapPin, text: ortLine });
 
   const dateLabel = fmtPortalDate(date);
-  if (dateLabel !== "—") meta.push({ icon: "calendar", text: dateLabel });
+  if (dateLabel !== "—") meta.push({ icon: Calendar, text: dateLabel });
 
   return meta;
 }
@@ -197,26 +177,20 @@ export function resolvePartnerKonditionZeilen(
         }
       )
     : buildPartnerKonditionZeilen(positionenRaw, filter);
-
-  const withAuftragEk = overlayAuftragPartnerEk(
-    basis,
-    opts?.auftragPositionen
-  );
-
   if (opts?.nachreichungOpenIds?.length) {
     return mergeKonditionNachreichungZeilen(
-      withAuftragEk,
+      basis,
       hwKonditionen,
       opts.nachreichungOpenIds
     );
   }
   if (opts?.neueVerhandlungsrunde && hwKonditionen?.positionen.length) {
-    return mergeKonditionRueckfrageZeilen(withAuftragEk, hwKonditionen);
+    return mergeKonditionRueckfrageZeilen(basis, hwKonditionen);
   }
   if (hwKonditionen?.positionen.length) {
-    return mergeKonditionZeilenMitHw(withAuftragEk, hwKonditionen);
+    return mergeKonditionZeilenMitHw(basis, hwKonditionen);
   }
-  return withAuftragEk;
+  return basis;
 }
 
 export function resolvePartnerAuftragKonditionZeilen(
@@ -258,15 +232,6 @@ export function partnerDetailDateMetaLine(date?: string | null): string | undefi
   const rel = fmtPortalRelativeTime(date);
   const parts = [formatted !== "—" ? formatted : null, rel].filter(Boolean);
   return parts.length ? parts.join(" · ") : undefined;
-}
-
-/** Detail-Subline: Anschrift (wie HV/Kunde-Karten). */
-export function partnerDetailOrtMetaLine(
-  lead?: PortalAnfrageLeadSource | null
-): string | undefined {
-  if (!lead) return undefined;
-  const line = formatAnfrageListOrtLine(lead);
-  return line !== "—" ? line : undefined;
 }
 
 export function partnerAuftragDetailMetaLine(

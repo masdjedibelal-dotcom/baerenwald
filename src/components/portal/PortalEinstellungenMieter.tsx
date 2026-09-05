@@ -5,13 +5,11 @@ import { useEffect, useState } from "react";
 
 import { PortalKontoSicherheitPanel } from "@/components/shared/PortalKontoSicherheitPanel";
 import { PortalEinstellungenShell } from "@/components/shared/PortalEinstellungenShell";
-import { PortalPushSettingsPanel } from "@/components/shared/PortalPushSettingsPanel";
 import {
   EinstellungenEdField,
   EinstellungenEditModal,
-  EinstellungenPfList,
   EinstellungenPfRow,
-  EinstellungenSectionCard,
+  EinstellungenSectionHeader,
 } from "@/components/shared/PortalEinstellungenUi";
 import { SITE_CONFIG } from "@/lib/config";
 import {
@@ -115,30 +113,26 @@ export function PortalEinstellungenMieter({
     <div className="space-y-4">
       <PortalEinstellungenShell variant="mieter">
         {(tab) => {
-          if (tab === "benachrichtigungen") {
-            return <PortalPushSettingsPanel portal="portal" />;
-          }
-
           if (tab === "zugang") {
             return (
-              <>
-                <EinstellungenSectionCard title={MIETER_KONTO_ZUGANG_TITLE}>
-                  <EinstellungenPfList>
-                    <EinstellungenPfRow
-                      label="Wohnung"
-                      value={wohnung?.trim() || "—"}
-                    />
-                    <EinstellungenPfRow
-                      label="Portal bereitgestellt von"
-                      value={orgName?.trim() || "—"}
-                    />
-                  </EinstellungenPfList>
-                  <p className="portal-text-meta leading-relaxed text-text-secondary">
+              <div className="space-y-4">
+                <div className="space-y-2.5">
+                  <EinstellungenSectionHeader title={MIETER_KONTO_ZUGANG_TITLE} />
+                  <EinstellungenPfRow
+                    label="Wohnung"
+                    value={wohnung?.trim() || "—"}
+                  />
+                  <EinstellungenPfRow
+                    label="Portal bereitgestellt von"
+                    value={orgName?.trim() || "—"}
+                  />
+                  <p className="text-[12.5px] leading-relaxed text-text-secondary">
                     {mieterKontoZugangHinweis(zugangMail)}
                   </p>
-                </EinstellungenSectionCard>
+                </div>
 
-                <EinstellungenSectionCard title={MIETER_SPRACHE_TITLE}>
+                <div className="space-y-3 border-t border-border-default pt-4">
+                  <EinstellungenSectionHeader title={MIETER_SPRACHE_TITLE} />
                   <div
                     className="flex gap-2"
                     role="group"
@@ -150,7 +144,7 @@ export function PortalEinstellungenMieter({
                         type="button"
                         onClick={() => setUiLang(l)}
                         className={cn(
-                          "portal-text-meta min-w-[52px] rounded-[9px] border px-3 py-2 font-bold uppercase",
+                          "min-w-[52px] rounded-[9px] border px-3 py-2 text-[13px] font-bold uppercase",
                           lang === l
                             ? "border-accent bg-accent text-white"
                             : "border-border-default bg-white text-text-secondary"
@@ -160,25 +154,24 @@ export function PortalEinstellungenMieter({
                       </button>
                     ))}
                   </div>
-                </EinstellungenSectionCard>
+                </div>
 
                 <PortalKontoSicherheitPanel signOutHref="/portal/login" />
-              </>
+              </div>
             );
           }
 
           return (
-            <EinstellungenSectionCard
-              title="PROFIL"
-              onEdit={openEdit}
-              editLabel="Telefon bearbeiten"
-            >
-              <EinstellungenPfList>
-                <EinstellungenPfRow label="Name" value={name?.trim() || "—"} />
-                <EinstellungenPfRow label="E-Mail" value={email?.trim() || "—"} />
-                <EinstellungenPfRow label="Telefon" value={savedTel || "—"} />
-              </EinstellungenPfList>
-              <p className="portal-text-meta leading-relaxed text-text-secondary">
+            <div className="space-y-2.5">
+              <EinstellungenSectionHeader
+                title="PROFIL"
+                onEdit={openEdit}
+                editLabel="Telefon bearbeiten"
+              />
+              <EinstellungenPfRow label="Name" value={name?.trim() || "—"} />
+              <EinstellungenPfRow label="E-Mail" value={email?.trim() || "—"} />
+              <EinstellungenPfRow label="Telefon" value={savedTel || "—"} />
+              <p className="text-[12.5px] leading-relaxed text-text-secondary">
                 Name oder E-Mail ändern? Schreiben Sie Ihrer Verwaltung:{" "}
                 <a
                   href={`mailto:${supportMail}?subject=${encodeURIComponent("Portal Konto")}`}
@@ -187,7 +180,7 @@ export function PortalEinstellungenMieter({
                   {supportMail}
                 </a>
               </p>
-            </EinstellungenSectionCard>
+            </div>
           );
         }}
       </PortalEinstellungenShell>
@@ -207,6 +200,14 @@ export function PortalEinstellungenMieter({
           autoComplete="tel"
         />
       </EinstellungenEditModal>
+
+      <div className="px-4 lg:px-6">
+        <form action="/portal/auth/signout" method="post">
+          <button type="submit" className="btn-pill-outline w-full">
+            Abmelden
+          </button>
+        </form>
+      </div>
     </div>
   );
 }

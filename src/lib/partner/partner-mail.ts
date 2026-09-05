@@ -1,7 +1,5 @@
 import { Resend } from "resend";
 
-import { sendBrandedMail } from "@/lib/email/send-branded-mail";
-
 import { SITE_CONFIG } from "@/lib/config";
 import {
   buildStandardMailHtml,
@@ -47,12 +45,6 @@ function crmAngebotUrl(angebotId: string): string | undefined {
   const base = process.env.NEXT_PUBLIC_DASHBOARD_URL?.replace(/\/$/, "");
   if (!base) return undefined;
   return `${base}/angebote/${encodeURIComponent(angebotId)}#handwerker-partner`;
-}
-
-function crmRechnungUrl(rechnungId: string): string | undefined {
-  const base = process.env.NEXT_PUBLIC_DASHBOARD_URL?.replace(/\/$/, "");
-  if (!base) return undefined;
-  return `${base}/rechnungen/${encodeURIComponent(rechnungId)}`;
 }
 
 function crmAuftragUrl(auftragId: string): string | undefined {
@@ -134,7 +126,7 @@ export async function sendHandwerkerNewAnfrageMail(opts: {
     ? `<p><strong>Zeitraum:</strong> ${escapeHtml(opts.zeitraum.trim())}</p>`
     : "";
   const tokenBlock = opts.tokenLink?.trim()
-    ? `<p style="font-size:15px;color:#444">Alternativ (Einmal-Link): <a href="${escapeHtml(opts.tokenLink.trim())}">Anfrage öffnen</a></p>`
+    ? `<p style="font-size:13px;color:#444">Alternativ (Einmal-Link): <a href="${escapeHtml(opts.tokenLink.trim())}">Anfrage öffnen</a></p>`
     : "";
 
   const html = mailShell(
@@ -142,14 +134,14 @@ export async function sendHandwerkerNewAnfrageMail(opts: {
     `<p style="margin:0 0 12px;font-size:15px;line-height:1.6;">Hallo ${escapeHtml(opts.handwerkerName)},</p>
 <p style="margin:0 0 12px;font-size:15px;line-height:1.6;">du hast eine neue Anfrage für <strong>${escapeHtml(opts.gewerkName)}</strong> (PLZ ${escapeHtml(opts.plz)}).</p>
 ${zeitraumBlock}
-<p style="margin:0 0 12px;font-size:15px;color:#444;">Bitte unter <strong>Vorgänge</strong> annehmen oder ablehnen.</p>
+<p style="margin:0 0 12px;font-size:14px;color:#444;">Bitte unter <strong>Vorgänge</strong> annehmen oder ablehnen.</p>
 ${mailBtn("Zur Anfrage im Portal", portalHref)}
 ${tokenBlock}`,
     `Neue Anfrage: ${opts.gewerkName}`
   );
 
   try {
-    const { error } = await sendBrandedMail(resend, {
+    const { error } = await resend.emails.send({
       from: systemFrom(),
       to: opts.to.trim(),
       subject: `Neue Anfrage: ${opts.gewerkName} — Bärenwald Partner`,
@@ -213,7 +205,7 @@ export async function sendHandwerkerLeistungZuweisungMail(opts: {
   );
 
   const detailsBox = mailGreenBox(`
-    <table width="100%" cellpadding="0" cellspacing="0" style="font-size:15px;line-height:1.6;">
+    <table width="100%" cellpadding="0" cellspacing="0" style="font-size:14px;line-height:1.6;">
       <tr><td style="color:#2E7D52;padding:4px 0;width:38%;">Auftrag:</td><td style="font-weight:600;color:#1A3D2B;">${escapeHtml(opts.auftragTitel)}</td></tr>
       <tr><td style="color:#2E7D52;padding:4px 0;">Kunde:</td><td style="font-weight:600;color:#1A3D2B;">${escapeHtml(opts.kundeName)}</td></tr>
       <tr><td style="color:#2E7D52;padding:4px 0;">Einsatzort:</td><td style="font-weight:600;color:#1A3D2B;">${escapeHtml(opts.adresseZeile)}</td></tr>
@@ -244,14 +236,14 @@ export async function sendHandwerkerLeistungZuweisungMail(opts: {
 <p style="margin:0 0 12px;font-size:15px;line-height:1.6;">${intro}</p>
 ${detailsBox}
 ${mailBtn("Zum Partner-Portal →", portalLink)}
-<p style="font-size:15px;color:#6B7280;line-height:1.6;margin:0 0 8px;">
+<p style="font-size:13px;color:#6B7280;line-height:1.6;margin:0 0 8px;">
   ${footer}
 </p>`,
     opts.auftragTitel
   );
 
   try {
-    const { error } = await sendBrandedMail(resend, {
+    const { error } = await resend.emails.send({
       from: systemFrom(),
       to: opts.to.trim(),
       subject,
@@ -285,8 +277,8 @@ export async function sendHandwerkerAngebotBestaetigtMail(opts: {
 
   const portalHref = opts.portalLink.trim() || partnerDashboardUrl();
   const preisBlock = mailGreenBox(`
-    <p style="margin:0 0 6px;font-size:15px;"><strong>${escapeHtml(opts.angebotTitel)}</strong> · ${escapeHtml(opts.gewerkName)}</p>
-    <p style="margin:0;font-size:15px;">Netto: ${escapeHtml(fmtEuro(opts.preisNetto))} · Brutto: ${escapeHtml(fmtEuro(opts.preisBrutto))}</p>
+    <p style="margin:0 0 6px;font-size:14px;"><strong>${escapeHtml(opts.angebotTitel)}</strong> · ${escapeHtml(opts.gewerkName)}</p>
+    <p style="margin:0;font-size:14px;">Netto: ${escapeHtml(fmtEuro(opts.preisNetto))} · Brutto: ${escapeHtml(fmtEuro(opts.preisBrutto))}</p>
   `);
 
   const bitteBestaetigen = Boolean(opts.bitteBestaetigen);
@@ -307,7 +299,7 @@ ${mailBtn("Zum Partner-Portal", portalHref)}`;
   const html = mailShell(headline, body, headline);
 
   try {
-    const { error } = await sendBrandedMail(resend, {
+    const { error } = await resend.emails.send({
       from: systemFrom(),
       to: opts.to.trim(),
       subject,
@@ -350,23 +342,23 @@ export async function sendHandwerkerAngebotAntwortMail(opts: {
     : `Angebot nicht übernommen: ${opts.gewerkName} — Bärenwald Partner`;
 
   const notizBlock = mailGreenBox(`
-    <p style="margin:0 0 6px;font-size:15px;color:#374151;font-weight:600;">Nachricht von Bärenwald</p>
-    <p style="margin:0;font-size:15px;line-height:1.6;white-space:pre-wrap;">${escapeHtml(opts.crmNotiz.trim())}</p>
+    <p style="margin:0 0 6px;font-size:13px;color:#374151;font-weight:600;">Nachricht von Bärenwald</p>
+    <p style="margin:0;font-size:14px;line-height:1.6;white-space:pre-wrap;">${escapeHtml(opts.crmNotiz.trim())}</p>
   `);
 
   const html = mailShell(
     titel,
     `<p style="margin:0 0 12px;font-size:15px;line-height:1.6;">Hallo ${escapeHtml(opts.handwerkerName)},</p>
 <p style="margin:0 0 12px;font-size:15px;line-height:1.6;">${intro}</p>
-<p style="margin:0 0 12px;font-size:15px;line-height:1.6;"><strong>${escapeHtml(opts.angebotTitel)}</strong> · ${escapeHtml(opts.gewerkName)}</p>
+<p style="margin:0 0 12px;font-size:14px;line-height:1.6;"><strong>${escapeHtml(opts.angebotTitel)}</strong> · ${escapeHtml(opts.gewerkName)}</p>
 ${notizBlock}
 ${mailBtn("Zum Partner-Portal", portalHref)}
-<p style="font-size:15px;color:#6B7280;line-height:1.6;margin:12px 0 0;">Bei Rückfragen melde dich bei uns.</p>`,
+<p style="font-size:13px;color:#6B7280;line-height:1.6;margin:12px 0 0;">Bei Rückfragen melde dich bei uns.</p>`,
     `${opts.gewerkName} — ${opts.angebotTitel}`
   );
 
   try {
-    const { error } = await sendBrandedMail(resend, {
+    const { error } = await resend.emails.send({
       from: systemFrom(),
       to: opts.to.trim(),
       ...(opts.cc?.length ? { cc: opts.cc } : {}),
@@ -415,7 +407,7 @@ export async function sendPartnerInternalAngebotMail(opts: {
 
   const posRows =
     opts.positionen?.length
-      ? `<table style="width:100%;border-collapse:collapse;margin:12px 0;font-size:15px;">
+      ? `<table style="width:100%;border-collapse:collapse;margin:12px 0;font-size:14px;">
   <tr style="border-bottom:1px solid #e5e7eb;">
     <th style="text-align:left;padding:6px 4px;">Leistung</th>
     <th style="text-align:right;padding:6px 4px;">Vorschlag</th>
@@ -456,7 +448,7 @@ ${mailActionButtons({
   );
 
   try {
-    await sendBrandedMail(resend, {
+    await resend.emails.send({
       from: systemFrom(),
       to,
       subject: `HW-Konditionen: ${opts.gewerkName} — ${hw}`,
@@ -474,7 +466,6 @@ export async function sendPartnerInternalRechnungMail(opts: {
   gewerkName: string;
   plz: string;
   angebotId: string;
-  rechnungId?: string | null;
   rechnungPdfUrl?: string | null;
 }): Promise<void> {
   const to = internTo();
@@ -482,30 +473,25 @@ export async function sendPartnerInternalRechnungMail(opts: {
   if (!to || !resend) return;
 
   const hw = opts.firma?.trim() || opts.handwerkerName;
-  const crm =
-    (opts.rechnungId?.trim() && crmRechnungUrl(opts.rechnungId.trim())) ||
-    crmAngebotUrl(opts.angebotId);
+  const crm = crmAngebotUrl(opts.angebotId);
 
   const html = mailShell(
-    "Eingehende Rechnung vom Handwerk",
-    `<p>Die eingehende Rechnung von <strong>${escapeHtml(hw)}</strong> ist eingegangen.</p>
+    "Handwerker-Rechnung eingegangen",
+    `<p><strong>${escapeHtml(hw)}</strong> hat eine Rechnung hochgeladen.</p>
 <p>Gewerk: ${escapeHtml(opts.gewerkName)} · PLZ ${escapeHtml(opts.plz)}</p>
-<p>Bitte prüfen und im CRM als überwiesen markieren, sobald überwiesen.</p>
 ${mailActionButtons({
   pdfUrl: opts.rechnungPdfUrl ?? undefined,
   pdfLabel: "Rechnungs-PDF öffnen",
   crmUrl: crm,
-  crmLabel: opts.rechnungId?.trim()
-    ? "Eingangsrechnung im CRM öffnen"
-    : "Im CRM öffnen",
+  crmLabel: "Im CRM (Handwerker-Bereich)",
 })}`
   );
 
   try {
-    await sendBrandedMail(resend, {
+    await resend.emails.send({
       from: systemFrom(),
       to,
-      subject: `Eingehende Rechnung: ${hw} — ${opts.gewerkName}`,
+      subject: `HW-Rechnung: ${opts.gewerkName} — ${hw}`,
       html,
     });
   } catch (e) {
@@ -536,7 +522,7 @@ export async function sendPartnerInternalBautagebuchMail(opts: {
       <p style="margin:0 0 12px;font-size:15px;color:#374151;line-height:1.6;">Guten Tag,</p>
       <p style="margin:0 0 16px;font-size:15px;color:#374151;line-height:1.6;"><strong>${escapeHtml(hw)}</strong> hat einen Bautagebuch-Eintrag erstellt.</p>
       ${mailGreenBox(`
-        <table width="100%" cellpadding="0" cellspacing="0" style="font-size:15px;line-height:1.6;">
+        <table width="100%" cellpadding="0" cellspacing="0" style="font-size:14px;line-height:1.6;">
           <tr><td style="color:#2E7D52;padding:4px 0;width:38%;">Auftrag:</td><td style="font-weight:600;color:#1A3D2B;">${escapeHtml(opts.auftragTitel)}</td></tr>
           <tr><td style="color:#2E7D52;padding:4px 0;">Eintrag:</td><td style="font-weight:600;color:#1A3D2B;">${escapeHtml(opts.eintragTitel)}</td></tr>
           <tr><td style="color:#2E7D52;padding:4px 0;">Datum:</td><td style="font-weight:600;color:#1A3D2B;">${escapeHtml(opts.datum)}</td></tr>
@@ -553,7 +539,7 @@ export async function sendPartnerInternalBautagebuchMail(opts: {
   });
 
   try {
-    await sendBrandedMail(resend, {
+    await resend.emails.send({
       from: systemFrom(),
       to,
       subject: `Bautagebuch: ${opts.auftragTitel} — ${hw}`,
@@ -619,7 +605,7 @@ ${mailActionButtons({ crmUrl: crm, crmLabel: "Angebot im CRM öffnen" })}`
     : `${opts.handwerkerName} hat abgelehnt — ${opts.gewerkName}`;
 
   try {
-    await sendBrandedMail(resend, {
+    await resend.emails.send({
       from: systemFrom(),
       to,
       subject,
@@ -666,7 +652,7 @@ ${mailActionButtons({
   );
 
   try {
-    await sendBrandedMail(resend, {
+    await resend.emails.send({
       from: systemFrom(),
       to,
       subject: `Erledigt gemeldet: ${opts.auftragTitel} — ${hw}`,
@@ -705,7 +691,7 @@ ${mailActionButtons({ crmUrl, crmLabel: "Vorgang im CRM öffnen" })}`
   );
 
   try {
-    await sendBrandedMail(resend, {
+    await resend.emails.send({
       from: systemFrom(),
       to,
       subject: `Mängelmeldung HV: ${opts.hvName}`,

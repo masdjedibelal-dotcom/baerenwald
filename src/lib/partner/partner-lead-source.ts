@@ -13,8 +13,6 @@ export type PartnerLeadDbRow = {
   budget_ca?: number | null;
   kontakt_nachricht?: string | null;
   funnel_daten?: unknown;
-  anlass?: string | null;
-  kanal?: string | null;
   kunde_objekt_id?: string | null;
   auftraggeber_kunde_id?: string | null;
   org_freigabe_status?: string | null;
@@ -33,7 +31,6 @@ export type PartnerKundenObjektRow = {
   plz?: string | null;
   ort?: string | null;
   cover_url?: string | null;
-  einheiten_hinweis?: string | null;
 };
 
 export function buildPartnerLeadSource(opts: {
@@ -61,20 +58,15 @@ export function buildPartnerLeadSource(opts: {
     return {
       plz: objekt?.plz ?? opts.kundePlz ?? null,
       objekt,
-      einheiten_hinweis: objektId
-        ? opts.objektById.get(objektId)?.einheiten_hinweis?.trim() || null
-        : null,
     };
   }
-
-  const objektRow = objektId ? opts.objektById.get(objektId) : undefined;
 
   return {
     situation: lead.situation,
     bereiche: lead.bereiche,
     plz: lead.plz ?? objekt?.plz ?? opts.kundePlz ?? null,
-    strasse: lead.strasse?.trim() || objekt?.strasse?.trim() || null,
-    hausnummer: lead.hausnummer?.trim() || null,
+    strasse: lead.strasse,
+    hausnummer: lead.hausnummer,
     ort: objekt?.ort ?? opts.kundeOrt ?? null,
     zeitraum: lead.zeitraum,
     preis_min: lead.preis_min,
@@ -83,14 +75,11 @@ export function buildPartnerLeadSource(opts: {
     kontakt_name: lead.kontakt_name,
     kontakt_nachricht: lead.kontakt_nachricht,
     funnel_daten: lead.funnel_daten,
-    anlass: lead.anlass,
-    ...(lead.kanal ? { kanal: lead.kanal } : {}),
     hv_meldung_status: lead.hv_meldung_status,
     melder_name: lead.melder_name,
     melder_einheit: lead.melder_einheit,
     melder_telefon: lead.melder_telefon,
     melder_email: lead.melder_email,
-    einheiten_hinweis: objektRow?.einheiten_hinweis?.trim() || null,
     objekt,
   };
 }

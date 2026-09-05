@@ -24,9 +24,9 @@ export const LEISTUNGEN_DATA: Record<string, LeistungsData> = {
     label: "Streichen & Tapezieren",
     headline: "Streichen & Tapezieren in München —\nfrisch und sauber",
     subline:
-      "Wände, Decken, frischer Anstrich. Ein Termin, ein Ansprechpartner — wir messen alles aus und nennen Ihnen einen klaren Preis.",
+      "Wände, Decken, frischer Anstrich. Ein Termin, ein Ansprechpartner — wir messen alles aus und nennen dir einen klaren Preis.",
     beschreibung:
-      "Frisch gestrichene Wände machen den größten Unterschied. Wir streichen, tapezieren und spachteln — sauber, gleichmäßig und ohne Flecken auf Ihrem Boden. Sie kommen zurück und die Wohnung sieht aus wie neu.",
+      "Frisch gestrichene Wände machen den größten Unterschied. Wir streichen, tapezieren und spachteln — sauber, gleichmäßig und ohne Flecken auf deinem Boden. Du kommst zurück und die Wohnung sieht aus wie neu.",
     wasWirMachen: [
       "Wände und Decken frisch streichen",
       "Alte Tapeten entfernen und neu tapezieren",
@@ -39,7 +39,7 @@ export const LEISTUNGEN_DATA: Record<string, LeistungsData> = {
     preisBis: 22,
     preisEinheit: "pro m² Wandfläche",
     preisHinweis:
-      "Der Preis hängt davon ab wie groß die Fläche ist und ob die Wände in gutem Zustand sind. Beim Vor-Ort-Termin sehen wir uns alles an und nennen Ihnen einen festen Preis. Anfahrt wird bei Beauftragung angerechnet.",
+      "Der Preis hängt davon ab wie groß die Fläche ist und ob die Wände in gutem Zustand sind. Beim Vor-Ort-Termin sehen wir uns alles an und nennen dir einen festen Preis. Anfahrt wird bei Beauftragung angerechnet.",
     vorteile: vorteil(
       ["🎯", "Ein Ansprechpartner für alles"],
       ["✓", "Geprüfte Meisterbetriebe"],
@@ -60,11 +60,11 @@ export const LEISTUNGEN_DATA: Record<string, LeistungsData> = {
       },
       {
         q: "Welche Farben werden verwendet?",
-        a: "Wir arbeiten mit hochwertigen Markenfarben — Caparol, Alpina oder nach Ihrem Wunsch. Wir beraten Sie gern bei der Auswahl.",
+        a: "Wir arbeiten mit hochwertigen Markenfarben — Caparol, Alpina oder nach deinem Wunsch. Wir beraten dich gern bei der Auswahl.",
       },
       {
         q: "Kann ich die Farbe selbst auswählen?",
-        a: "Ja, absolut. Sie können Farbton und Hersteller selbst wählen oder wir beraten Sie vor Ort.",
+        a: "Ja, absolut. Du kannst Farbton und Hersteller selbst wählen oder wir beraten dich vor Ort.",
       },
       {
         q: "Wird der Boden geschützt?",
@@ -78,7 +78,7 @@ export const LEISTUNGEN_DATA: Record<string, LeistungsData> = {
     label: "Neues Bad",
     headline: "Neues Bad in München —\naus einer Hand geplant",
     subline:
-      "Bad modernisieren oder komplett neu. Wir kümmern uns um Planung, Termine und alle Handwerker — Sie haben nur einen Ansprechpartner.",
+      "Bad modernisieren oder komplett neu. Wir kümmern uns um Planung, Termine und alle Handwerker — du hast nur einen Ansprechpartner.",
     beschreibung:
       "Ein neues Bad braucht mehrere Handwerker — jemand für die Fliesen, jemand für die Leitungen, jemand für den Strom. Das kostet normalerweise viel Nerven beim Koordinieren. Bei uns gibt es nur einen Ansprechpartner. Wir kümmern uns um alles.",
     wasWirMachen: [
@@ -93,7 +93,7 @@ export const LEISTUNGEN_DATA: Record<string, LeistungsData> = {
     preisBis: 20000,
     preisEinheit: "pauschal je nach Umfang",
     preisHinweis:
-      "Oben auf dieser Seite wählen Sie Ihr Bad-Paket und sehen den Preisrahmen live. Beim Termin schauen wir, was wirklich nötig ist — Festpreis nach Besichtigung.",
+      "Oben auf dieser Seite wählst du dein Bad-Paket und siehst den Preisrahmen live. Beim Termin schauen wir, was wirklich nötig ist — Festpreis nach Besichtigung.",
     vorteile: vorteil(
       ["🔧", "Alle Schritte aus einer Hand"],
       ["📐", "Durchdachte Planung vor dem Start"],
@@ -106,15 +106,15 @@ export const LEISTUNGEN_DATA: Record<string, LeistungsData> = {
     faq: [
       {
         q: "Wie lange dauert eine Badsanierung?",
-        a: "Eine Komplettsanierung dauert 2–3 Wochen. Teilsanierungen (nur Fliesen, nur Wasserinstallation) 3–7 Tage. Wir planen so dass Sie nicht zu lange ohne Bad bist.",
+        a: "Eine Komplettsanierung dauert 2–3 Wochen. Teilsanierungen (nur Fliesen, nur Wasserinstallation) 3–7 Tage. Wir planen so dass du nicht zu lange ohne Bad bist.",
       },
       {
         q: "Können wir während der Sanierung in der Wohnung bleiben?",
-        a: "Bei Komplettsanierungen ist das schwierig da für mehrere Tage kein Bad nutzbar ist. Wir sprechen das im Vorfeld mit Ihnen ab.",
+        a: "Bei Komplettsanierungen ist das schwierig da für mehrere Tage kein Bad nutzbar ist. Wir sprechen das im Vorfeld mit dir ab.",
       },
       {
         q: "Gibt es Förderungen für barrierefreie Bäder?",
-        a: "Ja — die KfW fördert altersgerechten Umbau mit Zuschüssen bis 6.250 €. Wir informieren Sie bei Bedarf.",
+        a: "Ja — die KfW fördert altersgerechten Umbau mit Zuschüssen bis 6.250 €. Wir informieren dich bei Bedarf.",
       },
       {
         q: "Was ist im Festpreis enthalten?",
@@ -130,7 +130,7 @@ export const LEISTUNGEN_DATA: Record<string, LeistungsData> = {
     subline:
       "Laminat, Parkett, Fliesen oder Vinyl — wir beraten und verlegen fachgerecht.",
     beschreibung:
-      "Neuer Boden verändert ein Zimmer komplett. Wir beraten welches Material zu Ihnen passt, bereiten den Untergrund vor und verlegen fachgerecht — von der ersten Leiste bis zur letzten Sockelleiste.",
+      "Neuer Boden verändert ein Zimmer komplett. Wir beraten welches Material zu dir passt, bereiten den Untergrund vor und verlegen fachgerecht — von der ersten Leiste bis zur letzten Sockelleiste.",
     wasWirMachen: [
       "Alten Boden entfernen und entsorgen",
       "Untergrund vorbereiten und ausgleichen",
@@ -143,7 +143,7 @@ export const LEISTUNGEN_DATA: Record<string, LeistungsData> = {
     preisBis: 140,
     preisEinheit: "pro m² je nach Material",
     preisHinweis:
-      "Laminat kostet weniger, Parkett mehr — wir zeigen Ihnen den Unterschied und was sich für Ihre Situation lohnt. Preis immer pro m² inkl. Verlegung.",
+      "Laminat kostet weniger, Parkett mehr — wir zeigen dir den Unterschied und was sich für deine Situation lohnt. Preis immer pro m² inkl. Verlegung.",
     vorteile: vorteil(
       ["🪵", "Materialberatung vor Ort"],
       ["🔊", "Trittschall & Untergrund richtig"],
@@ -206,7 +206,7 @@ export const LEISTUNGEN_DATA: Record<string, LeistungsData> = {
       },
       {
         q: "Gibt es Förderung für die Wallbox?",
-        a: "Ja — viele Energieversorger und Bundesländer fördern Wallboxen. Wir informieren Sie über aktuelle Programme.",
+        a: "Ja — viele Energieversorger und Bundesländer fördern Wallboxen. Wir informieren dich über aktuelle Programme.",
       },
     ],
   },
@@ -258,9 +258,9 @@ export const LEISTUNGEN_DATA: Record<string, LeistungsData> = {
     label: "Gartenpflege",
     headline: "Gartenpflege in München —\nregelmäßig und zuverlässig",
     subline:
-      "Mähen, Schneiden, Aufräumen. Wir kümmern uns regelmäßig damit Ihr Garten immer gut aussieht.",
+      "Mähen, Schneiden, Aufräumen. Wir kümmern uns regelmäßig damit dein Garten immer gut aussieht.",
     beschreibung:
-      "Regelmäßige Pflege hält den Garten in Schuss — ohne dass Sie jeden Samstag selbst mähen musst. Wir kommen wöchentlich, zweiwöchentlich oder monatlich und halten alles ordentlich.",
+      "Regelmäßige Pflege hält den Garten in Schuss — ohne dass du jeden Samstag selbst mähen musst. Wir kommen wöchentlich, zweiwöchentlich oder monatlich und halten alles ordentlich.",
     wasWirMachen: [
       "Rasen mähen und Kanten schneiden",
       "Hecken und Sträucher in Form halten",
@@ -273,7 +273,7 @@ export const LEISTUNGEN_DATA: Record<string, LeistungsData> = {
     preisBis: 3.8,
     preisEinheit: "pro m² pro Monat",
     preisHinweis:
-      "Ein kleiner Stadtgarten kostet ab 220 € pro Monat bei zweiwöchentlicher Pflege. Beim ersten Termin schauen wir uns alles an und machen Ihnen ein individuelles Angebot.",
+      "Ein kleiner Stadtgarten kostet ab 220 € pro Monat bei zweiwöchentlicher Pflege. Beim ersten Termin schauen wir uns alles an und machen dir ein individuelles Angebot.",
     vorteile: vorteil(
       ["🌿", "Fester Rhythmus, weniger Stress"],
       ["📅", "Flexibel wöchentlich oder monatlich"],
@@ -290,7 +290,7 @@ export const LEISTUNGEN_DATA: Record<string, LeistungsData> = {
       },
       {
         q: "Brauche ich einen Vertrag?",
-        a: "Nein — wir bieten auch Einzeleinsätze an. Ein Abo ist günstiger und gibt Ihnen Planungssicherheit.",
+        a: "Nein — wir bieten auch Einzeleinsätze an. Ein Abo ist günstiger und gibt dir Planungssicherheit.",
       },
     ],
   },
@@ -315,7 +315,7 @@ export const LEISTUNGEN_DATA: Record<string, LeistungsData> = {
     preisBis: 175,
     preisEinheit: "pro m² je nach Umfang",
     preisHinweis:
-      "Einfache Neugestaltung ab 90 €/m². Terrasse aus Naturstein ab 120 €/m². Beim ersten Gespräch entwickeln wir gemeinsam eine Idee die zu Ihrem Budget passt.",
+      "Einfache Neugestaltung ab 90 €/m². Terrasse aus Naturstein ab 120 €/m². Beim ersten Gespräch entwickeln wir gemeinsam eine Idee die zu deinem Budget passt.",
     vorteile: vorteil(
       ["🌳", "Planung & Umsetzung aus einer Hand"],
       ["🪨", "Terrasse & Wege fachgerecht"],
@@ -328,7 +328,7 @@ export const LEISTUNGEN_DATA: Record<string, LeistungsData> = {
     faq: [
       {
         q: "Brauche ich eine Genehmigung?",
-        a: "Für Terrassen und Wege meist nicht. Für Zäune und größere Bauten je nach Gemeinde. Wir prüfen das für Sie.",
+        a: "Für Terrassen und Wege meist nicht. Für Zäune und größere Bauten je nach Gemeinde. Wir prüfen das für dich.",
       },
     ],
   },
@@ -338,22 +338,22 @@ export const LEISTUNGEN_DATA: Record<string, LeistungsData> = {
     label: "Winterdienst",
     headline: "Winterdienst München —\nzuverlässig und haftungssicher",
     subline:
-      "Räumen und Streuen wenn es drauf ankommt. Wir übernehmen Ihre Streupflicht.",
+      "Räumen und Streuen wenn es drauf ankommt. Wir übernehmen deine Streupflicht.",
     beschreibung:
-      "In München müssen Sie als Hauseigentümer oder Mieter (wenn im Mietvertrag so vereinbart) den Gehweg räumen und streuen — ab 7 Uhr morgens. Wer das nicht tut haftet persönlich wenn jemand stürzt. Wir übernehmen diese Pflicht vollständig.",
+      "In München musst du als Hauseigentümer oder Mieter (wenn im Mietvertrag so vereinbart) den Gehweg räumen und streuen — ab 7 Uhr morgens. Wer das nicht tut haftet persönlich wenn jemand stürzt. Wir übernehmen diese Pflicht vollständig.",
     wasWirMachen: [
       "Gehweg räumen sobald es schneit",
       "Streuen damit niemand ausrutscht",
       "Einfahrt und Parkplatz freihalten",
       "Bereitschaft auch frühmorgens und am Wochenende",
-      "Jeden Einsatz dokumentieren — für Ihre Absicherung",
+      "Jeden Einsatz dokumentieren — für deine Absicherung",
       "Umweltfreundliches Streumittel nutzen",
     ],
     preisVon: 620,
     preisBis: 1100,
     preisEinheit: "pro Saison",
     preisHinweis:
-      "Pro Saison (Oktober bis April) kostet ein normaler Gehweg 620–1.100 €. Einmalig buchen oder als Jahresvertrag — ganz wie Sie wollen.",
+      "Pro Saison (Oktober bis April) kostet ein normaler Gehweg 620–1.100 €. Einmalig buchen oder als Jahresvertrag — ganz wie du willst.",
     vorteile: vorteil(
       ["❄", "Bereitschaft bei Schneefall"],
       ["📄", "Dokumentation für Nachweise"],
@@ -380,9 +380,9 @@ export const LEISTUNGEN_DATA: Record<string, LeistungsData> = {
     label: "Hausmeisterservice",
     headline: "Rund ums Haus —\nein fester Ansprechpartner",
     subline:
-      "Garten, Reinigung, Winterdienst, kleine Reparaturen — wir kümmern uns regelmäßig um Ihr Objekt.",
+      "Garten, Reinigung, Winterdienst, kleine Reparaturen — wir kümmern uns regelmäßig um dein Objekt.",
     beschreibung:
-      "Ein Ansprechpartner für alles rund ums Haus. Garten, Reinigung, kleine Reparaturen, Winterdienst — wir kümmern uns regelmäßig damit Sie es nicht müssen. Ideal für Eigentümer die keine Zeit haben oder Vermieter die ihr Objekt in Schuss halten wollen.",
+      "Ein Ansprechpartner für alles rund ums Haus. Garten, Reinigung, kleine Reparaturen, Winterdienst — wir kümmern uns regelmäßig damit du es nicht musst. Ideal für Eigentümer die keine Zeit haben oder Vermieter die ihr Objekt in Schuss halten wollen.",
     wasWirMachen: [
       "Regelmäßige Kontrollgänge",
       "Garten pflegen und Winterdienst machen",
@@ -466,7 +466,7 @@ export const LEISTUNGEN_DATA: Record<string, LeistungsData> = {
     subline:
       "Zimmer teilen, Decke abhängen, Nische bauen — schnell und ohne nassen Beton.",
     beschreibung:
-      "Zimmer teilen, Nische bauen, Decke abhängen — das geht schneller und sauberer als Sie denken. Kein nasser Beton, keine wochenlange Trocknungszeit. Wir bauen neue Wände und Decken in Trockenbauweise.",
+      "Zimmer teilen, Nische bauen, Decke abhängen — das geht schneller und sauberer als du denkst. Kein nasser Beton, keine wochenlange Trocknungszeit. Wir bauen neue Wände und Decken in Trockenbauweise.",
     wasWirMachen: [
       "Neue Trennwände einziehen",
       "Zimmer aufteilen oder verkleinern",
@@ -517,7 +517,7 @@ export const LEISTUNGEN_DATA: Record<string, LeistungsData> = {
     preisBis: 180,
     preisEinheit: "pro m² Dachfläche",
     preisHinweis:
-      "Kleine Reparaturen ab 250 € pauschal. Größere Schäden schauen wir uns beim Vor-Ort-Termin an und nennen Ihnen einen festen Preis. Anfahrt wird bei Beauftragung angerechnet. Bei Sturmschäden helfen wir auch bei der Versicherung.",
+      "Kleine Reparaturen ab 250 € pauschal. Größere Schäden schauen wir uns beim Vor-Ort-Termin an und nennen dir einen festen Preis. Anfahrt wird bei Beauftragung angerechnet. Bei Sturmschäden helfen wir auch bei der Versicherung.",
     vorteile: vorteil(
       ["🏡", "Notfall & schnelle Abdichtung"],
       ["🛡", "Fachbetriebe für alle Dachformen"],
@@ -569,7 +569,7 @@ export const LEISTUNGEN_DATA: Record<string, LeistungsData> = {
     faq: [
       {
         q: "Brauche ich eine Genehmigung?",
-        a: "Oft ja — wir prüfen mit Ihnen die Voraussetzungen in München und empfehlen Planer.",
+        a: "Oft ja — wir prüfen mit dir die Voraussetzungen in München und empfehlen Planer.",
       },
     ],
   },
@@ -648,7 +648,7 @@ export const LEISTUNGEN_DATA: Record<string, LeistungsData> = {
     headline: "Terrassenbau in München",
     subline: "Neue Terrasse — Holz, WPC oder Stein, inkl. Unterbau.",
     beschreibung:
-      "Von der Planung bis zur Abnahme: Material, Unterbau und Entwässerung stimmen wir auf Ihr Grundstück ab — als GU-Paket.",
+      "Von der Planung bis zur Abnahme: Material, Unterbau und Entwässerung stimmen wir auf dein Grundstück ab — als GU-Paket.",
     wasWirMachen: [
       "Planung und Materialwahl",
       "Unterbau und Entwässerung",
@@ -671,7 +671,7 @@ export const LEISTUNGEN_DATA: Record<string, LeistungsData> = {
     faq: [
       {
         q: "Brauche ich eine Baugenehmigung?",
-        a: "Kommt auf Höhe und Lage an — wir geben Ihnen eine klare Empfehlung.",
+        a: "Kommt auf Höhe und Lage an — wir geben dir eine klare Empfehlung.",
       },
     ],
   },
@@ -682,7 +682,7 @@ export const LEISTUNGEN_DATA: Record<string, LeistungsData> = {
     headline: "Bad sanieren in München",
     subline: "Modernisierung oder Neubad — ein Ansprechpartner für alle Gewerke.",
     beschreibung:
-      "Sanitär, Fliesen, Elektro und Lüftung greifen ineinander. Wir koordinieren alles und nennen Ihnen einen verbindlichen Festpreis nach dem Termin.",
+      "Sanitär, Fliesen, Elektro und Lüftung greifen ineinander. Wir koordinieren alles und nennen dir einen verbindlichen Festpreis nach dem Termin.",
     wasWirMachen: [
       "Planung und Auswahl",
       "Abriss und Entsorgung",
@@ -773,7 +773,7 @@ export const LEISTUNGEN_DATA: Record<string, LeistungsData> = {
     faq: [
       {
         q: "Gibt es Förderung?",
-        a: "Oft ja für energetische Maßnahmen — weisen wir Sie auf aktuelle Programme hin.",
+        a: "Oft ja für energetische Maßnahmen — wir weisen dich auf aktuelle Programme hin.",
       },
     ],
   },
@@ -951,7 +951,7 @@ export const LEISTUNGEN_DATA: Record<string, LeistungsData> = {
     faq: [
       {
         q: "Brauche ich eine Genehmigung?",
-        a: "Bei größeren Bäumen in München oft — wir beraten Sie vorab.",
+        a: "Bei größeren Bäumen in München oft — wir beraten dich vorab.",
       },
     ],
   },
@@ -1014,7 +1014,7 @@ export function buildLeistungsDataFallback(base: string): LeistungsData | null {
     label: route.label,
     headline: `${route.label} in München`,
     subline: route.kurz,
-    beschreibung: `${route.label} in München: ${route.kurz}. ${route.hint}. Über unseren Preisrechner bekommen Sie einen ersten Rahmen — Angebot nach Besichtigung, unverbindlich.`,
+    beschreibung: `${route.label} in München: ${route.kurz}. ${route.hint}. Über unseren Preisrechner bekommst du einen ersten Rahmen — Angebot nach Besichtigung, unverbindlich.`,
     wasWirMachen: [
       `Schwerpunkte: ${route.hint}`,
       "Besichtigung und transparenter Kostenrahmen",
@@ -1041,7 +1041,7 @@ export function buildLeistungsDataFallback(base: string): LeistungsData | null {
       },
       {
         q: "Muss ich sofort beauftragen?",
-        a: "Nein. Sie entscheiden in Ruhe — das Angebot ist unverbindlich.",
+        a: "Nein. Du entscheidest in Ruhe — das Angebot ist unverbindlich.",
       },
     ],
   };

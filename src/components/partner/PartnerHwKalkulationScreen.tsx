@@ -9,15 +9,12 @@ import {
 } from "@/components/partner/PartnerDetailUi";
 import {
   DEFAULT_HW_POSITIONEN,
-  HW_MENGE_EINHEITEN,
   formatHwMoney,
   hwKalkAdd,
   hwKalkDel,
   hwKalkPatch,
   hwKalkSumme,
   hwKalkValid,
-  joinHwMenge,
-  splitHwMenge,
   type HwKalkPosition,
 } from "@/lib/portal2/hw-kalkulation";
 import { partnerPortalToast, portalToastError } from "@/lib/shared/portal-toast";
@@ -29,14 +26,7 @@ type Props = {
   initialPositionen?: HwKalkPosition[];
   onDone: () => void;
   onCancel: () => void;
-  /** Partner-Einholung ohne LV: Positionen + Summen, ohne HV-Hilfstexte. */
-  variant?: "default" | "einholung";
 };
-
-function parseDecimalInput(raw: string): number {
-  const n = Number(String(raw).trim().replace(",", "."));
-  return Number.isFinite(n) && n >= 0 ? n : 0;
-}
 
 /**
  * Mock `screenHwKalkulation` — Positionen add/patch/del, Summe 19 %, Einreichen.
@@ -47,23 +37,17 @@ export function PartnerHwKalkulationScreen({
   initialPositionen,
   onDone,
   onCancel,
-  variant = "default",
 }: Props) {
-  const einholung = variant === "einholung";
   const [modus, setModus] = useState<"kalkulieren" | "upload">("kalkulieren");
   const [positionen, setPositionen] = useState<HwKalkPosition[]>(
     () =>
       initialPositionen?.length
         ? initialPositionen.map((p) => ({ ...p }))
-        : einholung
-          ? [{ pos: "", menge: "1 Stk.", einzel: 0, gewerk: "Sonstiges" }]
-          : DEFAULT_HW_POSITIONEN.map((p) => ({ ...p }))
+        : DEFAULT_HW_POSITIONEN.map((p) => ({ ...p }))
   );
   const [dauer, setDauer] = useState("2–3 Werktage");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [draftMenge, setDraftMenge] = useState<Record<number, string>>({});
-  const [draftEinzel, setDraftEinzel] = useState<Record<number, string>>({});
 
   const sum = useMemo(() => hwKalkSumme(positionen), [positionen]);
   const unterSchwelle = sum.brutto <= schwelleEur;
@@ -72,217 +56,101 @@ export function PartnerHwKalkulationScreen({
   async function onSubmit() {
     setBusy(true);
     setError(null);
-    try {
-      const res = await submitPartnerHwKalkulation({
-        anfrageId,
-        positionen: modus === "upload" ? DEFAULT_HW_POSITIONEN : positionen,
-        dauerHinweis: dauer,
-      });
-      if (!res.ok) {
-        setError(res.error);
-        portalToastError("Kalkulation fehlgeschlagen", res.error);
-        return;
-      }
-      partnerPortalToast.hwAngebotEingereicht();
-      onDone();
-    } finally {
-      setBusy(false);
+    const res = await submitPartnerHwKalkulation({
+      anfrageId,
+      positionen:
+        modus === "upload" ? DEFAULT_HW_POSITIONEN : positionen,
+      dauerHinweis: dauer,
+    });
+    setBusy(false);
+    if (!res.ok) {
+      setError(res.error);
+      portalToastError("Kalkulation fehlgeschlagen", res.error);
+      return;
     }
-  }
-
-  function mengeDisplay(i: number, faktor: string) {
-    if (draftMenge[i] !== undefined) return draftMenge[i];
-    return faktor === "0" || faktor === "0," ? "" : faktor;
-  }
-
-  function einzelDisplay(i: number, einzel: number) {
-    if (draftEinzel[i] !== undefined) return draftEinzel[i];
-    return einzel > 0 ? String(einzel).replace(".", ",") : "";
+    partnerPortalToast.hwAngebotEingereicht();
+    onDone();
   }
 
   return (
-    <PartnerDetailSection title={einholung ? "Leistungsverzeichnis" : "Kalkulation / Angebot"}>
-      {einholung ? (
-        <p className="portal-text-body text-text-secondary mb-3">
-          Positionen aus der Anfrage — bitte Menge und Preis je Zeile ergänzen.
-        </p>
-      ) : (
-        <p className="portal-text-body text-text-secondary mb-3">
-          Positionen anlegen, Summen prüfen und einreichen. Das Angebot erscheint
-          bei Bärenwald und der Verwaltung als empfohlenes Angebot.
-        </p>
-      )}
+    <PartnerDetailSection title="Kalkulation / Angebot">
+      <p className="portal-text-body text-text-secondary mb-3">
+        Positionen anlegen, Summen prüfen und einreichen. Das Angebot erscheint
+        bei Bärenwald und der Verwaltung als empfohlenes Angebot.
+      </p>
 
-      {einholung ? null : (
-        <div className="mb-3 flex rounded-[10px] border border-border-default bg-white p-1">
-          {(
-            [
-              ["kalkulieren", "Kalkulieren"],
-              ["upload", "PDF-Upload (Standard)"],
-            ] as const
-          ).map(([key, label]) => (
-            <button
-              key={key}
-              type="button"
-              className={cn(
-                "flex-1 rounded-lg py-2 text-[13px] font-semibold",
-                modus === key
-                  ? "bg-white text-text-primary shadow-sm"
-                  : "text-text-secondary"
-              )}
-              onClick={() => setModus(key)}
-            >
-              {label}
-            </button>
-          ))}
-        </div>
-      )}
+      <div className="mb-3 flex rounded-[10px] bg-muted p-1">
+        {(
+          [
+            ["kalkulieren", "Kalkulieren"],
+            ["upload", "PDF-Upload (Standard)"],
+          ] as const
+        ).map(([key, label]) => (
+          <button
+            key={key}
+            type="button"
+            className={cn(
+              "flex-1 rounded-lg py-2 text-[13px] font-semibold",
+              modus === key
+                ? "bg-white text-text-primary shadow-sm"
+                : "text-text-secondary"
+            )}
+            onClick={() => setModus(key)}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
 
-      {modus === "kalkulieren" || einholung ? (
+      {modus === "kalkulieren" ? (
         <div className="space-y-0 overflow-hidden rounded-xl border border-border-default bg-white">
-          {positionen.map((p, i) => {
-            const { faktor, einheit } = splitHwMenge(p.menge);
-            const vorgabePos = einholung && Boolean(p.pos.trim());
-            const extraEinheit = (HW_MENGE_EINHEITEN as readonly string[]).includes(
-              einheit
-            )
-              ? null
-              : einheit;
-            return (
-              <div
-                key={i}
-                className="hw-kalk-pos border-b border-border-light px-3 py-3 last:border-b-0"
-              >
-                <div className="mb-2 flex items-start justify-between gap-2">
-                  {vorgabePos ? (
-                    <p className="min-w-0 flex-1 whitespace-pre-wrap text-sm font-semibold leading-snug text-text-primary">
-                      {p.pos}
-                    </p>
-                  ) : (
-                    <input
-                      className="portal-input min-w-0 flex-1 rounded-lg border border-border-default px-2.5 py-2 text-sm"
-                      placeholder="Leistung / Position"
-                      value={p.pos}
-                      onChange={(e) =>
-                        setPositionen(hwKalkPatch(positionen, i, "pos", e.target.value))
-                      }
-                    />
-                  )}
-                  <button
-                    type="button"
-                    className="shrink-0 px-1 text-lg leading-none text-text-tertiary"
-                    title="Position entfernen"
-                    onClick={() => setPositionen(hwKalkDel(positionen, i))}
-                  >
-                    ×
-                  </button>
-                </div>
-
-                <div className="hw-kalk-pos__fields">
-                  <input
-                    className="portal-input hw-kalk-pos__field hw-kalk-pos__field--menge rounded-lg border border-border-default px-2 py-2 text-center text-sm"
-                    inputMode="decimal"
-                    placeholder="1"
-                    value={mengeDisplay(i, faktor)}
-                    onFocus={() =>
-                      setDraftMenge((prev) => ({
-                        ...prev,
-                        [i]: mengeDisplay(i, faktor),
-                      }))
-                    }
-                    onBlur={() => {
-                      setDraftMenge((prev) => {
-                        const next = { ...prev };
-                        delete next[i];
-                        return next;
-                      });
-                    }}
-                    onChange={(e) => {
-                      const val = e.target.value;
-                      setDraftMenge((prev) => ({ ...prev, [i]: val }));
-                      setPositionen(
-                        hwKalkPatch(
-                          positionen,
-                          i,
-                          "menge",
-                          joinHwMenge(val || "1", einheit)
-                        )
-                      );
-                    }}
-                  />
-                  {vorgabePos ? (
-                    <div
-                      className="portal-input hw-kalk-pos__field hw-kalk-pos__field--einheit flex items-center justify-center rounded-lg border border-border-default bg-surface-muted px-2 py-2 text-center text-sm text-text-secondary"
-                      aria-hidden
-                    >
-                      {einheit}
-                    </div>
-                  ) : (
-                    <select
-                      className="portal-input hw-kalk-pos__field hw-kalk-pos__field--einheit rounded-lg border border-border-default px-1.5 py-2 text-center text-sm"
-                      value={einheit}
-                      onChange={(e) =>
-                        setPositionen(
-                          hwKalkPatch(
-                            positionen,
-                            i,
-                            "menge",
-                            joinHwMenge(faktor, e.target.value)
-                          )
-                        )
-                      }
-                    >
-                      {extraEinheit ? (
-                        <option value={extraEinheit}>{extraEinheit}</option>
-                      ) : null}
-                      {HW_MENGE_EINHEITEN.map((u) => (
-                        <option key={u} value={u}>
-                          {u}
-                        </option>
-                      ))}
-                    </select>
-                  )}
-                  <div className="hw-kalk-pos__field--preis-wrap">
-                    <input
-                      type="text"
-                      inputMode="decimal"
-                      className="portal-input hw-kalk-pos__field hw-kalk-pos__field--preis w-full rounded-lg border border-border-default py-2 pl-2 pr-6 text-right text-sm"
-                      placeholder="0"
-                      value={einzelDisplay(i, p.einzel)}
-                      onFocus={() =>
-                        setDraftEinzel((prev) => ({
-                          ...prev,
-                          [i]: einzelDisplay(i, p.einzel),
-                        }))
-                      }
-                      onBlur={() => {
-                        setDraftEinzel((prev) => {
-                          const next = { ...prev };
-                          delete next[i];
-                          return next;
-                        });
-                      }}
-                      onChange={(e) => {
-                        const val = e.target.value;
-                        setDraftEinzel((prev) => ({ ...prev, [i]: val }));
-                        setPositionen(
-                          hwKalkPatch(
-                            positionen,
-                            i,
-                            "einzel",
-                            parseDecimalInput(val)
-                          )
-                        );
-                      }}
-                    />
-                    <span className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-xs text-text-tertiary">
-                      €
-                    </span>
-                  </div>
-                </div>
+          {positionen.map((p, i) => (
+            <div
+              key={i}
+              className="flex flex-wrap items-center gap-2 border-b border-border-light px-3 py-2.5 last:border-b-0"
+            >
+              <input
+                className="portal-input min-w-0 flex-1 rounded-lg border border-border-default px-2.5 py-2 text-sm"
+                placeholder="Leistung / Position"
+                value={p.pos}
+                onChange={(e) =>
+                  setPositionen(hwKalkPatch(positionen, i, "pos", e.target.value))
+                }
+              />
+              <input
+                className="portal-input w-[74px] rounded-lg border border-border-default px-2 py-2 text-center text-sm"
+                value={p.menge}
+                onChange={(e) =>
+                  setPositionen(
+                    hwKalkPatch(positionen, i, "menge", e.target.value)
+                  )
+                }
+              />
+              <div className="relative">
+                <input
+                  type="number"
+                  className="portal-input w-[92px] rounded-lg border border-border-default py-2 pl-2 pr-6 text-right text-sm"
+                  value={p.einzel}
+                  onChange={(e) =>
+                    setPositionen(
+                      hwKalkPatch(positionen, i, "einzel", e.target.value)
+                    )
+                  }
+                />
+                <span className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-xs text-text-tertiary">
+                  €
+                </span>
               </div>
-            );
-          })}
+              <button
+                type="button"
+                className="px-1 text-lg text-text-tertiary"
+                title="Position entfernen"
+                onClick={() => setPositionen(hwKalkDel(positionen, i))}
+              >
+                ×
+              </button>
+            </div>
+          ))}
         </div>
       ) : (
         <p className="rounded-xl border border-dashed border-border-default p-4 text-sm text-text-secondary">
@@ -292,7 +160,7 @@ export function PartnerHwKalkulationScreen({
         </p>
       )}
 
-      {modus === "kalkulieren" || einholung ? (
+      {modus === "kalkulieren" ? (
         <button
           type="button"
           className="mt-2 text-[13px] font-semibold text-accent"
@@ -302,20 +170,18 @@ export function PartnerHwKalkulationScreen({
         </button>
       ) : null}
 
-      {einholung ? null : (
-        <label className="mt-4 block">
-          <span className="portal-text-meta text-text-tertiary">
-            Voraussichtliche Dauer
-          </span>
-          <input
-            className="portal-input mt-1 w-full max-w-xs rounded-lg border border-border-default px-3 py-2 text-sm"
-            value={dauer}
-            onChange={(e) => setDauer(e.target.value)}
-          />
-        </label>
-      )}
+      <label className="mt-4 block">
+        <span className="portal-text-meta text-text-tertiary">
+          Voraussichtliche Dauer
+        </span>
+        <input
+          className="portal-input mt-1 w-full rounded-lg border border-border-default px-3 py-2 text-sm"
+          value={dauer}
+          onChange={(e) => setDauer(e.target.value)}
+        />
+      </label>
 
-      <div className="mt-4 rounded-xl border border-border-light bg-white px-4 py-3 text-sm">
+      <div className="mt-4 rounded-xl bg-muted/40 px-4 py-3 text-sm">
         <div className="flex justify-between">
           <span>Netto</span>
           <span className="font-semibold">{formatHwMoney(sum.net)}</span>
@@ -328,7 +194,7 @@ export function PartnerHwKalkulationScreen({
           <span>Brutto</span>
           <span>{formatHwMoney(sum.brutto)}</span>
         </div>
-        {einholung ? null : unterSchwelle ? (
+        {unterSchwelle ? (
           <p className="mt-2 text-xs font-semibold text-[#1F6A3F]">
             Unter Freigabeschwelle ({formatHwMoney(schwelleEur)}) — nach
             Einreichung oft ohne HV-Freigabe-Schritt (Bärenwald Auto-Pfad).
@@ -350,7 +216,7 @@ export function PartnerHwKalkulationScreen({
           disabled={busy || !canSubmit}
           onClick={() => void onSubmit()}
         >
-          {busy ? "Wird eingereicht…" : einholung ? "LV einreichen" : "Angebot einreichen"}
+          {busy ? "Wird eingereicht…" : "Angebot einreichen"}
         </button>
         <button
           type="button"
