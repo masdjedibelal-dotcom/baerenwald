@@ -168,7 +168,9 @@ function konditionZeileFromAuftragPosition(
 ): PartnerKonditionZeile {
   // Nur Partner-EK (preis_partner = Netto-Zeile). Kein VK-Fallback über Lohn/Material.
   const vorschlagNetto =
-    p.preis_partner != null && p.preis_partner > 0
+    p.preis_partner != null &&
+    Number.isFinite(p.preis_partner) &&
+    p.preis_partner >= 0
       ? round2(p.preis_partner)
       : null;
   return {
@@ -243,11 +245,13 @@ function positionBeschreibung(raw: Record<string, unknown>, title: string): stri
 
 function vorschlagNettoFromRow(raw: Record<string, unknown>): number | null {
   const menge = Math.max(num(raw.menge) || 1, 0.0001);
+  if (raw.einkaufspreis == null || raw.einkaufspreis === "") return null;
   const ek = num(raw.einkaufspreis);
   // Nur Einkaufspreis (Partner-EK/Einheit) × Menge = Netto-Zeile.
   // Lohn/Material sind Kunden-VK — nicht als HW-Vergütung anzeigen.
-  if (ek > 0) return round2(ek * menge);
-  return null;
+  // 0 € ist ein gültiger gesetzter Preis (nicht „Preis folgt“).
+  if (!Number.isFinite(ek) || ek < 0) return null;
+  return round2(ek * menge);
 }
 
 export function parsePartnerHwKonditionen(raw: unknown): PartnerHwKonditionen | null {
@@ -268,7 +272,11 @@ export function parsePartnerHwKonditionen(raw: unknown): PartnerHwKonditionen | 
       beschreibung:
         typeof p.beschreibung === "string" ? p.beschreibung.trim() || undefined : undefined,
       ek_netto:
-        p.ek_netto == null ? null : num(p.ek_netto) > 0 ? round2(num(p.ek_netto)) : null,
+        p.ek_netto == null
+          ? null
+          : Number.isFinite(num(p.ek_netto)) && num(p.ek_netto) >= 0
+            ? round2(num(p.ek_netto))
+            : null,
       hw_netto: round2(hw),
       mwst_satz: resolveMwstSatz(p),
       geaendert: Boolean(p.geaendert),
@@ -460,7 +468,7 @@ export function summeKonditionNetto(
         ? z.hwNetto
         : z.vorschlagNetto
       : z.vorschlagNetto;
-    if (n != null && n > 0) sum += n;
+    if (n != null && Number.isFinite(n) && n >= 0) sum += n;
   }
   return round2(sum);
 }
@@ -476,7 +484,7 @@ export function summeKonditionBrutto(
         ? z.hwNetto
         : z.vorschlagNetto
       : z.vorschlagNetto;
-    if (netto == null || netto <= 0) continue;
+    if (netto == null || !Number.isFinite(netto) || netto < 0) continue;
     sum += round2(netto * (1 + z.mwstSatz / 100));
   }
   return round2(sum);
@@ -487,9 +495,11 @@ export function mapKonditionZeilenVereinbart(
 ): PartnerKonditionZeile[] {
   return zeilen.map((z) => {
     const netto =
-      z.hwNetto != null && z.hwNetto > 0
+      z.hwNetto != null && Number.isFinite(z.hwNetto) && z.hwNetto >= 0
         ? z.hwNetto
-        : z.vorschlagNetto != null && z.vorschlagNetto > 0
+        : z.vorschlagNetto != null &&
+            Number.isFinite(z.vorschlagNetto) &&
+            z.vorschlagNetto >= 0
           ? z.vorschlagNetto
           : null;
     return {
@@ -742,7 +752,9 @@ export function buildHwKonditionenPayload(
     const hw_netto = round2(hwNettoById[z.id] ?? 0);
     const ek = z.vorschlagNetto;
     const geaendert =
-      ek != null && ek > 0 ? Math.abs(hw_netto - ek) > 0.009 : hw_netto > 0;
+      ek != null && Number.isFinite(ek) && ek >= 0
+        ? Math.abs(hw_netto - ek) > 0.009
+        : hw_netto > 0;
     const notiz = hwNotizById?.[z.id]?.trim();
     return {
       position_id: z.id,
@@ -771,11 +783,11 @@ export function initialHwNettoInputs(
   const submitted = new Map(hw?.positionen.map((p) => [p.position_id, p.hw_netto]));
   for (const z of zeilen) {
     const fromHw = submitted.get(z.id);
-    if (fromHw != null && fromHw > 0) {
+    if (fromHw != null && fromHw >= 0) {
       out[z.id] = String(fromHw).replace(".", ",");
       continue;
     }
-    if (z.vorschlagNetto != null && z.vorschlagNetto > 0) {
+    if (z.vorschlagNetto != null && z.vorschlagNetto >= 0) {
       out[z.id] = String(z.vorschlagNetto).replace(".", ",");
     } else {
       out[z.id] = "";
@@ -806,9 +818,11 @@ export function buildKonditionenEingabeFromZeilen(
   const rows: Array<{ position_id: string; hw_netto: number; hw_notiz?: string }> = [];
   for (const z of zeilen) {
     const netto =
-      z.hwNetto != null && z.hwNetto > 0
+      z.hwNetto != null && Number.isFinite(z.hwNetto) && z.hwNetto >= 0
         ? z.hwNetto
-        : z.vorschlagNetto != null && z.vorschlagNetto > 0
+        : z.vorschlagNetto != null &&
+            Number.isFinite(z.vorschlagNetto) &&
+            z.vorschlagNetto >= 0
           ? z.vorschlagNetto
           : null;
     if (netto == null) return null;
@@ -839,7 +853,7 @@ export function sindKonditionPreiseGeaendert(
     if (z.readonly) return false;
     const hw = parseHwNettoInput(hwValues[z.id] ?? "");
     if (hw == null) return false;
-    if (z.vorschlagNetto == null || z.vorschlagNetto <= 0) return hw > 0;
+    if (z.vorschlagNetto == null || z.vorschlagNetto < 0) return hw > 0;
     return Math.abs(hw - z.vorschlagNetto) > 0.009;
   });
 }

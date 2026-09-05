@@ -16,9 +16,9 @@ import {
   PartnerConfirmDialog,
   PartnerDetailError,
   PartnerDetailLayout,
-  PartnerDetailSection,
   PartnerDetailStickyActions,
 } from "@/components/partner/PartnerDetailUi";
+import { PortalDetailCard } from "@/components/shared/PortalDetailCard";
 import { PortalEntityDetailLayout } from "@/components/shared/PortalEntityDetailLayout";
 import {
   HANDWERKER_ABLEHNUNG_GRUND_LABELS,
@@ -248,13 +248,14 @@ export function PartnerAuftragAnfrageDetail({
       />
 
       {konditionZeilen.length > 0 ? (
-        <PartnerDetailSection title={PARTNER_LEISTUNGEN_SECTION_TITLE}>
+        <PortalDetailCard title={PARTNER_LEISTUNGEN_SECTION_TITLE} chrome="responsive">
           <PartnerLeistungenKonditionenCard
             zeilen={konditionZeilen}
             mode="readonly"
+            variant="plain"
             gesamtLabel={PARTNER_LEISTUNGEN_GESAMT_LABEL}
           />
-        </PartnerDetailSection>
+        </PortalDetailCard>
       ) : null}
 
       {brauchtProjektvertrag ? (

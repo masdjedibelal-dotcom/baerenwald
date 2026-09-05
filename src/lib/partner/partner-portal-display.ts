@@ -19,8 +19,30 @@ import {
   mergeKonditionRueckfrageZeilen,
   mergeKonditionZeilenMitHw,
   type PartnerHwKonditionen,
+  type PartnerKonditionZeile,
   type PartnerNachreichungFilter,
 } from "@/lib/partner/partner-konditionen";
+
+/** CRM setzt Partner-EK auf Auftrag — Angebots-JSON kann noch leer sein. */
+function overlayAuftragPartnerEk(
+  zeilen: PartnerKonditionZeile[],
+  auftragPositionen?: PartnerAuftragPosition[]
+): PartnerKonditionZeile[] {
+  if (!auftragPositionen?.length) return zeilen;
+  const byId = new Map(auftragPositionen.map((p) => [p.id, p]));
+  return zeilen.map((z) => {
+    const ap = byId.get(z.id);
+    if (!ap) return z;
+    if (
+      ap.preis_partner != null &&
+      Number.isFinite(ap.preis_partner) &&
+      ap.preis_partner >= 0
+    ) {
+      return { ...z, vorschlagNetto: Math.round(ap.preis_partner * 100) / 100 };
+    }
+    return z;
+  });
+}
 import {
   buildAuftragCardMeta,
   formatAuftragDatumSpan,
@@ -175,20 +197,26 @@ export function resolvePartnerKonditionZeilen(
         }
       )
     : buildPartnerKonditionZeilen(positionenRaw, filter);
+
+  const withAuftragEk = overlayAuftragPartnerEk(
+    basis,
+    opts?.auftragPositionen
+  );
+
   if (opts?.nachreichungOpenIds?.length) {
     return mergeKonditionNachreichungZeilen(
-      basis,
+      withAuftragEk,
       hwKonditionen,
       opts.nachreichungOpenIds
     );
   }
   if (opts?.neueVerhandlungsrunde && hwKonditionen?.positionen.length) {
-    return mergeKonditionRueckfrageZeilen(basis, hwKonditionen);
+    return mergeKonditionRueckfrageZeilen(withAuftragEk, hwKonditionen);
   }
   if (hwKonditionen?.positionen.length) {
-    return mergeKonditionZeilenMitHw(basis, hwKonditionen);
+    return mergeKonditionZeilenMitHw(withAuftragEk, hwKonditionen);
   }
-  return basis;
+  return withAuftragEk;
 }
 
 export function resolvePartnerAuftragKonditionZeilen(

@@ -312,7 +312,7 @@ export function PortalDetailLeistungenPreisListe({
 }) {
   if (!items.length) return null;
   const showGesamt =
-    !hidePreise && typeof gesamtBrutto === "number" && gesamtBrutto > 0;
+    !hidePreise && typeof gesamtBrutto === "number" && gesamtBrutto >= 0;
 
   return (
     <div className="portal-text-body">
@@ -321,7 +321,9 @@ export function PortalDetailLeistungenPreisListe({
           const isEntfernt = Boolean(p.entfernt || p.aenderungBadge === "entfernt");
           const geaendert = p.aenderungBadge === "geaendert";
           const preisLabel =
-            p.preisBrutto > 0 ? formatEuro(p.preisBrutto) : "Preis folgt";
+            typeof p.preisBrutto === "number" && p.preisBrutto >= 0
+              ? formatEuro(p.preisBrutto)
+              : "Preis folgt";
           const ampel = resolvePortalLeistungStatusAmpel({
             aenderungBadge: p.aenderungBadge,
             entfernt: isEntfernt,

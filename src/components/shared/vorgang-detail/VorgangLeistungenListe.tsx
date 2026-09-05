@@ -32,9 +32,9 @@ export function VorgangLeistungenListe({
   const showPlain = mode === "plain";
 
   const gesamt =
-    showVk && typeof summeBrutto === "number" && summeBrutto > 0
+    showVk && typeof summeBrutto === "number" && summeBrutto >= 0
       ? summeBrutto
-      : showEk && typeof summeEkNetto === "number" && summeEkNetto > 0
+      : showEk && typeof summeEkNetto === "number" && summeEkNetto >= 0
         ? summeEkNetto
         : showVk
           ? items.reduce((a, z) => a + (z.preisBrutto ?? 0), 0)
@@ -48,9 +48,9 @@ export function VorgangLeistungenListe({
         {items.map((p) => {
           const removed = p.aenderungBadge === "entfernt";
           const price =
-            showVk && typeof p.preisBrutto === "number" && p.preisBrutto > 0
+            showVk && typeof p.preisBrutto === "number" && p.preisBrutto >= 0
               ? moneyEur(p.preisBrutto)
-              : showEk && typeof p.preisEkNetto === "number" && p.preisEkNetto > 0
+              : showEk && typeof p.preisEkNetto === "number" && p.preisEkNetto >= 0
                 ? moneyEur(p.preisEkNetto)
                 : showVk || showEk
                   ? "Preis folgt"
@@ -100,7 +100,13 @@ export function VorgangLeistungenListe({
           );
         })}
       </ul>
-      {gesamt > 0 && (showVk || showEk) ? (
+      {gesamt >= 0 &&
+      (showVk || showEk) &&
+      items.some((z) =>
+        showVk
+          ? typeof z.preisBrutto === "number" && z.preisBrutto >= 0
+          : typeof z.preisEkNetto === "number" && z.preisEkNetto >= 0
+      ) ? (
         <div className="flex items-center justify-between border-t border-border-light px-0 py-2.5">
           <span className="portal-text-meta font-semibold text-text-secondary">
             {showEk ? "Summe netto (Ihre Vergütung)" : "Gesamt brutto"}

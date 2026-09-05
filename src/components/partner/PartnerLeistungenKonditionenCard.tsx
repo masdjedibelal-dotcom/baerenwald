@@ -23,8 +23,16 @@ function angebotspreis(
   hwValues?: Record<string, string>
 ): string {
   if (mode === "readonly" || z.readonly) {
-    if (z.hwNetto != null && z.hwNetto > 0) return fmtPartnerEuro(z.hwNetto);
-    if (z.vorschlagNetto != null && z.vorschlagNetto > 0) return fmtPartnerEuro(z.vorschlagNetto);
+    if (z.hwNetto != null && Number.isFinite(z.hwNetto) && z.hwNetto >= 0) {
+      return fmtPartnerEuro(z.hwNetto);
+    }
+    if (
+      z.vorschlagNetto != null &&
+      Number.isFinite(z.vorschlagNetto) &&
+      z.vorschlagNetto >= 0
+    ) {
+      return fmtPartnerEuro(z.vorschlagNetto);
+    }
     return "Preis folgt";
   }
   const raw = hwValues?.[z.id] ?? "";
@@ -32,7 +40,13 @@ function angebotspreis(
     const n = Number(raw.replace(",", "."));
     if (Number.isFinite(n) && n >= 0) return fmtPartnerEuro(n);
   }
-  if (z.vorschlagNetto != null && z.vorschlagNetto > 0) return fmtPartnerEuro(z.vorschlagNetto);
+  if (
+    z.vorschlagNetto != null &&
+    Number.isFinite(z.vorschlagNetto) &&
+    z.vorschlagNetto >= 0
+  ) {
+    return fmtPartnerEuro(z.vorschlagNetto);
+  }
   return "Preis folgt";
 }
 
@@ -42,7 +56,7 @@ function isZeileGeaendert(z: PartnerKonditionZeile, hwValues?: Record<string, st
   if (!raw.trim()) return false;
   const hw = Number(raw.replace(",", "."));
   if (!Number.isFinite(hw)) return false;
-  if (z.vorschlagNetto == null || z.vorschlagNetto <= 0) return hw > 0;
+  if (z.vorschlagNetto == null || z.vorschlagNetto < 0) return hw > 0;
   return Math.abs(hw - z.vorschlagNetto) > 0.009;
 }
 
@@ -111,7 +125,7 @@ export function PartnerLeistungenKonditionenCard({
     setEditId(z.id);
     setDraftPreis(
       current ||
-        (z.vorschlagNetto != null && z.vorschlagNetto > 0
+        (z.vorschlagNetto != null && z.vorschlagNetto >= 0
           ? String(z.vorschlagNetto).replace(".", ",")
           : "")
     );
@@ -135,9 +149,13 @@ export function PartnerLeistungenKonditionenCard({
 
   const plain = variant === "plain";
   const totalsOnly = variant === "totalsOnly";
+  const hasAnyNetto = sumZeilen.some((z) => {
+    const n = z.hwNetto ?? z.vorschlagNetto;
+    return n != null && Number.isFinite(n) && n >= 0;
+  });
 
   if (totalsOnly) {
-    if (sumNetto <= 0) return null;
+    if (!hasAnyNetto) return null;
     return (
       <div className="space-y-1 border-t border-[var(--p2-line2)] pt-4 text-right">
         <div className="text-[12.5px] text-text-secondary">
@@ -315,7 +333,7 @@ export function PartnerLeistungenKonditionenCard({
           })}
         </ul>
 
-        {sumNetto > 0 ? (
+        {hasAnyNetto ? (
           <div
             className={cn(
               plain

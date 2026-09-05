@@ -303,7 +303,7 @@ export function PortalNotificationBell({
         aria-controls={panelId}
         onClick={() => setOpenSafe(!open)}
       >
-        <MockIcon ctx="emphasis" n="bell" size={18} />
+        <MockIcon ctx="sidebar" n="bell" size={18} className="portal-bell-icon" />
       </button>
       {/* Außerhalb des Buttons — sonst clippt overflow/border-radius die Ecke. */}
       <PortalCountBadge count={unreadCount} variant="corner" />

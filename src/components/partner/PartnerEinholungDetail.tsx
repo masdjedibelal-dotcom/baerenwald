@@ -15,7 +15,6 @@ import {
   PortalConfirmDialog,
   PortalDetailError,
   PortalDetailLayout,
-  PortalDetailSection,
   PortalDetailStickyActions,
 } from "@/components/shared/PortalDetailUi";
 import { PortalEntityDetailLayout } from "@/components/shared/PortalEntityDetailLayout";
@@ -358,13 +357,14 @@ export function PartnerEinholungDetail({
           />
 
           {eingereicht && konditionZeilen.length > 0 ? (
-            <PortalDetailSection title="Angebot">
+            <PortalDetailCard title="Angebot" chrome="responsive">
               <PartnerLeistungenKonditionenCard
                 zeilen={konditionZeilen}
                 mode="readonly"
+                variant="plain"
                 gesamtLabel={PARTNER_LEISTUNGEN_GESAMT_LABEL}
               />
-            </PortalDetailSection>
+            </PortalDetailCard>
           ) : null}
 
           {dokumentZeilen.length ? (

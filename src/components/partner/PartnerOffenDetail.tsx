@@ -20,9 +20,9 @@ import {
   PortalDetailError,
   PortalDetailInfoBox,
   PortalDetailLayout,
-  PortalDetailSection,
   PortalDetailStickyActions,
 } from "@/components/shared/PortalDetailUi";
+import { PortalDetailCard } from "@/components/shared/PortalDetailCard";
 import { PortalEntityDetailLayout } from "@/components/shared/PortalEntityDetailLayout";
 import { PartnerHwKalkulationScreen } from "@/components/partner/PartnerHwKalkulationScreen";
 import { PartnerFirmendatenFehlenDialog } from "@/components/partner/PartnerFirmendatenFehlenDialog";
@@ -181,7 +181,8 @@ export function PartnerOffenDetail({
     const zeilen = resolvePartnerKonditionZeilen(
       item.crm_positionen_raw,
       { gewerkId: item.gewerk_id, handwerkerId: item.handwerker_id },
-      item.hw_konditionen
+      item.hw_konditionen,
+      { auftragPositionen: item.crm_auftrag_positionen }
     );
     return mapKonditionZeilenVereinbart(zeilen);
   }, [isNachreichung, item, openPositionIds]);
@@ -450,17 +451,19 @@ export function PartnerOffenDetail({
       ) : null}
 
       {konditionZeilen.length > 0 ? (
-        <PortalDetailSection
+        <PortalDetailCard
           title={
             isNachreichung ? "Geänderte Leistungen" : PARTNER_LEISTUNGEN_SECTION_TITLE
           }
+          chrome="responsive"
         >
           <PartnerLeistungenKonditionenCard
             zeilen={konditionZeilen}
             mode="readonly"
+            variant="plain"
             gesamtLabel={PARTNER_LEISTUNGEN_GESAMT_LABEL}
           />
-        </PortalDetailSection>
+        </PortalDetailCard>
       ) : null}
 
       {brauchtProjektvertrag ? (

@@ -1516,7 +1516,15 @@ h3 {
   }
 
   .portal-topbar-sub {
-    display: none;
+    margin-top: 1px;
+    font-size: calc(11px * var(--p2-type-scale, 1.1));
+    font-weight: 800;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: rgba(255, 255, 255, 0.55);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 
   .portal-topbar-divider {
@@ -1539,12 +1547,26 @@ h3 {
   @media (min-width: 1024px) {
     .portal-topbar {
       --portal-topbar-overlap: 72px;
-      gap: 12px;
-      padding: 14px 32px;
+      --portal-sidebar-w: 250px;
+      display: grid;
+      grid-template-columns: var(--portal-sidebar-w) minmax(0, 1fr);
+      align-items: center;
+      gap: 0;
+      padding: 14px 32px 14px 12px;
       position: relative;
     }
 
-    .portal-topbar-brand,
+    /* Marke links oben — Spalte = Sidebar-Breite */
+    .portal-topbar-brand {
+      display: flex;
+      width: 100%;
+      max-width: none;
+      margin-right: 0;
+      padding-left: 6px;
+      padding-right: 8px;
+      box-sizing: border-box;
+    }
+
     .portal-topbar-divider,
     .portal-topbar-spacer {
       display: none;
@@ -1554,6 +1576,12 @@ h3 {
       flex: 1 1 auto;
       margin-left: 0;
       width: 100%;
+      min-width: 0;
+    }
+
+    /* Kein Doppel-Brand in der Sidebar — Topbar trägt Marke */
+    .portal-shell-brand {
+      display: none;
     }
   }
 
@@ -1591,7 +1619,7 @@ h3 {
     overflow: visible;
   }
 
-  /* Glocke — Outline weiß auf Topbar */
+  /* Glocke — Outline + Icon weiß auf Topbar (auch mobil / content-bleed) */
   .portal-bell-trigger {
     width: 44px;
     height: 44px;
@@ -1602,9 +1630,12 @@ h3 {
     box-shadow: none;
   }
 
-  .portal-bell-trigger .mock-icon,
-  .portal-bell-trigger .mock-icon--emphasis {
-    color: #fff;
+  .portal-ui .portal-bell-trigger .mock-icon,
+  .portal-ui .portal-bell-trigger .mock-icon--emphasis,
+  .portal-ui .portal-bell-trigger .mock-icon--sidebar,
+  .portal-ui .portal-bell-trigger .portal-bell-icon,
+  .portal-topbar .portal-bell-trigger .mock-icon {
+    color: #fff !important;
   }
 
   .portal-bell-trigger:hover,
@@ -1623,6 +1654,13 @@ h3 {
     .portal-bell-trigger {
       width: 42px;
       height: 42px;
+    }
+
+    /* Auch über Hero (content-bleed): Glocke bleibt weiß */
+    .portal-shell[data-content-bleed="true"] .portal-bell-trigger,
+    .portal-shell[data-content-bleed="true"] .portal-bell-trigger .mock-icon {
+      color: #fff !important;
+      border-color: rgba(255, 255, 255, 0.9);
     }
   }
 
