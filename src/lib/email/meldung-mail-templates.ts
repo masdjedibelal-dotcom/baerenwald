@@ -77,8 +77,8 @@ export function buildMelderBestaetigungHtml(input: {
       <p style="margin:0 0 12px;font-size:15px;color:#374151;line-height:1.6;">wir haben Ihre <strong>${esc(kat)}</strong>-Meldung für <strong>${esc(input.objektTitel)}</strong> erhalten.</p>
       <p style="margin:0 0 12px;font-size:15px;color:#374151;line-height:1.6;">${intro}</p>
       ${statusBlock}
-      ${input.referenz ? `<p style="margin:12px 0 0;font-size:13px;color:#6B7280;">Referenz: ${esc(input.referenz)}</p>` : ""}
-      <p style="margin:16px 0 0;font-size:13px;color:#6B7280;">${footer}</p>
+      ${input.referenz ? `<p style="margin:12px 0 0;font-size:15px;color:#6B7280;">Referenz: ${esc(input.referenz)}</p>` : ""}
+      <p style="margin:16px 0 0;font-size:15px;color:#6B7280;">${footer}</p>
       <p style="margin:24px 0 0;font-size:15px;color:#374151;line-height:1.6;">${mailTeamGrussHtml("sie")}</p>
     `,
   });
@@ -119,7 +119,7 @@ export function buildMelderEinladungHtml(input: {
       <p style="margin:0 0 12px;font-size:15px;color:#374151;line-height:1.6;">${mailBegruessungHtml("sie", input.melderName)}</p>
       <p style="margin:0 0 12px;font-size:15px;color:#374151;line-height:1.6;">${esc(input.orgName)} hat eine Meldung für <strong>${esc(input.objektTitel)}</strong> vorgemerkt. Bitte ergänzen Sie kurz Details und Fotos:</p>
       ${mailPrimaryButtonHtml("Meldung ergänzen", input.link)}
-      <p style="margin:12px 0 0;font-size:13px;color:#6B7280;word-break:break-all;">Link: ${esc(input.link)}</p>
+      <p style="margin:12px 0 0;font-size:15px;color:#6B7280;word-break:break-all;">Link: ${esc(input.link)}</p>
       <p style="margin:24px 0 0;font-size:15px;color:#374151;line-height:1.6;">${mailTeamGrussHtml("sie")}</p>
     `,
   });

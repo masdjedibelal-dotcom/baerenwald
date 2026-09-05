@@ -303,6 +303,7 @@ export function PortalShell({
     <div
       className={cn("portal-ui portal-shell bg-surface-page", className)}
       data-portal-variant={variant}
+      data-content-bleed={contentFullBleed ? "true" : undefined}
       style={shellStyle}
     >
       <PortalDocViewerProvider>

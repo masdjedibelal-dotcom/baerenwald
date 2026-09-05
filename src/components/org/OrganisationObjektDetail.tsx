@@ -18,7 +18,7 @@ import {
 import { PortalDetailCover } from "@/components/shared/PortalDetailCover";
 import { PortalDetailHead } from "@/components/shared/PortalDetailUi";
 import { PortalDetailTabs } from "@/components/shared/PortalDetailTabs";
-import { PortalEntityCard } from "@/components/shared/PortalEntityCard";
+import { PortalEntityList } from "@/components/shared/PortalEntityList";
 import { PortalInboxEmpty } from "@/components/shared/PortalEmptyState";
 import { PortalInlineLoading } from "@/components/shared/PortalInlineLoading";
 import { usePortalBusy } from "@/components/shared/PortalBusyContext";
@@ -29,10 +29,12 @@ import {
   EinstellungenPfList,
   EinstellungenPfRow,
   EinstellungenSectionCard,
-  EinstellungenSheetCard,
   EinstellungenToggle,
 } from "@/components/shared/PortalEinstellungenUi";
-import { SofortmassnahmeAkutTitle } from "@/components/org/SofortmassnahmeFaelleLink";
+import {
+  SofortmassnahmeAkutTitle,
+  SofortmassnahmeFaelleEinstellungenLink,
+} from "@/components/org/SofortmassnahmeFaelleLink";
 import { PortalListCard } from "@/components/shared/PortalListCard";
 import { leadBelongsToObjekt } from "@/lib/org/match-lead-objekt";
 import { meldeKategorieLabel } from "@/lib/org/melde-kategorien";
@@ -42,7 +44,6 @@ import type { OrganisationLead, OrganisationObjekt } from "@/lib/org/types";
 import { portalListStackClass } from "@/lib/portal2/layout-chrome";
 import type { PortalEinladungHvBlock } from "@/lib/portal2/portal-einladungen";
 import {
-  EINSTELLUNGEN_SCHWELLE_BETRAG_INTRO,
   EINSTELLUNGEN_SCHWELLE_BETRAG_TITLE,
   EINSTELLUNGEN_SCHWELLE_SLIDER_MAX,
   EINSTELLUNGEN_SCHWELLE_SLIDER_MIN,
@@ -650,40 +651,57 @@ export function OrganisationObjektDetail({
         </EinstellungenSectionCard>
 
         <EinstellungenSectionCard
-          title="Hausmeister"
+          title={hmAmObjekt ? "Hausmeister · 1" : "Hausmeister"}
           onAdd={hmLoading || hmAmObjekt ? undefined : openHmEdit}
           addLabel="Hausmeister hinzufügen"
         >
           {hmLoading ? (
             <PortalInlineLoading label="Hausmeister wird geladen" />
           ) : hmAmObjekt ? (
-            <PortalEntityCard
-              title={hmAmObjekt.name}
-              meta={
-                <div className="space-y-0.5">
-                  <p className="text-[13px] text-text-secondary">
-                    Portal:{" "}
-                    {
-                      HAUSMEISTER_PORTAL_STATUS_LABEL[
-                        resolveHausmeisterPortalStatus(hmAmObjekt)
-                      ]
-                    }
-                  </p>
-                  {hmAmObjekt.email?.trim() ? (
-                    <p className="truncate text-[13px] text-text-secondary">
-                      {hmAmObjekt.email.trim()}
-                    </p>
-                  ) : null}
-                </div>
-              }
-              menu={
-                <OrganisationObjektHausmeisterMenu
-                  canEinladen={Boolean(hmAmObjekt.email?.trim())}
-                  onEinladen={() => void inviteHausmeister()}
-                  onBearbeiten={openHmEdit}
-                  onEntfernen={() => setHmConfirmRemove(true)}
-                />
-              }
+            <PortalEntityList
+              ariaLabel="Hausmeister"
+              columns={[
+                { key: "name", label: "Name", width: "minmax(0, 1.2fr)" },
+                { key: "status", label: "Status", width: "minmax(0, 0.9fr)" },
+                { key: "kontakt", label: "Kontakt", width: "minmax(0, 1.4fr)" },
+              ]}
+              rows={[
+                {
+                  id: hmAmObjekt.id ?? "hm",
+                  title: hmAmObjekt.name,
+                  meta: (
+                    <div className="space-y-0.5">
+                      <p>
+                        Portal:{" "}
+                        {
+                          HAUSMEISTER_PORTAL_STATUS_LABEL[
+                            resolveHausmeisterPortalStatus(hmAmObjekt)
+                          ]
+                        }
+                      </p>
+                      {hmAmObjekt.email?.trim() ? (
+                        <p>{hmAmObjekt.email.trim()}</p>
+                      ) : null}
+                    </div>
+                  ),
+                  cells: [
+                    hmAmObjekt.name,
+                    HAUSMEISTER_PORTAL_STATUS_LABEL[
+                      resolveHausmeisterPortalStatus(hmAmObjekt)
+                    ],
+                    hmAmObjekt.email?.trim() || "—",
+                  ],
+                  onClick: openHmEdit,
+                  menu: (
+                    <OrganisationObjektHausmeisterMenu
+                      canEinladen={Boolean(hmAmObjekt.email?.trim())}
+                      onEinladen={() => void inviteHausmeister()}
+                      onBearbeiten={openHmEdit}
+                      onEntfernen={() => setHmConfirmRemove(true)}
+                    />
+                  ),
+                },
+              ]}
             />
           ) : (
             <PortalInboxEmpty title="Noch kein Hausmeister" compact />
@@ -942,9 +960,14 @@ export function OrganisationObjektDetail({
             onChange={setEditAkut}
             title={<SofortmassnahmeAkutTitle />}
             description={
-              editAkut
-                ? "Aktiv: Die in den Einstellungen ausgewählten Sofortmaßnahme-Fälle gehen ohne Freigabe (nur Info)."
-                : "Aus: Auch Sofortmaßnahmen an diesem Objekt brauchen Freigabe."
+              editAkut ? (
+                <>
+                  Aktiv: Ausgewählte Fälle ohne Freigabe (nur Info).{" "}
+                  <SofortmassnahmeFaelleEinstellungenLink />
+                </>
+              ) : (
+                "Aus: Auch Sofortmaßnahmen an diesem Objekt brauchen Freigabe."
+              )
             }
           />
           <EinstellungenToggle
@@ -956,12 +979,8 @@ export function OrganisationObjektDetail({
                 ? EINSTELLUNGEN_UNTER_SCHWELLE_INTRO
                 : "Aus: Jedes Angebot braucht Ihre Freigabe, unabhängig vom Betrag."
             }
-          />
-          {editSchwelleAktiv ? (
-            <EinstellungenSheetCard
-              title={EINSTELLUNGEN_SCHWELLE_BETRAG_TITLE}
-              description={EINSTELLUNGEN_SCHWELLE_BETRAG_INTRO}
-            >
+          >
+            {editSchwelleAktiv ? (
               <EinstellungenEuroSlider
                 value={editSchwelle}
                 min={Math.max(EINSTELLUNGEN_SCHWELLE_SLIDER_MIN, 500)}
@@ -972,8 +991,8 @@ export function OrganisationObjektDetail({
                   setEditSchwelle(snapEinstellungenSchwelle(Math.max(v, 500)))
                 }
               />
-            </EinstellungenSheetCard>
-          ) : null}
+            ) : null}
+          </EinstellungenToggle>
         </EinstellungenEditModal>
       </EinstellungenSectionCard>
     );

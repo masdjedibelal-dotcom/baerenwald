@@ -23,7 +23,12 @@ const HW_BEANTWORTET = new Set(["akzeptiert", "abgelehnt"]);
 
 type PartnerAnfrageTimingFields = Pick<
   PartnerAnfrageItem,
-  "status" | "antwort_at" | "gesendet_at" | "hw_status" | "bestaetigt_at"
+  | "status"
+  | "antwort_at"
+  | "gesendet_at"
+  | "hw_status"
+  | "bestaetigt_at"
+  | "hw_eingereicht_at"
 > & {
   zeitraum?: string;
   lead?: PartnerAnfrageItem["lead"] | null;
@@ -51,11 +56,25 @@ export function isPartnerAnfrageAntwortAbgelaufen(
 export function isPartnerAnfrageOffen(item: PartnerAnfrageTimingFields): boolean {
   if (isPartnerAnfrageAntwortAbgelaufen(item)) return false;
   if (item.bestaetigt_at) return false;
+  /** LV/Angebot bereits eingereicht — keine Offene-Aktion mehr. */
+  if (item.hw_eingereicht_at?.trim()) return false;
+  const hwSt = (item.hw_status ?? "").trim().toLowerCase();
+  if (hwSt === "eingereicht" || hwSt === "uebernommen" || hwSt === "bestaetigt") {
+    return false;
+  }
   const st = item.status.toLowerCase();
   if (st === "angenommen" || st === "abgelehnt") return false;
   if (item.antwort_at) return false;
   if (item.gesendet_at) return true;
   return PENDING_STATUS.has(st);
+}
+
+/** HW hat LV/PDF eingereicht (warte auf CRM) — Stub weiter listen. */
+export function isPartnerAnfrageHwEingereicht(
+  item: Pick<PartnerAnfrageItem, "hw_eingereicht_at" | "hw_status">
+): boolean {
+  if (item.hw_eingereicht_at?.trim()) return true;
+  return (item.hw_status ?? "").trim().toLowerCase() === "eingereicht";
 }
 
 type PartnerAnfrageKonditionenFields = PartnerAnfrageTimingFields &

@@ -11,7 +11,7 @@ type Props = {
 
 /**
  * Kompakte Header-Suche (Privat / Eigentümer / Partner).
- * Visuell wie OrganisationSuche — ohne Org-API.
+ * Visuell wie OrganisationSuche — Icon-Farbe steuert Topbar-CSS (weiß auf Grün).
  */
 export function PortalHeaderSearch({
   placeholder = "Suchen…",
@@ -20,10 +20,7 @@ export function PortalHeaderSearch({
 }: Props) {
   return (
     <div className={className ? `portal-search ${className}` : "portal-search"}>
-      <Search
-        className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-text-tertiary"
-        aria-hidden
-      />
+      <Search className="portal-search-icon" aria-hidden />
       <input
         type="search"
         placeholder={placeholder}

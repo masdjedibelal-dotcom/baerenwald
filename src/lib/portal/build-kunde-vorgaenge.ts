@@ -367,22 +367,31 @@ function anfrageTitleFromLead(
 }
 
 /** CRM-Angebotstitel nur nutzen, wenn er echt sprechend ist (nicht Name/Kategorie). */
+function normalizeAngebotListenTitel(angebotTitel: string): string | null {
+  const t = angebotTitel.trim();
+  if (!t) return null;
+  if (/^angebot$/i.test(t)) return null;
+  if (/^angebot\s+[A-Z0-9][\w./-]{0,48}$/i.test(t)) return null;
+  const withoutPrefix = t.replace(/^angebot\s*[—\-|:·]?\s*/i, "").trim();
+  return withoutPrefix || null;
+}
+
 function isUsableAngebotTitel(
   angebotTitel: string,
   lead: PortalLead
 ): boolean {
-  const t = angebotTitel.trim();
-  if (!t) return false;
-  if (/^(notfall|reparatur|schaden|sonstiges|meldung|vorgang)\b/i.test(t)) {
+  const usable = normalizeAngebotListenTitel(angebotTitel);
+  if (!usable) return false;
+  if (/^(notfall|reparatur|schaden|sonstiges|meldung|vorgang)\b/i.test(usable)) {
     return false;
   }
-  if (/^(notfall|reparatur|schaden|sonstiges)\s*[·|—-]/i.test(t)) {
+  if (/^(notfall|reparatur|schaden|sonstiges)\s*[·|—-]/i.test(usable)) {
     return false;
   }
   const melder = (lead.melder_name ?? lead.kontakt_name ?? "").trim();
-  if (melder && t.toLowerCase() === melder.toLowerCase()) return false;
+  if (melder && usable.toLowerCase() === melder.toLowerCase()) return false;
   // Kurzer Buchstabensalat ohne Leerzeichen (Tippfehler-Namen als Titel)
-  if (t.length <= 24 && !/\s/.test(t) && !/[.,;:!?/]/.test(t)) {
+  if (usable.length <= 24 && !/\s/.test(usable) && !/[.,;:!?/]/.test(usable)) {
     return false;
   }
   return true;
@@ -407,7 +416,7 @@ function resolveListCardTitle(
   }
   const angebotTitel = sanitizeCustomerText(angebot?.titel, 200)?.trim();
   if (angebotTitel && isUsableAngebotTitel(angebotTitel, lead)) {
-    return angebotTitel;
+    return normalizeAngebotListenTitel(angebotTitel) ?? angebotTitel;
   }
   return anfrageTitleFromLead(lead).title;
 }

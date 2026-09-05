@@ -47,6 +47,7 @@ import {
   meldeKategorieForDirektauftragFlow,
 } from "@/lib/funnel/melde-direktauftrag";
 import { ALL_AKUT_FALL_IDS } from "@/lib/org/sofortmassnahme-faelle";
+import { bewohnerInMieterZuordnung } from "@/lib/org/einheit-bewohner-regeln";
 import { calculatePrice, isBwZuKomplexErgebnis } from "@/lib/funnel/price-calc";
 import {
   applyGroesseStepCopy,
@@ -360,16 +361,28 @@ export function PortalFunnelHost({
         name: string;
         email?: string | null;
         telefon?: string | null;
+        rolle?: string | null;
+        selbstbewohnt?: boolean | null;
         objekt_einheiten?: { bezeichnung?: string | null } | null;
       }>;
     };
-    return (json.bewohner ?? []).map((b) => ({
-      id: b.id,
-      name: b.name,
-      email: b.email,
-      telefon: b.telefon,
-      einheitLabel: b.objekt_einheiten?.bezeichnung ?? null,
-    })) satisfies HvMieterOption[];
+    return (json.bewohner ?? [])
+      .filter((b) => bewohnerInMieterZuordnung(b))
+      .map((b) => {
+        const selbst =
+          String(b.rolle ?? "").toLowerCase() === "eigentuemer" &&
+          Boolean(b.selbstbewohnt);
+        const einheit = b.objekt_einheiten?.bezeichnung ?? null;
+        return {
+          id: b.id,
+          name: b.name,
+          email: b.email,
+          telefon: b.telefon,
+          einheitLabel: selbst
+            ? [einheit, "Eigentümer selbstbewohnt"].filter(Boolean).join(" · ")
+            : einheit,
+        };
+      }) satisfies HvMieterOption[];
   }, []);
 
   const mieterKontaktOk = useCallback(() => {

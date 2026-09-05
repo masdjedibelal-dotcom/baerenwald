@@ -68,10 +68,10 @@ export function EinstellungenPfRow({
         className
       )}
     >
-      <div className="max-w-[44%] shrink-0 text-[13px] font-semibold leading-snug text-text-primary">
+      <div className="portal-text-label max-w-[44%] shrink-0 font-semibold leading-snug normal-case tracking-normal text-text-primary">
         {label}
       </div>
-      <p className="min-w-0 flex-1 text-right text-[14.5px] font-semibold leading-snug text-text-primary [overflow-wrap:anywhere]">
+      <p className="portal-text-body min-w-0 flex-1 text-right font-semibold leading-snug text-text-primary [overflow-wrap:anywhere]">
         {value}
       </p>
     </div>
@@ -113,7 +113,9 @@ export function EinstellungenEdField({
 }) {
   return (
     <label className="flex flex-col gap-1">
-      <span className="text-[13px] font-semibold text-text-primary">{label}</span>
+      <span className="portal-text-label font-semibold normal-case tracking-normal text-text-primary">
+        {label}
+      </span>
       <input
         type={type}
         className="portal-field w-full"
@@ -242,9 +244,7 @@ export function EinstellungenSectionHeader({
   const hasActions = Boolean(onEdit || onAdd || trailing);
   return (
     <div className="mb-1 flex items-center justify-between gap-2">
-      <p className="text-[11.5px] font-extrabold uppercase tracking-wide text-[#7A857F]">
-        {title}
-      </p>
+      <p className="portal-liste-eyebrow !mb-0">{title}</p>
       {hasActions ? (
         <div className="flex items-center gap-1.5">
           {trailing}
@@ -593,7 +593,7 @@ export function EinstellungenEuroInput({
   );
 }
 
-/** Mock Toggle (Objekt-Regeln / Freigabe). */
+/** Mock Toggle (Objekt-Regeln / Freigabe). Optional children unter dem Text (z. B. Slider). */
 export function EinstellungenToggle({
   checked,
   onChange,
@@ -601,6 +601,7 @@ export function EinstellungenToggle({
   title,
   description,
   nested,
+  children,
 }: {
   checked: boolean;
   onChange: (checked: boolean) => void;
@@ -609,46 +610,49 @@ export function EinstellungenToggle({
   description?: ReactNode;
   /** Flach innerhalb EinstellungenSectionCard — keine Card-in-Card. */
   nested?: boolean;
+  /** Inhalt in derselben Karte (unter Beschreibung), z. B. Freigabe-Slider. */
+  children?: ReactNode;
 }) {
   return (
     <div
       className={cn(
-        "flex w-full items-start gap-3",
         nested
           ? PORTAL_NESTED_PANEL_CLASS
           : "rounded-[11px] border border-border-default bg-[var(--p2-panel,#fff)] px-3.5 py-[13px] shadow-sm",
         disabled && "opacity-60"
       )}
     >
-      <button
-        type="button"
-        disabled={disabled}
-        aria-pressed={checked}
-        onClick={() => onChange(!checked)}
-        className={cn(
-          "relative mt-0.5 h-7 w-12 shrink-0 rounded-full transition-colors disabled:cursor-not-allowed",
-          checked ? "bg-[#2E7D52]" : "bg-[#cfd4d2]"
-        )}
-      >
-        <span
+      <div className="flex w-full items-start gap-3">
+        <button
+          type="button"
+          disabled={disabled}
+          aria-pressed={checked}
+          onClick={() => onChange(!checked)}
           className={cn(
-            "absolute top-[3px] h-[22px] w-[22px] rounded-full bg-white shadow transition-[left]",
-            checked ? "left-[23px]" : "left-[3px]"
+            "relative mt-0.5 h-7 w-12 shrink-0 rounded-full transition-colors disabled:cursor-not-allowed",
+            checked ? "bg-[#2E7D52]" : "bg-[#cfd4d2]"
           )}
-          aria-hidden
-        />
-      </button>
-      <div className="min-w-0 flex-1">
-        <div className="text-[15.5px] font-bold text-text-primary">{title}</div>
-        {description ? (
-          <div
-            className="mt-1 text-[13.5px] leading-[1.55]"
-            style={{ color: "#55615B" }}
-          >
-            {description}
+        >
+          <span
+            className={cn(
+              "absolute top-[3px] h-[22px] w-[22px] rounded-full bg-white shadow transition-[left]",
+              checked ? "left-[23px]" : "left-[3px]"
+            )}
+            aria-hidden
+          />
+        </button>
+        <div className="min-w-0 flex-1">
+          <div className="portal-text-body font-bold text-text-primary">
+            {title}
           </div>
-        ) : null}
+          {description ? (
+            <div className="portal-text-meta mt-1 leading-[1.55] text-text-secondary">
+              {description}
+            </div>
+          ) : null}
+        </div>
       </div>
+      {children ? <div className="mt-3">{children}</div> : null}
     </div>
   );
 }

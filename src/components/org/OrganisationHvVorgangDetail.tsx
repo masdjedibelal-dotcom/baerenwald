@@ -598,7 +598,7 @@ export function OrganisationHvVorgangDetail({
                   className="block w-full overflow-hidden bg-white text-left"
                 >
                   <p
-                    className="px-3 py-4 text-center text-[12.5px] font-semibold"
+                    className="portal-text-meta px-3 py-4 text-center font-semibold"
                     style={{ color: PORTAL_VAR.primary }}
                   >
                     {doc.name} — PDF öffnen
@@ -1170,7 +1170,7 @@ export function OrganisationHvVorgangDetail({
         <p className="font-semibold text-amber-950">
           Vom Hausmeister erledigt
         </p>
-        <p className="mt-1 text-[13px] text-amber-900/90">
+        <p className="portal-text-body mt-1 text-amber-900/90">
           Die Vor-Ort-Prüfung ist abgeschlossen — Bärenwald muss hier nichts
           mehr tun. Dokumentierte Prüfpunkte finden Sie unter Tab „Checkliste“.
         </p>
@@ -1192,7 +1192,7 @@ export function OrganisationHvVorgangDetail({
         <p className="font-semibold text-amber-950">
           {hausmeisterActor ? "Hausmeister-Prüfung" : "Hausmeister-Prüfung läuft"}
         </p>
-        <p className="mt-1 text-[13px] text-amber-900/90">
+        <p className="portal-text-body mt-1 text-amber-900/90">
           {hausmeisterActor
             ? "Unter Tab „Checkliste“ Punkte prüfen — danach selbst erledigen oder an Bärenwald weitergeben."
             : "Der Vorgang liegt beim Hausmeister. Ergebnis erscheint unter Tab „Checkliste“, sobald die Prüfung abgeschlossen ist."}
@@ -1436,7 +1436,7 @@ export function OrganisationHvVorgangDetail({
                       className="block w-full overflow-hidden rounded-xl border border-[var(--portal-primary,#2E7D52)]/30 bg-[var(--portal-primary,#2E7D52)]/5 text-left"
                     >
                       <p
-                        className="px-3 py-4 text-center text-[13px] font-semibold"
+                        className="portal-text-meta px-3 py-4 text-center font-semibold"
                         style={{ color: PORTAL_VAR.primary }}
                       >
                         {doc.name} — PDF öffnen

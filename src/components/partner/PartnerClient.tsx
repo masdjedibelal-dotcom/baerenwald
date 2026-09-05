@@ -349,6 +349,16 @@ export function PartnerClient({
       return;
     }
 
+    /**
+     * Detail-Klick läuft schon (pendingDetailId), searchParams hinken noch hinterher
+     * (oft noch section=profil nach Einstellungen) → nicht zurückspringen.
+     */
+    if (pendingDetailIdRef.current) {
+      if (!(normalized === "vorgaenge" && rawId)) {
+        return;
+      }
+    }
+
     if (!rawSection) return;
 
     if (rawSection === "profil" || rawSection === "unterlagen") {
@@ -431,7 +441,8 @@ export function PartnerClient({
   useEffect(() => {
     const focus = searchParams.get("focus")?.trim();
     if (!focus || !selectedId) return;
-    if (focus !== "bautagebuch" && focus !== "abnahme") return;
+    if (focus !== "bautagebuch" && focus !== "abnahme" && focus !== "ablehnen")
+      return;
     const t = window.setTimeout(() => {
       const params = new URLSearchParams(searchParams.toString());
       params.delete("focus");
@@ -472,7 +483,15 @@ export function PartnerClient({
     const t = window.setTimeout(() => {
       pendingDetailIdRef.current = null;
       endDetailOpening();
-      setSelectedId(null);
+      ignoreUrlDetailRef.current = true;
+      flushSync(() => {
+        setSelectedId(null);
+      });
+      const filterQs =
+        vorgangListFilter === "alle"
+          ? partnerSectionListPath("vorgaenge")
+          : `/partner?section=vorgaenge&filter=${vorgangListFilter}`;
+      router.replace(filterQs, { scroll: false });
     }, 2500);
     return () => window.clearTimeout(t);
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -619,7 +638,10 @@ export function PartnerClient({
     router.push(href);
   }
 
-  function refreshVorgangAfterConfirm(id: string) {
+  function refreshVorgangAfterConfirm(
+    id: string,
+    opts?: { declined?: boolean }
+  ) {
     const vorgangId = id.trim();
     if (!vorgangId) return;
     ignoreUrlDetailRef.current = true;
@@ -627,11 +649,30 @@ export function PartnerClient({
     endDetailOpening();
     setSection("vorgaenge");
     setListPage(1);
-    setVorgangListFilter("auftrag");
+    const nextFilter: VorgangFilter = opts?.declined ? "erledigt" : "auftrag";
+    setVorgangListFilter(nextFilter);
+    if (opts?.declined) {
+      setVorgaengeState((prev) =>
+        prev.map((v) => {
+          if (v.id !== vorgangId && v.anfrage?.id !== vorgangId) return v;
+          return {
+            ...v,
+            state: "abgelehnt",
+            anfrage: v.anfrage
+              ? { ...v.anfrage, status: "abgelehnt" }
+              : v.anfrage,
+          };
+        })
+      );
+    }
     flushSync(() => {
       setSelectedId(null);
     });
-    router.replace(`/partner?section=vorgaenge&filter=auftrag`);
+    router.replace(
+      nextFilter === "erledigt"
+        ? `/partner?section=vorgaenge&filter=erledigt`
+        : `/partner?section=vorgaenge&filter=auftrag`
+    );
     refreshFlash();
   }
 
@@ -690,7 +731,11 @@ export function PartnerClient({
     );
   }
 
-  function openFromOverview(_tab: OverviewTabId, id: string) {
+  function openFromOverview(
+    _tab: OverviewTabId,
+    id: string,
+    opts?: { focus?: string }
+  ) {
     ignoreUrlDetailRef.current = false;
     pendingDetailIdRef.current = id.replace(/^auftrag:/, "");
     beginDetailOpening();
@@ -699,7 +744,13 @@ export function PartnerClient({
       setSection("vorgaenge");
       setSelectedId(id);
     });
-    router.replace(partnerVorgangPortalPath(id), { scroll: false });
+    const focus =
+      opts?.focus === "ablehnen" ||
+      opts?.focus === "bautagebuch" ||
+      opts?.focus === "abnahme"
+        ? opts.focus
+        : undefined;
+    router.replace(partnerVorgangPortalPath(id, { focus }), { scroll: false });
   }
 
   function selectRow(id: string) {
@@ -707,11 +758,10 @@ export function PartnerClient({
     pendingDetailIdRef.current = id.replace(/^auftrag:/, "");
     beginDetailOpening();
     flushSync(() => {
+      setSection("vorgaenge");
       setSelectedId(id);
     });
-    if (section === "vorgaenge") {
-      router.replace(partnerVorgangPortalPath(id), { scroll: false });
-    }
+    router.replace(partnerVorgangPortalPath(id), { scroll: false });
   }
 
   function closeDetail() {
@@ -786,6 +836,7 @@ export function PartnerClient({
           }
           anfrageId={searchParams.get("anfrage")?.trim() || null}
           focusAbnahme={searchParams.get("focus")?.trim() === "abnahme"}
+          focusAblehnen={searchParams.get("focus")?.trim() === "ablehnen"}
           protokollId={searchParams.get("protokoll")?.trim() || null}
         />
       </div>
@@ -900,12 +951,10 @@ export function PartnerClient({
           ) : null}
 
           {section === "profil" ? (
-            <article className="portal-surface p-4 sm:p-5">
-              <PartnerProfilPanel
-                handwerker={handwerker}
-                profil={profil}
-              />
-            </article>
+            <PartnerProfilPanel
+              handwerker={handwerker}
+              profil={profil}
+            />
           ) : null}
 
           {section === "planer" ? (
@@ -954,7 +1003,9 @@ export function PartnerClient({
                   switchSection("vorgaenge", "offen");
                 }
               }}
-              onOpenItem={(id) => openFromOverview("vorgaenge", id)}
+              onOpenItem={(id, opts) =>
+                openFromOverview("vorgaenge", id, opts)
+              }
               recent={overviewCardRows.map((row) => {
                 const colors = partnerDashboardStatusColors(row.statusPillKey);
                 return {

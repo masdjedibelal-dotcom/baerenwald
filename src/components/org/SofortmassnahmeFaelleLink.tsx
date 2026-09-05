@@ -169,6 +169,29 @@ export function SofortmassnahmeAkutTitle({
   );
 }
 
+/** Deep-Link zu Org-Einstellungen → Freigabe-Fälle. */
+export const SOFORTMASSNAHME_FAELLE_EINSTELLUNGEN_HREF =
+  "/portal?section=einstellungen&tab=freigabe" as const;
+
+/** Hinweis + Link zu den org-weiten Sofortmaßnahme-Fällen. */
+export function SofortmassnahmeFaelleEinstellungenLink({
+  className,
+}: {
+  className?: string;
+}) {
+  return (
+    <a
+      href={SOFORTMASSNAHME_FAELLE_EINSTELLUNGEN_HREF}
+      className={cn(
+        "font-semibold text-[var(--org-primary,var(--p2-primary,#2e7d52))] underline-offset-2 hover:underline",
+        className
+      )}
+    >
+      Sofortmaßnahme-Fälle in den Einstellungen
+    </a>
+  );
+}
+
 /** @deprecated Alias — Objekt/Listen ohne Editor */
 export function SofortmassnahmeAkutTitleWithFaelle({
   className,

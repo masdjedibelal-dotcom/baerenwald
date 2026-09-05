@@ -549,7 +549,10 @@ function leistungTitleKeysFromPosition(pos: PartnerAuftragPosition): string[] {
 /**
  * Robuste Nachreichungs-Erkennung: Auftragspositionen, die in keiner
  * vereinbarten hw_konditionen-Zeile (alle angebot_handwerker zum Angebot) vorkommen.
- * Unabhängig von hw_status — entscheidend ist: Auftrag läuft, Leistung fehlt in der Einigung.
+ *
+ * Wichtig: Nur nach echter Auftrags-Annahme (Position akzeptiert/übernommen).
+ * Reine LV-Preisabfrage (hw_konditionen ohne angenommene Auftragsposition) zählt nicht —
+ * sonst erscheint Erstzuweisung als „Änderungen bestätigen“.
  */
 export function resolveAuftragNachreichungOpenIds(
   auftragPositionen: PartnerAuftragPosition[],
@@ -557,17 +560,15 @@ export function resolveAuftragNachreichungOpenIds(
 ): string[] {
   const agreedIds = new Set<string>();
   const agreedTitles = new Set<string>();
-  let hasPriorAgreement = false;
 
   for (const a of anfragen) {
     for (const p of a.hw_konditionen?.positionen ?? []) {
-      hasPriorAgreement = true;
       if (p.position_id) agreedIds.add(p.position_id);
       agreedTitles.add(normalizeKonditionLeistungKey(p.leistung));
     }
   }
 
-  /** Laufender Auftrag mit bereits angenommenen Leistungen, aber ohne hw_konditionen-JSON. */
+  /** Laufender Auftrag mit bereits angenommenen Leistungen. */
   const hadAcceptedPosition = auftragPositionen.some((p) => {
     const s = String(p.handwerker_status ?? "")
       .trim()
@@ -580,14 +581,9 @@ export function resolveAuftragNachreichungOpenIds(
     );
   });
 
-  // Reine Erstzuweisung (noch nichts angenommen) ist keine Nachreichung —
-  // sonst greift der „Änderungen bestätigen“-Pfad und scheitert.
-  if (!hasPriorAgreement && !hadAcceptedPosition) {
+  // Reine Erstzuweisung / LV-Preisabfrage ohne angenommene Position ≠ Nachreichung
+  if (!hadAcceptedPosition) {
     return [];
-  }
-
-  if (!hasPriorAgreement) {
-    hasPriorAgreement = true;
   }
 
   const open: string[] = [];
@@ -618,22 +614,23 @@ export function resolveNachreichungOpenZeilenIds(input: {
     (hw) => ({ hw_konditionen: hw })
   );
 
-  const hasPriorAgreement =
-    anfragen.some((a) => (a.hw_konditionen?.positionen.length ?? 0) > 0) ||
-    String(input.hw_status ?? "")
+  const hadAcceptedPosition = zugewiesenePositionen.some((p) => {
+    const s = String(p.handwerker_status ?? "")
       .trim()
-      .toLowerCase() === "uebernommen" ||
-    zugewiesenePositionen.some((p) => {
-      const s = String(p.handwerker_status ?? "")
-        .trim()
-        .toLowerCase();
-      return (
-        s === "akzeptiert" ||
-        s === "bestaetigt" ||
-        s === "uebernommen" ||
-        s === "erledigt"
-      );
-    });
+      .toLowerCase();
+    return (
+      s === "akzeptiert" ||
+      s === "bestaetigt" ||
+      s === "uebernommen" ||
+      s === "erledigt"
+    );
+  });
+
+  /**
+   * Nachreichung nur nach echter Auftrags-Annahme.
+   * hw_konditionen aus früherer LV-Preisabfrage allein reicht nicht.
+   */
+  const hasPriorAgreement = hadAcceptedPosition;
 
   /** Erst nach vorheriger Annahme: offene Positions-Statuses zählen als Nachreichung. */
   const ausStatus =

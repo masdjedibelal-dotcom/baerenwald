@@ -2,8 +2,8 @@
 
 import type { ObjektAnlagePortal } from "@/lib/org/objektakte/types";
 import { PortalDetailCard } from "@/components/shared/PortalDetailCard";
+import { PortalEntityList } from "@/components/shared/PortalEntityList";
 import { PortalInboxEmpty } from "@/components/shared/PortalEmptyState";
-import { PORTAL_VAR } from "@/lib/portal2/tokens";
 
 const STATUS_LABEL: Record<string, string> = {
   aktiv: "Aktiv",
@@ -20,7 +20,10 @@ function fmtGarantie(iso: string | null | undefined): string | null {
   if (!raw || !/^\d{4}-\d{2}-\d{2}$/.test(raw)) return null;
   const d = new Date(raw);
   if (Number.isNaN(d.getTime())) return null;
-  return `Garantie bis ${d.toLocaleDateString("de-DE", { month: "2-digit", year: "numeric" })}`;
+  return `Garantie bis ${d.toLocaleDateString("de-DE", {
+    month: "2-digit",
+    year: "numeric",
+  })}`;
 }
 
 export function OrganisationObjektAnlagenPanel({
@@ -37,72 +40,60 @@ export function OrganisationObjektAnlagenPanel({
   }
 
   return (
-    <PortalDetailCard title={`Anlagen & Teile (${anlagen.length})`}>
-      <div
-        className="overflow-hidden rounded-[12px] border bg-white lg:rounded-none lg:border-0"
-        style={{ borderColor: PORTAL_VAR.line }}
-      >
-        <div className="hidden overflow-x-auto sm:block">
-          <table className="w-full text-left text-[13px]">
-            <thead>
-              <tr className="border-b bg-white text-text-tertiary lg:bg-transparent">
-                <th className="px-4 py-2.5 font-medium">Bezeichnung</th>
-                <th className="px-4 py-2.5 font-medium">Gewerk</th>
-                <th className="px-4 py-2.5 font-medium">Standort</th>
-                <th className="px-4 py-2.5 font-medium">Einheit</th>
-                <th className="px-4 py-2.5 font-medium">Status</th>
-                <th className="px-4 py-2.5 text-right font-medium">Vorgänge</th>
-              </tr>
-            </thead>
-            <tbody>
-              {anlagen.map((a) => (
-                <tr key={a.id} className="border-b last:border-b-0">
-                  <td className="px-4 py-3 font-medium text-text-primary">
-                    <div>{dash(a.bezeichnung)}</div>
-                    {fmtGarantie(a.garantieBis) ? (
-                      <div className="portal-text-meta mt-0.5 text-text-tertiary">
-                        {fmtGarantie(a.garantieBis)}
-                      </div>
-                    ) : null}
-                  </td>
-                  <td className="px-4 py-3 text-text-secondary">
-                    {dash(a.gewerkName)}
-                  </td>
-                  <td className="px-4 py-3 text-text-secondary">
-                    {dash(a.standort)}
-                  </td>
-                  <td className="px-4 py-3 text-text-secondary">
-                    {dash(a.einheitLabel)}
-                  </td>
-                  <td className="px-4 py-3 text-text-secondary">
-                    {STATUS_LABEL[a.status] ?? dash(a.status)}
-                  </td>
-                  <td className="px-4 py-3 text-right text-text-secondary">
-                    {a.vorgangCount}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-
-        <div className="divide-y sm:hidden">
-          {anlagen.map((a) => (
-            <div key={a.id} className="space-y-1 px-4 py-3">
-              <p className="portal-text-card-title">{dash(a.bezeichnung)}</p>
-              <p className="portal-text-meta text-text-secondary">
-                {[dash(a.gewerkName), dash(a.standort), dash(a.einheitLabel)]
-                  .filter((x) => x !== "—")
-                  .join(" · ") || "—"}
-              </p>
-              <p className="portal-text-meta text-text-tertiary">
-                {STATUS_LABEL[a.status] ?? dash(a.status)} · {a.vorgangCount}{" "}
-                Vorgänge
-              </p>
-            </div>
-          ))}
-        </div>
-      </div>
+    <PortalDetailCard title={`Anlagen & Teile · ${anlagen.length}`}>
+      <PortalEntityList
+        ariaLabel="Anlagen"
+        columns={[
+          { key: "name", label: "Bezeichnung", width: "minmax(0, 1.4fr)" },
+          { key: "gewerk", label: "Gewerk", width: "minmax(0, 0.8fr)" },
+          { key: "standort", label: "Standort", width: "minmax(0, 0.8fr)" },
+          { key: "status", label: "Status", width: "minmax(0, 0.7fr)" },
+          {
+            key: "vorgaenge",
+            label: "Vorgänge",
+            width: "minmax(56px, 0.5fr)",
+            align: "right",
+          },
+        ]}
+        rows={anlagen.map((a) => {
+          const garantie = fmtGarantie(a.garantieBis);
+          const status = STATUS_LABEL[a.status] ?? dash(a.status);
+          const metaLine = [
+            dash(a.gewerkName) !== "—" ? dash(a.gewerkName) : null,
+            dash(a.standort) !== "—" ? dash(a.standort) : null,
+            dash(a.einheitLabel) !== "—" ? dash(a.einheitLabel) : null,
+          ]
+            .filter(Boolean)
+            .join(" · ");
+          return {
+            id: a.id,
+            title: dash(a.bezeichnung),
+            meta: (
+              <div className="space-y-0.5">
+                <p>{metaLine || "—"}</p>
+                <p className="text-text-tertiary">
+                  {status} · {a.vorgangCount} Vorgänge
+                  {garantie ? ` · ${garantie}` : ""}
+                </p>
+              </div>
+            ),
+            cells: [
+              <>
+                {dash(a.bezeichnung)}
+                {garantie ? (
+                  <span className="mt-0.5 block text-[12px] font-normal text-text-tertiary">
+                    {garantie}
+                  </span>
+                ) : null}
+              </>,
+              dash(a.gewerkName),
+              dash(a.standort),
+              status,
+              a.vorgangCount,
+            ],
+          };
+        })}
+      />
     </PortalDetailCard>
   );
 }

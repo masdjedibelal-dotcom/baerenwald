@@ -144,11 +144,11 @@ export async function mapAngebotHandwerkerRow(
     plz,
     ort,
     lead,
-    fallbackTitel: ohneLv
-      ? opts?.lvLeistungsumfang?.trim() ||
-        angebote?.leistungsumfang?.trim() ||
-        angebot_titel
-      : angebot_titel,
+    fallbackTitel:
+      parseWizardMetaFromNotizen(angebote?.notizen)?.titel?.trim() ||
+      opts?.lvLeistungsumfang?.trim() ||
+      angebote?.leistungsumfang?.trim() ||
+      angebot_titel,
   });
   const crm_leistungsumfang =
     (ohneLv ? opts?.lvLeistungsumfang?.trim() : null) ||

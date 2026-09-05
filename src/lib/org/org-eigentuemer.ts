@@ -207,6 +207,7 @@ export async function assignExistingEigentuemerToEinheit(input: {
   einheitId: string;
   sourceBewohnerId: string;
   sondereigentumVerwaltung?: boolean;
+  selbstbewohnt?: boolean;
 }): Promise<
   | { ok: true; bewohnerId: string }
   | { ok: false; error: string }
@@ -214,7 +215,7 @@ export async function assignExistingEigentuemerToEinheit(input: {
   const { data: source, error: srcErr } = await supabaseAdmin
     .from("einheit_bewohner")
     .select(
-      "id, name, email, telefon, portal_kunde_id, sondereigentum_verwaltung, rolle, objekt_einheit_id"
+      "id, name, email, telefon, portal_kunde_id, sondereigentum_verwaltung, selbstbewohnt, rolle, objekt_einheit_id"
     )
     .eq("id", input.sourceBewohnerId)
     .eq("kunde_id", input.orgKundeId)
@@ -287,6 +288,13 @@ export async function assignExistingEigentuemerToEinheit(input: {
       ? Boolean(input.sondereigentumVerwaltung)
       : Boolean(source.sondereigentum_verwaltung);
 
+  const selbst =
+    input.selbstbewohnt !== undefined
+      ? Boolean(input.selbstbewohnt)
+      : Boolean(
+          (source as { selbstbewohnt?: boolean | null }).selbstbewohnt
+        );
+
   const { data: inserted, error: insErr } = await supabaseAdmin
     .from("einheit_bewohner")
     .insert({
@@ -298,6 +306,7 @@ export async function assignExistingEigentuemerToEinheit(input: {
         source.telefon != null ? String(source.telefon).trim() || null : null,
       rolle: "eigentuemer",
       sondereigentum_verwaltung: se,
+      selbstbewohnt: selbst,
       portal_kunde_id: portalId || null,
       aktiv: true,
     })

@@ -19,7 +19,6 @@ import { normalizeAkutFallIds } from "@/lib/org/sofortmassnahme-faelle";
 import type { OrganisationKunde } from "@/lib/org/types";
 import {
   EINSTELLUNGEN_AKUT_INTRO,
-  EINSTELLUNGEN_SCHWELLE_BETRAG_INTRO,
   EINSTELLUNGEN_SCHWELLE_BETRAG_TITLE,
   EINSTELLUNGEN_SCHWELLE_SLIDER_MAX,
   EINSTELLUNGEN_SCHWELLE_SLIDER_MIN,
@@ -280,12 +279,8 @@ export function OrganisationFreigabeRegelnPanel({
               ? EINSTELLUNGEN_UNTER_SCHWELLE_INTRO
               : "Aus: Jedes Angebot braucht Ihre Freigabe, unabhängig vom Betrag."
           }
-        />
-        {editSchwelleAktiv ? (
-          <EinstellungenSheetCard
-            title={EINSTELLUNGEN_SCHWELLE_BETRAG_TITLE}
-            description={EINSTELLUNGEN_SCHWELLE_BETRAG_INTRO}
-          >
+        >
+          {editSchwelleAktiv ? (
             <EinstellungenEuroSlider
               value={editSchwelle}
               min={Math.max(EINSTELLUNGEN_SCHWELLE_SLIDER_MIN, 500)}
@@ -296,8 +291,8 @@ export function OrganisationFreigabeRegelnPanel({
                 setEditSchwelle(snapEinstellungenSchwelle(Math.max(v, 500)))
               }
             />
-          </EinstellungenSheetCard>
-        ) : null}
+          ) : null}
+        </EinstellungenToggle>
         <EinstellungenToggle
           checked={editHmAuto}
           onChange={setEditHmAuto}

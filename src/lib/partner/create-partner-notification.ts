@@ -104,7 +104,7 @@ function partnerNotifyBodyHtml(opts: {
   return `
     <p style="margin:0 0 12px;font-size:15px;color:#374151;line-height:1.6;">${mailBegruessungHtml("du", opts.handwerkerName)}</p>
     <p style="margin:0 0 16px;font-size:15px;color:#374151;line-height:1.6;"><strong>${escapeHtml(opts.subjectLine)}</strong></p>
-    <p style="margin:0 0 8px;font-size:14px;color:#374151;line-height:1.6;">${ctaHint}</p>
+    <p style="margin:0 0 8px;font-size:15px;color:#374151;line-height:1.6;">${ctaHint}</p>
     ${mailPrimaryButtonHtml(ctaLabel, opts.portalUrl)}
     <p style="margin:24px 0 0;font-size:15px;color:#374151;line-height:1.6;">${mailTeamGrussHtml("du")}</p>
   `;

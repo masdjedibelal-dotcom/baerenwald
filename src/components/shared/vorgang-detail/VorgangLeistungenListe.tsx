@@ -67,13 +67,13 @@ export function VorgangLeistungenListe({
               <div className="min-w-0 flex-1">
                 <p
                   className={cn(
-                    "text-[13.5px] font-medium text-text-primary",
+                    "portal-text-body font-medium text-text-primary",
                     removed && "text-text-secondary line-through"
                   )}
                 >
                   {p.title}
                 </p>
-                {(p.gewerk || p.menge || p.einheit) && !showPlain ? (
+                {(p.gewerk || p.menge || p.einheit) ? (
                   <p className="portal-text-meta mt-0.5 text-text-secondary">
                     {[p.gewerk, [p.menge, p.einheit].filter(Boolean).join(" ")]
                       .filter(Boolean)
@@ -92,7 +92,7 @@ export function VorgangLeistungenListe({
                 ) : null}
               </div>
               {price ? (
-                <p className="shrink-0 text-[13px] font-semibold tabular-nums text-text-primary">
+                <p className="portal-text-body shrink-0 font-semibold tabular-nums text-text-primary">
                   {price}
                 </p>
               ) : null}
@@ -102,10 +102,10 @@ export function VorgangLeistungenListe({
       </ul>
       {gesamt > 0 && (showVk || showEk) ? (
         <div className="flex items-center justify-between border-t border-border-light px-0 py-2.5">
-          <span className="text-[12.5px] font-semibold text-text-secondary">
+          <span className="portal-text-meta font-semibold text-text-secondary">
             {showEk ? "Summe netto (Ihre Vergütung)" : "Gesamt brutto"}
           </span>
-          <span className="text-[14px] font-bold tabular-nums text-text-primary">
+          <span className="portal-text-body font-bold tabular-nums text-text-primary">
             {moneyEur(gesamt)}
           </span>
         </div>

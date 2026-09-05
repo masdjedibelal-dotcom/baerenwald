@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import { declinePartnerAnfrage } from "@/app/actions/partner-auftrag-bestaetigen";
 import { submitPartnerEinholungAngebotPdf } from "@/app/actions/partner-angebote";
@@ -21,7 +21,9 @@ import {
 import { PortalEntityDetailLayout } from "@/components/shared/PortalEntityDetailLayout";
 import { PortalDetailCard } from "@/components/shared/PortalDetailCard";
 import { VorgangDetailBlocks } from "@/components/shared/vorgang-detail";
+import { VorgangLeistungenListe } from "@/components/shared/vorgang-detail/VorgangLeistungenListe";
 import { buildPartnerVorgangDetailVm } from "@/lib/vorgang/build-vorgang-detail-vm";
+import type { VorgangLeistungZeile } from "@/lib/vorgang/vorgang-detail-vm";
 import {
   HANDWERKER_ABLEHNUNG_GRUND_LABELS,
   HANDWERKER_ABLEHNUNG_GRUND_VALUES,
@@ -54,10 +56,12 @@ export function PartnerEinholungDetail({
   item,
   onConfirmed,
   onBack,
+  focusAblehnen,
 }: {
   item: PartnerOffenAngebotItem;
-  onConfirmed?: (anfrageId: string) => void;
+  onConfirmed?: (anfrageId: string, opts?: { declined?: boolean }) => void;
   onBack?: () => void;
+  focusAblehnen?: boolean;
 }) {
   const router = useRouter();
   const { refresh } = usePortalRefresh();
@@ -66,12 +70,16 @@ export function PartnerEinholungDetail({
   const [view, setView] = useState<"detail" | "erstellen" | "upload">("detail");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [showReject, setShowReject] = useState(false);
+  const [showReject, setShowReject] = useState(Boolean(focusAblehnen));
   const [confirmReject, setConfirmReject] = useState(false);
   const [grund, setGrund] = useState<string>(HANDWERKER_ABLEHNUNG_GRUND_VALUES[0]);
   const [notiz, setNotiz] = useState("");
   const [files, setFiles] = useState<File[]>([]);
   const [pdfError, setPdfError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (focusAblehnen) setShowReject(true);
+  }, [focusAblehnen]);
 
   const eingereicht = Boolean(item.hw_eingereicht_at?.trim());
   const title =
@@ -95,6 +103,24 @@ export function PartnerEinholungDetail({
       .filter((x): x is HwKalkPosition => x != null);
     return mapped.length ? mapped : undefined;
   }, [item.positionen, item.gewerk_name]);
+
+  const angefragtePositionen = useMemo((): VorgangLeistungZeile[] => {
+    const out: VorgangLeistungZeile[] = [];
+    for (const [i, p] of (item.positionen ?? []).entries()) {
+      const title = p.leistung.trim();
+      if (!title) continue;
+      out.push({
+        id: `lv-vorgabe-${i}`,
+        title,
+        beschreibung: p.beschreibung?.trim() || undefined,
+        menge: p.menge > 0 ? String(p.menge).replace(".", ",") : undefined,
+        einheit: p.einheit?.trim() || undefined,
+        gewerk: p.gewerk_name?.trim() || item.gewerk_name || undefined,
+      });
+    }
+    return out;
+  }, [item.positionen, item.gewerk_name]);
+
   const statusPillKey = partnerOffenStatusPillKey(item.offen_karten_typ);
   const heroMeta = partnerDetailOrtMetaLine(item.lead);
 
@@ -129,8 +155,8 @@ export function PartnerEinholungDetail({
     void refresh();
   }
 
-  function finish() {
-    if (onConfirmed) onConfirmed(item.id);
+  function finish(opts?: { declined?: boolean }) {
+    if (onConfirmed) onConfirmed(item.id, opts);
     else void refresh();
   }
 
@@ -151,7 +177,7 @@ export function PartnerEinholungDetail({
           return;
         }
         partnerPortalToast.abgelehnt();
-        finish();
+        finish({ declined: true });
       });
     } finally {
       setLoading(false);
@@ -291,16 +317,27 @@ export function PartnerEinholungDetail({
         statusPillStyle={partnerDetailStatusPillStyle(eingereicht ? "eingereicht" : statusPillKey)}
       >
         <div className="space-y-5">
-          {beschreibung || aufgabeNotiz ? (
-            <PortalDetailCard>
-              {beschreibung ? (
-                <p className="whitespace-pre-wrap portal-text-body">{beschreibung}</p>
-              ) : null}
-              {aufgabeNotiz ? (
-                <p className={`${beschreibung ? "mt-3" : ""} whitespace-pre-wrap portal-text-body`}>
-                  {aufgabeNotiz}
-                </p>
-              ) : null}
+          {angefragtePositionen.length > 0 ? (
+            <PortalDetailCard title="Angefragte Positionen">
+              <VorgangLeistungenListe
+                items={angefragtePositionen}
+                mode="plain"
+              />
+            </PortalDetailCard>
+          ) : (
+            <PortalDetailCard title="Angefragte Positionen">
+              <p className="portal-text-body text-text-secondary">
+                Noch keine Positionsvorgabe — bitte LV selbst aufbauen oder
+                Angebot hochladen.
+              </p>
+            </PortalDetailCard>
+          )}
+
+          {aufgabeNotiz ? (
+            <PortalDetailCard title="Hinweis von Bärenwald">
+              <p className="whitespace-pre-wrap portal-text-body">
+                {aufgabeNotiz}
+              </p>
             </PortalDetailCard>
           ) : null}
 
@@ -312,9 +349,9 @@ export function PartnerEinholungDetail({
               lead: item.lead,
               plz: item.plz,
               ort: item.ort,
-              zeitraum: item.zeitraum,
               gewerkName: item.gewerk_name,
-              aufgabeNotiz: null,
+              variant: "einholung",
+              beschreibungPlain: beschreibung || null,
               konditionZeilen: [],
               fotos: meldeFotos,
             })}

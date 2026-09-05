@@ -137,10 +137,10 @@ export function PortalEinstellungenShell({
                         onClick={() => selectTab(item.id)}
                         aria-current={on ? "page" : undefined}
                         className={cn(
-                          "w-full rounded-[14px] px-[15px] py-[13px] text-left text-[13.5px] font-semibold transition-colors",
+                          "portal-text-nav w-full rounded-[14px] px-[15px] py-[13px] text-left transition-colors",
                           on
                             ? "bg-white font-extrabold shadow-[var(--p2-shadow)]"
-                            : "bg-transparent hover:bg-white/70"
+                            : "bg-transparent font-semibold hover:bg-white/70"
                         )}
                         style={{
                           color: on ? PORTAL_VAR.greenDark : "#55615B",

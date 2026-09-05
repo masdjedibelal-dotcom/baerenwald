@@ -178,9 +178,9 @@ export function PartnerHwKalkulationScreen({
                   </button>
                 </div>
 
-                <div className="hw-kalk-pos__fields grid grid-cols-3 gap-2">
+                <div className="hw-kalk-pos__fields">
                   <input
-                    className="portal-input hw-kalk-pos__field rounded-lg border border-border-default px-2 py-2 text-center text-sm"
+                    className="portal-input hw-kalk-pos__field hw-kalk-pos__field--menge rounded-lg border border-border-default px-2 py-2 text-center text-sm"
                     inputMode="decimal"
                     placeholder="1"
                     value={mengeDisplay(i, faktor)}
@@ -212,14 +212,14 @@ export function PartnerHwKalkulationScreen({
                   />
                   {vorgabePos ? (
                     <div
-                      className="portal-input hw-kalk-pos__field flex items-center justify-center rounded-lg border border-border-default bg-surface-muted px-2 py-2 text-center text-sm text-text-secondary"
+                      className="portal-input hw-kalk-pos__field hw-kalk-pos__field--einheit flex items-center justify-center rounded-lg border border-border-default bg-surface-muted px-2 py-2 text-center text-sm text-text-secondary"
                       aria-hidden
                     >
                       {einheit}
                     </div>
                   ) : (
                     <select
-                      className="portal-input hw-kalk-pos__field rounded-lg border border-border-default px-1.5 py-2 text-center text-sm"
+                      className="portal-input hw-kalk-pos__field hw-kalk-pos__field--einheit rounded-lg border border-border-default px-1.5 py-2 text-center text-sm"
                       value={einheit}
                       onChange={(e) =>
                         setPositionen(
@@ -242,11 +242,11 @@ export function PartnerHwKalkulationScreen({
                       ))}
                     </select>
                   )}
-                  <div className="relative min-w-0">
+                  <div className="hw-kalk-pos__field--preis-wrap">
                     <input
                       type="text"
                       inputMode="decimal"
-                      className="portal-input hw-kalk-pos__field w-full rounded-lg border border-border-default py-2 pl-2 pr-6 text-right text-sm"
+                      className="portal-input hw-kalk-pos__field hw-kalk-pos__field--preis w-full rounded-lg border border-border-default py-2 pl-2 pr-6 text-right text-sm"
                       placeholder="0"
                       value={einzelDisplay(i, p.einzel)}
                       onFocus={() =>
@@ -308,7 +308,7 @@ export function PartnerHwKalkulationScreen({
             Voraussichtliche Dauer
           </span>
           <input
-            className="portal-input mt-1 w-full rounded-lg border border-border-default px-3 py-2 text-sm"
+            className="portal-input mt-1 w-full max-w-xs rounded-lg border border-border-default px-3 py-2 text-sm"
             value={dauer}
             onChange={(e) => setDauer(e.target.value)}
           />

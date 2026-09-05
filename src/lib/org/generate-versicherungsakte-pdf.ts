@@ -17,9 +17,13 @@ export type VersicherungsTeilPdfInput = {
   versicherungsNr?: string | null;
   schadenNr?: string | null;
   schadendatum?: string | null;
-  /** Freitext Hergang / Melder */
+  /**
+   * Strukturierte Funnel-/Melde-Angaben (wie Anfrage-Detail):
+   * Melder, Schadenort, Fachfragen, Beschreibung.
+   */
+  schadenAngaben?: Array<{ label: string; value: string }> | null;
+  /** Legacy-Freitext — nur Fallback wenn keine schadenAngaben */
   hergang?: string | null;
-  melderZeile?: string | null;
   chronologie?: Array<{ datum: string; text: string }>;
   befundZeilen?: Array<{
     datum: string;
@@ -69,10 +73,6 @@ function wrapText(text: string, maxChars: number): string[] {
   return lines.length ? lines : [];
 }
 
-function phaseKicker(phase: VersicherungPdfPhase): string {
-  return phase === "meldung" ? "SCHADENMELDUNG" : "SCHADENURSACHE / BEFUND";
-}
-
 function phaseTitle(phase: VersicherungPdfPhase): string {
   return phase === "meldung"
     ? "Schadenmeldung zur Versicherung"
@@ -85,9 +85,9 @@ type DrawCtx = {
   font: PDFFont;
   fontBold: PDFFont;
   y: number;
-  schadenNr: string;
   orgName: string;
   erstelltAm: string;
+  policenNr: string;
 };
 
 function drawFooter(ctx: DrawCtx) {
@@ -105,15 +105,19 @@ function drawFooter(ctx: DrawCtx) {
     font: ctx.font,
     color: MUTED,
   });
-  const right = `Schaden-Nr. ${ctx.schadenNr}`;
-  const rw = ctx.font.widthOfTextAtSize(right, 8);
-  ctx.page.drawText(right, {
-    x: PAGE_W - MARGIN - rw,
-    y: 38,
-    size: 8,
-    font: ctx.font,
-    color: MUTED,
-  });
+  const right = ctx.policenNr.trim()
+    ? `Policen-Nr. ${ctx.policenNr.trim()}`
+    : "";
+  if (right) {
+    const rw = ctx.font.widthOfTextAtSize(right, 8);
+    ctx.page.drawText(right, {
+      x: PAGE_W - MARGIN - rw,
+      y: 38,
+      size: 8,
+      font: ctx.font,
+      color: MUTED,
+    });
+  }
 }
 
 function ensureSpace(ctx: DrawCtx, need: number) {
@@ -236,6 +240,60 @@ function drawMetaBar(
   ctx.y = bottom - 14;
 }
 
+/** Label | Wert — wie Anfrage-Detail, mehrzeilige Werte erlaubt. */
+function drawPropTable(
+  ctx: DrawCtx,
+  rows: Array<{ label: string; value: string }>
+) {
+  if (!rows.length) return;
+  const labelW = 128;
+  const gap = 8;
+  const valueMaxChars = 62;
+
+  for (const row of rows) {
+    const valueLines = wrapText(row.value, valueMaxChars);
+    const lines = valueLines.length ? valueLines : ["—"];
+    const rowH = Math.max(16, lines.length * 12 + 6);
+    ensureSpace(ctx, rowH + 8);
+
+    const top = ctx.y;
+    ctx.page.drawLine({
+      start: { x: MARGIN, y: top + 2 },
+      end: { x: PAGE_W - MARGIN, y: top + 2 },
+      thickness: 0.4,
+      color: LINE,
+    });
+
+    ctx.page.drawText(row.label.slice(0, 28), {
+      x: MARGIN,
+      y: top - 12,
+      size: 8.5,
+      font: ctx.font,
+      color: MUTED,
+    });
+
+    lines.forEach((ln, i) => {
+      ctx.page.drawText(ln.slice(0, 90), {
+        x: MARGIN + labelW + gap,
+        y: top - 12 - i * 12,
+        size: 9.5,
+        font: ctx.font,
+        color: TEXT,
+      });
+    });
+
+    ctx.y = top - rowH;
+  }
+
+  ctx.page.drawLine({
+    start: { x: MARGIN, y: ctx.y + 2 },
+    end: { x: PAGE_W - MARGIN, y: ctx.y + 2 },
+    thickness: 0.4,
+    color: LINE,
+  });
+  ctx.y -= 10;
+}
+
 /**
  * Teil-PDF Versicherung — Briefkopf HV + Meta-Leiste + nummerierte Abschnitte
  * (ohne Plattform-Branding, White-Label der Hausverwaltung).
@@ -246,10 +304,7 @@ export async function generateVersicherungsTeilPdf(
   const pdf = await PDFDocument.create();
   const font = await pdf.embedFont(StandardFonts.Helvetica);
   const fontBold = await pdf.embedFont(StandardFonts.HelveticaBold);
-  const schadenNr =
-    input.schadenNr?.trim() ||
-    input.versicherungsNr?.trim() ||
-    "ohne Nr.";
+  const policenNr = input.versicherungsNr?.trim() || "";
   const erstelltAm = new Date().toLocaleDateString("de-DE", {
     day: "2-digit",
     month: "2-digit",
@@ -263,9 +318,9 @@ export async function generateVersicherungsTeilPdf(
     font,
     fontBold,
     y: PAGE_H - 56,
-    schadenNr,
     orgName,
     erstelltAm,
+    policenNr,
   };
 
   // —— Absender (White-Label HV) ——
@@ -286,19 +341,13 @@ export async function generateVersicherungsTeilPdf(
   ctx.y -= 4;
   drawHr(ctx, true);
 
-  // —— Dokumenttitel ——
-  drawText(ctx, phaseKicker(input.phase), {
-    bold: true,
-    size: 8,
-    color: MUTED,
-  });
-  ctx.y += 2;
+  // —— Dokumenttitel (nur eine Zeile — kein Kicker darüber) ——
   drawText(ctx, phaseTitle(input.phase), {
     bold: true,
     size: 16,
     color: ACCENT,
   });
-  ctx.y -= 2;
+  ctx.y -= 4;
 
   drawText(ctx, input.objektTitel, { bold: true, size: 11, color: TEXT });
   if (input.objektAdresse?.trim()) {
@@ -306,31 +355,30 @@ export async function generateVersicherungsTeilPdf(
   }
 
   ctx.y -= 2;
+  /** Schaden-Nr. vergibt die Versicherung — hier nur Police + Datum. */
   drawMetaBar(ctx, [
-    { label: "Policen-Nr.", value: input.versicherungsNr?.trim() || "—" },
-    { label: "Schaden-Nr.", value: schadenNr },
+    { label: "Policen-Nr.", value: policenNr || "—" },
     { label: "Schadendatum", value: fmtDatum(input.schadendatum) },
   ]);
-
-  if (input.melderZeile?.trim()) {
-    drawText(ctx, `Melder: ${input.melderZeile.trim()}`, {
-      size: 10,
-      color: MUTED,
-    });
-    ctx.y -= 2;
-  }
 
   let section = 1;
 
   if (input.phase === "meldung") {
-    drawSection(ctx, section++, "Schadenhergang");
-    const hergang = input.hergang?.trim();
-    if (hergang) drawWrapped(ctx, hergang, { size: 10 });
-    else
-      drawText(ctx, "Keine Hergangsbeschreibung hinterlegt.", {
-        size: 10,
-        color: MUTED,
-      });
+    drawSection(ctx, section++, "Schadenangaben");
+    const angaben = (input.schadenAngaben ?? []).filter(
+      (r) => r.label.trim() && r.value.trim()
+    );
+    if (angaben.length > 0) {
+      drawPropTable(ctx, angaben);
+    } else {
+      const hergang = input.hergang?.trim();
+      if (hergang) drawWrapped(ctx, hergang, { size: 10 });
+      else
+        drawText(ctx, "Keine Schadenangaben hinterlegt.", {
+          size: 10,
+          color: MUTED,
+        });
+    }
 
     if (input.fotoHinweis?.trim()) {
       drawSection(ctx, section++, "Anlagen / Fotos");

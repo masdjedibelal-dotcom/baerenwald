@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { cn } from "@/lib/utils";
+import { bewohnerBelegtEinheit } from "@/lib/org/einheit-bewohner-regeln";
 import { orgPortalToast, portalToastError } from "@/lib/shared/portal-toast";
 import { PortalInboxEmpty } from "@/components/shared/PortalEmptyState";
 
@@ -17,6 +18,8 @@ type BewohnerRow = {
   id: string;
   name: string;
   objekt_einheit_id: string;
+  rolle?: string | null;
+  selbstbewohnt?: boolean | null;
 };
 
 /**
@@ -71,7 +74,9 @@ export function OrganisationObjektEinheitenPanel({
   const occupied = useMemo(() => {
     const set = new Set<string>();
     for (const b of bewohner) {
-      if (b.objekt_einheit_id) set.add(b.objekt_einheit_id);
+      if (b.objekt_einheit_id && bewohnerBelegtEinheit(b)) {
+        set.add(b.objekt_einheit_id);
+      }
     }
     return set;
   }, [bewohner]);

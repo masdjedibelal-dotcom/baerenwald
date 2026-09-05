@@ -659,10 +659,10 @@ export function PartnerPositionLebenszyklusList({
                 {!readOnly && !isBlocked && !isErledigt ? (
                   <div className="mt-3 space-y-2">
                     {st === "offen" ? (
-                      <div className="flex flex-col gap-2 sm:flex-row">
+                      <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
                         <button
                           type="button"
-                          className="btn-pill-primary flex-1"
+                          className="btn-pill-primary w-full sm:w-auto"
                           onClick={() => setSheet({ mode: "start", position: p })}
                         >
                           {isRegie ? "Start (Foto)" : "Update"}
@@ -670,7 +670,7 @@ export function PartnerPositionLebenszyklusList({
                         {!isRegie ? (
                           <button
                             type="button"
-                            className="btn-pill-outline flex-1"
+                            className="btn-pill-outline w-full sm:w-auto"
                             onClick={() =>
                               setSheet({ mode: "erledigt", position: p })
                             }
@@ -681,10 +681,10 @@ export function PartnerPositionLebenszyklusList({
                       </div>
                     ) : null}
                     {isArbeit ? (
-                      <div className="flex flex-col gap-2 sm:flex-row">
+                      <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
                         <button
                           type="button"
-                          className="btn-pill-primary flex-1"
+                          className="btn-pill-primary w-full sm:w-auto"
                           onClick={() =>
                             setSheet({ mode: "fortschritt", position: p })
                           }
@@ -693,7 +693,7 @@ export function PartnerPositionLebenszyklusList({
                         </button>
                         <button
                           type="button"
-                          className="btn-pill-outline flex-1"
+                          className="btn-pill-outline w-full sm:w-auto"
                           onClick={() =>
                             setSheet({ mode: "erledigt", position: p })
                           }

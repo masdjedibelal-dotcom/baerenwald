@@ -1203,11 +1203,30 @@ export async function getPartnerDataForHandwerker(
 
     const vertragCtx = complianceBundle.vertragByAuftragId.get(a.id) ?? null;
 
+    const hadAcceptedPosition = a.positionen.some((p) => {
+      const s = String(p.handwerker_status ?? "")
+        .trim()
+        .toLowerCase();
+      return (
+        s === "akzeptiert" ||
+        s === "bestaetigt" ||
+        s === "uebernommen" ||
+        s === "erledigt"
+      );
+    });
+
+    /**
+     * Nur echte Nachreichung nach Annahme.
+     * Roh `aenderung_typ: neu` bei Erstzuweisung darf hier nicht rein —
+     * sonst Dashboard „Änderungen bestätigen“ statt „Annehmen“.
+     */
     const nachreichungOpenPositionIds = filterOffeneNachreichungPositionIds(
       a.positionen,
       Array.from(
         new Set([
-          ...resolveOffeneAuftragPositionIdsByStatus(a.positionen),
+          ...(hadAcceptedPosition
+            ? resolveOffeneAuftragPositionIdsByStatus(a.positionen)
+            : []),
           ...anfragenForAngebot.flatMap((af) =>
             resolveNachreichungOpenZeilenIds({
               crm_positionen_raw: af.crm_positionen_raw,
@@ -1259,9 +1278,14 @@ export async function getPartnerDataForHandwerker(
     }
   }
 
-  const anfragenAngebot = anfragenFinal.filter(
-    (a) => isPartnerAngebotOffenListItem(a) || nachreichungAnfrageIds.has(a.id)
-  );
+  const anfragenAngebot = anfragenFinal.filter((a) => {
+    if (isPartnerAngebotOffenListItem(a) || nachreichungAnfrageIds.has(a.id)) {
+      return true;
+    }
+    // Abgelehnte Zuweisungen unter „Erledigt“ behalten (nicht still verschwinden).
+    const st = String(a.status ?? "").trim().toLowerCase();
+    return st === "abgelehnt";
+  });
   const angebote: typeof anfragenFinal = [];
   const angeboteAlleAkzeptiert: typeof anfragenFinal = [];
   const auftragAnfragenListe = alleAuftraege.filter((a) => {

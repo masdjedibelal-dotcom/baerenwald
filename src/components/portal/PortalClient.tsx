@@ -851,6 +851,16 @@ export function PortalClient({
     if (!rawSection) return;
     if (!normalized) return;
 
+    /**
+     * Detail-Klick schon unterwegs — stale Section (z. B. profil nach Einstellungen)
+     * darf setSection nicht zurückdrehen.
+     */
+    if (pendingDetailIdRef.current) {
+      if (!(normalized === "vorgaenge" && rawId)) {
+        return;
+      }
+    }
+
     setSection(normalized);
     if (normalized === "vorgaenge") {
       applyDetailFromUrl(rawId);

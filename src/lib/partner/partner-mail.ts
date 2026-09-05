@@ -134,7 +134,7 @@ export async function sendHandwerkerNewAnfrageMail(opts: {
     ? `<p><strong>Zeitraum:</strong> ${escapeHtml(opts.zeitraum.trim())}</p>`
     : "";
   const tokenBlock = opts.tokenLink?.trim()
-    ? `<p style="font-size:13px;color:#444">Alternativ (Einmal-Link): <a href="${escapeHtml(opts.tokenLink.trim())}">Anfrage öffnen</a></p>`
+    ? `<p style="font-size:15px;color:#444">Alternativ (Einmal-Link): <a href="${escapeHtml(opts.tokenLink.trim())}">Anfrage öffnen</a></p>`
     : "";
 
   const html = mailShell(
@@ -142,7 +142,7 @@ export async function sendHandwerkerNewAnfrageMail(opts: {
     `<p style="margin:0 0 12px;font-size:15px;line-height:1.6;">Hallo ${escapeHtml(opts.handwerkerName)},</p>
 <p style="margin:0 0 12px;font-size:15px;line-height:1.6;">du hast eine neue Anfrage für <strong>${escapeHtml(opts.gewerkName)}</strong> (PLZ ${escapeHtml(opts.plz)}).</p>
 ${zeitraumBlock}
-<p style="margin:0 0 12px;font-size:14px;color:#444;">Bitte unter <strong>Vorgänge</strong> annehmen oder ablehnen.</p>
+<p style="margin:0 0 12px;font-size:15px;color:#444;">Bitte unter <strong>Vorgänge</strong> annehmen oder ablehnen.</p>
 ${mailBtn("Zur Anfrage im Portal", portalHref)}
 ${tokenBlock}`,
     `Neue Anfrage: ${opts.gewerkName}`
@@ -213,7 +213,7 @@ export async function sendHandwerkerLeistungZuweisungMail(opts: {
   );
 
   const detailsBox = mailGreenBox(`
-    <table width="100%" cellpadding="0" cellspacing="0" style="font-size:14px;line-height:1.6;">
+    <table width="100%" cellpadding="0" cellspacing="0" style="font-size:15px;line-height:1.6;">
       <tr><td style="color:#2E7D52;padding:4px 0;width:38%;">Auftrag:</td><td style="font-weight:600;color:#1A3D2B;">${escapeHtml(opts.auftragTitel)}</td></tr>
       <tr><td style="color:#2E7D52;padding:4px 0;">Kunde:</td><td style="font-weight:600;color:#1A3D2B;">${escapeHtml(opts.kundeName)}</td></tr>
       <tr><td style="color:#2E7D52;padding:4px 0;">Einsatzort:</td><td style="font-weight:600;color:#1A3D2B;">${escapeHtml(opts.adresseZeile)}</td></tr>
@@ -244,7 +244,7 @@ export async function sendHandwerkerLeistungZuweisungMail(opts: {
 <p style="margin:0 0 12px;font-size:15px;line-height:1.6;">${intro}</p>
 ${detailsBox}
 ${mailBtn("Zum Partner-Portal →", portalLink)}
-<p style="font-size:13px;color:#6B7280;line-height:1.6;margin:0 0 8px;">
+<p style="font-size:15px;color:#6B7280;line-height:1.6;margin:0 0 8px;">
   ${footer}
 </p>`,
     opts.auftragTitel
@@ -285,8 +285,8 @@ export async function sendHandwerkerAngebotBestaetigtMail(opts: {
 
   const portalHref = opts.portalLink.trim() || partnerDashboardUrl();
   const preisBlock = mailGreenBox(`
-    <p style="margin:0 0 6px;font-size:14px;"><strong>${escapeHtml(opts.angebotTitel)}</strong> · ${escapeHtml(opts.gewerkName)}</p>
-    <p style="margin:0;font-size:14px;">Netto: ${escapeHtml(fmtEuro(opts.preisNetto))} · Brutto: ${escapeHtml(fmtEuro(opts.preisBrutto))}</p>
+    <p style="margin:0 0 6px;font-size:15px;"><strong>${escapeHtml(opts.angebotTitel)}</strong> · ${escapeHtml(opts.gewerkName)}</p>
+    <p style="margin:0;font-size:15px;">Netto: ${escapeHtml(fmtEuro(opts.preisNetto))} · Brutto: ${escapeHtml(fmtEuro(opts.preisBrutto))}</p>
   `);
 
   const bitteBestaetigen = Boolean(opts.bitteBestaetigen);
@@ -350,18 +350,18 @@ export async function sendHandwerkerAngebotAntwortMail(opts: {
     : `Angebot nicht übernommen: ${opts.gewerkName} — Bärenwald Partner`;
 
   const notizBlock = mailGreenBox(`
-    <p style="margin:0 0 6px;font-size:13px;color:#374151;font-weight:600;">Nachricht von Bärenwald</p>
-    <p style="margin:0;font-size:14px;line-height:1.6;white-space:pre-wrap;">${escapeHtml(opts.crmNotiz.trim())}</p>
+    <p style="margin:0 0 6px;font-size:15px;color:#374151;font-weight:600;">Nachricht von Bärenwald</p>
+    <p style="margin:0;font-size:15px;line-height:1.6;white-space:pre-wrap;">${escapeHtml(opts.crmNotiz.trim())}</p>
   `);
 
   const html = mailShell(
     titel,
     `<p style="margin:0 0 12px;font-size:15px;line-height:1.6;">Hallo ${escapeHtml(opts.handwerkerName)},</p>
 <p style="margin:0 0 12px;font-size:15px;line-height:1.6;">${intro}</p>
-<p style="margin:0 0 12px;font-size:14px;line-height:1.6;"><strong>${escapeHtml(opts.angebotTitel)}</strong> · ${escapeHtml(opts.gewerkName)}</p>
+<p style="margin:0 0 12px;font-size:15px;line-height:1.6;"><strong>${escapeHtml(opts.angebotTitel)}</strong> · ${escapeHtml(opts.gewerkName)}</p>
 ${notizBlock}
 ${mailBtn("Zum Partner-Portal", portalHref)}
-<p style="font-size:13px;color:#6B7280;line-height:1.6;margin:12px 0 0;">Bei Rückfragen melde dich bei uns.</p>`,
+<p style="font-size:15px;color:#6B7280;line-height:1.6;margin:12px 0 0;">Bei Rückfragen melde dich bei uns.</p>`,
     `${opts.gewerkName} — ${opts.angebotTitel}`
   );
 
@@ -415,7 +415,7 @@ export async function sendPartnerInternalAngebotMail(opts: {
 
   const posRows =
     opts.positionen?.length
-      ? `<table style="width:100%;border-collapse:collapse;margin:12px 0;font-size:14px;">
+      ? `<table style="width:100%;border-collapse:collapse;margin:12px 0;font-size:15px;">
   <tr style="border-bottom:1px solid #e5e7eb;">
     <th style="text-align:left;padding:6px 4px;">Leistung</th>
     <th style="text-align:right;padding:6px 4px;">Vorschlag</th>
@@ -536,7 +536,7 @@ export async function sendPartnerInternalBautagebuchMail(opts: {
       <p style="margin:0 0 12px;font-size:15px;color:#374151;line-height:1.6;">Guten Tag,</p>
       <p style="margin:0 0 16px;font-size:15px;color:#374151;line-height:1.6;"><strong>${escapeHtml(hw)}</strong> hat einen Bautagebuch-Eintrag erstellt.</p>
       ${mailGreenBox(`
-        <table width="100%" cellpadding="0" cellspacing="0" style="font-size:14px;line-height:1.6;">
+        <table width="100%" cellpadding="0" cellspacing="0" style="font-size:15px;line-height:1.6;">
           <tr><td style="color:#2E7D52;padding:4px 0;width:38%;">Auftrag:</td><td style="font-weight:600;color:#1A3D2B;">${escapeHtml(opts.auftragTitel)}</td></tr>
           <tr><td style="color:#2E7D52;padding:4px 0;">Eintrag:</td><td style="font-weight:600;color:#1A3D2B;">${escapeHtml(opts.eintragTitel)}</td></tr>
           <tr><td style="color:#2E7D52;padding:4px 0;">Datum:</td><td style="font-weight:600;color:#1A3D2B;">${escapeHtml(opts.datum)}</td></tr>

@@ -86,19 +86,55 @@ export function VorgangCard({
   focusBautagebuch,
   anfrageId,
   focusAbnahme,
+  focusAblehnen,
   protokollId,
 }: {
   vorgang: PartnerVorgangItem;
   handwerker?: VorgangCardHandwerker | null;
-  onUpdated?: (id: string) => void;
+  onUpdated?: (id: string, opts?: { declined?: boolean }) => void;
   onBack?: () => void;
   focusBautagebuch?: boolean;
   anfrageId?: string | null;
   focusAbnahme?: boolean;
+  focusAblehnen?: boolean;
   protokollId?: string | null;
 }) {
   const { state, auftrag } = vorgang;
   const vorgangState = state as VorgangState;
+
+  /**
+   * Partner-Einholung / Angebots-Stub ohne echten Auftrag:
+   * auch nach LV-Einreichung (state erledigt) bei EinholungDetail bleiben —
+   * sonst AuftragDetail mit Stub-ID → „Vorgang wird geladen…“.
+   */
+  const anfrageOnlyStub =
+    Boolean(vorgang.anfrage) &&
+    auftrag.portalPhase === "anfrage" &&
+    auftrag.id === vorgang.anfrage!.id;
+
+  if (anfrageOnlyStub && vorgang.anfrage?.ohne_lv) {
+    return (
+      <PartnerEinholungDetail
+        item={enrichPartnerOffenAngebot(vorgang.anfrage)}
+        onBack={onBack}
+        onConfirmed={onUpdated}
+        focusAblehnen={focusAblehnen}
+      />
+    );
+  }
+
+  if (anfrageOnlyStub && vorgang.anfrage) {
+    const offenItem = toOffenAngebotItem(vorgang);
+    return (
+      <PartnerOffenDetail
+        item={offenItem}
+        vorgangState={vorgangState}
+        onBack={onBack}
+        onConfirmed={onUpdated}
+        focusAblehnen={focusAblehnen}
+      />
+    );
+  }
 
   // Direktauftrag / Notmaßnahme: HV braucht keine Freigabe — Handwerker muss
   // trotzdem annehmen/ablehnen (wie jeder andere Vorgang).
@@ -130,6 +166,7 @@ export function VorgangCard({
           item={offenItem}
           onBack={onBack}
           onConfirmed={onUpdated}
+          focusAblehnen={focusAblehnen}
         />
       );
     }
@@ -139,6 +176,7 @@ export function VorgangCard({
         vorgangState={vorgangState}
         onBack={onBack}
         onConfirmed={onUpdated}
+        focusAblehnen={focusAblehnen}
       />
     );
   }

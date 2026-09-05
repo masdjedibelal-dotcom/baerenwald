@@ -506,7 +506,7 @@ export function PartnerAuftragDetail({
           <div className="space-y-3.5">
             {crmNotiz ? (
               <PortalDetailCard title="Hinweis vom Auftraggeber">
-                <p className="whitespace-pre-wrap text-[13px] font-semibold leading-relaxed text-text-primary">
+                                <p className="whitespace-pre-wrap portal-text-body font-semibold leading-relaxed text-text-primary">
                   {crmNotiz}
                 </p>
               </PortalDetailCard>

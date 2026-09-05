@@ -485,6 +485,132 @@ h3 {
     box-shadow: var(--p2-shadow, 0 1px 3px rgba(0, 0, 0, 0.04));
   }
 
+  /* CRM-Parität: Desktop-Tabellenliste / Mobile-Cards (Objektakte) */
+  .portal-entity-list {
+    border: 0.5px solid var(--p2-line, rgba(0, 0, 0, 0.08));
+    border-radius: var(--p2-radius-md, 12px);
+    overflow: hidden;
+    background: var(--p2-panel, #fff);
+  }
+
+  .portal-entity-list__head,
+  .portal-entity-list__row {
+    display: grid;
+    gap: 10px;
+    align-items: center;
+    padding: 10px 12px;
+  }
+
+  .portal-entity-list__head {
+    background: var(--p2-bg, #f5f6f4);
+    font-size: calc(11.5px * var(--p2-type-scale, 1.1));
+    font-weight: 650;
+    color: var(--p2-faint, #8a938e);
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+  }
+
+  .portal-entity-list__row + .portal-entity-list__row {
+    border-top: 0.5px solid var(--p2-line, rgba(0, 0, 0, 0.08));
+  }
+
+  .portal-entity-list__row:hover {
+    background: color-mix(in srgb, var(--p2-bg, #f5f6f4) 70%, transparent);
+  }
+
+  .portal-entity-list__hit {
+    display: contents;
+    border: 0;
+    background: transparent;
+    text-align: left;
+    cursor: pointer;
+    color: inherit;
+    font: inherit;
+    padding: 0;
+    margin: 0;
+  }
+
+  .portal-entity-list__hit--static {
+    cursor: default;
+  }
+
+  .portal-entity-list__name {
+    font-size: calc(14px * var(--p2-type-scale, 1.1));
+    font-weight: 600;
+    color: var(--p2-ink, #142019);
+    min-width: 0;
+  }
+
+  .portal-entity-list__dim {
+    font-size: calc(13px * var(--p2-type-scale, 1.1));
+    color: var(--p2-sub, #5c6560);
+    min-width: 0;
+  }
+
+  .portal-entity-row-actions {
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+  }
+
+  .portal-entity-cards {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .portal-entity-card-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    padding: 12px 14px;
+    border-radius: var(--p2-radius-md, 12px);
+    border: 0.5px solid var(--p2-line, rgba(0, 0, 0, 0.08));
+    background: var(--p2-panel, #fff);
+  }
+
+  .portal-entity-card-hit {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    text-align: left;
+    cursor: pointer;
+    color: inherit;
+    font: inherit;
+  }
+
+  .portal-entity-card-hit--static {
+    cursor: default;
+  }
+
+  .portal-entity-card-top {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .portal-entity-card-name {
+    font-size: calc(14.5px * var(--p2-type-scale, 1.1));
+    font-weight: 600;
+    color: var(--p2-ink, #142019);
+  }
+
+  .portal-entity-card-meta {
+    font-size: calc(13px * var(--p2-type-scale, 1.1));
+    color: var(--p2-sub, #5c6560);
+    line-height: 1.4;
+  }
+
   /* Zusammenhängende Listenfläche (Mock „Zuletzt“ / Liste) */
   .portal-list-panel {
     background: var(--p2-panel, #fff);
@@ -669,9 +795,9 @@ h3 {
 
   .portal-einstellungen-card-title {
     margin-bottom: 8px;
-    font-size: calc(11.5px * var(--p2-type-scale, 1.1));
+    font-size: var(--p2-type-eyebrow, calc(11.5px * var(--p2-type-scale, 1.1)));
     font-weight: 800;
-    letter-spacing: 0.04em;
+    letter-spacing: 0.14em;
     text-transform: uppercase;
     color: #7a857f;
   }
@@ -1260,12 +1386,24 @@ h3 {
 
   /**
    * Suchfeld mit Icon links — Padding muss Icon-Platz freilassen.
-   * Deep Green Desktop: 16rem, kein Border, weicher Schatten.
+   * Topbar: weiß auf Grün; sonst Tertiary auf hellem Grund.
    */
   .portal-search {
     position: relative;
     flex: 1;
     min-width: 0;
+    width: 100%;
+  }
+
+  .portal-search-icon {
+    pointer-events: none;
+    position: absolute;
+    left: 14px;
+    top: 50%;
+    width: 18px;
+    height: 18px;
+    transform: translateY(-50%);
+    color: var(--p2-faint, #8a938e);
   }
 
   .portal-search-input {
@@ -1273,7 +1411,7 @@ h3 {
     border-radius: 999px;
     border: 1px solid var(--p2-line, #dfe4e0);
     background: #fff;
-    padding: 11px 16px 11px 40px;
+    padding: 12px 16px 12px 42px;
     font-size: calc(14px * var(--p2-type-scale, 1.1));
     font-weight: 600;
     color: var(--p2-ink, #142019);
@@ -1291,11 +1429,12 @@ h3 {
 
   @media (min-width: 1024px) {
     .portal-search {
-      flex: 0 0 auto;
-      width: 16rem;
+      flex: 1 1 auto;
+      width: 100%;
+      max-width: none;
     }
     .portal-search-input {
-      width: 16rem;
+      width: 100%;
       border: none;
       box-shadow: 0 2px 10px rgba(16, 32, 24, 0.06);
     }
@@ -1316,18 +1455,19 @@ h3 {
     min-width: 44px;
   }
 
-  /* Portal 2.0 Topbar — durchgehend Deep Green (Brand + Header-Cluster) */
+  /* Portal 2.0 Topbar — Deep Green; content-bleed mobil = Overlay über Hero */
   .portal-topbar {
+    --portal-topbar-overlap: 68px;
     position: sticky;
     top: 0;
     z-index: 50;
     display: flex;
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
     align-items: center;
     gap: 12px;
-    padding: 14px 18px 16px;
+    padding: 12px 18px;
+    min-height: var(--portal-topbar-overlap);
     overflow: visible;
-    /* background/color: siehe .portal-ui.portal-topbar (Cascade-Fix) */
     background: var(--org-primary-dk, var(--p2-primary-dk, #1a3d2b));
     color: #fff;
     border-bottom: none;
@@ -1391,16 +1531,16 @@ h3 {
   .portal-topbar-right {
     display: flex;
     align-items: center;
-    gap: 6px;
-    margin-left: auto;
-    overflow: visible;
+    gap: 10px;
+    min-width: 0;
+    flex: 1 1 auto;
   }
 
-  /* Desktop: Brand in Sidebar — Topbar nur Suche/Glocke, weiterhin grün */
   @media (min-width: 1024px) {
     .portal-topbar {
+      --portal-topbar-overlap: 72px;
       gap: 12px;
-      padding: 20px 32px 4px;
+      padding: 14px 32px;
       position: relative;
     }
 
@@ -1411,8 +1551,9 @@ h3 {
     }
 
     .portal-topbar-right {
-      flex: 0 0 auto;
-      margin-left: auto;
+      flex: 1 1 auto;
+      margin-left: 0;
+      width: 100%;
     }
   }
 
@@ -1420,7 +1561,6 @@ h3 {
   .portal-header {
     display: flex;
     align-items: center;
-    justify-content: flex-end;
     gap: 10px;
     flex-shrink: 0;
     width: 100%;
@@ -1428,8 +1568,19 @@ h3 {
   }
 
   .portal-header-search {
-    flex: 1;
+    flex: 1 1 auto;
     min-width: 0;
+  }
+
+  .portal-header-search--empty {
+    display: none;
+  }
+
+  .portal-header-end {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-shrink: 0;
   }
 
   .portal-header-notifications {
@@ -1440,10 +1591,10 @@ h3 {
     overflow: visible;
   }
 
-  /* Glocke — Outline-Icon auf grüner Topbar (weiß Rand + Icon) */
+  /* Glocke — Outline weiß auf Topbar */
   .portal-bell-trigger {
-    width: 42px;
-    height: 42px;
+    width: 44px;
+    height: 44px;
     border-radius: 999px;
     border: 1.5px solid rgba(255, 255, 255, 0.85);
     background: transparent;
@@ -1470,11 +1621,10 @@ h3 {
 
   @media (max-width: 1023px) {
     .portal-bell-trigger {
-      width: 36px;
-      height: 36px;
+      width: 42px;
+      height: 42px;
     }
   }
-
 
   /* Abmelden liegt in der Sidebar */
   .portal-header-notifications form,
@@ -1482,25 +1632,19 @@ h3 {
     display: none !important;
   }
 
-  @media (min-width: 1024px) {
-    .portal-header {
-      width: auto;
-    }
-    .portal-header-search {
-      flex: 0 0 auto;
-    }
-  }
-
-  /* Topbar-Suche — Outline wie Glocke (weiß Rand + Icon/Text) */
+  /* Topbar-Suche — Outline wie Glocke */
   .portal-topbar .portal-search-input {
     border: 1.5px solid rgba(255, 255, 255, 0.85);
     background: transparent;
     color: #fff;
     box-shadow: none;
+    min-height: 44px;
+    padding: 11px 16px 11px 44px;
+    font-size: calc(15px * var(--p2-type-scale, 1.1));
   }
 
   .portal-topbar .portal-search-input::placeholder {
-    color: rgba(255, 255, 255, 0.65);
+    color: rgba(255, 255, 255, 0.62);
   }
 
   .portal-topbar .portal-search-input:focus {
@@ -1509,30 +1653,61 @@ h3 {
     background: rgba(255, 255, 255, 0.12);
   }
 
-  .portal-topbar .portal-search svg {
+  .portal-topbar .portal-search-icon {
+    left: 15px;
+    width: 18px;
+    height: 18px;
     color: #fff;
   }
 
   @media (max-width: 1023px) {
-    .portal-header-search {
-      flex: 1;
-      min-width: 0;
-      max-width: 11rem;
-    }
-
-    .portal-topbar .portal-search-input {
-      padding: 9px 12px 9px 36px;
-      font-size: calc(13px * var(--p2-type-scale, 1.1));
-    }
-
     .portal-header-user {
       display: none !important;
     }
 
-    .portal-topbar-right {
-      flex: 1;
+    .portal-header-search {
+      flex: 1 1 auto;
       min-width: 0;
-      margin-left: auto;
+      max-width: none;
+    }
+
+    /* Listen ohne Hero: Brand in Topbar behalten */
+    .portal-shell:not([data-content-bleed="true"]) .portal-topbar-brand {
+      display: flex;
+      max-width: 42%;
+    }
+
+    .portal-shell[data-content-bleed="true"] .portal-topbar-brand,
+    .portal-shell[data-content-bleed="true"] .portal-topbar-spacer {
+      display: none;
+    }
+  }
+
+  @media (min-width: 1024px) {
+    .portal-header {
+      display: grid;
+      grid-template-columns: 1fr minmax(18rem, 28rem) 1fr;
+      align-items: center;
+      gap: 16px;
+      width: 100%;
+    }
+
+    .portal-header-search {
+      grid-column: 2;
+      flex: none;
+      width: 100%;
+      max-width: none;
+    }
+
+    .portal-header-search--empty {
+      display: block;
+      visibility: hidden;
+      pointer-events: none;
+    }
+
+    .portal-header-end {
+      grid-column: 3;
+      justify-self: end;
     }
   }
 
@@ -1610,16 +1785,18 @@ h3 {
     }
   }
 
-  /* Deep Green Dashboard — negativer Top-Bleed = shell-main--padded (18px) */
+  /* Deep Green Dashboard — horizontal pad via --portal-pad-x; Top-Bleed nur ohne content-bleed */
   .portal-dash {
+    --portal-pad-x: 18px;
     background: var(--p2-bg, #f5f6f4);
-    margin-inline: -18px;
-    margin-top: -18px;
+    margin-inline: calc(-1 * var(--portal-pad-x));
+    margin-top: calc(-1 * var(--portal-pad-x));
     padding-bottom: 8px;
   }
 
   @media (min-width: 1024px) {
     .portal-dash {
+      --portal-pad-x: 0px;
       margin-inline: 0;
       margin-top: 0;
     }
@@ -1646,7 +1823,7 @@ h3 {
     inset: 0;
     background-size: cover;
     background-position: center;
-    opacity: 0.22;
+    opacity: 0.28;
     pointer-events: none;
   }
 
@@ -1821,7 +1998,7 @@ h3 {
   }
 
   .portal-dash-body {
-    padding: 0 18px 24px;
+    padding: 0 var(--portal-pad-x, 18px) 24px;
     max-width: var(--portal-content-max, 1040px);
     margin-inline: auto;
   }
@@ -1991,6 +2168,7 @@ h3 {
 
   .portal-dash-focus-actions {
     display: flex;
+    flex-wrap: wrap;
     gap: 10px;
     margin-top: 16px;
   }
@@ -2005,17 +2183,30 @@ h3 {
   }
 
   .portal-dash-focus-btn--secondary {
+    flex: 0 0 auto;
     background: #fff;
     border: 1px solid rgba(20, 32, 25, 0.12);
     color: var(--p2-ink, #142019);
   }
 
   .portal-dash-focus-btn--primary {
-    flex: 1;
+    /* Mobil: Primär füllt Rest; Desktop: natürliche Breite */
+    flex: 1 1 auto;
+    min-width: 7.5rem;
     background: var(--org-primary, var(--p2-primary, #2e7d52));
     border: none;
     color: #fff;
     box-shadow: var(--p2-shadow-primary-btn, 0 8px 20px rgba(46, 125, 82, 0.28));
+  }
+
+  @media (min-width: 1024px) {
+    .portal-dash-focus-actions {
+      justify-content: flex-start;
+    }
+
+    .portal-dash-focus-btn--primary {
+      flex: 0 0 auto;
+    }
   }
 
   .portal-dash-action-count {
@@ -2247,16 +2438,18 @@ h3 {
     box-shadow: var(--p2-shadow, 0 2px 10px rgba(16, 32, 24, 0.05));
   }
 
-  /* Deep Green Detail — Hero wie Dashboard; Top-Bleed = shell-main--padded (18px) */
+  /* Deep Green Detail — gleiche Pad-/Bleed-Logik wie Dashboard */
   .portal-detail-layout,
   .portal-entity-detail {
+    --portal-pad-x: 18px;
     background: var(--p2-bg, #f5f6f4);
-    margin-inline: -18px;
-    margin-top: -18px;
+    margin-inline: calc(-1 * var(--portal-pad-x));
+    margin-top: calc(-1 * var(--portal-pad-x));
   }
 
   /* Nested: Entity liegt schon im Layout-Bleed — nicht nochmal ziehen */
   .portal-detail-layout .portal-entity-detail {
+    --portal-pad-x: 18px;
     margin-inline: 0;
     margin-top: 0;
     background: transparent;
@@ -2265,6 +2458,7 @@ h3 {
   @media (min-width: 1024px) {
     .portal-detail-layout,
     .portal-entity-detail {
+      --portal-pad-x: 0px;
       margin-inline: 0;
       margin-top: 0;
     }
@@ -2349,11 +2543,11 @@ h3 {
     cursor: pointer;
   }
 
-  /* Kopfkarte: etwas tiefer (weniger Overlap), horizontal inset wie Dashboard-Fokus */
+  /* Kopfkarte: horizontal inset wie Dashboard-Fokus (--portal-pad-x) */
   .portal-detail-kopfkarte {
     position: relative;
     z-index: 1;
-    margin: -20px 18px 0;
+    margin: -20px var(--portal-pad-x, 18px) 0;
     padding: 20px;
     border-radius: 22px;
     background: #fff;
@@ -2367,7 +2561,7 @@ h3 {
   }
 
   .portal-detail-body-pad {
-    padding-inline: 18px;
+    padding-inline: var(--portal-pad-x, 18px);
   }
 
   @media (min-width: 1024px) {
@@ -2431,7 +2625,7 @@ h3 {
   }
 
   .portal-entity-detail-body {
-    padding: 16px 18px 24px;
+    padding: 16px var(--portal-pad-x, 18px) 24px;
   }
 
   @media (min-width: 1024px) {
@@ -2547,7 +2741,7 @@ h3 {
 
   .portal-detail-kv-label {
     max-width: 44%;
-    font-size: calc(13.5px * var(--p2-type-scale, 1.1));
+    font-size: var(--p2-type-label, calc(13px * var(--p2-type-scale, 1.1)));
     font-weight: 600;
     color: var(--p2-sub, #55615b);
     overflow-wrap: anywhere;
@@ -2557,7 +2751,7 @@ h3 {
     flex: 1;
     min-width: 0;
     text-align: right;
-    font-size: calc(14.5px * var(--p2-type-scale, 1.1));
+    font-size: var(--p2-type-body, calc(14.5px * var(--p2-type-scale, 1.1)));
     font-weight: 700;
     color: var(--p2-ink, #142019);
     overflow-wrap: anywhere;
@@ -4341,7 +4535,8 @@ h3 {
   }
 
   .portal-shell-main--padded {
-    padding: 18px 18px var(--portal-mobile-nav-pad);
+    --portal-pad-x: 18px;
+    padding: var(--portal-pad-x) var(--portal-pad-x) var(--portal-mobile-nav-pad);
   }
 
   .portal-shell-main--chrome-hidden {
@@ -4350,10 +4545,63 @@ h3 {
 
   @media (min-width: 1024px) {
     .portal-shell-main--padded {
-      padding: 16px 32px 40px;
+      --portal-pad-x: 32px;
+      padding: 16px var(--portal-pad-x) 40px;
     }
     .portal-shell-main--chrome-hidden {
-      padding: 16px 32px 40px;
+      --portal-pad-x: 32px;
+      padding: 16px var(--portal-pad-x) 40px;
+    }
+  }
+
+  /* Mobil: Dashboard/Detail — Topbar transparent, Hero läuft darunter */
+  @media (max-width: 1023px) {
+    .portal-shell[data-content-bleed="true"] .portal-topbar {
+      background: transparent;
+      background-image: linear-gradient(
+        to bottom,
+        rgba(16, 32, 24, 0.55) 0%,
+        rgba(16, 32, 24, 0.22) 55%,
+        transparent 100%
+      );
+    }
+
+    .portal-shell[data-content-bleed="true"] .portal-shell-main--padded {
+      padding-top: 0;
+      padding-inline: 0;
+    }
+
+    .portal-shell[data-content-bleed="true"] .portal-dash,
+    .portal-shell[data-content-bleed="true"] .portal-detail-layout,
+    .portal-shell[data-content-bleed="true"] .portal-entity-detail {
+      margin-inline: 0;
+      margin-top: 0;
+    }
+
+    .portal-shell[data-content-bleed="true"] .portal-dash-hero,
+    .portal-shell[data-content-bleed="true"] .portal-detail-hero {
+      margin-top: calc(-1 * var(--portal-topbar-overlap, 68px));
+      padding-top: calc(var(--portal-topbar-overlap, 68px) + 16px);
+      border-radius: 0 0 30px 30px;
+    }
+
+    .portal-shell[data-content-bleed="true"] .portal-detail-hero {
+      padding-top: calc(var(--portal-topbar-overlap, 68px) + 56px);
+    }
+
+    .portal-shell[data-content-bleed="true"] .portal-detail-cover-back,
+    .portal-shell[data-content-bleed="true"] .portal-detail-cover-edit {
+      top: calc(var(--portal-topbar-overlap, 68px) + 8px);
+    }
+
+    .portal-shell[data-content-bleed="true"] .portal-dash-body,
+    .portal-shell[data-content-bleed="true"] .portal-entity-detail-body {
+      padding-inline: 18px;
+    }
+
+    .portal-shell[data-content-bleed="true"] .portal-detail-kopfkarte {
+      margin-left: 18px;
+      margin-right: 18px;
     }
   }
 
@@ -5577,17 +5825,42 @@ select {
   text-align: center;
 }
 
-/* Partner LV-Kalkulation — Position oben, Menge/Einheit/€ gleich breit darunter */
+/* Partner LV-Kalkulation: Desktop kompakt, Mobil 3 Spalten vollbreit */
 .hw-kalk-pos__fields {
-  align-items: stretch;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
 }
 .hw-kalk-pos__field {
   min-width: 0;
   min-height: 40px;
+  box-sizing: border-box;
 }
-@media (max-width: 380px) {
+.hw-kalk-pos__field--menge {
+  width: 4.75rem;
+}
+.hw-kalk-pos__field--einheit {
+  width: 5.75rem;
+}
+.hw-kalk-pos__field--preis {
+  width: 7.25rem;
+}
+.hw-kalk-pos__field--preis-wrap {
+  position: relative;
+  width: 7.25rem;
+}
+@media (max-width: 639px) {
   .hw-kalk-pos__fields {
+    display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 8px;
+  }
+  .hw-kalk-pos__field--menge,
+  .hw-kalk-pos__field--einheit,
+  .hw-kalk-pos__field--preis,
+  .hw-kalk-pos__field--preis-wrap {
+    width: 100%;
   }
 }
 

@@ -21,7 +21,12 @@ import {
   EinstellungenToggle,
 } from "@/components/shared/PortalEinstellungenUi";
 import { PortalDetailCard } from "@/components/shared/PortalDetailCard";
-import { PortalEntityCard } from "@/components/shared/PortalEntityCard";
+import { PortalEntityList } from "@/components/shared/PortalEntityList";
+import {
+  bewohnerBelegtEinheit,
+  einheitMieterAddGesperrt,
+  isEigentuemerSelbstbewohnt,
+} from "@/lib/org/einheit-bewohner-regeln";
 import {
   OBJ_MIETER_PORTAL_STATUS,
   resolveObjMieterPortalStatus,
@@ -53,6 +58,7 @@ type Bewohner = {
   telefon?: string | null;
   rolle?: PersonRolle | null;
   sondereigentum_verwaltung?: boolean | null;
+  selbstbewohnt?: boolean | null;
   miete_hinweis?: string | null;
   objekt_einheit_id: string;
 };
@@ -122,6 +128,7 @@ export function OrganisationObjektEinheitenTab({
   const [email, setEmail] = useState("");
   const [telefon, setTelefon] = useState("");
   const [seVerwaltung, setSeVerwaltung] = useState(false);
+  const [selbstbewohnt, setSelbstbewohnt] = useState(false);
   const [mieteHinweis, setMieteHinweis] = useState("");
   const [personBusy, setPersonBusy] = useState(false);
 
@@ -281,6 +288,7 @@ export function OrganisationObjektEinheitenTab({
     setEmail("");
     setTelefon("");
     setSeVerwaltung(false);
+    setSelbstbewohnt(false);
     setMieteHinweis("");
     setExistingEigentuemerId("");
     setEigentuemerMode(rolle === "eigentuemer" ? "existing" : "new");
@@ -323,6 +331,7 @@ export function OrganisationObjektEinheitenTab({
     setEmail(b.email?.trim() || "");
     setTelefon(b.telefon?.trim() || "");
     setSeVerwaltung(Boolean(b.sondereigentum_verwaltung));
+    setSelbstbewohnt(Boolean(b.selbstbewohnt));
     setMieteHinweis(b.miete_hinweis?.trim() || "");
     setEigentuemerMode("new");
     setExistingEigentuemerId("");
@@ -364,6 +373,7 @@ export function OrganisationObjektEinheitenTab({
               einheitId: personForm.einheitId,
               existingBewohnerId: existingEigentuemerId,
               sondereigentum_verwaltung: seVerwaltung,
+              selbstbewohnt,
             }),
           });
           const json = (await res.json()) as { error?: string };
@@ -394,6 +404,8 @@ export function OrganisationObjektEinheitenTab({
                   rolle: personForm.rolle,
                   sondereigentum_verwaltung:
                     personForm.rolle === "eigentuemer" ? seVerwaltung : false,
+                  selbstbewohnt:
+                    personForm.rolle === "eigentuemer" ? selbstbewohnt : false,
                   miete_hinweis:
                     personForm.rolle === "mieter"
                       ? mieteHinweis.trim() || null
@@ -408,6 +420,8 @@ export function OrganisationObjektEinheitenTab({
                   rolle: personForm.rolle,
                   sondereigentum_verwaltung:
                     personForm.rolle === "eigentuemer" ? seVerwaltung : false,
+                  selbstbewohnt:
+                    personForm.rolle === "eigentuemer" ? selbstbewohnt : false,
                   miete_hinweis:
                     personForm.rolle === "mieter"
                       ? mieteHinweis.trim() || undefined
@@ -571,13 +585,25 @@ export function OrganisationObjektEinheitenTab({
     people: Bewohner[]
   ) {
     const title = rolle === "eigentuemer" ? "Eigentümer" : "Mieter";
+    const allOnEinheit = byEinheit.get(einheit.id) ?? [];
+    const mieterGesperrt =
+      rolle === "mieter" && einheitMieterAddGesperrt(allOnEinheit);
     return (
       <div className="space-y-2">
         <EinstellungenSectionHeader
           title={title}
-          onAdd={() => openPersonCreate(einheit.id, rolle)}
+          onAdd={
+            mieterGesperrt
+              ? undefined
+              : () => openPersonCreate(einheit.id, rolle)
+          }
           addLabel={`${title} hinzufügen`}
         />
+        {mieterGesperrt ? (
+          <p className="text-[12.5px] leading-snug text-text-secondary">
+            Eigentümer selbstbewohnt — kein zusätzlicher Mieter.
+          </p>
+        ) : null}
         {people.length === 0 ? (
           <p className="text-[13px] text-text-secondary">Noch keine {title}.</p>
         ) : (
@@ -591,6 +617,11 @@ export function OrganisationObjektEinheitenTab({
               const metaBits = [
                 mail || null,
                 tel || null,
+                rolle === "eigentuemer"
+                  ? isEigentuemerSelbstbewohnt(b)
+                    ? "Selbstbewohnt"
+                    : null
+                  : null,
                 rolle === "eigentuemer"
                   ? b.sondereigentum_verwaltung
                     ? "SE-Verwaltung"
@@ -672,12 +703,19 @@ export function OrganisationObjektEinheitenTab({
       ) : einheiten.length === 0 ? (
         <PortalInboxEmpty title="Noch keine Einheiten" compact />
       ) : (
-        <ul className="space-y-2">
-          {einheiten.map((u) => {
+        <PortalEntityList
+          ariaLabel="Einheiten"
+          columns={[
+            { key: "name", label: "Einheit", width: "minmax(0, 1.2fr)" },
+            { key: "details", label: "Details", width: "minmax(0, 1.4fr)" },
+            { key: "status", label: "Status", width: "minmax(0, 0.7fr)" },
+          ]}
+          rows={einheiten.map((u) => {
             const people = byEinheit.get(u.id) ?? [];
             const mieter = people.filter((p) => p.rolle !== "eigentuemer");
             const eigentuemer = people.filter((p) => p.rolle === "eigentuemer");
-            const badge = people.length > 0 ? "belegt" : "leer";
+            const belegt = people.some((p) => bewohnerBelegtEinheit(p));
+            const badge = belegt ? "belegt" : "leer";
             const meta = [
               u.etage?.trim() ? `Etage ${u.etage.trim()}` : null,
               u.wohnflaeche_m2 != null ? `${u.wohnflaeche_m2} m²` : null,
@@ -685,45 +723,48 @@ export function OrganisationObjektEinheitenTab({
                 ? `${eigentuemer.length} Eigentümer`
                 : null,
               mieter.length ? `${mieter.length} Mieter` : null,
+              eigentuemer.some((p) => isEigentuemerSelbstbewohnt(p))
+                ? "selbstbewohnt"
+                : null,
             ]
               .filter(Boolean)
               .join(" · ");
-
-            return (
-              <li key={u.id}>
-                <PortalEntityCard
-                  title={u.bezeichnung}
-                  badge={
-                    <span
-                      className={cn(
-                        "shrink-0 rounded-full px-2.5 py-1 text-[11px] font-semibold",
-                        badge === "leer"
-                          ? "bg-[#FBF1D6] text-[#8A5A06]"
-                          : "bg-accent-light text-accent"
-                      )}
-                    >
-                      {badge}
-                    </span>
-                  }
-                  meta={
-                    <p className="truncate text-[13px] text-text-secondary">
-                      {meta || "Keine Personen"}
-                    </p>
-                  }
-                  onClick={() => setDetailId(u.id)}
-                  menu={
-                    <PortalActionMenu
-                      title={u.bezeichnung}
-                      items={einheitMenuItems(u)}
-                      variant="popover"
-                      triggerLabel="Einheit-Menü"
-                    />
-                  }
-                />
-              </li>
+            const statusBadge = (
+              <span
+                className={cn(
+                  "shrink-0 rounded-full px-2.5 py-1 text-[11px] font-semibold",
+                  badge === "leer"
+                    ? "bg-[#FBF1D6] text-[#8A5A06]"
+                    : "bg-accent-light text-accent"
+                )}
+              >
+                {badge}
+              </span>
             );
+            return {
+              id: u.id,
+              title: u.bezeichnung,
+              badge: statusBadge,
+              meta: (
+                <p className="truncate">{meta || "Keine Personen"}</p>
+              ),
+              cells: [
+                u.bezeichnung,
+                meta || "Keine Personen",
+                statusBadge,
+              ],
+              onClick: () => setDetailId(u.id),
+              menu: (
+                <PortalActionMenu
+                  title={u.bezeichnung}
+                  items={einheitMenuItems(u)}
+                  variant="popover"
+                  triggerLabel="Einheit-Menü"
+                />
+              ),
+            };
           })}
-        </ul>
+        />
       )}
       </PortalDetailCard>
 
@@ -930,12 +971,20 @@ export function OrganisationObjektEinheitenTab({
           )}
 
           {personForm?.rolle === "eigentuemer" ? (
-            <EinstellungenToggle
-              checked={seVerwaltung}
-              onChange={setSeVerwaltung}
-              title="Sondereigentumsverwaltung durch HV"
-              description="Ja = HV führt SE-Aufträge; Freigabe über Schwelle beim Eigentümer."
-            />
+            <>
+              <EinstellungenToggle
+                checked={selbstbewohnt}
+                onChange={setSelbstbewohnt}
+                title="Wohnung selbstbewohnt"
+                description="Ja = Eigentümer wohnt selbst — zählt wie Mieter für Belegung und Vorgänge. Mieter hinzufügen ist dann gesperrt."
+              />
+              <EinstellungenToggle
+                checked={seVerwaltung}
+                onChange={setSeVerwaltung}
+                title="Sondereigentumsverwaltung durch HV"
+                description="Ja = HV führt SE-Aufträge; Freigabe über Schwelle beim Eigentümer."
+              />
+            </>
           ) : !assigningExistingEigentuemer ? (
             <EinstellungenEdField
               label="Miet-Hinweis (optional)"

@@ -83,12 +83,6 @@ export function OrganisationObjektFinanzPanel({ objektId }: Props) {
     void load();
   }, [load]);
 
-  const jahr = von.slice(0, 4);
-  const gewerkHint =
-    data && data.nachGewerk.length > 0
-      ? data.nachGewerk.slice(0, 3).map((g) => `${g.gewerk} (${g.count})`).join(" · ")
-      : "—";
-
   return (
     <EinstellungenSectionCard
       title="Kosten & Kennzahlen"
@@ -96,7 +90,7 @@ export function OrganisationObjektFinanzPanel({ objektId }: Props) {
         <div className="relative">
           <button
             type="button"
-            className="portal-btn portal-btn-secondary inline-flex items-center gap-1.5 text-[13px]"
+            className="btn-pill-primary portal-btn inline-flex items-center gap-1.5 text-[13px]"
             onClick={() => setExportOpen((o) => !o)}
           >
             Export <ChevronDown className="h-4 w-4" />
@@ -123,13 +117,6 @@ export function OrganisationObjektFinanzPanel({ objektId }: Props) {
                 >
                   Versammlungsbericht (PDF)
                 </button>
-                <a
-                  className="block px-3 py-2 text-[13px] hover:bg-muted/60"
-                  href={`/api/org/objekte/bericht?objektId=${encodeURIComponent(objektId)}&jahr=${encodeURIComponent(jahr)}`}
-                  onClick={() => setExportOpen(false)}
-                >
-                  Jahresbericht (PDF)
-                </a>
                 <a
                   className="block px-3 py-2 text-[13px] hover:bg-muted/60"
                   href={`/api/org/objekte/kosten-csv?objektId=${encodeURIComponent(objektId)}&von=${encodeURIComponent(von)}&bis=${encodeURIComponent(bis)}`}
@@ -202,7 +189,7 @@ export function OrganisationObjektFinanzPanel({ objektId }: Props) {
         <>
           <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-4">
             <KpiTile
-              label={`Kosten ${jahr}`}
+              label="Gesamtkosten"
               value={fmtEuro(data?.gesamtKosten ?? 0)}
               muted={!data?.rechnungenAnzahl}
             />
@@ -236,9 +223,6 @@ export function OrganisationObjektFinanzPanel({ objektId }: Props) {
               ))}
             </ul>
           ) : null}
-          <p className="portal-text-meta text-text-tertiary">
-            Nach Gewerk: {gewerkHint}
-          </p>
         </>
       )}
 

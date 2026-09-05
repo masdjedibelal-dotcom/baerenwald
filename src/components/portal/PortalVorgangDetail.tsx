@@ -555,7 +555,7 @@ export function PortalVorgangDetail({
                             kind="pdf"
                             className="block w-full overflow-hidden rounded-xl border border-[var(--portal-primary,#2E7D52)]/30 bg-[var(--portal-primary,#2E7D52)]/5 text-left"
                           >
-                            <p className="px-3 py-4 text-center text-[13px] font-semibold text-[var(--portal-primary,#2E7D52)]">
+                            <p className="px-3 py-4 text-center portal-text-meta font-semibold text-[var(--portal-primary,#2E7D52)]">
                               {d.name} — PDF öffnen
                             </p>
                           </PortalDocOpenButton>

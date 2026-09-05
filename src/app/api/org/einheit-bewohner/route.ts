@@ -114,6 +114,7 @@ async function createBewohnerWithWohnung(input: {
   telefon?: string;
   rolle?: "mieter" | "eigentuemer";
   sondereigentum_verwaltung?: boolean;
+  selbstbewohnt?: boolean;
   miete_hinweis?: string | null;
   notiz?: string | null;
 }): Promise<
@@ -196,6 +197,8 @@ async function createBewohnerWithWohnung(input: {
       rolle === "eigentuemer"
         ? Boolean(input.sondereigentum_verwaltung)
         : false,
+    selbstbewohnt:
+      rolle === "eigentuemer" ? Boolean(input.selbstbewohnt) : false,
     miete_hinweis:
       rolle === "mieter" ? input.miete_hinweis?.trim() || null : null,
     notiz: input.notiz?.trim() || null,
@@ -209,7 +212,7 @@ async function createBewohnerWithWohnung(input: {
 
   if (
     bewErr &&
-    /rolle|sondereigentum|miete_hinweis|notiz/i.test(bewErr.message)
+    /rolle|sondereigentum|miete_hinweis|notiz|selbstbewohnt/i.test(bewErr.message)
   ) {
     const legacy = await supabaseAdmin
       .from("einheit_bewohner")
@@ -336,6 +339,7 @@ export async function POST(req: Request) {
     telefon?: string;
     rolle?: "mieter" | "eigentuemer";
     sondereigentum_verwaltung?: boolean;
+    selbstbewohnt?: boolean;
     miete_hinweis?: string;
     notiz?: string;
     /** Bestehenden Eigentümer an diese Einheit hängen. */
@@ -362,6 +366,7 @@ export async function POST(req: Request) {
       einheitId,
       sourceBewohnerId: existingBewohnerId,
       sondereigentumVerwaltung: body.sondereigentum_verwaltung,
+      selbstbewohnt: body.selbstbewohnt,
     });
     if (!assigned.ok) {
       return NextResponse.json({ error: assigned.error }, { status: 400 });
@@ -389,6 +394,7 @@ export async function POST(req: Request) {
       telefon: body.telefon,
       rolle,
       sondereigentum_verwaltung: body.sondereigentum_verwaltung,
+      selbstbewohnt: body.selbstbewohnt,
       miete_hinweis: body.miete_hinweis,
       notiz: body.notiz,
     });
@@ -422,6 +428,8 @@ export async function POST(req: Request) {
     rolle,
     sondereigentum_verwaltung:
       rolle === "eigentuemer" ? Boolean(body.sondereigentum_verwaltung) : false,
+    selbstbewohnt:
+      rolle === "eigentuemer" ? Boolean(body.selbstbewohnt) : false,
     miete_hinweis: rolle === "mieter" ? body.miete_hinweis?.trim() || null : null,
     notiz: body.notiz?.trim() || null,
   };
@@ -432,7 +440,7 @@ export async function POST(req: Request) {
     .select("id")
     .single();
 
-  if (error && /rolle|sondereigentum|miete_hinweis|notiz/i.test(error.message)) {
+  if (error && /rolle|sondereigentum|miete_hinweis|notiz|selbstbewohnt/i.test(error.message)) {
     ({ data, error } = await supabaseAdmin
       .from("einheit_bewohner")
       .insert({
@@ -499,6 +507,7 @@ export async function PATCH(req: Request) {
     email?: string;
     rolle?: "mieter" | "eigentuemer";
     sondereigentum_verwaltung?: boolean;
+    selbstbewohnt?: boolean;
     miete_hinweis?: string | null;
     notiz?: string | null;
   };
@@ -519,11 +528,26 @@ export async function PATCH(req: Request) {
   if (body.sondereigentum_verwaltung !== undefined) {
     patch.sondereigentum_verwaltung = Boolean(body.sondereigentum_verwaltung);
   }
+  if (body.selbstbewohnt !== undefined) {
+    const rolleNext =
+      body.rolle === "mieter" || body.rolle === "eigentuemer"
+        ? body.rolle
+        : undefined;
+    patch.selbstbewohnt =
+      (rolleNext ?? "eigentuemer") === "eigentuemer"
+        ? Boolean(body.selbstbewohnt)
+        : false;
+  }
   if (body.miete_hinweis !== undefined) {
     patch.miete_hinweis = body.miete_hinweis?.trim() || null;
   }
   if (body.notiz !== undefined) {
     patch.notiz = body.notiz?.trim() || null;
+  }
+
+  // Rolle mieter → selbstbewohnt immer aus
+  if (body.rolle === "mieter") {
+    patch.selbstbewohnt = false;
   }
 
   const { error } = await supabaseAdmin

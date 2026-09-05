@@ -1,5 +1,4 @@
 import type { PartnerVorgangItem } from "@/lib/partner/build-partner-vorgaenge";
-import { resolvePartnerOffenKartenTyp } from "@/lib/partner/partner-offen-status";
 import type { PortalDashboardActionSlide } from "@/lib/portal2/dashboard-actions/types";
 import { sortDashboardActionSlides } from "@/lib/portal2/dashboard-actions/sort";
 
@@ -23,7 +22,13 @@ export function resolvePartnerDashboardActions(
   for (const v of vorgaenge) {
     if (v.state !== "neu" && v.state !== "geaendert") continue;
 
-    const typ = v.anfrage ? resolvePartnerOffenKartenTyp(v.anfrage) : "neu";
+    /**
+     * „Änderungen bestätigen“ nur bei state=geaendert (Nachreichung nach Annahme).
+     * Erstzuweisung / neue Anfrage bleibt „Annehmen“ — auch wenn aenderung_typ=neu
+     * oder Reste einer früheren LV-Preisabfrage existieren.
+     */
+    const typ: "neu" | "nachreichung" =
+      v.state === "geaendert" ? "nachreichung" : "neu";
     const kicker =
       typ === "nachreichung" ? "Nachreichung offen" : "Angebot gefordert";
     const primaryLabel =
@@ -53,6 +58,7 @@ export function resolvePartnerDashboardActions(
           id: "ablehnen",
           label: "Ablehnen",
           variant: "secondary",
+          /** Öffnet Detail direkt im Ablehnen-Dialog (Grund nötig). */
           mode: "open",
         },
         {

@@ -127,16 +127,18 @@ function HvListeChrome({
         <PortalListeEyebrow>{HV_LISTE_PAGE_EYEBROW}</PortalListeEyebrow>
         <PortalListeTitle>{HV_LISTE_PAGE_TITLE}</PortalListeTitle>
       </div>
-      <div className="-mx-1 flex items-center gap-2 overflow-x-auto px-1 py-3.5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-        {HV_CHIPS.map((chip) => (
-          <PortalListeFilterChip
-            key={chip.id}
-            active={chip.id === filter}
-            onClick={() => onFilterChange(chip.id)}
-          >
-            {chip.label}
-          </PortalListeFilterChip>
-        ))}
+      <div className="relative z-30 -mx-1 flex items-center gap-2 px-1 py-3.5">
+        <div className="flex min-w-0 flex-1 items-center gap-2 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+          {HV_CHIPS.map((chip) => (
+            <PortalListeFilterChip
+              key={chip.id}
+              active={chip.id === filter}
+              onClick={() => onFilterChange(chip.id)}
+            >
+              {chip.label}
+            </PortalListeFilterChip>
+          ))}
+        </div>
         <HvObjektFilterPopover
           objekte={objekte.map((o) => ({
             id: o.id,

@@ -56,6 +56,8 @@ export async function syncAngebotHandwerkerAfterAuftragAccept(opts: {
       status: String(row.status ?? ""),
       antwort_at: row.antwort_at as string | null | undefined,
       gesendet_at: (row as { gesendet_at?: string | null }).gesendet_at,
+      hw_eingereicht_at:
+        (row.hw_eingereicht_at as string | null | undefined) ?? undefined,
     });
 
     if (offen) {

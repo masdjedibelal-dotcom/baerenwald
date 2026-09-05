@@ -335,7 +335,7 @@ export function PartnerFirmendatenScreen({
           onSave={() => void onSaveEdit()}
           saving={saving}
         >
-          <p className="text-[11.5px] font-bold text-text-tertiary">
+          <p className="portal-liste-eyebrow !mb-0">
             {HW_FIRMEN_SECTIONS.anschrift}
           </p>
           <EinstellungenGrid2>
@@ -388,11 +388,11 @@ export function PartnerFirmendatenScreen({
             autoComplete="tel"
           />
           <EinstellungenPfRow label="E-Mail" value={dash(edit.mail)} />
-          <p className="text-[11.5px] text-text-tertiary">
+          <p className="portal-text-meta text-text-tertiary">
             E-Mail-Änderung nur über Support.
           </p>
 
-          <p className="pt-2 text-[11.5px] font-bold text-text-tertiary">
+          <p className="portal-liste-eyebrow !mb-0 pt-2">
             {HW_FIRMEN_SECTIONS.steuer}
           </p>
           <EinstellungenGrid2>
@@ -421,17 +421,17 @@ export function PartnerFirmendatenScreen({
                 setEdit({ ...edit, kleinunternehmer: e.target.checked })
               }
             />
-            <span className="text-[13px] leading-snug text-text-secondary">
+            <span className="portal-text-body leading-snug text-text-secondary">
               <span className="font-semibold text-text-primary">
                 Kleinunternehmer §19 UStG
               </span>
-              <span className="mt-0.5 block text-[12px]">
+              <span className="portal-text-meta mt-0.5 block">
                 Rechnungen ohne MwSt-Ausweis, mit gesetzlichem Hinweis.
               </span>
             </span>
           </label>
 
-          <p className="pt-2 text-[11.5px] font-bold text-text-tertiary">
+          <p className="portal-liste-eyebrow !mb-0 pt-2">
             {HW_FIRMEN_SECTIONS.bank}
           </p>
           <EinstellungenEdField

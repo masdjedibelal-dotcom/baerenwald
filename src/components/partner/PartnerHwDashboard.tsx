@@ -37,7 +37,7 @@ type Props = {
   actionSlides?: PortalDashboardActionSlide[];
   onActionRefresh?: () => void | Promise<void>;
   onOpenAll: () => void;
-  onOpenItem: (id: string) => void;
+  onOpenItem: (id: string, opts?: { focus?: string }) => void;
   onKpiClick?: (id: keyof PartnerHwDashboardKpis) => void;
   heroImageUrl?: string | null;
   beforeTiles?: ReactNode;

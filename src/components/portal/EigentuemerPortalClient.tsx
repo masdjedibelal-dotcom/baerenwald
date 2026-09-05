@@ -176,7 +176,10 @@ export function EigentuemerPortalClient({
 
   useEffect(() => {
     const s = normalizeSection(searchParams.get("section"));
-    if (s) setSection(s);
+    if (!s) return;
+    // Detail-Navigation läuft — stale Section (Einstellungen etc.) ignorieren.
+    if (pendingDetailIdRef.current && s !== "vorgaenge") return;
+    setSection(s);
   }, [searchParams]);
 
   const switchSection = (id: SectionId) => {

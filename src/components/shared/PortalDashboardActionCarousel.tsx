@@ -13,7 +13,7 @@ import { cn } from "@/lib/utils";
 
 type Props = {
   slides: PortalDashboardActionSlide[];
-  onOpen: (openId: string) => void;
+  onOpen: (openId: string, opts?: { focus?: string }) => void;
   onRefresh: () => void | Promise<void>;
   className?: string;
 };
@@ -59,7 +59,10 @@ export function PortalDashboardActionCarousel({
       if (!btn) return;
 
       if (dashboardButtonOpensDetail(btn)) {
-        onOpen(slide.openId);
+        onOpen(
+          slide.openId,
+          buttonId === "ablehnen" ? { focus: "ablehnen" } : undefined
+        );
         return;
       }
 

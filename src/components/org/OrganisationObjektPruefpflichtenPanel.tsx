@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { PortalActionMenu } from "@/components/shared/PortalActionMenu";
 import { PortalDetailCard } from "@/components/shared/PortalDetailCard";
-import { PortalEntityCard } from "@/components/shared/PortalEntityCard";
+import { PortalEntityList } from "@/components/shared/PortalEntityList";
 import { PortalInboxEmpty } from "@/components/shared/PortalEmptyState";
 import { PortalInlineLoading } from "@/components/shared/PortalInlineLoading";
 import { PortalModalShell } from "@/components/shared/PortalModalShell";
@@ -195,57 +195,60 @@ export function OrganisationObjektPruefpflichtenPanel({ objektId }: { objektId: 
           compact
         />
       ) : (
-        <div className="space-y-2">
-          {GROUP_ORDER.map((group) => {
-            const rows = grouped.get(group) ?? [];
-            if (!rows.length) return null;
-            return rows.map((p) => {
+        <PortalEntityList
+          ariaLabel="Prüfpflichten"
+          columns={[
+            { key: "typ", label: "Typ", width: "minmax(0, 1.4fr)" },
+            { key: "faellig", label: "Nächste Fälligkeit", width: "minmax(0, 1fr)" },
+            { key: "status", label: "Status", width: "minmax(0, 0.8fr)" },
+          ]}
+          rows={GROUP_ORDER.flatMap((group) => {
+            const list = grouped.get(group) ?? [];
+            return list.map((p) => {
               const badge = resolvePruefpflichtBadge(p.naechste_faellig);
-              return (
-                <PortalEntityCard
-                  key={p.id}
-                  title={p.typ}
-                  badge={
-                    <span
-                      className={cn(
-                        "rounded-full px-2 py-0.5 text-[11px] font-semibold",
-                        BADGE_CLASS[badge]
-                      )}
-                    >
-                      {PRUEFPFLICHT_BADGE_LABEL[badge]}
-                    </span>
-                  }
-                  meta={
-                    <p className="text-[13px] text-text-secondary">
-                      {p.naechste_faellig
-                        ? `Fällig ${fmtDatum(p.naechste_faellig)}`
-                        : "Kein Fälligkeitsdatum"}
-                    </p>
-                  }
-                  menu={
-                    <PortalActionMenu
-                      title={p.typ}
-                      triggerLabel="Prüfpflicht-Menü"
-                      variant="popover"
-                      items={[
-                        {
-                          label: "Bearbeiten",
-                          onClick: () => openEdit(p),
-                        },
-                        {
-                          label: "Archivieren",
-                          danger: true,
-                          dividerBefore: true,
-                          onClick: () => void archivieren(p.id),
-                        },
-                      ]}
-                    />
-                  }
-                />
+              const statusBadge = (
+                <span
+                  className={cn(
+                    "rounded-full px-2 py-0.5 text-[11px] font-semibold",
+                    BADGE_CLASS[badge]
+                  )}
+                >
+                  {PRUEFPFLICHT_BADGE_LABEL[badge]}
+                </span>
               );
+              const faelligTxt = p.naechste_faellig
+                ? fmtDatum(p.naechste_faellig)
+                : "Kein Datum";
+              return {
+                id: p.id,
+                title: p.typ,
+                badge: statusBadge,
+                meta: <p>Fällig {faelligTxt}</p>,
+                cells: [p.typ, faelligTxt, statusBadge],
+                onClick: () => openEdit(p),
+                menu: (
+                  <PortalActionMenu
+                    title={p.typ}
+                    triggerLabel="Prüfpflicht-Menü"
+                    variant="popover"
+                    items={[
+                      {
+                        label: "Bearbeiten",
+                        onClick: () => openEdit(p),
+                      },
+                      {
+                        label: "Archivieren",
+                        danger: true,
+                        dividerBefore: true,
+                        onClick: () => void archivieren(p.id),
+                      },
+                    ]}
+                  />
+                ),
+              };
             });
           })}
-        </div>
+        />
       )}
 
       <PortalModalShell

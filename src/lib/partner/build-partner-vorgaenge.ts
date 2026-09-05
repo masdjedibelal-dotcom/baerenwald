@@ -5,6 +5,7 @@ import type {
 import { pickPrimaryAngebotHandwerkerAnfrage } from "@/lib/partner/pick-primary-angebot-handwerker";
 import {
   isPartnerAnfrageAktionErforderlich,
+  isPartnerAnfrageHwEingereicht,
   isPartnerAuftragAnfrageAktionErforderlich,
   isPartnerVorgangAusgeblendet,
 } from "@/lib/partner/partner-anfrage-status";
@@ -63,7 +64,8 @@ export function stubAuftragFromAnfrage(
     positionen: anfrage.crm_auftrag_positionen ?? [],
     bautagebuch: [],
     portalPhase: "anfrage",
-    hwStatus: anfrage.status || "angefragt",
+    /** Kein Auftrag — `angebot_handwerker.status` nicht als Zuweisungs-Status missbrauchen. */
+    hwStatus: "angefragt",
     angebotHandwerkerId: anfrage.id,
     angebotHwStatus: anfrage.hw_status ?? null,
     angebotHwEingereichtAt: anfrage.hw_eingereicht_at ?? null,
@@ -152,19 +154,19 @@ export function buildPartnerVorgaenge(input: {
 
     const anfrageAbgelehnt =
       String(anfrage.status ?? "").trim().toLowerCase() === "abgelehnt";
-    // Offene Aktionen ODER abgelehnte Anfragen (unter Erledigt / Status Abgelehnt)
-    if (!isPartnerAnfrageAktionErforderlich(anfrage) && !anfrageAbgelehnt) {
+    const hwEingereicht = isPartnerAnfrageHwEingereicht(anfrage);
+    // Offene Aktionen, abgelehnt, ODER eingereicht (sonst Detail-URL → endlos „wird geladen“)
+    if (
+      !isPartnerAnfrageAktionErforderlich(anfrage) &&
+      !anfrageAbgelehnt &&
+      !hwEingereicht
+    ) {
       continue;
     }
 
     const auftrag = stubAuftragFromAnfrage(anfrage);
-    const handwerker_bestaetigt_at = resolveHandwerkerBestaetigtAt({
-      handwerker_bestaetigt_at: auftrag.handwerker_bestaetigt_at,
-      projektvertrag_bestaetigt_am: auftrag.projektvertrag_bestaetigt_am,
-      angebot_bestaetigt_at: anfrage.bestaetigt_at ?? null,
-      angebotHwStatus: anfrage.hw_status ?? null,
-      hwStatus: auftrag.hwStatus,
-    });
+    /** Stub ohne echten Auftrag: kein Fake-„crm-angenommen“ über status=akzeptiert. */
+    const handwerker_bestaetigt_at = anfrage.bestaetigt_at?.trim() || null;
 
     if (
       isPartnerVorgangAusgeblendet({
@@ -176,15 +178,19 @@ export function buildPartnerVorgaenge(input: {
       continue;
     }
 
-    const state = ableitenVorgangState({
-      auftragStatus: auftrag.status,
-      handwerkerBestaetigtAt: handwerker_bestaetigt_at,
-      positionen: auftrag.positionen,
-      offeneNachreichungPositionIds: auftrag.nachreichungOpenPositionIds,
-      anfrageAktionNoetig: !anfrageAbgelehnt,
-      hwStatus: auftrag.hwStatus,
-      anfrageStatus: anfrage.status,
-    });
+    const state = anfrageAbgelehnt
+      ? ("abgelehnt" as const)
+      : hwEingereicht
+        ? ("erledigt" as const)
+        : ableitenVorgangState({
+            auftragStatus: auftrag.status,
+            handwerkerBestaetigtAt: handwerker_bestaetigt_at,
+            positionen: auftrag.positionen,
+            offeneNachreichungPositionIds: auftrag.nachreichungOpenPositionIds,
+            anfrageAktionNoetig: isPartnerAnfrageAktionErforderlich(anfrage),
+            hwStatus: auftrag.hwStatus,
+            anfrageStatus: anfrage.status,
+          });
 
     items.push({
       id: anfrage.id,

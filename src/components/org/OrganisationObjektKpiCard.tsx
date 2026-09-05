@@ -5,6 +5,7 @@ import { PORTAL_VAR } from "@/lib/portal2/tokens";
 
 type Props = {
   kpis: ObjektKpiPortal;
+  /** @deprecated ungenutzt */
   jahr?: number;
   onHistorieClick?: () => void;
   onBerichtClick?: () => void;
@@ -17,7 +18,6 @@ function fmtEuro(n: number): string {
 
 export function OrganisationObjektKpiCard({
   kpis,
-  jahr = new Date().getFullYear(),
   onHistorieClick,
   onBerichtClick,
 }: Props) {
@@ -35,7 +35,7 @@ export function OrganisationObjektKpiCard({
     },
     {
       id: "kosten",
-      label: `Kosten ${jahr}`,
+      label: "Gesamtkosten",
       value: fmtEuro(kpis.kostenLaufendesJahr),
     },
     {
@@ -58,7 +58,7 @@ export function OrganisationObjektKpiCard({
           <button
             type="button"
             onClick={onBerichtClick}
-            className="portal-btn portal-btn-secondary text-[13px]"
+            className="btn-pill-primary portal-btn text-[13px]"
           >
             Bericht erstellen
           </button>

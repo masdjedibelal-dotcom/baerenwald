@@ -328,11 +328,19 @@ export type BuildPartnerVmInput = {
   startDatum?: string | null;
   endDatum?: string | null;
   fotos?: string[];
+  /**
+   * Preisanfrage (LV-Einholung): kein Melder/Zugang/Dringlichkeit —
+   * nur Ort + kurze Beschreibung + optional CRM-Text.
+   */
+  variant?: "default" | "einholung";
+  /** Überschreibt Melde-Beschreibung (z. B. CRM-Projektbeschreibung). */
+  beschreibungPlain?: string | null;
 };
 
 export function buildPartnerVorgangDetailVm(
   input: BuildPartnerVmInput
 ): VorgangDetailVM {
+  const einholung = input.variant === "einholung";
   const lead = input.lead;
   const addr = resolveAnfrageAdresse({
     ...(lead ?? {}),
@@ -362,17 +370,27 @@ export function buildPartnerVorgangDetailVm(
     : null;
   const situationSlug = norm?.situation || lead?.situation || undefined;
   const situationLabel =
-    situationSlug && labelSituation(situationSlug) !== "—"
+    !einholung &&
+    situationSlug &&
+    labelSituation(situationSlug) !== "—"
       ? labelSituation(situationSlug)
       : null;
   const bereichLabel = lead ? formatAnfrageBereiche(lead) ?? null : null;
-  const fachdetailRows = lead?.funnel_daten
-    ? fachdetailRowsFromFunnelDaten(lead.funnel_daten, lead.bereiche)
-    : [];
-  const zeitraumLabel =
-    input.zeitraum?.trim() ||
-    (lead ? formatAnfrageZeitraum(lead) : null) ||
-    null;
+  const fachdetailRows =
+    !einholung && lead?.funnel_daten
+      ? fachdetailRowsFromFunnelDaten(lead.funnel_daten, lead.bereiche)
+      : [];
+  const zeitraumLabel = einholung
+    ? null
+    : input.zeitraum?.trim() ||
+      (lead ? formatAnfrageZeitraum(lead) : null) ||
+      null;
+
+  const beschreibung = einholung
+    ? input.beschreibungPlain?.trim() || null
+    : input.beschreibungPlain?.trim() ||
+      lead?.kontakt_nachricht?.trim() ||
+      null;
 
   return {
     role: "partner",
@@ -389,11 +407,13 @@ export function buildPartnerVorgangDetailVm(
       adresseStrasse: strasse,
       plzOrt,
       einheit: melder.einheit ?? lead?.melder_einheit ?? null,
-      zugangshinweis: lead?.einheiten_hinweis ?? null,
-      melderName: melder.name ?? lead?.kontakt_name ?? null,
-      melderTelefon: melder.telefon ?? lead?.melder_telefon ?? null,
-      melderEmail: melder.email ?? null,
-      beschreibung: lead?.kontakt_nachricht ?? null,
+      zugangshinweis: einholung ? null : (lead?.einheiten_hinweis ?? null),
+      melderName: einholung ? null : (melder.name ?? lead?.kontakt_name ?? null),
+      melderTelefon: einholung
+        ? null
+        : (melder.telefon ?? lead?.melder_telefon ?? null),
+      melderEmail: einholung ? null : (melder.email ?? null),
+      beschreibung,
       fotos: input.fotos ?? [],
       situationLabel,
       bereichLabel,
@@ -402,15 +422,20 @@ export function buildPartnerVorgangDetailVm(
     },
     ausfuehrung: {
       gewerk: input.gewerkName ?? null,
-      aufgabeNotiz: input.aufgabeNotiz ?? null,
-      terminVon: input.startDatum ?? null,
-      terminBis: input.endDatum ?? null,
-      terminLabel:
-        zeitraumLabel ||
-        formatAuftragDatumSpan(input.startDatum, input.endDatum) ||
-        null,
-      kontaktVorOrtName: melder.name ?? lead?.kontakt_name ?? null,
-      kontaktVorOrtTel: melder.telefon ?? lead?.melder_telefon ?? null,
+      aufgabeNotiz: einholung ? null : (input.aufgabeNotiz ?? null),
+      terminVon: einholung ? null : (input.startDatum ?? null),
+      terminBis: einholung ? null : (input.endDatum ?? null),
+      terminLabel: einholung
+        ? null
+        : zeitraumLabel ||
+          formatAuftragDatumSpan(input.startDatum, input.endDatum) ||
+          null,
+      kontaktVorOrtName: einholung
+        ? null
+        : (melder.name ?? lead?.kontakt_name ?? null),
+      kontaktVorOrtTel: einholung
+        ? null
+        : (melder.telefon ?? lead?.melder_telefon ?? null),
       summeEkNetto: summeEk > 0 ? summeEk : null,
     },
     leistungen,

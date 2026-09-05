@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import {
   confirmPartnerAuftrag,
@@ -70,11 +70,13 @@ export function PartnerOffenDetail({
   vorgangState,
   onConfirmed,
   onBack,
+  focusAblehnen,
 }: {
   item: PartnerOffenAngebotItem;
   vorgangState?: VorgangState;
-  onConfirmed?: (anfrageId: string) => void;
+  onConfirmed?: (anfrageId: string, opts?: { declined?: boolean }) => void;
   onBack?: () => void;
+  focusAblehnen?: boolean;
 }) {
   const router = useRouter();
   const { refresh } = usePortalRefresh();
@@ -87,7 +89,7 @@ export function PartnerOffenDetail({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [confirmOpen, setConfirmOpen] = useState(false);
-  const [showReject, setShowReject] = useState(false);
+  const [showReject, setShowReject] = useState(Boolean(focusAblehnen));
   const [confirmReject, setConfirmReject] = useState(false);
   const [grund, setGrund] = useState<string>(HANDWERKER_ABLEHNUNG_GRUND_VALUES[0]);
   const [notiz, setNotiz] = useState("");
@@ -100,6 +102,10 @@ export function PartnerOffenDetail({
     compliance_projekt: item.compliance_projekt,
   });
   const brauchtProjektvertrag = hatAuftrag && !isNachreichung && istBauprojekt;
+
+  useEffect(() => {
+    if (focusAblehnen) setShowReject(true);
+  }, [focusAblehnen]);
 
   const statusLabel = vorgangState
     ? vorgangStateLabel(vorgangState)
@@ -321,7 +327,7 @@ export function PartnerOffenDetail({
           return;
         }
         partnerPortalToast.abgelehnt();
-        if (onConfirmed) onConfirmed(item.id);
+        if (onConfirmed) onConfirmed(item.id, { declined: true });
         else await refresh();
       });
     } finally {

@@ -150,9 +150,12 @@ export function resolveHandwerkerBestaetigtAt(input: {
   handwerker_bestaetigt_at?: string | null;
   projektvertrag_bestaetigt_am?: string | null;
   angebot_bestaetigt_at?: string | null;
-  /** CRM-Übernahme an angebot_handwerker — reicht ohne Projektvertrag. */
+  /**
+   * @deprecated Nicht mehr als Annahme-Signal — `hw_status=uebernommen` entsteht
+   * auch bei reiner LV-Preisabfrage und würde Erstzuweisung als „Geändert“ markieren.
+   */
   angebotHwStatus?: string | null;
-  /** Zuweisung am Auftrag. */
+  /** Zuweisung am Auftrag (`auftrag_handwerker` / Positionen). */
   hwStatus?: string | null;
 }): string | null {
   const explicit =
@@ -162,10 +165,7 @@ export function resolveHandwerkerBestaetigtAt(input: {
     null;
   if (explicit) return explicit;
 
-  const ah = (input.angebotHwStatus ?? "").trim().toLowerCase();
-  if (ah === "uebernommen" || ah === "bestaetigt") {
-    return "crm-freigegeben";
-  }
+  // Nur echte Auftrags-Zuweisung, nicht angebot_handwerker.hw_status (LV-Preisabfrage).
   const hw = (input.hwStatus ?? "").trim().toLowerCase();
   if (hw === "akzeptiert" || hw === "uebernommen") {
     return "crm-angenommen";

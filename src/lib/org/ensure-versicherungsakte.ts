@@ -1,5 +1,6 @@
 import { writeAuditEvent } from "@/lib/audit/write-audit-event";
 import { generateVersicherungsTeilPdf } from "@/lib/org/generate-versicherungsakte-pdf";
+import { buildVersicherungsakteSchadenAngaben } from "@/lib/org/versicherungsakte-schaden-angaben";
 import {
   phaseStoragePath,
   resolveVersicherungPdfReadiness,
@@ -19,30 +20,6 @@ function adresseFrom(parts: {
   const plz = parts.plz?.trim();
   const line = [street, plz].filter(Boolean).join(", ");
   return line || undefined;
-}
-
-function hergangFromLead(lead: {
-  kontakt_nachricht?: string | null;
-  notizen?: string | null;
-  situation?: string | null;
-  melder_name?: string | null;
-  created_at?: string | null;
-}): string {
-  const bits: string[] = [];
-  if (lead.created_at) {
-    const d = new Date(lead.created_at).toLocaleDateString("de-DE");
-    bits.push(
-      `Am ${d} wurde der Schaden gemeldet` +
-        (lead.melder_name ? ` (${lead.melder_name})` : "") +
-        "."
-    );
-  }
-  const body =
-    lead.kontakt_nachricht?.trim() ||
-    lead.notizen?.trim() ||
-    lead.situation?.trim();
-  if (body) bits.push(body);
-  return bits.join(" ") || "Schadenmeldung aus dem Vorgang.";
 }
 
 type EnsureOpts = {
@@ -292,7 +269,7 @@ export async function ensureVersicherungsakteForLead(
   const { data: lead, error: leadErr } = await supabaseAdmin
     .from("leads")
     .select(
-      "id, auftraggeber_kunde_id, kunde_id, kunde_objekt_id, kostentraeger, versicherungs_nr, schaden_nr, kontakt_nachricht, notizen, situation, melder_name, melder_einheit, melder_telefon, created_at, strasse, hausnummer, plz, funnel_daten"
+      "id, auftraggeber_kunde_id, kunde_id, kunde_objekt_id, kostentraeger, versicherungs_nr, schaden_nr, kontakt_name, kontakt_nachricht, notizen, situation, bereiche, zeitraum, melder_name, melder_einheit, melder_telefon, melder_email, created_at, strasse, hausnummer, plz, ort, funnel_daten"
     )
     .eq("id", id)
     .maybeSingle();
@@ -353,11 +330,17 @@ export async function ensureVersicherungsakteForLead(
     hausnummer: lead.hausnummer,
     plz: lead.plz,
   });
+  let objektForAngaben: {
+    name: string;
+    strasse: string | null;
+    plz: string | null;
+    ort: string | null;
+  } | null = null;
   const objektId = lead.kunde_objekt_id ? String(lead.kunde_objekt_id) : null;
   if (objektId) {
     const { data: obj } = await supabaseAdmin
       .from("kunden_objekte")
-      .select("titel, strasse, hausnummer, plz, versicherungs_nr")
+      .select("titel, strasse, hausnummer, plz, ort, versicherungs_nr")
       .eq("id", objektId)
       .maybeSingle();
     if (obj?.titel) objektTitel = String(obj.titel);
@@ -370,6 +353,16 @@ export async function ensureVersicherungsakteForLead(
     if (!versNr && obj?.versicherungs_nr) {
       versNr = String(obj.versicherungs_nr).trim() || null;
     }
+    if (obj) {
+      objektForAngaben = {
+        name: String(obj.titel ?? "Objekt"),
+        strasse:
+          [obj.strasse, obj.hausnummer].filter(Boolean).join(" ").trim() ||
+          null,
+        plz: obj.plz ? String(obj.plz) : null,
+        ort: obj.ort ? String(obj.ort) : null,
+      };
+    }
   }
 
   const signals = await loadLeadSignals(id);
@@ -381,15 +374,26 @@ export async function ensureVersicherungsakteForLead(
       ? `${fotos.length} Melde-Foto${fotos.length === 1 ? "" : "s"} im Vorgang hinterlegt.`
       : null;
 
-  const melderZeile = [
-    lead.melder_name?.trim(),
-    lead.melder_einheit?.trim()
-      ? `WE ${String(lead.melder_einheit).trim()}`
+  const schadenAngaben = buildVersicherungsakteSchadenAngaben({
+    situation: lead.situation as string | null | undefined,
+    bereiche: Array.isArray(lead.bereiche)
+      ? (lead.bereiche as string[])
       : null,
-    lead.melder_telefon?.trim(),
-  ]
-    .filter(Boolean)
-    .join(" · ");
+    zeitraum: lead.zeitraum as string | null | undefined,
+    plz: lead.plz as string | null | undefined,
+    strasse: lead.strasse as string | null | undefined,
+    hausnummer: lead.hausnummer as string | null | undefined,
+    ort: lead.ort as string | null | undefined,
+    melder_name: lead.melder_name as string | null | undefined,
+    melder_einheit: lead.melder_einheit as string | null | undefined,
+    melder_telefon: lead.melder_telefon as string | null | undefined,
+    melder_email: lead.melder_email as string | null | undefined,
+    kontakt_name: lead.kontakt_name as string | null | undefined,
+    kontakt_nachricht: lead.kontakt_nachricht as string | null | undefined,
+    notizen: lead.notizen as string | null | undefined,
+    funnel_daten: lead.funnel_daten,
+    objekt: objektForAngaben,
+  });
 
   const pdfBytes = await generateVersicherungsTeilPdf({
     phase,
@@ -404,14 +408,7 @@ export async function ensureVersicherungsakteForLead(
     versicherungsNr: versNr,
     schadenNr: String(lead.schaden_nr ?? "").trim() || null,
     schadendatum: (lead.created_at as string | undefined) ?? null,
-    hergang: hergangFromLead({
-      kontakt_nachricht: lead.kontakt_nachricht,
-      notizen: lead.notizen,
-      situation: lead.situation,
-      melder_name: lead.melder_name,
-      created_at: lead.created_at,
-    }),
-    melderZeile: melderZeile || null,
+    schadenAngaben,
     chronologie: phase === "ursache" ? signals.chronologie : [],
     befundZeilen: phase === "ursache" ? signals.befundZeilen : [],
     fotoHinweis: phase === "meldung" ? fotoHinweis : null,

@@ -42,7 +42,7 @@ type Props = {
   tilesTitle?: string;
   /** Echte Aktionen — ersetzt die Mock-Fokus-Karte. */
   actionSlides?: PortalDashboardActionSlide[];
-  onOpenActionItem?: (id: string) => void;
+  onOpenActionItem?: (id: string, opts?: { focus?: string }) => void;
   onActionRefresh?: () => void | Promise<void>;
   /** Zwischen Fokus und Liste (z. B. Service-Versprechen HV) */
   afterFocus?: ReactNode;

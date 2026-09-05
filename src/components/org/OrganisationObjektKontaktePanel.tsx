@@ -1,10 +1,10 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { PortalActionMenu } from "@/components/shared/PortalActionMenu";
 import { PortalConfirmDialog } from "@/components/shared/PortalDetailUi";
-import { PortalEntityCard } from "@/components/shared/PortalEntityCard";
+import { PortalEntityList } from "@/components/shared/PortalEntityList";
 import {
   EinstellungenEdField,
   EinstellungenEditModal,
@@ -32,6 +32,12 @@ const ROLLEN = [
   { id: "sonstiges", label: "Sonstiges" },
 ] as const;
 
+const LIST_COLS = [
+  { key: "name", label: "Name", width: "minmax(0, 1.2fr)" },
+  { key: "rolle", label: "Rolle", width: "minmax(0, 0.9fr)" },
+  { key: "kontakt", label: "Kontakt", width: "minmax(0, 1.4fr)" },
+] as const;
+
 function rolleLabel(rolle: string): string {
   return ROLLEN.find((r) => r.id === rolle)?.label ?? rolle;
 }
@@ -41,7 +47,7 @@ type Props = {
 };
 
 /**
- * Kontakte vor Ort — Entity-Cards + ⋮ (leere Felder ausgeblendet).
+ * Kontakte vor Ort — Desktop-Tabelle / Mobile-Cards (CRM-Parität).
  */
 export function OrganisationObjektKontaktePanel({ objektId }: Props) {
   const [items, setItems] = useState<ObjektKontaktVorOrt[]>([]);
@@ -196,10 +202,74 @@ export function OrganisationObjektKontaktePanel({ objektId }: Props) {
     }
   }
 
+  const rows = useMemo(
+    () =>
+      items.map((k) => {
+        const kontaktZeile =
+          [k.telefon?.trim(), k.email?.trim()].filter(Boolean).join(" · ") ||
+          "—";
+        const rolleTxt = rolleLabel(k.rolle);
+        return {
+          id: k.id,
+          title: k.name,
+          badge: (
+            <span className="rounded-full bg-muted px-2 py-0.5 text-[11px] font-semibold text-text-secondary">
+              {rolleTxt}
+            </span>
+          ),
+          meta: (
+            <div className="space-y-0.5">
+              <p>{kontaktZeile}</p>
+              {k.notiz?.trim() ? (
+                <p className="text-[12.5px] text-text-tertiary">
+                  {k.notiz.trim()}
+                </p>
+              ) : null}
+            </div>
+          ),
+          cells: [
+            <>
+              {k.name}
+              {k.notiz?.trim() ? (
+                <span className="mt-0.5 block text-[12px] font-normal text-text-tertiary">
+                  {k.notiz.trim()}
+                </span>
+              ) : null}
+            </>,
+            rolleTxt,
+            kontaktZeile,
+          ],
+          onClick: () => openBearbeiten(k),
+          menu: (
+            <PortalActionMenu
+              title={k.name}
+              triggerLabel="Kontakt-Menü"
+              variant="popover"
+              items={[
+                {
+                  label: "Bearbeiten",
+                  onClick: () => openBearbeiten(k),
+                },
+                {
+                  label: "Entfernen",
+                  danger: true,
+                  dividerBefore: true,
+                  onClick: () => setRemoveTarget(k),
+                },
+              ]}
+            />
+          ),
+        };
+      }),
+    [items]
+  );
+
   return (
     <>
       <EinstellungenSectionCard
-        title="Kontakte vor Ort"
+        title={
+          items.length ? `Kontakte vor Ort · ${items.length}` : "Kontakte vor Ort"
+        }
         onAdd={openNeu}
         addLabel="Kontakt hinzufügen"
       >
@@ -208,60 +278,11 @@ export function OrganisationObjektKontaktePanel({ objektId }: Props) {
         ) : items.length === 0 ? (
           <PortalInboxEmpty title="Noch keine Kontakte" compact />
         ) : (
-          <ul className="space-y-2">
-            {items.map((k) => {
-              const kontaktZeile = [k.telefon?.trim(), k.email?.trim()]
-                .filter(Boolean)
-                .join(" · ");
-              return (
-                <li key={k.id}>
-                  <PortalEntityCard
-                    title={k.name}
-                    badge={
-                      <span className="rounded-full bg-muted px-2 py-0.5 text-[11px] font-semibold text-text-secondary">
-                        {rolleLabel(k.rolle)}
-                      </span>
-                    }
-                    meta={
-                      kontaktZeile || k.notiz?.trim() ? (
-                        <div className="space-y-0.5">
-                          {kontaktZeile ? (
-                            <p className="truncate text-[13px] text-text-secondary">
-                              {kontaktZeile}
-                            </p>
-                          ) : null}
-                          {k.notiz?.trim() ? (
-                            <p className="truncate text-[12.5px] text-text-tertiary">
-                              {k.notiz.trim()}
-                            </p>
-                          ) : null}
-                        </div>
-                      ) : undefined
-                    }
-                    menu={
-                      <PortalActionMenu
-                        title={k.name}
-                        triggerLabel="Kontakt-Menü"
-                        variant="popover"
-                        items={[
-                          {
-                            label: "Bearbeiten",
-                            onClick: () => openBearbeiten(k),
-                          },
-                          {
-                            label: "Entfernen",
-                            danger: true,
-                            dividerBefore: true,
-                            onClick: () => setRemoveTarget(k),
-                          },
-                        ]}
-                      />
-                    }
-                  />
-                </li>
-              );
-            })}
-          </ul>
+          <PortalEntityList
+            columns={[...LIST_COLS]}
+            rows={rows}
+            ariaLabel="Kontakte vor Ort"
+          />
         )}
       </EinstellungenSectionCard>
 

@@ -84,7 +84,7 @@ export function PortalDetailMetaField({
       <p className="portal-text-label" style={{ color: PORTAL_VAR.faint }}>
         {label}
       </p>
-      <div className="portal-text-meta mt-0.5 font-semibold" style={{ color: PORTAL_VAR.ink }}>
+      <div className="portal-text-body mt-0.5 font-semibold" style={{ color: PORTAL_VAR.ink }}>
         {children}
       </div>
     </div>

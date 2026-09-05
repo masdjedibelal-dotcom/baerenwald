@@ -54,7 +54,7 @@ export function PartnerAuftragAnfrageDetail({
   onBack,
 }: {
   item: PartnerAuftragItem;
-  onAccepted?: (anfrageId: string) => void;
+  onAccepted?: (anfrageId: string, opts?: { declined?: boolean }) => void;
   onBack?: () => void;
 }) {
   const router = useRouter();
@@ -173,7 +173,7 @@ export function PartnerAuftragAnfrageDetail({
           return;
         }
         partnerPortalToast.abgelehnt();
-        if (onAccepted) onAccepted(item.id);
+        if (onAccepted) onAccepted(item.id, { declined: true });
         else await refresh();
       });
     } finally {

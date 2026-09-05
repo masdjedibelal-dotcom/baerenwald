@@ -29,7 +29,7 @@ function BlockShell({
 
 function MetaRow({ label, value }: { label: string; value: string }) {
   return (
-    <div className="flex min-w-0 items-start justify-between gap-3 border-b border-border-light py-2 text-[13px] last:border-b-0">
+    <div className="portal-text-body flex min-w-0 items-start justify-between gap-3 border-b border-border-light py-2 last:border-b-0">
       <span className="max-w-[55%] min-w-0 leading-snug text-text-secondary [overflow-wrap:anywhere]">
         {label}
       </span>

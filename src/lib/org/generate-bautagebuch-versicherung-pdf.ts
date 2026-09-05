@@ -59,7 +59,7 @@ type DrawCtx = {
   font: PDFFont;
   fontBold: PDFFont;
   y: number;
-  schadenNr: string;
+  policenNr: string;
   orgName: string;
   erstelltAm: string;
 };
@@ -79,15 +79,19 @@ function drawFooter(ctx: DrawCtx) {
     font: ctx.font,
     color: MUTED,
   });
-  const right = `Schaden-Nr. ${ctx.schadenNr}`;
-  const rw = ctx.font.widthOfTextAtSize(right, 8);
-  ctx.page.drawText(right, {
-    x: PAGE_W - MARGIN - rw,
-    y: 38,
-    size: 8,
-    font: ctx.font,
-    color: MUTED,
-  });
+  const right = ctx.policenNr.trim()
+    ? `Policen-Nr. ${ctx.policenNr.trim()}`
+    : "";
+  if (right) {
+    const rw = ctx.font.widthOfTextAtSize(right, 8);
+    ctx.page.drawText(right, {
+      x: PAGE_W - MARGIN - rw,
+      y: 38,
+      size: 8,
+      font: ctx.font,
+      color: MUTED,
+    });
+  }
 }
 
 function ensureSpace(ctx: DrawCtx, need: number) {
@@ -181,10 +185,7 @@ export async function generateBautagebuchVersicherungPdf(
   const pdf = await PDFDocument.create();
   const font = await pdf.embedFont(StandardFonts.Helvetica);
   const fontBold = await pdf.embedFont(StandardFonts.HelveticaBold);
-  const schadenNr =
-    input.schadenNr?.trim() ||
-    input.versicherungsNr?.trim() ||
-    "ohne Nr.";
+  const policenNr = input.versicherungsNr?.trim() || "";
   const erstelltAm = new Date().toLocaleDateString("de-DE", {
     day: "2-digit",
     month: "2-digit",
@@ -198,7 +199,7 @@ export async function generateBautagebuchVersicherungPdf(
     font,
     fontBold,
     y: PAGE_H - 56,
-    schadenNr,
+    policenNr,
     orgName,
     erstelltAm,
   };
@@ -207,14 +208,12 @@ export async function generateBautagebuchVersicherungPdf(
   ctx.y -= 2;
   drawHr(ctx, true);
 
-  drawText(ctx, "BAUTAGEBUCH", { bold: true, size: 8, color: MUTED });
-  ctx.y += 2;
   drawText(ctx, "Export für die Versicherung", {
     bold: true,
     size: 16,
     color: ACCENT,
   });
-  ctx.y -= 2;
+  ctx.y -= 4;
 
   drawText(ctx, input.objektTitel, { bold: true, size: 11, color: TEXT });
   if (input.objektAdresse?.trim()) {
@@ -222,8 +221,7 @@ export async function generateBautagebuchVersicherungPdf(
   }
 
   drawMetaBar(ctx, [
-    { label: "Policen-Nr.", value: input.versicherungsNr?.trim() || "—" },
-    { label: "Schaden-Nr.", value: schadenNr },
+    { label: "Policen-Nr.", value: policenNr || "—" },
     {
       label: "Einträge",
       value: String(input.eintraege.length),

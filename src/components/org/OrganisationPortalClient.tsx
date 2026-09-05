@@ -266,8 +266,11 @@ export function OrganisationPortalClient({
   /** Notification / Deep-Link: Section aus URL übernehmen (nicht nur Initial-State). */
   useEffect(() => {
     const s = portalSectionFromParam(searchParams.get("section"));
-    if (s) setSection(s);
-  }, [searchParams]);
+    if (!s) return;
+    // Detail-Klick schon unterwegs — stale Section (z. B. einstellungen) nicht zurücksetzen.
+    if (pendingDetailId && s !== "vorgaenge") return;
+    setSection(s);
+  }, [searchParams, pendingDetailId]);
 
   const displayName =
     kunde.org_anzeigename?.trim() || kunde.name?.trim() || "Verwaltung";

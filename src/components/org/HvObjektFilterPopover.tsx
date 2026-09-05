@@ -94,7 +94,10 @@ export function HvObjektFilterPopover({
   if (objekte.length <= 1) return null;
 
   return (
-    <div ref={rootRef} className="relative shrink-0">
+    <div
+      ref={rootRef}
+      className={cn("relative shrink-0", open && "z-50")}
+    >
       <button
         type="button"
         aria-haspopup="listbox"
@@ -123,7 +126,7 @@ export function HvObjektFilterPopover({
           role="listbox"
           aria-multiselectable
           aria-label="Objekte filtern"
-          className="absolute left-0 z-40 mt-2 w-[min(100vw-2rem,280px)] overflow-hidden rounded-[12px] border border-border-default bg-white shadow-[0_12px_40px_rgba(0,0,0,0.12)]"
+          className="absolute right-0 z-50 mt-2 w-[min(100vw-2rem,280px)] overflow-hidden rounded-[12px] border border-border-default bg-white shadow-[0_12px_40px_rgba(0,0,0,0.12)] sm:left-0 sm:right-auto"
         >
           <p className="border-b border-border-light px-3.5 py-2.5 text-[11px] font-bold uppercase tracking-wide text-text-tertiary">
             Objekte
