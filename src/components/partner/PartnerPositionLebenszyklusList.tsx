@@ -15,7 +15,9 @@ import { PortalModalShell } from "@/components/shared/PortalModalShell";
 import {
   addPartnerPositionFortschritt,
   completePartnerPosition,
+  createPartnerTagebuchEintrag,
   createPartnerWeitereArbeit,
+  markPartnerPositionenErledigt,
   startPartnerPosition,
 } from "@/app/actions/partner-position-eintraege";
 import { normalizePartnerCameraPhoto } from "@/lib/partner/normalize-camera-photo";
@@ -149,6 +151,13 @@ export function PartnerPositionLebenszyklusList({
     mode: SheetMode;
     position: LebenszyklusPosition;
   } | null>(null);
+  const [tagebuchOpen, setTagebuchOpen] = useState(false);
+  const [tbTitel, setTbTitel] = useState("");
+  const [tbBeschreibung, setTbBeschreibung] = useState("");
+  const [tbSelected, setTbSelected] = useState<string[]>([]);
+  const [tbErledigt, setTbErledigt] = useState<string[]>([]);
+  const [tbFotos, setTbFotos] = useState<File[]>([]);
+  const [bulkSelected, setBulkSelected] = useState<string[]>([]);
   const [nachtragOpen, setNachtragOpen] = useState(false);
   const [nachtragTitel, setNachtragTitel] = useState("");
   const [nachtragBegruendung, setNachtragBegruendung] = useState("");
@@ -195,6 +204,18 @@ export function PartnerPositionLebenszyklusList({
       ? Math.round((erledigtCount / actionablePositionen.length) * 100)
       : 0;
 
+  const bulkSelectableIds = useMemo(
+    () =>
+      actionablePositionen
+        .filter((p) => {
+          if (p.leistung_status === "erledigt") return false;
+          if (isRegiePosition(p)) return false;
+          return true;
+        })
+        .map((p) => p.id),
+    [actionablePositionen]
+  );
+
   useEffect(() => {
     if (!autoOpenPreferred || autoOpenedRef.current || !preferredSet.size) return;
     const target = sortedPositionen.find(
@@ -213,6 +234,95 @@ export function PartnerPositionLebenszyklusList({
     setBeschreibung("");
     setErledigtFotos([]);
   }, [sheet?.position.id, sheet?.mode]);
+
+  function toggleBulk(id: string) {
+    setBulkSelected((prev) =>
+      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
+    );
+  }
+
+  function selectAllBulk() {
+    setBulkSelected(bulkSelectableIds);
+  }
+
+  function submitBulkErledigt() {
+    if (!bulkSelected.length || submitting) return;
+    const formData = new FormData();
+    formData.set("auftragId", auftragId);
+    for (const id of bulkSelected) formData.append("positionIds", id);
+    setSubmitting(true);
+    void (async () => {
+      try {
+        await runBusy(async () => {
+          const res = await markPartnerPositionenErledigt(formData);
+          if (!res.ok) {
+            portalToastError(res.error);
+            return;
+          }
+          portalToastSuccess(
+            res.count === 1
+              ? "Leistung als erledigt markiert."
+              : `${res.count} Leistungen erledigt.`
+          );
+          setBulkSelected([]);
+          await onDone?.();
+        }, Math.max(PORTAL_BUSY_MIN_MS, 400));
+      } finally {
+        setSubmitting(false);
+      }
+    })();
+  }
+
+  function closeTagebuch() {
+    setTagebuchOpen(false);
+    setTbSelected([]);
+    setTbErledigt([]);
+    setTbTitel("");
+    setTbBeschreibung("");
+    setTbFotos([]);
+  }
+
+  function submitTagebuch() {
+    if (submitting) return;
+    if (!tbTitel.trim() && !tbBeschreibung.trim() && !tbFotos.length) {
+      portalToastError("Titel, Text oder Foto angeben.");
+      return;
+    }
+    const formData = new FormData();
+    formData.set("auftragId", auftragId);
+    if (anfrageId) formData.set("anfrageId", anfrageId);
+    if (tbTitel.trim()) formData.set("titel", tbTitel.trim());
+    if (tbBeschreibung.trim()) formData.set("beschreibung", tbBeschreibung.trim());
+    for (const id of tbSelected) formData.append("positionIds", id);
+    for (const id of tbErledigt) formData.append("erledigtPositionIds", id);
+    setSubmitting(true);
+    void (async () => {
+      try {
+        await runBusy(async () => {
+          try {
+            for (const f of tbFotos.slice(0, 5)) {
+              formData.append("fotos", await normalizePartnerCameraPhoto(f));
+            }
+          } catch {
+            portalToastError(
+              "Foto konnte nicht verarbeitet werden. Bitte erneut versuchen."
+            );
+            return;
+          }
+          const res = await createPartnerTagebuchEintrag(formData);
+          if (!res.ok) {
+            portalToastError(res.error);
+            return;
+          }
+          portalToastSuccess("Tagebuch-Eintrag gespeichert.");
+          closeTagebuch();
+          await onDone?.();
+        }, Math.max(PORTAL_BUSY_MIN_MS, 600));
+      } finally {
+        setSubmitting(false);
+      }
+    })();
+  }
 
   async function normalizeFotoField(
     formData: FormData,
@@ -508,6 +618,40 @@ export function PartnerPositionLebenszyklusList({
             {erledigtCount} von {actionablePositionen.length} erledigt
           </p>
         </div>
+        {!readOnly && bulkSelectableIds.length > 0 ? (
+          <div className="mt-2 flex flex-wrap items-center gap-2">
+            {bulkSelected.length > 0 ? (
+              <>
+                <button
+                  type="button"
+                  className="btn-pill-primary"
+                  disabled={submitting}
+                  onClick={() => submitBulkErledigt()}
+                >
+                  {bulkSelected.length} als erledigt
+                </button>
+                <button
+                  type="button"
+                  className="btn-pill-outline"
+                  disabled={submitting}
+                  onClick={() => setBulkSelected([])}
+                >
+                  Auswahl aufheben
+                </button>
+              </>
+            ) : null}
+            {bulkSelected.length < bulkSelectableIds.length ? (
+              <button
+                type="button"
+                className="btn-pill-outline"
+                disabled={submitting}
+                onClick={selectAllBulk}
+              >
+                Alle auswählen
+              </button>
+            ) : null}
+          </div>
+        ) : null}
         <div
           className="mt-1.5 h-2 overflow-hidden rounded-full"
           style={{ background: PORTAL_C.line2 }}
@@ -578,21 +722,43 @@ export function PartnerPositionLebenszyklusList({
                 )}
               >
                 <div className="flex items-start gap-2.5">
-                  <div
-                    className={cn(
-                      "mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-md border",
-                      isBlocked
-                        ? "border-border-default bg-[var(--p2-line2,#e8ebe9)]"
-                        : isErledigt
+                  {!readOnly &&
+                  !isBlocked &&
+                  !isErledigt &&
+                  !isRegie ? (
+                    <button
+                      type="button"
+                      className={cn(
+                        "mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-md border",
+                        bulkSelected.includes(p.id)
                           ? "border-accent bg-accent text-white"
                           : "border-border-default bg-white"
-                    )}
-                    aria-hidden
-                  >
-                    {!isBlocked && isErledigt ? (
-                      <Check className="h-3 w-3" strokeWidth={3} />
-                    ) : null}
-                  </div>
+                      )}
+                      aria-pressed={bulkSelected.includes(p.id)}
+                      aria-label={`${p.leistung_name} auswählen`}
+                      onClick={() => toggleBulk(p.id)}
+                    >
+                      {bulkSelected.includes(p.id) ? (
+                        <Check className="h-3 w-3" strokeWidth={3} />
+                      ) : null}
+                    </button>
+                  ) : (
+                    <div
+                      className={cn(
+                        "mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-md border",
+                        isBlocked
+                          ? "border-border-default bg-[var(--p2-line2,#e8ebe9)]"
+                          : isErledigt
+                            ? "border-accent bg-accent text-white"
+                            : "border-border-default bg-white"
+                      )}
+                      aria-hidden
+                    >
+                      {!isBlocked && isErledigt ? (
+                        <Check className="h-3 w-3" strokeWidth={3} />
+                      ) : null}
+                    </div>
+                  )}
                   <div className="min-w-0 flex-1">
                     <div className="flex items-start justify-between gap-2">
                       <p
@@ -711,14 +877,28 @@ export function PartnerPositionLebenszyklusList({
       )}
 
       {!readOnly ? (
-        <button
-          type="button"
-          className="w-full rounded-[10px] border border-dashed px-3 py-3 text-[13.5px] font-semibold text-text-primary"
-          style={{ borderColor: PORTAL_VAR.line, background: "#fff" }}
-          onClick={() => setNachtragOpen(true)}
-        >
-          + Nachtrag / Regie
-        </button>
+        <div className="space-y-2">
+          <button
+            type="button"
+            className="w-full rounded-[10px] border border-dashed px-3 py-3 text-[13.5px] font-semibold text-text-primary"
+            style={{ borderColor: PORTAL_VAR.line, background: "#fff" }}
+            onClick={() => setTagebuchOpen(true)}
+          >
+            + Tagebuch-Eintrag
+          </button>
+          <button
+            type="button"
+            className="w-full rounded-[10px] border border-dashed px-3 py-3 text-[13.5px] font-semibold text-text-primary"
+            style={{ borderColor: PORTAL_VAR.line, background: "#fff" }}
+            onClick={() => setNachtragOpen(true)}
+          >
+            + Nachtrag / Regie
+          </button>
+          <p className="text-[11.5px] leading-relaxed text-text-tertiary">
+            Tagebuch: Update mit 0–n Leistungen. Nachtrag: zusätzliche Arbeit erst
+            melden — Bärenwald prüft.
+          </p>
+        </div>
       ) : null}
 
       {sheet ? (
@@ -876,6 +1056,156 @@ export function PartnerPositionLebenszyklusList({
           })()}
         </PortalModalShell>
       ) : null}
+
+      <PortalModalShell
+        open={tagebuchOpen}
+        title="Tagebuch-Eintrag"
+        subtitle="Optional Leistungen anhaken — oder freier Eintrag."
+        onClose={closeTagebuch}
+        variant="edit"
+        dirty={
+          !submitting &&
+          (tbTitel.trim().length > 0 ||
+            tbBeschreibung.trim().length > 0 ||
+            tbSelected.length > 0 ||
+            tbFotos.length > 0)
+        }
+        closeOnBackdrop={!submitting}
+        busy={submitting && tagebuchOpen}
+        busyTitle="Wird gespeichert…"
+        busyBody="Tagebuch-Eintrag wird übertragen."
+      >
+        <div className="flex flex-col gap-3">
+          <div>
+            <p className="portal-form-label">Leistungen (optional)</p>
+            <p className="mt-0.5 text-[11.5px] text-text-tertiary">
+              Keine, eine oder mehrere — leer = freier Tageseintrag.
+            </p>
+            {sortedPositionen.length > 0 ? (
+              <div className="mt-1.5 flex flex-wrap items-center gap-2">
+                <button
+                  type="button"
+                  className="btn-pill-outline"
+                  disabled={submitting}
+                  onClick={() => {
+                    setTbSelected([]);
+                    setTbErledigt([]);
+                  }}
+                >
+                  Keine Leistung
+                </button>
+                <button
+                  type="button"
+                  className="btn-pill-outline"
+                  disabled={
+                    submitting ||
+                    tbSelected.length === sortedPositionen.length
+                  }
+                  onClick={() => {
+                    const all = sortedPositionen.map((p) => p.id);
+                    setTbSelected(all);
+                    setTbErledigt((er) => er.filter((x) => all.includes(x)));
+                  }}
+                >
+                  Alle auswählen
+                </button>
+                <span className="text-[11.5px] text-text-tertiary">
+                  {tbSelected.length === 0
+                    ? "Freier Eintrag"
+                    : `${tbSelected.length} von ${sortedPositionen.length}`}
+                </span>
+              </div>
+            ) : null}
+            <ul className="mt-1.5 max-h-40 space-y-1 overflow-y-auto">
+              {sortedPositionen.map((p) => {
+                const checked = tbSelected.includes(p.id);
+                const alreadyDone = p.leistung_status === "erledigt";
+                return (
+                  <li
+                    key={p.id}
+                    className="rounded-lg border border-border-light px-2.5 py-2"
+                  >
+                    <label className="flex cursor-pointer items-start gap-2">
+                      <input
+                        type="checkbox"
+                        className="mt-1"
+                        checked={checked}
+                        disabled={submitting}
+                        onChange={() => {
+                          setTbSelected((prev) => {
+                            const next = checked
+                              ? prev.filter((x) => x !== p.id)
+                              : [...prev, p.id];
+                            setTbErledigt((er) =>
+                              er.filter((x) => next.includes(x))
+                            );
+                            return next;
+                          });
+                        }}
+                      />
+                      <span className="min-w-0 flex-1 text-[13.5px] font-semibold">
+                        {p.leistung_name}
+                      </span>
+                    </label>
+                    {checked && !alreadyDone ? (
+                      <label className="ml-6 mt-1 flex items-center gap-2 text-[12px] text-text-secondary">
+                        <input
+                          type="checkbox"
+                          checked={tbErledigt.includes(p.id)}
+                          disabled={submitting}
+                          onChange={() =>
+                            setTbErledigt((prev) =>
+                              prev.includes(p.id)
+                                ? prev.filter((x) => x !== p.id)
+                                : [...prev, p.id]
+                            )
+                          }
+                        />
+                        Als erledigt markieren
+                      </label>
+                    ) : null}
+                  </li>
+                );
+              })}
+            </ul>
+          </div>
+
+          <PartnerKiKorrekturField
+            scope="bautagebuch"
+            name="titel"
+            rohName="titel_roh"
+            singleLine
+            label="Titel"
+            value={tbTitel}
+            onChange={setTbTitel}
+            auftragTitel={auftragTitel}
+            placeholder="Kurzer Titel fürs Portal"
+          />
+          <PartnerKiKorrekturField
+            scope="bautagebuch"
+            label="Beschreibung"
+            value={tbBeschreibung}
+            onChange={setTbBeschreibung}
+            rows={3}
+            auftragTitel={auftragTitel}
+            placeholder="Was ist auf der Baustelle passiert?"
+          />
+          <PartnerMultiFotoSlot
+            label="Fotos (optional)"
+            required={false}
+            value={tbFotos}
+            onChange={setTbFotos}
+          />
+          <button
+            type="button"
+            className="btn-pill-primary mt-2 w-full"
+            disabled={submitting}
+            onClick={submitTagebuch}
+          >
+            {submitting ? "Speichern…" : "Speichern"}
+          </button>
+        </div>
+      </PortalModalShell>
 
       <PortalModalShell
         open={nachtragOpen}

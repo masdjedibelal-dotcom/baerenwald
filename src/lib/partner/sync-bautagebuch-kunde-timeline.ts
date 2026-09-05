@@ -16,6 +16,8 @@ function eintragTypLabel(typ: string): string {
       return "Ergebnis";
     case "weitere_arbeit":
       return "Weitere Arbeit";
+    case "notiz":
+      return "Update";
     default:
       return "Bautagebuch";
   }
@@ -25,15 +27,24 @@ export async function syncPartnerPositionEintragToKundeTimeline(opts: {
   eintragId: string;
   auftragId: string;
   typ: string;
+  titel?: string | null;
   beschreibung?: string | null;
   leistungName?: string | null;
+  leistungNames?: string[] | null;
   handwerkerId?: string | null;
 }): Promise<void> {
   if (!isSupabaseConfigured()) return;
 
+  const leistungLabel =
+    (opts.leistungNames ?? [])
+      .map((n) => n.trim())
+      .filter(Boolean)
+      .join(", ") ||
+    opts.leistungName?.trim() ||
+    null;
   const titelParts = [
-    eintragTypLabel(opts.typ),
-    opts.leistungName?.trim() || null,
+    opts.titel?.trim() || eintragTypLabel(opts.typ),
+    opts.titel?.trim() ? null : leistungLabel,
   ].filter(Boolean);
 
   const { data: fotos } = await supabaseAdmin

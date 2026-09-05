@@ -102,7 +102,7 @@ async function assertAuftragNochOffen(auftragId: string): Promise<boolean> {
 }
 
 async function insertEintrag(opts: {
-  positionId: string;
+  positionId?: string | null;
   typ: EintragTyp;
   beschreibung: string | null;
   beschreibungRoh?: string | null;
@@ -112,11 +112,17 @@ async function insertEintrag(opts: {
   leistungName?: string | null;
   anfrageId?: string | null;
 }): Promise<{ ok: true; id: string } | { ok: false; error: string }> {
+  const positionId = opts.positionId?.trim() || null;
+  const auftragId = opts.auftragId?.trim() || null;
+  if (!positionId && !auftragId) {
+    return { ok: false, error: "Position oder Auftrag fehlt." };
+  }
   const roh = opts.beschreibungRoh?.trim() || null;
   const { data, error } = await supabaseAdmin
     .from("position_eintraege")
     .insert({
-      position_id: opts.positionId,
+      position_id: positionId,
+      auftrag_id: auftragId,
       typ: opts.typ,
       beschreibung: opts.beschreibung,
       beschreibung_roh: roh && roh !== opts.beschreibung ? roh : roh,
@@ -140,7 +146,12 @@ async function insertEintrag(opts: {
 
   const eintragId = String(data.id);
 
-  if (opts.typ === "fortschritt" || opts.typ === "ergebnis" || opts.typ === "start") {
+  if (
+    opts.typ === "fortschritt" ||
+    opts.typ === "ergebnis" ||
+    opts.typ === "start" ||
+    opts.typ === "notiz"
+  ) {
     void markPartnerBautagebuchAnfrageErledigt({
       auftragId: opts.auftragId,
       handwerkerId: opts.handwerkerId,
@@ -148,18 +159,57 @@ async function insertEintrag(opts: {
     });
   }
 
+  if (positionId) {
+    void linkPartnerEintragLeistungen(eintragId, [positionId]);
+  }
+
   return { ok: true, id: eintragId };
 }
 
+async function linkPartnerEintragLeistungen(
+  eintragId: string,
+  positionIds: string[]
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  const unique = Array.from(
+    new Set(positionIds.map((id) => id.trim()).filter(Boolean))
+  );
+  if (!unique.length) return { ok: true };
+  const { error } = await supabaseAdmin.from("position_eintrag_leistungen").upsert(
+    unique.map((position_id) => ({ eintrag_id: eintragId, position_id })),
+    { onConflict: "eintrag_id,position_id", ignoreDuplicates: true }
+  );
+  if (error) {
+    if (/position_eintrag_leistungen|does not exist/i.test(error.message)) {
+      return {
+        ok: false,
+        error:
+          "Migration position_eintrag_leistungen fehlt noch — bitte DB aktualisieren.",
+      };
+    }
+    return { ok: false, error: error.message };
+  }
+  return { ok: true };
+}
+
 function readBeschreibungFromForm(formData: FormData): {
+  titel: string | null;
   beschreibung: string | null;
   beschreibungRoh: string | null;
   anfrageId: string | null;
+  combined: string | null;
 } {
+  const titel = String(formData.get("titel") ?? "").trim() || null;
   const beschreibung = String(formData.get("beschreibung") ?? "").trim() || null;
   const roh = String(formData.get("beschreibung_roh") ?? "").trim() || null;
   const anfrageId = String(formData.get("anfrageId") ?? "").trim() || null;
-  return { beschreibung, beschreibungRoh: roh, anfrageId };
+  const combined = [titel, beschreibung].filter(Boolean).join("\n\n") || null;
+  return {
+    titel,
+    beschreibung,
+    beschreibungRoh: roh,
+    anfrageId,
+    combined,
+  };
 }
 
 async function attachFoto(opts: {
@@ -780,4 +830,238 @@ export async function createPartnerWeitereArbeit(
 
   revalidatePath("/partner");
   return { ok: true, eintragId, positionId };
+}
+
+/**
+ * Narratives Tagebuch: 0..n Leistungen, optional Erledigt — analog CRM createCrmTagebuchEintrag.
+ */
+export async function createPartnerTagebuchEintrag(
+  formData: FormData
+): Promise<PartnerPositionEintragResult> {
+  const auth = await partnerAuth();
+  if (!auth.ok) return auth;
+
+  const auftragId = String(formData.get("auftragId") ?? "").trim();
+  if (!auftragId) return { ok: false, error: "Auftrag fehlt." };
+
+  if (!(await assertAuftragNochOffen(auftragId))) {
+    return { ok: false, error: "Auftrag ist abgeschlossen (read-only)." };
+  }
+
+  const { titel, beschreibung, beschreibungRoh, anfrageId, combined } =
+    readBeschreibungFromForm(formData);
+  const positionIds = formData
+    .getAll("positionIds")
+    .map((v) => String(v).trim())
+    .filter(Boolean);
+  const erledigtIds = formData
+    .getAll("erledigtPositionIds")
+    .map((v) => String(v).trim())
+    .filter(Boolean);
+
+  const uniquePos = Array.from(new Set(positionIds));
+  const uniqueErledigt = Array.from(new Set(erledigtIds));
+
+  const fotos = parseFotosFromForm(formData);
+  const foto = parseFotoFromForm(formData);
+  if (foto.nachgereicht && !foto.nachreichGrund) {
+    return { ok: false, error: "Bitte Grund für nachgereichtes Foto angeben." };
+  }
+  if (!combined?.trim() && fotos.length === 0 && !foto.file) {
+    return { ok: false, error: "Titel, Text oder Foto angeben." };
+  }
+
+  let leistungNames: string[] = [];
+  if (uniquePos.length > 0) {
+    const { data: rows, error } = await supabaseAdmin
+      .from("auftrag_positionen")
+      .select("id, leistung_name, handwerker_id, auftrag_id")
+      .eq("auftrag_id", auftragId)
+      .eq("handwerker_id", auth.handwerkerId)
+      .in("id", uniquePos);
+    if (error) return { ok: false, error: error.message };
+    if ((rows ?? []).length !== uniquePos.length) {
+      return {
+        ok: false,
+        error: "Eine oder mehrere Leistungen gehören nicht zu diesem Auftrag.",
+      };
+    }
+    leistungNames = (rows ?? [])
+      .map((r) => String(r.leistung_name ?? "").trim())
+      .filter(Boolean);
+  } else {
+    const allowed = await assertPartnerAuftragAccess(
+      auth.handwerkerId,
+      auftragId
+    );
+    if (!allowed) {
+      return { ok: false, error: "Kein Zugriff auf diesen Auftrag." };
+    }
+  }
+
+  for (const id of uniqueErledigt) {
+    if (!uniquePos.includes(id)) {
+      return {
+        ok: false,
+        error: "Erledigt nur für ausgewählte Leistungen möglich.",
+      };
+    }
+  }
+
+  const typ: EintragTyp = uniquePos.length > 0 ? "fortschritt" : "notiz";
+  const primaryPos = uniquePos[0] ?? null;
+
+  const eintrag = await insertEintrag({
+    positionId: primaryPos,
+    auftragId,
+    typ,
+    beschreibung: combined || (fotos.length || foto.file ? "Foto-Update" : null),
+    beschreibungRoh,
+    zeitMinuten: null,
+    handwerkerId: auth.handwerkerId,
+    anfrageId,
+  });
+  if (!eintrag.ok) return eintrag;
+
+  const linked = await linkPartnerEintragLeistungen(eintrag.id, uniquePos);
+  if (!linked.ok) return linked;
+
+  const allFotos = [
+    ...fotos,
+    ...(foto.file &&
+    !fotos.some((f) => f.name === foto.file!.name && f.size === foto.file!.size)
+      ? [foto.file]
+      : []),
+  ];
+  for (const file of allFotos) {
+    const attached = await attachFoto({
+      eintragId: eintrag.id,
+      handwerkerId: auth.handwerkerId,
+      auftragId,
+      positionId: primaryPos ?? "frei",
+      file,
+      captureAt: foto.captureAt,
+      nachgereicht: foto.nachgereicht,
+      nachreichGrund: foto.nachreichGrund,
+    });
+    if (!attached.ok) return attached;
+  }
+
+  if (uniqueErledigt.length > 0) {
+    const now = new Date().toISOString();
+    await supabaseAdmin
+      .from("auftrag_positionen")
+      .update({
+        leistung_status: "erledigt",
+        erledigt_am: now,
+        handwerker_status: "bestaetigt",
+      })
+      .in("id", uniqueErledigt)
+      .eq("handwerker_id", auth.handwerkerId);
+  }
+
+  void syncPartnerPositionEintragToKundeTimeline({
+    eintragId: eintrag.id,
+    auftragId,
+    typ,
+    titel,
+    beschreibung: beschreibung || combined,
+    leistungNames,
+    handwerkerId: auth.handwerkerId,
+  });
+
+  await writeAuditEvent({
+    entityType: "auftrag",
+    entityId: auftragId,
+    aktion: "partner_tagebuch_eintrag",
+    actorRolle: "partner",
+    payload: {
+      eintrag_id: eintrag.id,
+      position_ids: uniquePos,
+      erledigt_position_ids: uniqueErledigt,
+    },
+  });
+
+  revalidatePath("/partner");
+  return { ok: true, eintragId: eintrag.id, positionId: primaryPos ?? "" };
+}
+
+/** Mehrere Leistungen als erledigt markieren (ohne Doku-Pflicht). */
+export async function markPartnerPositionenErledigt(
+  formData: FormData
+): Promise<{ ok: true; count: number } | { ok: false; error: string }> {
+  const auth = await partnerAuth();
+  if (!auth.ok) return auth;
+
+  const auftragId = String(formData.get("auftragId") ?? "").trim();
+  const positionIds = formData
+    .getAll("positionIds")
+    .map((v) => String(v).trim())
+    .filter(Boolean);
+  const unique = Array.from(new Set(positionIds));
+  if (!auftragId || !unique.length) {
+    return { ok: false, error: "Auftrag oder Leistungen fehlen." };
+  }
+  if (!(await assertAuftragNochOffen(auftragId))) {
+    return { ok: false, error: "Auftrag ist abgeschlossen (read-only)." };
+  }
+
+  const { data: rows, error } = await supabaseAdmin
+    .from("auftrag_positionen")
+    .select("id, typ, verguetung, leistung_status")
+    .eq("auftrag_id", auftragId)
+    .eq("handwerker_id", auth.handwerkerId)
+    .in("id", unique);
+  if (error) return { ok: false, error: error.message };
+  if ((rows ?? []).length !== unique.length) {
+    return { ok: false, error: "Leistungen ungültig." };
+  }
+  for (const r of rows ?? []) {
+    const isRegie =
+      String(r.typ ?? "").toLowerCase() === "regie" ||
+      String(r.verguetung ?? "").toLowerCase() === "aufwand";
+    if (isRegie) {
+      return {
+        ok: false,
+        error: "Regie-Leistungen bitte über „Ende — Dokumentieren“ abschließen.",
+      };
+    }
+  }
+
+  const now = new Date().toISOString();
+  const { error: upErr } = await supabaseAdmin
+    .from("auftrag_positionen")
+    .update({
+      leistung_status: "erledigt",
+      erledigt_am: now,
+      handwerker_status: "bestaetigt",
+    })
+    .in("id", unique)
+    .eq("handwerker_id", auth.handwerkerId);
+  if (upErr) return { ok: false, error: upErr.message };
+
+  await writeAuditEvent({
+    entityType: "auftrag",
+    entityId: auftragId,
+    aktion: "partner_positionen_erledigt",
+    actorRolle: "partner",
+    payload: { position_ids: unique },
+  });
+
+  revalidatePath("/partner");
+  return { ok: true, count: unique.length };
+}
+
+async function assertPartnerAuftragAccess(
+  handwerkerId: string,
+  auftragId: string
+): Promise<boolean> {
+  if (await assertPartnerAktiveZuweisung(handwerkerId, auftragId)) return true;
+  const { data: pos } = await supabaseAdmin
+    .from("auftrag_positionen")
+    .select("id")
+    .eq("auftrag_id", auftragId)
+    .eq("handwerker_id", handwerkerId)
+    .limit(1);
+  return Boolean(pos?.length);
 }

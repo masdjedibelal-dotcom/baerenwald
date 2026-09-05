@@ -564,7 +564,7 @@ export async function getPortalDataForKunde(
           : supabaseAdmin
               .from("auftrag_timeline")
               .select(
-                "id, auftrag_id, titel, beschreibung, foto_urls, created_at, fuer_kunde_freigegeben"
+                "id, auftrag_id, typ, titel, beschreibung, foto_urls, created_at, fuer_kunde_freigegeben"
               )
               .in("auftrag_id", auftragIds)
               .eq("fuer_kunde_freigegeben", true),
@@ -762,6 +762,59 @@ export async function getPortalDataForKunde(
     bautagebuchByAuftrag.set(aid, list);
   }
 
+  // Timeline-Publish (CRM/Partner) → gleicher Kunden-Feed
+  const timelineBt = listMode
+    ? []
+    : await Promise.all(
+        (timeline ?? [])
+          .filter((t) => {
+            const typ = String((t as { typ?: string }).typ ?? "").toLowerCase();
+            return typ === "bautagebuch";
+          })
+          .map(async (t) => {
+            const row = t as {
+              id: string;
+              auftrag_id: string;
+              titel?: string | null;
+              beschreibung?: string | null;
+              foto_urls?: unknown;
+              created_at?: string | null;
+            };
+            const fotoRaw = row.foto_urls;
+            const paths = Array.isArray(fotoRaw)
+              ? (fotoRaw as string[]).map((s) => String(s).trim()).filter(Boolean)
+              : [];
+            const signed = await resolvePartnerFileUrls(paths);
+            return {
+              aid: String(row.auftrag_id),
+              entry: {
+                id: `tl-${row.id}`,
+                datum:
+                  typeof row.created_at === "string" ? row.created_at : undefined,
+                titel: typeof row.titel === "string" ? row.titel : "Update",
+                notiz:
+                  typeof row.beschreibung === "string"
+                    ? row.beschreibung
+                    : undefined,
+                fotos_urls: signed,
+              },
+            };
+          })
+      );
+  for (const { aid, entry } of timelineBt) {
+    const list = bautagebuchByAuftrag.get(aid) ?? [];
+    const dup = list.some(
+      (x) =>
+        x.titel === entry.titel &&
+        (x.notiz ?? "") === (entry.notiz ?? "") &&
+        (x.datum ?? "").slice(0, 10) === (entry.datum ?? "").slice(0, 10)
+    );
+    if (!dup) {
+      list.push(entry);
+      bautagebuchByAuftrag.set(aid, list);
+    }
+  }
+
   // Partner-Dokumentation (Positions-Lebenszyklus) → Accordion für HV/Kunde
   if (!listMode && auftragIds.length > 0) {
     const {
@@ -778,6 +831,16 @@ export async function getPortalDataForKunde(
         mergePortalBautagebuchEntries(legacy, partner)
       );
     }
+  }
+
+  // Neueste zuerst
+  for (const [aid, list] of Array.from(bautagebuchByAuftrag.entries())) {
+    list.sort((a, b) => {
+      const ta = a.datum ?? "";
+      const tb = b.datum ?? "";
+      return tb.localeCompare(ta);
+    });
+    bautagebuchByAuftrag.set(aid, list);
   }
 
   const betreuerIds = Array.from(

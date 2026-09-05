@@ -6,7 +6,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { usePortalBusy } from "@/components/shared/PortalBusyContext";
 import { VorgangDetailBlocks } from "@/components/shared/vorgang-detail";
 import { buildKundeHvVorgangDetailVm } from "@/lib/vorgang/build-vorgang-detail-vm";
-import { BautagebuchAccordionList } from "@/components/shared/BautagebuchAccordionList";
+import { BautagebuchCardFeed } from "@/components/shared/BautagebuchCardFeed";
 import { DokumenteTabelle } from "@/components/shared/DokumenteTabelle";
 import { PortalDocInlinePreview } from "@/components/shared/PortalDocInlinePreview";
 import { PortalDocOpenButton } from "@/components/shared/PortalDocOpenButton";
@@ -1024,9 +1024,8 @@ export function OrganisationHvVorgangDetail({
     </DetailCard>
   ) : null;
 
-  const showBautagebuch =
-    ["auftrag", "abschluss", "rechnung", "bezahlt"].includes(displayFlowStatus) ||
-    bautagebuch.length > 0;
+  /** Updates-Tab für HV immer — Empty-State bis Einträge da sind. */
+  const showBautagebuch = true;
 
   const showAngebotSection = Boolean(angebotTabPanel);
   const angebotSectionLabel = "Angebot";
@@ -1402,23 +1401,18 @@ export function OrganisationHvVorgangDetail({
           {activeSection === "bautagebuch" && showBautagebuch ? (
             <DetailCard id="vorgang-panel-bautagebuch" title={HV_DETAIL_COPY.bautagebuchTitle}>
               <div onFocus={onBautagebuchViewed} onClick={onBautagebuchViewed}>
-                {bautagebuch.length ? (
-                  <BautagebuchAccordionList
-                    heading=""
-                    className="!border-t-0 !pt-0"
-                    eintraege={bautagebuch.map((e, i) => ({
-                      id: e.id ?? `tb-${i}`,
-                      datum: e.datum ?? e.created_at,
-                      titel: e.titel ?? "Eintrag",
-                      beschreibung: e.notiz,
-                      fotos: e.fotos_urls,
-                    }))}
-                  />
-                ) : (
-                  <p className="portal-text-meta" style={{ color: PORTAL_VAR.faint }}>
-                    {HV_DETAIL_COPY.bautagebuchEmpty}
-                  </p>
-                )}
+                <BautagebuchCardFeed
+                  heading=""
+                  className="!border-t-0 !pt-0"
+                  emptyText={HV_DETAIL_COPY.bautagebuchEmpty}
+                  eintraege={bautagebuch.map((e, i) => ({
+                    id: e.id ?? `tb-${i}`,
+                    datum: e.datum ?? e.created_at,
+                    titel: e.titel ?? "Eintrag",
+                    beschreibung: e.notiz,
+                    fotos: e.fotos_urls,
+                  }))}
+                />
               </div>
             </DetailCard>
           ) : null}

@@ -25,6 +25,8 @@ function typLabel(typ: string): string {
       return "Ergebnis";
     case "weitere_arbeit":
       return "Weitere Arbeit";
+    case "notiz":
+      return "Update";
     default:
       return "Dokumentation";
   }
@@ -39,6 +41,7 @@ function dateKey(iso: string | null | undefined): string | undefined {
 
 /**
  * Lädt Partner-Dokumentation je Auftrag (für HV-/Kunden-Portal Detail).
+ * Inkl. freier Einträge ohne position_id (auftrag_id).
  */
 export async function loadPartnerDokumentationByAuftragIds(
   auftragIds: string[]
@@ -61,8 +64,6 @@ export async function loadPartnerDokumentationByAuftragIds(
   }
 
   const posRows = positionen ?? [];
-  if (!posRows.length) return out;
-
   const posMeta = new Map<
     string,
     { auftragId: string; leistungName: string | null }
@@ -76,13 +77,23 @@ export async function loadPartnerDokumentationByAuftragIds(
   }
 
   const positionIds = Array.from(posMeta.keys());
-  const { data: eintraege, error: eErr } = await supabaseAdmin
+
+  let eintraegeQuery = supabaseAdmin
     .from("position_eintraege")
     .select(
-      "id, position_id, typ, beschreibung, ereignis_zeit, created_at"
+      "id, position_id, auftrag_id, typ, beschreibung, ereignis_zeit, created_at"
     )
-    .in("position_id", positionIds)
     .order("ereignis_zeit", { ascending: false });
+
+  if (positionIds.length > 0) {
+    eintraegeQuery = eintraegeQuery.or(
+      `auftrag_id.in.(${ids.join(",")}),position_id.in.(${positionIds.join(",")})`
+    );
+  } else {
+    eintraegeQuery = eintraegeQuery.in("auftrag_id", ids);
+  }
+
+  const { data: eintraege, error: eErr } = await eintraegeQuery;
 
   if (eErr) {
     if (/does not exist|schema cache|position_eintraege/i.test(eErr.message)) {
@@ -92,7 +103,15 @@ export async function loadPartnerDokumentationByAuftragIds(
     return out;
   }
 
-  const rows = eintraege ?? [];
+  const rows = (eintraege ?? []).filter((r) => {
+    const aid =
+      r.auftrag_id != null
+        ? String(r.auftrag_id)
+        : r.position_id
+          ? posMeta.get(String(r.position_id))?.auftragId
+          : null;
+    return aid && ids.includes(aid);
+  });
   if (!rows.length) return out;
 
   const eintragIds = rows.map((r) => String(r.id));
@@ -123,13 +142,18 @@ export async function loadPartnerDokumentationByAuftragIds(
   );
 
   for (const row of rows) {
-    const meta = posMeta.get(String(row.position_id));
-    if (!meta) continue;
+    const meta = row.position_id
+      ? posMeta.get(String(row.position_id))
+      : null;
+    const auftragId =
+      (row.auftrag_id != null ? String(row.auftrag_id) : null) ||
+      meta?.auftragId;
+    if (!auftragId || !ids.includes(auftragId)) continue;
+
     const typ = String(row.typ ?? "").trim();
-    const titelParts = [
-      typLabel(typ),
-      meta.leistungName,
-    ].filter(Boolean);
+    const titelParts = [typLabel(typ), meta?.leistungName ?? null].filter(
+      Boolean
+    );
     const when =
       (row.ereignis_zeit as string | null) ??
       (row.created_at as string | null) ??
@@ -151,9 +175,9 @@ export async function loadPartnerDokumentationByAuftragIds(
       fotos_urls,
     };
 
-    const list = out.get(meta.auftragId) ?? [];
+    const list = out.get(auftragId) ?? [];
     list.push(entry);
-    out.set(meta.auftragId, list);
+    out.set(auftragId, list);
   }
 
   return out;

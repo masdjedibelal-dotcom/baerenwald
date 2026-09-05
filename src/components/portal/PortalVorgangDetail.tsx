@@ -11,7 +11,7 @@ import { OrgVorgangFeedbackSection } from "@/components/org/OrgVorgangFeedbackSe
 import { OrgMelderStatusLinkPanel } from "@/components/org/OrgMelderStatusLinkPanel";
 import { PortalVorgangFeedbackSection } from "@/components/portal/PortalVorgangFeedbackSection";
 import { PartnerPortalDetailSections } from "@/components/partner/PartnerPortalDetailSections";
-import { BautagebuchAccordionList } from "@/components/shared/BautagebuchAccordionList";
+import { BautagebuchCardFeed } from "@/components/shared/BautagebuchCardFeed";
 import { DokumenteTabelle } from "@/components/shared/DokumenteTabelle";
 import { PortalDetailCard } from "@/components/shared/PortalDetailCard";
 import { PortalDocOpenButton } from "@/components/shared/PortalDocOpenButton";
@@ -180,12 +180,9 @@ export function PortalVorgangDetail({
     [flowStatusOverride, item, orgFreigabeStatus, hvMeldungStatus]
   );
 
+  /** Updates-Tab immer (außer Mieter) — Empty-State bis Einträge da sind. */
   const showBautagebuchTab = Boolean(
-    Boolean(item.bautagebuch && item.bautagebuch.length > 0) ||
-      flowStatus === "auftrag" ||
-      flowStatus === "abschluss" ||
-      flowStatus === "rechnung" ||
-      flowStatus === "bezahlt"
+    !item.hvMieterView && !mieterStatusMode
   );
   const showFeedbackTab = Boolean(item.leadId);
 
@@ -514,21 +511,17 @@ export function PortalVorgangDetail({
           ) : null}
 
           {activeSection === "bautagebuch" && showBautagebuchTab ? (
-            (item.bautagebuch?.length ?? 0) > 0 ? (
-              <BautagebuchAccordionList
-                eintraege={(item.bautagebuch ?? []).map((b) => ({
-                  id: b.id ?? `${b.datum}-${b.titel}`,
-                  datum: b.datum ?? b.created_at,
-                  titel: b.titel ?? "Eintrag",
-                  beschreibung: b.notiz,
-                  fotos: b.fotos_urls,
-                }))}
-              />
-            ) : (
-              <p className="text-sm text-[var(--portal-muted,#5B6470)]">
-                Noch keine Updates vom Handwerker.
-              </p>
-            )
+            <BautagebuchCardFeed
+              heading="Updates"
+              emptyText="Noch keine Updates vom Handwerker."
+              eintraege={(item.bautagebuch ?? []).map((b) => ({
+                id: b.id ?? `${b.datum}-${b.titel}`,
+                datum: b.datum ?? b.created_at,
+                titel: b.titel ?? "Eintrag",
+                beschreibung: b.notiz,
+                fotos: b.fotos_urls,
+              }))}
+            />
           ) : null}
 
           {activeSection === "dokumente" ? (

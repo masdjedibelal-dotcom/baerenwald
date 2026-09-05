@@ -13,6 +13,8 @@ type Props = {
   value: string;
   onChange: (value: string) => void;
   rows?: number;
+  /** Einzeilig (Titel) statt Textarea */
+  singleLine?: boolean;
   required?: boolean;
   placeholder?: string;
   label?: string;
@@ -33,6 +35,7 @@ export function PartnerKiKorrekturField({
   value,
   onChange,
   rows = 3,
+  singleLine = false,
   required,
   placeholder,
   label = "Beschreibung",
@@ -76,15 +79,27 @@ export function PartnerKiKorrekturField({
         contextHint={contextHint || null}
         required={required}
       >
-        <textarea
-          name={name}
-          rows={rows}
-          required={required}
-          value={value}
-          onChange={(e) => onTextChange(e.target.value)}
-          placeholder={placeholder}
-          className="portal-input w-full rounded-xl border border-border-default px-3 py-2.5"
-        />
+        {singleLine ? (
+          <input
+            type="text"
+            name={name}
+            required={required}
+            value={value}
+            onChange={(e) => onTextChange(e.target.value)}
+            placeholder={placeholder}
+            className="portal-input w-full rounded-xl border border-border-default px-3 py-2.5"
+          />
+        ) : (
+          <textarea
+            name={name}
+            rows={rows}
+            required={required}
+            value={value}
+            onChange={(e) => onTextChange(e.target.value)}
+            placeholder={placeholder}
+            className="portal-input w-full rounded-xl border border-border-default px-3 py-2.5"
+          />
+        )}
       </PortalKiAssistField>
       <input type="hidden" name={rohName} value={roh || value} />
     </div>
