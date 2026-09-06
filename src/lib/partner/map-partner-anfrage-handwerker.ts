@@ -24,6 +24,7 @@ export const PARTNER_LEAD_EMBED = `
   funnel_daten,
   anlass,
   kanal,
+  erfassung_von,
   preis_min,
   preis_max,
   budget_ca,

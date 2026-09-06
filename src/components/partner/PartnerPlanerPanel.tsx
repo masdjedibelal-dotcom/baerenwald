@@ -248,15 +248,13 @@ function AufgabeTypDot({
   dringend?: boolean;
 }) {
   const color =
-    typ === "bautagebuch_eintrag"
-      ? "bg-blue-500"
-      : typ === "unterlagen_hochladen" || typ === "dokument_hochladen"
-        ? "bg-violet-500"
-        : typ === "bestaetigen" || typ === "auftrag_annehmen"
-          ? "bg-emerald-500"
-          : dringend
-            ? "bg-amber-500"
-            : "bg-text-tertiary";
+    typ === "unterlagen_hochladen" || typ === "dokument_hochladen"
+      ? "bg-violet-500"
+      : typ === "bestaetigen" || typ === "auftrag_annehmen"
+        ? "bg-emerald-500"
+        : dringend
+          ? "bg-amber-500"
+          : "bg-text-tertiary";
 
   return (
     <span

@@ -110,7 +110,7 @@
   --p2-shadow-primary-btn: 0 8px 20px rgba(46, 125, 82, 0.28);
   --p2-shadow-nav: 0 14px 32px rgba(16, 32, 24, 0.3);
   --p2-shadow-sheet: 0 -10px 60px rgba(0, 0, 0, 0.3);
-  --p2-scrim: rgba(16, 25, 20, 0.58);
+  --p2-scrim: rgba(16, 25, 20, 0.22);
   --p2-radius-sm: 12px;
   --p2-radius-md: 18px;
   --p2-radius-lg: 22px;
@@ -2734,16 +2734,16 @@ h3 {
   }
 
   .portal-detail-hero {
-    /* Platz für Back-Pill + Abstand zum Titel; unten Luft für Abrundung */
-    padding: 72px 20px 64px;
+    /* Kompakt: Back + Titel, wenig Leerraum — Inhalte schneller sichtbar */
+    padding: 40px 18px 28px;
     min-height: 0;
-    border-radius: 0 0 30px 30px;
+    border-radius: 0 0 24px 24px;
   }
 
   @media (min-width: 1024px) {
     .portal-detail-hero {
-      padding: 56px 30px 40px;
-      border-radius: 26px;
+      padding: 36px 28px 28px;
+      border-radius: 22px;
     }
   }
 
@@ -2755,25 +2755,38 @@ h3 {
 
   .portal-detail-hero .portal-dash-hero-name {
     margin: 0;
+    font-size: calc(22px * var(--p2-type-scale, 1.1));
+    line-height: 1.2;
+  }
+
+  @media (min-width: 1024px) {
+    .portal-detail-hero .portal-dash-hero-name {
+      font-size: calc(26px * var(--p2-type-scale, 1.1));
+    }
   }
 
   .portal-detail-hero--compact {
-    padding-bottom: 40px;
+    padding-bottom: 20px;
+  }
+
+  .portal-detail-layout.portal-entity-detail {
+    /* Abstand Hero ↔ Kopfkarte über .portal-detail-kopfkarte margin */
+    gap: 0;
   }
 
   /*
-   * Parent (.portal-detail-layout / .portal-entity-detail) ist bereits full-bleed.
-   * Kein zusätzliches margin-inline + w-full — das wurde rechts abgeschnitten.
+   * Detail-Hero mobil seitlich eingerückt (wie Kopfkarte) — nicht vollflächig
+   * übereinander geklebt. Desktop bleibt content-breit.
    */
   .portal-detail-cover--bleed {
-    margin-inline: 0;
-    border-radius: 0 0 30px 30px;
+    margin-inline: var(--portal-pad-x, 18px);
+    border-radius: 0 0 24px 24px;
   }
 
   @media (min-width: 1024px) {
     .portal-detail-cover--bleed {
       margin-inline: 0;
-      border-radius: 26px;
+      border-radius: 22px;
     }
   }
 
@@ -2818,11 +2831,11 @@ h3 {
     cursor: pointer;
   }
 
-  /* Kopfkarte: horizontal inset wie Dashboard-Fokus (--portal-pad-x) */
+  /* Kopfkarte: Abstand zum Hero + seitliches Padding (kein Überlapp) */
   .portal-detail-kopfkarte {
     position: relative;
     z-index: 1;
-    margin: -20px var(--portal-pad-x, 18px) 0;
+    margin: 12px var(--portal-pad-x, 18px) 0;
     padding: 20px;
     border-radius: 22px;
     background: #fff;
@@ -3332,7 +3345,8 @@ h3 {
   }
 
   /* Portal 2.0 B7 — modalShell: edit|confirm|funnel|preview
-     SoT: handoff 07-sheets-und-overlays.md */
+     SoT: handoff 07-sheets-und-overlays.md
+     Scrim leicht + starker Blur — Hintergrund lesbar, nicht grau-zugedeckt */
   .portal-modal-shell {
     position: fixed;
     inset: 0;
@@ -3340,9 +3354,9 @@ h3 {
     align-items: flex-end;
     justify-content: center;
     padding: 0;
-    background: rgba(16, 25, 20, 0.6);
-    -webkit-backdrop-filter: blur(10px);
-    backdrop-filter: blur(10px);
+    background: rgba(16, 25, 20, 0.22);
+    -webkit-backdrop-filter: blur(18px) saturate(1.1);
+    backdrop-filter: blur(18px) saturate(1.1);
     overscroll-behavior: none;
     touch-action: none;
   }
@@ -4686,6 +4700,16 @@ h3 {
   }
 
   /* PortalShell — Fullscreen (kein Mock-desktopFrame / Floating Card) */
+  /*
+   * Nav-/CTA-Höhen auf :root — Sticky-CTAs werden nach document.body portiert
+   * und erben sonst keine Vars von .portal-shell → bottom wird ungültig.
+   */
+  :root {
+    --portal-mobile-nav-h: calc(5.5rem + env(safe-area-inset-bottom, 0px));
+    --portal-mobile-nav-pad: calc(var(--portal-mobile-nav-h) + 1.25rem);
+    --portal-detail-actions-h: 5.25rem;
+  }
+
   .portal-shell {
     /*
      * Bottom-Nav inkl. Safe-Area (Icons + Labels + Padding).
@@ -4734,14 +4758,51 @@ h3 {
     background: var(--p2-bg, #f5f6f4);
   }
 
+  /*
+   * Desktop: fester Viewport — Main ist der Scrollport.
+   * Ohne height-Kette wächst Main mit dem Inhalt, fängt aber mit
+   * overflow:auto + overscroll-behavior:contain das Mausrad ab → kein Scroll.
+   */
   @media (min-width: 1024px) {
-    .portal-shell-chrome {
+    html.portal-doc-scroll,
+    html.portal-doc-scroll body {
+      height: 100%;
+      max-height: 100%;
       overflow: hidden;
+    }
+
+    .portal-shell {
+      height: 100dvh;
+      max-height: 100dvh;
+      overflow: hidden;
+    }
+
+    .portal-shell-body,
+    .portal-shell-frame {
+      flex: 1 1 auto;
       min-height: 0;
       height: 100%;
+      max-height: 100%;
+      overflow: hidden;
+    }
+
+    .portal-shell-sidebar {
+      min-height: 0;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    .portal-shell-chrome {
+      flex: 1 1 auto;
+      min-height: 0;
+      height: auto;
+      max-height: 100%;
+      overflow: hidden;
     }
 
     .portal-shell-chrome > .portal-shell-main {
+      flex: 1 1 auto;
+      min-height: 0;
       overflow: auto;
       -webkit-overflow-scrolling: touch;
       overscroll-behavior: contain;
@@ -4808,7 +4869,7 @@ h3 {
 
     .portal-shell-frame {
       overflow: hidden;
-      min-height: 100vh;
+      min-height: 0;
       border-radius: 0;
       border: none;
       box-shadow: none;
@@ -4837,7 +4898,7 @@ h3 {
     color: rgba(255, 255, 255, 0.66);
     border-radius: 0;
     align-self: stretch;
-    min-height: 100%;
+    min-height: 0;
   }
 
   @media (min-width: 1024px) {
@@ -4911,13 +4972,17 @@ h3 {
     }
 
     .portal-shell[data-content-bleed="true"] .portal-detail-hero {
-      /* Mehr Luft unter der Topbar-Suche bis „← Vorgänge“ */
-      padding-top: calc(var(--portal-topbar-overlap, 68px) + 72px);
+      /* Topbar-Bleed, aber seitlich wie Kopfkarte eingerückt */
+      margin-left: 18px;
+      margin-right: 18px;
+      padding-top: calc(var(--portal-topbar-overlap, 68px) + 32px);
+      padding-bottom: 28px;
+      border-radius: 0 0 24px 24px;
     }
 
     .portal-shell[data-content-bleed="true"] .portal-detail-cover-back,
     .portal-shell[data-content-bleed="true"] .portal-detail-cover-edit {
-      top: calc(var(--portal-topbar-overlap, 68px) + 22px);
+      top: calc(var(--portal-topbar-overlap, 68px) + 10px);
     }
 
     .portal-shell[data-content-bleed="true"] .portal-dash-body,
@@ -4927,8 +4992,7 @@ h3 {
     }
 
     .portal-shell[data-content-bleed="true"] .portal-detail-kopfkarte {
-      margin-left: 18px;
-      margin-right: 18px;
+      margin: 12px 18px 0;
     }
   }
 
@@ -5333,13 +5397,17 @@ h3 {
 
   /*
    * Detail-CTAs mobil: sticky über der schwebenden Bottom-Nav (immer sichtbar).
+   * Vars mit Fallback — Element liegt per Portal auf body, nicht unter .portal-shell.
    */
   .portal-detail-mobile-cta {
     position: fixed;
     left: 0;
     right: 0;
     top: auto;
-    bottom: calc(var(--portal-mobile-nav-h) + 8px);
+    bottom: calc(
+      var(--portal-mobile-nav-h, calc(5.5rem + env(safe-area-inset-bottom, 0px))) +
+        8px
+    );
     height: fit-content;
     z-index: 55;
     display: flex;

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import { Camera, Check, ChevronDown, Plus } from "lucide-react";
+import { Camera, Check, ChevronDown } from "lucide-react";
 
 import { PartnerDirektKameraSlot } from "@/components/partner/PartnerDirektKameraSlot";
 import { PartnerKiKorrekturField } from "@/components/partner/PartnerKiKorrekturField";
@@ -17,12 +17,9 @@ import {
   completePartnerPosition,
   createPartnerTagebuchEintrag,
   createPartnerWeitereArbeit,
-  listPartnerAuftragTagebuchEintraege,
   markPartnerPositionenErledigt,
   startPartnerPosition,
-  type PartnerTagebuchListenEintrag,
 } from "@/app/actions/partner-position-eintraege";
-import { BautagebuchCardFeed } from "@/components/shared/BautagebuchCardFeed";
 import { normalizePartnerCameraPhoto } from "@/lib/partner/normalize-camera-photo";
 import {
   formatZeitMinuten,
@@ -60,8 +57,11 @@ type Props = {
   autoOpenPreferred?: boolean;
   /** Erledigter Auftrag: nur lesen, keine Start-/Update-/Nachtrag-Aktionen. */
   readOnly?: boolean;
-  /** Deep-Link / CRM-Anforderung: direkt Tagebuch-Tab */
-  initialView?: "leistungen" | "tagebuch";
+  /**
+   * Deep-Link / CRM-Anforderung: Multi-Update-Sheet mit bevorzugten Leistungen öffnen.
+   * (Kein Tagebuch-Tab mehr — Tagebuch nur im CRM.)
+   */
+  openUpdateOnMount?: boolean;
 };
 
 function formatEuro(n: number): string {
@@ -203,18 +203,13 @@ export function PartnerPositionLebenszyklusList({
   auftragTitel,
   autoOpenPreferred = false,
   readOnly = false,
-  initialView = "leistungen",
+  openUpdateOnMount = false,
 }: Props) {
-  const [view, setView] = useState<"leistungen" | "tagebuch">(initialView);
-  const [tagebuchEintraege, setTagebuchEintraege] = useState<
-    PartnerTagebuchListenEintrag[]
-  >([]);
-  const [tagebuchLoading, setTagebuchLoading] = useState(false);
   const [sheet, setSheet] = useState<{
     mode: SheetMode;
     position: LebenszyklusPosition;
   } | null>(null);
-  const [tagebuchOpen, setTagebuchOpen] = useState(false);
+  const [updateOpen, setUpdateOpen] = useState(false);
   const [tbTitel, setTbTitel] = useState("");
   const [tbBeschreibung, setTbBeschreibung] = useState("");
   const [tbSelected, setTbSelected] = useState<string[]>([]);
@@ -233,6 +228,7 @@ export function PartnerPositionLebenszyklusList({
   const [beschreibung, setBeschreibung] = useState("");
   const [sheetFotos, setSheetFotos] = useState<File[]>([]);
   const autoOpenedRef = useRef(false);
+  const updateOpenedRef = useRef(false);
   const sheetFormRef = useRef<HTMLFormElement>(null);
   const { runBusy } = usePortalBusy();
   const preferredSet = useMemo(
@@ -291,34 +287,16 @@ export function PartnerPositionLebenszyklusList({
   );
 
   useEffect(() => {
-    setView(initialView);
-  }, [initialView]);
-
-  useEffect(() => {
-    if (initialView !== "tagebuch" || readOnly) return;
+    if (!openUpdateOnMount || readOnly || updateOpenedRef.current) return;
     if (!preferredPositionIds.length) return;
+    updateOpenedRef.current = true;
     setTbSelected(
       preferredPositionIds.filter((id) =>
         positionen.some((p) => p.id === id)
       )
     );
-    setTagebuchOpen(true);
-  }, [initialView, preferredPositionIds, positionen, readOnly]);
-
-  async function reloadTagebuch() {
-    setTagebuchLoading(true);
-    try {
-      const list = await listPartnerAuftragTagebuchEintraege(auftragId);
-      setTagebuchEintraege(list);
-    } finally {
-      setTagebuchLoading(false);
-    }
-  }
-
-  useEffect(() => {
-    void reloadTagebuch();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [auftragId]);
+    setUpdateOpen(true);
+  }, [openUpdateOnMount, preferredPositionIds, positionen, readOnly]);
 
   useEffect(() => {
     if (!autoOpenPreferred || autoOpenedRef.current || !preferredSet.size) return;
@@ -377,8 +355,8 @@ export function PartnerPositionLebenszyklusList({
     })();
   }
 
-  function closeTagebuch() {
-    setTagebuchOpen(false);
+  function closeUpdateSheet() {
+    setUpdateOpen(false);
     setTbSelected([]);
     setTbErledigt([]);
     setTbTitel("");
@@ -386,8 +364,12 @@ export function PartnerPositionLebenszyklusList({
     setTbFotos([]);
   }
 
-  function submitTagebuch() {
+  function submitLeistungsUpdate() {
     if (submitting) return;
+    if (!tbSelected.length) {
+      portalToastError("Mindestens eine Leistung auswählen.");
+      return;
+    }
     if (!tbTitel.trim() && !tbBeschreibung.trim() && !tbFotos.length) {
       portalToastError("Titel, Text oder Foto angeben.");
       return;
@@ -423,8 +405,7 @@ export function PartnerPositionLebenszyklusList({
               ? `Update für ${tbSelected.length} Leistungen gespeichert.`
               : "Update gespeichert."
           );
-          closeTagebuch();
-          await reloadTagebuch();
+          closeUpdateSheet();
           await onDone?.();
         }, Math.max(PORTAL_BUSY_MIN_MS, 600));
       } finally {
@@ -719,92 +700,8 @@ export function PartnerPositionLebenszyklusList({
         >
           {HW_DOKU_STORY.title}
         </h3>
-
-        <div
-          className="mt-3 flex rounded-xl border border-border-light bg-[var(--p2-line2,#eef1ef)] p-0.5"
-          role="tablist"
-          aria-label="Ansicht"
-        >
-          <button
-            type="button"
-            role="tab"
-            aria-selected={view === "leistungen"}
-            className={cn(
-              "flex-1 rounded-[10px] px-3 py-2 text-[13px] font-semibold transition-colors",
-              view === "leistungen"
-                ? "bg-white text-text-primary shadow-sm"
-                : "text-text-tertiary"
-            )}
-            onClick={() => setView("leistungen")}
-          >
-            Leistungen
-          </button>
-          <button
-            type="button"
-            role="tab"
-            aria-selected={view === "tagebuch"}
-            className={cn(
-              "flex flex-1 items-center justify-center gap-1.5 rounded-[10px] px-3 py-2 text-[13px] font-semibold transition-colors",
-              view === "tagebuch"
-                ? "bg-white text-text-primary shadow-sm"
-                : "text-text-tertiary"
-            )}
-            onClick={() => setView("tagebuch")}
-          >
-            Tagebuch
-            {tagebuchEintraege.length > 0 ? (
-              <span className="rounded-full bg-[var(--p2-primary-soft,#dce8e0)] px-1.5 py-0.5 text-[11px] font-bold tabular-nums text-[var(--p2-primary,#2E7D52)]">
-                {tagebuchEintraege.length}
-              </span>
-            ) : null}
-          </button>
-        </div>
       </div>
 
-      {view === "tagebuch" ? (
-        <div className="space-y-3">
-          {!readOnly ? (
-            <div className="flex items-center justify-end">
-              <button
-                type="button"
-                className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[var(--p2-primary,#2E7D52)] text-white transition-opacity hover:opacity-90"
-                aria-label="Tagebuch-Eintrag hinzufügen"
-                title="Tagebuch-Eintrag"
-                onClick={() => setTagebuchOpen(true)}
-              >
-                <Plus className="h-[18px] w-[18px]" strokeWidth={2.5} aria-hidden />
-              </button>
-            </div>
-          ) : null}
-          {tagebuchLoading && tagebuchEintraege.length === 0 ? (
-            <p className="portal-text-body py-6 text-center text-text-tertiary">
-              Einträge werden geladen…
-            </p>
-          ) : (
-            <BautagebuchCardFeed
-              heading=""
-              className="!border-t-0 !pt-0"
-              emptyText="Noch keine Tagebuch-Einträge — CRM und Handwerker erscheinen hier."
-              eintraege={tagebuchEintraege.map((e) => ({
-                id: e.id,
-                datum: e.datum,
-                titel: e.titel,
-                beschreibung: [
-                  e.quelleLabel,
-                  e.leistungNames.length
-                    ? e.leistungNames.join(", ")
-                    : null,
-                  e.beschreibung,
-                ]
-                  .filter(Boolean)
-                  .join(" · "),
-                fotos: e.fotos,
-              }))}
-            />
-          )}
-        </div>
-      ) : (
-        <>
       <div>
         <div className="mt-0 flex items-center justify-between gap-2">
           <p className="text-[12.5px] font-semibold" style={{ color: PORTAL_VAR.sub }}>
@@ -828,7 +725,7 @@ export function PartnerPositionLebenszyklusList({
                     setTbTitel("");
                     setTbBeschreibung("");
                     setTbFotos([]);
-                    setTagebuchOpen(true);
+                    setUpdateOpen(true);
                   }}
                 >
                   Update ({bulkSelected.length})
@@ -1165,13 +1062,10 @@ export function PartnerPositionLebenszyklusList({
             + Nachtrag / Regie
           </button>
           <p className="text-[11.5px] leading-relaxed text-text-tertiary">
-            Zusätzliche Arbeit erst melden — Bärenwald prüft. Tagebuch-Einträge
-            unter dem Tab „Tagebuch“.
+            Zusätzliche Arbeit erst melden — Bärenwald prüft und weist zu.
           </p>
         </div>
       ) : null}
-        </>
-      )}
 
       {sheet ? (
         <PortalModalShell
@@ -1332,10 +1226,10 @@ export function PartnerPositionLebenszyklusList({
       ) : null}
 
       <PortalModalShell
-        open={tagebuchOpen}
-        title="Tagebuch-Eintrag"
-        subtitle="Optional Leistungen anhaken — oder freier Eintrag."
-        onClose={closeTagebuch}
+        open={updateOpen}
+        title="Update"
+        subtitle="Leistungen auswählen und Fortschritt dokumentieren."
+        onClose={closeUpdateSheet}
         variant="edit"
         dirty={
           !submitting &&
@@ -1345,29 +1239,18 @@ export function PartnerPositionLebenszyklusList({
             tbFotos.length > 0)
         }
         closeOnBackdrop={!submitting}
-        busy={submitting && tagebuchOpen}
+        busy={submitting && updateOpen}
         busyTitle="Wird gespeichert…"
-        busyBody="Tagebuch-Eintrag wird übertragen."
+        busyBody="Update wird übertragen."
       >
         <div className="flex flex-col gap-3">
           <div>
-            <p className="portal-form-label">Leistungen (optional)</p>
+            <p className="portal-form-label">Leistungen</p>
             <p className="mt-0.5 text-[11.5px] text-text-tertiary">
-              Keine, eine oder mehrere — leer = freier Tageseintrag.
+              Eine oder mehrere Leistungen für dieses Update.
             </p>
             {sortedPositionen.length > 0 ? (
               <div className="mt-1.5 flex flex-wrap items-center gap-2">
-                <button
-                  type="button"
-                  className="btn-pill-outline"
-                  disabled={submitting}
-                  onClick={() => {
-                    setTbSelected([]);
-                    setTbErledigt([]);
-                  }}
-                >
-                  Keine Leistung
-                </button>
                 <button
                   type="button"
                   className="btn-pill-outline"
@@ -1385,7 +1268,7 @@ export function PartnerPositionLebenszyklusList({
                 </button>
                 <span className="text-[11.5px] text-text-tertiary">
                   {tbSelected.length === 0
-                    ? "Freier Eintrag"
+                    ? "Keine gewählt"
                     : `${tbSelected.length} von ${sortedPositionen.length}`}
                 </span>
               </div>
@@ -1453,7 +1336,7 @@ export function PartnerPositionLebenszyklusList({
             value={tbTitel}
             onChange={setTbTitel}
             auftragTitel={auftragTitel}
-            placeholder="Kurzer Titel fürs Portal"
+            placeholder="Kurzer Titel zum Update"
           />
           <PartnerKiKorrekturField
             scope="bautagebuch"
@@ -1462,7 +1345,7 @@ export function PartnerPositionLebenszyklusList({
             onChange={setTbBeschreibung}
             rows={8}
             auftragTitel={auftragTitel}
-            placeholder="Was ist auf der Baustelle passiert?"
+            placeholder="Was wurde gemacht?"
           />
           <PartnerMultiFotoSlot
             label="Fotos (optional)"
@@ -1475,7 +1358,7 @@ export function PartnerPositionLebenszyklusList({
             type="button"
             className="btn-pill-primary mt-2 w-full"
             disabled={submitting}
-            onClick={submitTagebuch}
+            onClick={submitLeistungsUpdate}
           >
             {submitting ? "Speichern…" : "Speichern"}
           </button>

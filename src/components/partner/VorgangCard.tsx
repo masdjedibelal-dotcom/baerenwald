@@ -83,8 +83,6 @@ export function VorgangCard({
   handwerker,
   onUpdated,
   onBack,
-  focusBautagebuch,
-  anfrageId,
   focusAbnahme,
   focusAblehnen,
   protokollId,
@@ -93,8 +91,6 @@ export function VorgangCard({
   handwerker?: VorgangCardHandwerker | null;
   onUpdated?: (id: string, opts?: { declined?: boolean }) => void;
   onBack?: () => void;
-  focusBautagebuch?: boolean;
-  anfrageId?: string | null;
   focusAbnahme?: boolean;
   focusAblehnen?: boolean;
   protokollId?: string | null;
@@ -150,8 +146,6 @@ export function VorgangCard({
         vorgangState={vorgangState}
         handwerker={handwerker}
         onBack={onBack}
-        focusBautagebuch={focusBautagebuch}
-        deepLinkAnfrageId={anfrageId}
         focusAbnahme={focusAbnahme}
         deepLinkProtokollId={protokollId}
       />

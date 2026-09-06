@@ -69,7 +69,7 @@ export function PortalEntityDetailLayout({
   return (
     <div
       className={cn(
-        "portal-detail-layout portal-entity-detail space-y-5 pb-2",
+        "portal-detail-layout portal-entity-detail flex flex-col pb-2",
         className
       )}
     >

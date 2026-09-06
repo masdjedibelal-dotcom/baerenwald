@@ -35,10 +35,7 @@ assert.equal(
   })?.label,
   "Wartet auf HW · Antwort"
 );
-assert.equal(
-  resolveHvWartetAufHw({ bautagebuchAnfrageOffen: true })?.kind,
-  "bautagebuch"
-);
+assert.equal(resolveHvWartetAufHw({ terminOffen: true })?.kind, "termin");
 assert.equal(resolveHvWartetAufHw({}), null);
 
 assert.equal(hvKpiToListeFilter("offen"), "offen");

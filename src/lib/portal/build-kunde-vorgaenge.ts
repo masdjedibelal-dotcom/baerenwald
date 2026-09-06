@@ -72,7 +72,7 @@ import {
   leadIstMeldeTitelQuelle,
   titelFromFunnelLeistungen,
 } from "@/lib/org/melde-vorgang-titel";
-import { resolveAkteVorgangTitel } from "@/lib/vorgang/vorgang-anzeige-titel";
+import { resolveAkteVorgangTitel, isPlaceholderVorgangTitel } from "@/lib/vorgang/vorgang-anzeige-titel";
 
 function meldeFotosFromFunnel(funnelDaten: unknown): string[] {
   const fd = funnelDaten as { fotos?: unknown } | null | undefined;
@@ -380,8 +380,9 @@ function normalizeAngebotListenTitel(angebotTitel: string): string | null {
 }
 
 /**
- * Einheitlicher Vorgangs-Titel wie CRM (`resolveAkteVorgangTitel`):
- * Leistungsumfang → Auftragstitel → Situation · Bereich → Melde-/Funnel-Fallback.
+ * Einheitlicher Vorgangs-Titel wie CRM / Partner:
+ * Leistungsumfang → Melde-Titel → Auftragstitel → Situation · Bereich → Fallback.
+ * Platzhalter wie „Leistungen“ zählen nicht.
  */
 function resolveListCardTitle(
   lead: PortalLead,
@@ -389,6 +390,13 @@ function resolveListCardTitle(
   auftrag: PortalAuftrag | null
 ): string {
   const meldeFallback = anfrageTitleFromLead(lead).title;
+  const isMelde = leadIstMeldeTitelQuelle({
+    anlass: lead.anlass,
+    kanal: lead.kanal,
+    funnelDaten: lead.funnel_daten,
+    erfassung_von: lead.erfassung_von,
+  });
+  const auftragTitel = auftrag?.titel?.trim() || "";
   const crmTitel = resolveAkteVorgangTitel({
     angebot: angebot
       ? {
@@ -396,16 +404,28 @@ function resolveListCardTitle(
           notizen: angebot.notizen,
         }
       : null,
-    auftragTitel: auftrag?.titel,
-    situation: lead.situation,
-    bereiche: lead.bereiche,
+    auftragTitel: isPlaceholderVorgangTitel(auftragTitel)
+      ? null
+      : auftragTitel,
+    situation: isMelde ? null : lead.situation,
+    bereiche: isMelde ? null : lead.bereiche,
     fallback: meldeFallback,
   });
 
   // Generische „Angebot ANG-…“-Titel verwerfen → Fallback
   const cleaned = normalizeAngebotListenTitel(crmTitel);
-  if (cleaned && !/^angebot\b/i.test(cleaned)) return cleaned;
-  if (crmTitel && !/^angebot\s+[A-Z0-9]/i.test(crmTitel.trim())) {
+  if (
+    cleaned &&
+    !isPlaceholderVorgangTitel(cleaned) &&
+    !/^angebot\b/i.test(cleaned)
+  ) {
+    return cleaned;
+  }
+  if (
+    crmTitel &&
+    !isPlaceholderVorgangTitel(crmTitel) &&
+    !/^angebot\s+[A-Z0-9]/i.test(crmTitel.trim())
+  ) {
     return crmTitel;
   }
   return meldeFallback;

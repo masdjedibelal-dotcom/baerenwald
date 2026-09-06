@@ -11,6 +11,39 @@ export type VorgangAnzeigeTitelAngebot = {
   notizen?: string | null;
 };
 
+/**
+ * Platzhalter / PosBoard-Defaults / Slugs — kein sprechender Vorgangs-Titel.
+ * (z. B. „Leistungen“, „Auftrag“, „Direktauftrag — sanitär“)
+ */
+export function isPlaceholderVorgangTitel(
+  t: string | null | undefined
+): boolean {
+  const raw = t?.trim() ?? "";
+  if (!raw) return true;
+  const n = raw.toLowerCase();
+  if (
+    n === "leistungen" ||
+    n === "leistung" ||
+    n === "auftrag" ||
+    n === "projekt" ||
+    n === "vorgang" ||
+    n === "meldung" ||
+    n === "angebot" ||
+    n === "direktauftrag" ||
+    n === "notfall" ||
+    n === "einsatz"
+  ) {
+    return true;
+  }
+  // Reine Dok-Nr. / generisches „Angebot …“
+  if (/^angebot(\s+[a-z0-9][\w./-]{0,48})?$/i.test(raw)) return true;
+  // CRM-Slug (ein Token)
+  if (/^[a-z][a-z0-9_]{1,40}$/.test(raw)) return true;
+  // „Direktauftrag — sanitär“ / „Direktauftrag - elektro“
+  if (/^direktauftrag\s*[—\-|:·]\s*[a-z0-9_]+$/i.test(raw)) return true;
+  return false;
+}
+
 /** Situation + Bereich (Labels), z. B. „Reparatur · Sanitär“. */
 export function situationBereichTitel(
   situation?: string | null,
@@ -44,16 +77,21 @@ export function angebotTitelOderSituationBereich(opts: {
     opts.angebot?.leistungsumfang?.trim() ||
     wm?.leistungsumfang?.trim() ||
     "";
-  if (angebotTitel) return angebotTitel;
+  if (angebotTitel && !isPlaceholderVorgangTitel(angebotTitel)) {
+    return angebotTitel;
+  }
 
   const fromLead = situationBereichTitel(opts.situation, opts.bereiche);
   if (fromLead) return fromLead;
 
-  return opts.fallback?.trim() || "Vorgang";
+  const fb = opts.fallback?.trim() || "";
+  if (fb && !isPlaceholderVorgangTitel(fb)) return fb;
+  return "Vorgang";
 }
 
 /**
  * Akte / Portal-Liste: Angebot → Auftrag → Rechnung → Anfrage (Situation · Bereich).
+ * Platzhalter wie „Leistungen“ zählen nicht als Auftragstitel.
  */
 export function resolveAkteVorgangTitel(opts: {
   angebot?: VorgangAnzeigeTitelAngebot | null;
@@ -70,16 +108,24 @@ export function resolveAkteVorgangTitel(opts: {
     opts.angebot?.leistungsumfang?.trim() ||
     wm?.leistungsumfang?.trim() ||
     "";
-  if (angebotTitel) return angebotTitel;
+  if (angebotTitel && !isPlaceholderVorgangTitel(angebotTitel)) {
+    return angebotTitel;
+  }
 
-  const auftragTitel = opts.auftragTitel?.trim();
-  if (auftragTitel) return auftragTitel;
+  const auftragTitel = opts.auftragTitel?.trim() || "";
+  if (auftragTitel && !isPlaceholderVorgangTitel(auftragTitel)) {
+    return auftragTitel;
+  }
 
-  const rechnungTitel = opts.rechnungTitel?.trim();
-  if (rechnungTitel) return rechnungTitel;
+  const rechnungTitel = opts.rechnungTitel?.trim() || "";
+  if (rechnungTitel && !isPlaceholderVorgangTitel(rechnungTitel)) {
+    return rechnungTitel;
+  }
 
   const anfrage = situationBereichTitel(opts.situation, opts.bereiche);
   if (anfrage) return anfrage;
 
-  return opts.fallback?.trim() || "Vorgang";
+  const fb = opts.fallback?.trim() || "";
+  if (fb && !isPlaceholderVorgangTitel(fb)) return fb;
+  return "Vorgang";
 }

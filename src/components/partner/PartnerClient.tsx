@@ -831,10 +831,6 @@ export function PartnerClient({
           handwerker={handwerker}
           onBack={closeDetail}
           onUpdated={refreshVorgangAfterConfirm}
-          focusBautagebuch={
-            searchParams.get("focus")?.trim() === "bautagebuch"
-          }
-          anfrageId={searchParams.get("anfrage")?.trim() || null}
           focusAbnahme={searchParams.get("focus")?.trim() === "abnahme"}
           focusAblehnen={searchParams.get("focus")?.trim() === "ablehnen"}
           protokollId={searchParams.get("protokoll")?.trim() || null}

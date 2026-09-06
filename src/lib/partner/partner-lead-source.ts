@@ -15,6 +15,7 @@ export type PartnerLeadDbRow = {
   funnel_daten?: unknown;
   anlass?: string | null;
   kanal?: string | null;
+  erfassung_von?: string | null;
   kunde_objekt_id?: string | null;
   auftraggeber_kunde_id?: string | null;
   org_freigabe_status?: string | null;
@@ -95,6 +96,7 @@ export function buildPartnerLeadSource(opts: {
     funnel_daten: lead.funnel_daten,
     anlass: lead.anlass,
     ...(lead.kanal ? { kanal: lead.kanal } : {}),
+    ...(lead.erfassung_von ? { erfassung_von: lead.erfassung_von } : {}),
     hv_meldung_status: lead.hv_meldung_status,
     melder_name: lead.melder_name,
     melder_einheit: lead.melder_einheit,

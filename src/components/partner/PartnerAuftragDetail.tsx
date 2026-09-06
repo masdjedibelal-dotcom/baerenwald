@@ -79,8 +79,6 @@ export function PartnerAuftragDetail({
   vorgangState,
   handwerker,
   onBack,
-  focusBautagebuch,
-  deepLinkAnfrageId,
   focusAbnahme,
   deepLinkProtokollId: _deepLinkProtokollId,
 }: {
@@ -103,8 +101,6 @@ export function PartnerAuftragDetail({
     | "kleinunternehmer"
   > | null;
   onBack?: () => void;
-  focusBautagebuch?: boolean;
-  deepLinkAnfrageId?: string | null;
   focusAbnahme?: boolean;
   deepLinkProtokollId?: string | null;
 }) {
@@ -122,30 +118,14 @@ export function PartnerAuftragDetail({
   const [rechnungGateBusy, setRechnungGateBusy] = useState(false);
   const [firmendatenFehlenOpen, setFirmendatenFehlenOpen] = useState(false);
   const [firmendatenMissing, setFirmendatenMissing] = useState<string[]>([]);
-  const [autoOpenPreferred, setAutoOpenPreferred] = useState(false);
   const [deleteDoc, setDeleteDoc] = useState<DokumentZeile | null>(null);
   const [deleteBusy, setDeleteBusy] = useState(false);
   const [activeTab, setActiveTab] = useState(() => {
     if (focusAbnahme) return "abnahme";
-    if (focusBautagebuch) return "dokumentation";
     // Laufender Auftrag: direkt Leistungen (Update / Erledigt / Regie)
     if (vorgangState === "in_bearbeitung") return "dokumentation";
     return "uebersicht";
   });
-
-  const btAnfrageId =
-    deepLinkAnfrageId?.trim() ||
-    item.bautagebuchAnfrageId?.trim() ||
-    null;
-  const preferredPositionIds = item.bautagebuchAnfragePositionIds ?? [];
-
-  useEffect(() => {
-    if (!focusBautagebuch) return;
-    if (preferredPositionIds.length > 0 && vorgangState !== "erledigt" && vorgangState !== "abgelehnt") {
-      setAutoOpenPreferred(true);
-    }
-    setActiveTab("dokumentation");
-  }, [focusBautagebuch, preferredPositionIds.length, vorgangState]);
 
   useEffect(() => {
     if (focusAbnahme) setActiveTab("abnahme");
@@ -547,13 +527,7 @@ export function PartnerAuftragDetail({
               <PartnerPositionLebenszyklusList
                 auftragId={item.id}
                 auftragTitel={titel}
-                anfrageId={btAnfrageId}
-                preferredPositionIds={preferredPositionIds}
-                autoOpenPreferred={
-                  autoOpenPreferred && !isErledigt && !focusBautagebuch
-                }
                 readOnly={isErledigt}
-                initialView={focusBautagebuch ? "tagebuch" : "leistungen"}
                 positionen={item.positionen.map((p) => ({
                   id: p.id,
                   leistung_name: p.leistung_name,

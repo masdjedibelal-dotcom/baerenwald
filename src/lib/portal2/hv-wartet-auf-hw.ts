@@ -11,8 +11,6 @@ export type HvWartetAufHwSignals = {
     handwerker_status?: string | null;
     leistung_status?: string | null;
   }> | null;
-  /** Offene CRM-Anforderung an Partner für Bautagebuch */
-  bautagebuchAnfrageOffen?: boolean;
   /** Partner hat Termin noch nicht bestätigt */
   terminOffen?: boolean;
   /** Angebot vom HW angefragt / ausstehend */
@@ -21,7 +19,7 @@ export type HvWartetAufHwSignals = {
 
 export type HvWartetAufHwResult = {
   label: string;
-  kind: "angebot" | "termin" | "bautagebuch" | "antwort" | "leistung";
+  kind: "angebot" | "termin" | "antwort" | "leistung";
 };
 
 /**
@@ -31,12 +29,6 @@ export type HvWartetAufHwResult = {
 export function resolveHvWartetAufHw(
   signals: HvWartetAufHwSignals
 ): HvWartetAufHwResult | null {
-  if (signals.bautagebuchAnfrageOffen) {
-    return {
-      kind: "bautagebuch",
-      label: "Wartet auf HW · Bautagebuch",
-    };
-  }
   if (signals.terminOffen) {
     return {
       kind: "termin",
