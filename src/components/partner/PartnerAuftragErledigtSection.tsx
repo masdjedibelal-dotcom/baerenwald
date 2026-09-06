@@ -7,8 +7,7 @@ import {
 import { PortalDetailCard } from "@/components/shared/PortalDetailCard";
 
 /**
- * Nur Erfolgszustand nach echtem Abschluss (Signatur / Freigabe),
- * nicht schon wenn Positionen nur dokumentiert sind.
+ * Erfolgszustand nach „Auftrag erledigt“ (ohne Abnahme).
  */
 export function PartnerAuftragErledigtSection({
   done,
@@ -16,12 +15,12 @@ export function PartnerAuftragErledigtSection({
   layout = "section",
 }: {
   auftragId?: string;
-  /** Lokal nach Modal-Submit, bis Router-Refresh greift. */
+  /** Lokal nach Confirm, bis Router-Refresh greift. */
   done?: boolean;
-  /** Server: Signatur oder Freigabe-Status gesetzt. */
+  /** Server: erledigt_gemeldet_am oder Legacy-Signatur. */
   hatAbschluss?: boolean;
   layout?: "section" | "cta";
-  /** @deprecated ungenutzt — Positionen allein gelten nicht als Abschluss. */
+  /** @deprecated */
   positionen?: unknown;
   vollstaendig?: boolean;
   vorgangState?: unknown;
@@ -32,7 +31,8 @@ export function PartnerAuftragErledigtSection({
 
   const success = (
     <PartnerDetailSuccessBox>
-      <p className="font-semibold">Auftrag abgeschlossen</p>
+      <p className="font-semibold">Auftrag erledigt gemeldet</p>
+      <p className="text-sm mt-1">Rechnung kann erstellt werden.</p>
     </PartnerDetailSuccessBox>
   );
 

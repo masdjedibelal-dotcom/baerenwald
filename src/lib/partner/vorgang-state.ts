@@ -73,6 +73,8 @@ export function ableitenVorgangState(input: {
   hwStatus?: string | null;
   /** `angebot_handwerker.status` falls verknüpft. */
   anfrageStatus?: string | null;
+  /** Partner hat „Auftrag erledigt“ gemeldet (ohne Abnahme). */
+  hwErledigtGemeldetAm?: string | null;
 }): VorgangState {
   const auftragSt = input.auftragStatus.trim().toLowerCase();
   if (auftragSt === "abgelehnt") return "abgelehnt";
@@ -87,6 +89,9 @@ export function ableitenVorgangState(input: {
   ) {
     return "abgelehnt";
   }
+
+  // HW meldet fertig → unter „Erledigt“ (Rechnung), CRM schließt separat ab.
+  if (input.hwErledigtGemeldetAm?.trim()) return "erledigt";
 
   const bestaetigt = Boolean(input.handwerkerBestaetigtAt?.trim());
   const offeneNachreichung =

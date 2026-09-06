@@ -30,10 +30,11 @@ type AbschlussCtaInput = {
   >;
   vorgangState?: VorgangState;
   auftragStatus: string;
-  /** Eigene HW-Teilabnahme-Signatur (nicht global am Auftrag). */
+  /** Partner hat „Auftrag erledigt“ gemeldet (ohne Abnahme). */
+  hwErledigtGemeldetAm?: string | null;
+  /** Legacy: alte Teilabnahme-Signatur — gilt weiterhin als erledigt. */
   hwAbschlussSigniertAm?: string | null;
   abnahmeProtokollUrl?: string | null;
-  /** CRM-Freigabe der eigenen Teilabnahme. */
   abnahmeFreigabeStatus?: string | null;
 };
 
@@ -51,19 +52,19 @@ export function partnerAbschlussRelevantePositionen(
   });
 }
 
+function partnerHatErledigtGemeldet(input: AbschlussCtaInput): boolean {
+  if (input.hwErledigtGemeldetAm?.trim()) return true;
+  if (input.hwAbschlussSigniertAm?.trim()) return true;
+  return false;
+}
+
 /**
- * CTA „Abschließen“ anzeigen (auch ausgegraut), solange der Auftrag
- * noch nicht final abgenommen ist und der HW in Ausführung ist.
+ * CTA „Auftrag erledigt“ anzeigen, solange der Partner noch nicht gemeldet hat
+ * und der Auftrag in Ausführung ist.
  */
 export function partnerZeigtAbschlussCta(input: AbschlussCtaInput): boolean {
   if (isVorgangAuftragErledigt(input.auftragStatus)) return false;
-  const freigabe = String(input.abnahmeFreigabeStatus ?? "")
-    .trim()
-    .toLowerCase();
-  const eigeneSigniert = Boolean(input.hwAbschlussSigniertAm?.trim());
-  const erneutNachAblehnung = freigabe === "abgelehnt";
-  if (eigeneSigniert && !erneutNachAblehnung) return false;
-  // Globaler abnahme_protokoll_url darf andere HWs nicht blockieren.
+  if (partnerHatErledigtGemeldet(input)) return false;
   if (input.vorgangState !== "in_bearbeitung") return false;
   if (!input.positionen.length) return false;
   if (input.positionen.some(positionBrauchtVorgangAktion)) return false;
@@ -71,16 +72,11 @@ export function partnerZeigtAbschlussCta(input: AbschlussCtaInput): boolean {
 }
 
 /**
- * F1 — CTA „Auftrag abschließen“ bleibt bis eigene Teilabnahme.
- * Position-Ende dokumentiert nur die Leistung (leistung_status), setzt nicht
- * handwerker_status=erledigt. Abnahme setzt den finalen Status.
- *
- * Signatur ist pro Handwerker (`auftrag_handwerker.abnahme_signiert_am`).
- * Nach CRM-Ablehnung darf erneut eingereicht werden.
+ * CTA aktiv, wenn alle eigenen Leistungen dokumentiert (`leistung_status=erledigt`).
+ * Keine Abnahme mehr — nur Erledigt-Meldung.
  */
 export function partnerKannErledigtMelden(input: AbschlussCtaInput): boolean {
   if (!partnerZeigtAbschlussCta(input)) return false;
-  // Alle eigenen zugewiesenen Positionen müssen dokumentiert sein.
   const relevant = partnerAbschlussRelevantePositionen(input.positionen);
   return relevant.every((p) => leistungDokumentiert(p));
 }
@@ -92,7 +88,7 @@ export function allePartnerPositionenErledigt(
   return positionen.every((p) => positionHandwerkerErledigt(p.handwerker_status));
 }
 
-/** Positionen, die bei Abnahme final auf erledigt gesetzt werden. */
+/** Positionen, die bei Erledigt-Meldung final auf erledigt gesetzt werden. */
 export function partnerAbnahmeZielPositionen(
   positionen: Array<
     Pick<

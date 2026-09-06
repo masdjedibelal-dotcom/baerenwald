@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Camera, ImageIcon, Loader2, X } from "lucide-react";
+import { ImageIcon, Loader2, X } from "lucide-react";
 
 import { normalizePartnerCameraPhoto } from "@/lib/partner/normalize-camera-photo";
 import { useImageFileDrop } from "@/hooks/useImageFileDrop";
@@ -23,7 +23,10 @@ export type PartnerMultiFotoSlotProps = {
 
 /**
  * Foto-Zone: Klick + Drag-and-Drop, Mehrfachauswahl — analog CRM FotoDropZone.
- * Mobil: Kamera; Desktop: Mediathek / Ablegen.
+ *
+ * Mobil: bewusst OHNE `capture` — iOS/Android zeigen den System-Picker
+ * (Foto aufnehmen / Mediathek / Dateien). `capture` + `multiple` bricht auf
+ * Safari oft den Rückweg nach dem Foto.
  */
 export function PartnerMultiFotoSlot({
   label = "Fotos",
@@ -120,7 +123,7 @@ export function PartnerMultiFotoSlot({
   }
 
   const canAdd = files.length < max && !disabled;
-  const Icon = isMobile ? Camera : ImageIcon;
+  const Icon = ImageIcon;
   const ctaLabel = status === "uploading"
     ? "wird vorbereitet…"
     : isDragging
@@ -128,7 +131,7 @@ export function PartnerMultiFotoSlot({
       : isMobile
         ? files.length
           ? "Weitere Fotos"
-          : "Kamera öffnen"
+          : "Foto aufnehmen oder wählen"
         : files.length
           ? "Weitere Fotos tippen oder ablegen"
           : "Fotos tippen oder ablegen";
@@ -191,7 +194,6 @@ export function PartnerMultiFotoSlot({
         type="file"
         accept="image/*"
         multiple
-        {...(isMobile ? { capture: "environment" as const } : {})}
         className="sr-only"
         disabled={busy}
         onChange={onPick}

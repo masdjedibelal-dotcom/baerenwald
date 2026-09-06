@@ -110,15 +110,21 @@ export function buildPartnerAuftragDokumentZeilen(
   return sortPartnerDokumentZeilen(rows);
 }
 
+/**
+ * Partner hat Arbeit abgeschlossen → Rechnung freischaltbar.
+ * Primär: erledigt_gemeldet_am (ohne Abnahme). Legacy: Signatur / Protokoll.
+ */
 export function partnerAuftragHatAbschluss(
   item: Pick<
     PartnerAuftragItem,
+    | "hw_erledigt_gemeldet_am"
     | "hw_abschluss_signiert_am"
     | "abnahme_freigabe_status"
     | "abnahme_protokoll_id"
     | "abnahme_protokoll_url"
   >
 ): boolean {
+  if (item.hw_erledigt_gemeldet_am?.trim()) return true;
   if (item.hw_abschluss_signiert_am?.trim()) return true;
   if (item.abnahme_protokoll_id?.trim() || item.abnahme_protokoll_url?.trim()) {
     return true;
@@ -126,7 +132,6 @@ export function partnerAuftragHatAbschluss(
   const freigabe = String(item.abnahme_freigabe_status ?? "")
     .trim()
     .toLowerCase();
-  // Eigener Abschluss eingereicht (warte auf Freigabe oder freigegeben)
   return Boolean(freigabe) && freigabe !== "abgelehnt";
 }
 
@@ -150,15 +155,13 @@ export function partnerHwRechnungCrmFreigegeben(
 }
 
 /**
- * Auto-Rechnung / Upload nach Abschluss + CRM-Freigabe/Annahme.
- * Kein Projektvertrag nötig. Optional: `abschlussDoneLocal` direkt nach Signatur.
+ * Auto-Rechnung / Upload nach HW-erledigt + CRM-Freigabe/Annahme.
+ * Keine Abnahme nötig. Optional: `abschlussDoneLocal` direkt nach Erledigt-Klick.
  */
 export function partnerAuftragKannRechnungHochladen(
   item: PartnerAuftragItem,
   opts?: { abschlussDoneLocal?: boolean }
 ): boolean {
-  // Direktauftrag braucht keine angebot_handwerker-Zeile in der UI —
-  // Server legt sie intern an und rechnet aus Auftrags-Leistungen.
   if (item.status.toLowerCase() === "storniert") return false;
   if (item.hw_rechnung_eingereicht_at) return false;
   if (!partnerHwRechnungCrmFreigegeben(item)) return false;

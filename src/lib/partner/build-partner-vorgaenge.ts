@@ -126,6 +126,8 @@ export function buildPartnerVorgaenge(input: {
       anfrageAktionNoetig,
       hwStatus: auftrag.hwStatus,
       anfrageStatus: anfrage?.status ?? null,
+      hwErledigtGemeldetAm:
+        auftrag.hw_erledigt_gemeldet_am ?? auftrag.hw_abschluss_signiert_am,
     });
 
     items.push({
@@ -232,6 +234,7 @@ export function partnerVorgangLastActivityAt(v: PartnerVorgangItem): number {
     v.auftrag.projektvertrag_bestaetigt_am,
     v.auftrag.hw_rechnung_eingereicht_at,
     v.auftrag.hw_abschluss_signiert_am,
+    v.auftrag.hw_erledigt_gemeldet_am,
     v.auftrag.angebotHwEingereichtAt,
     v.auftrag.start_datum,
     v.auftrag.end_datum,

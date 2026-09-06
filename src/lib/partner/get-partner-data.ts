@@ -253,7 +253,9 @@ export type PartnerAuftragItem = {
   hw_rechnung_pdf_url?: string | null;
   hw_rechnung_pdf_signed_url?: string | null;
   hw_rechnung_eingereicht_at?: string | null;
-  /** F1/F4 — Eigene Teilabnahme signiert (auftrag_handwerker.abnahme_signiert_am) */
+  /** Partner meldet Auftrag erledigt (ohne Abnahme). */
+  hw_erledigt_gemeldet_am?: string | null;
+  /** Legacy: Teilabnahme signiert (auftrag_handwerker.abnahme_signiert_am) */
   hw_abschluss_signiert_am?: string | null;
   /** Eigenes Teilabnahme-Protokoll (nicht globales Gesamtdokument) */
   abnahme_protokoll_id?: string | null;
@@ -678,10 +680,34 @@ export async function getPartnerDataForHandwerker(
     return Boolean((row.gesendet_at as string | null | undefined)?.trim());
   });
 
-  const { data: hwAuftraege } = await supabaseAdmin
-    .from("auftrag_handwerker")
-    .select("auftrag_id, status, abnahme_signiert_am, abnahme_protokoll_id")
-    .eq("handwerker_id", id);
+  let hwAuftraege: Array<{
+    auftrag_id: string;
+    status?: string;
+    abnahme_signiert_am?: string | null;
+    abnahme_protokoll_id?: string | null;
+    erledigt_gemeldet_am?: string | null;
+  }> | null = null;
+
+  {
+    const withErledigt = await supabaseAdmin
+      .from("auftrag_handwerker")
+      .select(
+        "auftrag_id, status, abnahme_signiert_am, abnahme_protokoll_id, erledigt_gemeldet_am"
+      )
+      .eq("handwerker_id", id);
+    if (
+      withErledigt.error &&
+      /erledigt_gemeldet_am|column|schema cache/i.test(withErledigt.error.message)
+    ) {
+      const legacy = await supabaseAdmin
+        .from("auftrag_handwerker")
+        .select("auftrag_id, status, abnahme_signiert_am, abnahme_protokoll_id")
+        .eq("handwerker_id", id);
+      hwAuftraege = (legacy.data as typeof hwAuftraege) ?? [];
+    } else {
+      hwAuftraege = (withErledigt.data as typeof hwAuftraege) ?? [];
+    }
+  }
 
   const { data: posAuftraege } = await supabaseAdmin
     .from("auftrag_positionen")
@@ -692,7 +718,11 @@ export async function getPartnerDataForHandwerker(
   const posStatusByAuftrag = new Map<string, string[]>();
   const abnahmeByAuftrag = new Map<
     string,
-    { signiertAm: string | null; protokollId: string | null }
+    {
+      signiertAm: string | null;
+      protokollId: string | null;
+      erledigtGemeldetAm: string | null;
+    }
   >();
 
   for (const r of hwAuftraege ?? []) {
@@ -701,24 +731,24 @@ export async function getPartnerDataForHandwerker(
       status?: string;
       abnahme_signiert_am?: string | null;
       abnahme_protokoll_id?: string | null;
+      erledigt_gemeldet_am?: string | null;
     };
     const aid = String(row.auftrag_id);
     const st = String(row.status ?? "ausstehend");
+    const abnahmePayload = {
+      signiertAm: row.abnahme_signiert_am ?? null,
+      protokollId: row.abnahme_protokoll_id ?? null,
+      erledigtGemeldetAm: row.erledigt_gemeldet_am ?? null,
+    };
     /* ersetzt: kein aktiver Portal-Zugriff über Zuweisung */
     if (isPartnerZuweisungInaktiv(st)) {
-      abnahmeByAuftrag.set(aid, {
-        signiertAm: row.abnahme_signiert_am ?? null,
-        protokollId: row.abnahme_protokoll_id ?? null,
-      });
+      abnahmeByAuftrag.set(aid, abnahmePayload);
       continue;
     }
     const list = hwStatusByAuftrag.get(aid) ?? [];
     list.push(st);
     hwStatusByAuftrag.set(aid, list);
-    abnahmeByAuftrag.set(aid, {
-      signiertAm: row.abnahme_signiert_am ?? null,
-      protokollId: row.abnahme_protokoll_id ?? null,
-    });
+    abnahmeByAuftrag.set(aid, abnahmePayload);
   }
   for (const r of posAuftraege ?? []) {
     const aid = String((r as { auftrag_id: string }).auftrag_id);
@@ -1048,6 +1078,8 @@ export async function getPartnerDataForHandwerker(
         bewertung: bewertungByAuftragId.get(aid) ?? null,
         handwerker_bestaetigt_at:
           (raw.handwerker_bestaetigt_at as string | null)?.slice(0, 19) ?? null,
+        hw_erledigt_gemeldet_am:
+          abnahmeByAuftrag.get(aid)?.erledigtGemeldetAm ?? null,
         hw_abschluss_signiert_am: (() => {
           const own = abnahmeByAuftrag.get(aid);
           return own?.signiertAm ?? null;

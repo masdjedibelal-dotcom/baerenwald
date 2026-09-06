@@ -10,11 +10,11 @@ export const HW_AUFTRAG_COPY = {
   ausfuehrenTitle: "Auftrag ausführen",
   ausfuehrenBody:
     "Dokumentieren Sie je Leistung: Update-Foto → optional weiteres Update → Endfoto. Bei Regie/Aufwand Zeit miterfassen.",
-  ausfuehrenCta: "Abschließen",
+  ausfuehrenCta: "Auftrag erledigt",
   ausfuehrenDisabledHint:
     "Alles als erledigt markieren. Bei Regie auch die Updates.",
   ausfuehrenHint:
-    "Nach Updates je Leistung: Abnahme mit Signatur. Danach Rechnung prüfen & einreichen.",
+    "Nach Updates je Leistung: Auftrag erledigt melden. Danach Rechnung prüfen & einreichen.",
   leistungenTitle: "Leistungen",
   einsatzTitle: "Details",
   verlaufTitle: "Verlauf",

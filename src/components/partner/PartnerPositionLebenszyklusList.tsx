@@ -418,7 +418,11 @@ export function PartnerPositionLebenszyklusList({
             portalToastError(res.error);
             return;
           }
-          portalToastSuccess("Tagebuch-Eintrag gespeichert.");
+          portalToastSuccess(
+            tbSelected.length > 1
+              ? `Update für ${tbSelected.length} Leistungen gespeichert.`
+              : "Update gespeichert."
+          );
           closeTagebuch();
           await reloadTagebuch();
           await onDone?.();
@@ -814,6 +818,21 @@ export function PartnerPositionLebenszyklusList({
           <div className="mt-2 flex flex-wrap items-center gap-2">
             {bulkSelected.length > 0 ? (
               <>
+                <button
+                  type="button"
+                  className="btn-pill-outline"
+                  disabled={submitting}
+                  onClick={() => {
+                    setTbSelected([...bulkSelected]);
+                    setTbErledigt([]);
+                    setTbTitel("");
+                    setTbBeschreibung("");
+                    setTbFotos([]);
+                    setTagebuchOpen(true);
+                  }}
+                >
+                  Update ({bulkSelected.length})
+                </button>
                 <button
                   type="button"
                   className="btn-pill-primary"

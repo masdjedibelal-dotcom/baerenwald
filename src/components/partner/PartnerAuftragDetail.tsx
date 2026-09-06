@@ -3,11 +3,10 @@
 import { useRouter } from "next/navigation";
 
 import { submitPartnerAngebotPdf, submitPartnerRechnung, deletePartnerHwAuftragDokument } from "@/app/actions/partner-angebote";
+import { markPartnerAuftragErledigt } from "@/app/actions/partner-auftrag-erledigt";
 import { previewPartnerAutoDokument } from "@/app/actions/partner-auto-dokumente";
 import { usePortalRefresh } from "@/components/shared/usePortalRefresh";
 import { usePortalUploadBusy } from "@/components/shared/usePortalUploadBusy";
-import { PartnerAbnahmeAbschlussSheet } from "@/components/partner/PartnerAbnahmeAbschlussSheet";
-import { PartnerAbnahmeReviewSection } from "@/components/partner/PartnerAbnahmeReviewSection";
 import { PartnerDokumentPreviewModal } from "@/components/partner/PartnerDokumentPreviewModal";
 import { PartnerFirmendatenFehlenDialog } from "@/components/partner/PartnerFirmendatenFehlenDialog";
 import { PartnerAuftragErledigtSection } from "@/components/partner/PartnerAuftragErledigtSection";
@@ -70,7 +69,7 @@ import {
   hwAuftragStatusStyle,
 } from "@/lib/portal2/hw-auftrag-detail";
 import { buildPartnerVorgangDetailVm } from "@/lib/vorgang/build-vorgang-detail-vm";
-import { partnerPortalToast, portalToastError } from "@/lib/shared/portal-toast";
+import { partnerPortalToast, portalToastError, portalToastSuccess } from "@/lib/shared/portal-toast";
 import { DokumenteTabelle, type DokumentZeile } from "@/components/shared/DokumenteTabelle";
 import { FileUploadField } from "@/components/shared/FileUploadField";
 import { useEffect, useMemo, useState } from "react";
@@ -83,7 +82,7 @@ export function PartnerAuftragDetail({
   focusBautagebuch,
   deepLinkAnfrageId,
   focusAbnahme,
-  deepLinkProtokollId,
+  deepLinkProtokollId: _deepLinkProtokollId,
 }: {
   item: PartnerAuftragItem;
   vorgangState?: VorgangState;
@@ -118,19 +117,12 @@ export function PartnerAuftragDetail({
   const [rechnungPdf, setRechnungPdf] = useState<File | null>(null);
   const [abschlussOpen, setAbschlussOpen] = useState(false);
   const [abschlussDone, setAbschlussDone] = useState(false);
+  const [abschlussBusy, setAbschlussBusy] = useState(false);
   const [rechnungDocOpen, setRechnungDocOpen] = useState(false);
   const [rechnungGateBusy, setRechnungGateBusy] = useState(false);
   const [firmendatenFehlenOpen, setFirmendatenFehlenOpen] = useState(false);
   const [firmendatenMissing, setFirmendatenMissing] = useState<string[]>([]);
   const [autoOpenPreferred, setAutoOpenPreferred] = useState(false);
-  const [abnahmePdfUrl, setAbnahmePdfUrl] = useState<string | null>(
-    item.abnahme_protokoll_url ?? null
-  );
-  const [abnahmeProtokollId, setAbnahmeProtokollId] = useState<string | null>(
-    deepLinkProtokollId ?? null
-  );
-  const [abnahmePunkteCount, setAbnahmePunkteCount] = useState<number | null>(null);
-  const [abnahmeMaengelCount, setAbnahmeMaengelCount] = useState<number | null>(null);
   const [deleteDoc, setDeleteDoc] = useState<DokumentZeile | null>(null);
   const [deleteBusy, setDeleteBusy] = useState(false);
   const [activeTab, setActiveTab] = useState(() => {
@@ -215,6 +207,7 @@ export function PartnerAuftragDetail({
     positionen: item.positionen,
     vorgangState,
     auftragStatus: item.status,
+    hwErledigtGemeldetAm: item.hw_erledigt_gemeldet_am,
     hwAbschlussSigniertAm: item.hw_abschluss_signiert_am,
     abnahmeProtokollUrl: item.abnahme_protokoll_url,
     abnahmeFreigabeStatus: item.abnahme_freigabe_status,
@@ -222,6 +215,25 @@ export function PartnerAuftragDetail({
   const zeigtAbschluss = !abschlussDone && partnerZeigtAbschlussCta(abschlussCtaInput);
   const kannAbschluss =
     zeigtAbschluss && partnerKannErledigtMelden(abschlussCtaInput);
+
+  async function confirmAuftragErledigt() {
+    if (!kannAbschluss || abschlussBusy) return;
+    setAbschlussBusy(true);
+    try {
+      const res = await markPartnerAuftragErledigt(item.id);
+      if (!res.ok) {
+        portalToastError(res.error);
+        return;
+      }
+      setAbschlussDone(true);
+      setAbschlussOpen(false);
+      portalToastSuccess("Auftrag als erledigt gemeldet.");
+      setActiveTab("abnahme");
+      await refresh();
+    } finally {
+      setAbschlussBusy(false);
+    }
+  }
 
   async function confirmDeleteDoc() {
     if (!deleteDoc || !item.angebotHandwerkerId || deleteBusy) return;
@@ -340,8 +352,8 @@ export function PartnerAuftragDetail({
     resolvePartnerVorgangListenStatus(vorgangState, item);
 
   const titel = resolvePartnerDetailTitelFromAuftrag(item);
-  const statusLabel = abschlussDone
-    ? "Abgeschlossen"
+  const statusLabel = abschlussDone || hatAbschluss
+    ? "Erledigt"
     : hwAuftragStatusLabel({
         vorgangState,
         fallback: listenStatusLabel,
@@ -395,7 +407,10 @@ export function PartnerAuftragDetail({
 
   const coverUrl = item.lead?.objekt?.cover_url ?? null;
   const isErledigt =
-    vorgangState === "erledigt" || vorgangState === "abgelehnt";
+    vorgangState === "erledigt" ||
+    vorgangState === "abgelehnt" ||
+    abschlussDone ||
+    hatAbschluss;
 
   const DETAIL_TABS: PortalDetailTab[] = [
     { id: "uebersicht", label: "Übersicht" },
@@ -689,58 +704,35 @@ export function PartnerAuftragDetail({
         {activeTab === "abnahme" ? (
           <div className="space-y-3.5">
             <PartnerFachdokuSlots auftragId={item.id} variant="hint" />
-            {abnahmePdfUrl ||
-            item.abnahme_protokoll_url ||
-            item.hw_abschluss_signiert_am ||
-            focusAbnahme ||
-            kannAbschluss ? (
-              <PartnerAbnahmeReviewSection
-                auftragId={item.id}
-                protokollId={abnahmeProtokollId || item.abnahme_protokoll_id}
-                initialPdfUrl={abnahmePdfUrl || item.abnahme_protokoll_url}
-                initialFreigabeStatus={
-                  abschlussDone
-                    ? item.abnahme_freigabe_status || "zur_freigabe"
-                    : item.abnahme_freigabe_status
-                }
-                initialPunkteCount={abnahmePunkteCount}
-                initialMaengelCount={abnahmeMaengelCount}
-                focus={focusAbnahme || abschlussDone}
-                erledigt={isErledigt}
-              />
+            {hatAbschluss || abschlussDone ? (
+              <PortalDetailCard title="Abschluss">
+                <PortalDetailSuccessBox>
+                  <p className="font-semibold">Auftrag erledigt gemeldet</p>
+                  <p className="text-sm mt-1">
+                    Du kannst jetzt die Rechnung erstellen oder hochladen.
+                  </p>
+                </PortalDetailSuccessBox>
+                {rechnungInline}
+              </PortalDetailCard>
             ) : (
               <p className="portal-text-body text-text-secondary">
-                Noch kein Abschlussprotokoll. Schließe den Auftrag ab, sobald alle
-                Leistungen erledigt sind.
+                Melde den Auftrag als erledigt, sobald alle Leistungen dokumentiert
+                sind. Danach kannst du die Rechnung einreichen.
               </p>
             )}
           </div>
         ) : null}
       </PortalEntityDetailLayout>
 
-      <PartnerAbnahmeAbschlussSheet
+      <PortalConfirmDialog
         open={abschlussOpen}
-        auftragId={item.id}
-        auftragTitel={titel}
-        leistungItems={item.positionen.map((p) => ({
-          id: p.id,
-          leistung_name: p.leistung_name,
-          beschreibung: p.beschreibung,
-          gewerk_name: p.gewerk_name,
-          leistung_status: p.leistung_status,
-        }))}
-        defaultOrt={[item.plz, item.ort]
-          .filter((v) => v && v !== "—")
-          .join(" ")}
-        onClose={() => setAbschlussOpen(false)}
-        onSuccess={(result) => {
-          setAbschlussDone(true);
-          setAbschlussOpen(false);
-          if (result.pdf_url) setAbnahmePdfUrl(result.pdf_url);
-          if (result.protokoll_id) setAbnahmeProtokollId(result.protokoll_id);
-          setAbnahmePunkteCount(result.punkte_count);
-          setAbnahmeMaengelCount(result.maengel_count);
-          setActiveTab("abnahme");
+        title="Auftrag erledigt melden?"
+        description="Alle deine Leistungen sind dokumentiert. Danach kannst du die Rechnung erstellen. Eine Abnahme macht die Verwaltung im CRM."
+        confirmLabel={abschlussBusy ? "Wird gemeldet…" : "Erledigt melden"}
+        loading={abschlussBusy}
+        onConfirm={() => void confirmAuftragErledigt()}
+        onCancel={() => {
+          if (!abschlussBusy) setAbschlussOpen(false);
         }}
       />
 
@@ -751,7 +743,9 @@ export function PartnerAuftragDetail({
         art="rechnung"
         skipAsk
         leistungsZeitraum={
-          abschlussDone || Boolean(item.hw_abschluss_signiert_am)
+          abschlussDone ||
+          Boolean(item.hw_erledigt_gemeldet_am) ||
+          Boolean(item.hw_abschluss_signiert_am)
             ? new Date().toLocaleDateString("de-DE")
             : undefined
         }
