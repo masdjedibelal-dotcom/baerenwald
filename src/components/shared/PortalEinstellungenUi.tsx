@@ -324,7 +324,7 @@ export function EinstellungenEditModal({
       confirmDisabled={Boolean(saving || saveDisabled)}
     >
       <div
-        className="flex flex-col gap-3"
+        className="portal-sheet-form-group"
         onInput={() => setTouched(true)}
         onChange={() => setTouched(true)}
       >

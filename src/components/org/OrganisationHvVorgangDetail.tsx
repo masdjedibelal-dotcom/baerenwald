@@ -119,6 +119,8 @@ export type OrganisationHvVorgangDetailProps = {
   freigabeBypassGrund?: "schwelle" | "akut" | null;
   /** Funnel Sofortmaßnahme — unabhängig von org_freigabe_status */
   funnelDirektauftrag?: boolean | null;
+  /** false = CRM-Direkt-Angebot → Tab Versicherungsakte ausblenden */
+  versicherungsakteEligible?: boolean;
   hvMeldungStatus?: string | null;
   /** Für HM-CTA: Objekt-Kontakt rolle=hausmeister */
   kundeObjektId?: string | null;
@@ -354,6 +356,7 @@ export function OrganisationHvVorgangDetail({
   orgFreigabeStatus,
   freigabeBypassGrund = null,
   funnelDirektauftrag = null,
+  versicherungsakteEligible = true,
   hvMeldungStatus,
   kundeObjektId = null,
   angebotId,
@@ -566,7 +569,8 @@ export function OrganisationHvVorgangDetail({
     detailRole === "hv" &&
     !mieterStatusMode &&
     !hausmeisterActor &&
-    Boolean(leadId);
+    Boolean(leadId) &&
+    versicherungsakteEligible !== false;
   const empfohlen = pickEmpfohlenesAngebot(offers);
   const statusLabel =
     statusLabelOverride?.trim() || PORTAL_STATUS[displayFlowStatus].label;
@@ -1322,13 +1326,13 @@ export function OrganisationHvVorgangDetail({
               role="tabpanel"
               className="space-y-3.5"
             >
+              <VorgangDetailBlocks vm={uebersichtVm} />
               {!mieterStatusMode &&
               (actionKind === "abschluss" ||
                 actionKind === "rechnung" ||
                 actionKind === "bezahlt")
                 ? abschlussCard
                 : null}
-              <VorgangDetailBlocks vm={uebersichtVm} />
             </section>
           ) : null}
 
@@ -1364,7 +1368,11 @@ export function OrganisationHvVorgangDetail({
           ) : null}
 
           {activeSection === "hm_pruefung" && showHmTab ? (
-            <DetailCard id="vorgang-panel-hm" title="Checkliste">
+            <section
+              id="vorgang-panel-hm"
+              role="tabpanel"
+              className="space-y-3.5"
+            >
               <OrgHmBefundPanel
                 leadId={leadId}
                 hvMeldungStatus={hvStatusOptimistic ?? hvMeldungStatus}
@@ -1389,7 +1397,7 @@ export function OrganisationHvVorgangDetail({
                 }
                 hideInlineActions
               />
-            </DetailCard>
+            </section>
           ) : null}
 
           {activeSection !== "angebot" && error ? (

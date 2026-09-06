@@ -308,6 +308,7 @@ export function PortalVorgangDetail({
           null
         }
         funnelDirektauftrag={item.funnelDirektauftrag ?? null}
+        versicherungsakteEligible={item.versicherungsakteEligible !== false}
         hvMeldungStatus={hvMeldungStatus ?? item.hvMeldungStatus}
         kundeObjektId={item.kundeObjektId ?? null}
         angebotId={item.isAngebotDetail ? item.id : null}

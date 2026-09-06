@@ -15,9 +15,7 @@ import {
   PortalInviteMailtoSheet,
   type PortalInviteMailtoReady,
 } from "@/components/shared/PortalInviteMailtoSheet";
-import { PortalDetailCover } from "@/components/shared/PortalDetailCover";
-import { PortalDetailHead } from "@/components/shared/PortalDetailUi";
-import { PortalDetailTabs } from "@/components/shared/PortalDetailTabs";
+import { PortalEntityDetailLayout } from "@/components/shared/PortalEntityDetailLayout";
 import { PortalEntityList } from "@/components/shared/PortalEntityList";
 import { PortalInboxEmpty } from "@/components/shared/PortalEmptyState";
 import { PortalInlineLoading } from "@/components/shared/PortalInlineLoading";
@@ -1009,34 +1007,26 @@ export function OrganisationObjektDetail({
   }
 
   return (
-    <div className="-mx-4 -mt-5 min-w-0 lg:-mx-6 lg:-mt-7">
+    <>
       <PortalInviteMailtoSheet
         open={Boolean(inviteMailtoReady)}
         payload={inviteMailtoReady}
         onClose={() => setInviteMailtoReady(null)}
       />
-      <PortalDetailCover
+      <PortalEntityDetailLayout
         coverUrl={objekt.cover_url}
         onBack={onBack}
         backLabel="← Objekte"
         onEdit={onEdit}
-      />
-
-      <div className="mt-4 mb-5 space-y-4 px-4 lg:px-6">
-        <PortalDetailHead
-          title={objekt.titel}
-          metaLine={adresseLine || undefined}
-        />
-
-        <PortalDetailTabs
-          tabs={detailTabs}
-          activeId={tab}
-          onChange={(id) => setTab(id as ObjDetailTabId)}
-          navLabel="Objekt-Abschnitte"
-        >
-          {body}
-        </PortalDetailTabs>
-      </div>
-    </div>
+        title={objekt.titel}
+        metaLine={adresseLine || undefined}
+        tabs={detailTabs}
+        activeTab={tab}
+        onTabChange={(id) => setTab(id as ObjDetailTabId)}
+        tabsNavLabel="Objekt-Abschnitte"
+      >
+        {body}
+      </PortalEntityDetailLayout>
+    </>
   );
 }

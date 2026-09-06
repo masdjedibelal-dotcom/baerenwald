@@ -13,6 +13,7 @@ import {
   dokumenteFromUrls,
 } from "@/lib/portal/portal-dokumente";
 import { isAngebotPortalSichtbar } from "@/lib/portal/portal-angebot-sichtbarkeit";
+import { isVersicherungsakteEligibleLead } from "@/lib/portal/portal-lead-sichtbarkeit";
 import { mapPortalRechnungForResolver } from "@/lib/crm-vorgang/portal-resolve";
 import {
   resolvePortalObjekt,
@@ -1132,7 +1133,9 @@ export async function getPortalDataForKunde(
             })
           );
       const versDoc =
-        !listMode && leadId
+        !listMode &&
+        leadId &&
+        isVersicherungsakteEligibleLead(raw)
           ? dokumentFromVersicherungsakte({
               leadId,
               url: raw.versicherungsakte_pdf_url,

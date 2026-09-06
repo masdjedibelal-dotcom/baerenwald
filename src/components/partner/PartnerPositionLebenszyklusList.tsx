@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
-import { Check } from "lucide-react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { Camera, Check, ChevronDown, Plus } from "lucide-react";
 
 import { PartnerDirektKameraSlot } from "@/components/partner/PartnerDirektKameraSlot";
 import { PartnerKiKorrekturField } from "@/components/partner/PartnerKiKorrekturField";
@@ -139,6 +139,58 @@ function mengeLabel(p: LebenszyklusPosition): string | null {
   return null;
 }
 
+function positionMetaLine(
+  p: LebenszyklusPosition,
+  opts: { preferred: boolean; blocked: boolean }
+): string {
+  const st = p.leistung_status ?? "offen";
+  const isAufwand = p.verguetung === "aufwand";
+  const isRegie = p.typ === "regie" || isAufwand;
+  const inPruefung = p.anerkennung_status === "in_pruefung";
+  const isAbgelehnt = p.anerkennung_status === "abgelehnt";
+  return [
+    inPruefung
+      ? "Noch zur Prüfung"
+      : isAbgelehnt
+        ? "Abgelehnt"
+        : lebenszyklusLabel(st),
+    isRegie ? "Regie" : mengeLabel(p),
+    opts.preferred && !opts.blocked ? "Update angefordert" : null,
+  ]
+    .filter(Boolean)
+    .join(" · ");
+}
+
+/** Kompakte Icon-CTA (Mobil) — Update / Erledigt nebeneinander. */
+function PositionActionIconBtn({
+  label,
+  variant,
+  onClick,
+  children,
+}: {
+  label: string;
+  variant: "primary" | "outline";
+  onClick: () => void;
+  children: ReactNode;
+}) {
+  return (
+    <button
+      type="button"
+      aria-label={label}
+      title={label}
+      onClick={onClick}
+      className={cn(
+        "inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full transition-colors",
+        variant === "primary"
+          ? "bg-[var(--p2-primary,#2E7D52)] text-white"
+          : "border border-border-default bg-white text-text-primary"
+      )}
+    >
+      {children}
+    </button>
+  );
+}
+
 /**
  * Mock-Flow: Leistungskarten mit CTA → Bottom Sheet (Foto + Beschreibung).
  */
@@ -169,6 +221,7 @@ export function PartnerPositionLebenszyklusList({
   const [tbErledigt, setTbErledigt] = useState<string[]>([]);
   const [tbFotos, setTbFotos] = useState<File[]>([]);
   const [bulkSelected, setBulkSelected] = useState<string[]>([]);
+  const [erledigtAccordionOpen, setErledigtAccordionOpen] = useState(false);
   const [nachtragOpen, setNachtragOpen] = useState(false);
   const [nachtragTitel, setNachtragTitel] = useState("");
   const [nachtragBegruendung, setNachtragBegruendung] = useState("");
@@ -209,6 +262,16 @@ export function PartnerPositionLebenszyklusList({
     () =>
       actionablePositionen.filter((p) => p.leistung_status === "erledigt").length,
     [actionablePositionen]
+  );
+  const offenPositionen = useMemo(
+    () =>
+      sortedPositionen.filter((p) => (p.leistung_status ?? "offen") !== "erledigt"),
+    [sortedPositionen]
+  );
+  const erledigtPositionen = useMemo(
+    () =>
+      sortedPositionen.filter((p) => (p.leistung_status ?? "offen") === "erledigt"),
+    [sortedPositionen]
   );
   const progressPct =
     actionablePositionen.length > 0
@@ -697,14 +760,17 @@ export function PartnerPositionLebenszyklusList({
       {view === "tagebuch" ? (
         <div className="space-y-3">
           {!readOnly ? (
-            <button
-              type="button"
-              className="w-full rounded-[10px] border border-dashed px-3 py-3 text-[13.5px] font-semibold text-text-primary"
-              style={{ borderColor: PORTAL_VAR.line, background: "#fff" }}
-              onClick={() => setTagebuchOpen(true)}
-            >
-              + Tagebuch-Eintrag
-            </button>
+            <div className="flex items-center justify-end">
+              <button
+                type="button"
+                className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[var(--p2-primary,#2E7D52)] text-white transition-opacity hover:opacity-90"
+                aria-label="Tagebuch-Eintrag hinzufügen"
+                title="Tagebuch-Eintrag"
+                onClick={() => setTagebuchOpen(true)}
+              >
+                <Plus className="h-[18px] w-[18px]" strokeWidth={2.5} aria-hidden />
+              </button>
+            </div>
           ) : null}
           {tagebuchLoading && tagebuchEintraege.length === 0 ? (
             <p className="portal-text-body py-6 text-center text-text-tertiary">
@@ -813,193 +879,260 @@ export function PartnerPositionLebenszyklusList({
           </p>
         </div>
       ) : (
-        <ul className="divide-y divide-border-light">
-          {sortedPositionen.map((p) => {
-            const st = p.leistung_status ?? "offen";
-            const isArbeit = st === "in_arbeit";
-            const isErledigt = st === "erledigt";
-            const isAufwand = p.verguetung === "aufwand";
-            const isRegie = p.typ === "regie" || isAufwand;
-            const isPreferred = preferredSet.has(p.id);
-            const inPruefung = p.anerkennung_status === "in_pruefung";
-            const isAbgelehnt = p.anerkennung_status === "abgelehnt";
-            const isBlocked = inPruefung || isAbgelehnt;
-            const arbeitsMin = isRegie ? regieArbeitsminuten(p) : 0;
-            const gesamtPreis = isRegie ? regieGesamtpreis(p) : null;
-            const meta = [
-              inPruefung
-                ? "Noch zur Prüfung"
-                : isAbgelehnt
-                  ? "Abgelehnt"
-                  : lebenszyklusLabel(st),
-              isRegie ? "Regie" : mengeLabel(p),
-              isPreferred && !isBlocked ? "Update angefordert" : null,
-            ]
-              .filter(Boolean)
-              .join(" · ");
+        <div className="space-y-1">
+          {offenPositionen.length > 0 ? (
+            <ul className="divide-y divide-border-light">
+              {offenPositionen.map((p) => {
+                const st = p.leistung_status ?? "offen";
+                const isArbeit = st === "in_arbeit";
+                const isAufwand = p.verguetung === "aufwand";
+                const isRegie = p.typ === "regie" || isAufwand;
+                const isPreferred = preferredSet.has(p.id);
+                const inPruefung = p.anerkennung_status === "in_pruefung";
+                const isAbgelehnt = p.anerkennung_status === "abgelehnt";
+                const isBlocked = inPruefung || isAbgelehnt;
+                const arbeitsMin = isRegie ? regieArbeitsminuten(p) : 0;
+                const gesamtPreis = isRegie ? regieGesamtpreis(p) : null;
+                const meta = positionMetaLine(p, {
+                  preferred: isPreferred,
+                  blocked: isBlocked,
+                });
+                const showActions = !readOnly && !isBlocked;
+                const updateMode: SheetMode =
+                  st === "offen" ? "start" : "fortschritt";
+                const updateLabel =
+                  st === "offen" && isRegie ? "Start (Foto)" : "Update";
+                const erledigtLabel = isRegie ? "Ende (Foto)" : "Erledigt";
+                const showErledigtBtn =
+                  showActions && (isArbeit || (st === "offen" && !isRegie));
+                const showUpdateBtn =
+                  showActions && (st === "offen" || isArbeit);
+                const preisLabel = !isRegie ? formatPartnerPreisLabel(p) : null;
 
-            return (
-              <li
-                key={p.id}
-                className={cn(
-                  "px-0 py-3.5",
-                  isBlocked && "opacity-70",
-                  isPreferred && !isBlocked && "bg-amber-50/60"
-                )}
-              >
-                <div className="flex items-start gap-2.5">
-                  {!readOnly &&
-                  !isBlocked &&
-                  !isErledigt &&
-                  !isRegie ? (
-                    <button
-                      type="button"
-                      className={cn(
-                        "mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-md border",
-                        bulkSelected.includes(p.id)
-                          ? "border-accent bg-accent text-white"
-                          : "border-border-default bg-white"
-                      )}
-                      aria-pressed={bulkSelected.includes(p.id)}
-                      aria-label={`${p.leistung_name} auswählen`}
-                      onClick={() => toggleBulk(p.id)}
-                    >
-                      {bulkSelected.includes(p.id) ? (
-                        <Check className="h-3 w-3" strokeWidth={3} />
-                      ) : null}
-                    </button>
-                  ) : (
-                    <div
-                      className={cn(
-                        "mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-md border",
-                        isBlocked
-                          ? "border-border-default bg-[var(--p2-line2,#e8ebe9)]"
-                          : isErledigt
-                            ? "border-accent bg-accent text-white"
-                            : "border-border-default bg-white"
-                      )}
-                      aria-hidden
-                    >
-                      {!isBlocked && isErledigt ? (
-                        <Check className="h-3 w-3" strokeWidth={3} />
-                      ) : null}
-                    </div>
-                  )}
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-start justify-between gap-2">
-                      <p
-                        className={cn(
-                          "text-[14.5px] font-bold leading-snug",
-                          isBlocked ? "text-text-secondary" : "text-text-primary"
-                        )}
-                      >
-                        {p.leistung_name}
-                      </p>
-                      {!isRegie
-                        ? (() => {
-                            const preisLabel = formatPartnerPreisLabel(p);
-                            if (!preisLabel) return null;
-                            return (
-                              <p
-                                className={cn(
-                                  "shrink-0 text-[14.5px] font-bold tabular-nums",
-                                  isBlocked
-                                    ? "text-text-tertiary"
-                                    : "text-text-primary"
-                                )}
-                              >
-                                {preisLabel}
-                              </p>
-                            );
-                          })()
-                        : null}
-                    </div>
-                    <p className="mt-0.5 text-[12.5px] text-text-tertiary">
-                      {meta}
-                    </p>
-                    {isRegie ? (
-                      <div className="mt-1.5 space-y-0.5 text-[12.5px] text-text-secondary">
-                        <p className="flex justify-between gap-3">
-                          <span className="shrink-0 text-text-tertiary">
-                            Arbeitsstunden
-                          </span>
-                          <span className="min-w-0 text-right font-semibold tabular-nums text-text-primary">
-                            {arbeitsMin > 0
-                              ? formatZeitMinuten(arbeitsMin)
-                              : "—"}
-                          </span>
-                        </p>
-                        <p className="flex justify-between gap-3">
-                          <span className="shrink-0 text-text-tertiary">
-                            Gesamtpreis
-                          </span>
-                          <span className="min-w-0 text-right font-semibold tabular-nums text-text-primary">
-                            {gesamtPreis != null ? formatEuro(gesamtPreis) : "—"}
-                          </span>
-                        </p>
-                      </div>
-                    ) : null}
-                    {inPruefung ? (
-                      <p className="mt-1 text-[12.5px] font-semibold text-amber-800">
-                        Eingereicht — noch zur Prüfung. Nach Freigabe wie üblich
-                        starten und abschließen.
-                      </p>
-                    ) : null}
-                  </div>
-                </div>
-
-                {!readOnly && !isBlocked && !isErledigt ? (
-                  <div className="mt-3 space-y-2">
-                    {st === "offen" ? (
-                      <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
+                return (
+                  <li
+                    key={p.id}
+                    className={cn(
+                      "px-0 py-3",
+                      isBlocked && "opacity-70",
+                      isPreferred && !isBlocked && "bg-amber-50/60"
+                    )}
+                  >
+                    <div className="flex items-start gap-2.5">
+                      {!readOnly && !isBlocked && !isRegie ? (
                         <button
                           type="button"
-                          className="btn-pill-primary w-full sm:w-auto"
-                          onClick={() => setSheet({ mode: "start", position: p })}
+                          className={cn(
+                            "mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-md border",
+                            bulkSelected.includes(p.id)
+                              ? "border-accent bg-accent text-white"
+                              : "border-border-default bg-white"
+                          )}
+                          aria-pressed={bulkSelected.includes(p.id)}
+                          aria-label={`${p.leistung_name} auswählen`}
+                          onClick={() => toggleBulk(p.id)}
                         >
-                          {isRegie ? "Start (Foto)" : "Update"}
+                          {bulkSelected.includes(p.id) ? (
+                            <Check className="h-3 w-3" strokeWidth={3} />
+                          ) : null}
                         </button>
-                        {!isRegie ? (
-                          <button
-                            type="button"
-                            className="btn-pill-outline w-full sm:w-auto"
-                            onClick={() =>
-                              setSheet({ mode: "erledigt", position: p })
-                            }
+                      ) : (
+                        <div
+                          className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-md border border-border-default bg-white"
+                          aria-hidden
+                        />
+                      )}
+
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-start justify-between gap-2">
+                          <p
+                            className={cn(
+                              "text-[14.5px] font-bold leading-snug",
+                              isBlocked
+                                ? "text-text-secondary"
+                                : "text-text-primary"
+                            )}
                           >
-                            Erledigt
-                          </button>
+                            {p.leistung_name}
+                          </p>
+                          {preisLabel ? (
+                            <p
+                              className={cn(
+                                "hidden shrink-0 text-[14.5px] font-bold tabular-nums sm:block",
+                                isBlocked
+                                  ? "text-text-tertiary"
+                                  : "text-text-primary"
+                              )}
+                            >
+                              {preisLabel}
+                            </p>
+                          ) : null}
+                        </div>
+                        <p className="mt-0.5 text-[12.5px] text-text-tertiary">
+                          {meta}
+                        </p>
+                        {isRegie ? (
+                          <div className="mt-1.5 space-y-0.5 text-[12.5px] text-text-secondary">
+                            <p className="flex justify-between gap-3">
+                              <span className="shrink-0 text-text-tertiary">
+                                Arbeitsstunden
+                              </span>
+                              <span className="min-w-0 text-right font-semibold tabular-nums text-text-primary">
+                                {arbeitsMin > 0
+                                  ? formatZeitMinuten(arbeitsMin)
+                                  : "—"}
+                              </span>
+                            </p>
+                            <p className="flex justify-between gap-3">
+                              <span className="shrink-0 text-text-tertiary">
+                                Gesamtpreis
+                              </span>
+                              <span className="min-w-0 text-right font-semibold tabular-nums text-text-primary">
+                                {gesamtPreis != null
+                                  ? formatEuro(gesamtPreis)
+                                  : "—"}
+                              </span>
+                            </p>
+                          </div>
+                        ) : null}
+                        {inPruefung ? (
+                          <p className="mt-1 text-[12.5px] font-semibold text-amber-800">
+                            Eingereicht — noch zur Prüfung. Nach Freigabe wie
+                            üblich starten und abschließen.
+                          </p>
+                        ) : null}
+
+                        {/* Desktop: Text-Buttons in einer Zeile */}
+                        {showUpdateBtn || showErledigtBtn ? (
+                          <div className="mt-2.5 hidden flex-row flex-wrap gap-2 sm:flex">
+                            {showUpdateBtn ? (
+                              <button
+                                type="button"
+                                className="btn-pill-primary"
+                                onClick={() =>
+                                  setSheet({ mode: updateMode, position: p })
+                                }
+                              >
+                                {updateLabel}
+                              </button>
+                            ) : null}
+                            {showErledigtBtn ? (
+                              <button
+                                type="button"
+                                className="btn-pill-outline"
+                                onClick={() =>
+                                  setSheet({ mode: "erledigt", position: p })
+                                }
+                              >
+                                {erledigtLabel}
+                              </button>
+                            ) : null}
+                          </div>
                         ) : null}
                       </div>
-                    ) : null}
-                    {isArbeit ? (
-                      <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
-                        <button
-                          type="button"
-                          className="btn-pill-primary w-full sm:w-auto"
-                          onClick={() =>
-                            setSheet({ mode: "fortschritt", position: p })
-                          }
-                        >
-                          Update
-                        </button>
-                        <button
-                          type="button"
-                          className="btn-pill-outline w-full sm:w-auto"
-                          onClick={() =>
-                            setSheet({ mode: "erledigt", position: p })
-                          }
-                        >
-                          {isRegie ? "Ende (Foto)" : "Erledigt"}
-                        </button>
-                      </div>
-                    ) : null}
-                  </div>
-                ) : null}
-              </li>
-            );
-          })}
-        </ul>
+
+                      {/* Mobil: zwei Icons rechts neben der Zeile */}
+                      {showUpdateBtn || showErledigtBtn ? (
+                        <div className="flex shrink-0 flex-row items-start gap-1.5 sm:hidden">
+                          {showUpdateBtn ? (
+                            <PositionActionIconBtn
+                              label={updateLabel}
+                              variant="primary"
+                              onClick={() =>
+                                setSheet({ mode: updateMode, position: p })
+                              }
+                            >
+                              <Camera className="h-[18px] w-[18px]" strokeWidth={2.25} />
+                            </PositionActionIconBtn>
+                          ) : null}
+                          {showErledigtBtn ? (
+                            <PositionActionIconBtn
+                              label={erledigtLabel}
+                              variant="outline"
+                              onClick={() =>
+                                setSheet({ mode: "erledigt", position: p })
+                              }
+                            >
+                              <Check className="h-[18px] w-[18px]" strokeWidth={2.5} />
+                            </PositionActionIconBtn>
+                          ) : null}
+                        </div>
+                      ) : null}
+                    </div>
+                  </li>
+                );
+              })}
+            </ul>
+          ) : (
+            <p className="px-0 py-4 text-center text-[13.5px] text-text-tertiary">
+              Alle offenen Leistungen erledigt.
+            </p>
+          )}
+
+          {erledigtPositionen.length > 0 ? (
+            <div className="border-t border-border-light pt-1">
+              <button
+                type="button"
+                className="flex min-h-[48px] w-full items-center justify-between gap-3 px-0 py-2.5 text-left"
+                aria-expanded={erledigtAccordionOpen}
+                onClick={() => setErledigtAccordionOpen((o) => !o)}
+              >
+                <span className="text-[13.5px] font-bold text-text-primary">
+                  {erledigtPositionen.length} erledigt
+                </span>
+                <ChevronDown
+                  className={cn(
+                    "h-5 w-5 shrink-0 text-text-tertiary transition-transform",
+                    erledigtAccordionOpen && "rotate-180"
+                  )}
+                  aria-hidden
+                />
+              </button>
+              {erledigtAccordionOpen ? (
+                <ul className="divide-y divide-border-light border-t border-border-light">
+                  {erledigtPositionen.map((p) => {
+                    const isAufwand = p.verguetung === "aufwand";
+                    const isRegie = p.typ === "regie" || isAufwand;
+                    const meta = positionMetaLine(p, {
+                      preferred: false,
+                      blocked: false,
+                    });
+                    const preisLabel = !isRegie
+                      ? formatPartnerPreisLabel(p)
+                      : null;
+                    return (
+                      <li key={p.id} className="px-0 py-3">
+                        <div className="flex items-start gap-2.5">
+                          <div
+                            className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-md border border-accent bg-accent text-white"
+                            aria-hidden
+                          >
+                            <Check className="h-3 w-3" strokeWidth={3} />
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <div className="flex items-start justify-between gap-2">
+                              <p className="text-[14.5px] font-bold leading-snug text-text-primary">
+                                {p.leistung_name}
+                              </p>
+                              {preisLabel ? (
+                                <p className="shrink-0 text-[14.5px] font-bold tabular-nums text-text-primary">
+                                  {preisLabel}
+                                </p>
+                              ) : null}
+                            </div>
+                            <p className="mt-0.5 text-[12.5px] text-text-tertiary">
+                              {meta}
+                            </p>
+                          </div>
+                        </div>
+                      </li>
+                    );
+                  })}
+                </ul>
+              ) : null}
+            </div>
+          ) : null}
+        </div>
       )}
 
       {!readOnly ? (

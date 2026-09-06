@@ -374,6 +374,7 @@ export function PartnerAuftragDetail({
         startDatum: item.start_datum,
         endDatum: item.end_datum,
         fotos: meldeFotos,
+        includeKontaktVorOrt: true,
       }),
     [
       item.id,

@@ -41,6 +41,8 @@ export function buildPartnerLeadSource(opts: {
   angebotObjektId?: string | null;
   kundePlz?: string | null;
   kundeOrt?: string | null;
+  kundeStrasse?: string | null;
+  kundeHausnummer?: string | null;
   objektById: Map<string, PartnerKundenObjektRow>;
 }): PortalAnfrageLeadSource | null {
   const lead = opts.lead;
@@ -60,6 +62,8 @@ export function buildPartnerLeadSource(opts: {
   if (!lead) {
     return {
       plz: objekt?.plz ?? opts.kundePlz ?? null,
+      strasse: opts.kundeStrasse?.trim() || objekt?.strasse?.trim() || null,
+      hausnummer: opts.kundeHausnummer?.trim() || null,
       objekt,
       einheiten_hinweis: objektId
         ? opts.objektById.get(objektId)?.einheiten_hinweis?.trim() || null
@@ -68,13 +72,19 @@ export function buildPartnerLeadSource(opts: {
   }
 
   const objektRow = objektId ? opts.objektById.get(objektId) : undefined;
+  const kundeStrasse = opts.kundeStrasse?.trim() || null;
+  const kundeHausnummer = opts.kundeHausnummer?.trim() || null;
 
   return {
     situation: lead.situation,
     bereiche: lead.bereiche,
     plz: lead.plz ?? objekt?.plz ?? opts.kundePlz ?? null,
-    strasse: lead.strasse?.trim() || objekt?.strasse?.trim() || null,
-    hausnummer: lead.hausnummer?.trim() || null,
+    strasse:
+      lead.strasse?.trim() ||
+      kundeStrasse ||
+      objekt?.strasse?.trim() ||
+      null,
+    hausnummer: lead.hausnummer?.trim() || kundeHausnummer || null,
     ort: objekt?.ort ?? opts.kundeOrt ?? null,
     zeitraum: lead.zeitraum,
     preis_min: lead.preis_min,
@@ -91,6 +101,7 @@ export function buildPartnerLeadSource(opts: {
     melder_telefon: lead.melder_telefon,
     melder_email: lead.melder_email,
     einheiten_hinweis: objektRow?.einheiten_hinweis?.trim() || null,
+    auftraggeber_kunde_id: lead.auftraggeber_kunde_id ?? null,
     objekt,
   };
 }

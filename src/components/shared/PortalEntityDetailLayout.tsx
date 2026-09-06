@@ -67,7 +67,12 @@ export function PortalEntityDetailLayout({
     typeof onTabChange === "function";
 
   return (
-    <div className={cn("portal-entity-detail", className)}>
+    <div
+      className={cn(
+        "portal-detail-layout portal-entity-detail space-y-5 pb-2",
+        className
+      )}
+    >
       <PortalDetailCover
         coverUrl={coverUrl}
         onBack={onBack}
@@ -95,7 +100,7 @@ export function PortalEntityDetailLayout({
         />
       </div>
 
-      <div className="portal-entity-detail-body">
+      <div className="portal-detail-body-pad flex flex-col gap-4 pb-6 pt-4 sm:pt-5">
         {useTabs && tabs && activeTab && onTabChange ? (
           <PortalDetailTabs
             tabs={tabs}

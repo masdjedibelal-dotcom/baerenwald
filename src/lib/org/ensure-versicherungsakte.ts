@@ -7,6 +7,7 @@ import {
   type VersicherungPdfPhase,
   type VersicherungPdfReadiness,
 } from "@/lib/org/versicherung-pdf-readiness";
+import { isVersicherungsakteEligibleLead } from "@/lib/portal/portal-lead-sichtbarkeit";
 import { supabaseAdmin } from "@/lib/supabase";
 
 const BUCKET = "protokolle";
@@ -199,12 +200,22 @@ export async function getVersicherungPdfReadinessForLead(
 
   const { data: lead, error } = await supabaseAdmin
     .from("leads")
-    .select("id, kostentraeger, hv_meldung_status")
+    .select("id, kostentraeger, hv_meldung_status, funnel_daten")
     .eq("id", id)
     .maybeSingle();
 
   if (error || !lead) {
     return { error: error?.message ?? "Vorgang nicht gefunden." };
+  }
+
+  if (!isVersicherungsakteEligibleLead(lead)) {
+    const blocker =
+      "Schadenakte entfällt bei Direkt-Angebot (kein Melde-Hergang).";
+    return {
+      kostentraegerVersicherung: false,
+      meldung: { ready: false, blockers: [blocker] },
+      ursache: { ready: false, blockers: [blocker] },
+    };
   }
 
   const signals = await loadLeadSignals(id);
@@ -269,7 +280,7 @@ export async function ensureVersicherungsakteForLead(
   const { data: lead, error: leadErr } = await supabaseAdmin
     .from("leads")
     .select(
-      "id, auftraggeber_kunde_id, kunde_id, kunde_objekt_id, kostentraeger, versicherungs_nr, schaden_nr, kontakt_name, kontakt_nachricht, notizen, situation, bereiche, zeitraum, melder_name, melder_einheit, melder_telefon, melder_email, created_at, strasse, hausnummer, plz, ort, funnel_daten"
+      "id, auftraggeber_kunde_id, kunde_id, kunde_objekt_id, kostentraeger, versicherungs_nr, schaden_nr, kontakt_name, kontakt_nachricht, notizen, situation, bereiche, zeitraum, melder_name, melder_einheit, melder_telefon, melder_email, created_at, strasse, hausnummer, plz, funnel_daten"
     )
     .eq("id", id)
     .maybeSingle();
@@ -383,7 +394,7 @@ export async function ensureVersicherungsakteForLead(
     plz: lead.plz as string | null | undefined,
     strasse: lead.strasse as string | null | undefined,
     hausnummer: lead.hausnummer as string | null | undefined,
-    ort: lead.ort as string | null | undefined,
+    ort: objektForAngaben?.ort ?? null,
     melder_name: lead.melder_name as string | null | undefined,
     melder_einheit: lead.melder_einheit as string | null | undefined,
     melder_telefon: lead.melder_telefon as string | null | undefined,
@@ -508,12 +519,13 @@ export async function applyAutomatischeSchadenakteIfEnabled(
 
   const { data: lead } = await supabaseAdmin
     .from("leads")
-    .select("id, anlass, kunde_objekt_id, kostentraeger, hv_meldung_status")
+    .select("id, anlass, kunde_objekt_id, kostentraeger, hv_meldung_status, funnel_daten")
     .eq("id", id)
     .maybeSingle();
 
   if (!lead?.kunde_objekt_id) return;
   if (String(lead.anlass ?? "") !== "meldung") return;
+  if (!isVersicherungsakteEligibleLead(lead)) return;
 
   const { data: obj, error: objErr } = await supabaseAdmin
     .from("kunden_objekte")

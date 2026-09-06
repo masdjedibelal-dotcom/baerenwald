@@ -13,6 +13,16 @@ export function isCrmDirektAngebotLead(lead: { funnel_daten?: unknown }): boolea
   return leadFunnelQuelle(lead.funnel_daten) === "crm_direkt_angebot";
 }
 
+/**
+ * Schadenakte / Versicherungsakte-Tab nur bei Melde-/Anfrage-Vorgängen.
+ * CRM-Direkt-Angebot (und Direkt-Rechnung ohne Lead) haben keinen Hergang.
+ */
+export function isVersicherungsakteEligibleLead(lead: {
+  funnel_daten?: unknown;
+}): boolean {
+  return !isCrmDirektAngebotLead(lead);
+}
+
 export type PortalLeadListbarAngebot = {
   lead_id?: string | null;
   status?: string | null;
@@ -40,10 +50,13 @@ function isActivePortalAuftrag(a: PortalLeadListbarAuftrag): boolean {
  * Echte Meldungen: immer sichtbar.
  * `crm_direkt_angebot`: nur mit versendetem Angebot oder aktivem Auftrag —
  * Entwürfe und abgebrochene Stubs wie im CRM unsichtbar.
+ * Lead-Status „angebot“ ohne sichtbares Angebot/Auftrag: Waisen-Stub (z. B.
+ * abgebrochener Direktangebot-Versuch) — nicht listen.
  */
 export function isLeadPortalListbar(
   lead: {
     id?: string | null;
+    status?: string | null;
     funnel_daten?: unknown;
     geloescht_am?: string | null;
   },
@@ -53,22 +66,44 @@ export function isLeadPortalListbar(
   }
 ): boolean {
   if (lead.geloescht_am) return false;
-  if (!isCrmDirektAngebotLead(lead)) return true;
 
   const leadId = String(lead.id ?? "").trim();
   if (!leadId) return false;
 
+  let hasVisibleAngebot = false;
   for (const a of ctx.angebote ?? []) {
     if (String(a.lead_id ?? "").trim() !== leadId) continue;
-    if (isAngebotPortalSichtbar(a)) return true;
+    if (isAngebotPortalSichtbar(a)) {
+      hasVisibleAngebot = true;
+      break;
+    }
   }
 
+  let hasActiveAuftrag = false;
   for (const a of ctx.auftraege ?? []) {
     if (String(a.lead_id ?? "").trim() !== leadId) continue;
-    if (isActivePortalAuftrag(a)) return true;
+    if (isActivePortalAuftrag(a)) {
+      hasActiveAuftrag = true;
+      break;
+    }
   }
 
-  return false;
+  if (isCrmDirektAngebotLead(lead)) {
+    return hasVisibleAngebot || hasActiveAuftrag;
+  }
+
+  const st = String(lead.status ?? "")
+    .toLowerCase()
+    .trim();
+  if (
+    (st === "angebot" || st === "angeboten") &&
+    !hasVisibleAngebot &&
+    !hasActiveAuftrag
+  ) {
+    return false;
+  }
+
+  return true;
 }
 
 export function filterPortalListableLeads<

@@ -92,8 +92,14 @@ export type PortalShellProps = {
   hideMobileChrome?: boolean;
   /**
    * Desktop: Content-Stack ohne max-width (z. B. Dashboard-Hero über volle Main-Breite).
+   * Mobil: Hero unter Topbar (Padding/Bleed) — unabhängig von Topbar-Farbe.
    */
   contentFullBleed?: boolean;
+  /**
+   * Mobil: Topbar-Hintergrund transparent (nur Dashboard).
+   * Andere Screens: solid grün. Default false.
+   */
+  topbarTransparent?: boolean;
   children: ReactNode;
   footer?: ReactNode;
   /**
@@ -165,6 +171,7 @@ export function PortalShell({
   createAction,
   hideMobileChrome = false,
   contentFullBleed = false,
+  topbarTransparent = false,
   children,
   footer,
   contentKey,
@@ -198,7 +205,20 @@ export function PortalShell({
       prevKeyRef.current = contentKey;
       changed = true;
     }
-    if (changed) flash();
+    if (!changed) return;
+    flash();
+    /* Mobil: Dokument-Scroll — neue Sektion/Seite immer oben starten */
+    const scrollTop = () => {
+      const root =
+        (document.scrollingElement as HTMLElement | null) ??
+        document.documentElement;
+      root.scrollTop = 0;
+      document.body.scrollTop = 0;
+      window.scrollTo(0, 0);
+      window.dispatchEvent(new Event("bw:scroll-chrome-sync"));
+    };
+    scrollTop();
+    requestAnimationFrame(scrollTop);
   }, [activeNavId, contentKey, flash]);
 
   /** Mobil: Dokument-Scroll → Browser darf die URL-Leiste einklappen (wie CRM). */
@@ -304,19 +324,11 @@ export function PortalShell({
       className={cn("portal-ui portal-shell bg-surface-page", className)}
       data-portal-variant={variant}
       data-content-bleed={contentFullBleed ? "true" : undefined}
+      data-topbar-transparent={topbarTransparent ? "true" : undefined}
       style={shellStyle}
     >
       <PortalDocViewerProvider>
         <PortalOfflineGate>
-          <PortalTopbar
-            brandTitle={brandTitle}
-            brandSubtitle={brandSubtitle}
-            brandLogoUrl={brandLogoUrl}
-            brandMarkSrc={brandMarkSrc}
-            brandKuerzel={brandKuerzel}
-            notifications={topbarRight}
-          />
-
           <div className="portal-shell-body">
             <div className="portal-shell-frame">
               <aside className="portal-shell-sidebar">
@@ -403,56 +415,67 @@ export function PortalShell({
                 </div>
               </aside>
 
-              <main
-                className={cn(
-                  "portal-shell-main",
-                  hideMobileChrome
-                    ? "portal-shell-main--chrome-hidden"
-                    : "portal-shell-main--padded"
-                )}
-              >
-                <div
+              <div className="portal-shell-chrome">
+                <PortalTopbar
+                  brandTitle={brandTitle}
+                  brandSubtitle={brandSubtitle}
+                  brandLogoUrl={brandLogoUrl}
+                  brandMarkSrc={brandMarkSrc}
+                  brandKuerzel={brandKuerzel}
+                  notifications={topbarRight}
+                />
+
+                <main
                   className={cn(
-                    "portal-page-stack relative min-h-[40vh]",
-                    (hideMobileChrome || contentFullBleed) &&
-                      "portal-page-stack--wide"
+                    "portal-shell-main",
+                    hideMobileChrome
+                      ? "portal-shell-main--chrome-hidden"
+                      : "portal-shell-main--padded"
                   )}
                 >
                   <div
                     className={cn(
-                      "portal-page-stack-inner",
-                      showContentBusy && "invisible pointer-events-none select-none"
+                      "portal-page-stack relative min-h-[40vh]",
+                      (hideMobileChrome || contentFullBleed) &&
+                        "portal-page-stack--wide"
                     )}
-                    aria-hidden={showContentBusy || undefined}
                   >
-                    {children}
-                  </div>
-                  {showContentBusy ? (
                     <div
-                      className="absolute inset-0 z-[80] bg-[var(--surface-page,#f5f6f4)]/92 backdrop-blur-[2px]"
-                      role="presentation"
+                      className={cn(
+                        "portal-page-stack-inner",
+                        showContentBusy && "invisible pointer-events-none select-none"
+                      )}
+                      aria-hidden={showContentBusy || undefined}
                     >
-                      <div className="sticky top-[max(1rem,18vh)] flex justify-center px-3 py-6">
-                        <PortalContentBusy
-                          className="!min-h-0 !py-8"
-                          title={
-                            contentBusyTitle ??
-                            (ctxBusy && !contentBusy
-                              ? "Wird verarbeitet…"
-                              : undefined)
-                          }
-                          body={
-                            contentBusyBody ??
-                            (ctxBusy && !contentBusy
-                              ? "Einen Moment bitte."
-                              : undefined)
-                          }
-                        />
-                      </div>
+                      {children}
                     </div>
-                  ) : null}
-                </div>
-              </main>
+                    {showContentBusy ? (
+                      <div
+                        className="absolute inset-0 z-[80] bg-[var(--surface-page,#f5f6f4)]/92 backdrop-blur-[2px]"
+                        role="presentation"
+                      >
+                        <div className="sticky top-[max(1rem,18vh)] flex justify-center px-3 py-6">
+                          <PortalContentBusy
+                            className="!min-h-0 !py-8"
+                            title={
+                              contentBusyTitle ??
+                              (ctxBusy && !contentBusy
+                                ? "Wird verarbeitet…"
+                                : undefined)
+                            }
+                            body={
+                              contentBusyBody ??
+                              (ctxBusy && !contentBusy
+                                ? "Einen Moment bitte."
+                                : undefined)
+                            }
+                          />
+                        </div>
+                      </div>
+                    ) : null}
+                  </div>
+                </main>
+              </div>
             </div>
           </div>
 

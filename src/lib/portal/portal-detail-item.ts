@@ -135,6 +135,8 @@ export type KundePortalDetailItem = {
   freigabeBypassGrund?: string | null;
   /** Funnel Sofortmaßnahme (direktauftrag) */
   funnelDirektauftrag?: boolean | null;
+  /** false = CRM-Direkt-Angebot → kein Versicherungsakte-Tab */
+  versicherungsakteEligible?: boolean;
   hvMeldungStatus?: string | null;
   /** Objekt-ID für HM-Delegation / Freigabe-CTAs */
   kundeObjektId?: string | null;

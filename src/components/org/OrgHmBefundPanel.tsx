@@ -590,49 +590,69 @@ export function OrgHmBefundPanel({
         <>
           {(isHv && befund.ergebnis) || !isHv ? (
             <div className="flex flex-wrap items-end justify-between gap-3">
-              <div className="flex min-w-0 flex-1 flex-wrap gap-3">
-                <label className="block min-w-[10rem] flex-1">
+              <div className="flex min-w-0 flex-1 flex-wrap gap-x-8 gap-y-2">
+                <label className="block min-w-[8rem]">
                   <span className="portal-text-label text-text-tertiary">
                     Durchgeführt von
                   </span>
-                  <input
-                    className="mt-1 w-full rounded-lg border px-3 py-2 text-[13px]"
-                    style={{ borderColor: PORTAL_VAR.line }}
-                    value={befund.durchgefuehrt_von}
-                    disabled={!editable}
-                    onChange={(e) =>
-                      setBefund({ ...befund, durchgefuehrt_von: e.target.value })
-                    }
-                    onBlur={() => {
-                      if (!editable) return;
-                      void updateLeadBefundKopfAction({
-                        befundId: befund.id,
-                        durchgefuehrtVon: befund.durchgefuehrt_von,
-                      });
-                    }}
-                  />
+                  {editable ? (
+                    <input
+                      className="mt-0.5 w-full border-0 bg-transparent p-0 text-[15px] font-semibold outline-none"
+                      style={{ color: PORTAL_VAR.ink }}
+                      value={befund.durchgefuehrt_von}
+                      onChange={(e) =>
+                        setBefund({
+                          ...befund,
+                          durchgefuehrt_von: e.target.value,
+                        })
+                      }
+                      onBlur={() => {
+                        void updateLeadBefundKopfAction({
+                          befundId: befund.id,
+                          durchgefuehrtVon: befund.durchgefuehrt_von,
+                        });
+                      }}
+                    />
+                  ) : (
+                    <p
+                      className="mt-0.5 text-[15px] font-semibold"
+                      style={{ color: PORTAL_VAR.ink }}
+                    >
+                      {befund.durchgefuehrt_von.trim() || "—"}
+                    </p>
+                  )}
                 </label>
-                <label className="block w-[9.5rem]">
+                <label className="block min-w-[7rem]">
                   <span className="portal-text-label text-text-tertiary">
                     Datum
                   </span>
-                  <input
-                    type="date"
-                    className="mt-1 w-full rounded-lg border px-3 py-2 text-[13px]"
-                    style={{ borderColor: PORTAL_VAR.line }}
-                    value={befund.durchgefuehrt_am.slice(0, 10)}
-                    disabled={!editable}
-                    onChange={(e) =>
-                      setBefund({ ...befund, durchgefuehrt_am: e.target.value })
-                    }
-                    onBlur={() => {
-                      if (!editable) return;
-                      void updateLeadBefundKopfAction({
-                        befundId: befund.id,
-                        durchgefuehrtAm: befund.durchgefuehrt_am,
-                      });
-                    }}
-                  />
+                  {editable ? (
+                    <input
+                      type="date"
+                      className="mt-0.5 w-full border-0 bg-transparent p-0 text-[15px] font-semibold outline-none"
+                      style={{ color: PORTAL_VAR.ink }}
+                      value={befund.durchgefuehrt_am.slice(0, 10)}
+                      onChange={(e) =>
+                        setBefund({
+                          ...befund,
+                          durchgefuehrt_am: e.target.value,
+                        })
+                      }
+                      onBlur={() => {
+                        void updateLeadBefundKopfAction({
+                          befundId: befund.id,
+                          durchgefuehrtAm: befund.durchgefuehrt_am,
+                        });
+                      }}
+                    />
+                  ) : (
+                    <p
+                      className="mt-0.5 text-[15px] font-semibold"
+                      style={{ color: PORTAL_VAR.ink }}
+                    >
+                      {fmtDatum(befund.durchgefuehrt_am) ?? "—"}
+                    </p>
+                  )}
                 </label>
               </div>
               {editable ? (
@@ -645,7 +665,8 @@ export function OrgHmBefundPanel({
                       className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full border-2 text-accent transition-opacity hover:opacity-90"
                       style={{
                         borderColor: "var(--p2-accent, var(--accent))",
-                        background: "var(--p2-accent-soft, rgba(46,125,82,0.12))",
+                        background:
+                          "var(--p2-accent-soft, rgba(46,125,82,0.12))",
                       }}
                       aria-label="Prüfpunkt hinzufügen"
                     >
@@ -659,7 +680,10 @@ export function OrgHmBefundPanel({
           ) : null}
 
           {befund.ergebnis ? (
-            <p className="portal-text-meta font-semibold text-text-primary">
+            <p
+              className="text-[17px] font-bold leading-snug sm:text-[18px]"
+              style={{ color: PORTAL_VAR.ink }}
+            >
               Ergebnis: {ergebnisLabel(befund.ergebnis)}
             </p>
           ) : null}

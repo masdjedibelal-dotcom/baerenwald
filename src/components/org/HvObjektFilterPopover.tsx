@@ -1,6 +1,6 @@
 "use client";
 
-import { Check, ChevronDown } from "lucide-react";
+import { Check, Home } from "lucide-react";
 import { useEffect, useId, useRef, useState } from "react";
 
 import { PORTAL_VAR } from "@/lib/portal2/tokens";
@@ -37,6 +37,7 @@ function labelForSelection(
 
 /**
  * HV Vorgänge: Objekt-Filter (Popover, Mehrfachauswahl).
+ * Trigger: Haus-Icon rechts (gleiche Chip-Höhe wie Status-Filter).
  * Nur anzeigen wenn `objekte.length > 1`.
  */
 export function HvObjektFilterPopover({
@@ -103,21 +104,27 @@ export function HvObjektFilterPopover({
         aria-haspopup="listbox"
         aria-expanded={open}
         aria-controls={listId}
+        aria-label={label}
+        title={label}
         onClick={() => setOpen((v) => !v)}
         className={cn(
-          "portal-text-meta inline-flex max-w-[220px] items-center gap-1.5 rounded-full px-3.5 py-2 font-semibold"
+          "portal-liste-chip portal-liste-chip--icon",
+          active && "portal-liste-chip--active"
         )}
-        style={{
-          border: `1px solid ${active ? "transparent" : PORTAL_VAR.line}`,
-          background: active ? PORTAL_VAR.greenDark : "#fff",
-          color: active ? "#fff" : PORTAL_VAR.sub,
-        }}
       >
-        <span className="truncate">{label}</span>
-        <ChevronDown
-          className={cn("h-3.5 w-3.5 shrink-0 transition-transform", open && "rotate-180")}
-          aria-hidden
-        />
+        <Home className="h-4 w-4 shrink-0" strokeWidth={2.25} aria-hidden />
+        {!allSelected ? (
+          <span
+            className="portal-liste-chip-badge"
+            style={{
+              color: active ? PORTAL_VAR.greenDark : "#1a2e1f",
+              background: active ? "#fff" : "var(--p2-sand, #e8b04b)",
+            }}
+            aria-hidden
+          >
+            {selectedIds.length === 1 ? "1" : String(selectedIds.length)}
+          </span>
+        ) : null}
       </button>
 
       {open ? (

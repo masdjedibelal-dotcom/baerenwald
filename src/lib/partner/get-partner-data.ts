@@ -91,7 +91,7 @@ export type PartnerAnfrageItem = {
   /** Handwerker-UUID (Filter für CRM-Positionen bei Nachreichung). */
   handwerker_id?: string;
   angebot_titel: string;
-  /** Einheitlich: „Gewerk — PLZ Ort“ (Partner-Listen & Detail). */
+  /** Einheitlicher Vorgangs-Titel wie CRM / Kundenportal. */
   listen_titel: string;
   gesendet_at?: string | null;
   antwort_at?: string | null;
@@ -755,9 +755,9 @@ export async function getPartnerDataForHandwerker(
         abnahme_datum,
         created_at,
         updated_at,
-        kunden(plz, ort, name),
+        kunden(plz, ort, name, strasse, hausnummer),
         leads(${PARTNER_LEAD_EMBED}),
-        angebote(kunde_objekt_id),
+        angebote(kunde_objekt_id, leistungsumfang, notizen),
         auftrag_positionen(
           id,
           gewerk_name,
@@ -920,14 +920,22 @@ export async function getPartnerDataForHandwerker(
         plz: string | null;
         ort: string | null;
         name?: string | null;
+        strasse?: string | null;
+        hausnummer?: string | null;
       } | null;
       const leadRow = one(raw.leads) as PartnerLeadDbRow | null;
-      const angebot = one(raw.angebote) as { kunde_objekt_id?: string | null } | null;
+      const angebot = one(raw.angebote) as {
+        kunde_objekt_id?: string | null;
+        leistungsumfang?: string | null;
+        notizen?: string | null;
+      } | null;
       const lead = buildPartnerLeadSource({
         lead: leadRow,
         angebotObjektId: angebot?.kunde_objekt_id,
         kundePlz: kunde?.plz,
         kundeOrt: kunde?.ort,
+        kundeStrasse: kunde?.strasse,
+        kundeHausnummer: kunde?.hausnummer,
         objektById: auftragObjektById,
       });
       const allPos = (raw.auftrag_positionen ?? []) as Array<Record<string, unknown>>;
@@ -1008,6 +1016,11 @@ export async function getPartnerDataForHandwerker(
         plz: lead?.objekt?.plz?.trim() || kunde?.plz?.trim() || "—",
         ort: lead?.objekt?.ort?.trim() || kunde?.ort?.trim() || "—",
         lead,
+        angebot: {
+          leistungsumfang: angebot?.leistungsumfang,
+          notizen: angebot?.notizen,
+        },
+        auftragTitel: titel,
         fallbackTitel: titel,
       });
 

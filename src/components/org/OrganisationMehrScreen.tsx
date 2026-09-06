@@ -43,8 +43,7 @@ export function OrganisationMehrScreen({ onOpen }: Props) {
               <span className="portal-mehr-tile-icon">
                 <PortalNavIcon
                   navId={tile.key as PortalNavKey}
-                  active
-                  surface="nav"
+                  surface="sidebar"
                   size={22}
                 />
               </span>

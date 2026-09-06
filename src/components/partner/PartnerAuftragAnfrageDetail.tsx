@@ -244,6 +244,7 @@ export function PartnerAuftragAnfrageDetail({
           konditionZeilen,
           startDatum: item.start_datum,
           endDatum: item.end_datum,
+          includeKontaktVorOrt: true,
         })}
       />
 

@@ -825,7 +825,7 @@ export function PartnerClient({
         body="Einen Moment — wir öffnen die Details."
       />
     ) : section === "vorgaenge" && selectedVorgang ? (
-      <div className="-mx-4 -mt-4 min-w-0 pb-4 lg:-mx-6 lg:-mt-5">
+      <div className="min-w-0 pb-4">
         <VorgangCard
           vorgang={selectedVorgang}
           handwerker={handwerker}
@@ -894,6 +894,7 @@ export function PartnerClient({
         contentFullBleed={
           section === "uebersicht" || Boolean(selectedId)
         }
+        topbarTransparent={section === "uebersicht"}
         activeNavId={
           section === "gpt" || section === "planer" ? "uebersicht" : section
         }

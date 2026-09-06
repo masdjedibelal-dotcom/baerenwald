@@ -21,7 +21,7 @@ type Props = {
   deleteMailto?: string | null;
   /** Abmelden-Form-Action (Default aus signOutHref abgeleitet). */
   signOutAction?: string;
-  /** Abmelden-Button unter Konto löschen (Default an). */
+  /** Logout-Button in der Card (Default an). */
   showSignOut?: boolean;
 };
 
@@ -33,8 +33,7 @@ function resolveSignOutAction(signOutHref: string, override?: string): string {
 }
 
 /**
- * B1/B3 — Passwort ändern in Section-Card;
- * Konto löschen + Abmelden flach darunter, zentriert.
+ * B1/B3 — Passwort, Logout und Konto löschen in einer Section-Card (flach).
  */
 export function PortalKontoSicherheitPanel({
   signOutHref = "/portal/login",
@@ -143,7 +142,7 @@ export function PortalKontoSicherheitPanel({
   const deleteControl = allowDelete ? (
     <button
       type="button"
-      className="btn-pill-outline portal-btn-compact portal-danger"
+      className="portal-konto-action portal-konto-action--danger"
       onClick={() => setDeleteOpen(true)}
     >
       Konto löschen
@@ -151,12 +150,12 @@ export function PortalKontoSicherheitPanel({
   ) : deleteMailto ? (
     <a
       href={`mailto:${deleteMailto}?subject=${encodeURIComponent("Konto löschen")}`}
-      className="btn-pill-outline portal-btn-compact portal-danger"
+      className="portal-konto-action portal-konto-action--danger"
     >
       Konto löschen
     </a>
   ) : deleteBlockedHint ? (
-    <p className="max-w-sm text-center portal-text-meta leading-relaxed text-text-secondary">
+    <p className="portal-text-meta leading-relaxed text-text-secondary">
       {deleteBlockedHint}
     </p>
   ) : null;
@@ -164,27 +163,24 @@ export function PortalKontoSicherheitPanel({
   return (
     <>
       <EinstellungenSectionCard title="Konto & Sicherheit">
-        <button
-          type="button"
-          className="btn-pill-outline portal-btn-compact"
-          onClick={() => setPwOpen(true)}
-        >
-          Passwort ändern
-        </button>
-      </EinstellungenSectionCard>
-
-      {(deleteControl || showSignOut) && (
-        <div className="flex flex-col items-center gap-2.5 px-2 py-1">
-          {deleteControl}
+        <div className="flex flex-col gap-1">
+          <button
+            type="button"
+            className="portal-konto-action"
+            onClick={() => setPwOpen(true)}
+          >
+            Passwort ändern
+          </button>
           {showSignOut ? (
             <form action={logoutAction} method="post">
-              <button type="submit" className="btn-pill-outline portal-btn-compact">
-                Abmelden
+              <button type="submit" className="portal-konto-action">
+                Logout
               </button>
             </form>
           ) : null}
+          {deleteControl}
         </div>
-      )}
+      </EinstellungenSectionCard>
 
       <PortalModalShell
         open={pwOpen}
@@ -199,7 +195,7 @@ export function PortalKontoSicherheitPanel({
         confirmLabel={pwBusy ? "Speichern…" : "Passwort speichern"}
         confirmDisabled={pwBusy || !pwCurrent || pwNew.length < 8}
       >
-        <div className="flex flex-col gap-3">
+        <div className="portal-sheet-form-group">
           <EinstellungenEdField
             label="Aktuelles Passwort"
             value={pwCurrent}

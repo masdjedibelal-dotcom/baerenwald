@@ -46,6 +46,8 @@ export type PortalAnfrageLeadSource = {
   einheiten_hinweis?: string | null;
   anlass?: string | null;
   erfassung_von?: string | null;
+  /** Org/HV als Auftraggeber — Partner: Objekt/Melde vs. Privat-Kundenadresse */
+  auftraggeber_kunde_id?: string | null;
 };
 
 /**

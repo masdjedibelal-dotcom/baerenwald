@@ -52,6 +52,7 @@ import type { PortalDetailSection } from "@/lib/portal/portal-display";
 import type { PortalObjekt } from "@/lib/portal/portal-objekt";
 import { fmtPortalDate, fmtPortalRelativeTime } from "@/lib/shared/portal-detail-format";
 import { buildPartnerLeistungsortSection } from "@/lib/partner/partner-portal-objekt";
+import { isPrivatPortalKontext } from "@/lib/portal/portal-titel";
 
 export type PartnerAnfrageListExtras = {
   gewerk_name?: string;
@@ -260,11 +261,25 @@ export function partnerDetailDateMetaLine(date?: string | null): string | undefi
   return parts.length ? parts.join(" · ") : undefined;
 }
 
-/** Detail-Subline: Anschrift (wie HV/Kunde-Karten). */
+/** Detail-Subline: Anschrift — Privat: Kundenstraße; HV: Objekt/Adresse. */
 export function partnerDetailOrtMetaLine(
   lead?: PortalAnfrageLeadSource | null
 ): string | undefined {
   if (!lead) return undefined;
+  const privat = isPrivatPortalKontext({
+    auftraggeber_kunde_id: lead.auftraggeber_kunde_id,
+    situation: lead.situation,
+  });
+  if (privat) {
+    const line = formatAnfrageListOrtLine(lead);
+    return line !== "—" ? line : undefined;
+  }
+  const objektName = lead.objekt?.name?.trim();
+  if (objektName && objektName !== "Leistungsort" && objektName !== "Objekt") {
+    const addr = formatAnfrageListOrtLine(lead);
+    if (addr !== "—") return `${objektName} · ${addr}`;
+    return objektName;
+  }
   const line = formatAnfrageListOrtLine(lead);
   return line !== "—" ? line : undefined;
 }

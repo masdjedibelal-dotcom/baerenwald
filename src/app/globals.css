@@ -187,13 +187,35 @@
 
   /*
    * Topbar trägt ggf. auch .portal-ui (Legacy) — dann schlägt .portal-ui { background }
-   * die grüne Topbar (gleiche Spezifität / Unlayered vs. @layer components).
-   * Deshalb hier mit höherer Spezifität und außerhalb von @layer.
+   * die Topbar (gleiche Spezifität / Unlayered vs. @layer components).
+   * Mobil: Deep Green; Desktop: weiß wie CRM (nur Main-Spalte).
    */
   &.portal-topbar,
   .portal-topbar {
     background: var(--org-primary-dk, var(--p2-primary-dk, #1a3d2b));
     color: #fff;
+  }
+
+  @media (min-width: 1024px) {
+    &.portal-topbar,
+    .portal-topbar {
+      background: #fff;
+      color: var(--p2-ink, #142019);
+    }
+  }
+
+  @media (max-width: 1023px) {
+    &[data-topbar-transparent="true"] .portal-topbar,
+    &.portal-shell[data-topbar-transparent="true"] .portal-topbar {
+      background: transparent;
+      background-image: linear-gradient(
+        to bottom,
+        rgba(16, 32, 24, 0.55) 0%,
+        rgba(16, 32, 24, 0.22) 55%,
+        transparent 100%
+      );
+      color: #fff;
+    }
   }
 
   /*
@@ -474,6 +496,40 @@ h3 {
     color: var(--p2-danger, #a1242a);
   }
 
+  /* Konto & Sicherheit — flache Text-Aktionen (kein Pill-Rand) */
+  .portal-konto-action {
+    display: block;
+    width: 100%;
+    margin: 0;
+    padding: 10px 0;
+    border: none;
+    background: transparent;
+    box-shadow: none;
+    text-align: left;
+    font-size: calc(14.5px * var(--p2-type-scale, 1.1));
+    font-weight: 600;
+    line-height: 1.4;
+    color: var(--p2-ink, #16201b);
+    cursor: pointer;
+  }
+
+  a.portal-konto-action {
+    text-decoration: none;
+  }
+
+  .portal-konto-action:hover {
+    opacity: 0.75;
+  }
+
+  .portal-konto-action--danger {
+    color: var(--p2-danger, #a1242a);
+  }
+
+  form:has(> .portal-konto-action) {
+    margin: 0;
+    width: 100%;
+  }
+
   /* Mock KPI-Tiles — weiß, Hairline, kein Card-Stack */
   .portal-kpi-card {
     min-width: 0;
@@ -734,7 +790,7 @@ h3 {
 
   .portal-liste-chip {
     display: inline-flex;
-    shrink: 0;
+    flex-shrink: 0;
     align-items: center;
     gap: 6px;
     border-radius: 999px;
@@ -746,6 +802,10 @@ h3 {
     background: #fff;
     box-shadow: 0 2px 8px rgba(16, 32, 24, 0.05);
     cursor: pointer;
+    white-space: nowrap;
+    line-height: 1.2;
+    min-height: 40px;
+    box-sizing: border-box;
   }
 
   .portal-liste-chip--active {
@@ -753,6 +813,25 @@ h3 {
     color: #fff;
     font-weight: 700;
     box-shadow: none;
+  }
+
+  .portal-liste-chip--icon {
+    position: relative;
+    justify-content: center;
+    width: 40px;
+    min-width: 40px;
+    padding: 0;
+    gap: 0;
+  }
+
+  .portal-liste-chip--icon .portal-liste-chip-badge {
+    position: absolute;
+    top: -4px;
+    right: -4px;
+    min-width: 16px;
+    padding: 0 4px;
+    line-height: 16px;
+    text-align: center;
   }
 
   .portal-liste-chip-badge {
@@ -1070,7 +1149,7 @@ h3 {
   }
 
   .portal-objekt-create .mock-icon,
-  .portal-mehr-tile-icon .mock-icon,
+  .portal-ui .portal-mehr-tile-icon .mock-icon,
   .portal-neue-anfrage-icon .mock-icon {
     color: #fff;
   }
@@ -1273,6 +1352,63 @@ h3 {
     height: auto;
   }
 
+  /**
+   * Filter-Zeile: immer nebeneinander, gleiche Spaltenbreite.
+   * Date-Inputs dürfen das Grid nicht mit min-content aufblasen.
+   */
+  .portal-filter-row {
+    display: grid;
+    gap: 8px;
+    align-items: end;
+  }
+
+  .portal-filter-row--3 {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .portal-filter-row--2 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .portal-filter-row > label,
+  .portal-filter-row > .portal-filter-field {
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .portal-filter-row .portal-field,
+  .portal-filter-row .portal-input,
+  .portal-filter-row select.portal-field {
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
+    height: var(--portal-btn-h, 44px);
+    min-height: var(--portal-btn-h, 44px);
+    box-sizing: border-box;
+    font-size: 16px; /* iOS zoom vermeiden */
+    padding-left: 0.5rem;
+    padding-right: 0.5rem;
+  }
+
+  .portal-filter-row input[type="date"].portal-field {
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  @media (min-width: 640px) {
+    .portal-filter-row {
+      gap: 12px;
+    }
+
+    .portal-filter-row .portal-field,
+    .portal-filter-row .portal-input,
+    .portal-filter-row select.portal-field {
+      padding-left: 0.75rem;
+      padding-right: 0.75rem;
+    }
+  }
+
   @media (min-width: 640px) {
     .portal-field,
     .portal-input {
@@ -1455,7 +1591,7 @@ h3 {
     min-width: 44px;
   }
 
-  /* Portal 2.0 Topbar — Deep Green; content-bleed mobil = Overlay über Hero */
+  /* Portal 2.0 Topbar — Desktop CRM-Style (weiß); Mobil Deep Green */
   .portal-topbar {
     --portal-topbar-overlap: 68px;
     position: sticky;
@@ -1471,6 +1607,7 @@ h3 {
     background: var(--org-primary-dk, var(--p2-primary-dk, #1a3d2b));
     color: #fff;
     border-bottom: none;
+    flex-shrink: 0;
   }
 
   .portal-topbar-brand {
@@ -1544,36 +1681,31 @@ h3 {
     flex: 1 1 auto;
   }
 
+  /* Desktop: weiße Topbar nur in der Main-Spalte (Sidebar bis oben mit Logo) */
   @media (min-width: 1024px) {
     .portal-topbar {
-      --portal-topbar-overlap: 72px;
-      --portal-sidebar-w: 250px;
-      display: grid;
-      grid-template-columns: var(--portal-sidebar-w) minmax(0, 1fr);
-      align-items: center;
-      gap: 0;
-      padding: 14px 32px 14px 12px;
-      position: relative;
-    }
-
-    /*
-     * Desktop: Marke nur in der Sidebar.
-     * Topbar-Brand bleibt im Grid (Sidebar-Spalte), aber unsichtbar —
-     * sonst rutscht Suche/Glocke in die Sidebar-Spalte.
-     */
-    .portal-topbar-brand {
+      --portal-topbar-overlap: 56px;
       display: flex;
-      width: 100%;
-      max-width: none;
-      margin-right: 0;
-      padding-left: 6px;
-      padding-right: 8px;
-      box-sizing: border-box;
-      visibility: hidden;
-      pointer-events: none;
+      align-items: center;
+      gap: 12px;
+      padding: 0 24px;
+      min-height: var(--portal-topbar-overlap);
+      height: var(--portal-topbar-overlap);
+      position: sticky;
+      top: 0;
+      background: #fff;
+      color: var(--p2-ink, #142019);
+      border-bottom: 0.5px solid var(--p2-line, #dfe4e0);
     }
 
-    .portal-topbar-divider,
+    .portal-topbar-brand {
+      display: none;
+    }
+
+    .portal-topbar-divider {
+      display: none;
+    }
+
     .portal-topbar-spacer {
       display: none;
     }
@@ -1620,14 +1752,14 @@ h3 {
     overflow: visible;
   }
 
-  /* Glocke — weiße Pill, Icon grün (wie Suchfeld) */
+  /* Glocke — Desktop: eckig + Schatten (CRM); Mobil: rund, Icon schwarz */
   .portal-bell-trigger {
     width: 44px;
     height: 44px;
     border-radius: 999px;
     border: 1px solid rgba(255, 255, 255, 0.95);
     background: #fff;
-    color: var(--org-primary, var(--p2-primary, #2e7d52));
+    color: #142019;
     box-shadow: 0 2px 10px rgba(16, 32, 24, 0.1);
   }
 
@@ -1636,7 +1768,7 @@ h3 {
   .portal-ui .portal-bell-trigger .mock-icon--sidebar,
   .portal-ui .portal-bell-trigger .portal-bell-icon,
   .portal-topbar .portal-bell-trigger .mock-icon {
-    color: var(--org-primary, var(--p2-primary, #2e7d52)) !important;
+    color: #142019 !important;
   }
 
   .portal-bell-trigger:hover,
@@ -1644,18 +1776,38 @@ h3 {
   .portal-bell:has([aria-expanded="true"]) .portal-bell-trigger {
     background: #fff;
     border-color: #fff;
-    color: var(--org-primary-dk, var(--p2-primary-dk, #1a3d2b));
+    color: #142019;
     box-shadow: 0 2px 12px rgba(16, 32, 24, 0.14);
   }
 
   .portal-bell-trigger:hover .mock-icon,
   .portal-bell[data-open="true"] .portal-bell-trigger .mock-icon,
   .portal-bell:has([aria-expanded="true"]) .portal-bell-trigger .mock-icon {
-    color: var(--org-primary-dk, var(--p2-primary-dk, #1a3d2b)) !important;
+    color: #142019 !important;
   }
 
   .portal-bell .portal-count-badge--corner {
     border-color: var(--org-primary-dk, var(--p2-primary-dk, #1a3d2b));
+  }
+
+  @media (min-width: 1024px) {
+    .portal-bell-trigger {
+      width: 36px;
+      height: 36px;
+      border-radius: 8px;
+      border: 0.5px solid var(--p2-line, #dfe4e0);
+      background: #fff;
+      color: #142019;
+      box-shadow: 0 1px 3px rgba(16, 32, 24, 0.08), 0 4px 12px rgba(16, 32, 24, 0.06);
+    }
+
+    .portal-bell-trigger:hover,
+    .portal-bell[data-open="true"] .portal-bell-trigger,
+    .portal-bell:has([aria-expanded="true"]) .portal-bell-trigger {
+      background: var(--p2-bg, #f5f6f4);
+      border-color: var(--p2-line, #dfe4e0);
+      box-shadow: 0 2px 8px rgba(16, 32, 24, 0.1);
+    }
   }
 
   @media (max-width: 1023px) {
@@ -1664,15 +1816,15 @@ h3 {
       height: 42px;
     }
 
-    /* Auch über Hero (content-bleed): weiße Pill, Icon grün */
+    /* Auch über Hero (content-bleed): weiße Pill, Icon schwarz */
     .portal-shell[data-content-bleed="true"] .portal-bell-trigger {
       background: #fff !important;
       border-color: #fff !important;
-      color: var(--org-primary, var(--p2-primary, #2e7d52)) !important;
+      color: #142019 !important;
     }
 
     .portal-shell[data-content-bleed="true"] .portal-bell-trigger .mock-icon {
-      color: var(--org-primary, var(--p2-primary, #2e7d52)) !important;
+      color: #142019 !important;
     }
   }
 
@@ -1682,11 +1834,11 @@ h3 {
     display: none !important;
   }
 
-  /* Topbar-Suche — komplett weiß, Text/Icon grün */
+  /* Topbar-Suche — Mobil: weiß; Desktop CRM: Border + schwarze Schrift */
   .portal-topbar .portal-search-input {
     border: 1px solid rgba(255, 255, 255, 0.95);
     background: #fff;
-    color: var(--org-primary, var(--p2-primary, #2e7d52));
+    color: #142019;
     box-shadow: 0 2px 10px rgba(16, 32, 24, 0.1);
     min-height: 44px;
     padding: 11px 16px 11px 44px;
@@ -1694,11 +1846,7 @@ h3 {
   }
 
   .portal-topbar .portal-search-input::placeholder {
-    color: color-mix(
-      in srgb,
-      var(--org-primary, var(--p2-primary, #2e7d52)) 55%,
-      transparent
-    );
+    color: rgba(20, 32, 25, 0.45);
   }
 
   .portal-topbar .portal-search-input:focus {
@@ -1711,7 +1859,43 @@ h3 {
     left: 15px;
     width: 18px;
     height: 18px;
-    color: var(--org-primary, var(--p2-primary, #2e7d52));
+    color: #142019;
+  }
+
+  @media (min-width: 1024px) {
+    .portal-topbar .portal-search-input {
+      border: 0.5px solid var(--p2-line, #dfe4e0);
+      border-radius: 10px;
+      background: var(--p2-bg, #f5f6f4);
+      color: #142019;
+      box-shadow: none;
+      min-height: 36px;
+      padding: 8px 14px 8px 40px;
+      font-size: calc(14px * var(--p2-type-scale, 1.1));
+    }
+
+    .portal-topbar .portal-search-input::placeholder {
+      color: rgba(20, 32, 25, 0.45);
+    }
+
+    .portal-topbar .portal-search-input:focus {
+      border-color: color-mix(
+        in srgb,
+        var(--org-primary, var(--p2-primary, #2e7d52)) 45%,
+        var(--p2-line, #dfe4e0)
+      );
+      background: #fff;
+      box-shadow: 0 0 0 3px
+        color-mix(
+          in srgb,
+          var(--org-primary, var(--p2-primary, #2e7d52)) 12%,
+          transparent
+        );
+    }
+
+    .portal-topbar .portal-search-icon {
+      color: rgba(20, 32, 25, 0.55);
+    }
   }
 
   @media (max-width: 1023px) {
@@ -1725,15 +1909,46 @@ h3 {
       max-width: none;
     }
 
-    /* Listen ohne Hero: Brand in Topbar behalten */
-    .portal-shell:not([data-content-bleed="true"]) .portal-topbar-brand {
-      display: flex;
-      max-width: 42%;
+    /* Einheitlicher Mobile-Header: nur Firmenlogo · Suche · Glocke (kein Name — steht im Hero) */
+    .portal-topbar-brand {
+      display: flex !important;
+      align-items: center;
+      margin-right: 8px;
+      flex-shrink: 0;
+      max-width: none;
     }
 
-    .portal-shell[data-content-bleed="true"] .portal-topbar-brand,
-    .portal-shell[data-content-bleed="true"] .portal-topbar-spacer {
-      display: none;
+    .portal-ui .portal-topbar-brand-text,
+    .portal-topbar-brand-text,
+    .portal-topbar-title,
+    .portal-topbar-sub,
+    .portal-topbar-spacer {
+      display: none !important;
+    }
+
+    .portal-topbar-mark {
+      width: 36px;
+      height: 36px;
+      border-radius: 10px;
+    }
+
+    .portal-topbar .portal-search-input {
+      min-height: 42px;
+      padding: 10px 14px 10px 40px;
+      font-size: calc(14.5px * var(--p2-type-scale, 1.1));
+      box-shadow: 0 2px 10px rgba(16, 32, 24, 0.1);
+    }
+
+    .portal-topbar .portal-search-icon {
+      left: 13px;
+      width: 17px;
+      height: 17px;
+    }
+
+    .portal-bell-trigger {
+      width: 42px;
+      height: 42px;
+      border-radius: 999px;
     }
   }
 
@@ -2571,13 +2786,19 @@ h3 {
     align-items: center;
     padding: 9px 15px;
     border-radius: 999px;
-    border: none;
-    background: rgba(255, 255, 255, 0.94);
-    color: var(--p2-ink, #142019);
+    border: 1px solid rgba(255, 255, 255, 0.35);
+    background: transparent;
+    color: #fff;
     font-size: calc(13.5px * var(--p2-type-scale, 1.1));
     font-weight: 700;
     cursor: pointer;
-    box-shadow: 0 2px 10px rgba(16, 32, 24, 0.08);
+    box-shadow: none;
+    backdrop-filter: none;
+  }
+
+  .portal-detail-cover-back:hover {
+    background: rgba(255, 255, 255, 0.12);
+    border-color: rgba(255, 255, 255, 0.5);
   }
 
   .portal-detail-cover-edit {
@@ -2614,12 +2835,14 @@ h3 {
     }
   }
 
-  .portal-detail-body-pad {
+  .portal-detail-body-pad,
+  .portal-entity-detail-body {
     padding-inline: var(--portal-pad-x, 18px);
   }
 
   @media (min-width: 1024px) {
-    .portal-detail-body-pad {
+    .portal-detail-body-pad,
+    .portal-entity-detail-body {
       padding-inline: 0;
     }
   }
@@ -2676,16 +2899,6 @@ h3 {
   .portal-detail-kopfkarte .portal-action-btn {
     min-height: 48px;
     border-radius: 15px;
-  }
-
-  .portal-entity-detail-body {
-    padding: 16px var(--portal-pad-x, 18px) 24px;
-  }
-
-  @media (min-width: 1024px) {
-    .portal-entity-detail-body {
-      padding-inline: 0;
-    }
   }
 
   .portal-flow-timeline-bars {
@@ -3420,6 +3633,12 @@ h3 {
     box-shadow: none;
   }
 
+  .portal-modal-shell-body textarea.portal-field,
+  .portal-modal-shell-body textarea.portal-input {
+    height: auto;
+    min-height: 96px;
+  }
+
   .portal-modal-shell-body .portal-field:focus,
   .portal-modal-shell-body .portal-field:focus-visible,
   .portal-modal-shell-body .portal-input:focus,
@@ -3429,15 +3648,16 @@ h3 {
     box-shadow: none;
   }
 
+  /* Sheet-Formulare: flach — keine Card pro Feld */
   .portal-modal-shell-body label:has(> .portal-field),
   .portal-modal-shell-body label:has(> .portal-input) {
     display: flex;
     flex-direction: column;
-    gap: 8px;
-    padding: 16px 18px;
-    border-radius: 20px;
-    background: #fff;
-    box-shadow: var(--p2-shadow, 0 2px 10px rgba(16, 32, 24, 0.05));
+    gap: 6px;
+    padding: 0;
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
   }
 
   .portal-modal-shell-body label:has(> .portal-field) > span:first-child,
@@ -3447,6 +3667,29 @@ h3 {
     letter-spacing: 0.12em;
     text-transform: uppercase;
     color: #7a857f;
+  }
+
+  /* Zusammengehörige Felder als eine Gruppe (kein Card-Stack) */
+  .portal-sheet-form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    padding: 16px 18px;
+    border-radius: 20px;
+    background: #fff;
+    box-shadow: var(--p2-shadow, 0 2px 10px rgba(16, 32, 24, 0.05));
+  }
+
+  .portal-sheet-form-group .portal-field,
+  .portal-sheet-form-group .portal-input {
+    background: #f7f8f7;
+  }
+
+  .portal-sheet-form-group .portal-field:focus,
+  .portal-sheet-form-group .portal-field:focus-visible,
+  .portal-sheet-form-group .portal-input:focus,
+  .portal-sheet-form-group .portal-input:focus-visible {
+    background: #fff;
   }
 
   .portal-modal-betrifft {
@@ -4480,7 +4723,29 @@ h3 {
     width: 100%;
     background: #fff;
     flex: 1 0 auto;
-    min-height: calc(100dvh - 56px);
+    min-height: 100dvh;
+  }
+
+  .portal-shell-chrome {
+    flex: 1 1 auto;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    background: var(--p2-bg, #f5f6f4);
+  }
+
+  @media (min-width: 1024px) {
+    .portal-shell-chrome {
+      overflow: hidden;
+      min-height: 0;
+      height: 100%;
+    }
+
+    .portal-shell-chrome > .portal-shell-main {
+      overflow: auto;
+      -webkit-overflow-scrolling: touch;
+      overscroll-behavior: contain;
+    }
   }
 
   /*
@@ -4509,6 +4774,7 @@ h3 {
 
     .portal-shell-body,
     .portal-shell-frame,
+    .portal-shell-chrome,
     .portal-shell-main {
       overflow: visible;
     }
@@ -4542,7 +4808,7 @@ h3 {
 
     .portal-shell-frame {
       overflow: hidden;
-      min-height: calc(100vh - 64px);
+      min-height: 100vh;
       border-radius: 0;
       border: none;
       box-shadow: none;
@@ -4586,6 +4852,7 @@ h3 {
     display: flex;
     flex-direction: column;
     background: var(--p2-bg, #f5f6f4);
+    min-height: 0;
   }
 
   /* Einheitlicher Abstand Header → erste Card (Listen, Dashboard, Details) */
@@ -4612,9 +4879,9 @@ h3 {
     }
   }
 
-  /* Mobil: Dashboard/Detail — Topbar transparent, Hero läuft darunter */
+  /* Mobil: nur Dashboard — Topbar transparent; sonst solid grün. Hero-Bleed bleibt. */
   @media (max-width: 1023px) {
-    .portal-shell[data-content-bleed="true"] .portal-topbar {
+    .portal-shell[data-topbar-transparent="true"] .portal-topbar {
       background: transparent;
       background-image: linear-gradient(
         to bottom,
@@ -4644,15 +4911,17 @@ h3 {
     }
 
     .portal-shell[data-content-bleed="true"] .portal-detail-hero {
-      padding-top: calc(var(--portal-topbar-overlap, 68px) + 56px);
+      /* Mehr Luft unter der Topbar-Suche bis „← Vorgänge“ */
+      padding-top: calc(var(--portal-topbar-overlap, 68px) + 72px);
     }
 
     .portal-shell[data-content-bleed="true"] .portal-detail-cover-back,
     .portal-shell[data-content-bleed="true"] .portal-detail-cover-edit {
-      top: calc(var(--portal-topbar-overlap, 68px) + 8px);
+      top: calc(var(--portal-topbar-overlap, 68px) + 22px);
     }
 
     .portal-shell[data-content-bleed="true"] .portal-dash-body,
+    .portal-shell[data-content-bleed="true"] .portal-detail-body-pad,
     .portal-shell[data-content-bleed="true"] .portal-entity-detail-body {
       padding-inline: 18px;
     }

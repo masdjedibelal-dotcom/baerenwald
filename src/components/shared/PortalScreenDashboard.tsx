@@ -31,9 +31,9 @@ type Props = {
   /** Anzeigename (ohne „Hallo …“) */
   hello: string;
   heroImageUrl?: string | null;
-  /** Marken-Kürzel mobil im Hero (Default: erster Buchstabe) */
+  /** @deprecated Mobil-Brand-Bar entfernt — Name nur noch unter der Begrüßung. */
   brandKuerzel?: string | null;
-  /** Org-/Verwaltungsname unter dem Kürzel (Mobil-Hero) */
+  /** @deprecated Mobil-Brand-Bar entfernt — Name nur noch unter der Begrüßung. */
   brandSubline?: string | null;
   avatarName?: string | null;
   avatarInitials?: string | null;
@@ -66,8 +66,8 @@ export function PortalScreenDashboard({
   roleLabel,
   hello,
   heroImageUrl,
-  brandKuerzel,
-  brandSubline,
+  brandKuerzel: _brandKuerzel,
+  brandSubline: _brandSubline,
   avatarName,
   tiles,
   actionSlides,
@@ -86,15 +86,7 @@ export function PortalScreenDashboard({
 }: Props) {
   const greet = portalDayGreetingPhrase();
   const displayName = (avatarName?.trim() || hello).trim();
-  const kuerzel = (
-    brandKuerzel?.trim() ||
-    displayName.charAt(0) ||
-    "B"
-  )
-    .slice(0, 2)
-    .toUpperCase();
   const strip = afterFocus ?? afterTiles;
-  const mobileSub = brandSubline?.trim() || roleLabel;
 
   return (
     <div className="portal-dash">
@@ -109,17 +101,6 @@ export function PortalScreenDashboard({
           aria-hidden
         />
         <div className="portal-dash-hero-scrim" aria-hidden />
-
-        <div className="portal-dash-hero-mobile-bar lg:hidden">
-          <div className="portal-dash-hero-brand">
-            <div className="portal-dash-hero-mark" aria-hidden>
-              {kuerzel}
-            </div>
-            <div className="portal-dash-hero-brand-text">
-              <p className="portal-dash-hero-brand-role">{mobileSub}</p>
-            </div>
-          </div>
-        </div>
 
         <div className="portal-dash-hero-inner">
           <div className="portal-dash-hero-copy">

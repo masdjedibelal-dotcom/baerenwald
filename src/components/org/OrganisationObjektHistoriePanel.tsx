@@ -56,35 +56,35 @@ export function OrganisationObjektHistoriePanel({
 
   return (
     <PortalDetailCard title="Historie" chrome="card" bodyClassName="space-y-0">
-      <div className="grid grid-cols-3 gap-2 pb-4 sm:gap-3">
-        <label className="block min-w-0">
+      <div className="portal-filter-row portal-filter-row--3 pb-4">
+        <label>
           <span className="portal-text-label mb-1.5 block text-text-secondary">
             Von
           </span>
           <input
             type="date"
-            className="portal-field w-full min-w-0"
+            className="portal-field"
             value={von}
             onChange={(e) => setVon(e.target.value)}
           />
         </label>
-        <label className="block min-w-0">
+        <label>
           <span className="portal-text-label mb-1.5 block text-text-secondary">
             Bis
           </span>
           <input
             type="date"
-            className="portal-field w-full min-w-0"
+            className="portal-field"
             value={bis}
             onChange={(e) => setBis(e.target.value)}
           />
         </label>
-        <label className="block min-w-0">
+        <label>
           <span className="portal-text-label mb-1.5 block text-text-secondary">
             Anlage
           </span>
           <select
-            className="portal-field w-full min-w-0"
+            className="portal-field"
             value={anlageId}
             onChange={(e) => setAnlageId(e.target.value)}
           >

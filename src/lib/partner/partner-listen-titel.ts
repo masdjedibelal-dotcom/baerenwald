@@ -11,6 +11,7 @@ import {
   buildMeldeVorgangTitel,
   leadIstMeldeTitelQuelle,
 } from "@/lib/org/melde-vorgang-titel";
+import { resolveAkteVorgangTitel } from "@/lib/vorgang/vorgang-anzeige-titel";
 
 /**
  * Generisches „Angebot …“ entfernen — bleibt der eingegebene Rest
@@ -31,7 +32,7 @@ export function stripGenericAngebotTitelPrefix(
 /** CRM-/Gewerk-Slug oder leerer Dokument-Titel — kein sprechender Listen-Titel. */
 function isBareGewerkSlug(t: string | null | undefined): boolean {
   const s = stripGenericAngebotTitelPrefix(t);
-  if (!s || s === "Projekt" || s === "Auftrag") return true;
+  if (!s || s === "Projekt" || s === "Auftrag" || s === "Vorgang") return true;
   // Ein Token, nur a–z/_, typisch CRM-Slug
   if (/^[a-z][a-z0-9_]{1,32}$/.test(s)) return true;
   return false;
@@ -70,7 +71,14 @@ export type PartnerListenTitelInput = {
   ort?: string | null;
   lead?: PortalAnfrageLeadSource | null;
   objekt?: PortalObjekt | null;
-  /** Eingegebener Angebots-/Wizard-Titel oder Leistungsumfang */
+  /** Angebots-Felder wie CRM / Kundenportal (`resolveAkteVorgangTitel`). */
+  angebot?: {
+    leistungsumfang?: string | null;
+    notizen?: string | null;
+  } | null;
+  /** Auftragstitel (nach Angebot in der CRM-Priorität). */
+  auftragTitel?: string | null;
+  /** Eingegebener Angebots-/Wizard-Titel oder Leistungsumfang (Fallback). */
   fallbackTitel?: string | null;
 };
 
@@ -115,28 +123,22 @@ function resolveOrtLabel(opts: PartnerListenTitelInput): string | undefined {
   const { plz, ort } = objektPlzOrt(objekt, lead?.plz ?? opts.plz);
   const plzClean = plz !== "—" ? plz : opts.plz?.trim();
   const ortClean = ort !== "—" ? ort : opts.ort?.trim();
-  const parts = [plzClean, ortClean].filter((p): p is string => Boolean(p && p !== "—"));
+  const parts = [plzClean, ortClean].filter((p): p is string =>
+    Boolean(p && p !== "—")
+  );
   return parts.length ? parts.join(" ") : undefined;
 }
 
-function resolveSituationLabel(lead?: PortalAnfrageLeadSource | null): string | undefined {
+function resolveSituationLabel(
+  lead?: PortalAnfrageLeadSource | null
+): string | undefined {
   const labeled = labelSituation(lead?.situation);
   return labeled !== "—" ? labeled : undefined;
 }
 
-/**
- * Partner-Listen-/Detail-Titel:
- * 1) Melde-Schadenstitel
- * 2) Eingegebener Angebots-Titel (ohne generisches „Angebot“ davor)
- * 3) Situation / Gewerk / Ort
- * 4) „Projekt“
- */
-export function resolvePartnerListenTitel(opts: PartnerListenTitelInput): string {
+function partnerContextFallback(opts: PartnerListenTitelInput): string {
   const melde = meldeTitelFromLead(opts.lead);
   if (melde) return melde;
-
-  const eingegeben = stripGenericAngebotTitelPrefix(opts.fallbackTitel);
-  if (eingegeben && !isBareGewerkSlug(eingegeben)) return eingegeben;
 
   const lead = opts.lead;
   const situation = resolveSituationLabel(lead);
@@ -154,13 +156,52 @@ export function resolvePartnerListenTitel(opts: PartnerListenTitelInput): string
     return ort;
   }
   if (situation) return situation;
-  return "Projekt";
+  return "Vorgang";
+}
+
+/**
+ * Partner-Listen-/Detail-Titel — gleiche Priorität wie CRM / Kundenportal:
+ * Leistungsumfang → Auftragstitel → Situation · Bereich → Melde-/Kontext-Fallback.
+ */
+export function resolvePartnerListenTitel(opts: PartnerListenTitelInput): string {
+  const eingegeben = stripGenericAngebotTitelPrefix(opts.fallbackTitel);
+  const angebotLeistung =
+    opts.angebot?.leistungsumfang?.trim() ||
+    (eingegeben && !opts.auftragTitel && !isBareGewerkSlug(eingegeben)
+      ? eingegeben
+      : "") ||
+    "";
+
+  const crmTitel = resolveAkteVorgangTitel({
+    angebot: {
+      leistungsumfang: angebotLeistung || opts.angebot?.leistungsumfang,
+      notizen: opts.angebot?.notizen,
+    },
+    auftragTitel: opts.auftragTitel?.trim() || null,
+    situation: opts.lead?.situation,
+    bereiche: opts.lead?.bereiche,
+    fallback: partnerContextFallback(opts),
+  });
+
+  const cleaned = stripGenericAngebotTitelPrefix(crmTitel);
+  if (cleaned && !isBareGewerkSlug(cleaned) && !/^angebot\b/i.test(cleaned)) {
+    return cleaned;
+  }
+  if (
+    crmTitel &&
+    !/^angebot\s+[A-Z0-9]/i.test(crmTitel.trim()) &&
+    !isBareGewerkSlug(crmTitel)
+  ) {
+    return crmTitel;
+  }
+
+  return partnerContextFallback(opts);
 }
 
 export function resolvePartnerListenTitelFromAnfrage(
   item: Pick<
     PartnerAnfrageItem,
-    "gewerk_name" | "plz" | "ort" | "lead" | "angebot_titel"
+    "gewerk_name" | "plz" | "ort" | "lead" | "angebot_titel" | "crm_leistungsumfang"
   >
 ): string {
   return resolvePartnerListenTitel({
@@ -168,6 +209,9 @@ export function resolvePartnerListenTitelFromAnfrage(
     plz: item.plz,
     ort: item.ort,
     lead: item.lead,
+    angebot: item.crm_leistungsumfang
+      ? { leistungsumfang: item.crm_leistungsumfang }
+      : null,
     fallbackTitel: item.angebot_titel,
   });
 }
@@ -183,6 +227,7 @@ export function resolvePartnerListenTitelFromAuftrag(
     plz: item.plz,
     ort: item.ort,
     lead: item.lead,
+    auftragTitel: item.titel,
     fallbackTitel: item.titel,
   });
 }
@@ -199,15 +244,12 @@ export function resolvePartnerDetailTitelFromAuftrag(
   const listen = stripGenericAngebotTitelPrefix(item.listen_titel);
   if (listen && !isBareGewerkSlug(listen)) return listen;
 
-  const melde = meldeTitelFromLead(item.lead);
-  if (melde) return melde;
-
   const fromLead = resolvePartnerListenTitelFromAuftrag(item);
   if (fromLead && !isBareGewerkSlug(fromLead)) return fromLead;
 
   const titel = stripGenericAngebotTitelPrefix(item.titel);
   if (titel && !isBareGewerkSlug(titel)) return titel;
-  return fromLead !== "Projekt" ? fromLead : listen || "Auftrag";
+  return fromLead !== "Vorgang" ? fromLead : listen || "Auftrag";
 }
 
 /**
@@ -216,19 +258,22 @@ export function resolvePartnerDetailTitelFromAuftrag(
 export function resolvePartnerDetailTitelFromAnfrage(
   item: Pick<
     PartnerAnfrageItem,
-    "angebot_titel" | "listen_titel" | "gewerk_name" | "plz" | "ort" | "lead"
+    | "angebot_titel"
+    | "listen_titel"
+    | "gewerk_name"
+    | "plz"
+    | "ort"
+    | "lead"
+    | "crm_leistungsumfang"
   >
 ): string {
   const listen = stripGenericAngebotTitelPrefix(item.listen_titel);
   if (listen && !isBareGewerkSlug(listen)) return listen;
-
-  const melde = meldeTitelFromLead(item.lead);
-  if (melde) return melde;
 
   const fromLead = resolvePartnerListenTitelFromAnfrage(item);
   if (fromLead && !isBareGewerkSlug(fromLead)) return fromLead;
 
   const titel = stripGenericAngebotTitelPrefix(item.angebot_titel);
   if (titel && !isBareGewerkSlug(titel)) return titel;
-  return fromLead !== "Projekt" ? fromLead : listen || "Projekt";
+  return fromLead !== "Vorgang" ? fromLead : listen || "Projekt";
 }

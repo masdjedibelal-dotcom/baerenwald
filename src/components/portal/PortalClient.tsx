@@ -1256,8 +1256,9 @@ export function PortalClient({
         contentFullBleed={
           section === "uebersicht" || Boolean(selectedId)
         }
+        topbarTransparent={section === "uebersicht"}
         activeNavId={section === "gpt" ? "uebersicht" : section}
-        contentKey={`${section}:${privatChip ?? ""}:${controlledHvListeFilter ?? controlledVorgangFilter ?? ""}`}
+        contentKey={`${section}:${privatChip ?? ""}:${controlledHvListeFilter ?? controlledVorgangFilter ?? ""}:${selectedId ? "detail" : "list"}`}
         contentBusy={pageBusy || detailLoading || ctxBusy}
         contentBusyTitle={
           detailLoading || pageBusy

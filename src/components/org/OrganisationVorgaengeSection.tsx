@@ -139,14 +139,16 @@ function HvListeChrome({
             </PortalListeFilterChip>
           ))}
         </div>
-        <HvObjektFilterPopover
-          objekte={objekte.map((o) => ({
-            id: o.id,
-            titel: o.titel,
-          }))}
-          selectedIds={selectedObjektIds}
-          onChange={onObjektIdsChange}
-        />
+        <div className="shrink-0">
+          <HvObjektFilterPopover
+            objekte={objekte.map((o) => ({
+              id: o.id,
+              titel: o.titel,
+            }))}
+            selectedIds={selectedObjektIds}
+            onChange={onObjektIdsChange}
+          />
+        </div>
       </div>
     </div>
   );

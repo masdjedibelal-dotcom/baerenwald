@@ -595,8 +595,9 @@ export function OrganisationPortalClient({
           (section === "vorgaenge" && vorgangDetailOpen) ||
           (section === "objekte" && objektDetailOpen)
         }
+        topbarTransparent={section === "uebersicht"}
         activeNavId={section}
-        contentKey={`${section}:${searchParams.get("filter") ?? ""}`}
+        contentKey={`${section}:${searchParams.get("filter") ?? ""}:${vorgangDetailOpen ? "vd" : ""}:${objektDetailOpen ? "od" : ""}`}
         contentBusy={ctxBusy || Boolean(pendingDetailId)}
         contentBusyTitle={
           pendingDetailId ? "Vorgang wird geladen…" : ctxBusy ? "Wird verarbeitet…" : undefined

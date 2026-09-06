@@ -19,6 +19,7 @@ import {
   normalizeFunnelDaten,
 } from "@/lib/lead-funnel-daten";
 import { formatAuftragDatumSpan } from "@/lib/portal/portal-auftrag-display";
+import { isPrivatPortalKontext } from "@/lib/portal/portal-titel";
 import {
   kostentraegerLabel,
   type VorgangDetailAusfuehrung,
@@ -335,6 +336,10 @@ export type BuildPartnerVmInput = {
   variant?: "default" | "einholung";
   /** Überschreibt Melde-Beschreibung (z. B. CRM-Projektbeschreibung). */
   beschreibungPlain?: string | null;
+  /**
+   * Kontakt vor Ort nur ab Auftrag (nicht bei Angebots-/Anfrage-Phase).
+   */
+  includeKontaktVorOrt?: boolean;
 };
 
 export function buildPartnerVorgangDetailVm(
@@ -342,6 +347,10 @@ export function buildPartnerVorgangDetailVm(
 ): VorgangDetailVM {
   const einholung = input.variant === "einholung";
   const lead = input.lead;
+  const privat = isPrivatPortalKontext({
+    auftraggeber_kunde_id: lead?.auftraggeber_kunde_id,
+    situation: lead?.situation,
+  });
   const addr = resolveAnfrageAdresse({
     ...(lead ?? {}),
     plz: lead?.plz ?? input.plz,
@@ -376,10 +385,11 @@ export function buildPartnerVorgangDetailVm(
       ? labelSituation(situationSlug)
       : null;
   const bereichLabel = lead ? formatAnfrageBereiche(lead) ?? null : null;
-  const fachdetailRows =
+  const fachdetailRows = (
     !einholung && lead?.funnel_daten
       ? fachdetailRowsFromFunnelDaten(lead.funnel_daten, lead.bereiche)
-      : [];
+      : []
+  ).filter((row) => row.label.trim().toLowerCase() !== "kundentyp");
   const zeitraumLabel = einholung
     ? null
     : input.zeitraum?.trim() ||
@@ -392,6 +402,13 @@ export function buildPartnerVorgangDetailVm(
       lead?.kontakt_nachricht?.trim() ||
       null;
 
+  const objektName = lead?.objekt?.name?.trim() || null;
+  const showObjekt =
+    !privat &&
+    Boolean(objektName && objektName !== "Leistungsort" && objektName !== "Objekt");
+
+  const showMeldeKontakt = !privat && !einholung && Boolean(input.includeKontaktVorOrt);
+
   return {
     role: "partner",
     kopf: {
@@ -402,17 +419,21 @@ export function buildPartnerVorgangDetailVm(
     },
     auftraggeber: {},
     objektMelder: {
-      objektTitel: lead?.objekt?.name?.trim() || strasse || null,
+      // HV: Objektname; Privat: keine Objekt-/Meldezeile — nur Kundenstraße
+      objektTitel: showObjekt ? objektName : null,
       adresseZeile: adresse,
       adresseStrasse: strasse,
       plzOrt,
-      einheit: melder.einheit ?? lead?.melder_einheit ?? null,
-      zugangshinweis: einholung ? null : (lead?.einheiten_hinweis ?? null),
-      melderName: einholung ? null : (melder.name ?? lead?.kontakt_name ?? null),
-      melderTelefon: einholung
-        ? null
-        : (melder.telefon ?? lead?.melder_telefon ?? null),
-      melderEmail: einholung ? null : (melder.email ?? null),
+      einheit: privat || einholung ? null : (melder.einheit ?? lead?.melder_einheit ?? null),
+      zugangshinweis:
+        privat || einholung ? null : (lead?.einheiten_hinweis ?? null),
+      melderName: showMeldeKontakt
+        ? melder.name ?? lead?.kontakt_name ?? null
+        : null,
+      melderTelefon: showMeldeKontakt
+        ? melder.telefon ?? lead?.melder_telefon ?? null
+        : null,
+      melderEmail: showMeldeKontakt ? melder.email ?? null : null,
       beschreibung,
       fotos: input.fotos ?? [],
       situationLabel,
@@ -430,12 +451,12 @@ export function buildPartnerVorgangDetailVm(
         : zeitraumLabel ||
           formatAuftragDatumSpan(input.startDatum, input.endDatum) ||
           null,
-      kontaktVorOrtName: einholung
-        ? null
-        : (melder.name ?? lead?.kontakt_name ?? null),
-      kontaktVorOrtTel: einholung
-        ? null
-        : (melder.telefon ?? lead?.melder_telefon ?? null),
+      kontaktVorOrtName: showMeldeKontakt
+        ? melder.name ?? lead?.kontakt_name ?? null
+        : null,
+      kontaktVorOrtTel: showMeldeKontakt
+        ? melder.telefon ?? lead?.melder_telefon ?? null
+        : null,
       summeEkNetto: summeEk > 0 ? summeEk : null,
     },
     leistungen,

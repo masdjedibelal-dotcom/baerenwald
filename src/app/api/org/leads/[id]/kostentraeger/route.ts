@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 
 import { writeAuditEvent } from "@/lib/audit/write-audit-event";
 import { ensureVersicherungsakteForLead } from "@/lib/org/ensure-versicherungsakte";
+import { isVersicherungsakteEligibleLead } from "@/lib/portal/portal-lead-sichtbarkeit";
 import {
   isKostentraeger,
   KOSTENTRAEGER,
@@ -45,12 +46,22 @@ export async function PATCH(
 
   const { data: lead } = await supabaseAdmin
     .from("leads")
-    .select("id, auftraggeber_kunde_id, kostentraeger, kunde_objekt_id")
+    .select("id, auftraggeber_kunde_id, kostentraeger, kunde_objekt_id, funnel_daten")
     .eq("id", id)
     .maybeSingle();
 
   if (!lead || lead.auftraggeber_kunde_id !== session.kunde.id) {
     return NextResponse.json({ error: "Vorgang nicht gefunden." }, { status: 404 });
+  }
+
+  if (kt === "versicherung" && !isVersicherungsakteEligibleLead(lead)) {
+    return NextResponse.json(
+      {
+        error:
+          "Bei Direkt-Angebot gibt es keine Schadenakte — bitte über eine Meldung erfassen.",
+      },
+      { status: 400 }
+    );
   }
 
   const now = new Date().toISOString();

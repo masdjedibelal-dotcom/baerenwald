@@ -167,16 +167,18 @@ export function OrganisationObjektFinanzPanel({ objektId }: Props) {
       </div>
 
       {preset === "custom" ? (
-        <div className="flex flex-wrap gap-2">
+        <div className="portal-filter-row portal-filter-row--2">
           <input
             type="date"
-            className="portal-field text-[13px]"
+            className="portal-field"
+            aria-label="Von"
             value={von}
             onChange={(e) => setVon(e.target.value)}
           />
           <input
             type="date"
-            className="portal-field text-[13px]"
+            className="portal-field"
+            aria-label="Bis"
             value={bis}
             onChange={(e) => setBis(e.target.value)}
           />

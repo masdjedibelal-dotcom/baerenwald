@@ -38,6 +38,7 @@ import {
   isAngebotPortalAnnehmbar,
   isAngebotPortalSichtbar,
 } from "@/lib/portal/portal-angebot-sichtbarkeit";
+import { isVersicherungsakteEligibleLead } from "@/lib/portal/portal-lead-sichtbarkeit";
 import { isLeadPortalListbar } from "@/lib/portal/portal-lead-sichtbarkeit";
 import {
   collectVorgangDokumente,
@@ -50,7 +51,6 @@ import {
   type KundePortalDetailItem,
   type PortalBautagebuchEntry,
 } from "@/lib/portal/portal-detail-item";
-import { sanitizeCustomerText } from "@/lib/portal/portal-display";
 import { vorgangFeedbackBereit } from "@/lib/portal/vorgang-feedback-eligibility";
 import { resolveKundeVorgangStatus } from "@/lib/portal/kunde-vorgang-status";
 import { isHvPortalLead } from "@/lib/portal/hv-portal-lead";
@@ -72,6 +72,7 @@ import {
   leadIstMeldeTitelQuelle,
   titelFromFunnelLeistungen,
 } from "@/lib/org/melde-vorgang-titel";
+import { resolveAkteVorgangTitel } from "@/lib/vorgang/vorgang-anzeige-titel";
 
 function meldeFotosFromFunnel(funnelDaten: unknown): string[] {
   const fd = funnelDaten as { fotos?: unknown } | null | undefined;
@@ -148,6 +149,8 @@ function normPortalId(id: string | null | undefined): string | null {
 type PortalAngebot = {
   id: string;
   titel?: string | null;
+  leistungsumfang?: string | null;
+  notizen?: string | null;
   objekt?: PortalObjekt | null;
   linkedLead?: PortalAnfrageLeadSource | null;
   status_einfach?: string | null;
@@ -376,49 +379,36 @@ function normalizeAngebotListenTitel(angebotTitel: string): string | null {
   return withoutPrefix || null;
 }
 
-function isUsableAngebotTitel(
-  angebotTitel: string,
-  lead: PortalLead
-): boolean {
-  const usable = normalizeAngebotListenTitel(angebotTitel);
-  if (!usable) return false;
-  if (/^(notfall|reparatur|schaden|sonstiges|meldung|vorgang)\b/i.test(usable)) {
-    return false;
-  }
-  if (/^(notfall|reparatur|schaden|sonstiges)\s*[·|—-]/i.test(usable)) {
-    return false;
-  }
-  const melder = (lead.melder_name ?? lead.kontakt_name ?? "").trim();
-  if (melder && usable.toLowerCase() === melder.toLowerCase()) return false;
-  // Kurzer Buchstabensalat ohne Leerzeichen (Tippfehler-Namen als Titel)
-  if (usable.length <= 24 && !/\s/.test(usable) && !/[.,;:!?/]/.test(usable)) {
-    return false;
-  }
-  return true;
-}
-
 /**
- * Einheitlicher Vorgangs-Titel für Startseite · Liste · Detail.
- * Melde-Vorgänge: immer sprechender Melde-Titel (z. B. „Wasser am Heizkörper“).
+ * Einheitlicher Vorgangs-Titel wie CRM (`resolveAkteVorgangTitel`):
+ * Leistungsumfang → Auftragstitel → Situation · Bereich → Melde-/Funnel-Fallback.
  */
 function resolveListCardTitle(
   lead: PortalLead,
-  angebot: PortalAngebot | null
+  angebot: PortalAngebot | null,
+  auftrag: PortalAuftrag | null
 ): string {
-  const meldeQuelle = leadIstMeldeTitelQuelle({
-    anlass: lead.anlass,
-    kanal: lead.kanal,
-    funnelDaten: lead.funnel_daten,
-    erfassung_von: lead.erfassung_von,
+  const meldeFallback = anfrageTitleFromLead(lead).title;
+  const crmTitel = resolveAkteVorgangTitel({
+    angebot: angebot
+      ? {
+          leistungsumfang: angebot.leistungsumfang,
+          notizen: angebot.notizen,
+        }
+      : null,
+    auftragTitel: auftrag?.titel,
+    situation: lead.situation,
+    bereiche: lead.bereiche,
+    fallback: meldeFallback,
   });
-  if (meldeQuelle) {
-    return anfrageTitleFromLead(lead).title;
+
+  // Generische „Angebot ANG-…“-Titel verwerfen → Fallback
+  const cleaned = normalizeAngebotListenTitel(crmTitel);
+  if (cleaned && !/^angebot\b/i.test(cleaned)) return cleaned;
+  if (crmTitel && !/^angebot\s+[A-Z0-9]/i.test(crmTitel.trim())) {
+    return crmTitel;
   }
-  const angebotTitel = sanitizeCustomerText(angebot?.titel, 200)?.trim();
-  if (angebotTitel && isUsableAngebotTitel(angebotTitel, lead)) {
-    return normalizeAngebotListenTitel(angebotTitel) ?? angebotTitel;
-  }
-  return anfrageTitleFromLead(lead).title;
+  return meldeFallback;
 }
 
 function buildItemFromLead(
@@ -434,7 +424,7 @@ function buildItemFromLead(
   eigentuemerView?: boolean
 ): KundePortalDetailItem {
   const { anfrageVorhaben, anfrageGewerk } = anfrageTitleFromLead(lead);
-  const title = resolveListCardTitle(lead, angebot);
+  const title = resolveListCardTitle(lead, angebot, auftrag);
   const addr = resolveAnfrageAdresse(lead);
   const melder = resolveAnfrageMelder(lead);
   const hidePreise = Boolean(mieterStatusMode && isHvPortalLead(lead));
@@ -486,6 +476,7 @@ function buildItemFromLead(
       (lead.funnel_daten as { direktauftrag?: unknown }).direktauftrag === true
         ? true
         : false,
+    versicherungsakteEligible: isVersicherungsakteEligibleLead(lead),
     hvMeldungStatus: lead.hv_meldung_status ?? null,
     kundeObjektId:
       (lead.kunde_objekt_id != null

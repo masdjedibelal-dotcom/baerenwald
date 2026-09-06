@@ -429,6 +429,7 @@ export function HausmeisterPortalClient({
           Boolean(selectedId) ||
           Boolean(objektDetailId)
         }
+        topbarTransparent={section === "uebersicht"}
         activeNavId={section}
         contentKey={`${section}:${objektDetailId ?? ""}:${selectedId ?? ""}`}
         contentBusy={pageBusy || detailOpening || ctxBusy}
@@ -604,8 +605,7 @@ export function HausmeisterPortalClient({
         {section === "objekte" ? (
           <div className="space-y-4">
             {activeObjekt ? (
-              <div className="-mx-4 -mt-4 min-w-0 pb-4 lg:-mx-6 lg:-mt-5">
-                <PortalEntityDetailLayout
+              <PortalEntityDetailLayout
                   coverUrl={activeObjekt.cover_url}
                   onBack={() => {
                     setObjektDetailId(null);
@@ -645,7 +645,6 @@ export function HausmeisterPortalClient({
                     </div>
                   </dl>
                 </PortalEntityDetailLayout>
-              </div>
             ) : (
               <>
                 <div className="px-0.5 pb-1">

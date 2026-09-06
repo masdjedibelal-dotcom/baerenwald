@@ -64,6 +64,41 @@ assert.equal(
   "echte Meldung ohne Angebot bleibt sichtbar"
 );
 
+assert.equal(
+  isLeadPortalListbar(
+    {
+      id: "orphan-angebot-status",
+      status: "angebot",
+      funnel_daten: { was_zeilen: [{ titel: "Stub" }] },
+    },
+    { angebote: [], auftraege: [] }
+  ),
+  false,
+  "Lead-Status angebot ohne sichtbares Angebot = Waise"
+);
+
+assert.equal(
+  isLeadPortalListbar(
+    {
+      id: "orphan-angebot-status",
+      status: "angebot",
+      funnel_daten: {},
+    },
+    {
+      angebote: [
+        {
+          lead_id: "orphan-angebot-status",
+          status_einfach: "gesendet",
+          gesendet_am: "2026-08-27T10:00:00Z",
+        },
+      ],
+      auftraege: [],
+    }
+  ),
+  true,
+  "Lead-Status angebot mit gesendetem Angebot bleibt sichtbar"
+);
+
 const filtered = filterPortalListableLeads(
   [STUB_LEAD, MELDUNG_LEAD],
   { angebote: [], auftraege: [] }

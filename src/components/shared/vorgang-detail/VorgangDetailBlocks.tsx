@@ -53,7 +53,8 @@ function formatPartnerEuro(n: number): string {
 
 /**
  * Partner: eine Details-Card analog HV-Meldung / anderen Vorgangsphasen.
- * Objekt → PLZ/Ort → Funnel → Zeitraum → Beschreibung → Kontakt — stabil über Phasen.
+ * HV: Objekt + Adresse (+ Melde-Einheit/Zugang). Privat: nur Kundenstraße + PLZ/Ort.
+ * Kontakt vor Ort nur, wenn VM ihn setzt (ab Auftrag).
  */
 function PartnerUnifiedDetails({
   vm,

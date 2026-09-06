@@ -501,6 +501,7 @@ export function EigentuemerPortalClient({
           Boolean(selectedId) ||
           Boolean(einheitDetailId)
         }
+        topbarTransparent={section === "uebersicht"}
         activeNavId={section}
         contentKey={`${section}:${einheitDetailId ?? ""}`}
       contentBusy={pageBusy || detailOpening}

@@ -52,7 +52,7 @@ export const PARTNER_ANGEBOT_EMBED = `
   projektbeschreibung,
   kunde_objekt_id,
   ist_partner_einholung,
-  kunden(plz, ort, name),
+  kunden(plz, ort, name, strasse, hausnummer),
   leads(${PARTNER_LEAD_EMBED})
 `;
 
@@ -94,7 +94,13 @@ export async function mapAngebotHandwerkerRow(
   const handwerkerId = String(row.handwerker_id ?? "");
   const gw = one(row.gewerke) as { name: string } | null;
   const kunde = angebote
-    ? (one(angebote.kunden) as { plz: string | null; ort: string | null; name?: string | null } | null)
+    ? (one(angebote.kunden) as {
+        plz: string | null;
+        ort: string | null;
+        name?: string | null;
+        strasse?: string | null;
+        hausnummer?: string | null;
+      } | null)
     : null;
   const leadRow = angebote
     ? (one(angebote.leads) as PartnerLeadDbRow | null)
@@ -104,6 +110,8 @@ export async function mapAngebotHandwerkerRow(
     angebotObjektId: angebote?.kunde_objekt_id,
     kundePlz: kunde?.plz,
     kundeOrt: kunde?.ort,
+    kundeStrasse: kunde?.strasse,
+    kundeHausnummer: kunde?.hausnummer,
     objektById,
   });
   const ohneLv = Boolean(row.ohne_lv);
@@ -139,22 +147,26 @@ export async function mapAngebotHandwerkerRow(
   const gewerk_name = gw?.name?.trim() || "Gewerk";
   const plz = lead?.objekt?.plz?.trim() || kunde?.plz?.trim() || lead?.plz?.trim() || "—";
   const ort = lead?.objekt?.ort?.trim() || kunde?.ort?.trim() || "—";
+  const wizardMeta = parseWizardMetaFromNotizen(angebote?.notizen);
+  const crm_leistungsumfang =
+    (ohneLv ? opts?.lvLeistungsumfang?.trim() : null) ||
+    angebote?.leistungsumfang?.trim() ||
+    wizardMeta?.leistungsumfang ||
+    null;
   const listen_titel = resolvePartnerListenTitel({
     gewerk_name,
     plz,
     ort,
     lead,
-    fallbackTitel:
-      parseWizardMetaFromNotizen(angebote?.notizen)?.titel?.trim() ||
-      opts?.lvLeistungsumfang?.trim() ||
-      angebote?.leistungsumfang?.trim() ||
-      angebot_titel,
+    angebot: {
+      leistungsumfang:
+        crm_leistungsumfang ||
+        wizardMeta?.titel?.trim() ||
+        null,
+      notizen: angebote?.notizen,
+    },
+    fallbackTitel: angebot_titel,
   });
-  const crm_leistungsumfang =
-    (ohneLv ? opts?.lvLeistungsumfang?.trim() : null) ||
-    angebote?.leistungsumfang?.trim() ||
-    parseWizardMetaFromNotizen(angebote?.notizen)?.leistungsumfang ||
-    null;
 
   return {
     id: String(row.id),
