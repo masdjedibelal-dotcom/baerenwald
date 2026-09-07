@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
+import { useCallback, useId, useMemo, useRef, useState } from "react";
 import { MockIcon } from "@/components/shared/MockIcon";
 import { PortalCountBadge } from "@/components/shared/PortalNavCountBadge";
 import { PortalModalShell } from "@/components/shared/PortalModalShell";
@@ -28,18 +28,6 @@ export type PortalNotificationBellProps = {
 };
 
 type FilterId = "offen" | "erledigt";
-
-function useIsMobile(breakpoint = 768) {
-  const [mobile, setMobile] = useState(false);
-  useEffect(() => {
-    const mq = window.matchMedia(`(max-width: ${breakpoint - 1}px)`);
-    const apply = () => setMobile(mq.matches);
-    apply();
-    mq.addEventListener("change", apply);
-    return () => mq.removeEventListener("change", apply);
-  }, [breakpoint]);
-  return mobile;
-}
 
 function NotifList({
   items,
@@ -169,7 +157,6 @@ export function PortalNotificationBell({
   const [filter, setFilter] = useState<FilterId>("offen");
   const rootRef = useRef<HTMLDivElement>(null);
   const panelId = useId();
-  const isMobile = useIsMobile();
 
   const setOpenSafe = useCallback(
     (next: boolean) => {
@@ -183,21 +170,9 @@ export function PortalNotificationBell({
     [onOpenChange, onRefresh]
   );
 
-  useEffect(() => {
-    if (!open || isMobile) return;
-    function onDoc(e: MouseEvent) {
-      if (!rootRef.current?.contains(e.target as Node)) setOpenSafe(false);
-    }
-    function onKey(e: KeyboardEvent) {
-      if (e.key === "Escape") setOpenSafe(false);
-    }
-    document.addEventListener("mousedown", onDoc);
-    document.addEventListener("keydown", onKey);
-    return () => {
-      document.removeEventListener("mousedown", onDoc);
-      document.removeEventListener("keydown", onKey);
-    };
-  }, [open, setOpenSafe, isMobile]);
+  /* Modal via createPortal → Body: kein Outside-Click auf rootRef (würde jeden
+   * Klick im Sheet inkl. „Alle gelesen“ als außen werten und schließen).
+   * Schließen über PortalModalShell (Backdrop / Escape / X). */
 
   const filtered = useMemo(() => {
     if (!showReadFilter) return items;
@@ -211,6 +186,8 @@ export function PortalNotificationBell({
     setMarking(true);
     try {
       await onMarkAllRead();
+      /* Umschalten auf Erledigt — Panel offen lassen, Liste zeigt gelesene. */
+      if (showReadFilter) setFilter("erledigt");
     } finally {
       setMarking(false);
     }
@@ -322,7 +299,10 @@ export function PortalNotificationBell({
                 <button
                   type="button"
                   disabled={marking}
-                  onClick={() => void handleMarkAll()}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    void handleMarkAll();
+                  }}
                   className="portal-text-meta font-semibold disabled:opacity-50"
                   style={{ color: "var(--org-primary, var(--p2-primary))" }}
                 >
