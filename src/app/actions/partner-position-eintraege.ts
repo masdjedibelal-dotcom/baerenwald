@@ -9,6 +9,7 @@ import {
   type EintragTyp,
 } from "@/lib/partner/position-lebenszyklus";
 import { uploadPartnerEintragFoto, resolvePartnerFileUrl } from "@/lib/partner/partner-storage";
+import { notifyCrmLeistungUpdate } from "@/lib/partner/notify-crm-leistung-update";
 import {
   markPartnerBautagebuchAnfrageErledigt,
   syncPartnerPositionEintragToKundeTimeline,
@@ -398,6 +399,14 @@ export async function startPartnerPosition(
     })
   );
 
+  void notifyCrmLeistungUpdate({
+    auftragId: String(pos.auftrag_id),
+    positionId,
+    handwerkerId: auth.handwerkerId,
+    leistungName: pos.leistung_name as string | null,
+    beschreibung,
+  });
+
   revalidatePath("/partner");
   return { ok: true, eintragId: eintrag.id, positionId };
 }
@@ -496,6 +505,14 @@ export async function addPartnerPositionFortschritt(
     aktion: "position_fortschritt",
     actorRolle: "partner",
     payload: { position_id: positionId, eintrag_id: eintrag.id, zeit_minuten: zeitMinuten },
+  });
+
+  void notifyCrmLeistungUpdate({
+    auftragId: String(pos.auftrag_id),
+    positionId,
+    handwerkerId: auth.handwerkerId,
+    leistungName: pos.leistung_name as string | null,
+    beschreibung,
   });
 
   revalidatePath("/partner");
@@ -662,6 +679,14 @@ export async function completePartnerPosition(
     aktion: "position_erledigt",
     actorRolle: "partner",
     payload: { position_id: positionId, eintrag_id: eintrag.id, zeit_minuten: zeitMinuten },
+  });
+
+  void notifyCrmLeistungUpdate({
+    auftragId: String(pos.auftrag_id),
+    positionId,
+    handwerkerId: auth.handwerkerId,
+    leistungName: pos.leistung_name as string | null,
+    beschreibung,
   });
 
   revalidatePath("/partner");
@@ -998,6 +1023,14 @@ export async function createPartnerTagebuchEintrag(
     },
   });
 
+  void notifyCrmLeistungUpdate({
+    auftragId,
+    positionId: primaryPos,
+    handwerkerId: auth.handwerkerId,
+    leistungName: leistungNames[0] ?? null,
+    beschreibung: beschreibung || combined,
+  });
+
   revalidatePath("/partner");
   return { ok: true, eintragId: eintrag.id, positionId: primaryPos ?? "" };
 }
@@ -1070,6 +1103,7 @@ export async function markPartnerPositionenErledigt(
 
 export type PartnerTagebuchListenEintrag = {
   id: string;
+  typ: string;
   titel: string;
   beschreibung: string | null;
   datum: string;
@@ -1077,6 +1111,8 @@ export type PartnerTagebuchListenEintrag = {
   /** crm_intern | partner_app | … */
   quelleLabel: string;
   leistungNames: string[];
+  /** Positionen, an die der Eintrag hängt (primary + Junction). */
+  leistungIds: string[];
 };
 
 /**
@@ -1182,16 +1218,19 @@ export async function listPartnerAuftragTagebuchEintraege(
       .filter((n): n is string => Boolean(n));
 
     const body = String(row.beschreibung ?? "").trim();
-    const lines = body.split(/\n+/).map((l) => l.trim()).filter(Boolean);
-    const titel =
-      lines[0]?.slice(0, 72) ||
-      (String(row.typ) === "notiz" ? "Notiz" : "Update");
-    const beschreibungText =
-      lines.length > 1
-        ? lines.slice(1).join("\n")
-        : lines[0] && lines[0].length > 72
-          ? body
-          : null;
+    const typ = String(row.typ ?? "fortschritt");
+    const typLabel =
+      typ === "start"
+        ? "Start"
+        : typ === "ergebnis"
+          ? "Erledigt"
+          : typ === "weitere_arbeit"
+            ? "Weitere Arbeit"
+            : typ === "notiz"
+              ? "Notiz"
+              : "Update";
+    const titel = typLabel;
+    const beschreibungText = body || null;
 
     const when =
       (row.ereignis_zeit as string | null) ||
@@ -1206,6 +1245,7 @@ export async function listPartnerAuftragTagebuchEintraege(
 
     out.push({
       id: eid,
+      typ,
       titel,
       beschreibung: beschreibungText,
       datum: when,
@@ -1214,6 +1254,7 @@ export async function listPartnerAuftragTagebuchEintraege(
         .filter((u): u is string => Boolean(u)),
       quelleLabel,
       leistungNames,
+      leistungIds,
     });
   }
 
@@ -1242,6 +1283,7 @@ export async function listPartnerAuftragTagebuchEintraege(
     }
     out.push({
       id,
+      typ: String(r.eintrag_typ ?? "fortschritt") || "fortschritt",
       titel: String(r.titel ?? "Update").trim() || "Update",
       beschreibung: (r.beschreibung as string | null) ?? null,
       datum: String(r.datum ?? ""),
@@ -1253,6 +1295,7 @@ export async function listPartnerAuftragTagebuchEintraege(
             ? "Handwerker"
             : "CRM",
       leistungNames: [],
+      leistungIds: [],
     });
   }
 

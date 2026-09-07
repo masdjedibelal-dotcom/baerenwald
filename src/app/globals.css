@@ -2734,15 +2734,18 @@ h3 {
   }
 
   .portal-detail-hero {
-    /* Kompakt: Back + Titel, wenig Leerraum — Inhalte schneller sichtbar */
-    padding: 40px 18px 28px;
+    /*
+     * Zurück absolut oben; Titel darunter mit klarer Luft
+     * (wie Card-Innenabstand — nicht aufeinander).
+     */
+    padding: 16px 20px 28px;
     min-height: 0;
-    border-radius: 0 0 24px 24px;
+    border-radius: 0 0 30px 30px;
   }
 
   @media (min-width: 1024px) {
     .portal-detail-hero {
-      padding: 36px 28px 28px;
+      padding: 24px 28px 32px;
       border-radius: 22px;
     }
   }
@@ -2751,12 +2754,20 @@ h3 {
     position: relative;
     z-index: 1;
     min-width: 0;
+    /* Freiraum unter der Zurück-Pille bis zum Titel */
+    padding-top: 52px;
+  }
+
+  @media (min-width: 1024px) {
+    .portal-detail-hero-inner {
+      padding-top: 56px;
+    }
   }
 
   .portal-detail-hero .portal-dash-hero-name {
     margin: 0;
     font-size: calc(22px * var(--p2-type-scale, 1.1));
-    line-height: 1.2;
+    line-height: 1.25;
   }
 
   @media (min-width: 1024px) {
@@ -2766,7 +2777,11 @@ h3 {
   }
 
   .portal-detail-hero--compact {
-    padding-bottom: 20px;
+    padding-bottom: 24px;
+  }
+
+  .portal-detail-hero--compact .portal-detail-hero-inner {
+    padding-top: 0;
   }
 
   .portal-detail-layout.portal-entity-detail {
@@ -2775,17 +2790,17 @@ h3 {
   }
 
   /*
-   * Detail-Hero mobil seitlich eingerückt (wie Kopfkarte) — nicht vollflächig
-   * übereinander geklebt. Desktop bleibt content-breit.
+   * Detail-Hero: Parent bereits full-bleed — vollflächig Rand zu Rand.
+   * Kopfkarte darunter mit Pad-X, nicht der Hero.
    */
   .portal-detail-cover--bleed {
-    margin-inline: var(--portal-pad-x, 18px);
-    border-radius: 0 0 24px 24px;
+    margin-inline: 0;
+    width: 100%;
+    border-radius: 0 0 30px 30px;
   }
 
   @media (min-width: 1024px) {
     .portal-detail-cover--bleed {
-      margin-inline: 0;
       border-radius: 22px;
     }
   }
@@ -2835,7 +2850,7 @@ h3 {
   .portal-detail-kopfkarte {
     position: relative;
     z-index: 1;
-    margin: 12px var(--portal-pad-x, 18px) 0;
+    margin: 14px var(--portal-pad-x, 18px) 0;
     padding: 20px;
     border-radius: 22px;
     background: #fff;
@@ -2844,8 +2859,12 @@ h3 {
 
   @media (min-width: 1024px) {
     .portal-detail-kopfkarte {
-      margin: 16px 0 0;
+      margin: 18px 0 0;
     }
+  }
+
+  .portal-detail-kopfkarte-banner {
+    margin-top: 14px;
   }
 
   .portal-detail-body-pad,
@@ -4967,22 +4986,17 @@ h3 {
     .portal-shell[data-content-bleed="true"] .portal-dash-hero,
     .portal-shell[data-content-bleed="true"] .portal-detail-hero {
       margin-top: calc(-1 * var(--portal-topbar-overlap, 68px));
-      padding-top: calc(var(--portal-topbar-overlap, 68px) + 16px);
+      margin-left: 0;
+      margin-right: 0;
+      padding-top: calc(var(--portal-topbar-overlap, 68px) + 12px);
+      padding-bottom: 32px;
+      padding-inline: 20px;
       border-radius: 0 0 30px 30px;
-    }
-
-    .portal-shell[data-content-bleed="true"] .portal-detail-hero {
-      /* Topbar-Bleed, aber seitlich wie Kopfkarte eingerückt */
-      margin-left: 18px;
-      margin-right: 18px;
-      padding-top: calc(var(--portal-topbar-overlap, 68px) + 32px);
-      padding-bottom: 28px;
-      border-radius: 0 0 24px 24px;
     }
 
     .portal-shell[data-content-bleed="true"] .portal-detail-cover-back,
     .portal-shell[data-content-bleed="true"] .portal-detail-cover-edit {
-      top: calc(var(--portal-topbar-overlap, 68px) + 10px);
+      top: calc(var(--portal-topbar-overlap, 68px) + 12px);
     }
 
     .portal-shell[data-content-bleed="true"] .portal-dash-body,
@@ -4992,7 +5006,7 @@ h3 {
     }
 
     .portal-shell[data-content-bleed="true"] .portal-detail-kopfkarte {
-      margin: 12px 18px 0;
+      margin: 14px 18px 0;
     }
   }
 

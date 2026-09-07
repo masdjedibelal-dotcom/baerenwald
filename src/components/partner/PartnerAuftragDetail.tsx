@@ -20,6 +20,7 @@ import { PortalEntityDetailLayout } from "@/components/shared/PortalEntityDetail
 import type { PortalDetailTab } from "@/components/shared/PortalDetailTabs";
 import {
   PortalDetailError,
+  PortalDetailInfoBox,
   PortalDetailLayout,
   PortalDetailSection,
   PortalDetailSuccessBox,
@@ -493,6 +494,14 @@ export function PartnerAuftragDetail({
         metaLine={partnerDetailOrtMetaLine(item.lead)}
         statusLabel={statusLabel}
         statusPillStyle={statusStyle}
+        kopfBanner={
+          crmNotiz ? (
+            <PortalDetailInfoBox variant="warning">
+              <p className="font-semibold">Hinweis vom Auftraggeber</p>
+              <p className="mt-1 whitespace-pre-wrap">{crmNotiz}</p>
+            </PortalDetailInfoBox>
+          ) : null
+        }
         tabs={DETAIL_TABS}
         activeTab={activeTab}
         onTabChange={setActiveTab}
@@ -500,13 +509,6 @@ export function PartnerAuftragDetail({
       >
         {activeTab === "uebersicht" ? (
           <div className="space-y-3.5">
-            {crmNotiz ? (
-              <PortalDetailCard title="Hinweis vom Auftraggeber">
-                                <p className="whitespace-pre-wrap portal-text-body font-semibold leading-relaxed text-text-primary">
-                  {crmNotiz}
-                </p>
-              </PortalDetailCard>
-            ) : null}
             <VorgangDetailBlocks vm={detailVm} />
             <PartnerHausmeisterVorbefundCard
               eintraege={item.bautagebuch ?? []}

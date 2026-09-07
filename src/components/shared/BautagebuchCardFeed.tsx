@@ -17,19 +17,27 @@ export type BautagebuchCardEintrag = {
   fotos?: string[];
 };
 
+/** Datum als tt.mm.yyyy (ohne Monatsnamen). */
 function fmtDatum(v?: string | null): string {
   if (!v) return "—";
   const d = new Date(v);
-  if (Number.isNaN(d.getTime())) return "—";
-  return d.toLocaleDateString("de-DE", {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-  });
+  if (!Number.isNaN(d.getTime())) {
+    const dd = String(d.getDate()).padStart(2, "0");
+    const mm = String(d.getMonth() + 1).padStart(2, "0");
+    const yyyy = d.getFullYear();
+    return `${dd}.${mm}.${yyyy}`;
+  }
+  const day = String(v).slice(0, 10);
+  if (/^\d{4}-\d{2}-\d{2}$/.test(day)) {
+    const [y, m, dd] = day.split("-");
+    return `${dd}.${m}.${y}`;
+  }
+  return "—";
 }
 
 /**
- * Kunden-Feed: Karten wie CRM `.bt-inserat` (Titel, Text, Foto + Lightbox).
+ * HV/Kunde Updates-Feed: eine Card pro Eintrag.
+ * Titel → Datum (tt.mm.yyyy) → Text (2 Zeilen …) → Aufklappen nach unten → Fotos.
  */
 export function BautagebuchCardFeed({
   eintraege,
@@ -94,10 +102,16 @@ export function BautagebuchCardFeed({
 
   return (
     <section className={cn("space-y-3 border-t border-border-light pt-5", className)}>
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <h4 className="portal-text-label text-text-tertiary">{heading}</h4>
-        {headerAction}
-      </div>
+      {(heading || headerAction) && (
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          {heading ? (
+            <h4 className="portal-text-label text-text-tertiary">{heading}</h4>
+          ) : (
+            <span />
+          )}
+          {headerAction}
+        </div>
+      )}
       {sorted.length === 0 ? (
         <p className="portal-text-body rounded-xl border border-dashed border-border-light bg-muted/20 px-3 py-5 text-center text-text-secondary">
           {emptyText}
@@ -106,50 +120,29 @@ export function BautagebuchCardFeed({
         <ul className="space-y-2.5">
           {sorted.map((e) => {
             const open = openId === e.id;
-            const foto = e.fotos?.[0] ?? null;
-            const more = (e.fotos?.length ?? 0) > 1 ? e.fotos!.length - 1 : 0;
             const desc = e.beschreibung?.trim() || "";
             const imageFotos = (e.fotos ?? []).filter(
               (u) => u && !isBautagebuchPdfUrl(u)
             );
+            const pdfFotos = (e.fotos ?? []).filter(
+              (u) => u && isBautagebuchPdfUrl(u)
+            );
             return (
               <li key={e.id}>
-                <div
-                  className={cn(
-                    "flex w-full overflow-hidden rounded-xl border border-border-light bg-white text-left shadow-[0_1px_2px_rgba(22,32,27,0.04)]",
-                    !foto && "min-h-[72px]"
-                  )}
-                >
-                  {foto && !isBautagebuchPdfUrl(foto) ? (
-                    <button
-                      type="button"
-                      className="relative h-[88px] w-[88px] shrink-0 bg-muted/30 sm:h-[100px] sm:w-[100px]"
-                      onClick={() => openLightbox(imageFotos, 0)}
-                      aria-label="Foto vergrößern"
-                    >
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img
-                        src={foto}
-                        alt=""
-                        className="h-full w-full object-cover"
-                      />
-                      {more > 0 ? (
-                        <span className="absolute bottom-1 right-1 rounded bg-black/65 px-1.5 py-0.5 text-[11px] font-semibold text-white">
-                          +{more}
-                        </span>
-                      ) : null}
-                    </button>
-                  ) : null}
+                <div className="overflow-hidden rounded-xl border border-border-light bg-white shadow-[0_1px_2px_rgba(22,32,27,0.04)]">
                   <button
                     type="button"
                     onClick={() => setOpenId(open ? null : e.id)}
-                    className="flex min-w-0 flex-1 flex-col justify-center gap-1 px-3 py-3 text-left transition-colors hover:bg-muted/20"
+                    className="flex w-full flex-col gap-1 px-3.5 py-3 text-left transition-colors hover:bg-muted/15"
                     aria-expanded={open}
                   >
                     <div className="flex items-start justify-between gap-2">
-                      <span className="portal-text-card-title line-clamp-2">
-                        {e.titel}
-                      </span>
+                      <div className="min-w-0 flex-1">
+                        <p className="portal-text-card-title">{e.titel}</p>
+                        <p className="portal-text-meta mt-0.5 tabular-nums text-text-tertiary">
+                          {fmtDatum(e.datum)}
+                        </p>
+                      </div>
                       <ChevronDown
                         className={cn(
                           "mt-0.5 h-4 w-4 shrink-0 text-text-tertiary transition-transform",
@@ -158,45 +151,34 @@ export function BautagebuchCardFeed({
                         aria-hidden
                       />
                     </div>
-                    {desc && !open ? (
-                      <p className="portal-text-body line-clamp-2 text-text-secondary">
-                        {desc}
-                      </p>
-                    ) : null}
-                    <span className="portal-text-meta tabular-nums text-text-tertiary">
-                      {fmtDatum(e.datum)}
-                    </span>
-                  </button>
-                </div>
-                {open ? (
-                  <div className="portal-text-body space-y-3 rounded-b-xl border border-t-0 border-border-light bg-muted/15 px-3 py-4">
                     {desc ? (
-                      <p className="whitespace-pre-wrap text-text-secondary">{desc}</p>
+                      open ? null : (
+                        <p className="portal-text-body mt-1 line-clamp-2 text-text-secondary">
+                          {desc}
+                        </p>
+                      )
                     ) : null}
-                    {e.fotos && e.fotos.length > 0 ? (
-                      <div className="flex flex-wrap gap-2">
-                        {e.fotos.map((url, i) =>
-                          isBautagebuchPdfUrl(url) ? (
-                            <a
-                              key={`${e.id}-doc-${i}`}
-                              href={url}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="portal-text-body inline-flex min-h-[44px] items-center gap-1.5 rounded-lg border border-border-light bg-surface-card px-3 py-2 font-medium text-brand-primary hover:bg-muted/30"
-                            >
-                              {bautagebuchAnhangLabel(url, i)}
-                            </a>
-                          ) : (
+                  </button>
+
+                  {open ? (
+                    <div className="space-y-3 border-t border-border-light px-3.5 pb-3.5 pt-3">
+                      {desc ? (
+                        <p className="portal-text-body whitespace-pre-wrap text-text-secondary">
+                          {desc}
+                        </p>
+                      ) : (
+                        <p className="portal-text-meta text-text-tertiary">
+                          Kein Text
+                        </p>
+                      )}
+                      {imageFotos.length > 0 || pdfFotos.length > 0 ? (
+                        <div className="flex flex-wrap gap-2">
+                          {imageFotos.map((url, i) => (
                             <button
                               key={`${e.id}-foto-${i}`}
                               type="button"
-                              className="block h-20 w-20 overflow-hidden rounded-lg border border-border-light"
-                              onClick={() =>
-                                openLightbox(
-                                  imageFotos,
-                                  imageFotos.indexOf(url)
-                                )
-                              }
+                              className="block h-[4.5rem] w-[4.5rem] overflow-hidden rounded-xl border border-border-light bg-muted/20 sm:h-24 sm:w-24"
+                              onClick={() => openLightbox(imageFotos, i)}
                               aria-label={`${bautagebuchAnhangLabel(url, i)} vergrößern`}
                             >
                               {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -206,12 +188,23 @@ export function BautagebuchCardFeed({
                                 className="h-full w-full object-cover"
                               />
                             </button>
-                          )
-                        )}
-                      </div>
-                    ) : null}
-                  </div>
-                ) : null}
+                          ))}
+                          {pdfFotos.map((url, i) => (
+                            <a
+                              key={`${e.id}-pdf-${i}`}
+                              href={url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="portal-text-body inline-flex min-h-[44px] items-center gap-1.5 rounded-lg border border-border-light bg-surface-card px-3 py-2 font-medium text-brand-primary hover:bg-muted/30"
+                            >
+                              {bautagebuchAnhangLabel(url, i)}
+                            </a>
+                          ))}
+                        </div>
+                      ) : null}
+                    </div>
+                  ) : null}
+                </div>
               </li>
             );
           })}

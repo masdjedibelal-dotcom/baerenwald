@@ -417,15 +417,16 @@ export function PartnerOffenDetail({
         statusLabel={statusLabel}
         statusPillClass={partnerDetailStatusPillClass(statusPillKey)}
         statusPillStyle={partnerDetailStatusPillStyle(statusPillKey)}
+        kopfBanner={
+          aufgabeOderCrmNotiz ? (
+            <PortalDetailInfoBox variant="warning">
+              <p className="font-semibold">Hinweis vom Auftraggeber</p>
+              <p className="mt-1 whitespace-pre-wrap">{aufgabeOderCrmNotiz}</p>
+            </PortalDetailInfoBox>
+          ) : null
+        }
       >
         <div className="space-y-5">
-      {aufgabeOderCrmNotiz ? (
-        <PortalDetailInfoBox>
-          <p className="font-semibold">Hinweis vom Auftraggeber</p>
-          <p className="mt-1 whitespace-pre-wrap">{aufgabeOderCrmNotiz}</p>
-        </PortalDetailInfoBox>
-      ) : null}
-
       <VorgangDetailBlocks
         vm={buildPartnerVorgangDetailVm({
           idLabel: item.id.slice(0, 8).toUpperCase(),

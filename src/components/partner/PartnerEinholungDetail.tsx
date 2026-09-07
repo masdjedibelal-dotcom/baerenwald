@@ -14,6 +14,7 @@ import { PartnerLeistungenKonditionenCard } from "@/components/partner/PartnerLe
 import {
   PortalConfirmDialog,
   PortalDetailError,
+  PortalDetailInfoBox,
   PortalDetailLayout,
   PortalDetailStickyActions,
 } from "@/components/shared/PortalDetailUi";
@@ -314,6 +315,14 @@ export function PartnerEinholungDetail({
         statusLabel={eingereicht ? "Eingereicht" : statusLabel}
         statusPillClass={partnerDetailStatusPillClass(eingereicht ? "eingereicht" : statusPillKey)}
         statusPillStyle={partnerDetailStatusPillStyle(eingereicht ? "eingereicht" : statusPillKey)}
+        kopfBanner={
+          aufgabeNotiz ? (
+            <PortalDetailInfoBox variant="warning">
+              <p className="font-semibold">Hinweis von Bärenwald</p>
+              <p className="mt-1 whitespace-pre-wrap">{aufgabeNotiz}</p>
+            </PortalDetailInfoBox>
+          ) : null
+        }
       >
         <div className="space-y-5">
           {angefragtePositionen.length > 0 ? (
@@ -331,14 +340,6 @@ export function PartnerEinholungDetail({
               </p>
             </PortalDetailCard>
           )}
-
-          {aufgabeNotiz ? (
-            <PortalDetailCard title="Hinweis von Bärenwald">
-              <p className="whitespace-pre-wrap portal-text-body">
-                {aufgabeNotiz}
-              </p>
-            </PortalDetailCard>
-          ) : null}
 
           <VorgangDetailBlocks
             vm={buildPartnerVorgangDetailVm({

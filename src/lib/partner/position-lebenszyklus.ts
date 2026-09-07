@@ -62,3 +62,18 @@ export function formatZeitMinuten(minuten: number | null | undefined): string {
   if (m <= 0) return `${h} Std`;
   return `${h} Std ${m} Min`;
 }
+
+export function eintragTypLabel(typ: string | null | undefined): string {
+  switch (String(typ ?? "").toLowerCase()) {
+    case "start":
+    case "fortschritt":
+    case "ergebnis":
+      return "Update";
+    case "weitere_arbeit":
+      return "Weitere Arbeit";
+    case "notiz":
+      return "Notiz";
+    default:
+      return "Update";
+  }
+}

@@ -1,11 +1,13 @@
 /**
- * Partner-Leistungs-Updates bleiben CRM-intern.
- * Kein Auto-Publish in die Kunden-Timeline — Tagebuch/Abnahme macht das CRM.
+ * Partner-Leistungs-Update → Portal-Glocken (HV + Kunde).
+ * Sichtbar im Updates-Tab (position_eintraege via loadPartnerDokumentation).
  */
 
+import { notifyHvPartnerBautagebuch } from "@/lib/org/notify-hv-bautagebuch";
+import { notifyMieterBautagebuchEintrag } from "@/lib/melde/notify-mieter-bautagebuch";
 import { isSupabaseConfigured, supabaseAdmin } from "@/lib/supabase";
 
-export async function syncPartnerPositionEintragToKundeTimeline(_opts: {
+export async function syncPartnerPositionEintragToKundeTimeline(opts: {
   eintragId: string;
   auftragId: string;
   typ: string;
@@ -15,10 +17,67 @@ export async function syncPartnerPositionEintragToKundeTimeline(_opts: {
   leistungNames?: string[] | null;
   handwerkerId?: string | null;
 }): Promise<void> {
-  // Absichtlich no-op: Updates nur im CRM unter Leistungen.
+  if (!isSupabaseConfigured()) return;
+  const typ = String(opts.typ ?? "").toLowerCase();
+  if (typ === "weitere_arbeit") return;
+
+  const auftragId = opts.auftragId.trim();
+  if (!auftragId) return;
+
+  const leistung =
+    opts.leistungName?.trim() ||
+    opts.leistungNames?.map((n) => n.trim()).filter(Boolean)[0] ||
+    null;
+  const eintragTitel =
+    opts.titel?.trim() ||
+    (leistung ? `Update — ${leistung}` : null) ||
+    opts.beschreibung?.trim()?.split(/\n+/)[0]?.slice(0, 72) ||
+    "Update";
+
+  const [{ data: hw }, { data: auf }] = await Promise.all([
+    opts.handwerkerId
+      ? supabaseAdmin
+          .from("handwerker")
+          .select("name")
+          .eq("id", opts.handwerkerId)
+          .maybeSingle()
+      : Promise.resolve({ data: null }),
+    supabaseAdmin
+      .from("auftraege")
+      .select("id, titel, lead_id")
+      .eq("id", auftragId)
+      .maybeSingle(),
+  ]);
+
+  const handwerkerName = String(hw?.name ?? "Handwerker").trim() || "Handwerker";
+  const auftragTitel = String(auf?.titel ?? "Auftrag").trim() || "Auftrag";
+  const leadId = auf?.lead_id ? String(auf.lead_id) : null;
+
+  try {
+    await notifyHvPartnerBautagebuch({
+      auftragId,
+      handwerkerName,
+      eintragTitel,
+    });
+  } catch (e) {
+    console.warn("[syncPartnerPositionEintrag] HV-Notify:", e);
+  }
+
+  if (leadId) {
+    try {
+      await notifyMieterBautagebuchEintrag({
+        leadId,
+        handwerkerName,
+        eintragTitel,
+        auftragTitel,
+      });
+    } catch (e) {
+      console.warn("[syncPartnerPositionEintrag] Portal-Notify:", e);
+    }
+  }
 }
 
-export async function syncPartnerFreiesBautagebuchToKundeTimeline(_opts: {
+export async function syncPartnerFreiesBautagebuchToKundeTimeline(opts: {
   auftragId: string;
   titel: string;
   beschreibung?: string | null;
@@ -26,8 +85,55 @@ export async function syncPartnerFreiesBautagebuchToKundeTimeline(_opts: {
   handwerkerId?: string | null;
   bautagebuchEintragId?: string | null;
 }): Promise<string | null> {
-  // Absichtlich no-op — siehe syncPartnerPositionEintragToKundeTimeline.
-  return null;
+  if (!isSupabaseConfigured()) return null;
+  const auftragId = opts.auftragId.trim();
+  if (!auftragId) return null;
+
+  const eintragTitel = opts.titel.trim() || "Update";
+
+  const [{ data: hw }, { data: auf }] = await Promise.all([
+    opts.handwerkerId
+      ? supabaseAdmin
+          .from("handwerker")
+          .select("name")
+          .eq("id", opts.handwerkerId)
+          .maybeSingle()
+      : Promise.resolve({ data: null }),
+    supabaseAdmin
+      .from("auftraege")
+      .select("id, titel, lead_id")
+      .eq("id", auftragId)
+      .maybeSingle(),
+  ]);
+
+  const handwerkerName = String(hw?.name ?? "Handwerker").trim() || "Handwerker";
+  const auftragTitel = String(auf?.titel ?? "Auftrag").trim() || "Auftrag";
+  const leadId = auf?.lead_id ? String(auf.lead_id) : null;
+
+  try {
+    await notifyHvPartnerBautagebuch({
+      auftragId,
+      handwerkerName,
+      eintragTitel,
+    });
+  } catch (e) {
+    console.warn("[syncPartnerFreiesBautagebuch] HV-Notify:", e);
+  }
+
+  if (leadId) {
+    try {
+      await notifyMieterBautagebuchEintrag({
+        leadId,
+        handwerkerName,
+        eintragTitel,
+        auftragTitel,
+      });
+    } catch (e) {
+      console.warn("[syncPartnerFreiesBautagebuch] Portal-Notify:", e);
+    }
+  }
+
+  return opts.bautagebuchEintragId ?? null;
 }
 
 /** Offene CRM-BT-Anforderung als erledigt markieren. */

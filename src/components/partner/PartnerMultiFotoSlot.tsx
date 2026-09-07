@@ -200,34 +200,44 @@ export function PartnerMultiFotoSlot({
       />
 
       {files.length > 0 ? (
-        <div
-          className="grid grid-cols-3 gap-2 sm:grid-cols-4"
-          role="list"
-          aria-label={`Hochgeladene Fotos, ${files.length} von ${max}`}
-        >
-          {previews.map((url, i) => (
-            <div
-              key={`${url}-${i}`}
-              role="listitem"
-              className="relative aspect-square overflow-hidden rounded-lg border border-border-default bg-white"
-            >
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={url}
-                alt={`Foto ${i + 1}`}
-                className="h-full w-full object-cover"
-              />
-              <button
-                type="button"
-                className="absolute right-1 top-1 grid h-6 w-6 place-items-center rounded-full bg-black/55 text-white"
-                aria-label={`Foto ${i + 1} entfernen`}
-                disabled={busy}
-                onClick={() => removeAt(i)}
+        <div className="space-y-1.5">
+          <p className="text-[11.5px] font-medium text-text-tertiary">
+            Vorschau · {files.length}
+            {max > 1 ? ` / ${max}` : ""} · wischen · × zum Entfernen
+          </p>
+          <div
+            className="partner-foto-carousel flex gap-2.5 overflow-x-auto overscroll-x-contain pb-1 pt-0.5 [-webkit-overflow-scrolling:touch] [scrollbar-width:thin] snap-x snap-mandatory"
+            role="list"
+            aria-label={`Hochgeladene Fotos, ${files.length} von ${max}`}
+          >
+            {previews.map((url, i) => (
+              <div
+                key={`${files[i]?.name ?? "foto"}-${i}-${files[i]?.size ?? 0}`}
+                role="listitem"
+                className="relative h-[4.75rem] w-[4.75rem] shrink-0 snap-start overflow-hidden rounded-xl border border-border-default bg-white shadow-sm"
               >
-                <X className="h-3.5 w-3.5" strokeWidth={2.5} />
-              </button>
-            </div>
-          ))}
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={url}
+                  alt={`Foto ${i + 1}`}
+                  className="h-full w-full object-cover"
+                  draggable={false}
+                />
+                <button
+                  type="button"
+                  className="absolute right-1 top-1 grid h-7 w-7 place-items-center rounded-full bg-black/65 text-white shadow-sm active:scale-95"
+                  aria-label={`Foto ${i + 1} entfernen`}
+                  disabled={busy}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    removeAt(i);
+                  }}
+                >
+                  <X className="h-3.5 w-3.5" strokeWidth={2.5} />
+                </button>
+              </div>
+            ))}
+          </div>
         </div>
       ) : null}
 

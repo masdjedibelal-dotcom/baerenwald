@@ -17,12 +17,14 @@ export type CreateHvNotificationInput = {
  * - neues Angebot (`angebot`)
  * - abgeschlossen (`abgeschlossen` / Partner- oder HM-Selbstabschluss)
  * - Hausmeister-Befund fertig (`hm_befund` — selbst erledigt / Fachfirma)
+ * - Handwerker-Update / Bautagebuch (`bautagebuch`)
  */
 export const HV_NOTIFICATION_ALLOWED_TYPES = new Set([
   "neue_meldung",
   "angebot",
   "abgeschlossen",
   "hm_befund",
+  "bautagebuch",
 ]);
 
 /**

@@ -17,9 +17,12 @@ import {
   completePartnerPosition,
   createPartnerTagebuchEintrag,
   createPartnerWeitereArbeit,
+  listPartnerAuftragTagebuchEintraege,
   markPartnerPositionenErledigt,
   startPartnerPosition,
+  type PartnerTagebuchListenEintrag,
 } from "@/app/actions/partner-position-eintraege";
+import { PartnerLeistungUpdatesAccordion } from "@/components/partner/PartnerLeistungUpdatesAccordion";
 import { normalizePartnerCameraPhoto } from "@/lib/partner/normalize-camera-photo";
 import {
   formatZeitMinuten,
@@ -227,6 +230,7 @@ export function PartnerPositionLebenszyklusList({
   const [submitting, setSubmitting] = useState(false);
   const [beschreibung, setBeschreibung] = useState("");
   const [sheetFotos, setSheetFotos] = useState<File[]>([]);
+  const [updates, setUpdates] = useState<PartnerTagebuchListenEintrag[]>([]);
   const autoOpenedRef = useRef(false);
   const updateOpenedRef = useRef(false);
   const sheetFormRef = useRef<HTMLFormElement>(null);
@@ -235,6 +239,48 @@ export function PartnerPositionLebenszyklusList({
     () => new Set(preferredPositionIds.map((id) => id.trim()).filter(Boolean)),
     [preferredPositionIds]
   );
+
+  async function reloadUpdates() {
+    const aid = auftragId?.trim();
+    if (!aid) {
+      setUpdates([]);
+      return;
+    }
+    try {
+      const rows = await listPartnerAuftragTagebuchEintraege(aid);
+      setUpdates(rows);
+    } catch {
+      /* Liste optional */
+    }
+  }
+
+  useEffect(() => {
+    void reloadUpdates();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [auftragId]);
+
+  const updatesByPosition = useMemo(() => {
+    const map = new Map<string, PartnerTagebuchListenEintrag[]>();
+    for (const e of updates) {
+      // Nur eigene HW-Updates (CRM-Einträge bleiben im CRM)
+      if (e.quelleLabel !== "Handwerker") continue;
+      const ids =
+        e.leistungIds?.length > 0
+          ? e.leistungIds
+          : []; /* Legacy ohne Positionsbezug: nicht unter Leistung */
+      for (const pid of ids) {
+        const list = map.get(pid) ?? [];
+        list.push(e);
+        map.set(pid, list);
+      }
+    }
+    return map;
+  }, [updates]);
+
+  async function afterSaveRefresh() {
+    await reloadUpdates();
+    await onDone?.();
+  }
 
   const sortedPositionen = useMemo(() => {
     if (!preferredSet.size) return positionen;
@@ -975,6 +1021,9 @@ export function PartnerPositionLebenszyklusList({
                         </div>
                       ) : null}
                     </div>
+                    <PartnerLeistungUpdatesAccordion
+                      eintraege={updatesByPosition.get(p.id) ?? []}
+                    />
                   </li>
                 );
               })}
@@ -1039,6 +1088,9 @@ export function PartnerPositionLebenszyklusList({
                             <p className="mt-0.5 text-[12.5px] text-text-tertiary">
                               {meta}
                             </p>
+                            <PartnerLeistungUpdatesAccordion
+                              eintraege={updatesByPosition.get(p.id) ?? []}
+                            />
                           </div>
                         </div>
                       </li>

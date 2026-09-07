@@ -245,7 +245,7 @@ function buildTitel(input: ResolveVorgangInput): string {
   const ort = lead.plz?.trim()
   const parts = [situation, bereich, ort].filter(Boolean)
   if (parts.length) return parts.join(' — ')
-  return lead.kontakt_name?.trim() || 'Vorgang'
+  return 'Vorgang'
 }
 
 /** Kanonische Ableitung — nie aus vorgang_phase lesen. */

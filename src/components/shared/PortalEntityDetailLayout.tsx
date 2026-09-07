@@ -29,6 +29,8 @@ export type PortalEntityDetailLayoutProps = {
   /** Timeline-Labels je Portal-Typ (Default hv). */
   flowTimelineVariant?: PortalFlowTimelineVariant;
   actions?: ReactNode;
+  /** Unter Meta/Timeline in der Kopfkarte (z. B. gelber Hinweis). */
+  kopfBanner?: ReactNode;
   tabs?: readonly PortalDetailTab[];
   activeTab?: string;
   onTabChange?: (id: string) => void;
@@ -53,6 +55,7 @@ export function PortalEntityDetailLayout({
   flowStatus,
   flowTimelineVariant = "hv",
   actions,
+  kopfBanner,
   tabs,
   activeTab,
   onTabChange,
@@ -98,6 +101,9 @@ export function PortalEntityDetailLayout({
           }
           actions={actions}
         />
+        {kopfBanner ? (
+          <div className="portal-detail-kopfkarte-banner">{kopfBanner}</div>
+        ) : null}
       </div>
 
       <div className="portal-detail-body-pad flex flex-col gap-4 pb-6 pt-4 sm:pt-5">
