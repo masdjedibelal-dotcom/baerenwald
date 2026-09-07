@@ -2076,7 +2076,8 @@ h3 {
     overflow: hidden;
     background: var(--org-primary-dk, var(--p2-primary-dk, #1a3d2b));
     color: #fff;
-    padding: 16px 20px 74px;
+    /* Kein Extra-Pad für Fokus-Overlap — KPIs bleiben sichtbar */
+    padding: 16px 20px 28px;
     border-radius: 0 0 30px 30px;
   }
 
@@ -2293,7 +2294,8 @@ h3 {
   .portal-dash-focus--overlap {
     position: relative;
     z-index: 1;
-    margin-top: -56px;
+    /* Leichter Lift unter dem Hero — KPIs nicht überdecken */
+    margin-top: -12px;
   }
 
   @media (min-width: 1024px) {
@@ -2308,12 +2310,14 @@ h3 {
     justify-content: space-between;
     gap: 12px;
     margin-bottom: 10px;
+    min-width: 0;
   }
 
   .portal-dash-focus-kicker {
     display: inline-flex;
     align-items: center;
     gap: 8px;
+    min-width: 0;
     font-size: calc(11.5px * var(--p2-type-scale, 1.1));
     font-weight: 800;
     letter-spacing: 0.14em;
@@ -2448,67 +2452,115 @@ h3 {
     font-size: calc(14.5px * var(--p2-type-scale, 1.1));
     font-weight: 700;
     cursor: pointer;
-    padding: 0 16px;
+    padding: 0 12px;
+    /* Mobil: gleiche Breite in der Row */
+    flex: 1 1 0;
+    min-width: 0;
   }
 
   .portal-dash-focus-btn--secondary {
-    flex: 0 0 auto;
     background: #fff;
     border: 1px solid rgba(20, 32, 25, 0.12);
     color: var(--p2-ink, #142019);
   }
 
   .portal-dash-focus-btn--primary {
-    /* Mobil: Primär füllt Rest; Desktop: natürliche Breite */
-    flex: 1 1 auto;
-    min-width: 7.5rem;
     background: var(--org-primary, var(--p2-primary, #2e7d52));
     border: none;
     color: #fff;
     box-shadow: var(--p2-shadow-primary-btn, 0 8px 20px rgba(46, 125, 82, 0.28));
   }
 
+  /* 3+ Buttons: Ablehnen + Hausmeister teilen die erste Row; Primär volle Breite darunter */
+  .portal-dash-focus-actions:has(> :nth-child(3)) .portal-dash-focus-btn--primary {
+    flex-basis: 100%;
+  }
+
   @media (min-width: 1024px) {
     .portal-dash-focus-actions {
       justify-content: flex-start;
+      flex-wrap: nowrap;
     }
 
-    .portal-dash-focus-btn--primary {
+    .portal-dash-focus-btn {
       flex: 0 0 auto;
+      padding: 0 16px;
+    }
+
+    .portal-dash-focus-actions:has(> :nth-child(3)) .portal-dash-focus-btn--primary {
+      flex-basis: auto;
     }
   }
 
-  .portal-dash-action-count {
-    margin-left: 6px;
-    font-size: calc(10.5px * var(--p2-type-scale, 1.1));
-    font-weight: 700;
-    letter-spacing: 0.04em;
-    text-transform: none;
-    color: rgba(20, 32, 25, 0.42);
+  .portal-dash-action-carousel-frame {
+    display: flex;
+    align-items: stretch;
+    gap: 6px;
+    touch-action: pan-y;
   }
 
-  .portal-dash-action-nav {
+  .portal-dash-action-carousel-main {
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+
+  .portal-dash-action-side-btn {
     display: inline-flex;
-    align-items: center;
-    gap: 4px;
     flex-shrink: 0;
-  }
-
-  .portal-dash-action-nav-btn {
-    display: inline-flex;
+    align-self: center;
     align-items: center;
     justify-content: center;
     width: 32px;
-    height: 32px;
-    border-radius: 10px;
+    height: 44px;
+    margin: 0;
+    padding: 0;
+    border-radius: 12px;
     border: 1px solid rgba(20, 32, 25, 0.1);
     background: #fff;
     color: var(--p2-ink, #142019);
     cursor: pointer;
   }
 
-  .portal-dash-action-nav-btn:hover {
+  .portal-dash-action-side-btn:hover {
     background: rgba(20, 32, 25, 0.04);
+  }
+
+  .portal-dash-action-carousel {
+    padding-inline: 10px;
+  }
+
+  @media (min-width: 1024px) {
+    .portal-dash-action-carousel {
+      padding-inline: 12px;
+    }
+
+    .portal-dash-action-carousel-frame {
+      gap: 8px;
+    }
+
+    .portal-dash-action-side-btn {
+      width: 36px;
+      height: 40px;
+    }
+  }
+
+  .portal-dash-action-footer {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    margin-top: 14px;
+  }
+
+  .portal-dash-action-count {
+    flex-shrink: 0;
+    font-size: 11px;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: 0.02em;
+    white-space: nowrap;
+    text-transform: none;
+    color: rgba(20, 32, 25, 0.42);
   }
 
   .portal-dash-action-error {
@@ -2527,7 +2579,6 @@ h3 {
     display: flex;
     justify-content: center;
     gap: 6px;
-    margin-top: 14px;
   }
 
   .portal-dash-action-dot {

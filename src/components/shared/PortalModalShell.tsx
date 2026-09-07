@@ -18,7 +18,6 @@ import {
   lockPortalBodyScroll,
   unlockPortalBodyScroll,
 } from "@/lib/portal2/lock-portal-body-scroll";
-import { usePortalBusy } from "@/components/shared/PortalBusyContext";
 import { PortalSheetConfirm } from "@/components/shared/PortalSheetConfirm";
 import {
   PORTAL_MODAL_SCRIM,
@@ -199,42 +198,16 @@ export function PortalModalShell({
   const [discardOpen, setDiscardOpen] = useState(false);
   const layerIdRef = useRef(Symbol("portal-modal"));
   const inHistoryStackRef = useRef(false);
-  const busyHoldRef = useRef(false);
   const dirtyRef = useRef(dirty);
   dirtyRef.current = dirty;
   const depth = useContext(PortalModalDepthContext);
-  const { hold, release } = usePortalBusy();
 
-  /** Speichern/Upload im Sheet → gleiches Portal-Loading wie Nav/Refresh. */
-  useEffect(() => {
-    if (!open) {
-      if (busyHoldRef.current) {
-        busyHoldRef.current = false;
-        release();
-      }
-      return;
-    }
-    if (busy) {
-      if (!busyHoldRef.current) {
-        busyHoldRef.current = true;
-        hold();
-      }
-      return;
-    }
-    if (busyHoldRef.current) {
-      busyHoldRef.current = false;
-      release();
-    }
-  }, [open, busy, hold, release]);
-
-  useEffect(() => {
-    return () => {
-      if (busyHoldRef.current) {
-        busyHoldRef.current = false;
-        release();
-      }
-    };
-  }, [release]);
+  /**
+   * Kein globaler PortalBusy-Hold über `busy`.
+   * Früher: hold() bei busy → Doppel-Hold mit runUpload/runBusy → Overlay blieb
+   * hängen (z. B. HW Rechnung erstellen). Sheet hat eigenes Busy-Overlay;
+   * globales Loading kommt von runBusy/runUpload/refresh.
+   */
 
   const closeNow = useCallback(
     (fromPop: boolean) => {

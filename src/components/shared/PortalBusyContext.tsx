@@ -71,21 +71,26 @@ export function PortalBusyProvider({ children }: { children: ReactNode }) {
   const release = useCallback(
     (msMin = DEFAULT_FLASH_MS) => {
       if (holdRef.current <= 0) {
+        holdRef.current = 0;
         clearTimer();
         setBusy(false);
         return;
       }
-      if (holdRef.current > 1) {
-        holdRef.current -= 1;
-        return;
-      }
+      // Sofort dekrementieren — sonst bleibt isHeld() während des Min-Timers true
+      // und verschachtelte hold/release (Modal + runUpload) können orphaned Hangs erzeugen.
+      holdRef.current -= 1;
+      if (holdRef.current > 0) return;
+
       const elapsed = Date.now() - holdStartedAtRef.current;
       const wait = Math.max(0, msMin - elapsed);
       clearTimer();
+      if (wait === 0) {
+        setBusy(false);
+        return;
+      }
       timerRef.current = setTimeout(() => {
         timerRef.current = null;
-        holdRef.current = 0;
-        setBusy(false);
+        if (holdRef.current === 0) setBusy(false);
       }, wait);
     },
     [clearTimer]

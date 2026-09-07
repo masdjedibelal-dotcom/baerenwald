@@ -106,7 +106,7 @@ export function PartnerAuftragDetail({
   deepLinkProtokollId?: string | null;
 }) {
   const router = useRouter();
-  const { refresh } = usePortalRefresh();
+  const { refresh, refreshFlash } = usePortalRefresh();
   const { uploadBusy, runUpload } = usePortalUploadBusy();
   const [pdfError, setPdfError] = useState<string | null>(null);
   const [rechnungError, setRechnungError] = useState<string | null>(null);
@@ -260,6 +260,7 @@ export function PartnerAuftragDetail({
   async function onRechnungErstellen() {
     if (uploadBusy || rechnungGateBusy) return;
     setRechnungGateBusy(true);
+    let openDoc = false;
     try {
       await runUpload(async () => {
         const res = await previewPartnerAutoDokument({
@@ -279,8 +280,10 @@ export function PartnerAuftragDetail({
           setFirmendatenFehlenOpen(true);
           return;
         }
-        setRechnungDocOpen(true);
+        openDoc = true;
       });
+      // Modal erst nach Busy-Ende öffnen — sonst nestet loadPreview in runUpload.
+      if (openDoc) setRechnungDocOpen(true);
     } finally {
       setRechnungGateBusy(false);
     }
@@ -728,7 +731,8 @@ export function PartnerAuftragDetail({
         onClose={() => setRechnungDocOpen(false)}
         onSuccess={() => {
           setRechnungDocOpen(false);
-          void refresh();
+          // Flash statt nested runBusy — nach Absenden kein zweites Hold.
+          refreshFlash();
         }}
         onFirmendatenMissing={(labels) => {
           setRechnungDocOpen(false);
