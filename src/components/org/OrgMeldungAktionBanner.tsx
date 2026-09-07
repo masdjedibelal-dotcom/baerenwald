@@ -63,7 +63,6 @@ export function OrgMeldungAktionBanner({
   }, [lead.kunde_objekt_id, isNeu, isHmPruefung]);
 
   if (lead.einladung_status === "offen") return null;
-  if ((lead.erfassung_von ?? "").toLowerCase() === "organisation") return null;
 
   if (isHmPruefung) {
     return (

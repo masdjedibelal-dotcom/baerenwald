@@ -1,20 +1,17 @@
 /**
- * HV selbst angelegt: Start-Freigabe überspringen, CRM sofort informieren.
- * Bei Akut/Direktauftrag zusätzlich Bypass-Flag (wie Mieter-Melde).
+ * Nach Persist einer Org-/HV-eigenen Anfrage.
+ *
+ * Start bleibt wie Mieter-Meldung bei `hv_meldung_status = neu`, damit HV
+ * Ablehnen / Hausmeister / Direkt Bärenwald wählen kann.
+ * Nur Akut/Direktauftrag setzt Bypass-Flags (CRM-Notify erst nach HV-Aktion
+ * bzw. über Melde-Persist bei Sofortmaßnahme).
  */
 
 import { leadIstMeldeDirektauftrag } from "@/lib/funnel/melde-direktauftrag";
-import { notifyCrmOrgPortal } from "@/lib/org/notify-crm-org";
 import { effektiveNotfallDirekt } from "@/lib/org/org-direktauftrag";
 import { normalizeAkutFallIds } from "@/lib/org/sofortmassnahme-faelle";
 import { supabaseAdmin } from "@/lib/supabase";
 
-/**
- * Nach Persist einer Org-/HV-eigenen Anfrage:
- * - `hv_meldung_status = angebot_eingefordert` (kein Freigeben/Ablehnen am Start)
- * - bei Akut: `freigabe_bypass_grund = akut` (wenn Org/Objekt Sofortmaßnahme erlaubt)
- * - CRM-Notify „Angebot erstellen“
- */
 export async function finalizeOrgSelfCreatedLead(
   leadId: string
 ): Promise<void> {
@@ -32,72 +29,54 @@ export async function finalizeOrgSelfCreatedLead(
   if (!lead) return;
   if (String(lead.erfassung_von ?? "").toLowerCase() !== "organisation") return;
 
-  const status = (lead.hv_meldung_status ?? "").trim().toLowerCase();
   const anlass = String(lead.anlass ?? "").toLowerCase();
-  const patch: Record<string, unknown> = {
-    updated_at: new Date().toISOString(),
-  };
-  let shouldUpdate = false;
+  if (anlass !== "meldung") return;
 
-  // Nur Meldungs-Startpfad: neu → angebot_eingefordert
-  if (anlass === "meldung" && (status === "neu" || status === "")) {
-    patch.hv_meldung_status = "angebot_eingefordert";
-    shouldUpdate = true;
-  }
+  if (!leadIstMeldeDirektauftrag(lead)) return;
 
-  if (anlass === "meldung" && leadIstMeldeDirektauftrag(lead)) {
-    let notfallDirektAktiv = true;
-    const kundeId = String(lead.auftraggeber_kunde_id ?? "").trim();
-    const objektId = String(lead.kunde_objekt_id ?? "").trim();
-    if (kundeId) {
-      const { data: org } = await supabaseAdmin
-        .from("kunden")
-        .select("notfall_direkt, akut_fall_ids")
-        .eq("id", kundeId)
+  let notfallDirektAktiv = true;
+  const kundeId = String(lead.auftraggeber_kunde_id ?? "").trim();
+  const objektId = String(lead.kunde_objekt_id ?? "").trim();
+  if (kundeId) {
+    const { data: org } = await supabaseAdmin
+      .from("kunden")
+      .select("notfall_direkt, akut_fall_ids")
+      .eq("id", kundeId)
+      .maybeSingle();
+    let objektRule: { notfall_direkt: boolean | null } | null = null;
+    if (objektId) {
+      const { data: obj } = await supabaseAdmin
+        .from("kunden_objekte")
+        .select("notfall_direkt")
+        .eq("id", objektId)
         .maybeSingle();
-      let objektRule: { notfall_direkt: boolean | null } | null = null;
-      if (objektId) {
-        const { data: obj } = await supabaseAdmin
-          .from("kunden_objekte")
-          .select("notfall_direkt")
-          .eq("id", objektId)
-          .maybeSingle();
-        if (obj) {
-          objektRule = {
-            notfall_direkt:
-              obj.notfall_direkt == null ? null : Boolean(obj.notfall_direkt),
-          };
-        }
-      }
-      notfallDirektAktiv = effektiveNotfallDirekt(
-        { notfall_direkt: org?.notfall_direkt !== false },
-        objektRule
-      );
-      const allowed = normalizeAkutFallIds(
-        (org as { akut_fall_ids?: unknown } | null)?.akut_fall_ids
-      );
-      // Leere Liste = kein Bypass (auch bei manuellem Akut-Flag)
-      if (!allowed.length) {
-        notfallDirektAktiv = false;
+      if (obj) {
+        objektRule = {
+          notfall_direkt:
+            obj.notfall_direkt == null ? null : Boolean(obj.notfall_direkt),
+        };
       }
     }
-    if (notfallDirektAktiv) {
-      patch.freigabe_bypass_grund = "akut";
-      patch.org_freigabe_status = "nicht_noetig";
-      shouldUpdate = true;
-    }
-  }
-
-  if (shouldUpdate) {
-    await supabaseAdmin.from("leads").update(patch).eq("id", id);
-  }
-
-  const crmNotify = await notifyCrmOrgPortal({ leadId: id, typ: "meldung" });
-  if (!crmNotify.ok) {
-    console.warn(
-      "[finalizeOrgSelfCreatedLead] CRM-Notify fehlgeschlagen:",
-      crmNotify.error,
-      { leadId: id, skipped: crmNotify.skipped === true }
+    notfallDirektAktiv = effektiveNotfallDirekt(
+      { notfall_direkt: org?.notfall_direkt !== false },
+      objektRule
     );
+    const allowed = normalizeAkutFallIds(
+      (org as { akut_fall_ids?: unknown } | null)?.akut_fall_ids
+    );
+    if (!allowed.length) {
+      notfallDirektAktiv = false;
+    }
   }
+
+  if (!notfallDirektAktiv) return;
+
+  await supabaseAdmin
+    .from("leads")
+    .update({
+      freigabe_bypass_grund: "akut",
+      org_freigabe_status: "nicht_noetig",
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", id);
 }

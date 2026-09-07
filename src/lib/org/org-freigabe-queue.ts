@@ -54,15 +54,6 @@ export function isInOrgFreigabeQueue(
     return false;
   }
 
-  const freigabe = (lead.org_freigabe_status ?? "").trim();
-  if (
-    freigabe === "freigegeben" ||
-    freigabe === "abgelehnt" ||
-    freigabe === "nicht_noetig"
-  ) {
-    return false;
-  }
-
   const phase = (lead.vorgang_phase ?? "").trim();
   if (
     phase === "beauftragt" ||
@@ -73,14 +64,25 @@ export function isInOrgFreigabeQueue(
     return false;
   }
 
-  // HV-Selbstanlage: nie Start-Freigabe-Queue (auch Legacy mit status=neu)
-  const erfassung = String(lead.erfassung_von ?? "").toLowerCase();
-  if (
-    (lead.hv_meldung_status ?? "neu") === "neu" &&
-    erfassung !== "organisation"
-  ) {
+  /**
+   * Neue Meldung (Mieter, CRM, HV-Selbstanlage): Ablehnen / Hausmeister / Direkt.
+   * Vor `nicht_noetig`-Ausschluss — Startstatus nutzt bewusst `nicht_noetig`
+   * (noch keine Angebots-Freigabe fällig).
+   */
+  const hvStatus = (lead.hv_meldung_status ?? "neu").trim().toLowerCase();
+  if (hvStatus === "neu" || hvStatus === "") {
     return true;
   }
+
+  const freigabe = (lead.org_freigabe_status ?? "").trim();
+  if (
+    freigabe === "freigegeben" ||
+    freigabe === "abgelehnt" ||
+    freigabe === "nicht_noetig"
+  ) {
+    return false;
+  }
+
   if (
     freigabe === "ausstehend" ||
     freigabe === "beschluss_ausstehend" ||
