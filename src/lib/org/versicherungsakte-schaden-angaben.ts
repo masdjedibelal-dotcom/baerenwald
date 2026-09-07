@@ -3,15 +3,10 @@
  * gleiche Logik wie Anfrage-/Eingang-Detail (Melder, Ort, Funnel-Fachdetails).
  */
 
-import {
-  fachdetailRowsFromFunnelDaten,
-  normalizeFunnelDaten,
-} from "@/lib/lead-funnel-daten";
-import { labelSituation } from "@/lib/lead-funnel-labels";
+import { fachdetailRowsFromFunnelDaten } from "@/lib/lead-funnel-daten";
 import { buildMeldeVorgangTitel } from "@/lib/org/melde-vorgang-titel";
 import {
   formatAnfrageBereiche,
-  formatAnfrageZeitraum,
   resolveAnfrageAdresse,
   resolveAnfrageMelder,
   type PortalAnfrageLeadSource,
@@ -38,6 +33,14 @@ export type VersicherungsakteSchadenLead = {
   objekt?: PortalAnfrageLeadSource["objekt"];
 };
 
+/** Nicht in die Schadenmeldung-PDF. */
+const SKIP_LABELS = new Set([
+  "situation",
+  "dringlichkeit",
+  "kundentyp",
+  "schadenursache",
+]);
+
 function pushRow(
   rows: VersicherungsakteSchadenRow[],
   seen: Set<string>,
@@ -57,8 +60,8 @@ function pushRow(
 }
 
 /**
- * Alle relevanten Funnel-/Melde-Angaben als Tabellenzeilen
- * (Melder, Schadenort, Situation, Fachfragen, Freitext).
+ * Relevante Funnel-/Melde-Angaben als Tabellenzeilen
+ * (Melder, Schadenort, Fachfragen, Freitext — ohne Situation/Dringlichkeit/Kundentyp).
  */
 export function buildVersicherungsakteSchadenAngaben(
   lead: VersicherungsakteSchadenLead
@@ -83,13 +86,6 @@ export function buildVersicherungsakteSchadenAngaben(
 
   const addr = resolveAnfrageAdresse(source);
   const melder = resolveAnfrageMelder(source);
-  const norm = normalizeFunnelDaten(lead.funnel_daten, lead.bereiche);
-  const situationSlug = norm.situation || lead.situation || undefined;
-  const situationLabel =
-    situationSlug && labelSituation(situationSlug) !== "—"
-      ? labelSituation(situationSlug)
-      : null;
-
   const beschreibung =
     lead.kontakt_nachricht?.trim() || lead.notizen?.trim() || "";
   const kurz = buildMeldeVorgangTitel({
@@ -124,13 +120,12 @@ export function buildVersicherungsakteSchadenAngaben(
   );
 
   pushRow(rows, seen, "Bereich", formatAnfrageBereiche(source));
-  pushRow(rows, seen, "Situation", situationLabel);
-  pushRow(rows, seen, "Dringlichkeit", formatAnfrageZeitraum(source));
 
   for (const r of fachdetailRowsFromFunnelDaten(
     lead.funnel_daten,
     lead.bereiche
   )) {
+    if (SKIP_LABELS.has(r.label.trim().toLowerCase())) continue;
     pushRow(rows, seen, r.label, r.value);
   }
 

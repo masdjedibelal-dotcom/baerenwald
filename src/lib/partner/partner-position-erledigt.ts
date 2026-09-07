@@ -52,10 +52,19 @@ export function partnerAbschlussRelevantePositionen(
   });
 }
 
-function partnerHatErledigtGemeldet(input: AbschlussCtaInput): boolean {
+/**
+ * Partner hat Auftrag bereits erledigt gemeldet.
+ * Primär Timestamp; Fallback: alle relevanten Positionen handwerker_status=erledigt
+ * (wird beim Melden gesetzt — auch wenn Timestamp fehlt/nicht geladen).
+ */
+export function partnerHatErledigtGemeldet(input: AbschlussCtaInput): boolean {
   if (input.hwErledigtGemeldetAm?.trim()) return true;
   if (input.hwAbschlussSigniertAm?.trim()) return true;
-  return false;
+  const relevant = partnerAbschlussRelevantePositionen(input.positionen);
+  return (
+    relevant.length > 0 &&
+    relevant.every((p) => positionHandwerkerErledigt(p.handwerker_status))
+  );
 }
 
 /**
@@ -93,7 +102,12 @@ export function partnerAbnahmeZielPositionen(
   positionen: Array<
     Pick<
       PartnerAuftragPosition,
-      "id" | "leistung_name" | "handwerker_status" | "leistung_status" | "aenderung_typ" | "handwerker_id"
+      | "id"
+      | "leistung_name"
+      | "handwerker_status"
+      | "leistung_status"
+      | "aenderung_typ"
+      | "handwerker_id"
     >
   >
 ): Array<{ id: string; leistung_name: string | null }> {

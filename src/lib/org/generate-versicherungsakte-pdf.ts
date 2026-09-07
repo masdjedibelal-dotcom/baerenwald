@@ -106,7 +106,7 @@ function drawFooter(ctx: DrawCtx) {
     color: MUTED,
   });
   const right = ctx.policenNr.trim()
-    ? `Policen-Nr. ${ctx.policenNr.trim()}`
+    ? `Versicherungsnummer ${ctx.policenNr.trim()}`
     : "";
   if (right) {
     const rw = ctx.font.widthOfTextAtSize(right, 8);
@@ -355,9 +355,9 @@ export async function generateVersicherungsTeilPdf(
   }
 
   ctx.y -= 2;
-  /** Schaden-Nr. vergibt die Versicherung — hier nur Police + Datum. */
+  /** Schaden-Nr. vergibt die Versicherung — hier nur Versicherungsnummer + Datum. */
   drawMetaBar(ctx, [
-    { label: "Policen-Nr.", value: policenNr || "—" },
+    { label: "Versicherungsnummer", value: policenNr || "—" },
     { label: "Schadendatum", value: fmtDatum(input.schadendatum) },
   ]);
 

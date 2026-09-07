@@ -53,7 +53,8 @@ export const VORGANG_DETAIL_SIGHT: Record<VorgangDetailRole, VorgangDetailSight>
     },
     partner: {
       auftraggeber: "hidden",
-      objektMelder: "site",
+      /** Wie Hausmeister: Melde-/Funnel-Details inkl. Fachzeilen, Beschreibung, Fotos */
+      objektMelder: "full",
       ausfuehrung: "full",
       leistungen: "ek",
     },

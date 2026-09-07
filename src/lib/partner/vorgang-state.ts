@@ -1,4 +1,4 @@
-import { positionBrauchtVorgangAktion } from "@/lib/partner/partner-konditionen";
+import { positionBrauchtVorgangAktion, positionHandwerkerErledigt, positionIstHandwerkerZugewiesen } from "@/lib/partner/partner-konditionen";
 import type { PartnerAuftragPosition } from "@/lib/partner/get-partner-data";
 
 export { positionBrauchtVorgangAktion } from "@/lib/partner/partner-konditionen";
@@ -92,6 +92,17 @@ export function ableitenVorgangState(input: {
 
   // HW meldet fertig → unter „Erledigt“ (Rechnung), CRM schließt separat ab.
   if (input.hwErledigtGemeldetAm?.trim()) return "erledigt";
+
+  // Fallback ohne Timestamp: alle eigenen Positionen final erledigt.
+  const eigene = input.positionen.filter((p) =>
+    positionIstHandwerkerZugewiesen(p.handwerker_status)
+  );
+  if (
+    eigene.length > 0 &&
+    eigene.every((p) => positionHandwerkerErledigt(p.handwerker_status))
+  ) {
+    return "erledigt";
+  }
 
   const bestaetigt = Boolean(input.handwerkerBestaetigtAt?.trim());
   const offeneNachreichung =

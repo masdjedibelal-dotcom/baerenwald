@@ -41,12 +41,12 @@ export type BefundVorlageDef = {
 const BASIS_PUNKTE: BefundVorlagePunktDef[] = [
   {
     key: "basis_vorgefunden",
-    titel: "Schaden wie gemeldet vorgefunden",
+    titel: "Schadenmeldung geprüft",
     haeufig: true,
   },
   {
     key: "basis_fotos",
-    titel: "Fotos vom Ist-Zustand gemacht",
+    titel: "Fotos vom Schaden gemacht",
     haeufig: true,
   },
   {
@@ -385,4 +385,18 @@ export function findVorlagePunktDef(
   const k = punktKey.trim();
   if (!k) return null;
   return getBefundVorlage(key).punkte.find((p) => p.key === k) ?? null;
+}
+
+/** Anzeige-Titel: aktuelle Vorlage-Labels auch für bereits gespeicherte Punkte. */
+export function displayBefundPunktTitel(punkt: {
+  titel: string;
+  vorlage_key?: string | null;
+}): string {
+  const key = punkt.vorlage_key?.trim();
+  if (!key) return punkt.titel;
+  for (const vorlage of Object.values(LEAD_BEFUND_VORLAGEN)) {
+    const def = vorlage.punkte.find((p) => p.key === key);
+    if (def) return def.titel;
+  }
+  return punkt.titel;
 }

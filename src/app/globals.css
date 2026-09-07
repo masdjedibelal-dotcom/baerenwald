@@ -1209,7 +1209,7 @@ h3 {
     min-height: 100%;
   }
 
-  /* Einheitlicher Zähler: Glocke, Sidebar, Mobile-Nav, Tabs — Sand (Deep Green) */
+  /* Einheitlicher Zähler: Sidebar, Mobile-Nav, Tabs — Sand (Deep Green) */
   .portal-count-badge {
     display: grid;
     place-items: center;
@@ -1235,11 +1235,14 @@ h3 {
     pointer-events: none;
   }
 
-  /* Glocke: Badge-Rahmen = Topbar-Grün (Outline-Icon) */
-  .portal-header-notifications .portal-count-badge--corner {
+  /* Glocke: ungelesene Notifications — Rot + weiße Schrift */
+  .portal-header-notifications .portal-count-badge--corner,
+  .portal-bell .portal-count-badge--corner {
     height: 19px;
     min-width: 19px;
-    border: 2px solid var(--org-primary-dk, var(--p2-primary-dk, #1a3d2b));
+    background: #d93b3b;
+    color: #fff;
+    border: none;
   }
 
   /* Kurzer Inhalt: Footer am Viewport-Boden; langer Inhalt: danach mitscrollen. */
@@ -1752,11 +1755,11 @@ h3 {
     overflow: visible;
   }
 
-  /* Glocke — Desktop: eckig + Schatten (CRM); Mobil: rund, Icon schwarz */
+  /* Glocke — Desktop + Mobil: eckig mit Soft-Radius (CRM) */
   .portal-bell-trigger {
     width: 44px;
     height: 44px;
-    border-radius: 999px;
+    border-radius: 8px;
     border: 1px solid rgba(255, 255, 255, 0.95);
     background: #fff;
     color: #142019;
@@ -1786,10 +1789,6 @@ h3 {
     color: #142019 !important;
   }
 
-  .portal-bell .portal-count-badge--corner {
-    border-color: var(--org-primary-dk, var(--p2-primary-dk, #1a3d2b));
-  }
-
   @media (min-width: 1024px) {
     .portal-bell-trigger {
       width: 36px;
@@ -1816,11 +1815,12 @@ h3 {
       height: 42px;
     }
 
-    /* Auch über Hero (content-bleed): weiße Pill, Icon schwarz */
+    /* Auch über Hero (content-bleed): weiße Soft-Quadrat-Pill, Icon schwarz */
     .portal-shell[data-content-bleed="true"] .portal-bell-trigger {
       background: #fff !important;
       border-color: #fff !important;
       color: #142019 !important;
+      border-radius: 8px;
     }
 
     .portal-shell[data-content-bleed="true"] .portal-bell-trigger .mock-icon {
@@ -1834,9 +1834,10 @@ h3 {
     display: none !important;
   }
 
-  /* Topbar-Suche — Mobil: weiß; Desktop CRM: Border + schwarze Schrift */
+  /* Topbar-Suche — Mobil: weiß, Soft-Radius wie Desktop; Desktop CRM: Border + schwarze Schrift */
   .portal-topbar .portal-search-input {
     border: 1px solid rgba(255, 255, 255, 0.95);
+    border-radius: 10px;
     background: #fff;
     color: #142019;
     box-shadow: 0 2px 10px rgba(16, 32, 24, 0.1);
@@ -1948,7 +1949,7 @@ h3 {
     .portal-bell-trigger {
       width: 42px;
       height: 42px;
-      border-radius: 999px;
+      border-radius: 8px;
     }
   }
 
@@ -2313,6 +2314,10 @@ h3 {
     min-width: 0;
   }
 
+  .portal-dash-focus-head--end {
+    justify-content: flex-end;
+  }
+
   .portal-dash-focus-kicker {
     display: inline-flex;
     align-items: center;
@@ -2515,7 +2520,7 @@ h3 {
     margin: 0;
     padding: 0;
     border-radius: 12px;
-    border: 1px solid rgba(20, 32, 25, 0.1);
+    border: 1px solid transparent;
     background: #fff;
     color: var(--p2-ink, #142019);
     cursor: pointer;
@@ -3645,7 +3650,8 @@ h3 {
     display: flex;
     align-items: center;
     justify-content: center;
-    background: rgba(245, 246, 244, 0.86);
+    /* Deckend — kein Durchscheinen von Confirm/Formular während Speichern */
+    background: #fff;
     padding: 16px;
   }
 
@@ -5045,9 +5051,14 @@ h3 {
       border-radius: 0 0 30px 30px;
     }
 
+    /* Detail: mehr Luft unter Topbar — Zurück nicht vom Header überlappt */
+    .portal-shell[data-content-bleed="true"] .portal-detail-hero {
+      padding-top: calc(var(--portal-topbar-overlap, 68px) + 28px);
+    }
+
     .portal-shell[data-content-bleed="true"] .portal-detail-cover-back,
     .portal-shell[data-content-bleed="true"] .portal-detail-cover-edit {
-      top: calc(var(--portal-topbar-overlap, 68px) + 12px);
+      top: calc(var(--portal-topbar-overlap, 68px) + 28px);
     }
 
     .portal-shell[data-content-bleed="true"] .portal-dash-body,

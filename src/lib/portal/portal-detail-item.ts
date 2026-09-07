@@ -150,6 +150,8 @@ export type KundePortalDetailItem = {
   meldeZeitraum?: string | null;
   /** Fachfragen (Frage → Antwort) aus dem Melde-Funnel */
   meldeFachdetails?: Array<{ label: string; value: string }>;
+  /** Freitext aus Funnel / HV-Erfassung (`kontakt_nachricht`) */
+  meldeBeschreibung?: string | null;
   /** Roh-Antworten für Ursachen-Matching (Wasser …) */
   meldeFachdetailAnswers?: Record<string, string | string[] | undefined>;
   /** Gespeicherter Ursachen-Check (funnel_daten.ursachen_check) */

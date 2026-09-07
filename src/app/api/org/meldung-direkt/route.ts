@@ -19,6 +19,8 @@ type Body = {
   bereichId?: string;
   fachdetailAnswers?: Record<string, string | string[]>;
   beschreibung?: string;
+  /** Öffentliche URLs aus /api/org/meldung-upload */
+  fotos?: string[];
   /** Abrechnung über Versicherung */
   versicherung?: boolean;
   versicherungsNr?: string;
@@ -46,6 +48,15 @@ export async function POST(req: Request) {
   const beschreibung = String(body.beschreibung ?? "").trim();
   const kategorie = (body.kategorie ?? "reparatur") as MeldeKategorie;
   const bereichId = parseMeldeBereichId(body.bereichId);
+  const fotos = Array.isArray(body.fotos)
+    ? body.fotos
+        .filter(
+          (u): u is string =>
+            typeof u === "string" && /^https?:\/\//i.test(u.trim())
+        )
+        .map((u) => u.trim())
+        .slice(0, 12)
+    : [];
 
   if (!objektId || !isValidName(melderName)) {
     return NextResponse.json({ error: "Pflichtfelder fehlen." }, { status: 400 });
@@ -80,6 +91,7 @@ export async function POST(req: Request) {
     kategorie,
     bereichId,
     fachdetailAnswers: body.fachdetailAnswers,
+    fotos,
     plz: String(objekt.plz ?? ""),
     strasse: objekt.strasse,
     hausnummer: objekt.hausnummer,

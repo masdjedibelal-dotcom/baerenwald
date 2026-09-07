@@ -106,8 +106,8 @@ function PhaseCard({
 }
 
 /**
- * Versicherungs-PDFs (Schadenmeldung / Schadenursache) — Inhalt des Tabs „Versicherungsakte“.
- * Ja/Nein und Policen-Nr. liegen in `OrganisationVersicherungsakteTab`.
+ * Versicherungs-PDF (Schadenmeldung) — Inhalt des Tabs „Versicherungsakte“.
+ * Ja/Nein und Versicherungsnummer liegen in `OrganisationVersicherungsakteTab`.
  */
 export function OrganisationVersicherungBlock({ leadId, onSaved }: Props) {
   const [readiness, setReadiness] = useState<Readiness | null>(null);
@@ -135,16 +135,12 @@ export function OrganisationVersicherungBlock({ leadId, onSaved }: Props) {
     void load();
   }, [load]);
 
-  async function openPdf(phase: VersicherungPdfPhase) {
+  async function openPdf() {
     setBusy(true);
     try {
       await runBusy(async () => {
-        await openPhasePdf(leadId, phase);
-        portalToastSuccess(
-          phase === "meldung"
-            ? "Schadenmeldung geöffnet."
-            : "Schadenursache geöffnet."
-        );
+        await openPhasePdf(leadId, "meldung");
+        portalToastSuccess("Schadenmeldung geöffnet.");
         await onSaved?.();
         await load();
       }, 320);
@@ -162,14 +158,7 @@ export function OrganisationVersicherungBlock({ leadId, onSaved }: Props) {
         description="Hergang, Melder und Objektangaben für die Einreichung."
         status={readiness?.meldung ?? null}
         busy={busy}
-        onOpen={() => void openPdf("meldung")}
-      />
-      <PhaseCard
-        title="Schadenursache"
-        description="Befund und Vor-Ort-Updates von Hausmeister und Handwerker."
-        status={readiness?.ursache ?? null}
-        busy={busy}
-        onOpen={() => void openPdf("ursache")}
+        onOpen={() => void openPdf()}
       />
     </div>
   );

@@ -487,6 +487,11 @@ function buildItemFromLead(
       (lead.objekt as { versicherungs_nr?: string | null } | null | undefined)
         ?.versicherungs_nr ?? null,
     meldeFotos,
+    meldeBeschreibung:
+      lead.kontakt_nachricht?.trim() ||
+      (typeof (lead as { notizen?: string | null }).notizen === "string"
+        ? (lead as { notizen?: string | null }).notizen?.trim() || null
+        : null),
     orgFreigabeStatus: lead.org_freigabe_status ?? null,
     freigabeBypassGrund: lead.freigabe_bypass_grund ?? null,
     funnelDirektauftrag:

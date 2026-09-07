@@ -1,7 +1,14 @@
 "use client";
 
 import { useRouter, useSearchParams } from "next/navigation";
-import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { flushSync } from "react-dom";
 
 import dynamic from "next/dynamic";
@@ -723,6 +730,23 @@ export function PortalClient({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedId, hvPortalMode]);
 
+  /** Nach Speichern im Detail: still neu laden (ohne Loader), sonst bleibt z. B. Kostenträger alt. */
+  const refetchDetailSilent = useCallback(async () => {
+    const id = selectedId?.trim();
+    if (!id) return;
+    const q = hvPortalMode ? "?hv=1" : "";
+    try {
+      const res = await fetch(
+        `/api/portal/vorgaenge/${encodeURIComponent(id)}${q}`
+      );
+      if (!res.ok) return;
+      const json = (await res.json()) as { item?: KundePortalDetailItem };
+      if (json?.item) setDetailItem(json.item);
+    } catch {
+      /* Liste bleibt Fallback */
+    }
+  }, [selectedId, hvPortalMode]);
+
   /** URL-/State-ID ohne Listen-Treffer und ohne Detail → nicht ewig „laden“. */
   useEffect(() => {
     if (!selectedId || listSelectedItem || detailMatchesSelection) return;
@@ -1135,7 +1159,10 @@ export function PortalClient({
       <PortalVorgangDetail
         item={selectedItem}
         showAnlassBadge={showAnlassBadge}
-        onAccepted={() => refreshFlash()}
+        onAccepted={() => {
+          refreshFlash();
+          void refetchDetailSilent();
+        }}
         hwErledigt={hwErledigtByLeadId[selectedLeadId]}
         hvFeedback={hvFeedbackByLeadId[selectedLeadId]}
         auftragId={auftragIdByLeadId[selectedLeadId]}
@@ -1172,7 +1199,10 @@ export function PortalClient({
           )?.hv_meldung_status ?? null
         }
         schwelleEur={kunde.freigabe_schwelle_eur ?? undefined}
-        onHvFeedbackSubmitted={() => refreshFlash()}
+        onHvFeedbackSubmitted={() => {
+          refreshFlash();
+          void refetchDetailSilent();
+        }}
         onBack={closeDetail}
       />
     </div>
@@ -1209,7 +1239,7 @@ export function PortalClient({
         </div>
         {showEmbeddedBusy ? (
           <div
-            className="absolute inset-0 z-[80] bg-[var(--surface-page,#f7f8fa)]/92 backdrop-blur-[2px]"
+            className="absolute inset-0 z-[80] bg-[var(--surface-page,#fff)]"
             role="presentation"
           >
             <div className="sticky top-[max(1rem,18vh)] flex justify-center px-3 py-6">

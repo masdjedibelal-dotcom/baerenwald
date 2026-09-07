@@ -27,7 +27,8 @@ export type PortalDashboardRecentRow = {
 };
 
 type Props = {
-  roleLabel: string;
+  /** @deprecated Nicht mehr im Hero — Name steht unter der Begrüßung. */
+  roleLabel?: string;
   /** Anzeigename (ohne „Hallo …“) */
   hello: string;
   heroImageUrl?: string | null;
@@ -63,7 +64,7 @@ type Props = {
  * Deep Green Dashboard: Hero (Grün + KPIs) → Fokus → optional Strip → Liste.
  */
 export function PortalScreenDashboard({
-  roleLabel,
+  roleLabel: _roleLabel,
   hello,
   heroImageUrl,
   brandKuerzel: _brandKuerzel,
@@ -104,9 +105,6 @@ export function PortalScreenDashboard({
 
         <div className="portal-dash-hero-inner">
           <div className="portal-dash-hero-copy">
-            {roleLabel ? (
-              <p className="portal-dash-hero-kicker">{roleLabel}</p>
-            ) : null}
             <p className="portal-dash-hero-greet">{greet}</p>
             <h1 className="portal-dash-hero-name">{displayName}</h1>
           </div>

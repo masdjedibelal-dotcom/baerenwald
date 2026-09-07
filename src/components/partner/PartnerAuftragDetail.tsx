@@ -688,10 +688,9 @@ export function PartnerAuftragDetail({
                 <PortalDetailSuccessBox>
                   <p className="font-semibold">Auftrag erledigt gemeldet</p>
                   <p className="text-sm mt-1">
-                    Du kannst jetzt die Rechnung erstellen oder hochladen.
+                    Als Nächstes Rechnung erstellen oder eigenes PDF hochladen.
                   </p>
                 </PortalDetailSuccessBox>
-                {rechnungInline}
               </PortalDetailCard>
             ) : (
               <p className="portal-text-body text-text-secondary">

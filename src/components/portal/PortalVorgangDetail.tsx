@@ -48,6 +48,8 @@ import type { PortalFlowTimelineVariant, PortalMockStatusId } from "@/lib/portal
 import { portalMieterStatusLabel } from "@/lib/portal2/status";
 
 function extractProjektbeschreibung(item: KundePortalDetailItem): string {
+  const fromMelde = item.meldeBeschreibung?.trim();
+  if (fromMelde) return fromMelde;
   for (const sec of item.sections ?? []) {
     const row = sec.rows?.find((r) =>
       /projektbeschreibung|beschreibung|anliegen|nachricht/i.test(r.label ?? "")

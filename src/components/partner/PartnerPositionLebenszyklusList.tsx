@@ -219,6 +219,9 @@ export function PartnerPositionLebenszyklusList({
   const [tbErledigt, setTbErledigt] = useState<string[]>([]);
   const [tbFotos, setTbFotos] = useState<File[]>([]);
   const [bulkSelected, setBulkSelected] = useState<string[]>([]);
+  const [bulkErledigtOpen, setBulkErledigtOpen] = useState(false);
+  const [bulkBeschreibung, setBulkBeschreibung] = useState("");
+  const [bulkFotos, setBulkFotos] = useState<File[]>([]);
   const [erledigtAccordionOpen, setErledigtAccordionOpen] = useState(false);
   const [nachtragOpen, setNachtragOpen] = useState(false);
   const [nachtragTitel, setNachtragTitel] = useState("");
@@ -373,15 +376,43 @@ export function PartnerPositionLebenszyklusList({
     setBulkSelected(bulkSelectableIds);
   }
 
+  function openBulkErledigt() {
+    if (!bulkSelected.length || submitting) return;
+    setBulkBeschreibung("");
+    setBulkFotos([]);
+    setBulkErledigtOpen(true);
+  }
+
+  function closeBulkErledigt() {
+    if (submitting) return;
+    setBulkErledigtOpen(false);
+    setBulkBeschreibung("");
+    setBulkFotos([]);
+  }
+
   function submitBulkErledigt() {
     if (!bulkSelected.length || submitting) return;
     const formData = new FormData();
     formData.set("auftragId", auftragId);
+    if (anfrageId) formData.set("anfrageId", anfrageId);
+    if (bulkBeschreibung.trim()) {
+      formData.set("beschreibung", bulkBeschreibung.trim());
+    }
     for (const id of bulkSelected) formData.append("positionIds", id);
-    setSubmitting(true);
+    paintPortalBusyNow(setSubmitting);
     void (async () => {
       try {
         await runBusy(async () => {
+          try {
+            for (const f of bulkFotos.slice(0, 12)) {
+              formData.append("fotos", await normalizePartnerCameraPhoto(f));
+            }
+          } catch {
+            portalToastError(
+              "Foto konnte nicht verarbeitet werden. Bitte erneut versuchen."
+            );
+            return;
+          }
           const res = await markPartnerPositionenErledigt(formData);
           if (!res.ok) {
             portalToastError(res.error);
@@ -393,6 +424,10 @@ export function PartnerPositionLebenszyklusList({
               : `${res.count} Leistungen erledigt.`
           );
           setBulkSelected([]);
+          setBulkErledigtOpen(false);
+          setBulkBeschreibung("");
+          setBulkFotos([]);
+          await reloadUpdates();
           await onDone?.();
         }, Math.max(PORTAL_BUSY_MIN_MS, 400));
       } finally {
@@ -780,7 +815,7 @@ export function PartnerPositionLebenszyklusList({
                   type="button"
                   className="btn-pill-primary"
                   disabled={submitting}
-                  onClick={() => submitBulkErledigt()}
+                  onClick={openBulkErledigt}
                 >
                   {bulkSelected.length} als erledigt
                 </button>
@@ -1276,6 +1311,75 @@ export function PartnerPositionLebenszyklusList({
           })()}
         </PortalModalShell>
       ) : null}
+
+      <PortalModalShell
+        open={bulkErledigtOpen}
+        title="Erledigt"
+        subtitle={
+          bulkSelected.length === 1
+            ? sortedPositionen.find((p) => p.id === bulkSelected[0])
+                ?.leistung_name ?? "1 Leistung"
+            : `${bulkSelected.length} Leistungen — Beschreibung gilt für jede Position`
+        }
+        onClose={closeBulkErledigt}
+        variant="edit"
+        dirty={
+          !submitting &&
+          (bulkBeschreibung.trim().length > 0 || bulkFotos.length > 0)
+        }
+        closeOnBackdrop={!submitting}
+        busy={submitting && bulkErledigtOpen}
+        busyTitle="Wird abgeschlossen…"
+        busyBody="Fotos und Daten werden übertragen."
+      >
+        <div className="flex flex-col gap-3">
+          {bulkSelected.length > 1 ? (
+            <ul className="max-h-28 space-y-1 overflow-y-auto rounded-xl border border-border-light px-3 py-2">
+              {bulkSelected.map((id) => {
+                const name =
+                  sortedPositionen.find((p) => p.id === id)?.leistung_name ??
+                  "Leistung";
+                return (
+                  <li
+                    key={id}
+                    className="text-[13px] font-semibold text-text-primary"
+                  >
+                    {name}
+                  </li>
+                );
+              })}
+            </ul>
+          ) : null}
+          <PartnerMultiFotoSlot
+            label="Ergebnis-Fotos"
+            required={false}
+            value={bulkFotos}
+            onChange={setBulkFotos}
+            disabled={submitting}
+          />
+          <PartnerKiKorrekturField
+            scope="bautagebuch"
+            label="Beschreibung"
+            value={bulkBeschreibung}
+            onChange={setBulkBeschreibung}
+            rows={8}
+            auftragTitel={auftragTitel}
+            placeholder="Kurz beschreiben… (wird bei jeder Position hinterlegt)"
+          />
+          <button
+            type="button"
+            className="btn-pill-primary mt-2 w-full"
+            disabled={submitting}
+            onClick={submitBulkErledigt}
+          >
+            {submitting
+              ? "Speichern…"
+              : bulkSelected.length === 1
+                ? "Als erledigt speichern"
+                : `${bulkSelected.length} als erledigt speichern`}
+          </button>
+        </div>
+      </PortalModalShell>
 
       <PortalModalShell
         open={updateOpen}

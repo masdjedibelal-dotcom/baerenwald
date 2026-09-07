@@ -507,13 +507,28 @@ export async function rejectKundeAngebot(
   }
 
   if (leadId) {
-    await supabaseAdmin
+    const leadPatch: Record<string, unknown> = {
+      vorgang_phase: "abgelehnt",
+      updated_at: now,
+    };
+    /* Ablehnung = Freigabe beendet — sonst bleibt CRM-Card auf „ausstehend/wartend“. */
+    const { data: leadRow } = await supabaseAdmin
       .from("leads")
-      .update({
-        vorgang_phase: "abgelehnt",
-        updated_at: now,
-      })
-      .eq("id", leadId);
+      .select("org_freigabe_status")
+      .eq("id", leadId)
+      .maybeSingle();
+    const freigabe = String(leadRow?.org_freigabe_status ?? "")
+      .trim()
+      .toLowerCase();
+    if (
+      freigabe === "ausstehend" ||
+      freigabe === "beschluss_ausstehend" ||
+      freigabe === "freigegeben"
+    ) {
+      leadPatch.org_freigabe_status = "abgelehnt";
+    }
+
+    await supabaseAdmin.from("leads").update(leadPatch).eq("id", leadId);
 
     await supabaseAdmin.from("lead_timeline").insert({
       lead_id: leadId,

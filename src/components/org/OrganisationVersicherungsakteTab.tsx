@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import { OrganisationVersicherungBlock } from "@/components/org/OrganisationVersicherungBlock";
 import { PortalContentBusy } from "@/components/shared/PortalContentBusy";
@@ -17,7 +17,8 @@ type Props = {
 };
 
 function isVersicherungsAbrechnung(kt: string | null | undefined): boolean {
-  return String(kt ?? "").trim().toLowerCase() === "versicherung";
+  const v = String(kt ?? "").trim().toLowerCase();
+  return v === "versicherung";
 }
 
 /**
@@ -31,7 +32,9 @@ export function OrganisationVersicherungsakteTab({
   objektPolicenNr,
   onSaved,
 }: Props) {
-  const versicherung = isVersicherungsAbrechnung(kostentraeger);
+  /** Lokal halten — Parent-Detail aktualisiert nach Speichern oft erst nach Reload. */
+  const [ktLocal, setKtLocal] = useState(kostentraeger ?? "");
+  const versicherung = isVersicherungsAbrechnung(ktLocal);
   const [versNr, setVersNr] = useState(
     versicherungsNr?.trim() || objektPolicenNr?.trim() || ""
   );
@@ -40,8 +43,18 @@ export function OrganisationVersicherungsakteTab({
   const [generatingAkte, setGeneratingAkte] = useState(false);
   const { runBusy } = usePortalBusy();
 
+  useEffect(() => {
+    setKtLocal(kostentraeger ?? "");
+  }, [kostentraeger]);
+
+  useEffect(() => {
+    setVersNr(versicherungsNr?.trim() || objektPolicenNr?.trim() || "");
+  }, [versicherungsNr, objektPolicenNr]);
+
   async function setAbrechnung(ja: boolean) {
     if (ja === versicherung) return;
+    const prev = ktLocal;
+    setKtLocal(ja ? "versicherung" : "unklar");
     setBusy(true);
     if (ja) setGeneratingAkte(true);
     try {
@@ -69,6 +82,7 @@ export function OrganisationVersicherungsakteTab({
         await onSaved?.();
       }, ja ? 700 : 320);
     } catch (e) {
+      setKtLocal(prev);
       portalToastError(e instanceof Error ? e.message : "Fehler");
     } finally {
       setBusy(false);
@@ -147,13 +161,13 @@ export function OrganisationVersicherungsakteTab({
         />
       ) : versicherung ? (
         <>
-          <PortalDetailCard title="Versicherungsdaten">
+          <PortalDetailCard title="Versicherungsnummer">
             <input
               type="text"
               value={versNr}
               onChange={(e) => setVersNr(e.target.value)}
               onBlur={() => void speichernVersNr()}
-              placeholder="Policen- / Versicherungsnummer (optional)"
+              placeholder="Versicherungsnummer (optional)"
               disabled={busy}
               className="portal-field w-full max-w-md"
             />

@@ -87,6 +87,27 @@ assert.equal(
   "kein CTA nach Legacy-Signatur"
 );
 
+assert.equal(
+  partnerZeigtAbschlussCta({
+    positionen: [{ ...basePos, handwerker_status: "erledigt" }],
+    vorgangState: "in_bearbeitung",
+    auftragStatus: "offen",
+  }),
+  false,
+  "kein Abschluss-CTA wenn Positionen final erledigt (ohne Timestamp)"
+);
+
+assert.equal(
+  partnerZeigtAbschlussCta({
+    positionen: [{ ...basePos, handwerker_status: "erledigt" }],
+    vorgangState: "erledigt",
+    auftragStatus: "offen",
+    hwErledigtGemeldetAm: "2026-07-24T10:00:00Z",
+  }),
+  false,
+  "kein Abschluss-CTA nach Rechnung-Phase (vorgang erledigt)"
+);
+
 const item = {
   angebotHandwerkerId: "a1",
   status: "offen",
@@ -96,7 +117,18 @@ const item = {
   hw_erledigt_gemeldet_am: null,
   hw_abschluss_signiert_am: null,
   abnahme_protokoll_url: null,
+  positionen: [],
 } as PartnerAuftragItem;
+
+assert.equal(
+  partnerAuftragKannRechnungHochladen({
+    ...item,
+    angebotHwStatus: "uebernommen",
+    positionen: [{ ...basePos, handwerker_status: "erledigt" }],
+  } as PartnerAuftragItem),
+  true,
+  "Rechnung-CTA nach Positions-erledigt ohne Timestamp"
+);
 
 assert.equal(
   partnerAuftragKannRechnungHochladen(item),

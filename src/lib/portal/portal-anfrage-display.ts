@@ -33,6 +33,8 @@ export type PortalAnfrageLeadSource = {
   preis_unsicher?: boolean | null;
   kontakt_name?: string | null;
   kontakt_nachricht?: string | null;
+  /** CRM/HV-Meldung: Freitext oft hier, parallel zu kontakt_nachricht */
+  notizen?: string | null;
   funnel_daten?: unknown;
   hv_meldung_status?: string | null;
   objekt?: PortalObjekt | null;
@@ -281,7 +283,20 @@ export function formatAnfrageBereiche(lead: PortalAnfrageLeadSource): string | u
   const parts = norm.bereiche
     .map((b) => labelBereich(b))
     .filter((l) => l && l !== "—");
-  return parts.length ? parts.join(", ") : undefined;
+  if (parts.length) return parts.join(", ");
+  // Melde-Funnel speichert oft nur melde_bereich (ohne bereiche[])
+  const fd =
+    lead.funnel_daten &&
+    typeof lead.funnel_daten === "object" &&
+    !Array.isArray(lead.funnel_daten)
+      ? (lead.funnel_daten as { melde_bereich?: unknown })
+      : null;
+  const meldeBereich = String(fd?.melde_bereich ?? "").trim();
+  if (meldeBereich) {
+    const l = labelBereich(meldeBereich);
+    if (l && l !== "—") return l;
+  }
+  return undefined;
 }
 
 export function formatAnfrageWasGemacht(

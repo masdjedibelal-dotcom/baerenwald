@@ -724,15 +724,25 @@ export async function getPartnerDataForHandwerker(
       protokollId: row.abnahme_protokoll_id ?? null,
       erledigtGemeldetAm: row.erledigt_gemeldet_am ?? null,
     };
+    const prev = abnahmeByAuftrag.get(aid);
+    /** Nie leere/inaktive Zeile über gesetztes erledigt_gemeldet_am legen. */
+    const merged = {
+      signiertAm: abnahmePayload.signiertAm ?? prev?.signiertAm ?? null,
+      protokollId: abnahmePayload.protokollId ?? prev?.protokollId ?? null,
+      erledigtGemeldetAm:
+        abnahmePayload.erledigtGemeldetAm ??
+        prev?.erledigtGemeldetAm ??
+        null,
+    };
     /* ersetzt: kein aktiver Portal-Zugriff über Zuweisung */
     if (isPartnerZuweisungInaktiv(st)) {
-      abnahmeByAuftrag.set(aid, abnahmePayload);
+      abnahmeByAuftrag.set(aid, merged);
       continue;
     }
     const list = hwStatusByAuftrag.get(aid) ?? [];
     list.push(st);
     hwStatusByAuftrag.set(aid, list);
-    abnahmeByAuftrag.set(aid, abnahmePayload);
+    abnahmeByAuftrag.set(aid, merged);
   }
   for (const r of posAuftraege ?? []) {
     const aid = String((r as { auftrag_id: string }).auftrag_id);

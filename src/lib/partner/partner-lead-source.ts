@@ -12,6 +12,7 @@ export type PartnerLeadDbRow = {
   preis_max?: number | null;
   budget_ca?: number | null;
   kontakt_nachricht?: string | null;
+  notizen?: string | null;
   funnel_daten?: unknown;
   anlass?: string | null;
   kanal?: string | null;
@@ -93,6 +94,7 @@ export function buildPartnerLeadSource(opts: {
     budget_ca: lead.budget_ca,
     kontakt_name: lead.kontakt_name,
     kontakt_nachricht: lead.kontakt_nachricht,
+    notizen: lead.notizen,
     funnel_daten: lead.funnel_daten,
     anlass: lead.anlass,
     ...(lead.kanal ? { kanal: lead.kanal } : {}),

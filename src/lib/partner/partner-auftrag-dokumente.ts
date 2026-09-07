@@ -1,6 +1,10 @@
 import type { DokumentZeile } from "@/components/shared/DokumenteTabelle";
 import type { PartnerAuftragItem } from "@/lib/partner/get-partner-data";
 import { partnerHwDokumentListenName, PARTNER_MAX_HW_UNTERLAGEN_GESAMT } from "@/lib/partner/partner-hw-dokument-typen";
+import {
+  partnerAbschlussRelevantePositionen,
+  positionHandwerkerErledigt,
+} from "@/lib/partner/partner-position-erledigt";
 
 function dokumentDatumMs(datum?: string | null): number {
   if (!datum?.trim()) return 0;
@@ -113,6 +117,7 @@ export function buildPartnerAuftragDokumentZeilen(
 /**
  * Partner hat Arbeit abgeschlossen → Rechnung freischaltbar.
  * Primär: erledigt_gemeldet_am (ohne Abnahme). Legacy: Signatur / Protokoll.
+ * Fallback: alle relevanten Positionen handwerker_status=erledigt.
  */
 export function partnerAuftragHatAbschluss(
   item: Pick<
@@ -122,6 +127,7 @@ export function partnerAuftragHatAbschluss(
     | "abnahme_freigabe_status"
     | "abnahme_protokoll_id"
     | "abnahme_protokoll_url"
+    | "positionen"
   >
 ): boolean {
   if (item.hw_erledigt_gemeldet_am?.trim()) return true;
@@ -132,7 +138,13 @@ export function partnerAuftragHatAbschluss(
   const freigabe = String(item.abnahme_freigabe_status ?? "")
     .trim()
     .toLowerCase();
-  return Boolean(freigabe) && freigabe !== "abgelehnt";
+  if (Boolean(freigabe) && freigabe !== "abgelehnt") return true;
+
+  const relevant = partnerAbschlussRelevantePositionen(item.positionen ?? []);
+  return (
+    relevant.length > 0 &&
+    relevant.every((p) => positionHandwerkerErledigt(p.handwerker_status))
+  );
 }
 
 /**

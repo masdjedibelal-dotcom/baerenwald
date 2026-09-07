@@ -14,7 +14,6 @@ import {
   labelBadAusstattung,
   labelBereich,
   labelDringlichkeit,
-  labelKundentyp,
   labelSituation,
   labelZeitraum,
   labelZugaenglichkeit,
@@ -76,11 +75,19 @@ export function normalizeFunnelDaten(
   bereicheFallback?: string[] | null
 ): NormalizedFunnelDaten {
   const d = asRecord(funnel_daten);
-  const bereiche = Array.isArray(d.bereiche)
+  const bereicheRaw = Array.isArray(d.bereiche)
     ? (d.bereiche as string[]).map(String)
     : Array.isArray(bereicheFallback)
       ? bereicheFallback
       : [];
+  const meldeBereich =
+    typeof d.melde_bereich === "string" ? d.melde_bereich.trim() : "";
+  const bereiche =
+    bereicheRaw.length > 0
+      ? bereicheRaw
+      : meldeBereich
+        ? [meldeBereich]
+        : [];
 
   const fdRaw = d.fachdetails;
   const fachdetails: FachdetailsState =
@@ -279,9 +286,32 @@ export function fachdetailRowsFromFunnelDaten(
   funnel_daten: unknown,
   bereicheFallback?: string[] | null
 ): MailTableRow[] {
-  return buildFunnelPortalDetailRows(
-    normalizeFunnelDaten(funnel_daten, bereicheFallback)
+  return filterVorgangDetailFachRows(
+    buildFunnelPortalDetailRows(
+      normalizeFunnelDaten(funnel_daten, bereicheFallback)
+    )
   );
+}
+
+/**
+ * Meta-Zeilen, die in Portal-Details nicht mehr sinnvoll sind
+ * (Kundentyp, Hausmeister-Bereichszeile, „Wichtig“).
+ */
+const VORGANG_DETAIL_SKIP_LABELS = new Set([
+  "kundentyp",
+  "hausmeister",
+  "hausmeisterservice",
+  "wichtig",
+]);
+
+export function filterVorgangDetailFachRows(
+  rows: MailTableRow[] | null | undefined
+): MailTableRow[] {
+  if (!rows?.length) return [];
+  return rows.filter((r) => {
+    const label = r.label.trim().toLowerCase();
+    return !VORGANG_DETAIL_SKIP_LABELS.has(label);
+  });
 }
 
 /**
@@ -306,10 +336,6 @@ export function buildFunnelPortalDetailRows(
   if (norm.dringlichkeit) {
     const l = labelDringlichkeit(norm.dringlichkeit);
     if (l && l !== "—") push("Dringlichkeit", l);
-  }
-  if (norm.kundentyp) {
-    const l = labelKundentyp(norm.kundentyp);
-    if (l && l !== "—") push("Kundentyp", l);
   }
   if (norm.zugaenglichkeit) {
     const l = labelZugaenglichkeit(norm.zugaenglichkeit);
@@ -432,4 +458,4 @@ export {
   labelDringlichkeit,
   labelZugaenglichkeit,
   labelBereich,
-};
+} from "@/lib/lead-funnel-labels";

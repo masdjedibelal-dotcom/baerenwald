@@ -451,7 +451,7 @@ export function PortalShell({
                     </div>
                     {showContentBusy ? (
                       <div
-                        className="absolute inset-0 z-[80] bg-[var(--surface-page,#f5f6f4)]/92 backdrop-blur-[2px]"
+                        className="absolute inset-0 z-[80] bg-[var(--surface-page,#fff)]"
                         role="presentation"
                       >
                         <div className="sticky top-[max(1rem,18vh)] flex justify-center px-3 py-6">

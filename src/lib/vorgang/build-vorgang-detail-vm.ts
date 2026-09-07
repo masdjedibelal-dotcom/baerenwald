@@ -15,9 +15,12 @@ import {
 import { labelSituation } from "@/lib/lead-funnel-labels";
 import type { PortalObjekt } from "@/lib/portal/portal-objekt";
 import {
+  extractKundenFreitext,
   fachdetailRowsFromFunnelDaten,
+  filterVorgangDetailFachRows,
   normalizeFunnelDaten,
 } from "@/lib/lead-funnel-daten";
+import { meldeFotosFromFunnelDaten } from "@/lib/org/org-eingang-utils";
 import { formatAuftragDatumSpan } from "@/lib/portal/portal-auftrag-display";
 import { isPrivatPortalKontext } from "@/lib/portal/portal-titel";
 import {
@@ -221,7 +224,7 @@ export function buildKundeHvVorgangDetailVm(
 
   const funnelRows =
     input.meldeFachdetails && input.meldeFachdetails.length > 0
-      ? input.meldeFachdetails
+      ? filterVorgangDetailFachRows(input.meldeFachdetails)
       : lead?.funnel_daten
         ? fachdetailRowsFromFunnelDaten(lead.funnel_daten, lead.bereiche)
         : [];
@@ -384,12 +387,12 @@ export function buildPartnerVorgangDetailVm(
     labelSituation(situationSlug) !== "—"
       ? labelSituation(situationSlug)
       : null;
-  const bereichLabel = lead ? formatAnfrageBereiche(lead) ?? null : null;
-  const fachdetailRows = (
+  const bereichLabel =
+    !einholung && lead ? formatAnfrageBereiche(lead) ?? null : null;
+  const fachdetailRows =
     !einholung && lead?.funnel_daten
       ? fachdetailRowsFromFunnelDaten(lead.funnel_daten, lead.bereiche)
-      : []
-  ).filter((row) => row.label.trim().toLowerCase() !== "kundentyp");
+      : [];
   const zeitraumLabel = einholung
     ? null
     : input.zeitraum?.trim() ||
@@ -399,8 +402,17 @@ export function buildPartnerVorgangDetailVm(
   const beschreibung = einholung
     ? input.beschreibungPlain?.trim() || null
     : input.beschreibungPlain?.trim() ||
+      (norm
+        ? extractKundenFreitext(norm, lead?.kontakt_nachricht)
+        : null) ||
       lead?.kontakt_nachricht?.trim() ||
+      lead?.notizen?.trim() ||
       null;
+
+  const fotos =
+    input.fotos && input.fotos.length > 0
+      ? input.fotos
+      : meldeFotosFromFunnelDaten(lead?.funnel_daten);
 
   const objektName = lead?.objekt?.name?.trim() || null;
   const showObjekt =
@@ -435,7 +447,7 @@ export function buildPartnerVorgangDetailVm(
         : null,
       melderEmail: showMeldeKontakt ? melder.email ?? null : null,
       beschreibung,
-      fotos: input.fotos ?? [],
+      fotos,
       situationLabel,
       bereichLabel,
       zeitraumLabel,

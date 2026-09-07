@@ -34,6 +34,7 @@ import { usePortalBusy } from "@/components/shared/PortalBusyContext";
 import { PortalActionMenu } from "@/components/shared/PortalActionMenu";
 import { PortalDetailInfoBox } from "@/components/shared/PortalDetailUi";
 import {
+  displayBefundPunktTitel,
   getBefundVorlage,
   isBefundVorlageKey,
   listVorlageKatalogOffen,
@@ -158,6 +159,7 @@ function BefundPunktCard({
   const tone = statusTone(punkt.status);
   const datum = fmtDatum(punkt.updated_at);
   const notiz = punkt.notiz.trim();
+  const titel = displayBefundPunktTitel(punkt);
 
   return (
     <article
@@ -173,7 +175,7 @@ function BefundPunktCard({
           <div className="flex items-start gap-3">
             <div className="min-w-0 flex-1">
               <p className="portal-text-body font-semibold text-text-primary">
-                {punkt.titel}
+                {titel}
               </p>
               {notiz ? (
                 <p className="portal-text-meta mt-0.5 line-clamp-2 text-text-secondary">
@@ -213,7 +215,7 @@ function BefundPunktCard({
           <button
             type="button"
             className="shrink-0 rounded-lg p-2 text-text-tertiary transition-colors hover:bg-[var(--p2-hover,#eef1ef)] hover:text-red-700"
-            aria-label={`${punkt.titel} entfernen`}
+            aria-label={`${titel} entfernen`}
             onClick={(e) => {
               e.stopPropagation();
               onDelete();
@@ -589,8 +591,7 @@ export function OrgHmBefundPanel({
       {!loading && befund ? (
         <>
           {(isHv && befund.ergebnis) || !isHv ? (
-            <div className="flex flex-wrap items-end justify-between gap-3">
-              <div className="flex min-w-0 flex-1 flex-wrap gap-x-8 gap-y-2">
+            <div className="flex min-w-0 flex-wrap gap-x-8 gap-y-2">
                 <label className="block min-w-[8rem]">
                   <span className="portal-text-label text-text-tertiary">
                     Durchgeführt von
@@ -654,28 +655,6 @@ export function OrgHmBefundPanel({
                     </p>
                   )}
                 </label>
-              </div>
-              {editable ? (
-                <PortalActionMenu
-                  variant="popover"
-                  title="Prüfpunkt hinzufügen"
-                  trigger={
-                    <button
-                      type="button"
-                      className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full border-2 text-accent transition-opacity hover:opacity-90"
-                      style={{
-                        borderColor: "var(--p2-accent, var(--accent))",
-                        background:
-                          "var(--p2-accent-soft, rgba(46,125,82,0.12))",
-                      }}
-                      aria-label="Prüfpunkt hinzufügen"
-                    >
-                      <Plus className="h-4 w-4" strokeWidth={2.5} aria-hidden />
-                    </button>
-                  }
-                  items={addMenuItems}
-                />
-              ) : null}
             </div>
           ) : null}
 
@@ -721,9 +700,32 @@ export function OrgHmBefundPanel({
             </p>
           ) : editable ? (
             <p className="portal-text-meta text-text-tertiary">
-              Noch keine Prüfpunkte — über „+“ Vorschläge wählen oder einen
-              eigenen Punkt anlegen.
+              Noch keine Prüfpunkte — unten weitere Punkte hinzufügen.
             </p>
+          ) : null}
+
+          {editable ? (
+            <div className="flex justify-center pt-1">
+              <PortalActionMenu
+                variant="popover"
+                title="Prüfpunkt hinzufügen"
+                trigger={
+                  <button
+                    type="button"
+                    className="inline-flex items-center gap-2 rounded-xl px-3 py-2.5 text-[14px] font-semibold text-accent transition-opacity hover:opacity-90"
+                    style={{
+                      background:
+                        "var(--p2-accent-soft, rgba(46,125,82,0.12))",
+                    }}
+                    aria-label="Weitere hinzufügen"
+                  >
+                    <Plus className="h-4 w-4" strokeWidth={2.5} aria-hidden />
+                    Weitere hinzufügen
+                  </button>
+                }
+                items={addMenuItems}
+              />
+            </div>
           ) : null}
 
           {editable && !hideInlineActions ? (
@@ -751,7 +753,9 @@ export function OrgHmBefundPanel({
         open={Boolean(editPunkt)}
         onClose={closePunkt}
         variant="edit"
-        title={editPunkt?.titel ?? "Prüfpunkt"}
+        title={
+          editPunkt ? displayBefundPunktTitel(editPunkt) : "Prüfpunkt"
+        }
         subtitle={editable ? "Status, Notiz und Fotos" : "Nur Ansicht"}
         dirty={draftDirty}
         onConfirm={editable ? () => void savePunkt() : undefined}
@@ -788,7 +792,7 @@ export function OrgHmBefundPanel({
                   setDraftDirty(true);
                 }}
                 contextHint={[
-                  `Prüfpunkt: ${editPunkt.titel}`,
+                  `Prüfpunkt: ${displayBefundPunktTitel(editPunkt)}`,
                   befund?.vorlage_key && isBefundVorlageKey(befund.vorlage_key)
                     ? `Vorlage: ${getBefundVorlage(befund.vorlage_key).label}`
                     : null,

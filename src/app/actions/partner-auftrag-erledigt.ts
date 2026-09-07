@@ -128,6 +128,13 @@ export async function markPartnerAuftragErledigt(
     return { ok: false, error: "Keine Leistungen zum Abschließen vorhanden." };
   }
 
+  if (!ahRow?.id) {
+    return {
+      ok: false,
+      error: "Keine aktive Auftragszuweisung — bitte Support kontaktieren.",
+    };
+  }
+
   const now = new Date().toISOString();
 
   let { error: updateErr } = await supabaseAdmin
@@ -150,13 +157,15 @@ export async function markPartnerAuftragErledigt(
     return { ok: false, error: "Leistungen konnten nicht aktualisiert werden." };
   }
 
-  if (ahRow?.id) {
-    const { error: ahErr } = await supabaseAdmin
-      .from("auftrag_handwerker")
-      .update({ erledigt_gemeldet_am: now })
-      .eq("id", ahRow.id);
-    if (ahErr && !/erledigt_gemeldet_am|column/i.test(ahErr.message)) {
-      console.error("[markPartnerAuftragErledigt] ah", ahErr.message);
+  const { error: ahErr } = await supabaseAdmin
+    .from("auftrag_handwerker")
+    .update({ erledigt_gemeldet_am: now })
+    .eq("id", ahRow.id);
+  if (ahErr) {
+    console.error("[markPartnerAuftragErledigt] ah", ahErr.message);
+    // Positionen sind schon auf erledigt — CTA erkennt das als Fallback.
+    // Timestamp-Fehler nicht totblocken, aber loggen.
+    if (!/erledigt_gemeldet_am|column|schema cache/i.test(ahErr.message)) {
       return {
         ok: false,
         error: "Erledigt-Meldung konnte nicht gespeichert werden.",

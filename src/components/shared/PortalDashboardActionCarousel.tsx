@@ -128,12 +128,6 @@ export function PortalDashboardActionCarousel({
 
   if (!slide || count === 0) return null;
 
-  const tone = slide.kickerTone ?? "sand";
-  const dotColor =
-    tone === "green"
-      ? "var(--org-primary, var(--p2-primary, #2e7d52))"
-      : "var(--p2-sand, #e8b04b)";
-
   return (
     <article
       className={cn("portal-dash-focus portal-dash-action-carousel", className)}
@@ -156,15 +150,7 @@ export function PortalDashboardActionCarousel({
         ) : null}
 
         <div className="portal-dash-action-carousel-main">
-          <div className="portal-dash-focus-head">
-            <div className="portal-dash-focus-kicker">
-              <span
-                className="portal-dash-focus-dot"
-                style={{ background: dotColor }}
-                aria-hidden
-              />
-              <span>{slide.kicker}</span>
-            </div>
+          <div className="portal-dash-focus-head portal-dash-focus-head--end">
             <button
               type="button"
               className="portal-dash-focus-open"

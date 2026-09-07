@@ -1035,7 +1035,11 @@ export async function createPartnerTagebuchEintrag(
   return { ok: true, eintragId: eintrag.id, positionId: primaryPos ?? "" };
 }
 
-/** Mehrere Leistungen als erledigt markieren (ohne Doku-Pflicht). */
+/**
+ * Mehrere LV-/Festpreis-Leistungen als erledigt markieren.
+ * Optional: gleiche Beschreibung + Fotos als Ergebnis-Eintrag pro Position
+ * (wie Einzel-Erledigt, Beschreibung wird an jede Position gehängt).
+ */
 export async function markPartnerPositionenErledigt(
   formData: FormData
 ): Promise<{ ok: true; count: number } | { ok: false; error: string }> {
@@ -1055,9 +1059,26 @@ export async function markPartnerPositionenErledigt(
     return { ok: false, error: "Auftrag ist abgeschlossen (read-only)." };
   }
 
+  const { beschreibung, beschreibungRoh, anfrageId } =
+    readBeschreibungFromForm(formData);
+  const fotos = parseFotosFromForm(formData);
+  const fotoMeta = parseFotoFromForm(formData);
+  if (fotoMeta.nachgereicht && !fotoMeta.nachreichGrund) {
+    return { ok: false, error: "Bitte Grund für nachgereichtes Foto angeben." };
+  }
+  const allFotos = [
+    ...fotos,
+    ...(fotoMeta.file &&
+    !fotos.some(
+      (f) => f.name === fotoMeta.file!.name && f.size === fotoMeta.file!.size
+    )
+      ? [fotoMeta.file]
+      : []),
+  ];
+
   const { data: rows, error } = await supabaseAdmin
     .from("auftrag_positionen")
-    .select("id, typ, verguetung, leistung_status")
+    .select("id, typ, verguetung, leistung_status, leistung_name")
     .eq("auftrag_id", auftragId)
     .eq("handwerker_id", auth.handwerkerId)
     .in("id", unique);
@@ -1075,9 +1096,78 @@ export async function markPartnerPositionenErledigt(
         error: "Regie-Leistungen bitte über „Ende — Dokumentieren“ abschließen.",
       };
     }
+    const st = String(r.leistung_status ?? "offen");
+    if (st === "erledigt") {
+      return { ok: false, error: "Eine Leistung ist bereits erledigt." };
+    }
   }
 
   const now = new Date().toISOString();
+  const hasDoku = Boolean(beschreibung?.trim()) || allFotos.length > 0;
+
+  if (hasDoku) {
+    for (const r of rows ?? []) {
+      const positionId = String(r.id);
+      const st = String(r.leistung_status ?? "offen");
+      if (st === "offen") {
+        await supabaseAdmin
+          .from("auftrag_positionen")
+          .update({
+            leistung_status: "in_arbeit",
+            gestartet_am: now,
+            handwerker_status: "bestaetigt",
+          })
+          .eq("id", positionId);
+      }
+
+      const eintrag = await insertEintrag({
+        positionId,
+        typ: "ergebnis",
+        beschreibung:
+          beschreibung?.trim() ||
+          (allFotos.length > 0 ? "Ergebnis-Fotos" : null),
+        beschreibungRoh,
+        zeitMinuten: null,
+        handwerkerId: auth.handwerkerId,
+        auftragId,
+        leistungName: (r.leistung_name as string | null) ?? null,
+        anfrageId,
+      });
+      if (!eintrag.ok) return eintrag;
+
+      for (const file of allFotos) {
+        const attached = await attachFoto({
+          eintragId: eintrag.id,
+          handwerkerId: auth.handwerkerId,
+          auftragId,
+          positionId,
+          file,
+          captureAt: fotoMeta.captureAt,
+          nachgereicht: fotoMeta.nachgereicht,
+          nachreichGrund: fotoMeta.nachreichGrund,
+        });
+        if (!attached.ok) return attached;
+      }
+
+      void syncPartnerPositionEintragToKundeTimeline({
+        eintragId: eintrag.id,
+        auftragId,
+        typ: "ergebnis",
+        beschreibung: beschreibung?.trim() || null,
+        leistungName: (r.leistung_name as string | null) ?? null,
+        handwerkerId: auth.handwerkerId,
+      });
+
+      void notifyCrmLeistungUpdate({
+        auftragId,
+        positionId,
+        handwerkerId: auth.handwerkerId,
+        leistungName: (r.leistung_name as string | null) ?? null,
+        beschreibung: beschreibung?.trim() || null,
+      });
+    }
+  }
+
   const { error: upErr } = await supabaseAdmin
     .from("auftrag_positionen")
     .update({
@@ -1094,7 +1184,11 @@ export async function markPartnerPositionenErledigt(
     entityId: auftragId,
     aktion: "partner_positionen_erledigt",
     actorRolle: "partner",
-    payload: { position_ids: unique },
+    payload: {
+      position_ids: unique,
+      mit_doku: hasDoku,
+      foto_count: allFotos.length,
+    },
   });
 
   revalidatePath("/partner");
