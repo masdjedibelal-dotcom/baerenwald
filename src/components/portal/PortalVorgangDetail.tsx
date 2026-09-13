@@ -516,7 +516,7 @@ export function PortalVorgangDetail({
           {activeSection === "bautagebuch" && showBautagebuchTab ? (
             <BautagebuchCardFeed
               heading="Updates"
-              emptyText="Noch keine Updates vom Handwerker."
+              emptyText="Noch keine Updates."
               eintraege={(item.bautagebuch ?? []).map((b) => ({
                 id: b.id ?? `${b.datum}-${b.titel}`,
                 datum: b.datum ?? b.created_at,

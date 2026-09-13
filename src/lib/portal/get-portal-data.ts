@@ -162,6 +162,11 @@ export type PortalDataLoadOpts = {
   mode?: PortalDataLoadMode;
   /** Optional: nur diese Lead-IDs laden (Detail on demand). */
   leadIds?: string[];
+  /**
+   * HV: Partner-/HW-Updates im Updates-Tab.
+   * Default false — Kunde sieht nur CRM-Bautagebuch.
+   */
+  includeHandwerkerUpdates?: boolean;
 };
 
 export async function getPortalDataForKunde(
@@ -171,6 +176,7 @@ export async function getPortalDataForKunde(
   if (!isSupabaseConfigured()) return null;
 
   const listMode = (opts?.mode ?? "list") !== "full";
+  const includeHandwerkerUpdates = Boolean(opts?.includeHandwerkerUpdates);
   const onlyLeadIds = (opts?.leadIds ?? [])
     .map((x) => String(x ?? "").trim())
     .filter(Boolean);
@@ -565,7 +571,7 @@ export async function getPortalDataForKunde(
           : supabaseAdmin
               .from("auftrag_timeline")
               .select(
-                "id, auftrag_id, typ, titel, beschreibung, foto_urls, created_at, fuer_kunde_freigegeben"
+                "id, auftrag_id, typ, titel, beschreibung, foto_urls, created_at, fuer_kunde_freigegeben, handwerker_id"
               )
               .in("auftrag_id", auftragIds)
               .eq("fuer_kunde_freigegeben", true),
@@ -763,14 +769,22 @@ export async function getPortalDataForKunde(
     bautagebuchByAuftrag.set(aid, list);
   }
 
-  // Timeline-Publish (CRM/Partner) → gleicher Kunden-Feed
+  // Timeline-Publish → Kunden-Feed (CRM); optional HW für HV
   const timelineBt = listMode
     ? []
     : await Promise.all(
         (timeline ?? [])
           .filter((t) => {
-            const typ = String((t as { typ?: string }).typ ?? "").toLowerCase();
-            return typ === "bautagebuch";
+            const row = t as {
+              typ?: string;
+              handwerker_id?: string | null;
+            };
+            const typ = String(row.typ ?? "").toLowerCase();
+            if (typ === "handwerker_update") return includeHandwerkerUpdates;
+            if (typ !== "bautagebuch") return false;
+            // Kunde: keine HW-Timeline (handwerker_id gesetzt)
+            if (!includeHandwerkerUpdates && row.handwerker_id) return false;
+            return true;
           })
           .map(async (t) => {
             const row = t as {
@@ -816,13 +830,15 @@ export async function getPortalDataForKunde(
     }
   }
 
-  // Partner-Dokumentation (Positions-Lebenszyklus) → Accordion für HV/Kunde
+  // Positions-Doku: Kunde nur CRM; HV (+ Handwerker) optional
   if (!listMode && auftragIds.length > 0) {
     const {
       loadPartnerDokumentationByAuftragIds,
       mergePortalBautagebuchEntries,
     } = await import("@/lib/portal/load-partner-dokumentation");
-    const partnerDoku = await loadPartnerDokumentationByAuftragIds(auftragIds);
+    const partnerDoku = await loadPartnerDokumentationByAuftragIds(auftragIds, {
+      sources: includeHandwerkerUpdates ? "all" : "crm",
+    });
     for (const aid of auftragIds) {
       const legacy = bautagebuchByAuftrag.get(aid) ?? [];
       const partner = partnerDoku.get(aid) ?? [];

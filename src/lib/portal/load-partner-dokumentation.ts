@@ -1,5 +1,5 @@
 /**
- * Handwerker-Dokumentation → Portal-Bautagebuch-Form (HV + Kunde Updates-Tab).
+ * Positions-/CRM-Updates → Portal-Bautagebuch-Form (Updates-Tab).
  */
 
 import { resolvePartnerFileUrl } from "@/lib/partner/partner-storage";
@@ -14,18 +14,33 @@ export type PortalPartnerDokuEntry = {
   fotos_urls: string[];
 };
 
+/** Welche Quellen in den Portal-Feed. */
+export type PortalDokuSources = "crm" | "partner" | "all";
+
+const SOURCE_ERFASST: Record<PortalDokuSources, string[]> = {
+  crm: ["crm_intern"],
+  partner: ["partner_app", "eigenbetrieb_app"],
+  all: ["partner_app", "eigenbetrieb_app", "crm_intern"],
+};
+
 /**
- * Lädt Partner-Leistungs-Updates je Auftrag für HV-/Kunden-Portal.
- * Quelle: position_eintraege (+ Fotos), Partner-App / Eigenbetrieb.
+ * Leistungs-/CRM-Updates → Portal-Bautagebuch-Form.
+ * Quelle: position_eintraege (+ Fotos).
+ * Default `crm`: Kunde sieht nur CRM-Bautagebuch, keine Handwerker-Updates.
+ * HV: `partner` oder `all`.
  */
 export async function loadPartnerDokumentationByAuftragIds(
-  auftragIds: string[]
+  auftragIds: string[],
+  opts?: { sources?: PortalDokuSources }
 ): Promise<Map<string, PortalPartnerDokuEntry[]>> {
   const out = new Map<string, PortalPartnerDokuEntry[]>();
   const ids = Array.from(
     new Set(auftragIds.map((id) => String(id).trim()).filter(Boolean))
   );
   if (!ids.length || !isSupabaseConfigured()) return out;
+
+  const sources = opts?.sources ?? "crm";
+  const erfasstVon = SOURCE_ERFASST[sources];
 
   const { data: positionen, error: posErr } = await supabaseAdmin
     .from("auftrag_positionen")
@@ -58,10 +73,10 @@ export async function loadPartnerDokumentationByAuftragIds(
     .select(
       "id, position_id, auftrag_id, typ, beschreibung, erfasst_von, ereignis_zeit, created_at"
     )
-    .in("erfasst_von", ["partner_app", "eigenbetrieb_app"])
+    .in("erfasst_von", erfasstVon)
     .neq("typ", "weitere_arbeit")
     .order("ereignis_zeit", { ascending: false })
-    .limit(200);
+    .limit(300);
 
   if (positionIds.length > 0) {
     query = query.or(
@@ -120,7 +135,17 @@ export async function loadPartnerDokumentationByAuftragIds(
 
     const body = String(row.beschreibung ?? "").trim();
     const leistung = meta?.leistungName?.trim() || null;
-    const titel = leistung ? `Update — ${leistung}` : "Update";
+    const erfasst = String(row.erfasst_von ?? "").toLowerCase();
+    const isCrm = erfasst === "crm_intern" || erfasst.startsWith("crm");
+    const firstLine = body.split(/\n+/).map((l) => l.trim()).find(Boolean) || "";
+    let titel: string;
+    if (isCrm) {
+      if (firstLine.length > 0 && firstLine.length <= 72) titel = firstLine;
+      else if (firstLine.length > 72) titel = `${firstLine.slice(0, 69)}…`;
+      else titel = "Update";
+    } else {
+      titel = leistung ? `Update — ${leistung}` : "Update";
+    }
     const when =
       (row.ereignis_zeit as string | null) ||
       (row.created_at as string | null) ||
@@ -154,7 +179,7 @@ export async function loadPartnerDokumentationByAuftragIds(
   return out;
 }
 
-/** Legacy + Partner-Doku mergen (Partner zuerst / neuer), IDs deduplizieren. */
+/** Legacy + Partner-Doku mergen, IDs deduplizieren. */
 export function mergePortalBautagebuchEntries(
   legacy: PortalPartnerDokuEntry[],
   partner: PortalPartnerDokuEntry[]

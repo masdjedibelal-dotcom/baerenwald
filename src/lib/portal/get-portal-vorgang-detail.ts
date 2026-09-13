@@ -75,6 +75,7 @@ export async function getPortalVorgangDetail(opts: {
   const data = await getPortalDataForKunde(kundeId, {
     mode: "full",
     leadIds: [leadId],
+    includeHandwerkerUpdates: Boolean(opts.hvPortalMode),
   });
   if (!data) return null;
 

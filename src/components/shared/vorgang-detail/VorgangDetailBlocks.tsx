@@ -241,13 +241,16 @@ export function VorgangDetailBlocks({
             {!safeOnly && !siteOnly && B.melderEmail ? (
               <MetaRow label="E-Mail" value={B.melderEmail} />
             ) : null}
+            {/* Beschreibung nur hier, wenn kein eigener Details-Block folgt */}
+            {!isHv &&
+            !isKunde &&
+            !isMieter &&
+            !isHausmeister &&
+            B.beschreibung &&
+            !siteOnly ? (
+              <MetaRow label="Beschreibung" value={B.beschreibung} />
+            ) : null}
           </div>
-          {/* Beschreibung nur hier, wenn kein eigener Details-Block folgt */}
-          {!isHv && !isKunde && !isMieter && !isHausmeister && B.beschreibung && !siteOnly ? (
-            <p className="portal-text-body mt-3 whitespace-pre-wrap text-text-secondary">
-              {B.beschreibung}
-            </p>
-          ) : null}
         </BlockShell>
       ) : null}
 
@@ -273,17 +276,10 @@ export function VorgangDetailBlocks({
                 value={row.value}
               />
             ))}
+            {B.beschreibung ? (
+              <MetaRow label="Beschreibung" value={B.beschreibung} />
+            ) : null}
           </div>
-          {B.beschreibung ? (
-            <div className="mt-3">
-              <p className="mb-1 text-[12px] font-semibold uppercase tracking-wide text-text-secondary">
-                Beschreibung
-              </p>
-              <p className="portal-text-body whitespace-pre-wrap text-text-secondary">
-                {B.beschreibung}
-              </p>
-            </div>
-          ) : null}
           {(isHv || isKunde || isMieter || isHausmeister) &&
           B.fotos &&
           B.fotos.length > 0 ? (

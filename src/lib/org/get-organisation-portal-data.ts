@@ -329,8 +329,75 @@ export async function getOrganisationPortalData(
       loadPartnerDokumentationByAuftragIds,
       mergePortalBautagebuchEntries,
     } = await import("@/lib/portal/load-partner-dokumentation");
+    const { resolvePartnerFileUrls } = await import(
+      "@/lib/partner/partner-storage"
+    );
     const auftragIds = mergedAuftraege.map((a) => String(a.id));
-    const partnerDoku = await loadPartnerDokumentationByAuftragIds(auftragIds);
+    const partnerDoku = await loadPartnerDokumentationByAuftragIds(auftragIds, {
+      sources: "all",
+    });
+
+    /** listMode strippt bautagebuch am Auftrag — Timeline-Updates separat laden */
+    const timelineByAuftrag = new Map<
+      string,
+      Array<{
+        id: string;
+        datum?: string;
+        created_at?: string;
+        titel: string;
+        notiz?: string;
+        fotos_urls: string[];
+      }>
+    >();
+    if (auftragIds.length > 0) {
+      const { data: timelineRows, error: tlErr } = await supabaseAdmin
+        .from("auftrag_timeline")
+        .select(
+          "id, auftrag_id, typ, titel, beschreibung, foto_urls, created_at, fuer_kunde_freigegeben, handwerker_id"
+        )
+        .in("auftrag_id", auftragIds)
+        .eq("fuer_kunde_freigegeben", true)
+        .in("typ", ["bautagebuch", "handwerker_update"])
+        .order("created_at", { ascending: false })
+        .limit(300);
+      if (tlErr) {
+        console.warn("[org-portal] timeline bautagebuch:", tlErr.message);
+      } else {
+        const mapped = await Promise.all(
+          (timelineRows ?? []).map(async (t) => {
+            const fotoRaw = t.foto_urls;
+            const paths = Array.isArray(fotoRaw)
+              ? (fotoRaw as string[]).map((s) => String(s).trim()).filter(Boolean)
+              : [];
+            const signed = await resolvePartnerFileUrls(paths);
+            const created =
+              typeof t.created_at === "string" ? t.created_at : undefined;
+            return {
+              aid: String(t.auftrag_id),
+              entry: {
+                id: `tl-${t.id}`,
+                datum: created,
+                created_at: created,
+                titel:
+                  typeof t.titel === "string" && t.titel.trim()
+                    ? t.titel.trim()
+                    : "Update",
+                notiz:
+                  typeof t.beschreibung === "string"
+                    ? t.beschreibung
+                    : undefined,
+                fotos_urls: signed,
+              },
+            };
+          })
+        );
+        for (const { aid, entry } of mapped) {
+          const list = timelineByAuftrag.get(aid) ?? [];
+          list.push(entry);
+          timelineByAuftrag.set(aid, list);
+        }
+      }
+    }
 
     for (const a of mergedAuftraege) {
       const leadId =
@@ -362,7 +429,11 @@ export async function getOrganisationPortalData(
           }))
         : [];
       const partner = partnerDoku.get(String(a.id)) ?? [];
-      const merged = mergePortalBautagebuchEntries(legacy, partner);
+      const timeline = timelineByAuftrag.get(String(a.id)) ?? [];
+      const merged = mergePortalBautagebuchEntries(
+        mergePortalBautagebuchEntries(legacy, timeline),
+        partner
+      );
       if (!merged.length) continue;
       const prev = bautagebuchByLeadId[leadId] ?? [];
       bautagebuchByLeadId[leadId] = mergePortalBautagebuchEntries(prev, merged);

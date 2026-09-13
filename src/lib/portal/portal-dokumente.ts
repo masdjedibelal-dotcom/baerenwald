@@ -415,6 +415,61 @@ export function dokumenteFromUrls(
   });
 }
 
+function isSchadenakteDokument(d: PortalDokument): boolean {
+  if (d.id.startsWith("versicherungsakte-")) return true;
+  return /^Schadenakte\b/i.test((d.name ?? "").trim());
+}
+
+/** Lead-Akte vor Auftrag-Kopie; sonst neuestes Datum. */
+function preferSchadenakte(a: PortalDokument, b: PortalDokument): PortalDokument {
+  const aLead = a.id.startsWith("versicherungsakte-lead-");
+  const bLead = b.id.startsWith("versicherungsakte-lead-");
+  if (aLead !== bLead) return aLead ? a : b;
+  const ta = new Date(a.datum || 0).getTime();
+  const tb = new Date(b.datum || 0).getTime();
+  return tb > ta ? b : a;
+}
+
+/**
+ * Nach ID-Merge: gleiche URL und doppelte Schadenakte (Lead + Auftrag)
+ * zusammenführen. Sonst erscheint „Schadenakte Versicherung“ zweimal,
+ * sobald die Policen-Nr. die URL auch am Auftrag setzt.
+ */
+function dedupePortalDokumente(docs: PortalDokument[]): PortalDokument[] {
+  const byHref = new Map<string, PortalDokument>();
+  const withoutHref: PortalDokument[] = [];
+  for (const doc of docs) {
+    const href = doc.href?.trim();
+    if (!href) {
+      withoutHref.push(doc);
+      continue;
+    }
+    const prev = byHref.get(href);
+    if (!prev) {
+      byHref.set(href, doc);
+      continue;
+    }
+    byHref.set(
+      href,
+      isSchadenakteDokument(prev) || isSchadenakteDokument(doc)
+        ? preferSchadenakte(prev, doc)
+        : prev
+    );
+  }
+
+  const afterHref = [...withoutHref, ...byHref.values()];
+  const schaden: PortalDokument[] = [];
+  const rest: PortalDokument[] = [];
+  for (const doc of afterHref) {
+    if (isSchadenakteDokument(doc)) schaden.push(doc);
+    else rest.push(doc);
+  }
+  if (schaden.length <= 1) return afterHref;
+
+  const winner = schaden.reduce(preferSchadenakte);
+  return [...rest, winner];
+}
+
 export function mergeDokumente(
   ...groups: PortalDokument[][]
 ): PortalDokument[] {
@@ -424,7 +479,7 @@ export function mergeDokumente(
       byId.set(doc.id, doc);
     }
   }
-  return Array.from(byId.values());
+  return dedupePortalDokumente(Array.from(byId.values()));
 }
 
 /**

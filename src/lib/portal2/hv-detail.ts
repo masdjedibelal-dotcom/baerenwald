@@ -218,7 +218,7 @@ export const HV_DETAIL_COPY = {
   abgeschlossenTitle: "Abgeschlossen",
   abschlagsplanTitle: "Abschlagsplan · 2 Raten",
   bautagebuchTitle: "Updates",
-  bautagebuchEmpty: "Noch keine Updates vom Handwerker.",
+  bautagebuchEmpty: "Noch keine Updates.",
   metaTitle: "Details",
   verlaufTitle: "Verlauf",
   beschreibungTitle: "Beschreibung",
