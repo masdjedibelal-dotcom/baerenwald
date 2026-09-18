@@ -66,10 +66,21 @@ function leadStatusForEvent(event: CrmLeadSyncEvent): string | null {
 function hvStatusForEvent(
   event: CrmLeadSyncEvent,
   current: string | null
-): string | null {
-  if (event === "auftrag_abgeschlossen") return "abgeschlossen";
-  if (event === "auftrag_storniert") return "abgelehnt";
-  return current;
+): { clear: boolean; value: string | null } {
+  if (event === "auftrag_abgeschlossen") {
+    return { clear: false, value: "abgeschlossen" };
+  }
+  if (event === "auftrag_storniert") {
+    return { clear: false, value: "abgelehnt" };
+  }
+  /* Wiedereröffnung: HV-Abschluss zurücknehmen */
+  if (
+    (event === "auftrag_beauftragt" || event === "auftrag_abnahme") &&
+    (current === "abgeschlossen" || current === "hm_erledigt")
+  ) {
+    return { clear: true, value: null };
+  }
+  return { clear: false, value: current };
 }
 
 /** CRM → Portal: Lead-Phase und HV-Status synchronisieren (eine Quelle). */
@@ -115,7 +126,11 @@ export async function syncLeadFromCrm(
   if (leadStatus) patch.status = leadStatus;
 
   const hv = hvStatusForEvent(event, (lead as LeadRow).hv_meldung_status);
-  if (hv) patch.hv_meldung_status = hv;
+  if (hv.clear) {
+    patch.hv_meldung_status = null;
+  } else if (hv.value) {
+    patch.hv_meldung_status = hv.value;
+  }
 
   const { error: upErr } = await supabaseAdmin
     .from("leads")
@@ -131,7 +146,12 @@ export async function syncLeadFromCrm(
     actorId: opts?.actorId ?? null,
     actorRolle: "crm",
     kundeId: (lead as LeadRow).auftraggeber_kunde_id ?? null,
-    payload: { event, phase, hv_meldung_status: hv, status: leadStatus },
+    payload: {
+      event,
+      phase,
+      hv_meldung_status: hv.clear ? null : hv.value,
+      status: leadStatus,
+    },
   });
 
   if (event === "angebot_gesendet") {

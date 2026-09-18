@@ -58,13 +58,21 @@ export function resolveMieterStatusStufe(
   const freigabe = (lead.org_freigabe_status ?? "").trim();
   const auftragStatus = (auftrag?.status ?? "").trim().toLowerCase();
   const offeneMaengel = Boolean(auftrag?.hasOffeneMaengel);
+  const crmAktiv =
+    auftragStatus === "in_arbeit" || auftragStatus === "offen";
 
-  /* Erledigt nur ohne offene Mängel — Rechnung zählt für Melder nicht */
-  if (!offeneMaengel && portalErledigtFromLeadAndAuftrag(lead, auftrag)) {
+  /* Erledigt nur ohne offene Mängel — Rechnung zählt für Melder nicht.
+   * CRM wieder in Arbeit → nie Erledigt (auch wenn Lead-Phase noch abgeschlossen). */
+  if (
+    !offeneMaengel &&
+    !crmAktiv &&
+    portalErledigtFromLeadAndAuftrag(lead, auftrag)
+  ) {
     return "erledigt";
   }
   if (
     !offeneMaengel &&
+    !crmAktiv &&
     (leadStatus === "abgeschlossen" ||
       phase === "abgeschlossen" ||
       hv === "abgeschlossen" ||

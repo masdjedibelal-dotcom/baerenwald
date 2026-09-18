@@ -44,6 +44,7 @@ export function allePositionenPortalErledigt(
 /**
  * Vorgang im Portal als erledigt (Lead-Sync, CRM-Auftrag oder Positionen).
  * Rechnung ist für Mieter/Melder irrelevant — Abnahme ohne offene Mängel = fertig.
+ * Ausnahme: CRM-Status aktiv (in_arbeit/offen) gewinnt — Korrektur nach Fehlabschluss.
  */
 export function isVorgangPortalErledigt(input: {
   leadVorgangPhase?: string | null;
@@ -52,6 +53,12 @@ export function isVorgangPortalErledigt(input: {
   auftragFortschritt?: number | null;
   positionen?: PortalPositionErledigtInput[] | null;
 }): boolean {
+  const auftragStatus = normalizeStatus(input.auftragStatus);
+  /* CRM wieder geöffnet → Portal nicht Erledigt (Lead-Phase kann noch „abgeschlossen“ sein) */
+  if (auftragStatus === "in_arbeit" || auftragStatus === "offen") {
+    return false;
+  }
+
   if (normalizeStatus(input.leadVorgangPhase) === "abgeschlossen") return true;
   const hv = normalizeStatus(input.hv_meldung_status);
   if (hv === "abgeschlossen" || hv === "hm_erledigt") return true;
@@ -66,7 +73,7 @@ export function isVorgangPortalErledigt(input: {
   }
 
   /* Abnahme = Arbeit abgeschlossen (Mängel-Gate sitzt in portalErledigtFromLeadAndAuftrag) */
-  if (normalizeStatus(input.auftragStatus) === "abnahme") return true;
+  if (auftragStatus === "abnahme") return true;
 
   const active = filterAktivePortalPositionen(input.positionen);
   if (active.length > 0) {
