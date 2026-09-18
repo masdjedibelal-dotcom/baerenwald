@@ -164,6 +164,9 @@ export function resolvePortalFlowStatus(
   const hv = norm(extra.hv_meldung_status);
   const u = norm(resolved.unterstatus);
 
+  if (hv === "abgelehnt" || u === "abgebrochen" || u === "storniert") {
+    return "abgelehnt";
+  }
   if (hv === "hm_erledigt") {
     return "abschluss";
   }

@@ -201,6 +201,25 @@ export function resolveLeadPortalFlowStatus(input: {
   auftrag?: HvDashboardAuftragSlice | null;
   extra?: PortalFlowExtraSignals;
 }): PortalMockStatusId {
+  const leadStatus = String(input.lead.status ?? "")
+    .toLowerCase()
+    .trim();
+  const phase = String(input.lead.vorgang_phase ?? "")
+    .toLowerCase()
+    .trim();
+  const hv = String(input.lead.hv_meldung_status ?? "")
+    .toLowerCase()
+    .trim();
+
+  /* Abgelehnt/abgebrochen gewinnt — sonst bleibt stale hv „angebot_eingefordert“ → In Arbeit */
+  if (
+    phase === "abgelehnt" ||
+    leadStatus === "abgebrochen" ||
+    hv === "abgelehnt"
+  ) {
+    return "abgelehnt";
+  }
+
   const auftragSt = String(input.auftrag?.status ?? "")
     .toLowerCase()
     .trim();
@@ -228,8 +247,7 @@ export function resolveLeadPortalFlowStatus(input: {
     input.extra?.hwAngefragt ??
     Boolean(
       input.auftrag?.positionen?.some((p) => p.handwerker_id) ||
-        String(input.lead.hv_meldung_status ?? "").toLowerCase() ===
-          "angebot_eingefordert"
+        hv === "angebot_eingefordert"
     );
 
   return resolvePortalFlowStatus({
