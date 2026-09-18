@@ -23,7 +23,7 @@ export const SHARED_PLZ_STEP: FunnelStep = {
   id: "shared_plz",
   question: "Wo befindet sich das Objekt?",
   subtext:
-    "PLZ eingeben — wir prüfen die Verfügbarkeit in deiner Region.",
+    "PLZ eingeben — wir prüfen die Verfügbarkeit in Ihrer Region.",
   inputType: "plz-zeitraum",
   options: [
     {
@@ -44,7 +44,7 @@ export const SHARED_PLZ_STEP: FunnelStep = {
 const STEPS_RENOVIERUNG: FunnelStep[] = [
   {
     id: "renov_bereiche",
-    question: "Welche Bereiche willst du erneuern?",
+    question: "Welche Bereiche möchten Sie erneuern?",
     inputType: "tiles-multi",
     options: [
       {
@@ -128,7 +128,7 @@ const STEPS_RENOVIERUNG: FunnelStep[] = [
 const STEPS_NEUBAU: FunnelStep[] = [
   {
     id: "neubau_situation",
-    question: "Was ist deine Situation?",
+    question: "Was ist Ihre Situation?",
     inputType: "tiles-single",
     options: [
       {

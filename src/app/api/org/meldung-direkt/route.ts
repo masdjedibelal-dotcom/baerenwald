@@ -1,10 +1,6 @@
 import { NextResponse } from "next/server";
 
 import {
-  buildOrgNeueMeldungHtml,
-  buildOrgNeueMeldungSubject,
-} from "@/lib/email/meldung-mail-templates";
-import {
   parseMeldeBereichId,
   persistMeldungLead,
 } from "@/lib/org/persist-meldung-lead";
@@ -12,7 +8,6 @@ import { requireOrganisationSession } from "@/lib/org/require-org-session";
 import type { MeldeKategorie } from "@/lib/org/types";
 import { isValidEmail, isValidName } from "@/lib/validation";
 import { supabaseAdmin } from "@/lib/supabase";
-import { Resend } from "resend";
 
 type Body = {
   objektId: string;
@@ -24,6 +19,8 @@ type Body = {
   bereichId?: string;
   fachdetailAnswers?: Record<string, string | string[]>;
   beschreibung?: string;
+  /** Öffentliche URLs aus /api/org/meldung-upload */
+  fotos?: string[];
   /** Abrechnung über Versicherung */
   versicherung?: boolean;
   versicherungsNr?: string;
@@ -51,6 +48,15 @@ export async function POST(req: Request) {
   const beschreibung = String(body.beschreibung ?? "").trim();
   const kategorie = (body.kategorie ?? "reparatur") as MeldeKategorie;
   const bereichId = parseMeldeBereichId(body.bereichId);
+  const fotos = Array.isArray(body.fotos)
+    ? body.fotos
+        .filter(
+          (u): u is string =>
+            typeof u === "string" && /^https?:\/\//i.test(u.trim())
+        )
+        .map((u) => u.trim())
+        .slice(0, 12)
+    : [];
 
   if (!objektId || !isValidName(melderName)) {
     return NextResponse.json({ error: "Pflichtfelder fehlen." }, { status: 400 });
@@ -85,6 +91,7 @@ export async function POST(req: Request) {
     kategorie,
     bereichId,
     fachdetailAnswers: body.fachdetailAnswers,
+    fotos,
     plz: String(objekt.plz ?? ""),
     strasse: objekt.strasse,
     hausnummer: objekt.hausnummer,
@@ -99,6 +106,11 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: result.error }, { status: result.status });
   }
 
+  const { finalizeOrgSelfCreatedLead } = await import(
+    "@/lib/org/finalize-org-self-created-lead"
+  );
+  await finalizeOrgSelfCreatedLead(result.id);
+
   if (body.versicherung) {
     const versNr = String(body.versicherungsNr ?? "").trim() || null;
     await supabaseAdmin
@@ -109,37 +121,28 @@ export async function POST(req: Request) {
         ...(versNr ? { versicherungs_nr: versNr } : {}),
       })
       .eq("id", result.id);
+    void import("@/lib/org/ensure-versicherungsakte").then(
+      ({ ensureVersicherungsakteForLead }) =>
+        ensureVersicherungsakteForLead(result.id, {
+          actorId: session.userId,
+          actorRolle: session.rolle,
+        }).catch((e) =>
+          console.warn("[meldung-direkt] schadenakte:", e)
+        )
+    );
+  } else {
+    void import("@/lib/org/ensure-versicherungsakte").then(
+      ({ applyAutomatischeSchadenakteIfEnabled }) =>
+        applyAutomatischeSchadenakteIfEnabled(result.id, {
+          actorId: session.userId,
+          actorRolle: session.rolle,
+        }).catch((e) =>
+          console.warn("[meldung-direkt] auto-schadenakte:", e)
+        )
+    );
   }
 
-  const orgEmail = session.kunde.email?.trim() ?? "";
-  const portalPath = `/portal?section=freigabe&id=${result.id}`;
-
-  if (process.env.RESEND_API_KEY && isValidEmail(orgEmail)) {
-    const resend = new Resend(process.env.RESEND_API_KEY);
-    try {
-      await resend.emails.send({
-        from:
-          process.env.RESEND_FROM_SYSTEM ??
-          "System <system@baerenwaldmuenchen.de>",
-        to: orgEmail,
-        subject: buildOrgNeueMeldungSubject(String(objekt.titel)),
-        html: buildOrgNeueMeldungHtml({
-          objektTitel: String(objekt.titel),
-          melderName,
-          melderEinheit: melderEinheit || undefined,
-          melderTelefon: melderTelefon || undefined,
-          melderEmail: isValidEmail(melderEmail) ? melderEmail : undefined,
-          kategorie,
-          bereichId,
-          beschreibung,
-          quelle: "hausverwaltung",
-          portalPath,
-        }),
-      });
-    } catch (e) {
-      console.error("[meldung-direkt] mail:", e);
-    }
-  }
+  // Keine Self-Mail an die HV bei eigener Erfassung (kein „Neuer Vorgang“-Template).
 
   return NextResponse.json({ ok: true, id: result.id });
 }

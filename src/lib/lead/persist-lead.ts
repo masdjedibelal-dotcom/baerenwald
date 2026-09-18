@@ -6,6 +6,7 @@ import {
   buildInternNotificationSubject,
   buildKundeBestaetigung,
 } from "@/lib/email/lead-mail-templates";
+import { sendBrandedMail } from "@/lib/email/send-branded-mail";
 import { AUTOMATED_CUSTOMER_EMAIL_BCC } from "@/lib/email/resend-bcc";
 import {
   erneuernProjektTyp,
@@ -232,7 +233,7 @@ function buildKundenBestaetigungSubject(raw: {
     const plzPart = plz.trim() || "—";
     return `[GU-PROJEKT] - ${projekt} - ${plzPart}`;
   }
-  return "Deine Anfrage ist bei uns eingegangen";
+  return "Ihre Anfrage ist bei uns eingegangen";
 }
 
 function mergeFunnelDaten(
@@ -659,7 +660,7 @@ async function persistLeadInner(
 
     if (kanal === "website" && hasEmail && !skipKundeMail) {
       try {
-        await resend.emails.send({
+        await sendBrandedMail(resend, {
           from: resendFromCustomer,
           to: emailRaw.toLowerCase(),
           bcc: AUTOMATED_CUSTOMER_EMAIL_BCC,
@@ -687,7 +688,7 @@ async function persistLeadInner(
       GPT_VIZ_SKIP_INTERN_MAIL_QUELLEN.has(String(funnel_quelle));
     if (internTo && !skipIntern) {
       try {
-        await resend.emails.send({
+        await sendBrandedMail(resend, {
           from: resendFromSystem,
           to: internTo,
           subject: buildInternNotificationSubject({

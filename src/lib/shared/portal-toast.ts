@@ -14,6 +14,24 @@ export function portalToastError(title: string, description?: string) {
   });
 }
 
+/** Hinweis / Ablehnung / Entfernen — gelb */
+export function portalToastWarning(title: string, description?: string) {
+  toast.warning(title, {
+    description,
+    duration: 5500,
+  });
+}
+
+/** Einheitlich nach Sheet-Speichern */
+export function portalToastSaved(title = "Änderungen gespeichert") {
+  toast.success(title, { duration: 2800 });
+}
+
+/** Nach Verwerfen / X ohne Speichern */
+export function portalToastDiscarded(title = "Nicht gespeichert") {
+  toast.warning(title, { duration: 2800 });
+}
+
 /** Partner-Portal */
 export const partnerPortalToast = {
   zuweisungAngenommen() {
@@ -35,7 +53,7 @@ export const partnerPortalToast = {
     );
   },
   abgelehnt() {
-    portalToastSuccess(
+    portalToastWarning(
       "Ablehnung gesendet",
       "Bärenwald wurde informiert und meldet sich bei Rückfragen."
     );
@@ -45,28 +63,31 @@ export const partnerPortalToast = {
       neu ? "Tagebucheintrag erstellt" : "Tagebucheintrag gespeichert",
       neu
         ? "Mieter und Verwaltung sehen den Eintrag sofort im Portal."
-        : "Deine Änderungen wurden übernommen."
+        : "Ihre Änderungen wurden übernommen."
     );
   },
   bautagebuchGeloescht() {
-    portalToastSuccess("Eintrag gelöscht", "Der Bautagebuch-Eintrag wurde entfernt.");
+    portalToastWarning(
+      "Eintrag gelöscht",
+      "Der Bautagebuch-Eintrag wurde entfernt."
+    );
   },
   unterlagenHochgeladen() {
     portalToastSuccess(
       "Unterlagen hochgeladen",
-      "Bärenwald prüft die Dokumente. Du findest sie unter Unterlagen im Vorgang."
+      "Bärenwald prüft die Dokumente. Sie finden sie unter Unterlagen im Vorgang."
     );
   },
   rechnungEingereicht() {
     portalToastSuccess(
-      "Rechnung eingereicht",
-      "Bärenwald erhält deine Rechnung zur Prüfung."
+      "Rechnung gesendet",
+      "Bärenwald hat deine Rechnung erhalten."
     );
   },
   rahmenvertragAkzeptiert() {
     portalToastSuccess(
       "Rahmenvertrag bestätigt",
-      "Deine Stammdaten sind vollständig. Neue Zuweisungen kannst du direkt annehmen."
+      "Ihre Stammdaten sind vollständig. Neue Zuweisungen können Sie direkt annehmen."
     );
   },
   complianceHochgeladen(bezeichnung: string) {
@@ -76,10 +97,16 @@ export const partnerPortalToast = {
     );
   },
   complianceGeloescht(bezeichnung: string) {
-    portalToastSuccess("Dokument entfernt", `„${bezeichnung}“ wurde gelöscht.`);
+    portalToastWarning(
+      "Dokument entfernt",
+      `„${bezeichnung}“ wurde gelöscht.`
+    );
   },
   stammdatenGespeichert() {
-    portalToastSuccess("Stammdaten gespeichert", "Deine Angaben wurden übernommen.");
+    portalToastSuccess(
+      "Stammdaten gespeichert",
+      "Ihre Angaben wurden übernommen."
+    );
   },
   projektvertragBestaetigt() {
     portalToastSuccess(
@@ -100,10 +127,7 @@ export const partnerPortalToast = {
     );
   },
   abschlussSigniert() {
-    portalToastSuccess(
-      "Teilabnahme eingereicht",
-      "Protokoll ist bei Bärenwald zur Freigabe. Kein automatischer Versand an den Kunden."
-    );
+    portalToastSuccess("Auftrag abgeschlossen");
   },
 };
 
@@ -116,7 +140,7 @@ export const kundePortalToast = {
     );
   },
   angebotAbgelehnt() {
-    portalToastSuccess("Angebot abgelehnt", "Danke für deine Rückmeldung.");
+    portalToastWarning("Angebot abgelehnt", "Danke für Ihre Rückmeldung.");
   },
   aenderungenAngenommen() {
     portalToastSuccess(
@@ -127,7 +151,7 @@ export const kundePortalToast = {
   feedbackGesendet() {
     portalToastSuccess(
       "Feedback gesendet",
-      "Danke für deine Rückmeldung — Bärenwald wurde informiert."
+      "Danke für Ihre Rückmeldung — Bärenwald wurde informiert."
     );
   },
 };
@@ -143,17 +167,47 @@ export const orgPortalToast = {
   einladungErstellt() {
     portalToastSuccess(
       "Einladung erstellt",
-      "Sende den Link an den Mieter, damit er Details und Fotos ergänzen kann."
+      "Senden Sie den Link an den Mieter, damit er Details und Fotos ergänzen kann."
     );
   },
   angebotEingefordert() {
     portalToastSuccess(
       "Angebot angefordert",
-      "Bärenwald erstellt ein Angebot. Du wirst informiert, sobald es zur Freigabe bereit ist."
+      "Bärenwald erstellt ein Angebot. Sie werden informiert, sobald es zur Freigabe bereit ist."
+    );
+  },
+  hmBegutachten() {
+    portalToastSuccess(
+      "Hausmeister-Prüfung gestartet",
+      "Der Vorgang liegt beim Hausmeister. Checkliste unter Tab „Hausmeister“; der HM wurde benachrichtigt."
+    );
+  },
+  hmErledigt() {
+    portalToastSuccess(
+      "Vom Hausmeister erledigt",
+      "Der Vorgang ist abgeschlossen — ohne Beauftragung an Bärenwald."
+    );
+  },
+  hmZurueckAnHv() {
+    portalToastSuccess(
+      "An die Verwaltung zurückgegeben",
+      "Die Hausmeister-Prüfung wurde abgelehnt. Der Vorgang liegt wieder bei der HV."
+    );
+  },
+  hmFachfirmaAngebot() {
+    portalToastSuccess(
+      "An Bärenwald übergeben",
+      "Vorbefund liegt vor. Bärenwald erstellt ein Angebot."
+    );
+  },
+  hmFachfirmaAkut() {
+    portalToastSuccess(
+      "Akut an Bärenwald",
+      "Soforteinsatz angefordert. Vorbefund liegt für Disposition bereit."
     );
   },
   meldungAbgelehnt() {
-    portalToastSuccess(
+    portalToastWarning(
       "Meldung abgelehnt",
       "Der Mieter kann bei Bedarf eine neue Meldung einreichen."
     );
@@ -171,7 +225,7 @@ export const orgPortalToast = {
     );
   },
   freigabeAbgelehnt() {
-    portalToastSuccess(
+    portalToastWarning(
       "Freigabe abgelehnt",
       "Bärenwald wurde informiert und meldet sich bei Rückfragen."
     );
@@ -182,8 +236,21 @@ export const orgPortalToast = {
       "Der Mieter erhält den Link noch einmal per E-Mail."
     );
   },
+  /** Nach „Portal-Link senden“ — Link bereit (Mail-App ggf. manuell). */
+  portalLinkGesendet(opts?: { rolle?: string }) {
+    const rolle = opts?.rolle?.trim();
+    portalToastSuccess(
+      "Portal-Link bereit",
+      rolle
+        ? `Einladung für ${rolle} — Mail-App über den Button öffnen.`
+        : "Mail-App über den Button öffnen oder Link kopieren."
+    );
+  },
   einstellungenGespeichert() {
-    portalToastSuccess("Einstellungen gespeichert", "Deine Freigabe-Regeln sind aktiv.");
+    portalToastSuccess(
+      "Einstellungen gespeichert",
+      "Ihre Freigabe-Regeln sind aktiv."
+    );
   },
   objektAngelegt() {
     portalToastSuccess(
@@ -192,7 +259,10 @@ export const orgPortalToast = {
     );
   },
   linkKopiert() {
-    portalToastSuccess("Link kopiert", "Der Melde-Link liegt in der Zwischenablage.");
+    portalToastSuccess(
+      "Link kopiert",
+      "Der Melde-Link liegt in der Zwischenablage."
+    );
   },
   aushangPdfErstellt() {
     portalToastSuccess(
@@ -201,32 +271,35 @@ export const orgPortalToast = {
     );
   },
   objektAktualisiert() {
-    portalToastSuccess("Objekt gespeichert", "Die Objektdaten wurden aktualisiert.");
+    portalToastSuccess(
+      "Objekt gespeichert",
+      "Die Objektdaten wurden aktualisiert."
+    );
   },
   objektGeloescht() {
-    portalToastSuccess("Objekt gelöscht", "Das Gebäude wurde aus der Liste entfernt.");
+    portalToastWarning(
+      "Objekt gelöscht",
+      "Das Gebäude wurde aus der Liste entfernt."
+    );
   },
   projektAnfrageGesendet() {
     portalToastSuccess(
-      "Projekt-Anfrage gesendet",
-      "Bärenwald prüft dein Vorhaben und meldet sich mit einem Angebot."
+      "Anfrage eingereicht",
+      "Bärenwald prüft Ihr Vorhaben und meldet sich mit einem Angebot."
     );
   },
   feedbackGesendet() {
-    portalToastSuccess(
-      "Feedback gesendet",
-      "Danke für deine Rückmeldung."
-    );
+    portalToastSuccess("Feedback gesendet", "Danke für Ihre Rückmeldung.");
   },
   maengelGemeldet() {
-    portalToastSuccess(
+    portalToastWarning(
       "Mängel gemeldet",
       "Bärenwald wurde informiert und kümmert sich um die Nachbearbeitung."
     );
   },
   servicepaketAnfrageGesendet() {
     portalToastSuccess(
-      "Servicepaket-Anfrage gesendet",
+      "Anfrage eingereicht",
       "Bärenwald meldet sich mit den nächsten Schritten zur Betreuung."
     );
   },

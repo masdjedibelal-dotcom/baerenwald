@@ -22,9 +22,9 @@ import {
 } from "@/lib/partner/partner-auftrag-list-status";
 import { portalDetailStatusPillStyle } from "@/lib/shared/portal-detail-format";
 import {
-  buildPartnerAnfrageCardMeta,
-  buildPartnerAuftragCardMeta,
-} from "@/lib/partner/partner-portal-display";
+  formatAnfrageListOrtLine,
+  type PortalAnfrageLeadSource,
+} from "@/lib/portal/portal-anfrage-display";
 import { compareVorgangListOrder } from "@/lib/portal/portal-vorgang-sort";
 import type { VorgangState } from "@/lib/partner/vorgang-state";
 
@@ -41,6 +41,14 @@ export type PartnerCardRow = {
   statusRank: number;
 };
 
+function partnerOrtSubtitle(
+  lead?: PortalAnfrageLeadSource | null
+): string | undefined {
+  if (!lead) return undefined;
+  const line = formatAnfrageListOrtLine(lead);
+  return line !== "—" ? line : undefined;
+}
+
 function partnerStateSortRank(state: VorgangState | string): number {
   switch (String(state)) {
     case "neu":
@@ -51,6 +59,8 @@ function partnerStateSortRank(state: VorgangState | string): number {
       return 2;
     case "erledigt":
       return 80;
+    case "abgelehnt":
+      return 90;
     default:
       return 20;
   }
@@ -66,7 +76,13 @@ export function partnerAngebotStatusPillClass(statusKey: string): string {
   const s = statusKey.toLowerCase();
   if (s === "neu") return "bg-orange-100 text-orange-800";
   if (s === "geaendert" || s === "ergaenzung") return "bg-violet-100 text-violet-800";
-  if (s === "in_arbeit" || s === "abnahme" || s === "durchfuehrung") {
+  if (
+    s === "in_arbeit" ||
+    s === "abnahme" ||
+    s === "durchfuehrung" ||
+    s === "auftrag" ||
+    s === "beauftragt"
+  ) {
     return "bg-[#E4ECF7] text-[#1F4FA8]";
   }
   if (s === "abgeschlossen" || s === "erledigt") return "bg-[#DDEEDF] text-[#1F6A3F]";
@@ -85,20 +101,14 @@ export function partnerStatusChipStyle(statusKey: string): {
 }
 
 export function mapAnfrageAuftragToCard(item: PartnerAuftragItem): PartnerCardRow {
-  const meta = buildPartnerAuftragCardMeta(
-    item.lead?.objekt,
-    item.lead,
-    item.start_datum,
-    item.end_datum
-  );
-
   return {
     id: `auftrag:${item.id}`,
     title: item.listen_titel,
+    subtitle: partnerOrtSubtitle(item.lead),
     statusLabel: partnerAuftragAnfrageStatusLabel(item),
     statusPillKey: "neu",
     accent: "anfrage",
-    meta,
+    meta: [],
     sortDate: ts(item.start_datum),
     statusRank: 0,
   };
@@ -109,15 +119,11 @@ export function mapAuftragToCard(item: PartnerAuftragItem): PartnerCardRow {
   return {
     id: item.id,
     title: item.listen_titel,
+    subtitle: partnerOrtSubtitle(item.lead),
     statusLabel: partnerAuftragListenStatusLabel(item.status),
     statusPillKey: pill,
     accent: "auftrag",
-    meta: buildPartnerAuftragCardMeta(
-      item.lead?.objekt,
-      item.lead,
-      item.start_datum,
-      item.end_datum
-    ),
+    meta: [],
     sortDate: ts(item.start_datum),
     statusRank: partnerStateSortRank(
       pill === "abgeschlossen" || pill === "erledigt" ? "erledigt" : "in_bearbeitung"
@@ -129,20 +135,15 @@ export function mapOffenAngebotToCard(
   item: PartnerAnfrageItem & { offen_karten_typ: "neu" | "nachreichung" }
 ): PartnerCardRow {
   const typ = item.offen_karten_typ;
-  const meta = buildPartnerAnfrageCardMeta(item.lead, {
-    gewerk_name: item.gewerk_name,
-    positionen: item.positionen,
-  });
 
   return {
     id: item.id,
     title: item.listen_titel,
-    subtitle:
-      typ === "nachreichung" ? "Leistungsänderung am laufenden Auftrag" : undefined,
+    subtitle: partnerOrtSubtitle(item.lead),
     statusLabel: partnerOffenStatusLabel(typ),
     statusPillKey: partnerOffenStatusPillKey(typ),
     accent: typ === "nachreichung" ? "anfrage" : "angebot",
-    meta,
+    meta: [],
     sortDate: ts(item.gesendet_at ?? item.antwort_at),
     statusRank: typ === "nachreichung" ? 1 : 0,
   };
@@ -150,23 +151,7 @@ export function mapOffenAngebotToCard(
 
 export function mapVorgangToCard(vorgang: PartnerVorgangItem): PartnerCardRow {
   const { auftrag, state, anfrage } = vorgang;
-  const meta = buildPartnerAuftragCardMeta(
-    auftrag.lead?.objekt,
-    auftrag.lead,
-    auftrag.start_datum,
-    auftrag.end_datum
-  );
-
-  const offeneAenderungen = vorgang.auftrag.nachreichungOpenPositionIds?.length ?? 0;
-
-  const subtitle =
-    state === "geaendert"
-      ? offeneAenderungen > 0
-        ? `Leistungsänderung am laufenden Auftrag (${offeneAenderungen} offen)`
-        : "Leistungsänderung am laufenden Auftrag"
-      : auftrag.bautagebuchAnfrageOffen && state === "in_bearbeitung"
-        ? "Tagebucheintrag von Bärenwald angefordert"
-        : undefined;
+  const subtitle = partnerOrtSubtitle(auftrag.lead);
 
   const listenStatus = resolvePartnerVorgangCardStatus(vorgang);
 
@@ -182,7 +167,8 @@ export function mapVorgangToCard(vorgang: PartnerVorgangItem): PartnerCardRow {
           ? "anfrage"
           : "angebot"
         : "auftrag",
-    meta,
+    meta: [],
+    hint: undefined,
     sortDate: partnerVorgangLastActivityAt(vorgang) || ts(
       anfrage?.gesendet_at ?? auftrag.start_datum ?? vorgang.handwerker_bestaetigt_at
     ),

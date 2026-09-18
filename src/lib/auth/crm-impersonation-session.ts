@@ -153,7 +153,8 @@ export async function establishPortalSessionForEmail(
   });
 
   const otp = linkData?.properties?.email_otp?.trim();
-  if (linkErr || !otp) {
+  const tokenHash = linkData?.properties?.hashed_token?.trim();
+  if (linkErr || (!otp && !tokenHash)) {
     return {
       ok: false,
       error: linkErr?.message ?? "Magic-Link/OTP konnte nicht erzeugt werden.",
@@ -170,13 +171,31 @@ export async function establishPortalSessionForEmail(
     auth: { autoRefreshToken: false, persistSession: false },
   });
 
-  const { data: verified, error: verifyErr } = await anon.auth.verifyOtp({
-    email: normalized,
-    token: otp,
-    type: "email",
-  });
+  // token_hash + magiclink ist robuster; email_otp als Fallback
+  let verified: Awaited<ReturnType<typeof anon.auth.verifyOtp>>["data"] | null =
+    null;
+  let verifyErr: { message: string } | null = null;
 
-  if (verifyErr || !verified.session) {
+  if (tokenHash) {
+    const res = await anon.auth.verifyOtp({
+      token_hash: tokenHash,
+      type: "magiclink",
+    });
+    verified = res.data;
+    verifyErr = res.error;
+  }
+
+  if ((!verified?.session || verifyErr) && otp) {
+    const res = await anon.auth.verifyOtp({
+      email: normalized,
+      token: otp,
+      type: "email",
+    });
+    verified = res.data;
+    verifyErr = res.error;
+  }
+
+  if (verifyErr || !verified?.session) {
     return {
       ok: false,
       error: verifyErr?.message ?? "OTP-Verifizierung fehlgeschlagen.",

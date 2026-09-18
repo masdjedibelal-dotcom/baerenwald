@@ -20,13 +20,24 @@ export type MeldeObjektChoice = {
 export function MeldeObjektAuswahl({
   brand,
   objekte,
+  hinweis,
 }: {
   brand: MieterWlBrand;
   objekte: MeldeObjektChoice[];
+  /** z. B. ungültiger Objekt-Slug in der URL */
+  hinweis?: string | null;
 }) {
   return (
     <MieterWlFrame brand={brand} variant="funnel">
       <div className="mx-auto max-w-xl px-6 pb-8 pt-8">
+        {hinweis ? (
+          <p
+            role="status"
+            className="mb-4 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-950"
+          >
+            {hinweis}
+          </p>
+        ) : null}
         <h1 className="mieter-wl-objekt-title">{MIETER_WL_OBJEKT.title_de}</h1>
         <p className="mieter-wl-objekt-sub">{MIETER_WL_OBJEKT.sub_de}</p>
         <div className="mieter-wl-objekt-list">

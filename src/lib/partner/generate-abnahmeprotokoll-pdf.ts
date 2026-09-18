@@ -161,7 +161,7 @@ export async function generateAbnahmeprotokollPdf(
   const hwImg = await embedPngDataUrl(pdf, input.hwSignaturPng);
   const kundeImg = await embedPngDataUrl(pdf, input.kundeSignaturPng);
 
-  page.drawText("Handwerker / Ausführender Betrieb:", {
+  page.drawText("Handwerker vor Ort:", {
     x: margin,
     y,
     size: 10,
@@ -198,7 +198,7 @@ export async function generateAbnahmeprotokollPdf(
   }
 
   ensureSpace(120);
-  page.drawText("Auftraggeber / Kunde (vor Ort):", {
+  page.drawText("Kunde vor Ort:", {
     x: margin,
     y,
     size: 10,

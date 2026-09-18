@@ -90,17 +90,17 @@ export function leadFieldLabel(field: GptLeadField): string {
 export function buildLeadQuestion(field: GptLeadField): string {
   switch (field) {
     case "name":
-      return "Gerne nehme ich dein Projekt direkt hier auf. Wie ist dein **Name**?";
+      return "Gerne nehme ich Ihr Projekt direkt hier auf. Wie ist Ihr **Name**?";
     case "strasse":
-      return "Danke! Wie lautet deine **Adresse** — Straße und Hausnummer?";
+      return "Danke! Wie lautet Ihre **Adresse** — Straße und Hausnummer?";
     case "plz":
-      return "Und deine **Postleitzahl**?";
+      return "Und Ihre **Postleitzahl**?";
     case "kontakt":
-      return "Wie erreichen wir dich am besten — **E-Mail oder Telefonnummer**?";
+      return "Wie erreichen wir Sie am besten — **E-Mail oder Telefonnummer**?";
     case "notizen":
-      return "Möchtest du uns noch etwas mitteilen? (Optional — einfach „nein“ schreiben, wenn nichts dazu ist.)";
+      return "Möchten Sie uns noch etwas mitteilen? (Optional — einfach „nein“ schreiben, wenn nichts dazu ist.)";
     default:
-      return "Wie kann ich dir helfen?";
+      return "Wie kann ich Ihnen helfen?";
   }
 }
 

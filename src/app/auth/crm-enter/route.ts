@@ -7,6 +7,12 @@ import {
   establishPortalSessionForEmail,
 } from "@/lib/auth/crm-impersonation-session";
 import { applyAuthSessionCookieOptions } from "@/lib/supabase/auth-session";
+import {
+  isStagingDeploy,
+  isStagingHostName,
+  isStagingSupabase,
+  STAGING_WEBSITE_ORIGIN,
+} from "@/lib/staging";
 
 type ImpersonationPayload = {
   email: string;
@@ -52,16 +58,46 @@ function verifyToken(token: string): ImpersonationPayload | null {
   }
 }
 
-/** Redirect-Ziel: gleicher Origin wie der Request (Cookies greifen). */
+/**
+ * Öffentlicher Origin für Redirect + Cookies.
+ * Auf Netlify ist `request.url` oft `https://main--….netlify.app` —
+ * dann landen Session-Cookies auf der falschen Domain → Login-Seite.
+ */
 function redirectOrigin(request: Request): string {
-  try {
-    return new URL(request.url).origin;
-  } catch {
-    return (
-      process.env.NEXT_PUBLIC_SITE_URL?.trim()?.replace(/\/$/, "") ||
-      "https://baerenwaldmuenchen.de"
-    );
+  const fwdHost = request.headers.get("x-forwarded-host")?.split(",")[0]?.trim();
+  const host = (fwdHost || request.headers.get("host")?.trim() || "").replace(
+    /:\d+$/,
+    ""
+  );
+  const fwdProto =
+    request.headers.get("x-forwarded-proto")?.split(",")[0]?.trim() || "https";
+
+  if (isStagingHostName(host) || isStagingSupabase() || isStagingDeploy()) {
+    if (host && isStagingHostName(host)) return `${fwdProto}://${host}`;
+    return STAGING_WEBSITE_ORIGIN;
   }
+
+  const configured = process.env.NEXT_PUBLIC_SITE_URL?.trim()?.replace(/\/$/, "");
+  if (configured) {
+    try {
+      return new URL(configured).origin;
+    } catch {
+      /* fall through */
+    }
+  }
+
+  if (host && !/\.netlify\.app$/i.test(host)) {
+    return `${fwdProto}://${host}`;
+  }
+
+  try {
+    const origin = new URL(request.url).origin;
+    if (!/\.netlify\.app$/i.test(new URL(origin).hostname)) return origin;
+  } catch {
+    /* fall through */
+  }
+
+  return "https://baerenwaldmuenchen.de";
 }
 
 function serviceClient() {
@@ -105,28 +141,34 @@ async function consumeJti(jti: string): Promise<boolean> {
   return true;
 }
 
+function loginPathForNext(next: string): string {
+  return next.startsWith("/partner") ? "/partner/login" : "/portal/login";
+}
+
 /** CRM-Admin: Token einlösen → Session serverseitig setzen (ohne Login-Seite). */
 export async function GET(request: Request) {
   const url = new URL(request.url);
   const token = url.searchParams.get("t")?.trim() ?? "";
   const next = url.searchParams.get("next")?.trim() || "/portal";
   const origin = redirectOrigin(request);
+  const loginBase = loginPathForNext(next);
+  const secureCookies = origin.startsWith("https://");
 
   const payload = verifyToken(token);
   if (!payload) {
-    return NextResponse.redirect(`${origin}/portal/login?hint=crm_enter_invalid`);
+    return NextResponse.redirect(`${origin}${loginBase}?hint=crm_enter_invalid`);
   }
 
   const fresh = await consumeJti(payload.jti);
   if (!fresh) {
-    return NextResponse.redirect(`${origin}/portal/login?hint=crm_enter_invalid`);
+    return NextResponse.redirect(`${origin}${loginBase}?hint=crm_enter_invalid`);
   }
 
   const session = await establishPortalSessionForEmail(payload.email);
   if (!session.ok) {
     console.error("[crm-enter]", session.error);
     return NextResponse.redirect(
-      `${origin}/portal/login?hint=crm_enter_failed&msg=${encodeURIComponent(session.error.slice(0, 120))}`
+      `${origin}${loginBase}?hint=crm_enter_failed&msg=${encodeURIComponent(session.error.slice(0, 120))}`
     );
   }
 
@@ -141,17 +183,21 @@ export async function GET(request: Request) {
   const byName = new Map<string, (typeof session.cookies)[number]>();
   for (const c of session.cookies) byName.set(c.name, c);
   for (const c of Array.from(byName.values())) {
-    response.cookies.set(
-      c.name,
-      c.value,
-      applyAuthSessionCookieOptions(c.options)
-    );
+    const opts = applyAuthSessionCookieOptions(c.options);
+    response.cookies.set(c.name, c.value, {
+      ...opts,
+      // Lokal http:// — Secure-Cookies würden sonst verworfen → Login-Seite
+      secure: secureCookies ? opts.secure : false,
+    });
   }
   const adminCookie = adminViewCookiePayload({
     roleLabel: payload.roleLabel,
     adminEmail: payload.adminEmail,
   });
-  response.cookies.set(adminCookie.name, adminCookie.value, adminCookie.options);
+  response.cookies.set(adminCookie.name, adminCookie.value, {
+    ...adminCookie.options,
+    secure: secureCookies ? adminCookie.options.secure : false,
+  });
 
   return response;
 }

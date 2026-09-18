@@ -174,7 +174,7 @@ export function OrgVorgangAbnahmeSection({
             ))}
           </ul>
           {doku.bemerkung ? (
-            <p className="rounded-lg border border-border-light bg-[#fbfcfb] p-3 text-sm">
+            <p className="rounded-lg border border-border-light bg-white p-3 text-sm">
               <b>Bemerkung des Betriebs:</b> {doku.bemerkung}
             </p>
           ) : null}
@@ -274,7 +274,7 @@ export function OrgVorgangAbnahmeSection({
         </div>
 
         {rejectOpen ? (
-          <div className="space-y-3 rounded-xl border border-border-light bg-[#fbfcfb] p-4">
+          <div className="space-y-3 rounded-xl border border-border-light bg-white p-4">
             <label className="block space-y-1.5">
               <span className="text-xs font-semibold text-text-tertiary">
                 Begründung der Zurückweisung

@@ -1,6 +1,11 @@
 import { NextResponse } from "next/server";
 
+import { ensureOrgKennung } from "@/lib/org/ensure-org-kennung";
 import { buildMeldeUrl, generateMeldeQrPng } from "@/lib/org/melde-url";
+import {
+  ORG_MELDE_LEGAL_REQUIRED_ERROR,
+  orgMeldeLegalUrlsReady,
+} from "@/lib/org/melde-legal-urls";
 import { requireOrganisationSession } from "@/lib/org/require-org-session";
 import { supabaseAdmin } from "@/lib/supabase";
 
@@ -39,11 +44,18 @@ async function handleMeldeQrGet(req: Request) {
     : 640;
 
   const org = session.kunde;
-  const orgKennung = org.org_kennung?.trim() ?? "";
+  if (!orgMeldeLegalUrlsReady(org)) {
+    return NextResponse.json(
+      { error: ORG_MELDE_LEGAL_REQUIRED_ERROR },
+      { status: 400 }
+    );
+  }
+
+  const orgKennung = await ensureOrgKennung(org);
   if (!orgKennung) {
     return NextResponse.json(
-      { error: "Organisations-Kennung fehlt. Bitte Bärenwald kontaktieren." },
-      { status: 400 }
+      { error: "Melde-Link konnte nicht vorbereitet werden." },
+      { status: 500 }
     );
   }
 

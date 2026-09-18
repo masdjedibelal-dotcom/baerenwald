@@ -1,8 +1,5 @@
 import type { PartnerOffeneLeistungsUnterlage } from "@/lib/partner/compliance-summary";
-import type {
-  PartnerBautagebuchAnfrageItem,
-  PartnerVorgangItem,
-} from "@/lib/partner/get-partner-data";
+import type { PartnerVorgangItem } from "@/lib/partner/get-partner-data";
 import type { PartnerPlanerSection } from "@/lib/partner/build-partner-termine";
 import { vorgangStateLabel } from "@/lib/partner/vorgang-state";
 
@@ -10,7 +7,6 @@ export type PartnerAufgabeTyp =
   | "bestaetigen"
   | "auftrag_annehmen"
   | "unterlagen_hochladen"
-  | "bautagebuch_eintrag"
   | "rechnung_einreichen"
   | "dokument_hochladen";
 
@@ -63,10 +59,9 @@ function gruppeFromVorgang(v: PartnerVorgangItem) {
 
 export function buildPartnerAufgaben(input: {
   vorgaenge: PartnerVorgangItem[];
-  bautagebuchAnfragen: PartnerBautagebuchAnfrageItem[];
   offeneLeistungsunterlagen: PartnerOffeneLeistungsUnterlage[];
 }): PartnerAufgabeItem[] {
-  const { vorgaenge, bautagebuchAnfragen, offeneLeistungsunterlagen } = input;
+  const { vorgaenge, offeneLeistungsunterlagen } = input;
   const list: PartnerAufgabeItem[] = [];
 
   for (const v of vorgaenge) {
@@ -93,37 +88,6 @@ export function buildPartnerAufgaben(input: {
         ...gruppe,
       });
     }
-
-    if (v.auftrag.bautagebuchAnfrageOffen) {
-      pushAufgabe(list, {
-        id: `bt-anfrage-${v.id}`,
-        typ: "bautagebuch_eintrag",
-        titel: "Bautagebuch-Eintrag",
-        untertitel: "Bärenwald hat um einen Eintrag gebeten",
-        dringend: true,
-        ...gruppe,
-      });
-    }
-  }
-
-  for (const bt of bautagebuchAnfragen) {
-    const vorgang = vorgaenge.find((v) => v.id === bt.auftrag_id);
-    if (!vorgang) continue;
-    pushAufgabe(list, {
-      id: `bt-offen-${bt.id}`,
-      typ: "bautagebuch_eintrag",
-      titel: "Bautagebuch-Eintrag",
-      untertitel: bt.notiz?.trim() || undefined,
-      dringend: true,
-      gruppeKey: `auftrag:${vorgang.id}`,
-      gruppeTitel: vorgang.auftrag.listen_titel,
-      gruppeUntertitel:
-        [vorgang.auftrag.plz, vorgang.auftrag.ort].filter(Boolean).join(" ") ||
-        undefined,
-      section: "vorgaenge",
-      selectedId: vorgang.id,
-      sortKey: `bt-${bt.created_at}`,
-    });
   }
 
   for (const block of offeneLeistungsunterlagen) {

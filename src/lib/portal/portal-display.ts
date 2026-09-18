@@ -194,8 +194,14 @@ export function parseLeistungenList(raw?: string | null): string[] {
 export function resolveAngebotTitel(opts: {
   angebotsnr?: string | null;
   notizen?: string | null;
+  leistungsumfang?: string | null;
 }): string {
   const wm = parseWizardMetaFromNotizen(opts.notizen);
+  // Wie CRM: Leistungsumfang vor Wizard-Titel / Nr.
+  const fromLeistung =
+    sanitizeCustomerText(opts.leistungsumfang, 200) ||
+    sanitizeCustomerText(wm?.leistungsumfang, 200);
+  if (fromLeistung) return fromLeistung;
   const fromWizard = sanitizeCustomerText(wm?.titel, 200);
   if (fromWizard) return fromWizard;
   const nr = opts.angebotsnr?.trim();
@@ -218,6 +224,7 @@ export function buildAngebotPortalDisplay(angebot: {
     titel: resolveAngebotTitel({
       angebotsnr: angebot.angebotsnr,
       notizen: angebot.notizen,
+      leistungsumfang: angebot.leistungsumfang,
     }),
     leistungen,
     hinweise: undefined,

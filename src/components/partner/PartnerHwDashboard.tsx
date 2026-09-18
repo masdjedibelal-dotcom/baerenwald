@@ -1,10 +1,13 @@
 "use client";
 
+import type { ReactNode } from "react";
+
 import { PortalScreenDashboard } from "@/components/shared/PortalScreenDashboard";
+import type { PortalDashboardActionSlide } from "@/lib/portal2/dashboard-actions/types";
 import { partnerStatusChipStyle } from "@/lib/partner/partner-list-mappers";
 
 export type PartnerHwDashboardKpis = {
-  neueAnfragen: number;
+  offen: number;
   inAusfuehrung: number;
   erledigt: number;
 };
@@ -22,8 +25,8 @@ const KPI_DEFS: Array<{
   id: keyof PartnerHwDashboardKpis;
   label: string;
 }> = [
-  { id: "neueAnfragen", label: "Neue Anfragen" },
-  { id: "inAusfuehrung", label: "In Ausführung" },
+  { id: "offen", label: "Offen" },
+  { id: "inAusfuehrung", label: "In Arbeit" },
   { id: "erledigt", label: "Erledigt" },
 ];
 
@@ -31,47 +34,57 @@ type Props = {
   firmName: string;
   kpis: PartnerHwDashboardKpis;
   recent: PartnerHwRecentItem[];
+  actionSlides?: PortalDashboardActionSlide[];
+  onActionRefresh?: () => void | Promise<void>;
   onOpenAll: () => void;
-  onOpenItem: (id: string) => void;
+  onOpenItem: (id: string, opts?: { focus?: string }) => void;
   onKpiClick?: (id: keyof PartnerHwDashboardKpis) => void;
   heroImageUrl?: string | null;
+  beforeTiles?: ReactNode;
 };
 
-/** Mock `screenDashboard` Handwerker — 1:1. */
+/** Deep Green Handwerker-Dashboard. */
 export function PartnerHwDashboard({
   firmName,
   kpis,
   recent,
+  actionSlides = [],
+  onActionRefresh,
   onOpenAll,
   onOpenItem,
   onKpiClick,
   heroImageUrl,
+  beforeTiles,
 }: Props) {
   return (
     <PortalScreenDashboard
       roleLabel="Handwerker"
       hello={firmName}
       avatarName={firmName}
+      brandSubline={firmName}
       heroImageUrl={heroImageUrl}
+      beforeTiles={beforeTiles}
       tiles={KPI_DEFS.map((def) => ({
         id: def.id,
         label: def.label,
         value: kpis[def.id],
         onClick: onKpiClick ? () => onKpiClick(def.id) : undefined,
       }))}
-      recent={recent.slice(0, 3).map((v) => ({
+      actionSlides={actionSlides}
+      onOpenActionItem={onOpenItem}
+      onActionRefresh={onActionRefresh ?? (() => {})}
+      recent={recent.slice(0, 4).map((v) => ({
         id: v.id,
         titel: v.titel,
         objekt: v.objekt,
         statusLabel: v.statusLabel,
         statusColor: v.statusColor,
-        statusBg: v.statusBg,
       }))}
       onOpenAll={onOpenAll}
       onOpenItem={onOpenItem}
       recentTitle="Zuletzt"
       recentAllLabel="Alle ansehen"
-      recentEmpty="Noch nichts"
+      recentEmpty="Noch keine Vorgänge — offene Vorgänge erscheinen hier."
     />
   );
 }

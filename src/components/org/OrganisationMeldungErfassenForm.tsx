@@ -2,7 +2,8 @@
 
 import { useState } from "react";
 
-import { orgPortalToast } from "@/lib/shared/portal-toast";
+import { PhotoUpload } from "@/components/funnel/PhotoUpload";
+import { orgPortalToast, portalToastError } from "@/lib/shared/portal-toast";
 import { MELDE_BEREICHE } from "@/lib/org/melde-bereiche";
 import { MELDE_KATEGORIEN } from "@/lib/org/melde-kategorien";
 import type { MeldeKategorie, OrganisationObjekt } from "@/lib/org/types";
@@ -15,6 +16,34 @@ type Props = {
   onDone: () => void;
 };
 
+const MAX_FOTOS = 12;
+
+async function uploadHvMeldungFotos(files: File[]): Promise<string[]> {
+  const urls: string[] = [];
+  for (const f of files.slice(0, MAX_FOTOS)) {
+    const fd = new FormData();
+    fd.set("file", f);
+    const res = await fetch("/api/org/meldung-upload", {
+      method: "POST",
+      body: fd,
+    });
+    if (res.status === 413) {
+      throw new Error("Datei zu groß (max. 8 MB)");
+    }
+    let json: { url?: string; error?: string } = {};
+    try {
+      json = (await res.json()) as { url?: string; error?: string };
+    } catch {
+      if (!res.ok) throw new Error("Upload fehlgeschlagen");
+    }
+    if (!res.ok || !json.url) {
+      throw new Error(json.error ?? "Upload fehlgeschlagen");
+    }
+    urls.push(json.url);
+  }
+  return urls;
+}
+
 export function OrganisationMeldungErfassenForm({ objekte, mode, onDone }: Props) {
   const [objektId, setObjektId] = useState(objekte[0]?.id ?? "");
   const [melderName, setMelderName] = useState("");
@@ -24,6 +53,7 @@ export function OrganisationMeldungErfassenForm({ objekte, mode, onDone }: Props
   const [kategorie, setKategorie] = useState<MeldeKategorie>("reparatur");
   const [bereichId, setBereichId] = useState("wasser");
   const [beschreibung, setBeschreibung] = useState("");
+  const [photos, setPhotos] = useState<File[]>([]);
   const [versicherung, setVersicherung] = useState(false);
   const [versicherungsNr, setVersicherungsNr] = useState("");
   const [busy, setBusy] = useState(false);
@@ -36,6 +66,19 @@ export function OrganisationMeldungErfassenForm({ objekte, mode, onDone }: Props
     setMessage(null);
     setLink(null);
     try {
+      let fotos: string[] = [];
+      if (mode === "direkt" && photos.length > 0) {
+        try {
+          fotos = await uploadHvMeldungFotos(photos);
+        } catch (err) {
+          const msg =
+            err instanceof Error ? err.message : "Foto-Upload fehlgeschlagen";
+          setMessage(msg);
+          portalToastError("Upload fehlgeschlagen", msg);
+          return;
+        }
+      }
+
       const endpoint =
         mode === "direkt" ? "/api/org/meldung-direkt" : "/api/org/meldung-vorab";
       const res = await fetch(endpoint, {
@@ -52,6 +95,7 @@ export function OrganisationMeldungErfassenForm({ objekte, mode, onDone }: Props
           beschreibung,
           ...(mode === "direkt"
             ? {
+                fotos,
                 versicherung,
                 versicherungsNr: versicherung
                   ? versicherungsNr || undefined
@@ -80,7 +124,7 @@ export function OrganisationMeldungErfassenForm({ objekte, mode, onDone }: Props
   };
 
   return (
-    <form onSubmit={submit} className="space-y-3">
+    <form onSubmit={(e) => void submit(e)} className="space-y-3">
       <p className="text-sm text-text-secondary">
         {mode === "direkt"
           ? "Telefonische oder schriftliche Meldung direkt erfassen (ohne Mieter-Link)."
@@ -165,6 +209,21 @@ export function OrganisationMeldungErfassenForm({ objekte, mode, onDone }: Props
         minLength={8}
       />
       {mode === "direkt" ? (
+        <div className="space-y-2">
+          <p className="text-sm text-text-secondary">
+            Fotos vom Schaden{" "}
+            <span className="text-text-tertiary">(optional, max. {MAX_FOTOS})</span>
+          </p>
+          <PhotoUpload
+            files={photos}
+            onChange={setPhotos}
+            maxFiles={MAX_FOTOS}
+            buttonTitle="Fotos hinzufügen"
+            buttonHint="Schadenfotos vom Melder oder vor Ort — optional"
+          />
+        </div>
+      ) : null}
+      {mode === "direkt" ? (
         <div className="space-y-2 rounded-xl border border-border-default bg-muted/30 p-3">
           <p className="text-sm font-medium text-text-secondary">
             Abrechnung über Versicherung?
@@ -199,7 +258,7 @@ export function OrganisationMeldungErfassenForm({ objekte, mode, onDone }: Props
           {versicherung ? (
             <input
               className="w-full border rounded-lg px-3 py-2"
-              placeholder="Policen- / Versicherungsnummer (optional)"
+              placeholder="Versicherungsnummer (optional)"
               value={versicherungsNr}
               onChange={(e) => setVersicherungsNr(e.target.value)}
             />
@@ -224,7 +283,9 @@ export function OrganisationMeldungErfassenForm({ objekte, mode, onDone }: Props
         <button type="submit" className="btn-pill-primary flex-1" disabled={busy}>
           {mode === "direkt"
             ? busy
-              ? "Speichern…"
+              ? photos.length > 0
+                ? "Fotos & Meldung…"
+                : "Speichern…"
               : "Meldung speichern"
             : busy
               ? "Senden…"

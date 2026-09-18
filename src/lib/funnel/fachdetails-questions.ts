@@ -203,7 +203,7 @@ export const SANITAER_FOLLOWUPS: Record<string, FachdetailQuestionDef> = {
   sanitaer_folge_leck_zugang: {
     id: "sanitaer_leck_zugang",
     title:
-      "Ist der Schaden sichtbar (z.B. unter dem Waschbecken) oder vermutest du ihn hinter der Wand/im Boden?",
+      "Ist der Schaden sichtbar (z.B. unter dem Waschbecken) oder vermuten Sie ihn hinter der Wand/im Boden?",
     education:
       "Damit der erste Rahmen zur Einschätzung passt — Details zum Bestand klärt der Meister vor Ort.",
     inputType: "single",
@@ -226,7 +226,7 @@ export const SANITAER_BAD_Q: FachdetailQuestionDef = {
   id: "sanitaer_bad_was",
   title: "Was soll gemacht werden?",
   education:
-    "Ein komplettes Bad braucht Fliesen, Sanitär und Elektro — wir koordinieren alle drei Gewerke für dich.",
+    "Ein komplettes Bad braucht Fliesen, Sanitär und Elektro — wir koordinieren alle drei Gewerke für Sie.",
   inputType: "single",
   options: [
     {
@@ -257,7 +257,7 @@ export const SANITAER_BAD_Q: FachdetailQuestionDef = {
 export const SANITAER_BAD_OBJEKT_LISTE: FachdetailQuestionDef = {
   id: "sanitaer_bad_objekt_liste",
   title: "Welche Bereiche sollen erneuert werden?",
-  education: "Du kannst mehrere Optionen wählen — der Preisrahmen addiert sich aus den gewählten Positionen.",
+  education: "Sie können mehrere Optionen wählen — der Preisrahmen addiert sich aus den gewählten Positionen.",
   inputType: "multi",
   options: [
     {
@@ -280,7 +280,7 @@ export const SANITAER_BAD_OBJEKT_LISTE: FachdetailQuestionDef = {
 
 export const HEIZUNG_Q1: FachdetailQuestionDef = {
   id: "heizung_typ",
-  title: "Was für eine Heizung hast du?",
+  title: "Was für eine Heizung haben Sie?",
   education:
     "Wärmepumpen und ältere Ölheizungen brauchen Spezialisten — das beeinflusst den Preis und die Verfügbarkeit unserer Handwerker.",
   inputType: "single",
@@ -306,7 +306,7 @@ export const HEIZUNG_Q1: FachdetailQuestionDef = {
       label: "Fernwärme",
       hint: "Hausanschluss ans Fernwärmenetz",
       education:
-        "Störungen und Wartung klären wir mit deinem örtlichen Fernwärmeversorger oder einem zertifizierten Betrieb — wir helfen bei der Abstimmung.",
+        "Störungen und Wartung klären wir mit Ihrem örtlichen Fernwärmeversorger oder einem zertifizierten Betrieb — wir helfen bei der Abstimmung.",
     },
     {
       value: "wartung",
@@ -324,16 +324,16 @@ export const HEIZUNG_Q1: FachdetailQuestionDef = {
 /** „Erneuern“: ohne Wartung — die gibt es nur bei Kaputt/anderen Situationen. */
 export const HEIZUNG_Q1_ERNEUERN: FachdetailQuestionDef = {
   ...HEIZUNG_Q1,
-  title: "Was hast du aktuell?",
+  title: "Was haben Sie aktuell?",
   options: HEIZUNG_Q1.options.filter((o) => o.value !== "wartung"),
 };
 
 /** Nach aktueller Anlage: gewünschter Ziel-Zustand (nur Erneuern). */
 export const HEIZUNG_ZIEL: FachdetailQuestionDef = {
   id: "heizung_ziel",
-  title: "Was ist dein Ziel?",
+  title: "Was ist Ihr Ziel?",
   education:
-    "Damit der Preisrahmen und die Gewerke passen — du kannst die Auswahl später bei der Besichtigung noch präzisieren.",
+    "Damit der Preisrahmen und die Gewerke passen — Sie können die Auswahl später bei der Besichtigung noch präzisieren.",
   inputType: "single",
   options: [
     {
@@ -354,7 +354,7 @@ export const HEIZUNG_ZIEL: FachdetailQuestionDef = {
     {
       value: "beratung",
       label: "Beratung erwünscht",
-      hint: "Noch unsicher — wir stimmen das Vorhaben mit dir ab",
+      hint: "Noch unsicher — wir stimmen das Vorhaben mit Ihnen ab",
     },
   ],
 };
@@ -381,7 +381,7 @@ export const HEIZUNG_FOLLOWUPS: Record<string, FachdetailQuestionDef> = {
     id: "heizung_folge_oel_alter",
     title: "Wie alt ist die Ölheizung?",
     education:
-      "Heizungen über 20 Jahre müssen laut GEG eventuell ausgetauscht werden — wir beraten dich dazu.",
+      "Heizungen über 20 Jahre müssen laut GEG eventuell ausgetauscht werden — wir beraten Sie dazu.",
     inputType: "single",
     options: [
       {
@@ -400,7 +400,7 @@ export const HEIZUNG_FOLLOWUPS: Record<string, FachdetailQuestionDef> = {
     id: "heizung_folge_wp_vorhaben",
     title: "Was soll gemacht werden?",
     education:
-      "Wärmepumpen-Einbau ist ein größeres Projekt — wir planen das persönlich mit dir.",
+      "Wärmepumpen-Einbau ist ein größeres Projekt — wir planen das persönlich mit Ihnen.",
     inputType: "single",
     options: [
       {
@@ -427,7 +427,7 @@ export const HEIZUNG_KAPUTT_Q1: FachdetailQuestionDef = {
   id: "heizung_kaputt_problem",
   title: "Was trifft am ehesten zu?",
   education:
-    "Eine Option reicht — du kannst Details später am Telefon oder vor Ort ergänzen.",
+    "Eine Option reicht — Sie können Details später am Telefon oder vor Ort ergänzen.",
   inputType: "single",
   options: [
     {
@@ -589,7 +589,7 @@ export const BODEN_Q1: FachdetailQuestionDef = {
 
 export const BODEN_ZIEL_Q: FachdetailQuestionDef = {
   id: "boden_ziel",
-  title: "Welchen Bodenbelag möchtest du verlegen lassen?",
+  title: "Welchen Bodenbelag möchten Sie verlegen lassen?",
   inputType: "single",
   options: [
     {
@@ -848,7 +848,7 @@ export const FENSTER_DEFEKT_Q1: FachdetailQuestionDef = {
 };
 
 const GARTEN_WAS_EDUCATION =
-  "Für Baumfällungen und starke Rückschnitte ab ca. 3 m Stammhöhe kann in München eine Genehmigung nötig sein — wir prüfen das gemeinsam mit dir.";
+  "Für Baumfällungen und starke Rückschnitte ab ca. 3 m Stammhöhe kann in München eine Genehmigung nötig sein — wir prüfen das gemeinsam mit Ihnen.";
 
 /** Gartenpflege / Erneuern-Garten u. a. — klassische Pflege + Hecke + Baum */
 export const GARTEN_Q1: FachdetailQuestionDef = {

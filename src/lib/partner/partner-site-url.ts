@@ -37,7 +37,7 @@ export function partnerAnfragePortalUrl(anfrageId: string): string {
 export function partnerVorgangPortalPath(
   vorgangId: string,
   opts?: {
-    focus?: "bautagebuch" | "abnahme";
+    focus?: "bautagebuch" | "abnahme" | "ablehnen";
     anfrageId?: string | null;
     protokollId?: string | null;
   }
@@ -46,7 +46,11 @@ export function partnerVorgangPortalPath(
   const params = new URLSearchParams();
   params.set("section", "vorgaenge");
   params.set("id", id);
-  if (opts?.focus === "bautagebuch" || opts?.focus === "abnahme") {
+  if (
+    opts?.focus === "bautagebuch" ||
+    opts?.focus === "abnahme" ||
+    opts?.focus === "ablehnen"
+  ) {
     params.set("focus", opts.focus);
   }
   if (opts?.anfrageId?.trim()) {

@@ -31,7 +31,7 @@ export function buildGuidedAssistantFromDraft(
       draft,
       text:
         opts?.prefixText ??
-        "Hier ist dein **unverbindlicher Preisrahmen** — berechnet mit unserer Rechner-Logik, nicht geschätzt.",
+        "Hier ist Ihr **unverbindlicher Preisrahmen** — berechnet mit unserer Rechner-Logik, nicht geschätzt.",
       blocks: [
         ...(summaryBlock ? [summaryBlock] : []),
         { type: "price_card", result: priceOutcome.result, draft: priceOutcome.draft },
@@ -54,7 +54,7 @@ export function buildGuidedAssistantFromDraft(
   if (!nextField) {
     return {
       draft,
-      text: opts?.prefixText ?? "Erzähl mir gern mehr — oder wähle unten einen Weg.",
+      text: opts?.prefixText ?? "Erzählen Sie mir gern mehr — oder wählen Sie unten einen Weg.",
       blocks: summaryBlock ? [summaryBlock] : [{ type: "journey_entry" }],
     };
   }
@@ -85,7 +85,7 @@ export function mergeClassificationIntoGuided(
       parsed && "antwort" in parsed && parsed.antwort
         ? parsed.antwort
         : displayText ??
-          "Für dein Vorhaben ist eine persönliche Einschätzung am sinnvollsten — ich helfe dir gern bei der Anfrage.";
+          "Für Ihr Vorhaben ist eine persönliche Einschätzung am sinnvollsten — ich helfe Ihnen gern bei der Anfrage.";
     return {
       draft,
       text: antwort,
@@ -99,11 +99,11 @@ export function mergeClassificationIntoGuided(
 function guidedPromptForField(field: NonNullable<ReturnType<typeof getNextGuidedField>>): string {
   switch (field) {
     case "situation":
-      return "Damit ich dir gezielt helfen kann — was trifft auf dein Vorhaben zu?";
+      return "Damit ich Ihnen gezielt helfen kann — was trifft auf Ihr Vorhaben zu?";
     case "bereich":
       return "Welches Gewerk oder welcher Bereich steht im Fokus?";
     case "fachdetail":
-      return "Noch eine kurze Frage zu deinem Projekt:";
+      return "Noch eine kurze Frage zu Ihrem Projekt:";
     case "groesse":
       return "Wie groß ist der Bereich ungefähr? Eine Schätzung reicht.";
     case "plz":
@@ -111,6 +111,6 @@ function guidedPromptForField(field: NonNullable<ReturnType<typeof getNextGuided
     case "zeitraum":
       return "Wann soll es ungefähr losgehen?";
     default:
-      return "Wie kann ich dir helfen?";
+      return "Wie kann ich Ihnen helfen?";
   }
 }

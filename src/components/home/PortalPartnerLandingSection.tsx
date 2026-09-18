@@ -126,7 +126,7 @@ export function PortalPartnerLandingSection() {
           <PortalCard
             eyebrow="FÜR KUND:INNEN"
             title="MeinBärenwald"
-            lead="Dein Projekt von der ersten Anfrage bis zur Abnahme — ein Login, voller Überblick."
+            lead="Ihr Projekt von der ersten Anfrage bis zur Abnahme — ein Login, voller Überblick."
             benefits={PORTAL_BENEFITS}
             loginHref="/portal/login"
             variant="portal"

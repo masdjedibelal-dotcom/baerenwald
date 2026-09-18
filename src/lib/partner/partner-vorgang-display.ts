@@ -47,14 +47,8 @@ export function resolvePartnerHandwerkerCrmDisplay(
 
 export function resolvePartnerVorgangListenStatus(
   vorgangState: VorgangState | undefined,
-  item: Pick<PartnerAuftragItem, "status" | "bautagebuchAnfrageOffen">
+  item: Pick<PartnerAuftragItem, "status">
 ): { label: string; pillKey: string; actionHint: string | null } {
-  if (
-    item.bautagebuchAnfrageOffen &&
-    (!vorgangState || vorgangState === "in_bearbeitung")
-  ) {
-    return { label: "Tagebuch offen", pillKey: "bautagebuch", actionHint: null };
-  }
   if (vorgangState) {
     return {
       label: vorgangStateLabel(vorgangState),

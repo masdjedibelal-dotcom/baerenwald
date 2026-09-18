@@ -1,6 +1,7 @@
 "use client";
 
 import { PartnerComplianceCheckliste } from "@/components/partner/PartnerComplianceCheckliste";
+import { PortalDetailCard } from "@/components/shared/PortalDetailCard";
 import { buildPartnerAuftragPflichten } from "@/lib/partner/partner-bauprojekt-pflichten";
 import {
   buildBauauftragComplianceItems,
@@ -59,10 +60,7 @@ export function PartnerPflichtenCard({
 
   return (
     <>
-      <section className="rounded-xl border border-border-default bg-white p-4">
-        <h3 className="mb-1 font-[family-name:var(--font-display)] text-[14px] font-bold text-text-primary">
-          {titel}
-        </h3>
+      <PortalDetailCard title={titel} chrome="responsive">
         <p className="text-[12.5px] text-text-secondary">
           {bauprojekt
             ? "Bauprojekt — bitte vor der Bestätigung durchlesen, was du erfüllen musst."
@@ -91,7 +89,7 @@ export function PartnerPflichtenCard({
             <span className="text-[13px] text-text-primary">{checkboxLabel}</span>
           </label>
         ) : null}
-      </section>
+      </PortalDetailCard>
 
       {bauprojekt && nachweisCheckliste.length > 0 ? (
         <PartnerComplianceCheckliste

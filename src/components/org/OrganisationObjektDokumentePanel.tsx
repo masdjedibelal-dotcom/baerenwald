@@ -1,8 +1,10 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { ChevronDown } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
 
 import { DokumenteTabelle } from "@/components/shared/DokumenteTabelle";
+import { PortalInboxEmpty } from "@/components/shared/PortalEmptyState";
 import {
   PORTAL_LIST_PAGE_SIZE,
   PortalListPagination,
@@ -11,6 +13,7 @@ import { meldeKategorieLabel } from "@/lib/org/melde-kategorien";
 import { meldeKategorieFromLead } from "@/lib/org/org-eingang-utils";
 import type { OrganisationLead, OrganisationObjekt } from "@/lib/org/types";
 import { PORTAL_VAR } from "@/lib/portal2/tokens";
+import { cn } from "@/lib/utils";
 
 export type ObjektDokumentEintrag = {
   id: string;
@@ -54,6 +57,7 @@ export function OrganisationObjektDokumentePanel({
   onOpenVorgang,
 }: Props) {
   const [listPage, setListPage] = useState(1);
+  const [openId, setOpenId] = useState<string | null>(null);
 
   const gruppen = useMemo((): VorgangDokGruppe[] => {
     const rows: VorgangDokGruppe[] = [];
@@ -93,26 +97,29 @@ export function OrganisationObjektDokumentePanel({
     safePage * PORTAL_LIST_PAGE_SIZE
   );
 
-  if (gruppen.length === 0) {
-    return (
-      <div className="rounded-xl border border-dashed border-border-light bg-muted/20 px-4 py-10 text-center">
-        <p className="portal-text-body text-text-secondary">
-          Noch keine Dokumente zu Vorgängen an diesem Objekt.
-        </p>
-        <p
-          className="mt-1.5 text-[12.5px] leading-snug"
-          style={{ color: PORTAL_VAR.sub }}
-        >
-          Angebote, Protokolle und Unterlagen erscheinen hier, sobald sie im
-          Vorgang vorliegen.
-        </p>
-      </div>
+  const pageKey = pageGruppen.map((g) => g.leadId).join(",");
+
+  useEffect(() => {
+    if (pageGruppen.length === 0) {
+      setOpenId(null);
+      return;
+    }
+    setOpenId((prev) =>
+      prev && pageGruppen.some((g) => g.leadId === prev)
+        ? prev
+        : pageGruppen[0].leadId
     );
+    // pageKey stabilisiert die Seiten-Gruppe; pageGruppen absichtlich nicht als Dep.
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- pageKey
+  }, [pageKey]);
+
+  if (gruppen.length === 0) {
+    return <PortalInboxEmpty title="Noch keine Daten" compact />;
   }
 
   return (
-    <div className="space-y-0 overflow-hidden rounded-xl border border-border-default bg-white">
-      <div className="flex items-baseline justify-between gap-2 border-b border-border-light px-3.5 py-3 sm:px-4">
+    <div className="space-y-3">
+      <div className="flex items-baseline justify-between gap-2 px-0.5">
         <p className="font-[family-name:var(--font-display)] text-sm font-bold text-text-primary">
           Dokumente
         </p>
@@ -122,44 +129,73 @@ export function OrganisationObjektDokumentePanel({
         </p>
       </div>
 
-      <div className="flex flex-col gap-0 divide-y divide-border-light">
-        {pageGruppen.map((g) => (
-          <section key={g.leadId} className="px-3.5 py-4 sm:px-4">
-            <div className="mb-2.5 flex items-start justify-between gap-3">
-              <div className="min-w-0">
-                <p className="truncate text-[13.5px] font-semibold text-text-primary">
-                  {g.title}
-                </p>
-                <p
-                  className="mt-0.5 truncate text-[12.5px]"
-                  style={{ color: PORTAL_VAR.sub }}
-                >
-                  {g.subtitle}
-                </p>
-              </div>
-              {onOpenVorgang ? (
+      <div className="flex flex-col gap-2.5">
+        {pageGruppen.map((g) => {
+          const open = openId === g.leadId;
+          return (
+            <section
+              key={g.leadId}
+              className="overflow-hidden rounded-xl border border-border-default bg-white shadow-[0_1px_0_rgba(0,0,0,0.03)]"
+            >
+              <div className="flex items-stretch gap-1">
                 <button
                   type="button"
-                  onClick={() => onOpenVorgang(g.leadId)}
-                  className="shrink-0 rounded-full border border-border-default px-2.5 py-1 text-[12px] font-semibold text-accent hover:bg-accent/5"
+                  onClick={() =>
+                    setOpenId((prev) => (prev === g.leadId ? null : g.leadId))
+                  }
+                  className="flex min-w-0 flex-1 items-center gap-2 px-3.5 py-3.5 text-left"
+                  aria-expanded={open}
                 >
-                  Vorgang ›
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-[13.5px] font-semibold text-text-primary">
+                      {g.title}
+                    </p>
+                    <p
+                      className="mt-0.5 truncate text-[12.5px]"
+                      style={{ color: PORTAL_VAR.sub }}
+                    >
+                      {g.subtitle}
+                      {" · "}
+                      {g.dokumente.length}{" "}
+                      {g.dokumente.length === 1 ? "Datei" : "Dateien"}
+                    </p>
+                  </div>
+                  <ChevronDown
+                    className={cn(
+                      "h-5 w-5 shrink-0 text-text-tertiary transition-transform",
+                      open && "rotate-180"
+                    )}
+                    aria-hidden
+                  />
                 </button>
+                {onOpenVorgang ? (
+                  <button
+                    type="button"
+                    onClick={() => onOpenVorgang(g.leadId)}
+                    className="shrink-0 self-center px-3 text-[12px] font-semibold text-accent hover:underline"
+                  >
+                    Vorgang
+                  </button>
+                ) : null}
+              </div>
+              {open ? (
+                <div className="border-t border-border-light px-3.5 pb-3.5 pt-3 sm:px-4">
+                  <DokumenteTabelle
+                    heading=""
+                    className="!border-0 !pt-0"
+                    emptyText="Keine Dokumente."
+                    dokumente={g.dokumente.map((d) => ({
+                      id: d.id,
+                      name: d.subtitle ? `${d.name} — ${d.subtitle}` : d.name,
+                      datum: d.datum,
+                      href: d.href,
+                    }))}
+                  />
+                </div>
               ) : null}
-            </div>
-            <DokumenteTabelle
-              heading=""
-              className="!border-0 !pt-0"
-              emptyText="Keine Dokumente."
-              dokumente={g.dokumente.map((d) => ({
-                id: d.id,
-                name: d.subtitle ? `${d.name} — ${d.subtitle}` : d.name,
-                datum: d.datum,
-                href: d.href,
-              }))}
-            />
-          </section>
-        ))}
+            </section>
+          );
+        })}
       </div>
 
       {gruppen.length > PORTAL_LIST_PAGE_SIZE ? (
@@ -170,16 +206,7 @@ export function OrganisationObjektDokumentePanel({
           totalPages={totalPages}
           onPageChange={setListPage}
         />
-      ) : (
-        <div className="border-t border-border-light px-3 py-2.5 sm:px-4">
-          <p className="portal-text-meta text-text-secondary">
-            <span className="font-medium text-text-primary">
-              {gruppen.length}
-            </span>{" "}
-            {gruppen.length === 1 ? "Vorgang" : "Vorgänge"}
-          </p>
-        </div>
-      )}
+      ) : null}
     </div>
   );
 }

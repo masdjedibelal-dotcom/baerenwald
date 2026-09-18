@@ -1,14 +1,18 @@
-"use client";
+'use client';
 
 import type { ReactNode } from "react";
 import { useEffect, useState } from "react";
 
+import { InfoTip } from "@/components/ui/InfoTip";
 import { cn } from "@/lib/utils";
 
 export interface StepWrapperProps {
   stepLabel?: string;
   question?: string;
   subtext?: string;
+  /** i-Icon-Hinweis statt langer Subtext-Absatz */
+  infoTip?: ReactNode;
+  infoTipLabel?: string;
   /** Kurzes positives Feedback (z. B. nach vorherigem Schritt) */
   banner?: ReactNode;
   /** Rechts neben Frage / Step-Label (z. B. + neues Objekt) */
@@ -29,6 +33,8 @@ export function StepWrapper({
   stepLabel,
   question,
   subtext,
+  infoTip,
+  infoTipLabel = "Hinweis",
   banner,
   headerAction,
   children,
@@ -58,7 +64,7 @@ export function StepWrapper({
       className={cn(
         isModal
           ? "funnel-step-embed w-full"
-          : "mx-auto max-w-xl px-6 pb-6 pt-8",
+          : "funnel-step-page mx-auto w-full max-w-xl px-4 pb-6 pt-6 sm:px-6 sm:pt-8",
         show && "animate-fade-in",
         className
       )}
@@ -71,7 +77,10 @@ export function StepWrapper({
             </p>
           ) : null}
           {question ? (
-            <h1 className="funnel-step-question">{question}</h1>
+            <h1 className="funnel-step-question inline-flex flex-wrap items-center gap-1.5">
+              <span>{question}</span>
+              {infoTip ? <InfoTip tip={infoTip} label={infoTipLabel} /> : null}
+            </h1>
           ) : null}
         </div>
         {headerAction ? (

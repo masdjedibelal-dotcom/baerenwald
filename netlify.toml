@@ -2,3 +2,6 @@
 # Next.js: Netlify nutzt den OpenNext-Adapter; kein `output: "export"` in diesem Projekt.
 [build]
   command = "npm run build"
+
+[context.staging.environment]
+  NEXT_PUBLIC_SITE_URL = "https://staging--baerenwald.netlify.app"

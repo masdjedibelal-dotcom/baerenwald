@@ -101,7 +101,20 @@
   border-color: rgba(46, 125, 82, 0.45);
 }
 
+/* Ablehnen = gleiche Größe/Gewicht wie Akzeptieren (gleichrangig) */
+.cookie-consent-btn--equal {
+  min-width: 8.5rem;
+  border: 1px solid #1a3d2b;
+  background: #fff;
+  color: #1a3d2b;
+}
+
+.cookie-consent-btn--equal:hover {
+  background: #f4f6f5;
+}
+
 .cookie-consent-btn--primary {
+  min-width: 8.5rem;
   border: none;
   background: #2e7d52;
   color: #fff;

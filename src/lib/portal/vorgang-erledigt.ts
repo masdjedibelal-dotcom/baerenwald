@@ -41,7 +41,10 @@ export function allePositionenPortalErledigt(
   return active.every(positionPortalErledigt);
 }
 
-/** Vorgang im Portal als erledigt (Lead-Sync, CRM-Auftrag oder Positionen). */
+/**
+ * Vorgang im Portal als erledigt (Lead-Sync, CRM-Auftrag oder Positionen).
+ * Rechnung ist für Mieter/Melder irrelevant — Abnahme ohne offene Mängel = fertig.
+ */
 export function isVorgangPortalErledigt(input: {
   leadVorgangPhase?: string | null;
   hv_meldung_status?: string | null;
@@ -49,25 +52,42 @@ export function isVorgangPortalErledigt(input: {
   auftragFortschritt?: number | null;
   positionen?: PortalPositionErledigtInput[] | null;
 }): boolean {
-  const active = filterAktivePortalPositionen(input.positionen);
+  if (normalizeStatus(input.leadVorgangPhase) === "abgeschlossen") return true;
+  const hv = normalizeStatus(input.hv_meldung_status);
+  if (hv === "abgeschlossen" || hv === "hm_erledigt") return true;
 
+  if (
+    isPortalAuftragAbgeschlossenRecord({
+      status: input.auftragStatus,
+      fortschritt: input.auftragFortschritt,
+    })
+  ) {
+    return true;
+  }
+
+  /* Abnahme = Arbeit abgeschlossen (Mängel-Gate sitzt in portalErledigtFromLeadAndAuftrag) */
+  if (normalizeStatus(input.auftragStatus) === "abnahme") return true;
+
+  const active = filterAktivePortalPositionen(input.positionen);
   if (active.length > 0) {
     return active.every(positionPortalErledigt);
   }
 
-  if (normalizeStatus(input.leadVorgangPhase) === "abgeschlossen") return true;
-  if (normalizeStatus(input.hv_meldung_status) === "abgeschlossen") return true;
-
-  return isPortalAuftragAbgeschlossenRecord({
-    status: input.auftragStatus,
-    fortschritt: input.auftragFortschritt,
-  });
+  return false;
 }
 
 export type PortalAuftragKontext = {
   status?: string | null;
   fortschritt?: number | null;
   positionen?: PortalPositionErledigtInput[] | null;
+  /** Partner hat Zuweisung bestätigt / übernommen */
+  handwerkerBestaetigt?: boolean;
+  /** Mindestens ein Bautagebuch-Eintrag */
+  hasBautagebuch?: boolean;
+  /** HW wurde angefragt / zugewiesen (nicht nur Lead) */
+  hwGesendet?: boolean;
+  /** Offene Abnahme-Mängel → Mieter darf nicht „Erledigt“ sehen */
+  hasOffeneMaengel?: boolean;
 };
 
 export function portalErledigtFromLeadAndAuftrag(
@@ -77,6 +97,7 @@ export function portalErledigtFromLeadAndAuftrag(
   },
   auftrag?: PortalAuftragKontext | null
 ): boolean {
+  if (auftrag?.hasOffeneMaengel) return false;
   return isVorgangPortalErledigt({
     leadVorgangPhase: lead.vorgang_phase,
     hv_meldung_status: lead.hv_meldung_status,

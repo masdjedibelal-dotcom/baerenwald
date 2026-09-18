@@ -1,21 +1,36 @@
 "use client";
 
 import { Info } from "lucide-react";
+import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
+import { createPortal } from "react-dom";
 
 import {
   LeistungStatusDot,
   resolvePortalLeistungStatusAmpel,
 } from "@/components/shared/LeistungStatusDot";
 import { PortalModalShell } from "@/components/shared/PortalModalShell";
+import { PortalSheetConfirm } from "@/components/shared/PortalSheetConfirm";
+import { useIsPortalMobile } from "@/lib/portal2/use-is-portal-mobile";
 import { cn } from "@/lib/utils";
 import { stripHtmlToPlainText } from "@/lib/portal/portal-display";
 
+/** Footer aus `PortalDetailLayout` — Desktop: automatisch in `PortalDetailHead`. */
+const PortalDetailLayoutFooterContext = createContext<ReactNode>(null);
+
+export function usePortalDetailLayoutFooter(): ReactNode {
+  return useContext(PortalDetailLayoutFooterContext);
+}
+
+/**
+ * Einheitliches Bottom-Confirm — gleiches Pattern wie Dirty „Verwerfen / Weiter bearbeiten“.
+ */
 export function PortalConfirmDialog({
   open,
   title,
   description,
   confirmLabel,
   confirmVariant = "primary",
+  cancelLabel = "Abbrechen",
   loading,
   onConfirm,
   onCancel,
@@ -25,43 +40,25 @@ export function PortalConfirmDialog({
   description: string;
   confirmLabel: string;
   confirmVariant?: "primary" | "danger";
+  /** Cancel-Label — bei Dirty-Close oft „Weiter bearbeiten“. */
+  cancelLabel?: string;
   loading: boolean;
   onConfirm: () => void;
   onCancel: () => void;
 }) {
   return (
-    <PortalModalShell
+    <PortalSheetConfirm
       open={open}
+      placement="standalone"
       title={title}
-      onClose={onCancel}
-      variant="confirm"
-    >
-      <p className="portal-text-body text-text-secondary">{description}</p>
-      <div className="portal-confirm-actions mt-5">
-        <button
-          type="button"
-          disabled={loading}
-          onClick={onConfirm}
-          className={cn(
-            "portal-btn portal-confirm-actions-primary",
-            confirmVariant === "danger"
-              ? "rounded-[9px] border border-red-200 bg-white font-semibold text-red-800"
-              : "rounded-[9px] border-0 bg-[var(--org-primary,var(--p2-primary,#2E7D52))] font-semibold text-white hover:bg-[var(--org-primary-dk,var(--p2-primary-dk,#256642))]",
-            loading && "opacity-60"
-          )}
-        >
-          {loading ? "Wird gesendet…" : confirmLabel}
-        </button>
-        <button
-          type="button"
-          onClick={onCancel}
-          disabled={loading}
-          className="portal-btn portal-confirm-actions-cancel rounded-[9px] border border-[var(--p2-line,rgba(0,0,0,0.08))] bg-[var(--p2-selected,#f0f2f0)] font-semibold text-[var(--p2-sub,#404a45)] hover:bg-[var(--p2-hover,#f7f8fa)]"
-        >
-          Abbrechen
-        </button>
-      </div>
-    </PortalModalShell>
+      description={description}
+      cancelLabel={cancelLabel}
+      confirmLabel={confirmLabel}
+      confirmVariant={confirmVariant}
+      loading={loading}
+      onCancel={onCancel}
+      onConfirm={onConfirm}
+    />
   );
 }
 
@@ -74,41 +71,55 @@ export function PortalDetailHead({
   subtitle,
   titleBadges,
   actions,
+  /** Deep Green: Titel bereits im Cover — hier nur Meta + Actions */
+  hideTitle,
+  timeline,
 }: {
   title: string;
   metaLine?: string;
   statusLabel?: string;
   statusPillClass?: string;
   statusPillStyle?: { color: string; backgroundColor: string };
-  /** Meta neben Status-Pill (Legacy Hero). */
   subtitle?: string;
-  /** Badges/Chips neben dem Titel. */
   titleBadges?: React.ReactNode;
-  /** CTA-Zeile rechts (Desktop) / unter dem Head (Mobile). */
   actions?: React.ReactNode;
+  hideTitle?: boolean;
+  timeline?: React.ReactNode;
 }) {
-  const showStatusRow = Boolean(statusLabel?.trim()) || Boolean(subtitle);
+  const layoutFooter = usePortalDetailLayoutFooter();
+  const resolvedActions = actions ?? layoutFooter;
+  const layoutFooterOnly = !actions && Boolean(layoutFooter);
+  const showStatusRow =
+    !hideTitle &&
+    (Boolean(statusLabel?.trim()) || Boolean(subtitle));
+
   return (
-    <header className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
-      <div className="min-w-0 flex-1 space-y-2">
-        <div className="flex flex-wrap items-center gap-2">
-          <h3 className="font-display text-xl font-semibold leading-snug text-text-primary sm:text-2xl">
-            {title}
-          </h3>
-          {titleBadges}
-        </div>
+    <header className="portal-detail-head">
+      <div className="portal-detail-head-main">
+        {!hideTitle ? (
+          <div className="flex flex-wrap items-center gap-2">
+            <h3 className="portal-detail-head-title">{title}</h3>
+            {titleBadges}
+          </div>
+        ) : titleBadges ? (
+          <div className="flex flex-wrap items-center gap-2">{titleBadges}</div>
+        ) : null}
         {metaLine ? (
-          <p className="portal-text-meta">{metaLine}</p>
+          <p className="portal-detail-head-meta">{metaLine}</p>
         ) : null}
         {showStatusRow ? (
           <div className="flex flex-wrap items-center gap-2">
             {statusLabel?.trim() ? (
               <span
                 className={cn(
-                  "portal-status-pill",
+                  "portal-status-word",
                   !statusPillStyle && statusPillClass
                 )}
-                style={statusPillStyle}
+                style={
+                  statusPillStyle
+                    ? { color: statusPillStyle.color }
+                    : undefined
+                }
               >
                 {statusLabel}
               </span>
@@ -120,10 +131,18 @@ export function PortalDetailHead({
             ) : null}
           </div>
         ) : null}
+        {timeline ? (
+          <div className="portal-detail-head-timeline">{timeline}</div>
+        ) : null}
       </div>
-      {actions ? (
-        <div className="flex flex-wrap items-center gap-2 sm:shrink-0 sm:justify-end">
-          {actions}
+      {resolvedActions ? (
+        <div
+          className={cn(
+            "portal-detail-head-actions",
+            layoutFooterOnly && "hidden lg:flex"
+          )}
+        >
+          {resolvedActions}
         </div>
       ) : null}
     </header>
@@ -173,15 +192,18 @@ export function PortalDetailInfoBox({
 }) {
   if (variant === "warning") {
     return (
-      <div className="portal-text-body flex gap-3 rounded-xl border border-amber-200 bg-amber-50 px-3 py-3.5 text-amber-950">
-        <Info className="mt-0.5 h-4 w-4 shrink-0 text-amber-700" aria-hidden />
+      <div className="portal-detail-infobox portal-detail-infobox--warn">
+        <Info className="mt-0.5 h-[17px] w-[17px] shrink-0" aria-hidden />
         <div className="min-w-0">{children}</div>
       </div>
     );
   }
   return (
-    <div className="portal-text-body flex gap-3 rounded-xl border border-border-light bg-muted/30 px-3 py-3.5 text-text-secondary">
-      <Info className="mt-0.5 h-4 w-4 shrink-0 text-accent" aria-hidden />
+    <div className="portal-detail-infobox">
+      <Info
+        className="mt-0.5 h-[17px] w-[17px] shrink-0 text-[var(--org-primary,var(--p2-primary,#2e7d52))]"
+        aria-hidden
+      />
       <div className="min-w-0">{children}</div>
     </div>
   );
@@ -192,13 +214,16 @@ export function PortalDetailSection({
   children,
   className,
 }: {
-  title: string;
+  /** Leer/undefined = kein Überschrift (wenn Tab den Titel schon trägt). */
+  title?: string | null;
   children: React.ReactNode;
   className?: string;
 }) {
   return (
     <section className={cn("space-y-2.5", className)}>
-      <h4 className="portal-text-section">{title}</h4>
+      {title?.trim() ? (
+        <h4 className="portal-text-section">{title.trim()}</h4>
+      ) : null}
       {children}
     </section>
   );
@@ -212,18 +237,11 @@ export function PortalDetailKeyValues({
   const visible = rows.filter((r) => r.value != null && r.value !== "" && r.value !== "—");
   if (!visible.length) return null;
   return (
-    <dl className="portal-text-body divide-y divide-border-light">
+    <dl className="portal-detail-kv">
       {visible.map((row) => (
-        <div
-          key={row.label}
-          className="grid grid-cols-1 gap-0.5 py-2.5 sm:grid-cols-[38%_1fr] sm:items-baseline sm:gap-4"
-        >
-          <dt className="text-[12px] font-medium text-text-tertiary">
-            {row.label}
-          </dt>
-          <dd className="text-[14px] leading-snug text-text-primary">
-            {row.value}
-          </dd>
+        <div key={row.label} className="portal-detail-kv-row">
+          <dt className="portal-detail-kv-label">{row.label}</dt>
+          <dd className="portal-detail-kv-value">{row.value}</dd>
         </div>
       ))}
     </dl>
@@ -242,16 +260,10 @@ export function PortalDetailLeistungenList({
 }) {
   if (!items.length) return null;
   return (
-    <ul className="portal-text-body overflow-hidden rounded-xl border border-border-light bg-muted/20">
-      {items.map((p, i) => (
-        <li
-          key={p.id}
-          className={cn(
-            "px-3 py-3",
-            i < items.length - 1 && "border-b border-border-light"
-          )}
-        >
-          <p className="font-medium text-text-primary">
+    <ul className="portal-text-body divide-y divide-border-light">
+      {items.map((p) => (
+        <li key={p.id} className="px-0 py-3">
+          <p className="portal-text-card-title font-semibold">
             {stripHtmlToPlainText(p.title) || p.title}
           </p>
           {p.beschreibung ? (
@@ -285,6 +297,10 @@ export function PortalDetailLeistungenPreisListe({
     id: string;
     title: string;
     beschreibung?: string;
+    gewerk?: string;
+    menge?: number;
+    einheit?: string;
+    mengeLabel?: string;
     preisBrutto: number;
     preisBruttoAlt?: number;
     aenderungBadge?: "neu" | "geaendert" | "entfernt";
@@ -296,28 +312,34 @@ export function PortalDetailLeistungenPreisListe({
 }) {
   if (!items.length) return null;
   const showGesamt =
-    !hidePreise && typeof gesamtBrutto === "number" && gesamtBrutto > 0;
+    !hidePreise && typeof gesamtBrutto === "number" && gesamtBrutto >= 0;
 
   return (
-    <div className="portal-text-body overflow-hidden rounded-xl border border-border-light bg-muted/20">
-      <ul>
-        {items.map((p, i) => {
+    <div className="portal-text-body">
+      <ul className="divide-y divide-border-light">
+        {items.map((p) => {
           const isEntfernt = Boolean(p.entfernt || p.aenderungBadge === "entfernt");
           const geaendert = p.aenderungBadge === "geaendert";
           const preisLabel =
-            p.preisBrutto > 0 ? formatEuro(p.preisBrutto) : "Preis folgt";
+            typeof p.preisBrutto === "number" && p.preisBrutto >= 0
+              ? formatEuro(p.preisBrutto)
+              : "Preis folgt";
           const ampel = resolvePortalLeistungStatusAmpel({
             aenderungBadge: p.aenderungBadge,
             entfernt: isEntfernt,
           });
+          const mengeLine =
+            p.mengeLabel?.trim() ||
+            [p.menge, p.einheit].filter(Boolean).join(" ").trim() ||
+            "";
+          const subline = [p.gewerk?.trim(), mengeLine].filter(Boolean).join(" · ");
 
           return (
             <li
               key={p.id}
               className={cn(
-                "flex items-start gap-4 px-3 py-3 sm:gap-6",
+                "flex items-start gap-4 px-0 py-3 sm:gap-6",
                 !hidePreise && "justify-between",
-                i < items.length - 1 && "border-b border-border-light",
                 isEntfernt && "bg-red-50/70",
                 geaendert && "bg-amber-50/60"
               )}
@@ -328,12 +350,17 @@ export function PortalDetailLeistungenPreisListe({
                   <div className="min-w-0 flex-1">
                     <p
                       className={cn(
-                        "font-medium text-text-primary",
+                        "portal-text-card-title font-semibold",
                         isEntfernt && "line-through text-text-secondary"
                       )}
                     >
                       {stripHtmlToPlainText(p.title) || p.title}
                     </p>
+                    {subline ? (
+                      <p className="portal-text-meta mt-0.5 text-text-secondary">
+                        {subline}
+                      </p>
+                    ) : null}
                     {p.beschreibung ? (
                       <p className="portal-text-meta mt-0.5 text-text-secondary">
                         {stripHtmlToPlainText(p.beschreibung)}
@@ -351,9 +378,9 @@ export function PortalDetailLeistungenPreisListe({
                 <div className="shrink-0 pt-0.5 text-right">
                   <p
                     className={cn(
-                      "font-semibold tabular-nums",
+                      "portal-text-body font-semibold tabular-nums",
                       preisLabel === "Preis folgt"
-                        ? "text-sm font-normal italic text-text-tertiary"
+                        ? "portal-text-meta font-normal italic text-text-tertiary"
                         : isEntfernt
                           ? "text-text-tertiary line-through"
                           : geaendert
@@ -367,7 +394,7 @@ export function PortalDetailLeistungenPreisListe({
                   p.preisBruttoAlt > 0 &&
                   p.preisBrutto > 0 &&
                   Math.abs(p.preisBruttoAlt - p.preisBrutto) > 0.009 ? (
-                    <p className="mt-0.5 text-sm tabular-nums text-text-tertiary line-through">
+                    <p className="portal-text-meta mt-0.5 tabular-nums text-text-tertiary line-through">
                       vorher {formatEuro(p.preisBruttoAlt)}
                     </p>
                   ) : null}
@@ -378,9 +405,9 @@ export function PortalDetailLeistungenPreisListe({
         })}
       </ul>
       {showGesamt ? (
-        <div className="flex items-center justify-between gap-4 border-t border-border-default bg-muted/40 px-3 py-3 sm:gap-6">
-          <p className="font-semibold text-text-primary">{gesamtLabel}</p>
-          <p className="font-bold tabular-nums text-text-primary">
+        <div className="flex items-center justify-between gap-4 border-t border-border-default px-0 py-3 sm:gap-6">
+          <p className="portal-text-card-title">{gesamtLabel}</p>
+          <p className="portal-text-card-title tabular-nums">
             {formatEuro(gesamtBrutto)}
           </p>
         </div>
@@ -396,29 +423,41 @@ export function PortalDetailLayout({
   children: React.ReactNode;
   footer?: React.ReactNode;
 }) {
+  const isMobile = useIsPortalMobile();
+  const hasCta = Boolean(footer);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => setMounted(true), []);
+
+  useEffect(() => {
+    const root = document.body;
+    if (!isMobile || !hasCta) {
+      root.classList.remove("has-portal-detail-cta");
+      return;
+    }
+    root.classList.add("has-portal-detail-cta");
+    return () => {
+      root.classList.remove("has-portal-detail-cta");
+    };
+  }, [isMobile, hasCta]);
+
+  const mobileBar =
+    mounted && isMobile && footer
+      ? createPortal(
+          <div className="portal-detail-mobile-cta" role="toolbar" aria-label="Aktionen">
+            <div className="portal-detail-mobile-cta__inner">{footer}</div>
+          </div>,
+          document.body
+        )
+      : null;
+
   return (
-    <div className="flex min-h-0 flex-col">
-      <div
-        className={cn(
-          "portal-detail-layout space-y-5",
-          footer ? "pb-4 max-lg:pb-2 lg:pb-2" : "pb-2"
-        )}
-      >
-        {children}
+    <PortalDetailLayoutFooterContext.Provider value={footer ?? null}>
+      <div className="flex flex-col">
+        <div className="portal-detail-layout space-y-5 pb-2">{children}</div>
+        {mobileBar}
       </div>
-      {footer ? (
-        <>
-          {/* Platzhalter: fixed Action-Bar darf Inhalt nicht verdecken */}
-          <div
-            className="pointer-events-none max-lg:h-[var(--portal-detail-actions-h,6rem)] lg:hidden"
-            aria-hidden
-          />
-          <div className="portal-detail-sticky-actions z-40 border-t border-[var(--p2-line)] bg-[var(--p2-panel)]/95 px-4 py-3 shadow-[0_-4px_12px_rgba(16,25,20,0.08)] backdrop-blur-sm max-lg:fixed max-lg:inset-x-0 max-lg:bottom-[var(--portal-mobile-nav-h)] lg:sticky lg:bottom-0 lg:mt-5">
-            {footer}
-          </div>
-        </>
-      ) : null}
-    </div>
+    </PortalDetailLayoutFooterContext.Provider>
   );
 }
 
@@ -432,6 +471,9 @@ export function PortalDetailStickyActions({
   secondaryLabel,
   onSecondary,
   secondaryDisabled,
+  tertiaryLabel,
+  onTertiary,
+  tertiaryDisabled,
   disabledHint,
 }: {
   primaryLabel: string;
@@ -443,12 +485,26 @@ export function PortalDetailStickyActions({
   secondaryLabel?: string;
   onSecondary?: () => void;
   secondaryDisabled?: boolean;
+  /** Dritter Button links (z. B. „Ablehnen“ neben Secondary + Primary). */
+  tertiaryLabel?: string;
+  onTertiary?: () => void;
+  tertiaryDisabled?: boolean;
   /** Hinweis unter den Buttons, wenn Primary disabled (z. B. fehlende Checkbox). */
   disabledHint?: string | null;
 }) {
   return (
-    <div className="w-full space-y-2">
+    <div className="w-full space-y-2 lg:w-auto">
       <div className="portal-action-row">
+        {tertiaryLabel ? (
+          <button
+            type="button"
+            disabled={tertiaryDisabled || primaryLoading}
+            onClick={onTertiary}
+            className="portal-action-btn portal-action-btn--ghost"
+          >
+            {tertiaryLabel}
+          </button>
+        ) : null}
         {secondaryLabel ? (
           <button
             type="button"
@@ -469,8 +525,10 @@ export function PortalDetailStickyActions({
           {primaryLoading ? "Wird gesendet…" : primaryLabel}
         </button>
       </div>
-      {primaryDisabled && disabledHint ? (
-        <p className="text-center text-[12px] text-text-tertiary">{disabledHint}</p>
+      {disabledHint && (primaryDisabled || secondaryDisabled) ? (
+        <p className="portal-text-label normal-case tracking-normal text-center text-text-tertiary">
+          {disabledHint}
+        </p>
       ) : null}
     </div>
   );
@@ -508,17 +566,17 @@ export function PortalAnsprechpartnerCard({
   return (
     <section className="space-y-2.5 border-t border-border-light pt-5">
       <h4 className="portal-text-section">Ansprechpartner</h4>
-      <div className="portal-text-body rounded-xl border border-border-light bg-gradient-to-br from-emerald-50/80 to-surface-card px-4 py-4">
+      <div className="portal-text-body px-0 py-1">
         <p className="portal-text-meta font-semibold uppercase tracking-wide text-accent">
           {rolleLabel}
         </p>
-        <p className="mt-2 font-display text-lg font-semibold text-text-primary">{name}</p>
+        <p className="portal-text-title mt-2">{name}</p>
         {intro.trim() ? (
-          <p className="mt-3 text-text-secondary">{intro}</p>
+          <p className="portal-text-body mt-3 text-text-secondary">{intro}</p>
         ) : null}
         <a
           href={telefonHref}
-          className="mt-3 inline-flex font-semibold text-accent underline-offset-2 hover:underline"
+          className="portal-text-body mt-3 inline-flex font-semibold text-accent underline-offset-2 hover:underline"
         >
           {telefon}
         </a>
@@ -534,15 +592,13 @@ export function PortalDetailMilestoneList({
 }) {
   if (!items.length) return null;
   return (
-    <ul className="space-y-2">
+    <ul className="divide-y divide-border-light">
       {items.map((m) => (
         <li
           key={m.id}
           className={cn(
-            "portal-text-body flex items-start gap-3 rounded-lg border px-3 py-3",
-            m.erledigt
-              ? "border-emerald-200 bg-emerald-50/80"
-              : "border-border-light bg-surface-card"
+            "portal-text-body flex items-start gap-3 px-0 py-3",
+            m.erledigt ? "text-text-primary" : "text-text-secondary"
           )}
         >
           <span
@@ -558,7 +614,7 @@ export function PortalDetailMilestoneList({
           </span>
           <span
             className={cn(
-              "font-medium text-text-primary",
+              "portal-text-body font-medium text-text-primary",
               m.erledigt && "text-text-secondary line-through decoration-text-tertiary"
             )}
           >

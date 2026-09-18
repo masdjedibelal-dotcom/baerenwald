@@ -11,7 +11,11 @@ export function isPartnerBlockedByOrgFreigabe(
   if (!lead?.auftraggeber_kunde_id) return false;
   if ((lead.hv_meldung_status ?? "").trim() === "notmassnahme") return false;
   const status = lead.org_freigabe_status ?? "nicht_noetig";
-  return status === "ausstehend" || status === "abgelehnt";
+  return (
+    status === "ausstehend" ||
+    status === "beschluss_ausstehend" ||
+    status === "abgelehnt"
+  );
 }
 
 function one<T>(x: T | T[] | null | undefined): T | null {

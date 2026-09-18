@@ -14,7 +14,7 @@ export type WarumBlock = {
 export const WARUM_EINSATZ_BLOCKS: readonly WarumBlock[] = [
   {
     titel: "Ein Ansprechpartner",
-    text: "Einer kennt dein Projekt — nicht drei Nummern, die du selbst abstimmst.",
+    text: "Einer kennt Ihr Projekt — nicht drei Nummern, die Sie selbst abstimmen.",
     icon: LANDING_ICON_WARUM_CONTACT,
     variant: "dark",
   },

@@ -8,7 +8,7 @@ import { loadImageBase64ForClaude } from "@/lib/gpt-viz/storage";
 import type { GptVizRaumAnalyse } from "@/lib/gpt-viz/types";
 
 const ROOM_SYSTEM = `Du analysierst ein Raumfoto für Bärenwald München (Handwerk/Renovierung als GU).
-Erkenne Raumtyp, beschreibe den Ist-Zustand sachlich auf Deutsch (Du-Form).
+Erkenne Raumtyp, beschreibe den Ist-Zustand sachlich auf Deutsch (Sie-Form).
 Liste sichtbare bauliche Elemente, die beim Render erhalten bleiben sollten (Fenster, Türen, Grundriss).
 Schlage 3 unterschiedliche Stil-Richtungen vor, passend zum erkannten Raum.
 Formuliere einen ersten Visualisierungs-Wunsch als Entwurf — der Nutzer bearbeitet ihn.
@@ -31,7 +31,7 @@ Antwort NUR als JSON mit exakt diesen Feldern:
 Keine Preise erfinden. Keine Kontaktdaten erfragen.`;
 
 const INSPIRATION_SYSTEM = `Du analysierst ein Inspirations-/Mood-Bild für eine Renovierung (Bärenwald München).
-Beschreibe Stil, Materialien, Farben und Atmosphäre auf Deutsch (Du-Form).
+Beschreibe Stil, Materialien, Farben und Atmosphäre auf Deutsch (Sie-Form).
 Formuliere daraus einen Visualisierungs-Wunsch, den der Nutzer auf seinen eigenen Raum anwenden kann.
 Antwort NUR als JSON mit exakt diesen Feldern:
 {

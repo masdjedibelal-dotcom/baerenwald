@@ -72,7 +72,7 @@ export class FunnelErrorBoundary extends Component<Props, State> {
               marginBottom: "24px",
             }}
           >
-            Etwas ist schiefgelaufen. Ruf uns einfach direkt an — wir helfen
+            Etwas ist schiefgelaufen. Rufen Sie uns einfach direkt an — wir helfen
             sofort weiter.
           </p>
           <a

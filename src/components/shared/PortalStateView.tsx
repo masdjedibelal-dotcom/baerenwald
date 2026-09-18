@@ -43,7 +43,7 @@ function StateButton({
   ghost?: boolean;
 }) {
   const className = cn(
-    "inline-flex items-center justify-center rounded-[10px] px-5 py-[11px] text-[13.5px] font-semibold",
+    "portal-text-meta inline-flex items-center justify-center rounded-[10px] px-5 py-[11px] font-semibold",
     ghost
       ? "border border-[var(--p2-line)] bg-white text-[var(--p2-sub)]"
       : "border-none bg-[var(--org-primary,var(--p2-primary))] text-white"
@@ -168,10 +168,8 @@ export function PortalStateView({
       >
         <MockIcon glyph={copy.glyph} ctx="default" size={32} style={{ color: "inherit" }} />
       </div>
-      <h2 className="mb-[9px] font-p2-head text-[20px] font-bold text-p2-ink sm:text-[23px]">
-        {copy.title}
-      </h2>
-      <p className="mb-[22px] max-w-[360px] text-[13.5px] leading-relaxed text-p2-sub">
+      <h2 className="portal-text-title mb-[9px]">{copy.title}</h2>
+      <p className="portal-text-meta mb-[22px] max-w-[360px] leading-relaxed text-p2-sub">
         {copy.subtitle}
       </p>
       {(primary || secondary) && (

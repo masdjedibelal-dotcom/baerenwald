@@ -49,9 +49,14 @@ function isAngebotBereit(status?: string | null): boolean {
   );
 }
 
-/** Kunde kann im Portal annehmen — nur bei „gesendet“, nicht nach Annahme. */
+/** Kunde/HV kann im Portal annehmen — gesendet inkl. gesendet_kunde. */
 function isAngebotWartetAufKunde(status?: string | null): boolean {
-  return normalizeStatus(status) === "gesendet";
+  const s = normalizeStatus(status);
+  return (
+    s === "gesendet" ||
+    s === "gesendet_kunde" ||
+    s.includes("gesendet")
+  );
 }
 
 function isAngebotVomKundenAngenommen(status?: string | null): boolean {
@@ -127,7 +132,7 @@ function isHvMieterInBearbeitung(input: {
 
 /**
  * Mieter über HV: nur MIETER_STG-Labels —
- * Eingegangen · In Bearbeitung · Bestätigung · Erledigt.
+ * Eingegangen · In Bearbeitung · Beauftragt · Erledigt.
  * Termin ist Hint/needsAction, kein eigener Status.
  */
 function resolveHvMieterVorgangStatus(input: {
@@ -174,7 +179,7 @@ function resolveHvMieterVorgangStatus(input: {
   if (input.hasAuftragRecord || isHvMieterTerminPhase(input)) {
     return {
       phase: "in_ausfuehrung",
-      label: "Bestätigung",
+      label: "Beauftragt",
       pillKey: "beauftragt",
       sortPriority: 18,
       needsAction: Boolean(input.hasOffeneTerminvorschlaege),
@@ -206,6 +211,8 @@ export function resolveKundeVorgangStatus(input: {
   hv_meldung_status?: string | null;
   org_freigabe_status?: string | null;
   angebotStatus?: string | null;
+  /** Angebot gesendet + PDF — Annehmen/Ablehnen im Portal. */
+  angebotEntscheidbar?: boolean;
   auftragStatus?: string | null;
   auftragFortschritt?: number | null;
   hasAngebotRecord?: boolean;
@@ -232,6 +239,25 @@ export function resolveKundeVorgangStatus(input: {
       label: LABELS.abgelehnt,
       pillKey: "abgelehnt",
       sortPriority: 90,
+      needsAction: false,
+    };
+  }
+
+  // HM selbst erledigt / Lead abgeschlossen — auch ohne Auftrag/Angebot
+  if (
+    isVorgangPortalErledigt({
+      leadVorgangPhase: input.leadVorgangPhase,
+      hv_meldung_status: input.hv_meldung_status,
+      auftragStatus: input.auftragStatus,
+      auftragFortschritt: input.auftragFortschritt,
+      positionen: input.auftragPositionen,
+    })
+  ) {
+    return {
+      phase: "abgeschlossen",
+      label: LABELS.abgeschlossen,
+      pillKey: "abgeschlossen",
+      sortPriority: 80,
       needsAction: false,
     };
   }
@@ -301,7 +327,12 @@ export function resolveKundeVorgangStatus(input: {
     };
   }
 
-  if (input.hasAngebotRecord && isAngebotWartetAufKunde(input.angebotStatus)) {
+  if (
+    input.hasAngebotRecord &&
+    !isAngebotVomKundenAngenommen(input.angebotStatus) &&
+    (isAngebotWartetAufKunde(input.angebotStatus) ||
+      input.angebotEntscheidbar)
+  ) {
     return {
       phase: "angebot_liegt_vor",
       label: LABELS.angebot_liegt_vor,

@@ -1,5 +1,10 @@
 /**
  * Portal 2.0 D8 — Eigentümer (`role=eigentuemer`).
+ *
+ * Fachmodell (ein Konto, Kontexte pro Einheit):
+ * - SE-Verwaltung an (HV führt Sondereigentum) → nur Status sehen, kein Create
+ * - SE aus / eigene Einheit / eigenes Objekt → Create wie Privat (Preis, Angebot annehmen)
+ * - Kein zweiter Privat-Stamm im CRM
  */
 
 export const EIGENTUEMER_DEFAULT_SCHWELLE_EUR = 500;
@@ -20,6 +25,16 @@ export type EigentuemerFreigabeStatus =
   | "freigegeben"
   | "abgelehnt"
   | "nicht_noetig";
+
+/** Einheit: Create erlaubt, wenn HV das SE nicht führt. */
+export function eigentuemerEinheitCreateAllowed(opts: {
+  sondereigentumVerwaltung?: boolean | null;
+  /** Objekt gehört dem Eigentümer-Stamm (ohne HV). */
+  objektEigen?: boolean;
+}): boolean {
+  if (opts.objektEigen) return true;
+  return !Boolean(opts.sondereigentumVerwaltung);
+}
 
 export function formatEigentuemerSchwelle(
   eur: number | null | undefined
@@ -92,5 +107,28 @@ export function filterLeadsByEigentuemerObjekte<
   return leads.filter((l) => {
     const oid = l.kunde_objekt_id?.trim();
     return oid ? set.has(oid) : false;
+  });
+}
+
+/** Vorgänge nach Objekt und optional Einheit (Melder-Einheit / Meta). */
+export function filterEigentuemerVorgaengeByScope<
+  T extends {
+    kundeObjektId?: string | null;
+    melderEinheit?: string | null;
+    cardSubtitle?: string | null;
+  },
+>(
+  items: T[],
+  opts: { objektId?: string | null; einheitLabel?: string | null }
+): T[] {
+  const oid = opts.objektId?.trim() || "";
+  const eh = opts.einheitLabel?.trim().toLowerCase() || "";
+  if (!oid && !eh) return items;
+  return items.filter((it) => {
+    if (oid && String(it.kundeObjektId ?? "").trim() !== oid) return false;
+    if (!eh) return true;
+    const melder = String(it.melderEinheit ?? "").trim().toLowerCase();
+    const sub = String(it.cardSubtitle ?? "").trim().toLowerCase();
+    return melder.includes(eh) || sub.includes(eh) || melder === eh;
   });
 }

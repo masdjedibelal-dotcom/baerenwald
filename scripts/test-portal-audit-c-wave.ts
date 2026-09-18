@@ -35,15 +35,14 @@ assert.equal(
   })?.label,
   "Wartet auf HW · Antwort"
 );
-assert.equal(
-  resolveHvWartetAufHw({ bautagebuchAnfrageOffen: true })?.kind,
-  "bautagebuch"
-);
+assert.equal(resolveHvWartetAufHw({ terminOffen: true })?.kind, "termin");
 assert.equal(resolveHvWartetAufHw({}), null);
 
+assert.equal(hvKpiToListeFilter("offen"), "offen");
 assert.equal(hvKpiToListeFilter("wartet_freigabe"), "offen");
 assert.equal(hvKpiToListeFilter("in_arbeit"), "in_arbeit");
-assert.ok(portalListStackClass("responsive").includes("lg:"));
+assert.ok(portalListStackClass("responsive").includes("portal-list-stack"));
+assert.ok(!portalListStackClass("responsive").includes("lg:divide-y"));
 assert.equal(PORTAL_DETAIL_SECTION_IDS.length, 5);
 
 console.log("audit C3/C4/layout checks passed.");

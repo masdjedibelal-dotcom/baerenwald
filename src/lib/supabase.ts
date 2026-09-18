@@ -2,6 +2,19 @@ import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 
 const placeholderUrl = "https://placeholder.supabase.co";
 
+/** Next.js 14 cached GET-fetch in Server Components — Melde-Seiten würden sonst leere Lookups behalten. */
+function fetchNoStore(
+  input: RequestInfo | URL,
+  init?: RequestInit
+): Promise<Response> {
+  return fetch(input, { ...init, cache: "no-store" });
+}
+
+const clientOpts = {
+  auth: { persistSession: false, autoRefreshToken: false },
+  global: { fetch: fetchNoStore },
+} as const;
+
 function envUrl(): string {
   return process.env.NEXT_PUBLIC_SUPABASE_URL?.trim() || "";
 }
@@ -18,14 +31,14 @@ function envService(): string {
 export const supabase: SupabaseClient = createClient(
   envUrl() || placeholderUrl,
   envAnon() || "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.e30.invalid",
-  { auth: { persistSession: false, autoRefreshToken: false } }
+  clientOpts
 );
 
 /** Server: Schreibzugriff — in API-Routen immer zuerst {@link isSupabaseConfigured} prüfen. */
 export const supabaseAdmin: SupabaseClient = createClient(
   envUrl() || placeholderUrl,
   envService() || "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.e30.invalid",
-  { auth: { persistSession: false, autoRefreshToken: false } }
+  clientOpts
 );
 
 export function isSupabaseConfigured(): boolean {

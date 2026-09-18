@@ -1,16 +1,11 @@
 /**
- * F-Wave Abnahme — CTA bleibt / Checks / Rechnung-Gate.
+ * F-Wave — Erledigt ohne Abnahme / Rechnung-Gate.
  */
 import assert from "node:assert/strict";
 
 import {
-  allLeistungChecksDone,
-  buildLeistungAbschlussChecks,
-  flattenAbschlussChecksForPersist,
-} from "../src/lib/partner/hw-abnahme";
-import {
-  partnerAbnahmeZielPositionen,
   partnerKannErledigtMelden,
+  partnerZeigtAbschlussCta,
 } from "../src/lib/partner/partner-position-erledigt";
 import { partnerAuftragKannRechnungHochladen } from "../src/lib/partner/partner-auftrag-dokumente";
 import type { PartnerAuftragItem } from "../src/lib/partner/get-partner-data";
@@ -49,79 +44,141 @@ assert.equal(
     auftragStatus: "offen",
   }),
   false,
-  "kein CTA solange nicht alle Leistungen dokumentiert"
+  "CTA disabled solange nicht alle Leistungen dokumentiert"
 );
 
 assert.equal(
-  partnerKannErledigtMelden({
-    positionen: [{ ...basePos, handwerker_status: "erledigt" }],
+  partnerZeigtAbschlussCta({
+    positionen: [
+      basePos,
+      {
+        ...basePos,
+        id: "p2",
+        leistung_status: "in_arbeit",
+        leistung_name: "Rohr tauschen",
+      },
+    ],
     vorgangState: "in_bearbeitung",
     auftragStatus: "offen",
   }),
   true,
-  "CTA bleibt bei Legacy handwerker_status=erledigt solange unsigniert"
+  "CTA sichtbar (ausgegraut) solange Leistungen offen"
 );
 
 assert.equal(
   partnerKannErledigtMelden({
-    positionen: [{ ...basePos, handwerker_status: "erledigt" }],
+    positionen: [basePos],
+    vorgangState: "in_bearbeitung",
+    auftragStatus: "offen",
+    hwErledigtGemeldetAm: "2026-07-24T10:00:00Z",
+  }),
+  false,
+  "kein CTA nach Erledigt-Meldung"
+);
+
+assert.equal(
+  partnerKannErledigtMelden({
+    positionen: [basePos],
     vorgangState: "in_bearbeitung",
     auftragStatus: "offen",
     hwAbschlussSigniertAm: "2026-07-24T10:00:00Z",
   }),
   false,
-  "kein CTA nach eigener Signatur"
+  "kein CTA nach Legacy-Signatur"
 );
 
 assert.equal(
-  partnerKannErledigtMelden({
-    positionen: [basePos],
+  partnerZeigtAbschlussCta({
+    positionen: [{ ...basePos, handwerker_status: "erledigt" }],
     vorgangState: "in_bearbeitung",
     auftragStatus: "offen",
-    hwAbschlussSigniertAm: "2026-07-24T10:00:00Z",
-    abnahmeFreigabeStatus: "abgelehnt",
   }),
-  true,
-  "CTA erneut nach CRM-Ablehnung"
+  false,
+  "kein Abschluss-CTA wenn Positionen final erledigt (ohne Timestamp)"
 );
 
 assert.equal(
-  partnerKannErledigtMelden({
-    positionen: [basePos],
-    vorgangState: "in_bearbeitung",
+  partnerZeigtAbschlussCta({
+    positionen: [{ ...basePos, handwerker_status: "erledigt" }],
+    vorgangState: "erledigt",
     auftragStatus: "offen",
-    abnahmeProtokollUrl: "https://example.com/other-hw.pdf",
+    hwErledigtGemeldetAm: "2026-07-24T10:00:00Z",
   }),
-  true,
-  "fremdes Protokoll blockiert eigenen CTA nicht"
+  false,
+  "kein Abschluss-CTA nach Rechnung-Phase (vorgang erledigt)"
 );
-
-const ziel = partnerAbnahmeZielPositionen([basePos]);
-assert.equal(ziel.length, 1);
-
-const checks = buildLeistungAbschlussChecks([basePos]);
-assert.equal(checks[0]!.dokumentiert, true);
-assert.equal(checks[0]!.checks.leistung, true);
-assert.equal(allLeistungChecksDone(checks), true);
-
-const flat = flattenAbschlussChecksForPersist(checks);
-assert.equal(flat.global.leistung, true);
-assert.equal(flat.leistungen.length, 1);
 
 const item = {
   angebotHandwerkerId: "a1",
   status: "offen",
   angebotHwStatus: "uebernommen",
-  projektvertrag_bestaetigt_am: "2026-07-01",
+  projektvertrag_bestaetigt_am: null,
   hw_rechnung_eingereicht_at: null,
+  hw_erledigt_gemeldet_am: null,
   hw_abschluss_signiert_am: null,
   abnahme_protokoll_url: null,
+  positionen: [],
 } as PartnerAuftragItem;
+
+assert.equal(
+  partnerAuftragKannRechnungHochladen({
+    ...item,
+    angebotHwStatus: "uebernommen",
+    positionen: [{ ...basePos, handwerker_status: "erledigt" }],
+  } as PartnerAuftragItem),
+  true,
+  "Rechnung-CTA nach Positions-erledigt ohne Timestamp"
+);
 
 assert.equal(
   partnerAuftragKannRechnungHochladen(item),
   false,
-  "Rechnung ohne Abnahme"
+  "Rechnung erst nach Erledigt"
+);
+
+assert.equal(
+  partnerAuftragKannRechnungHochladen({
+    ...item,
+    angebotHwStatus: "bestaetigt",
+    hw_erledigt_gemeldet_am: "2026-07-24T10:00:00Z",
+  }),
+  true,
+  "Rechnung nach CRM-Freigabe + HW-erledigt"
+);
+
+assert.equal(
+  partnerAuftragKannRechnungHochladen({
+    ...item,
+    angebotHwStatus: "offen",
+  }),
+  false,
+  "Rechnung ohne CRM-Freigabe nicht möglich"
+);
+
+assert.equal(
+  partnerAuftragKannRechnungHochladen({
+    ...item,
+    hw_erledigt_gemeldet_am: "2026-07-24T10:00:00Z",
+  }),
+  true,
+  "Rechnung nach Erledigt-Meldung möglich"
+);
+
+assert.equal(
+  partnerAuftragKannRechnungHochladen(item, { abschlussDoneLocal: true }),
+  true,
+  "Rechnung direkt nach lokalem Erledigt möglich"
+);
+
+assert.equal(
+  partnerAuftragKannRechnungHochladen({
+    ...item,
+    angebotHandwerkerId: null,
+    angebotHwStatus: "uebernommen",
+    hw_erledigt_gemeldet_am: "2026-07-24T10:00:00Z",
+  }),
+  true,
+  "Direktauftrag: Rechnung ohne angebotHandwerkerId möglich"
 );
 
 assert.equal(
@@ -130,7 +187,7 @@ assert.equal(
     hw_abschluss_signiert_am: "2026-07-24T10:00:00Z",
   }),
   true,
-  "Rechnung nach Abnahme"
+  "Legacy-Signatur unlockt Rechnung weiterhin"
 );
 
-console.log("audit F-wave abnahme checks passed.");
+console.log("audit F-wave erledigt-ohne-abnahme checks passed.");

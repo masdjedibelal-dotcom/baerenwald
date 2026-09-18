@@ -11,6 +11,10 @@ import {
   type PortalNotifItem,
   type PortalNotifRole,
 } from "@/lib/portal2/notif-types";
+import {
+  ensurePortalVorgangNotificationHref,
+  vorgangIdFromPortalHref,
+} from "@/lib/portal2/portal-detail-deep-link";
 
 export type HvNotificationRow = {
   id: string;
@@ -43,6 +47,10 @@ export function hvNotificationToPortalItem(
   const typ = mapHvTypToPortalNotifTyp(n.typ);
   const visual = resolvePortalNotifVisual(typ, role);
   const rawTitel = n.titel?.trim() || "";
+  const link = ensurePortalVorgangNotificationHref({
+    href: n.link,
+    typ: n.typ,
+  });
   return {
     id: n.id,
     typ,
@@ -55,7 +63,8 @@ export function hvNotificationToPortalItem(
     iconBg: visual.iconBg,
     iconFg: visual.iconFg,
     glyph: visual.glyph,
-    link: n.link,
+    link,
+    vorgangRef: vorgangIdFromPortalHref(link),
     createdAt: n.created_at,
   };
 }
@@ -111,6 +120,11 @@ export function portalNotificationRowToItem(
 ): PortalNotifItem {
   const typ = mapHvTypToPortalNotifTyp(n.typ);
   const visual = resolvePortalNotifVisual(typ, role);
+  const link = ensurePortalVorgangNotificationHref({
+    href: n.link,
+    vorgangId: n.vorgang_ref,
+    typ: n.typ,
+  });
   return {
     id: n.id,
     typ,
@@ -121,8 +135,8 @@ export function portalNotificationRowToItem(
     iconBg: n.icon_bg || visual.iconBg,
     iconFg: n.icon_fg || visual.iconFg,
     glyph: n.icon_glyph || visual.glyph,
-    link: n.link,
-    vorgangRef: n.vorgang_ref,
+    link,
+    vorgangRef: n.vorgang_ref?.trim() || vorgangIdFromPortalHref(link),
     createdAt: n.created_at,
   };
 }

@@ -3,12 +3,8 @@
 import Image from "next/image";
 
 import {
-  AUTH_BRAND_BODY_BW,
-  AUTH_BRAND_BODY_WL,
-  AUTH_BRAND_BULLETS,
   AUTH_BRAND_POWERED,
-  AUTH_BRAND_TAGLINE_BW,
-  AUTH_BRAND_TAGLINE_WL,
+  authBrandCopy,
   authBrandName,
   authWL,
   type AuthPortalRole,
@@ -38,6 +34,7 @@ export function PortalAuthBrandPanel({
 }: Props) {
   const wl = authWL(role);
   const name = authBrandName(role, orgName);
+  const copy = authBrandCopy(role);
   const bg = wl
     ? primaryDk?.trim() || "var(--org-primary-dk, #1a3d2b)"
     : "#1a3d2b";
@@ -78,16 +75,12 @@ export function PortalAuthBrandPanel({
       </div>
 
       <div className="portal-auth-brand-mid">
-        <p className="portal-auth-brand-tagline">
-          {wl ? AUTH_BRAND_TAGLINE_WL : AUTH_BRAND_TAGLINE_BW}
-        </p>
-        <p className="portal-auth-brand-body">
-          {wl ? AUTH_BRAND_BODY_WL : AUTH_BRAND_BODY_BW}
-        </p>
+        <p className="portal-auth-brand-tagline">{copy.tagline}</p>
+        <p className="portal-auth-brand-body">{copy.body}</p>
       </div>
 
       <ul className="portal-auth-brand-bullets">
-        {AUTH_BRAND_BULLETS.map(([i, t]) => (
+        {copy.bullets.map(([i, t]) => (
           <li key={t}>
             <span aria-hidden>{i}</span>
             {t}

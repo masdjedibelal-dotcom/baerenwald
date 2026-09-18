@@ -7,6 +7,7 @@ import {
   buildSavePriceInternalHtml,
   SAVE_PRICE_CUSTOMER_EMAIL_SUBJECT,
 } from "@/lib/email/lead-mail-templates";
+import { sendBrandedMail } from "@/lib/email/send-branded-mail";
 import { AUTOMATED_CUSTOMER_EMAIL_BCC } from "@/lib/email/resend-bcc";
 import { getPostHogClient } from "@/lib/posthog-server";
 import { getClientIp } from "@/lib/request-ip";
@@ -103,7 +104,7 @@ export async function POST(request: Request) {
     });
 
     let sendError: string | undefined;
-    const { error: err1 } = await resend.emails.send({
+    const { error: err1 } = await sendBrandedMail(resend, {
       from,
       to: email,
       bcc: AUTOMATED_CUSTOMER_EMAIL_BCC,
@@ -112,7 +113,7 @@ export async function POST(request: Request) {
     });
     if (err1) sendError = err1.message;
     if (!sendError) {
-      const { error: err2 } = await resend.emails.send({
+      const { error: err2 } = await sendBrandedMail(resend, {
         from,
         to: SITE_CONFIG.email,
         subject: `Rechner: Preis gespeichert — ${email}`,

@@ -1,73 +1,79 @@
 /**
- * Partner-Bautagebuch → sofort kundensichtbar in auftrag_timeline
- * (kein Freigabe-Schritt; analog CRM publishPositionEintragFuerKunde).
+ * Partner-Leistungs-Update → Portal-Glocken (HV + Kunde).
+ * Sichtbar im Updates-Tab (position_eintraege via loadPartnerDokumentation).
  */
 
-import { resolvePartnerFileUrl } from "@/lib/partner/partner-storage";
+import { notifyHvPartnerBautagebuch } from "@/lib/org/notify-hv-bautagebuch";
+import { notifyMieterBautagebuchEintrag } from "@/lib/melde/notify-mieter-bautagebuch";
 import { isSupabaseConfigured, supabaseAdmin } from "@/lib/supabase";
-
-function eintragTypLabel(typ: string): string {
-  switch (typ) {
-    case "start":
-      return "Start";
-    case "fortschritt":
-      return "Fortschritt";
-    case "ergebnis":
-      return "Ergebnis";
-    case "weitere_arbeit":
-      return "Weitere Arbeit";
-    default:
-      return "Bautagebuch";
-  }
-}
 
 export async function syncPartnerPositionEintragToKundeTimeline(opts: {
   eintragId: string;
   auftragId: string;
   typ: string;
+  titel?: string | null;
   beschreibung?: string | null;
   leistungName?: string | null;
+  leistungNames?: string[] | null;
   handwerkerId?: string | null;
 }): Promise<void> {
   if (!isSupabaseConfigured()) return;
+  const typ = String(opts.typ ?? "").toLowerCase();
+  if (typ === "weitere_arbeit") return;
 
-  const titelParts = [
-    eintragTypLabel(opts.typ),
-    opts.leistungName?.trim() || null,
-  ].filter(Boolean);
+  const auftragId = opts.auftragId.trim();
+  if (!auftragId) return;
 
-  const { data: fotos } = await supabaseAdmin
-    .from("eintrag_fotos")
-    .select("storage_path")
-    .eq("eintrag_id", opts.eintragId)
-    .limit(12);
+  const leistung =
+    opts.leistungName?.trim() ||
+    opts.leistungNames?.map((n) => n.trim()).filter(Boolean)[0] ||
+    null;
+  const eintragTitel =
+    opts.titel?.trim() ||
+    (leistung ? `Update — ${leistung}` : null) ||
+    opts.beschreibung?.trim()?.split(/\n+/)[0]?.slice(0, 72) ||
+    "Update";
 
-  const fotoUrls: string[] = [];
-  for (const f of fotos ?? []) {
-    const path = String(f.storage_path ?? "").trim();
-    if (!path) continue;
-    const url = await resolvePartnerFileUrl(path);
-    if (url) fotoUrls.push(url);
+  const [{ data: hw }, { data: auf }] = await Promise.all([
+    opts.handwerkerId
+      ? supabaseAdmin
+          .from("handwerker")
+          .select("name")
+          .eq("id", opts.handwerkerId)
+          .maybeSingle()
+      : Promise.resolve({ data: null }),
+    supabaseAdmin
+      .from("auftraege")
+      .select("id, titel, lead_id")
+      .eq("id", auftragId)
+      .maybeSingle(),
+  ]);
+
+  const handwerkerName = String(hw?.name ?? "Handwerker").trim() || "Handwerker";
+  const auftragTitel = String(auf?.titel ?? "Auftrag").trim() || "Auftrag";
+  const leadId = auf?.lead_id ? String(auf.lead_id) : null;
+
+  try {
+    await notifyHvPartnerBautagebuch({
+      auftragId,
+      handwerkerName,
+      eintragTitel,
+    });
+  } catch (e) {
+    console.warn("[syncPartnerPositionEintrag] HV-Notify:", e);
   }
 
-  const now = new Date().toISOString();
-  const { error } = await supabaseAdmin.from("auftrag_timeline").insert({
-    auftrag_id: opts.auftragId,
-    typ: "bautagebuch",
-    titel: titelParts.join(" · "),
-    beschreibung: opts.beschreibung?.trim() || null,
-    foto_urls: fotoUrls,
-    fuer_kunde_freigegeben: true,
-    freigegeben_at: now,
-    sichtbar_fuer_kunde: true,
-    handwerker_id: opts.handwerkerId ?? null,
-  });
-
-  if (error) {
-    console.warn(
-      "[syncPartnerPositionEintragToKundeTimeline]",
-      error.message
-    );
+  if (leadId) {
+    try {
+      await notifyMieterBautagebuchEintrag({
+        leadId,
+        handwerkerName,
+        eintragTitel,
+        auftragTitel,
+      });
+    } catch (e) {
+      console.warn("[syncPartnerPositionEintrag] Portal-Notify:", e);
+    }
   }
 }
 
@@ -80,48 +86,54 @@ export async function syncPartnerFreiesBautagebuchToKundeTimeline(opts: {
   bautagebuchEintragId?: string | null;
 }): Promise<string | null> {
   if (!isSupabaseConfigured()) return null;
+  const auftragId = opts.auftragId.trim();
+  if (!auftragId) return null;
 
-  const fotoUrls: string[] = [];
-  for (const path of opts.fotoPaths ?? []) {
-    const p = path.trim();
-    if (!p) continue;
-    const url = await resolvePartnerFileUrl(p);
-    if (url) fotoUrls.push(url);
+  const eintragTitel = opts.titel.trim() || "Update";
+
+  const [{ data: hw }, { data: auf }] = await Promise.all([
+    opts.handwerkerId
+      ? supabaseAdmin
+          .from("handwerker")
+          .select("name")
+          .eq("id", opts.handwerkerId)
+          .maybeSingle()
+      : Promise.resolve({ data: null }),
+    supabaseAdmin
+      .from("auftraege")
+      .select("id, titel, lead_id")
+      .eq("id", auftragId)
+      .maybeSingle(),
+  ]);
+
+  const handwerkerName = String(hw?.name ?? "Handwerker").trim() || "Handwerker";
+  const auftragTitel = String(auf?.titel ?? "Auftrag").trim() || "Auftrag";
+  const leadId = auf?.lead_id ? String(auf.lead_id) : null;
+
+  try {
+    await notifyHvPartnerBautagebuch({
+      auftragId,
+      handwerkerName,
+      eintragTitel,
+    });
+  } catch (e) {
+    console.warn("[syncPartnerFreiesBautagebuch] HV-Notify:", e);
   }
 
-  const now = new Date().toISOString();
-  const { data, error } = await supabaseAdmin
-    .from("auftrag_timeline")
-    .insert({
-      auftrag_id: opts.auftragId,
-      typ: "bautagebuch",
-      titel: opts.titel.trim() || "Bautagebuch",
-      beschreibung: opts.beschreibung?.trim() || null,
-      foto_urls: fotoUrls,
-      fuer_kunde_freigegeben: true,
-      freigegeben_at: now,
-      sichtbar_fuer_kunde: true,
-      handwerker_id: opts.handwerkerId ?? null,
-    })
-    .select("id")
-    .single();
-
-  if (error) {
-    console.warn(
-      "[syncPartnerFreiesBautagebuchToKundeTimeline]",
-      error.message
-    );
-    return null;
+  if (leadId) {
+    try {
+      await notifyMieterBautagebuchEintrag({
+        leadId,
+        handwerkerName,
+        eintragTitel,
+        auftragTitel,
+      });
+    } catch (e) {
+      console.warn("[syncPartnerFreiesBautagebuch] Portal-Notify:", e);
+    }
   }
 
-  const timelineId = data?.id ? String(data.id) : null;
-  if (timelineId && opts.bautagebuchEintragId) {
-    await supabaseAdmin
-      .from("auftrag_bautagebuch_eintraege")
-      .update({ timeline_id: timelineId, updated_at: now })
-      .eq("id", opts.bautagebuchEintragId);
-  }
-  return timelineId;
+  return opts.bautagebuchEintragId ?? null;
 }
 
 /** Offene CRM-BT-Anforderung als erledigt markieren. */

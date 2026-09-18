@@ -10,7 +10,7 @@ import { WHATSAPP_ICON_PATH, WHATSAPP_URL_ANFRAGE } from "@/lib/whatsapp";
 const TIMELINE_STEPS = [
   {
     title: "Anfrage eingegangen",
-    sub: "Wir haben deine Anfrage und alle Angaben erhalten.",
+    sub: "Wir haben Ihre Anfrage und alle Angaben erhalten.",
   },
   {
     title: "Verfügbarkeit wird geprüft",
@@ -22,7 +22,7 @@ const TIMELINE_STEPS = [
   },
   {
     title: "Auftrag & Umsetzung",
-    sub: "Nach deiner Zusage koordinieren wir alle Handwerker — du lehnst dich zurück.",
+    sub: "Nach Ihrer Zusage koordinieren wir alle Handwerker — Sie lehnen sich zurück.",
   },
 ] as const;
 
@@ -113,19 +113,19 @@ export function ThankYou({
       </div>
       <h2 className="mt-4 text-xl font-semibold text-text-primary">
         {isBeratung
-          ? beratungHeadline ?? "Wir melden uns persönlich bei dir."
+          ? beratungHeadline ?? "Wir melden uns persönlich bei Ihnen."
           : "Anfrage eingegangen!"}
       </h2>
       <p className="mt-2 max-w-sm text-sm text-text-secondary">
         {isBeratung
           ? beratungSubline ??
-            `Deine Anfrage ist bei uns eingegangen. Ein Kollege meldet sich bei dir — in der Regel ${SITE_CONFIG.responseSlaWithin}.`
+            `Ihre Anfrage ist bei uns eingegangen. Ein Kollege meldet sich bei Ihnen — in der Regel ${SITE_CONFIG.responseSlaWithin}.`
           : followUpSubline}
       </p>
 
       <div className="mt-6 w-full max-w-sm text-center">
         <p className="mb-3 text-sm text-text-secondary">
-          Oder schreib uns direkt auf WhatsApp — wir antworten schnell.
+          Oder schreiben Sie uns direkt auf WhatsApp — wir antworten schnell.
         </p>
         <a
           href={WHATSAPP_URL_ANFRAGE}
@@ -149,7 +149,7 @@ export function ThankYou({
       {showWunschterminSummary ? (
         <div className="mt-6 w-full text-left">
           <p className="mb-2 text-sm font-semibold text-text-primary">
-            Dein Wunschtermin
+            Ihr Wunschtermin
           </p>
           <div className="rounded-xl bg-muted p-4">
             {(
@@ -171,8 +171,8 @@ export function ThankYou({
           </div>
           {showCalendar !== false ? (
             <p className="mt-4 max-w-md text-center text-xs leading-relaxed text-text-tertiary">
-              Sobald wir die Verfügbarkeit bestätigt haben, kannst du den Termin
-              in deinen Kalender eintragen.
+              Sobald wir die Verfügbarkeit bestätigt haben, können Sie den Termin
+              in Ihren Kalender eintragen.
             </p>
           ) : null}
         </div>

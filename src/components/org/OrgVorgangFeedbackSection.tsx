@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 
+import { usePortalBusy } from "@/components/shared/PortalBusyContext";
 import { orgPortalToast } from "@/lib/shared/portal-toast";
 import { cn } from "@/lib/utils";
 
@@ -29,6 +30,7 @@ export function OrgVorgangFeedbackSection({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [bewertungDone, setBewertungDone] = useState(false);
+  const { runBusy } = usePortalBusy();
 
   if (!feedbackBereit) return null;
 
@@ -36,7 +38,6 @@ export function OrgVorgangFeedbackSection({
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
-    setBusy(true);
     setError(null);
 
     const body =
@@ -45,30 +46,32 @@ export function OrgVorgangFeedbackSection({
         : { leadId, feedbackTyp: "bewertung" as const, sterne, freitext: freitext.trim() || undefined };
 
     if (mode === "feedback" && sterne < 1) {
-      setBusy(false);
       setError("Bitte Sterne wählen.");
       return;
     }
 
+    setBusy(true);
     try {
-      const res = await fetch("/api/org/vorgang-feedback", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body),
+      await runBusy(async () => {
+        const res = await fetch("/api/org/vorgang-feedback", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(body),
+        });
+        const json = (await res.json()) as { error?: string };
+        if (!res.ok) {
+          setError(json.error ?? "Fehler beim Senden.");
+          return;
+        }
+        if (mode === "maengel") {
+          orgPortalToast.maengelGemeldet();
+          setFreitext("");
+        } else {
+          orgPortalToast.feedbackGesendet();
+          setBewertungDone(true);
+        }
+        onSubmitted?.();
       });
-      const json = (await res.json()) as { error?: string };
-      if (!res.ok) {
-        setError(json.error ?? "Fehler beim Senden.");
-        return;
-      }
-      if (mode === "maengel") {
-        orgPortalToast.maengelGemeldet();
-        setFreitext("");
-      } else {
-        orgPortalToast.feedbackGesendet();
-        setBewertungDone(true);
-      }
-      onSubmitted?.();
     } finally {
       setBusy(false);
     }

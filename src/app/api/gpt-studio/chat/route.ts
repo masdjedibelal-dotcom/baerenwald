@@ -185,7 +185,7 @@ export async function POST(req: Request) {
     });
 
     return Response.json({
-      displayText: text || "Wie kann ich dir weiterhelfen?",
+      displayText: text || "Wie kann ich Ihnen weiterhelfen?",
       intent,
       ...(await buildPriceHandoffFields(body, sanitized)),
     });

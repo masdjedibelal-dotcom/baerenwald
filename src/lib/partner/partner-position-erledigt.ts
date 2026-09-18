@@ -17,15 +17,7 @@ function leistungDokumentiert(
   return String(p.leistung_status ?? "").toLowerCase() === "erledigt";
 }
 
-/**
- * F1 — CTA „Auftrag abschließen“ bleibt bis eigene Teilabnahme.
- * Position-Ende dokumentiert nur die Leistung (leistung_status), setzt nicht
- * handwerker_status=erledigt. Abnahme setzt den finalen Status.
- *
- * Signatur ist pro Handwerker (`auftrag_handwerker.abnahme_signiert_am`).
- * Nach CRM-Ablehnung darf erneut eingereicht werden.
- */
-export function partnerKannErledigtMelden(input: {
+type AbschlussCtaInput = {
   positionen: Array<
     Pick<
       PartnerAuftragPosition,
@@ -33,35 +25,68 @@ export function partnerKannErledigtMelden(input: {
       | "aenderung_typ"
       | "leistung_status"
       | "handwerker_id"
+      | "anerkennung_status"
     >
   >;
   vorgangState?: VorgangState;
   auftragStatus: string;
-  /** Eigene HW-Teilabnahme-Signatur (nicht global am Auftrag). */
+  /** Partner hat „Auftrag erledigt“ gemeldet (ohne Abnahme). */
+  hwErledigtGemeldetAm?: string | null;
+  /** Legacy: alte Teilabnahme-Signatur — gilt weiterhin als erledigt. */
   hwAbschlussSigniertAm?: string | null;
   abnahmeProtokollUrl?: string | null;
-  /** CRM-Freigabe der eigenen Teilabnahme. */
   abnahmeFreigabeStatus?: string | null;
-}): boolean {
+};
+
+/** Eigene Positionen, die für den Abschluss zählen (ohne Nacharbeit in Prüfung). */
+export function partnerAbschlussRelevantePositionen(
+  positionen: AbschlussCtaInput["positionen"]
+): AbschlussCtaInput["positionen"] {
+  return positionen.filter((p) => {
+    const a = String(p.anerkennung_status ?? "nicht_noetig").toLowerCase();
+    if (a === "in_pruefung" || a === "abgelehnt") return false;
+    return (
+      positionIstHandwerkerZugewiesen(p.handwerker_status) &&
+      !positionBrauchtVorgangAktion(p)
+    );
+  });
+}
+
+/**
+ * Partner hat Auftrag bereits erledigt gemeldet.
+ * Primär Timestamp; Fallback: alle relevanten Positionen handwerker_status=erledigt
+ * (wird beim Melden gesetzt — auch wenn Timestamp fehlt/nicht geladen).
+ */
+export function partnerHatErledigtGemeldet(input: AbschlussCtaInput): boolean {
+  if (input.hwErledigtGemeldetAm?.trim()) return true;
+  if (input.hwAbschlussSigniertAm?.trim()) return true;
+  const relevant = partnerAbschlussRelevantePositionen(input.positionen);
+  return (
+    relevant.length > 0 &&
+    relevant.every((p) => positionHandwerkerErledigt(p.handwerker_status))
+  );
+}
+
+/**
+ * CTA „Auftrag erledigt“ anzeigen, solange der Partner noch nicht gemeldet hat
+ * und der Auftrag in Ausführung ist.
+ */
+export function partnerZeigtAbschlussCta(input: AbschlussCtaInput): boolean {
   if (isVorgangAuftragErledigt(input.auftragStatus)) return false;
-  const freigabe = String(input.abnahmeFreigabeStatus ?? "")
-    .trim()
-    .toLowerCase();
-  const eigeneSigniert = Boolean(input.hwAbschlussSigniertAm?.trim());
-  const erneutNachAblehnung = freigabe === "abgelehnt";
-  if (eigeneSigniert && !erneutNachAblehnung) return false;
-  // Globaler abnahme_protokoll_url darf andere HWs nicht blockieren.
+  if (partnerHatErledigtGemeldet(input)) return false;
   if (input.vorgangState !== "in_bearbeitung") return false;
   if (!input.positionen.length) return false;
   if (input.positionen.some(positionBrauchtVorgangAktion)) return false;
+  return partnerAbschlussRelevantePositionen(input.positionen).length > 0;
+}
 
-  // Alle eigenen zugewiesenen Positionen müssen dokumentiert sein.
-  const relevant = input.positionen.filter(
-    (p) =>
-      positionIstHandwerkerZugewiesen(p.handwerker_status) &&
-      !positionBrauchtVorgangAktion(p)
-  );
-  if (!relevant.length) return false;
+/**
+ * CTA aktiv, wenn alle eigenen Leistungen dokumentiert (`leistung_status=erledigt`).
+ * Keine Abnahme mehr — nur Erledigt-Meldung.
+ */
+export function partnerKannErledigtMelden(input: AbschlussCtaInput): boolean {
+  if (!partnerZeigtAbschlussCta(input)) return false;
+  const relevant = partnerAbschlussRelevantePositionen(input.positionen);
   return relevant.every((p) => leistungDokumentiert(p));
 }
 
@@ -72,12 +97,17 @@ export function allePartnerPositionenErledigt(
   return positionen.every((p) => positionHandwerkerErledigt(p.handwerker_status));
 }
 
-/** Positionen, die bei Abnahme final auf erledigt gesetzt werden. */
+/** Positionen, die bei Erledigt-Meldung final auf erledigt gesetzt werden. */
 export function partnerAbnahmeZielPositionen(
   positionen: Array<
     Pick<
       PartnerAuftragPosition,
-      "id" | "leistung_name" | "handwerker_status" | "leistung_status" | "aenderung_typ" | "handwerker_id"
+      | "id"
+      | "leistung_name"
+      | "handwerker_status"
+      | "leistung_status"
+      | "aenderung_typ"
+      | "handwerker_id"
     >
   >
 ): Array<{ id: string; leistung_name: string | null }> {

@@ -5,7 +5,7 @@ import { supabaseAdmin } from "@/lib/supabase";
 
 /** Nutzerfreundliche Meldung (kein „Spam“ nach außen). */
 export const KUNDE_GESPERRT_MESSAGE =
-  "Diese Kontaktadresse ist gesperrt. Bitte wende dich an uns, wenn du Hilfe brauchst.";
+  "Diese Kontaktadresse ist gesperrt. Bitte wenden Sie sich an uns, wenn Sie Hilfe brauchen.";
 
 type SpamRow = { id: string; ist_spam?: boolean | null };
 

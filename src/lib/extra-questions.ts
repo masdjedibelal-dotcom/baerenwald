@@ -16,7 +16,7 @@ export type ExtraQuestionDef = {
 const RENOV: ExtraQuestionDef[] = [
   {
     id: "extra_renov_wohnen",
-    label: "Wohnst du während der Renovierung in der Wohnung?",
+    label: "Wohnen Sie während der Renovierung in der Wohnung?",
     options: [
       { value: "ja_bleibe", label: "Ja, ich bleibe drin" },
       { value: "nein_aus", label: "Nein, ich ziehe kurz aus" },
@@ -32,7 +32,7 @@ const RENOV: ExtraQuestionDef[] = [
   },
   {
     id: "extra_renov_plaene",
-    label: "Hast du schon konkrete Vorstellungen?",
+    label: "Haben Sie schon konkrete Vorstellungen?",
     options: [
       { value: "genau", label: "Ja, ich weiß genau was ich will" },
       { value: "beratung", label: "Ich brauche Beratung" },
@@ -64,7 +64,7 @@ const NEUBAU: ExtraQuestionDef[] = [
       {
         whenValue: "familie",
         variant: "info",
-        text: "Wir empfehlen strapazierfähige Böden und Lärmschutz — wir beraten dich gern.",
+        text: "Wir empfehlen strapazierfähige Böden und Lärmschutz — wir beraten Sie gern.",
       },
     ],
   },
@@ -83,7 +83,7 @@ const NEUBAU: ExtraQuestionDef[] = [
 const AKUT: ExtraQuestionDef[] = [
   {
     id: "extra_akut_eigentum",
-    label: "Bist du Eigentümer oder Mieter?",
+    label: "Sind Sie Eigentümer oder Mieter?",
     options: [
       { value: "eigentuemer", label: "Eigentümer" },
       {
@@ -124,7 +124,7 @@ const AKUT: ExtraQuestionDef[] = [
 const PFLEGE: ExtraQuestionDef[] = [
   {
     id: "extra_pflege_entscheider",
-    label: "Bist du der Entscheider?",
+    label: "Sind Sie der Entscheider?",
     options: [
       { value: "ja", label: "Ja, ich entscheide" },
       { value: "gemeinsam", label: "Wir entscheiden gemeinsam" },
@@ -134,13 +134,13 @@ const PFLEGE: ExtraQuestionDef[] = [
       {
         whenValue: "fragen",
         variant: "info",
-        text: "Kein Problem — wir schicken dir das Ergebnis per Mail zum Weiterleiten.",
+        text: "Kein Problem — wir schicken Ihnen das Ergebnis per Mail zum Weiterleiten.",
       },
     ],
   },
   {
     id: "extra_pflege_vorher",
-    label: "Hattest du schon mal einen Pflegedienst?",
+    label: "Hatten Sie schon mal einen Pflegedienst?",
     options: [
       { value: "zufrieden", label: "Ja, war zufrieden" },
       {
@@ -153,7 +153,7 @@ const PFLEGE: ExtraQuestionDef[] = [
       {
         whenValue: "unzufrieden",
         variant: "info",
-        text: "Was war das Problem? Wir hören zu — schreib es uns kurz in die Anmerkungen.",
+        text: "Was war das Problem? Wir hören zu — schreiben Sie es uns kurz in die Anmerkungen.",
       },
     ],
   },

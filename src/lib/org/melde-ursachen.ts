@@ -226,7 +226,7 @@ export function resolveMeldeUrsachenBereich(opts: {
   if (opts.ursachen?.bereich === "strom") return "strom";
   if (opts.ursachen?.bereich === "fenster_tuer") return "fenster_tuer";
   if (opts.ursachen?.bereich === "dach") return "dach";
-  if (opts.ursachen?.bereich === "baum_notfall") return "baum_notfall";
+  if (opts.ursachen?.bereich === "baum_notfall") return "sonstiges";
   if (opts.ursachen?.bereich === "schimmel") return "schimmel";
   if (opts.ursachen?.bereich === "sonstiges") return "sonstiges";
 
@@ -236,7 +236,7 @@ export function resolveMeldeUrsachenBereich(opts: {
     bereiche: null as string[] | null,
   };
   if (isSchimmelMeldeContext(answerOnly)) return "schimmel";
-  if (isBaumMeldeContext(answerOnly)) return "baum_notfall";
+  if (isBaumMeldeContext(answerOnly)) return "sonstiges";
   if (isDachMeldeContext(answerOnly)) return "dach";
   if (isFensterMeldeContext(answerOnly)) return "fenster_tuer";
   if (isStromMeldeContext(answerOnly)) return "strom";
@@ -259,7 +259,7 @@ export function resolveMeldeUrsachenBereich(opts: {
     ursachenBereich: null as string | null,
   };
   if (isSchimmelMeldeContext(withLabel)) return "schimmel";
-  if (isBaumMeldeContext(withLabel)) return "baum_notfall";
+  if (isBaumMeldeContext(withLabel)) return "sonstiges";
   if (isDachMeldeContext(withLabel)) return "dach";
   if (isFensterMeldeContext(withLabel)) return "fenster_tuer";
   if (isStromMeldeContext(withLabel)) return "strom";
@@ -307,10 +307,12 @@ export function meldeUrsachenForAnswers(
     }));
   }
   if (bereich === "baum_notfall") {
-    return baumUrsachenForAnswers(answers).map((u: BaumUrsacheOption) => ({
-      id: u.id,
-      label: u.label,
-    }));
+    return sonstigesUrsachenForAnswers(answers).map(
+      (u: SonstigesUrsacheOption) => ({
+        id: u.id,
+        label: u.label,
+      })
+    );
   }
   if (bereich === "schimmel") {
     return schimmelUrsachenForAnswers(answers).map(
@@ -342,7 +344,7 @@ export function meldeSchadenKurz(
   if (bereich === "strom") return stromSchadenKurz(answers);
   if (bereich === "fenster_tuer") return fensterSchadenKurz(answers);
   if (bereich === "dach") return dachSchadenKurz(answers);
-  if (bereich === "baum_notfall") return baumSchadenKurz(answers);
+  if (bereich === "baum_notfall") return sonstigesSchadenKurz(answers);
   if (bereich === "schimmel") return schimmelSchadenKurz(answers);
   if (bereich === "sonstiges") return sonstigesSchadenKurz(answers);
   return wasserSchadenKurz(answers);
@@ -356,7 +358,7 @@ export function meldeUrsacheLabel(
   if (bereich === "strom") return stromUrsacheLabel(id);
   if (bereich === "fenster_tuer") return fensterUrsacheLabel(id);
   if (bereich === "dach") return dachUrsacheLabel(id);
-  if (bereich === "baum_notfall") return baumUrsacheLabel(id);
+  if (bereich === "baum_notfall") return sonstigesUrsacheLabel(id);
   if (bereich === "schimmel") return schimmelUrsacheLabel(id);
   if (bereich === "sonstiges") return sonstigesUrsacheLabel(id);
   return wasserUrsacheLabel(id);
@@ -367,7 +369,7 @@ export function meldeMaterialOptions(bereich: MeldeUrsachenBereich) {
   if (bereich === "strom") return STROM_MATERIAL_OPTIONS;
   if (bereich === "fenster_tuer") return FENSTER_MATERIAL_OPTIONS;
   if (bereich === "dach") return DACH_MATERIAL_OPTIONS;
-  if (bereich === "baum_notfall") return BAUM_MATERIAL_OPTIONS;
+  if (bereich === "baum_notfall") return SONSTIGES_MATERIAL_OPTIONS;
   if (bereich === "schimmel") return SCHIMMEL_MATERIAL_OPTIONS;
   if (bereich === "sonstiges") return SONSTIGES_MATERIAL_OPTIONS;
   return WASSER_MATERIAL_OPTIONS;

@@ -104,7 +104,7 @@ export function OnboardingTour({ open, audience, slides, onClose }: OnboardingTo
             {slide.highlights.length > 0 ? (
               <div className="onboarding-todos">
                 <p className="onboarding-todos-label">
-                  {audience === "portal" ? "Deine Vorteile" : "Deine To-dos"}
+                  {audience === "portal" ? "Ihre Vorteile" : "Deine To-dos"}
                 </p>
                 <ul>
                   {slide.highlights.map((item) => (

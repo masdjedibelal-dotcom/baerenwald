@@ -87,13 +87,7 @@ export function SelectionTile({
         )}
       </div>
 
-      <div
-        className={cn(
-          "pr-8",
-          !hasVisual &&
-            "flex min-h-[5.25rem] flex-col justify-center gap-0.5 py-4"
-        )}
-      >
+      <div className="pr-8">
         {optIconName ? (
           <span className="funnel-tile-icon-wrap" aria-hidden>
             <BwIcon name={optIconName} size={22} />

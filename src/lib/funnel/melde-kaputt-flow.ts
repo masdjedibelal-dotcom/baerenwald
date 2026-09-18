@@ -9,6 +9,10 @@ import {
   meldeDynamicQuestionsComplete,
   type MeldeAnswers,
 } from "@/lib/funnel/melde-dynamic-questions";
+import {
+  applyMeldeFrageVoice,
+  type MeldeFrageVoice,
+} from "@/lib/funnel/melde-frage-voice";
 import type { FunnelChannel } from "@/lib/funnel/funnel-variant";
 import {
   MELDE_BEREICHE,
@@ -17,6 +21,8 @@ import {
 } from "@/lib/org/melde-bereiche";
 import type { MeldeKategorie } from "@/lib/org/types";
 import type { MeldeFachfrageUi } from "@/lib/org/melde-fachdetails";
+
+export type { MeldeFrageVoice };
 
 /**
  * Kanäle mit vereinfachtem Melde-kaputt-Flow (kein Dringlichkeits-Schritt,
@@ -33,32 +39,33 @@ export function isMeldeKaputtChannel(channel: FunnelChannel): boolean {
 }
 
 /**
- * Akut automatisch (Schadenminderung / Wohnungsnotlage) —
- * ohne Nutzer-Frage zur Dringlichkeit.
+ * @deprecated Bereich allein entscheidet nicht mehr über Sofortmaßnahmen.
+ * Nutze `isMeldeDirektauftrag` (Fachfragen). Liste leer gehalten für Imports.
  */
-export const MELDE_AKUT_BEREICH_IDS: readonly MeldeBereichId[] = [
-  "wasser",
-  "schimmel",
-  "heizung",
-  "strom",
-  "dach",
-] as const;
+export const MELDE_AKUT_BEREICH_IDS: readonly MeldeBereichId[] = [] as const;
 
-export function isMeldeAkutBereich(id: MeldeBereichId): boolean {
-  return (MELDE_AKUT_BEREICH_IDS as readonly string[]).includes(id);
+export function isMeldeAkutBereich(_id: MeldeBereichId): boolean {
+  return false;
 }
 
-/** Melde-Bereiche ohne untypische Outdoor-Fälle (Baum/Sturm → Sonstiges/HV-Freitext). */
-export const MELDE_KAPUTT_BEREICH_OPTIONS: MeldeBereichOption[] =
-  MELDE_BEREICHE.filter((o) => o.id !== "baum_notfall");
+/** Melde-Bereiche für Kaputt-UI (Baum/Sturm liegt unter Sonstiges). */
+export const MELDE_KAPUTT_BEREICH_OPTIONS: MeldeBereichOption[] = MELDE_BEREICHE;
 
+/** @deprecated Nutze meldeKategorieForDirektauftragFlow + isMeldeDirektauftrag. */
 export function meldeKategorieForBereich(
   bereichId: MeldeBereichId
 ): MeldeKategorie {
-  return isMeldeAkutBereich(bereichId) ? "notfall" : "reparatur";
+  if (
+    bereichId === "wasser" ||
+    bereichId === "dach" ||
+    bereichId === "schimmel"
+  ) {
+    return "schaden";
+  }
+  return "reparatur";
 }
 
-/** Funnel-Bereichswert → Kategorie für Persistenz. */
+/** Funnel-Bereichswert → Kategorie für Persistenz (ohne Auto-Notfall). */
 export function meldeKategorieFromFunnelBereich(
   bereich: string | null | undefined
 ): MeldeKategorie {
@@ -68,17 +75,21 @@ export function meldeKategorieFromFunnelBereich(
 }
 
 export function meldeDringlichkeitFromBereich(
-  bereichId: MeldeBereichId
+  _bereichId: MeldeBereichId
 ): "sofort" | "diese_woche" {
-  return isMeldeAkutBereich(bereichId) ? "sofort" : "diese_woche";
+  return "diese_woche";
 }
 
 /** Dynamische Fachfragen — Folgefragen nur wenn nötig. */
 export function getMeldeKaputtFachfragen(
   bereichFunnelValue: string,
-  answers?: MeldeAnswers
+  answers?: MeldeAnswers,
+  voice: MeldeFrageVoice = "mieter"
 ): MeldeFachfrageUi[] {
-  return getMeldeDynamicQuestions(bereichFunnelValue, answers);
+  return applyMeldeFrageVoice(
+    getMeldeDynamicQuestions(bereichFunnelValue, answers),
+    voice
+  );
 }
 
 export function meldeFachfragenComplete(

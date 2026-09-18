@@ -1,8 +1,8 @@
-import { notFound } from "next/navigation";
-
+import { MeldeFehlerClient } from "@/components/melden/MeldeFehlerClient";
 import { MeldeFormular } from "@/components/melden/MeldeFormular";
 import { resolveMeldeLegalUrls } from "@/lib/org/melde-legal-urls";
 import { resolveEinladungKontext } from "@/lib/org/resolve-melde-kontext";
+import { MIETER_WL_FEHLER } from "@/lib/portal2/mieter-wl";
 
 export const metadata = {
   title: "Meldung ergänzen",
@@ -13,7 +13,16 @@ type Props = { params: { token: string } };
 
 export default async function MeldenErgaenzenPage({ params }: Props) {
   const ctx = await resolveEinladungKontext(params.token);
-  if (!ctx) notFound();
+  if (!ctx) {
+    return (
+      <MeldeFehlerClient
+        neutral
+        showObjektButton={false}
+        title={MIETER_WL_FEHLER.title_de}
+        body={MIETER_WL_FEHLER.body_de}
+      />
+    );
+  }
 
   const org = (ctx.org ?? {}) as Record<string, unknown>;
   const orgKennung =

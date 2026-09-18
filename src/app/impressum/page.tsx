@@ -80,6 +80,25 @@ export default function ImpressumPage() {
                 Verbreitung und jede Art der Verwertung außerhalb der Grenzen des Urheberrechtes
                 bedürfen der schriftlichen Zustimmung des jeweiligen Autors.
               </p>
+
+              <strong>Streitschlichtung / Verbraucherschlichtung (VSBG)</strong>
+              <p>
+                Die Europäische Kommission stellt eine Plattform zur Online-Streitbeilegung (OS)
+                bereit:{' '}
+                <a
+                  href="https://ec.europa.eu/consumers/odr/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  https://ec.europa.eu/consumers/odr/
+                </a>
+                . Unsere E-Mail-Adresse finden Sie oben im Impressum.
+              </p>
+              <p>
+                Wir sind nicht verpflichtet und nicht bereit, an Streitbeilegungsverfahren vor
+                einer Verbraucherschlichtungsstelle im Sinne des
+                Verbraucherstreitbeilegungsgesetzes (VSBG) teilzunehmen.
+              </p>
             </div>
           </div>
         </section>

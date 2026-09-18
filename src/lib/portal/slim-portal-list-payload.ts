@@ -12,18 +12,61 @@ export function slimFunnelForList(funnel: unknown): Record<string, unknown> | nu
   const out: Record<string, unknown> = {};
   for (const key of [
     "ort",
+    "strasse",
+    "hausnummer",
+    "plz",
+    "mieter",
+    "ohne_mieter",
     "answers",
     "antworten",
+    "situation",
+    "bereiche",
+    "zeitraum",
+    "dringlichkeit",
+    "kundentyp",
+    "zugaenglichkeit",
+    "groesse",
+    "groesseEinheit",
+    "badAusstattung",
+    "breakdown",
+    "freitext",
+    "leadBeschreibung",
+    /** Melde-Titel (Startseite/Liste) braucht Bereich + Fachantworten */
+    "melde_bereich",
     "melde_kategorie",
+    "fachdetailAnswers",
     "kategorie",
     "notfall",
     "havarie",
     "als_akut",
-    "dringlichkeit",
     "quelle",
-    "bereiche",
   ]) {
     if (f[key] !== undefined) out[key] = f[key];
+  }
+  // Nested: fachdetails inkl. Answers + verschachtelte Gewerk-States
+  const fd = f.fachdetails;
+  if (fd && typeof fd === "object" && !Array.isArray(fd)) {
+    const nested = fd as Record<string, unknown>;
+    const answers = nested.fachdetailAnswers;
+    const slimFd: Record<string, unknown> = {};
+    if (answers && typeof answers === "object") {
+      slimFd.fachdetailAnswers = answers;
+      if (out.fachdetailAnswers === undefined) out.fachdetailAnswers = answers;
+    }
+    for (const k of [
+      "sanitaer",
+      "maler",
+      "heizung",
+      "elektro",
+      "boden",
+      "dach",
+      "garten",
+      "fassade",
+      "fenster",
+    ]) {
+      if (nested[k] != null) slimFd[k] = nested[k];
+    }
+    if (Object.keys(slimFd).length) out.fachdetails = slimFd;
   }
   return Object.keys(out).length ? out : null;
 }
@@ -41,13 +84,21 @@ function slimLead(l: LeadLike): LeadLike {
 }
 
 function slimAngebot(a: AngebotLike): AngebotLike {
+  const docs = Array.isArray(a.dokumente) ? a.dokumente : [];
+  const angebotDocs = docs.filter((d) => {
+    const art = String((d as { art?: string }).art ?? "").toLowerCase();
+    return art === "angebot" || Boolean((d as { href?: string }).href);
+  });
   return {
     ...a,
+    // Roh-JSON nicht in die Client-Hydration schicken — Display behalten.
     positionen: undefined,
-    positionenDisplay: [],
-    leistungsumfang: null,
+    positionenDisplay: Array.isArray(a.positionenDisplay)
+      ? a.positionenDisplay
+      : [],
+    leistungsumfang: a.leistungsumfang ?? null,
     notizen: null,
-    dokumente: [],
+    dokumente: angebotDocs,
   };
 }
 
@@ -80,12 +131,19 @@ function slimAuftrag(a: AuftragLike): AuftragLike {
 export function slimVorgangListItem(
   item: KundePortalDetailItem
 ): KundePortalDetailItem {
+  const docs = Array.isArray(item.dokumente) ? item.dokumente : [];
+  const angebotDocs = docs.filter((d) => {
+    const art = String((d as { art?: string }).art ?? "").toLowerCase();
+    const name = String((d as { name?: string }).name ?? "").toLowerCase();
+    return art === "angebot" || name.includes("angebot");
+  });
   return {
     ...item,
     meldeFotos: [],
     bautagebuch: [],
-    dokumente: [],
-    angebotPositionen: undefined,
+    // Angebot-PDF + Leistungen müssen in der Liste/Detail-Fallback sichtbar bleiben.
+    dokumente: angebotDocs,
+    angebotPositionen: item.angebotPositionen,
     auftragPositionen: undefined,
     abnahmeCheckliste: null,
     meldeFachdetails: undefined,
@@ -106,18 +164,26 @@ export function buildSlimPortalListPayload(opts: {
     { sterne: number; freitext?: string | null }
   >;
 }) {
-  const leads = opts.leads.map(slimLead);
-  const angebote = opts.angebote.map(slimAngebot);
-  const auftraege = opts.auftraege.map(slimAuftrag);
-
+  /**
+   * Titel zuerst aus vollem Funnel (z. B. „Wasser am Heizkörper“),
+   * danach Payload slimmen — sonst weichen Liste und Detail auseinander.
+   */
   const initialVorgaenge = buildKundeVorgaenge({
-    leads: leads as Parameters<typeof buildKundeVorgaenge>[0]["leads"],
-    angebote: angebote as Parameters<typeof buildKundeVorgaenge>[0]["angebote"],
-    auftraege: auftraege as Parameters<typeof buildKundeVorgaenge>[0]["auftraege"],
+    leads: opts.leads as Parameters<typeof buildKundeVorgaenge>[0]["leads"],
+    angebote: opts.angebote as Parameters<
+      typeof buildKundeVorgaenge
+    >[0]["angebote"],
+    auftraege: opts.auftraege as Parameters<
+      typeof buildKundeVorgaenge
+    >[0]["auftraege"],
     hvPortalMode: opts.hvPortalMode,
     mieterStatusMode: opts.mieterStatusMode,
     mieterFeedbackByLeadId: opts.mieterFeedbackByLeadId,
   }).map(slimVorgangListItem);
+
+  const leads = opts.leads.map(slimLead);
+  const angebote = opts.angebote.map(slimAngebot);
+  const auftraege = opts.auftraege.map(slimAuftrag);
 
   return { leads, angebote, auftraege, initialVorgaenge };
 }

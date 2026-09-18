@@ -147,8 +147,8 @@ export async function POST(req: Request) {
     situation:
       body.situation ?? (anlass === "servicepaket" ? "betreuung" : "erneuern"),
     bereiche: body.bereiche ?? [],
-    preis_min: body.preis_min ?? 0,
-    preis_max: body.preis_max ?? 0,
+    preis_min: body.preis_min != null ? body.preis_min : undefined,
+    preis_max: body.preis_max != null ? body.preis_max : undefined,
     zeitraum: body.zeitraum ?? null,
     kanal,
     anlass,
@@ -182,6 +182,11 @@ export async function POST(req: Request) {
       { status: result.status ?? 500 }
     );
   }
+
+  const { finalizeOrgSelfCreatedLead } = await import(
+    "@/lib/org/finalize-org-self-created-lead"
+  );
+  await finalizeOrgSelfCreatedLead(result.id);
 
   let bewohnerId: string | null = null;
   if (createBewohner && melderName) {

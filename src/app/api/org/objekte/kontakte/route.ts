@@ -10,7 +10,6 @@ import { supabaseAdmin } from "@/lib/supabase";
 export const runtime = "nodejs";
 
 const KONTAKT_ROLLEN = [
-  "hausmeister",
   "beirat",
   "dienstleister",
   "notfall",
@@ -37,6 +36,7 @@ export async function GET(req: Request) {
     .select("*")
     .eq("kunde_objekt_id", objektId)
     .eq("aktiv", true)
+    .neq("rolle", "hausmeister")
     .order("sort_order", { ascending: true });
 
   if (error) {
@@ -137,7 +137,13 @@ export async function PATCH(req: Request) {
     updated_at: new Date().toISOString(),
   };
   if (body.name != null) patch.name = String(body.name).trim();
-  if (body.rolle != null) patch.rolle = body.rolle;
+  if (body.rolle != null) {
+    const rolle = String(body.rolle).trim();
+    if (!(KONTAKT_ROLLEN as readonly string[]).includes(rolle)) {
+      return NextResponse.json({ error: "Ungültige Rolle." }, { status: 400 });
+    }
+    patch.rolle = rolle;
+  }
   if (body.telefon != null) patch.telefon = body.telefon.trim() || null;
   if (body.email != null) patch.email = body.email.trim() || null;
   if (body.notiz != null) patch.notiz = body.notiz.trim() || null;

@@ -150,7 +150,8 @@ export const FUNNEL_VARIANT: Record<FunnelChannel, FunnelVariantConfig> = {
     forceKaputt: false,
     prefix: {
       objekt: "required",
-      objektNeu: false,
+      /** Eigene Objekte ohne HV — Anlegen im Funnel. */
+      objektNeu: true,
       mieter: "optional",
       mieterNeu: true,
       einheit: true,

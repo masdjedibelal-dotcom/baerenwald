@@ -23,6 +23,7 @@ export async function GET(req: Request) {
       "id, kontakt_name, melder_name, melder_einheit, anlass, status, hv_meldung_status, kunde_objekt_id, created_at, situation, bereiche"
     )
     .eq("auftraggeber_kunde_id", session.kunde.id)
+    .is("geloescht_am", null)
     .order("created_at", { ascending: false })
     .limit(100);
 

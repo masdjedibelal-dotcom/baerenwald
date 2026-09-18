@@ -90,7 +90,7 @@ export function GptZielbildCard({
   return (
     <div className={className ? `gpt-zielbild-card ${className}` : "gpt-zielbild-card"}>
       <div className="gpt-zielbild-card-head">
-        <p className="gpt-zielbild-card-title">Dein Zielbild</p>
+        <p className="gpt-zielbild-card-title">Ihr Zielbild</p>
         <p className="gpt-zielbild-card-hint">
           Editorial 4:5 — Vorher-Inset, Hero-Nachher, Magazin-Typo.
         </p>

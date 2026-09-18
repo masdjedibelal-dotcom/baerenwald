@@ -5,7 +5,7 @@ import { supabaseAdmin } from "@/lib/supabase";
 
 /** Nutzerfreundliche Meldung — Kunde soll sich an Bärenwald wenden. */
 export const KUNDE_PORTAL_GESPERRT_MESSAGE =
-  "Der Portal-Zugang für diese Adresse ist gesperrt. Bitte wende dich an uns, wenn du Hilfe brauchst.";
+  "Der Portal-Zugang für diese Adresse ist gesperrt. Bitte wenden Sie sich an uns, wenn Sie Hilfe brauchen.";
 
 type GesperrtRow = {
   id: string;

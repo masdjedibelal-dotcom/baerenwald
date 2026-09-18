@@ -73,7 +73,7 @@ export function buildPartnerHwKonditionenFromEingabe(opts: {
       .map((e) => [e.position_id, e.hw_notiz!.trim()])
   );
   for (const z of zeilen) {
-    if (hwById[z.id] == null) {
+    if (!Number.isFinite(hwById[z.id])) {
       return {
         ok: false,
         error: `Bitte einen Preis für „${z.title}“ angeben.`,
@@ -133,7 +133,7 @@ export function buildPartnerHwKonditionenFromAuftragEingabe(opts: {
   );
 
   for (const z of zeilen) {
-    if (hwById[z.id] == null) {
+    if (!Number.isFinite(hwById[z.id])) {
       return {
         ok: false,
         error: `Bitte einen Preis für „${z.title}“ angeben.`,

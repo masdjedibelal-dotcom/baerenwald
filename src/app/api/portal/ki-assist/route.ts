@@ -59,7 +59,7 @@ export async function POST(request: Request) {
     return NextResponse.json(
       {
         ok: false,
-        error: "scope ungültig (funnel_beschreibung|bautagebuch|abnahmeprotokoll).",
+        error: "scope ungültig (funnel_beschreibung|bautagebuch|abnahmeprotokoll|hm_befund_notiz).",
       },
       { status: 400 }
     );
@@ -86,6 +86,17 @@ export async function POST(request: Request) {
       return NextResponse.json(
         { ok: false, error: link.error },
         { status: 403 }
+      );
+    }
+  } else if (scope === "hm_befund_notiz") {
+    const supabase = await createClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (!user?.email) {
+      return NextResponse.json(
+        { ok: false, error: "Nicht angemeldet." },
+        { status: 401 }
       );
     }
   }

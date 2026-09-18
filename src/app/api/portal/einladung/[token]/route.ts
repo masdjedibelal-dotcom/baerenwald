@@ -24,6 +24,8 @@ export async function GET(_req: Request, { params }: Props) {
     objektTitel: data.objektTitel,
     einheitLabel: data.einheitLabel,
     orgKennung: data.orgKennung,
+    rolle: data.rolle,
+    prefill: data.prefill,
     canRegister: data.status === "offen",
   });
 }

@@ -1,231 +1,172 @@
 "use client";
 
-import { useState } from "react";
-
-import { PortalModalShell } from "@/components/shared/PortalModalShell";
 import {
-  formatServicepaketPreisAb,
-  SERVICEPAKET_CTA,
-  SERVICEPAKET_GROESSE_DEFAULT,
-  SERVICEPAKET_GROESSE_LABEL,
-  SERVICEPAKET_GROESSEN,
-  SERVICEPAKET_OK_BODY,
-  SERVICEPAKET_OK_CLOSE,
-  SERVICEPAKET_OK_TITLE,
-  SERVICEPAKET_PREIS_HINWEIS,
-  SERVICEPAKETE,
-  SERVICEPAKETE_INTRO,
-  SERVICEPAKETE_PAGE_TITLE,
-  servicepaketOkHeadline,
-  servicepaketPreisAb,
-  type ServicepaketCard,
-  type ServicepaketGroesseId,
-} from "@/lib/portal2/servicepakete";
-import { portalToastError } from "@/lib/shared/portal-toast";
-import { cn } from "@/lib/utils";
+  CalendarCheck2,
+  ClipboardList,
+  Eye,
+  Flower2,
+  Shield,
+  Snowflake,
+  Sparkles,
+  Wrench,
+} from "lucide-react";
 
-type Props = {
-  onRequested?: () => void;
-};
+import { PORTAL_VAR } from "@/lib/portal2/tokens";
 
-export function OrganisationServicepaketePanel({ onRequested }: Props) {
-  const [groesse, setGroesse] = useState<ServicepaketGroesseId>(
-    SERVICEPAKET_GROESSE_DEFAULT
-  );
-  const [busyId, setBusyId] = useState<string | null>(null);
-  const [okName, setOkName] = useState<string | null>(null);
+const MODULES = [
+  {
+    id: "hausmeister",
+    label: "Hausmeister",
+    hint: "Objektbegehung, Kleinstreparaturen, Meldungen vor Ort",
+    Icon: Wrench,
+  },
+  {
+    id: "reinigung",
+    label: "Reinigung",
+    hint: "Treppenhaus, Gemeinschaftsflächen, dokumentiertes Putzprotokoll",
+    Icon: Sparkles,
+  },
+  {
+    id: "garten",
+    label: "Gartenpflege",
+    hint: "Außenanlage, Schnitt, saisonale Pflege",
+    Icon: Flower2,
+  },
+  {
+    id: "winter",
+    label: "Winterdienst",
+    hint: "Räumen, Streuen, Nachweis je Einsatztag",
+    Icon: Snowflake,
+  },
+] as const;
 
-  const requestPaket = async (p: ServicepaketCard) => {
-    setBusyId(p.id);
-    const preisAb = servicepaketPreisAb(p, groesse);
-    try {
-      const res = await fetch("/api/org/servicepaket-anfrage", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          paket: p.id,
-          paketName: p.name,
-          groesse,
-          preisAb,
-        }),
-      });
-      const json = (await res.json()) as { error?: string };
-      if (!res.ok) {
-        portalToastError("Anfrage fehlgeschlagen", json.error);
-        return;
-      }
-      setOkName(p.name);
-      onRequested?.();
-    } finally {
-      setBusyId(null);
-    }
-  };
+const STEPS = [
+  {
+    n: "01",
+    title: "Module buchen",
+    body: "Hausmeister, Reinigung, Gartenpflege und Winterdienst einzeln fürs Objekt zuschalten — wie im Katalog, ohne Paketzwang.",
+    Icon: ClipboardList,
+  },
+  {
+    n: "02",
+    title: "Routinen abarbeiten",
+    body: "Tägliche oder wöchentliche Checklisten auf der Startseite. Vorlagen nutzen, anpassen, Punkt für Punkt erledigen.",
+    Icon: CalendarCheck2,
+  },
+  {
+    n: "03",
+    title: "Protokoll für alle",
+    body: "Erledigte Checklisten als Protokoll am Objekt — einsehbar für Verwaltung, Mieter und Eigentümer.",
+    Icon: Eye,
+  },
+] as const;
 
+/**
+ * Teaser: Objekt-Service-Module (kommt bald).
+ * Ersetzt die bisherige Abo-/Paket-Buchungs-UI.
+ */
+export function OrganisationServicepaketePanel() {
   return (
-    <div className="space-y-4">
-      <div className="space-y-0.5">
-        <h2 className="portal-text-section text-text-primary">
-          {SERVICEPAKETE_PAGE_TITLE}
-        </h2>
-        <p className="max-w-[640px] text-[13.5px] leading-relaxed text-text-secondary">
-          {SERVICEPAKETE_INTRO}
+    <div className="space-y-8">
+      <div className="space-y-3">
+        <div className="flex flex-wrap items-center gap-2">
+          <h2 className="portal-text-section text-text-primary">
+            Objekt-Services
+          </h2>
+          <span
+            className="rounded-full px-2.5 py-0.5 text-[11px] font-bold uppercase tracking-wide"
+            style={{
+              background: "var(--accent-light, #E7F1E9)",
+              color: "var(--org-primary, var(--accent, #2E7D52))",
+            }}
+          >
+            In Kürze
+          </span>
+        </div>
+        <p className="portal-text-body max-w-[40rem] leading-relaxed text-text-secondary">
+          Bald buchen Sie laufende Dienste modulweise — mit Routinen,
+          Checklisten und Protokollen, die Mieter und Eigentümer am Objekt
+          mitlesen können.
         </p>
       </div>
 
-      <div className="flex flex-wrap items-end gap-3">
-        <label className="flex min-w-[200px] flex-col gap-1.5">
-          <span className="text-[12px] font-semibold text-text-secondary">
-            {SERVICEPAKET_GROESSE_LABEL}
-          </span>
-          <select
-            className="h-10 rounded-[10px] border-[1.5px] border-[var(--border-default,#e3e6ea)] bg-white px-3 text-[13.5px] font-medium text-text-primary outline-none focus:border-accent"
-            value={groesse}
-            onChange={(e) =>
-              setGroesse(e.target.value as ServicepaketGroesseId)
-            }
-            aria-label={SERVICEPAKET_GROESSE_LABEL}
+      <ol className="grid gap-4 lg:grid-cols-3">
+        {STEPS.map((s) => (
+          <li
+            key={s.n}
+            className="portal-surface flex flex-col gap-3 p-5"
           >
-            {SERVICEPAKET_GROESSEN.map((g) => (
-              <option key={g.id} value={g.id}>
-                {g.label}
-              </option>
-            ))}
-          </select>
-        </label>
-      </div>
-
-      <div className="grid grid-cols-1 items-stretch gap-4 lg:grid-cols-3">
-        {SERVICEPAKETE.map((p) => {
-          const preisAb = servicepaketPreisAb(p, groesse);
-          return (
-            <article
-              key={p.id}
-              className={cn(
-                "relative flex flex-col overflow-hidden rounded-2xl border-[1.5px] bg-white",
-                p.pop ? "shadow-[0_12px_30px_-12px]" : "shadow-sm"
-              )}
-              style={{
-                borderColor: p.pop ? p.accent : "var(--border-default, #e3e6ea)",
-                boxShadow: p.pop
-                  ? `0 12px 30px -12px ${p.accent}55`
-                  : undefined,
-              }}
-            >
-              {p.pop ? (
-                <div
-                  className="absolute right-3.5 top-3.5 rounded-full px-2.5 py-0.5 text-[10.5px] font-bold uppercase tracking-wide text-white"
-                  style={{ background: p.accent }}
-                >
-                  Beliebt
-                </div>
-              ) : null}
-
-              <div
-                className="grid h-[120px] place-items-center text-[44px]"
-                style={{ background: p.tint }}
-                aria-hidden
+            <div className="flex items-center gap-3">
+              <span
+                className="grid h-11 w-11 place-items-center rounded-xl"
+                style={{
+                  background: "var(--accent-light, #E7F1E9)",
+                  color: "var(--org-primary, var(--accent, #2E7D52))",
+                }}
               >
-                {p.ic}
-              </div>
+                <s.Icon className="h-5 w-5" aria-hidden />
+              </span>
+              <span
+                className="text-[12px] font-bold tabular-nums"
+                style={{ color: PORTAL_VAR.faint }}
+              >
+                Schritt {s.n}
+              </span>
+            </div>
+            <h3 className="portal-text-title">{s.title}</h3>
+            <p className="portal-text-body leading-relaxed text-text-secondary">
+              {s.body}
+            </p>
+          </li>
+        ))}
+      </ol>
 
-              <div className="flex flex-1 flex-col px-5 py-[18px]">
-                <h3 className="font-[family-name:var(--font-display)] text-lg font-extrabold text-text-primary">
-                  {p.name}
-                </h3>
-                <p className="mb-3.5 mt-2 min-h-0 text-[13px] leading-snug text-text-secondary lg:min-h-[58px]">
-                  {p.desc}
+      <div className="space-y-3">
+        <p className="portal-text-label text-text-tertiary">Geplante Module</p>
+        <ul className="grid gap-3 sm:grid-cols-2">
+          {MODULES.map((m) => (
+            <li
+              key={m.id}
+              className="flex items-start gap-3 rounded-2xl border border-border-default bg-white p-4"
+            >
+              <span
+                className="grid h-10 w-10 shrink-0 place-items-center rounded-xl"
+                style={{
+                  background: "var(--accent-light, #E7F1E9)",
+                  color: "var(--org-primary, var(--accent, #2E7D52))",
+                }}
+              >
+                <m.Icon className="h-5 w-5" aria-hidden />
+              </span>
+              <div className="min-w-0">
+                <p className="font-semibold text-text-primary">{m.label}</p>
+                <p className="portal-text-meta mt-0.5 leading-snug text-text-secondary">
+                  {m.hint}
                 </p>
-                <div className="mb-3.5 flex items-baseline gap-1">
-                  <span
-                    className="font-[family-name:var(--font-display)] text-[26px] font-extrabold"
-                    style={{ color: p.accent }}
-                  >
-                    {formatServicepaketPreisAb(preisAb)}
-                  </span>
-                  <span className="text-[13px] font-semibold text-text-tertiary">
-                    {p.zyklus}
-                  </span>
-                </div>
-                <ul className="mb-[18px] flex flex-1 flex-col gap-2">
-                  {p.feats.map((f) => (
-                    <li
-                      key={f}
-                      className="flex items-center gap-2.5 text-[13px] text-text-primary"
-                    >
-                      <span
-                        className="grid h-[18px] w-[18px] shrink-0 place-items-center rounded-full text-[11px]"
-                        style={{
-                          background: `${p.accent}1f`,
-                          color: p.accent,
-                        }}
-                      >
-                        ✓
-                      </span>
-                      {f}
-                    </li>
-                  ))}
-                </ul>
-                <button
-                  type="button"
-                  disabled={busyId !== null}
-                  onClick={() => void requestPaket(p)}
-                  className="w-full rounded-[10px] py-3 font-[family-name:var(--font-display)] text-sm font-bold disabled:opacity-60"
-                  style={
-                    p.pop
-                      ? {
-                          background: p.accent,
-                          color: "#fff",
-                          border: "none",
-                        }
-                      : {
-                          background: "#fff",
-                          color: p.accent,
-                          border: `1.5px solid ${p.accent}`,
-                        }
-                  }
-                >
-                  {busyId === p.id ? "Wird angefragt…" : SERVICEPAKET_CTA}
-                </button>
               </div>
-            </article>
-          );
-        })}
+            </li>
+          ))}
+        </ul>
       </div>
 
-      <p className="max-w-[640px] text-[12.5px] leading-relaxed text-text-tertiary">
-        {SERVICEPAKET_PREIS_HINWEIS}
-      </p>
-
-      {okName ? (
-        <PortalModalShell
-          open
-          title={SERVICEPAKET_OK_TITLE}
-          onClose={() => setOkName(null)}
-          variant="confirm"
-        >
-          <div className="px-1 py-1.5 text-center">
-            <div
-              className="mx-auto mb-4 grid h-[60px] w-[60px] place-items-center rounded-2xl text-[28px] text-accent"
-              style={{ background: "var(--accent-light, #E7F1E9)" }}
-            >
-              ✓
-            </div>
-            <p className="mb-2 font-[family-name:var(--font-display)] text-lg font-bold text-text-primary">
-              {servicepaketOkHeadline(okName)}
-            </p>
-            <p className="mx-auto mb-[18px] max-w-[320px] text-[13.5px] leading-relaxed text-text-secondary">
-              {SERVICEPAKET_OK_BODY}
-            </p>
-            <button
-              type="button"
-              className="rounded-[10px] bg-accent px-[26px] py-[11px] text-sm font-semibold text-white"
-              onClick={() => setOkName(null)}
-            >
-              {SERVICEPAKET_OK_CLOSE}
-            </button>
-          </div>
-        </PortalModalShell>
-      ) : null}
+      <div
+        className="flex items-start gap-3 rounded-2xl border px-4 py-3.5"
+        style={{
+          borderColor: "var(--border-default, #e3e6ea)",
+          background: "var(--muted, #f6f7f8)",
+        }}
+      >
+        <Shield
+          className="mt-0.5 h-5 w-5 shrink-0"
+          style={{ color: "var(--org-primary, var(--accent, #2E7D52))" }}
+          aria-hidden
+        />
+        <p className="portal-text-body leading-relaxed text-text-secondary">
+          Buchung und Live-Routinen folgen in einem nächsten Release. Bestehende
+          Service-Anfragen aus der Vergangenheit bleiben in Ihren Vorgängen
+          sichtbar.
+        </p>
+      </div>
     </div>
   );
 }

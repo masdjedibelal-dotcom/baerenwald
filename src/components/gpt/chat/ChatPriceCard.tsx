@@ -26,7 +26,7 @@ export function ChatPriceCard({
 
   return (
     <div className={cn("gpt-guided-price-card", className)}>
-      <p className="gpt-guided-price-kicker">Dein Preisrahmen</p>
+      <p className="gpt-guided-price-kicker">Ihr Preisrahmen</p>
       <p className="gpt-guided-price-headline">
         {hasRange
           ? `${formatCurrencyEUR(result.min)} – ${formatCurrencyEUR(result.max)}`

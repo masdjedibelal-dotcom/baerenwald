@@ -32,9 +32,9 @@ export function VorgangLeistungenListe({
   const showPlain = mode === "plain";
 
   const gesamt =
-    showVk && typeof summeBrutto === "number" && summeBrutto > 0
+    showVk && typeof summeBrutto === "number" && summeBrutto >= 0
       ? summeBrutto
-      : showEk && typeof summeEkNetto === "number" && summeEkNetto > 0
+      : showEk && typeof summeEkNetto === "number" && summeEkNetto >= 0
         ? summeEkNetto
         : showVk
           ? items.reduce((a, z) => a + (z.preisBrutto ?? 0), 0)
@@ -43,19 +43,14 @@ export function VorgangLeistungenListe({
             : 0;
 
   return (
-    <div
-      className={cn(
-        "overflow-hidden rounded-xl border border-border-light bg-muted/20",
-        className
-      )}
-    >
-      <ul>
-        {items.map((p, i) => {
+    <div className={cn("overflow-hidden", className)}>
+      <ul className="divide-y divide-border-light">
+        {items.map((p) => {
           const removed = p.aenderungBadge === "entfernt";
           const price =
-            showVk && typeof p.preisBrutto === "number" && p.preisBrutto > 0
+            showVk && typeof p.preisBrutto === "number" && p.preisBrutto >= 0
               ? moneyEur(p.preisBrutto)
-              : showEk && typeof p.preisEkNetto === "number" && p.preisEkNetto > 0
+              : showEk && typeof p.preisEkNetto === "number" && p.preisEkNetto >= 0
                 ? moneyEur(p.preisEkNetto)
                 : showVk || showEk
                   ? "Preis folgt"
@@ -65,29 +60,29 @@ export function VorgangLeistungenListe({
             <li
               key={p.id}
               className={cn(
-                "flex items-start gap-4 px-3 py-3",
-                i < items.length - 1 && "border-b border-border-light",
+                "flex items-start gap-4 px-0 py-3",
                 removed && "bg-red-50/70"
               )}
             >
               <div className="min-w-0 flex-1">
                 <p
                   className={cn(
-                    "text-[13.5px] font-medium text-text-primary",
+                    "portal-text-body font-medium text-text-primary",
                     removed && "text-text-secondary line-through"
                   )}
                 >
-                  {p.gewerk ? `${p.gewerk} — ` : ""}
                   {p.title}
                 </p>
+                {(p.gewerk || p.menge || p.einheit) ? (
+                  <p className="portal-text-meta mt-0.5 text-text-secondary">
+                    {[p.gewerk, [p.menge, p.einheit].filter(Boolean).join(" ")]
+                      .filter(Boolean)
+                      .join(" · ")}
+                  </p>
+                ) : null}
                 {p.beschreibung ? (
                   <p className="portal-text-meta mt-0.5 text-text-secondary">
                     {p.beschreibung}
-                  </p>
-                ) : null}
-                {(p.menge || p.einheit) && !showPlain ? (
-                  <p className="portal-text-meta mt-0.5 text-text-secondary">
-                    {[p.menge, p.einheit].filter(Boolean).join(" ")}
                   </p>
                 ) : null}
                 {p.aenderungBadge && p.aenderungBadge !== "entfernt" ? (
@@ -97,7 +92,7 @@ export function VorgangLeistungenListe({
                 ) : null}
               </div>
               {price ? (
-                <p className="shrink-0 text-[13px] font-semibold tabular-nums text-text-primary">
+                <p className="portal-text-body shrink-0 font-semibold tabular-nums text-text-primary">
                   {price}
                 </p>
               ) : null}
@@ -105,12 +100,18 @@ export function VorgangLeistungenListe({
           );
         })}
       </ul>
-      {gesamt > 0 && (showVk || showEk) ? (
-        <div className="flex items-center justify-between border-t border-border-light bg-white/60 px-3 py-2.5">
-          <span className="text-[12.5px] font-semibold text-text-secondary">
+      {gesamt >= 0 &&
+      (showVk || showEk) &&
+      items.some((z) =>
+        showVk
+          ? typeof z.preisBrutto === "number" && z.preisBrutto >= 0
+          : typeof z.preisEkNetto === "number" && z.preisEkNetto >= 0
+      ) ? (
+        <div className="flex items-center justify-between border-t border-border-light px-0 py-2.5">
+          <span className="portal-text-meta font-semibold text-text-secondary">
             {showEk ? "Summe netto (Ihre Vergütung)" : "Gesamt brutto"}
           </span>
-          <span className="text-[14px] font-bold tabular-nums text-text-primary">
+          <span className="portal-text-body font-bold tabular-nums text-text-primary">
             {moneyEur(gesamt)}
           </span>
         </div>

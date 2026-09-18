@@ -173,9 +173,9 @@ export const STEP_ERNEUERN_PROJEKT_GROESSE: FunnelStep = {
 /** Gartengestaltung: Leistungsumfang → Preis oder Beratungsweg */
 export const STEP_PROJEKT_GARTEN_LEISTUNG: FunnelStep = {
   id: "projekt_garten_leistung",
-  question: "Welchen Leistungsumfang planst du?",
+  question: "Welchen Leistungsumfang planen Sie?",
   subtext:
-    "Von der ersten Idee bis zur Umsetzung — du kannst jederzeit mit einem Beratungstermin starten",
+    "Von der ersten Idee bis zur Umsetzung — Sie können jederzeit mit einem Beratungstermin starten",
   inputType: "tiles-single",
   options: [
     {
@@ -214,7 +214,7 @@ export const STEP_PROJEKT_GARTEN_LEISTUNG: FunnelStep = {
 /** Gartengestaltung: Terrasse / Außenbereich — Material → €/m² oder Beratung */
 export const STEP_PROJEKT_GARTEN_TERRASSE_MATERIAL: FunnelStep = {
   id: "projekt_garten_terrasse_material",
-  question: "Welches Material planst du?",
+  question: "Welches Material planen Sie?",
   subtext: "Bestimmt den Preisrahmen — oder wir klären es beim Vor-Ort-Termin",
   inputType: "tiles-single",
   options: [

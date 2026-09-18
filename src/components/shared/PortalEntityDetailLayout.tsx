@@ -3,11 +3,13 @@
 import type { ReactNode } from "react";
 
 import { PortalDetailCover } from "@/components/shared/PortalDetailCover";
+import { PortalFlowTimeline } from "@/components/shared/PortalFlowTimeline";
 import {
   PortalDetailTabs,
   type PortalDetailTab,
 } from "@/components/shared/PortalDetailTabs";
 import { PortalDetailHead } from "@/components/shared/PortalDetailUi";
+import type { PortalFlowTimelineVariant, PortalMockStatusId } from "@/lib/portal2/status";
 import { cn } from "@/lib/utils";
 
 export type PortalEntityDetailLayoutProps = {
@@ -19,36 +21,41 @@ export type PortalEntityDetailLayoutProps = {
   title: string;
   metaLine?: string;
   statusLabel?: string;
+  statusColor?: string;
   statusPillClass?: string;
   statusPillStyle?: { color: string; backgroundColor: string };
-  /** CTA-Zeile im Head (Desktop rechts). */
+  /** Deep Green Flow-Timeline */
+  flowStatus?: PortalMockStatusId | null;
+  /** Timeline-Labels je Portal-Typ (Default hv). */
+  flowTimelineVariant?: PortalFlowTimelineVariant;
   actions?: ReactNode;
+  /** Unter Meta/Timeline in der Kopfkarte (z. B. gelber Hinweis). */
+  kopfBanner?: ReactNode;
   tabs?: readonly PortalDetailTab[];
   activeTab?: string;
   onTabChange?: (id: string) => void;
-  /** aria-label der Tab-Navigation */
   tabsNavLabel?: string;
   children: ReactNode;
-  /** Extra-Klassen fürs Cover (z. B. Bleed `-mx-4`). */
   coverClassName?: string;
   className?: string;
+  layout?: "default" | "hv";
 };
 
 /**
- * Einheitliches Entity-Detail: Cover → Head → optional Tabs um children.
+ * Entity-Detail: Hero (Titel) → Kopfkarte (Meta+Timeline+Actions) → Tabs.
  */
 export function PortalEntityDetailLayout({
   coverUrl,
   onBack,
-  backLabel,
+  backLabel = "← Zurück",
   onEdit,
   editLabel,
   title,
   metaLine,
-  statusLabel,
-  statusPillClass,
-  statusPillStyle,
+  flowStatus,
+  flowTimelineVariant = "hv",
   actions,
+  kopfBanner,
   tabs,
   activeTab,
   onTabChange,
@@ -63,26 +70,43 @@ export function PortalEntityDetailLayout({
     typeof onTabChange === "function";
 
   return (
-    <div className={cn("space-y-0", className)}>
+    <div
+      className={cn(
+        "portal-detail-layout portal-entity-detail flex flex-col pb-2",
+        className
+      )}
+    >
       <PortalDetailCover
         coverUrl={coverUrl}
         onBack={onBack}
         backLabel={backLabel}
         onEdit={onEdit}
         editLabel={editLabel}
-        className={coverClassName}
+        className={cn("portal-detail-cover--bleed", coverClassName)}
+        title={title}
       />
 
-      <div className="mt-4 mb-5 space-y-4 px-4 lg:px-6">
+      <div className="portal-detail-kopfkarte">
         <PortalDetailHead
           title={title}
+          hideTitle
           metaLine={metaLine}
-          statusLabel={statusLabel}
-          statusPillClass={statusPillClass}
-          statusPillStyle={statusPillStyle}
+          timeline={
+            flowStatus ? (
+              <PortalFlowTimeline
+                flowStatus={flowStatus}
+                variant={flowTimelineVariant}
+              />
+            ) : null
+          }
           actions={actions}
         />
+        {kopfBanner ? (
+          <div className="portal-detail-kopfkarte-banner">{kopfBanner}</div>
+        ) : null}
+      </div>
 
+      <div className="portal-detail-body-pad flex flex-col gap-4 pb-6 pt-4 sm:pt-5">
         {useTabs && tabs && activeTab && onTabChange ? (
           <PortalDetailTabs
             tabs={tabs}

@@ -87,7 +87,7 @@ export async function submitPartnerAngebotPdf(
   }
 
   if (!pdfs.length) {
-    return { ok: false, error: "Bitte mindestens ein PDF auswählen." };
+    return { ok: false, error: "Bitte mindestens eine Datei (Foto oder PDF) auswählen." };
   }
 
   const pdfErr = validatePartnerAngebotFiles(pdfs, { required: true });
@@ -125,7 +125,140 @@ export async function submitPartnerAngebotPdf(
 
   if (upErr) return { ok: false, error: upErr.message };
 
+  void import("@/lib/partner/notify-crm-partner-dokument").then(
+    ({ notifyCrmPartnerDokumentUpload }) =>
+      notifyCrmPartnerDokumentUpload({
+        typ: "unterlage",
+        handwerkerId: link.handwerkerId,
+        anfrageId,
+        titel:
+          pdfs.length === 1
+            ? pdfs[0]!.name.slice(0, 120)
+            : `${pdfs.length} Unterlagen`,
+      })
+  );
+
   revalidatePath("/partner");
+  return { ok: true };
+}
+
+/** Partner-Einholung ohne LV: Angebot-PDF einreichen, ohne Übernahme-Gate. */
+export async function submitPartnerEinholungAngebotPdf(
+  formData: FormData
+): Promise<PartnerAngebotSubmitResult> {
+  if (!isSupabaseConfigured()) {
+    return { ok: false, error: "Datenbank nicht konfiguriert." };
+  }
+
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user?.email) {
+    return { ok: false, error: "Nicht angemeldet." };
+  }
+
+  const link = await linkPortalHandwerkerToAuthUser({
+    userId: user.id,
+    email: user.email,
+  });
+
+  if (!link.ok) {
+    return { ok: false, error: link.error };
+  }
+
+  const anfrageId = String(formData.get("anfrageId") ?? "").trim();
+  const pdfs = formData
+    .getAll("pdfs")
+    .filter((f): f is File => f instanceof File && f.size > 0);
+
+  if (!anfrageId) {
+    return { ok: false, error: "Anfrage fehlt." };
+  }
+
+  const { data: row, error } = await supabaseAdmin
+    .from("angebot_handwerker")
+    .select(
+      "id, handwerker_id, status, hw_status, hw_eingereicht_at, hw_angebot_pdf_url, hw_angebot_anhang_urls, ohne_lv"
+    )
+    .eq("id", anfrageId)
+    .maybeSingle();
+
+  if (error || !row) {
+    return { ok: false, error: "Anfrage nicht gefunden." };
+  }
+
+  if (String(row.handwerker_id) !== link.handwerkerId) {
+    return { ok: false, error: "Keine Berechtigung." };
+  }
+
+  if (!row.ohne_lv) {
+    return { ok: false, error: "Dieser Vorgang ist keine Partner-Einholung." };
+  }
+
+  const st = String(row.status ?? "").toLowerCase();
+  if (st === "abgelehnt" || st === "ersetzt" || st === "storniert") {
+    return { ok: false, error: "Anfrage ist nicht mehr offen." };
+  }
+
+  if (!pdfs.length) {
+    return { ok: false, error: "Bitte mindestens eine Datei (Foto oder PDF) auswählen." };
+  }
+
+  const pdfErr = validatePartnerAngebotFiles(pdfs, { required: true });
+  if (pdfErr) return { ok: false, error: pdfErr };
+
+  const upload = await uploadPartnerAngebotPdfs({
+    handwerkerId: link.handwerkerId,
+    anfrageId,
+    files: pdfs,
+  });
+  if (!upload.ok) return { ok: false, error: upload.error };
+
+  const existingPaths = parseHwAnhangStoragePaths(
+    row.hw_angebot_anhang_urls,
+    (row.hw_angebot_pdf_url as string | null) ?? null
+  );
+  const combined = Array.from(new Set([...existingPaths, ...upload.paths]));
+  if (combined.length > PARTNER_MAX_HW_UNTERLAGEN_GESAMT) {
+    return {
+      ok: false,
+      error: `Maximal ${PARTNER_MAX_HW_UNTERLAGEN_GESAMT} Unterlagen pro Vorgang (bereits ${existingPaths.length} hochgeladen).`,
+    };
+  }
+  const primaryPath = combined[0]!;
+  const now = new Date().toISOString();
+
+  const { error: upErr } = await supabaseAdmin
+    .from("angebot_handwerker")
+    .update({
+      hw_angebot_pdf_url: primaryPath,
+      hw_angebot_anhang_urls: combined,
+      hw_status: "eingereicht",
+      hw_eingereicht_at: row.hw_eingereicht_at || now,
+      status: "akzeptiert",
+    })
+    .eq("id", anfrageId)
+    .eq("handwerker_id", link.handwerkerId);
+
+  if (upErr) return { ok: false, error: upErr.message };
+
+  void import("@/lib/partner/notify-crm-partner-dokument").then(
+    ({ notifyCrmPartnerDokumentUpload }) =>
+      notifyCrmPartnerDokumentUpload({
+        typ: "unterlage",
+        handwerkerId: link.handwerkerId,
+        anfrageId,
+        titel:
+          pdfs.length === 1
+            ? pdfs[0]!.name.slice(0, 120)
+            : `${pdfs.length} Unterlagen`,
+      })
+  );
+
+  revalidatePath("/partner");
+  revalidatePath("/portal");
   return { ok: true };
 }
 
@@ -199,8 +332,13 @@ export async function submitPartnerRechnung(
     return { ok: false, error: "Keine Berechtigung." };
   }
 
-  const st = String(row.status).toLowerCase();
-  if (st !== "akzeptiert" && st !== "angenommen") {
+  const st = String(row.status).toLowerCase()
+  /* Eingangsrechnung bleibt nach Redisposition (`ersetzt`) möglich */
+  if (
+    st !== 'akzeptiert' &&
+    st !== 'angenommen' &&
+    st !== 'ersetzt'
+  ) {
     return { ok: false, error: "Nur für angenommene Anfragen möglich." };
   }
 
@@ -211,11 +349,15 @@ export async function submitPartnerRechnung(
     };
   }
 
-  if (String(row.hw_status ?? "").toLowerCase() !== "uebernommen") {
-    return {
-      ok: false,
-      error: "Rechnung erst nach Übernahme der Konditionen durch Bärenwald möglich.",
-    };
+  const hwSt = String(row.hw_status ?? "").toLowerCase();
+  if (hwSt !== "uebernommen" && hwSt !== "bestaetigt") {
+    const stOk = st === "akzeptiert" || st === "angenommen";
+    if (!stOk || !row.hw_eingereicht_at) {
+      return {
+        ok: false,
+        error: "Rechnung erst nach Freigabe/Annahme durch Bärenwald möglich.",
+      };
+    }
   }
 
   if (row.hw_rechnung_eingereicht_at) {
@@ -234,18 +376,23 @@ export async function submitPartnerRechnung(
   }
 
   const now = new Date().toISOString();
-  const { error: upErr } = await supabaseAdmin
+  const { data: updatedRows, error: upErr } = await supabaseAdmin
     .from("angebot_handwerker")
     .update({
       hw_rechnung_pdf_url: upload.path,
       hw_rechnung_eingereicht_at: now,
+      hw_rechnung_status: "eingereicht",
     })
     .eq("id", anfrageId)
     .eq("handwerker_id", link.handwerkerId)
-    .is("hw_rechnung_eingereicht_at", null);
+    .is("hw_rechnung_eingereicht_at", null)
+    .select("id");
 
   if (upErr) {
     return { ok: false, error: upErr.message };
+  }
+  if (!updatedRows?.length) {
+    return { ok: false, error: "Rechnung wurde bereits eingereicht." };
   }
 
   const { data: mailCtx } = await supabaseAdmin
@@ -280,6 +427,23 @@ export async function submitPartnerRechnung(
       upload.path,
       MAIL_PDF_LINK_TTL_SEC
     );
+
+    let ensuredRechnungId: string | null = null;
+    try {
+      const { notifyCrmPartnerDokumentUpload } = await import(
+        "@/lib/partner/notify-crm-partner-dokument"
+      );
+      const crmRes = await notifyCrmPartnerDokumentUpload({
+        typ: "rechnung",
+        handwerkerId: link.handwerkerId,
+        anfrageId,
+        titel: "Partner-Rechnung",
+      });
+      ensuredRechnungId = crmRes.rechnungId?.trim() || null;
+    } catch (e) {
+      console.warn("[submitPartnerRechnung] CRM-Notify:", e);
+    }
+
     void sendPartnerInternalRechnungMail({
       handwerkerName: String((hw as { name?: string })?.name ?? "Partner"),
       firma: (hw as { firma?: string | null })?.firma ?? null,
@@ -289,9 +453,119 @@ export async function submitPartnerRechnung(
         (lead as { plz?: string | null })?.plz?.trim() ||
         "—",
       angebotId: String(m.angebot_id),
+      rechnungId: ensuredRechnungId,
       rechnungPdfUrl,
     });
+  } else {
+    void import("@/lib/partner/notify-crm-partner-dokument").then(
+      ({ notifyCrmPartnerDokumentUpload }) =>
+        notifyCrmPartnerDokumentUpload({
+          typ: "rechnung",
+          handwerkerId: link.handwerkerId,
+          anfrageId,
+          titel: "Partner-Rechnung",
+        })
+    );
   }
+
+  revalidatePath("/partner");
+  return { ok: true };
+}
+
+/**
+ * Partner löscht eigene Auftrags-Unterlage oder Rechnung
+ * (`angebot_handwerker.hw_angebot_anhang_urls` / `hw_rechnung_*`).
+ */
+export async function deletePartnerHwAuftragDokument(input: {
+  anfrageId: string;
+  art: "unterlage" | "rechnung";
+  /** Index in der aktuellen Anhänge-Liste (0-basiert). */
+  index?: number;
+}): Promise<PartnerAngebotSubmitResult> {
+  if (!isSupabaseConfigured()) {
+    return { ok: false, error: "Datenbank nicht konfiguriert." };
+  }
+
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user?.email) {
+    return { ok: false, error: "Nicht angemeldet." };
+  }
+
+  const link = await linkPortalHandwerkerToAuthUser({
+    userId: user.id,
+    email: user.email,
+  });
+  if (!link.ok) return { ok: false, error: link.error };
+
+  const anfrageId = input.anfrageId.trim();
+  if (!anfrageId) return { ok: false, error: "Anfrage fehlt." };
+
+  const { data: row, error } = await supabaseAdmin
+    .from("angebot_handwerker")
+    .select(
+      "id, handwerker_id, status, hw_status, hw_angebot_pdf_url, hw_angebot_anhang_urls, hw_rechnung_pdf_url, hw_rechnung_eingereicht_at"
+    )
+    .eq("id", anfrageId)
+    .maybeSingle();
+
+  if (error || !row) {
+    return { ok: false, error: "Anfrage nicht gefunden." };
+  }
+  if (String(row.handwerker_id) !== link.handwerkerId) {
+    return { ok: false, error: "Keine Berechtigung." };
+  }
+
+  const st = String(row.status ?? "").toLowerCase();
+  if (st === "storniert" || st === "abgelehnt") {
+    return {
+      ok: false,
+      error: "Dokument kann in diesem Status nicht gelöscht werden.",
+    };
+  }
+
+  if (input.art === "rechnung") {
+    if (!row.hw_rechnung_pdf_url && !row.hw_rechnung_eingereicht_at) {
+      return { ok: false, error: "Keine Rechnung vorhanden." };
+    }
+    const { error: upErr } = await supabaseAdmin
+      .from("angebot_handwerker")
+      .update({
+        hw_rechnung_pdf_url: null,
+        hw_rechnung_eingereicht_at: null,
+      })
+      .eq("id", anfrageId)
+      .eq("handwerker_id", link.handwerkerId);
+    if (upErr) return { ok: false, error: upErr.message };
+    revalidatePath("/partner");
+    return { ok: true };
+  }
+
+  const paths = parseHwAnhangStoragePaths(
+    row.hw_angebot_anhang_urls,
+    (row.hw_angebot_pdf_url as string | null) ?? null
+  );
+  if (!paths.length) {
+    return { ok: false, error: "Keine Unterlage vorhanden." };
+  }
+  const index = typeof input.index === "number" ? input.index : -1;
+  if (index < 0 || index >= paths.length) {
+    return { ok: false, error: "Unterlage nicht gefunden." };
+  }
+
+  const next = paths.filter((_, i) => i !== index);
+  const { error: upErr } = await supabaseAdmin
+    .from("angebot_handwerker")
+    .update({
+      hw_angebot_pdf_url: next[0] ?? null,
+      hw_angebot_anhang_urls: next.length ? next : null,
+    })
+    .eq("id", anfrageId)
+    .eq("handwerker_id", link.handwerkerId);
+
+  if (upErr) return { ok: false, error: upErr.message };
 
   revalidatePath("/partner");
   return { ok: true };

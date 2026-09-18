@@ -39,11 +39,9 @@ export function PortalContentBusy({
         strokeWidth={2}
         aria-hidden
       />
-      <h2 className="mt-5 font-[family-name:var(--font-display,system-ui)] text-lg font-bold text-[var(--p2-ink,#16201b)]">
-        {title}
-      </h2>
+      <h2 className="portal-text-title mt-5">{title}</h2>
       {body ? (
-        <p className="mx-auto mt-2 max-w-[320px] text-sm leading-relaxed text-[var(--p2-sub,#404a45)]">
+        <p className="portal-text-body mx-auto mt-2 max-w-[320px] text-[var(--p2-sub,#404a45)]">
           {body}
         </p>
       ) : null}

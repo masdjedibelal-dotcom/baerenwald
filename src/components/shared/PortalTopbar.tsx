@@ -44,7 +44,7 @@ export function PortalTopbar({
 
   return (
     <header
-      className={cn("portal-ui portal-topbar", className)}
+      className={cn("portal-topbar", className)}
       data-portal-topbar=""
     >
       <div className="portal-topbar-brand">

@@ -1,8 +1,16 @@
 import { createPartnerNotification } from "@/lib/partner/create-partner-notification";
-import type { PartnerBautagebuchAnfrageItem } from "@/lib/partner/get-partner-data";
 import { partnerNotificationVorgangKey } from "@/lib/partner/partner-notifications";
 import { partnerVorgangPortalPath } from "@/lib/partner/partner-site-url";
 import { isSupabaseConfigured, supabaseAdmin } from "@/lib/supabase";
+
+/** Legacy: CRM fordert kein Bautagebuch mehr an — Typ nur für Nachzieh-Notify. */
+type PartnerBautagebuchAnfrageItem = {
+  id: string;
+  auftrag_id: string;
+  notiz: string | null;
+  created_at: string;
+  position_ids?: string[];
+};
 
 export async function notifyPartnerBautagebuchAnfrage(opts: {
   auftragId: string;

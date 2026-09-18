@@ -4,12 +4,14 @@ import { assertPortalEmailAllowed } from "@/app/actions/assert-portal-email-allo
 import {
   generateFunnelOtpCode,
   isPortalAuthEmailRegistered,
+  issueSignupOtp,
   sendFunnelOtpEmail,
   storeFunnelOtp,
   verifyFunnelOtp,
 } from "@/lib/funnel/funnel-portal-otp";
 import { normalizeKundenEmail } from "@/lib/kunden/kunde-email";
 import { linkPortalKundeToAuthUser } from "@/lib/portal/link-portal-kunde";
+import { ensurePortalRegistrationEmailAvailable } from "@/lib/portal/reclaim-orphan-portal-auth";
 import {
   buildPortalContactPrefill,
   type PortalContactPrefill,
@@ -96,13 +98,8 @@ export async function registerFunnelPortalAccount(
     };
   }
 
-  const already = await isPortalAuthEmailRegistered(email);
-  if (already) {
-    return {
-      ok: false,
-      error: "Diese E-Mail ist bereits registriert. Bitte melde dich an.",
-    };
-  }
+  const availability = await ensurePortalRegistrationEmailAvailable(email);
+  if (!availability.ok) return availability;
 
   const fullName = `${vorname} ${nachname}`.trim();
   const telefon = (input.telefon ?? "").trim() || null;
@@ -131,9 +128,40 @@ export async function registerFunnelPortalAccount(
   if (createErr || !created.user) {
     const msg = createErr?.message?.toLowerCase() ?? "";
     if (msg.includes("already") || msg.includes("registered")) {
+      const { reclaimOrphanPortalAuthUser } = await import(
+        "@/lib/portal/reclaim-orphan-portal-auth"
+      );
+      if ((await reclaimOrphanPortalAuthUser(email)) === "deleted") {
+        const retry = await supabaseAdmin.auth.admin.createUser({
+          email,
+          password,
+          email_confirm: false,
+          user_metadata: {
+            name: fullName,
+            vorname,
+            nachname,
+            telefon,
+            strasse,
+            hausnummer,
+            plz,
+            ort,
+            datenschutz_akzeptiert_at: now,
+            agb_akzeptiert_at: now,
+            funnel_register: true,
+          },
+        });
+        if (!retry.error && retry.data.user) {
+          return issueSignupOtp({
+            email,
+            userId: retry.data.user.id,
+            vorname,
+            brand: "meinbaerenwald",
+          });
+        }
+      }
       return {
         ok: false,
-        error: "Diese E-Mail ist bereits registriert. Bitte melde dich an.",
+        error: "Diese E-Mail ist bereits registriert. Bitte melden Sie sich an.",
       };
     }
     console.error("[registerFunnelPortalAccount]", createErr);
@@ -144,24 +172,13 @@ export async function registerFunnelPortalAccount(
   }
 
   const userId = created.user.id;
-  const code = generateFunnelOtpCode();
 
-  try {
-    await storeFunnelOtp({ email, code, userId });
-  } catch (e) {
-    console.error("[registerFunnelPortalAccount] store otp", e);
-    await supabaseAdmin.auth.admin.deleteUser(userId);
-    return { ok: false, error: "Code konnte nicht erzeugt werden." };
-  }
-
-  const mail = await sendFunnelOtpEmail({ email, code, vorname });
-  if (!mail.ok) {
-    await supabaseAdmin.auth.admin.deleteUser(userId);
-    await supabaseAdmin.from("funnel_portal_otp").delete().eq("email", email);
-    return mail;
-  }
-
-  return { ok: true };
+  return issueSignupOtp({
+    email,
+    userId,
+    vorname,
+    brand: "meinbaerenwald",
+  });
 }
 
 export async function resendFunnelPortalCode(

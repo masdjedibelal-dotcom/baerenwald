@@ -9,6 +9,7 @@ import {
   PORTAL_NOTIFICATIONS_CHANGED_EVENT,
 } from "@/lib/portal2/notif-refresh";
 import type { PortalNotifItem, PortalNotifRole } from "@/lib/portal2/notif-types";
+import { vorgangIdFromPortalHref } from "@/lib/portal2/portal-detail-deep-link";
 
 type ApiRow = {
   id: string;
@@ -23,20 +24,6 @@ type ApiRow = {
   icon_fg?: string | null;
   icon_glyph?: string | null;
 };
-
-function vorgangIdFromPortalLink(link: string | null | undefined): string | null {
-  if (!link?.trim()) return null;
-  try {
-    const u = link.startsWith("http")
-      ? new URL(link)
-      : new URL(link, "https://local.invalid");
-    const id = u.searchParams.get("id")?.trim();
-    return id || null;
-  } catch {
-    const m = link.match(/[?&]id=([^&]+)/i);
-    return m?.[1] ? decodeURIComponent(m[1]) : null;
-  }
-}
 
 /**
  * Kunde / Eigentümer / Mieter — liest `portal_notifications`.
@@ -117,7 +104,7 @@ export function PortalUserNotificationBell({
     if (!href) return;
 
     const vorgangId =
-      n.vorgangRef?.trim() || vorgangIdFromPortalLink(href);
+      n.vorgangRef?.trim() || vorgangIdFromPortalHref(href);
     if (vorgangId && onOpenVorgang) {
       onOpenVorgang(vorgangId, href);
       return;

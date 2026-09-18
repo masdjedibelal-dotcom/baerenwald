@@ -17,7 +17,7 @@ export function GptProjektBriefPanel({
     return (
       <div className="gpt-projekt-brief">
         <p className="gpt-viz-muted">
-          Starte in Beratung oder Raum visualisieren — dein Projekt-Brief wächst mit.
+          Starten Sie in Beratung oder Raum visualisieren — Ihr Projekt-Brief wächst mit.
         </p>
       </div>
     );
@@ -49,7 +49,7 @@ export function GptProjektBriefPanel({
     <div className="gpt-projekt-brief">
       <h2 className="gpt-viz-step-title">Mein Projekt</h2>
       <p className="gpt-viz-muted" style={{ marginBottom: "0.75rem" }}>
-        Das sendest du mit deiner Anfrage an Bärenwald.
+        Das senden Sie mit Ihrer Anfrage an Bärenwald.
       </p>
 
       {!hasContent ? (
@@ -88,7 +88,7 @@ export function GptProjektBriefPanel({
 
       {brief.ist_bilder_urls[0] ? (
         <div className="gpt-projekt-section">
-          <h4>Dein Raum (Ist)</h4>
+          <h4>Ihr Raum (Ist)</h4>
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src={brief.ist_bilder_urls[0]}

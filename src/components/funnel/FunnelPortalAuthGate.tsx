@@ -128,7 +128,7 @@ export function FunnelPortalAuthGate({
       return;
     }
     if (!session.authenticated) {
-      setError("Anmeldung fehlgeschlagen. Bitte erneut versuchen.");
+      setError("Anmeldung fehlgeschlagen. Bitte versuchen Sie es erneut.");
       return;
     }
     await finishWithPrefill(session.prefill);
@@ -209,7 +209,7 @@ export function FunnelPortalAuthGate({
       <div className={cn(className)}>
         <PortalAuthBusy
           title="Anmeldung wird geprüft…"
-          body="Einen Moment — wir prüfen, ob du bereits angemeldet bist."
+          body="Einen Moment — wir prüfen, ob Sie bereits angemeldet sind."
         />
       </div>
     );
@@ -226,7 +226,7 @@ export function FunnelPortalAuthGate({
                 ? "Konto wird angelegt…"
                 : "Anmeldung läuft…"
           }
-          body="Einen Moment — danach geht es weiter mit deinem Preisrahmen."
+          body="Einen Moment — danach geht es weiter mit Ihrem Preisrahmen."
         />
       </div>
     );
@@ -236,8 +236,8 @@ export function FunnelPortalAuthGate({
     <div className={cn("space-y-5", className)}>
       <div className="space-y-2">
         <p className="text-sm leading-relaxed text-text-secondary">
-          Melde dich bei <strong className="text-text-primary">Mein Bärenwald</strong>{" "}
-          an, um deinen Preis zu berechnen und das Angebot zu versenden.
+          Melden Sie sich bei <strong className="text-text-primary">Mein Bärenwald</strong>{" "}
+          an, um Ihren Preis zu berechnen und das Angebot zu versenden.
         </p>
         <ul className="space-y-2 pt-1">
           {MEIN_BAERENWALD_VORTEILE.map((text) => (

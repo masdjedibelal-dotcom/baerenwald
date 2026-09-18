@@ -34,8 +34,8 @@ export function LoadingScreen({
 
   const steps: { text: string }[] = [
     { text: "Anhand unserer Projekterfahrung in München wird gerechnet …" },
-    { text: "Dein Projekt wird eingeordnet…" },
-    { text: "Dein unverbindlicher Preisrahmen wird erstellt…" },
+    { text: "Ihr Projekt wird eingeordnet…" },
+    { text: "Ihr unverbindlicher Preisrahmen wird erstellt…" },
   ];
 
   return (
@@ -49,7 +49,7 @@ export function LoadingScreen({
       >
         <p className="loading-screen-kicker">Einen Moment</p>
         <h2 className="loading-screen-title">
-          Dein unverbindlicher Preisrahmen entsteht
+          Ihr unverbindlicher Preisrahmen entsteht
         </h2>
 
         <div className="loading-screen-icon-wrap" aria-hidden>

@@ -7,10 +7,12 @@ import {
   MieterWlBtn,
   MieterWlFrame,
 } from "@/components/melden/MieterWlFrame";
+import { InfoTip } from "@/components/ui/InfoTip";
 import {
   MIETER_WL_BESTAETIGUNG,
   type MieterWlBrand,
 } from "@/lib/portal2/mieter-wl";
+import { meldeStatusRelativePath } from "@/lib/melde/melde-tracking";
 import "./melden.css";
 
 type Props = {
@@ -22,7 +24,7 @@ type Props = {
   contactName?: string | null;
   contactEmail?: string | null;
   contactTelefon?: string | null;
-  /** @deprecated nicht mehr angezeigt */
+  /** Referenznummer (Lead-ID-Kurzform) */
   referenz?: string | null;
   objektAuswahlHref?: string | null;
 };
@@ -34,7 +36,7 @@ function absoluteUrl(pathOrUrl: string): string {
 }
 
 /**
- * Bestätigung nach Meldung — großer MeinBärenwald-CTA + Status-Link darunter.
+ * Bestätigung nach Meldung — Konto-CTA (neutral) + Status-Link darunter.
  */
 export function MeldenBestaetigungClient({
   brand,
@@ -43,6 +45,7 @@ export function MeldenBestaetigungClient({
   contactName,
   contactEmail,
   contactTelefon,
+  referenz,
   objektAuswahlHref,
 }: Props) {
   const t = MIETER_WL_BESTAETIGUNG;
@@ -52,21 +55,24 @@ export function MeldenBestaetigungClient({
     statusUrlProp?.trim() ||
     (statusToken?.trim() ? `/melden/status/${statusToken.trim()}` : null);
 
+  const nextPath = useMemo(
+    () => meldeStatusRelativePath(statusUrl?.trim() || "/portal"),
+    [statusUrl]
+  );
+
   const registerHref = useMemo(() => {
     const q = new URLSearchParams({ from: "melde" });
     if (statusToken?.trim()) q.set("meldeToken", statusToken.trim());
     if (contactName?.trim()) q.set("name", contactName.trim());
     if (contactEmail?.trim()) q.set("email", contactEmail.trim());
     if (contactTelefon?.trim()) q.set("telefon", contactTelefon.trim());
-    const next = statusUrl?.trim() || "/portal";
-    q.set("next", next.startsWith("http") ? next : next);
+    q.set("next", nextPath);
     return `/portal/registrieren?${q.toString()}`;
-  }, [statusToken, contactName, contactEmail, contactTelefon, statusUrl]);
+  }, [statusToken, contactName, contactEmail, contactTelefon, nextPath]);
 
   const loginHref = useMemo(() => {
-    const next = statusUrl?.trim() || "/portal";
-    return `/portal/login?next=${encodeURIComponent(next)}`;
-  }, [statusUrl]);
+    return `/portal/login?next=${encodeURIComponent(nextPath)}`;
+  }, [nextPath]);
 
   async function copyLink() {
     if (!statusUrl) return;
@@ -85,14 +91,23 @@ export function MeldenBestaetigungClient({
         <div className="mieter-wl-check" aria-hidden>
           ✓
         </div>
-        <h1 className="mieter-wl-center-title">{t.title_de}</h1>
+        <h1 className="mieter-wl-center-title inline-flex items-center justify-center gap-1.5">
+          <span>{t.title_de}</span>
+          {t.register_hint_de ? (
+            <InfoTip tip={t.register_hint_de} label="Konto-Hinweis" />
+          ) : null}
+        </h1>
         <p className="mieter-wl-center-body">
           {brand.name}
           {t.body_suffix_de}
         </p>
-        <p className="text-[13px] leading-relaxed text-[#4a5c54] text-center mt-2 max-w-[340px]">
-          {t.register_hint_de}
-        </p>
+
+        {referenz?.trim() ? (
+          <p className="text-[13px] leading-relaxed text-[#4a5c54] text-center mt-1 max-w-[340px]">
+            {t.ref_de}:{" "}
+            <strong className="tabular-nums tracking-wide">{referenz.trim()}</strong>
+          </p>
+        ) : null}
 
         <div className="mieter-wl-bestaetigung-actions w-full max-w-[340px] mt-4">
           <MieterWlBtn href={registerHref} className="mieter-wl-btn--lg">
@@ -121,7 +136,7 @@ export function MeldenBestaetigungClient({
           <Link
             href={loginHref}
             className="block text-center text-sm font-semibold pt-1"
-            style={{ color: "var(--org-primary, #2E7D52)" }}
+            style={{ color: "var(--org-primary)" }}
           >
             {t.login_de}
           </Link>

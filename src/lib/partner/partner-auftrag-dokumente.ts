@@ -1,6 +1,10 @@
 import type { DokumentZeile } from "@/components/shared/DokumenteTabelle";
 import type { PartnerAuftragItem } from "@/lib/partner/get-partner-data";
 import { partnerHwDokumentListenName, PARTNER_MAX_HW_UNTERLAGEN_GESAMT } from "@/lib/partner/partner-hw-dokument-typen";
+import {
+  partnerAbschlussRelevantePositionen,
+  positionHandwerkerErledigt,
+} from "@/lib/partner/partner-position-erledigt";
 
 function dokumentDatumMs(datum?: string | null): number {
   if (!datum?.trim()) return 0;
@@ -72,6 +76,10 @@ export function buildPartnerAuftragDokumentZeilen(
       : item.hw_angebot_pdf_signed_url
         ? [item.hw_angebot_pdf_signed_url]
         : [];
+  const kannHwDocsLoeschen =
+    String(item.status ?? "").toLowerCase() !== "storniert" &&
+    String(item.angebotHwStatus ?? "").toLowerCase() !== "abgelehnt";
+
   anhangSigned.forEach((href, i) => {
     rows.push({
       id: `hw-unterlage-${i}`,
@@ -81,6 +89,7 @@ export function buildPartnerAuftragDokumentZeilen(
         total: anhangSigned.length,
       }),
       href,
+      canDelete: kannHwDocsLoeschen,
     });
   });
 
@@ -90,6 +99,7 @@ export function buildPartnerAuftragDokumentZeilen(
       datum: item.hw_rechnung_eingereicht_at,
       name: partnerHwDokumentListenName("rechnung"),
       href: item.hw_rechnung_pdf_signed_url,
+      canDelete: kannHwDocsLoeschen,
     });
   }
 
@@ -104,22 +114,76 @@ export function buildPartnerAuftragDokumentZeilen(
   return sortPartnerDokumentZeilen(rows);
 }
 
-export function partnerAuftragKannRechnungHochladen(item: PartnerAuftragItem): boolean {
-  if (!item.angebotHandwerkerId) return false;
-  if (item.status.toLowerCase() === "storniert") return false;
-  // F4: Rechnung erst nach Abnahme-Signatur
-  if (!item.hw_abschluss_signiert_am?.trim() && !item.abnahme_protokoll_url?.trim()) {
-    return false;
+/**
+ * Partner hat Arbeit abgeschlossen → Rechnung freischaltbar.
+ * Primär: erledigt_gemeldet_am (ohne Abnahme). Legacy: Signatur / Protokoll.
+ * Fallback: alle relevanten Positionen handwerker_status=erledigt.
+ */
+export function partnerAuftragHatAbschluss(
+  item: Pick<
+    PartnerAuftragItem,
+    | "hw_erledigt_gemeldet_am"
+    | "hw_abschluss_signiert_am"
+    | "abnahme_freigabe_status"
+    | "abnahme_protokoll_id"
+    | "abnahme_protokoll_url"
+    | "positionen"
+  >
+): boolean {
+  if (item.hw_erledigt_gemeldet_am?.trim()) return true;
+  if (item.hw_abschluss_signiert_am?.trim()) return true;
+  if (item.abnahme_protokoll_id?.trim() || item.abnahme_protokoll_url?.trim()) {
+    return true;
   }
-  const hwSt = (item.angebotHwStatus ?? "").toLowerCase();
+  const freigabe = String(item.abnahme_freigabe_status ?? "")
+    .trim()
+    .toLowerCase();
+  if (Boolean(freigabe) && freigabe !== "abgelehnt") return true;
+
+  const relevant = partnerAbschlussRelevantePositionen(item.positionen ?? []);
   return (
-    hwSt === "uebernommen" &&
-    Boolean(item.projektvertrag_bestaetigt_am) &&
-    !item.hw_rechnung_eingereicht_at
+    relevant.length > 0 &&
+    relevant.every((p) => positionHandwerkerErledigt(p.handwerker_status))
   );
 }
 
-/** Auto-Rechnung-Prompt erneut, solange nicht eingereicht. */
+/**
+ * CRM hat die Zuweisung freigegeben / angenommen —
+ * unabhängig vom Projektvertrag.
+ */
+export function partnerHwRechnungCrmFreigegeben(
+  item: Pick<
+    PartnerAuftragItem,
+    "angebotHwStatus" | "hwStatus" | "handwerker_bestaetigt_at"
+  >
+): boolean {
+  const ah = (item.angebotHwStatus ?? "").toLowerCase();
+  if (ah === "uebernommen" || ah === "bestaetigt") return true;
+
+  const zuweisung = (item.hwStatus ?? "").toLowerCase();
+  if (zuweisung === "akzeptiert" || zuweisung === "uebernommen") return true;
+
+  return Boolean(item.handwerker_bestaetigt_at?.trim());
+}
+
+/**
+ * Auto-Rechnung / Upload nach HW-erledigt + CRM-Freigabe/Annahme.
+ * Keine Abnahme nötig. Optional: `abschlussDoneLocal` direkt nach Erledigt-Klick.
+ */
+export function partnerAuftragKannRechnungHochladen(
+  item: PartnerAuftragItem,
+  opts?: { abschlussDoneLocal?: boolean }
+): boolean {
+  if (item.status.toLowerCase() === "storniert") return false;
+  if (item.hw_rechnung_eingereicht_at) return false;
+  if (!partnerHwRechnungCrmFreigegeben(item)) return false;
+  if (!opts?.abschlussDoneLocal && !partnerAuftragHatAbschluss(item)) {
+    return false;
+  }
+  return true;
+}
+
+/** @deprecated Sticky-CTA nutzt `partnerAuftragKannRechnungHochladen`. */
 export function partnerNeedsAutoRechnungPrompt(item: PartnerAuftragItem): boolean {
   return partnerAuftragKannRechnungHochladen(item);
 }
@@ -135,10 +199,11 @@ export function partnerAuftragKannUnterlagenHochladen(item: PartnerAuftragItem):
 }
 
 export function partnerAuftragZeigtDokumenteUpload(
-  item: PartnerAuftragItem
+  item: PartnerAuftragItem,
+  opts?: { abschlussDoneLocal?: boolean }
 ): boolean {
   return (
     partnerAuftragKannUnterlagenHochladen(item) ||
-    partnerAuftragKannRechnungHochladen(item)
+    partnerAuftragKannRechnungHochladen(item, opts)
   );
 }
