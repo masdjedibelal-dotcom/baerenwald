@@ -564,20 +564,30 @@ export async function completePartnerPosition(
   if (status === "erledigt") {
     return { ok: false, error: "Position ist bereits erledigt." };
   }
-  // Regie: erst nach Start. LV/Festpreis: direkt aus offen möglich.
-  if (isRegie && status !== "in_arbeit") {
-    return {
-      ok: false,
-      error: "Bei Regie erst starten, dann Ende dokumentieren.",
-      status: 403,
-    };
-  }
-  if (!isRegie && status !== "in_arbeit" && status !== "offen") {
-    return { ok: false, error: "Position kann nicht abgeschlossen werden." };
-  }
 
   const fotos = parseFotosFromForm(formData);
   const fotoMeta = parseFotoFromForm(formData);
+
+  // LV aus offen: stillschweigend starten. Regie ebenso, wenn Ende-Doku mitkommt.
+  if (status === "offen") {
+    const nowSoft = new Date().toISOString();
+    const { error: __dbErr92_11 } = await supabaseAdmin
+      .from("auftrag_positionen")
+      .update({
+        leistung_status: "in_arbeit",
+        gestartet_am: nowSoft,
+        handwerker_status: "bestaetigt",
+      })
+      .eq("id", positionId);
+    if (__dbErr92_11)
+      logDbError(
+        "app/actions/partner-position-eintraege:auftrag_positionen",
+        __dbErr92_11
+      );
+  } else if (status !== "in_arbeit") {
+    return { ok: false, error: "Position kann nicht abgeschlossen werden." };
+  }
+
   if (isRegie) {
     if (fotos.length === 0) {
       return { ok: false, error: "Bei Regie ist das Ende-Foto Pflicht." };
@@ -591,20 +601,6 @@ export async function completePartnerPosition(
   }
   if (fotoMeta.nachgereicht && !fotoMeta.nachreichGrund) {
     return { ok: false, error: "Bitte Grund für nachgereichtes Foto angeben." };
-  }
-
-  // LV aus offen: stillschweigend als gestartet markieren
-  if (!isRegie && status === "offen") {
-    const nowSoft = new Date().toISOString();
-    const { error: __dbErr92_11 } = await supabaseAdmin
-      .from("auftrag_positionen")
-      .update({
-        leistung_status: "in_arbeit",
-        gestartet_am: nowSoft,
-        handwerker_status: "bestaetigt",
-      })
-      .eq("id", positionId);
-    if (__dbErr92_11) logDbError('app/actions/partner-position-eintraege:auftrag_positionen', __dbErr92_11)
   }
 
   const isAufwand = String(pos.verguetung ?? "").toLowerCase() === "aufwand";
@@ -1103,15 +1099,6 @@ export async function markPartnerPositionenErledigt(
     return { ok: false, error: "Leistungen ungültig." };
   }
   for (const r of rows ?? []) {
-    const isRegie =
-      String(r.typ ?? "").toLowerCase() === "regie" ||
-      String(r.verguetung ?? "").toLowerCase() === "aufwand";
-    if (isRegie) {
-      return {
-        ok: false,
-        error: "Regie-Leistungen bitte über „Ende — Dokumentieren“ abschließen.",
-      };
-    }
     const st = String(r.leistung_status ?? "offen");
     if (st === "erledigt") {
       return { ok: false, error: "Eine Leistung ist bereits erledigt." };
@@ -1125,6 +1112,10 @@ export async function markPartnerPositionenErledigt(
     for (const r of rows ?? []) {
       const positionId = String(r.id);
       const st = String(r.leistung_status ?? "offen");
+      const isRegie =
+        String(r.typ ?? "").toLowerCase() === "regie" ||
+        String(r.verguetung ?? "").toLowerCase() === "aufwand";
+      // Regie/LV: aus offen stillschweigend starten (Bulk wie Einzel-LV)
       if (st === "offen") {
         const { error: __dbErr95_14 } = await supabaseAdmin
           .from("auftrag_positionen")
@@ -1134,7 +1125,11 @@ export async function markPartnerPositionenErledigt(
             handwerker_status: "bestaetigt",
           })
           .eq("id", positionId);
-        if (__dbErr95_14) logDbError('app/actions/partner-position-eintraege:auftrag_positionen', __dbErr95_14)
+        if (__dbErr95_14)
+          logDbError(
+            "app/actions/partner-position-eintraege:auftrag_positionen",
+            __dbErr95_14
+          );
       }
 
       const eintrag = await insertEintrag({
@@ -1142,7 +1137,11 @@ export async function markPartnerPositionenErledigt(
         typ: "ergebnis",
         beschreibung:
           beschreibung?.trim() ||
-          (allFotos.length > 0 ? "Ergebnis-Fotos" : null),
+          (allFotos.length > 0
+            ? isRegie
+              ? "Regie abgeschlossen"
+              : "Ergebnis-Fotos"
+            : null),
         beschreibungRoh,
         zeitMinuten: null,
         handwerkerId: auth.handwerkerId,
@@ -1182,6 +1181,27 @@ export async function markPartnerPositionenErledigt(
         leistungName: (r.leistung_name as string | null) ?? null,
         beschreibung: beschreibung?.trim() || null,
       });
+    }
+  }
+
+  // Auch ohne Doku: offene Regie/LV soft-starten, dann alle markieren
+  for (const r of rows ?? []) {
+    const positionId = String(r.id);
+    const st = String(r.leistung_status ?? "offen");
+    if (st === "offen" && !hasDoku) {
+      const { error: softErr } = await supabaseAdmin
+        .from("auftrag_positionen")
+        .update({
+          leistung_status: "in_arbeit",
+          gestartet_am: now,
+          handwerker_status: "bestaetigt",
+        })
+        .eq("id", positionId);
+      if (softErr)
+        logDbError(
+          "app/actions/partner-position-eintraege:auftrag_positionen",
+          softErr
+        );
     }
   }
 

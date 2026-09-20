@@ -336,7 +336,7 @@ export function PartnerPositionLebenszyklusList({
       actionablePositionen
         .filter((p) => {
           if (p.leistung_status === "erledigt") return false;
-          if (isRegiePosition(p)) return false;
+          // Regie/Nachtrag wie normale Positionen auswählbar (nach Freigabe)
           return true;
         })
         .map((p) => p.id),
@@ -903,7 +903,7 @@ export function PartnerPositionLebenszyklusList({
                   st === "offen" && isRegie ? "Start (Foto)" : "Update";
                 const erledigtLabel = isRegie ? "Ende (Foto)" : "Erledigt";
                 const showErledigtBtn =
-                  showActions && (isArbeit || (st === "offen" && !isRegie));
+                  showActions && (isArbeit || st === "offen");
                 const showUpdateBtn =
                   showActions && (st === "offen" || isArbeit);
                 const preisLabel = !isRegie ? formatPartnerPreisLabel(p) : null;
@@ -918,7 +918,7 @@ export function PartnerPositionLebenszyklusList({
                     )}
                   >
                     <div className="flex items-start gap-2.5">
-                      {!readOnly && !isBlocked && !isRegie ? (
+                      {!readOnly && !isBlocked ? (
                         <PortalButton
                           variant="primary"
                           type="button"
@@ -1200,7 +1200,7 @@ export function PartnerPositionLebenszyklusList({
             return (
           <form
             ref={sheetFormRef}
-            className="flex flex-col"
+            className="flex flex-col gap-4"
             noValidate
             onSubmit={(e) => {
               e.preventDefault();
@@ -1253,7 +1253,7 @@ export function PartnerPositionLebenszyklusList({
               />
             )}
 
-            <div className="mt-4">
+            <div>
               <PortalField
                 name="beschreibung"
                 error={fieldErrors.beschreibung}

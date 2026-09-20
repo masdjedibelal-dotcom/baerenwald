@@ -47,7 +47,7 @@ function NotifList({
   if (loading && items.length === 0) {
     return (
       <p
-        className="portal-text-meta px-5 py-[34px] text-center"
+        className="portal-text-meta px-5 py-10 text-center"
         style={{ color: "var(--p2-faint)" }}
       >
         Lädt…
@@ -57,7 +57,7 @@ function NotifList({
   if (items.length === 0) {
     return (
       <p
-        className="portal-text-meta px-5 py-[34px] text-center"
+        className="portal-text-meta px-5 py-10 text-center"
         style={{ color: "var(--p2-faint)" }}
       >
         {emptyLabel}
@@ -65,54 +65,29 @@ function NotifList({
     );
   }
   return (
-    <ul>
-      {items.map((n, i) => {
+    <ul className="portal-notif-list">
+      {items.map((n) => {
         const time = n.timeLabel || formatPortalNotifTime(n.createdAt);
-        const rowStyle = {
-          display: "flex" as const,
-          alignItems: "flex-start" as const,
-          gap: 10,
-          padding: "13px 16px",
-          borderBottom:
-            i < items.length - 1 ? "1px solid var(--p2-line)" : "none",
-          background: n.unread
-            ? "rgba(46,125,82,0.04)"
-            : "var(--p2-panel)",
-          cursor: n.link || onItemActivate ? "pointer" : "default",
-          width: "100%" as const,
-          textAlign: "left" as const,
-        };
+        const rowClass = cn(
+          "portal-notif-row",
+          n.unread && "portal-notif-row--unread",
+          (n.link || onItemActivate) && "portal-notif-row--active"
+        );
 
-        /* CRM-Stil: Titel + Sub + Ungelesen-Punkt — kein Icon */
         const inner = (
           <>
             <span className="min-w-0 flex-1">
-              <span
-                className="portal-text-meta block truncate font-semibold"
-                style={{ color: "var(--p2-ink)" }}
-              >
-                {n.titel}
-              </span>
+              <span className="portal-notif-row__title">{n.titel}</span>
               {n.text?.trim() ? (
-                <span
-                  className="portal-text-label mt-0.5 block normal-case tracking-normal leading-[1.45]"
-                  style={{ color: "var(--p2-sub)" }}
-                >
-                  {n.text}
-                </span>
+                <span className="portal-notif-row__text">{n.text}</span>
               ) : null}
               {time ? (
-                <span
-                  className="portal-text-label mt-1 block normal-case tracking-normal"
-                  style={{ color: "var(--p2-faint)" }}
-                >
-                  {time}
-                </span>
+                <span className="portal-notif-row__time">{time}</span>
               ) : null}
             </span>
             {n.unread ? (
               <span
-                className="mt-1.5 h-[8px] w-[8px] shrink-0 rounded-pill"
+                className="portal-notif-row__dot"
                 style={{ background: PORTAL_VAR.primary }}
                 aria-label="Ungelesen"
               />
@@ -123,15 +98,21 @@ function NotifList({
         return (
           <li key={n.id}>
             {onItemActivate ? (
-              <PortalButton variant="ghost" type="button" style={rowStyle} onClick={() => onItem(n)}>
+              <PortalButton
+                variant="ghost"
+                action={false}
+                type="button"
+                className={rowClass}
+                onClick={() => onItem(n)}
+              >
                 {inner}
               </PortalButton>
             ) : n.link ? (
-              <Link href={n.link} style={rowStyle} onClick={() => onItem(n)}>
+              <Link href={n.link} className={rowClass} onClick={() => onItem(n)}>
                 {inner}
               </Link>
             ) : (
-              <div style={rowStyle}>{inner}</div>
+              <div className={rowClass}>{inner}</div>
             )}
           </li>
         );
@@ -293,7 +274,7 @@ export function PortalNotificationBell({
       {open ? (
         <PortalModalShell
           open
-          title="Benachrichtigungen"
+          title="Updates"
           onClose={() => setOpenSafe(false)}
           variant="edit"
           closeOnBackdrop
@@ -317,7 +298,7 @@ export function PortalNotificationBell({
               </div>
             ) : null}
             {filterBar}
-            <div className="min-h-0 max-h-[min(60vh,420px)] flex-1 overflow-y-auto">
+            <div className="min-h-0 max-h-[min(70vh,520px)] flex-1 overflow-y-auto">
               <NotifList
                 items={filtered}
                 loading={loading}

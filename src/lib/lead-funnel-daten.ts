@@ -296,13 +296,16 @@ export function fachdetailRowsFromFunnelDaten(
 
 /**
  * Meta-Zeilen, die in Portal-Details nicht mehr sinnvoll sind
- * (Kundentyp, Hausmeister-Bereichszeile, „Wichtig“).
+ * (Kundentyp, Hausmeister-Bereichszeile, „Wichtig“,
+ *  „Festgestellte Mängel“ — doppelt zu „Mängel“).
  */
 const VORGANG_DETAIL_SKIP_LABELS = new Set([
   "kundentyp",
   "hausmeister",
   "hausmeisterservice",
   "wichtig",
+  "festgestellte mängel",
+  "festgestellte maengel",
 ]);
 
 export function filterVorgangDetailFachRows(
@@ -311,7 +314,10 @@ export function filterVorgangDetailFachRows(
   if (!rows?.length) return [];
   return rows.filter((r) => {
     const label = r.label.trim().toLowerCase();
-    return !VORGANG_DETAIL_SKIP_LABELS.has(label);
+    if (VORGANG_DETAIL_SKIP_LABELS.has(label)) return false;
+    // Roh-Keys / Varianten: „Festgestellte Mängel …“
+    if (/^festgestellte\s+m(ä|ae)ngel\b/.test(label)) return false;
+    return true;
   });
 }
 

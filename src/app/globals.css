@@ -153,9 +153,10 @@
   --info-bg: #f0f7ff;
   --info-border: #c8dff7;
   --info-text: #1a5fab;
-  --warning-bg: #fff5f5;
-  --warning-border: #ffccc9;
-  --warning-text: #c0392b;
+  /* Hinweis / Freigabeschwelle — gelb (nicht danger-rot) */
+  --warning-bg: #fff8e6;
+  --warning-border: #f0d48a;
+  --warning-text: #8a5a06;
 
   --acc: #2e7d52;
   --text: #1e1c1a;
@@ -4057,8 +4058,10 @@ h3 {
     color: var(--p2-sub, #55615b);
   }
 
-  .portal-modal-shell-body .portal-field,
-  .portal-modal-shell-body .portal-input {
+  .portal-modal-shell-body input.portal-field,
+  .portal-modal-shell-body select.portal-field,
+  .portal-modal-shell-body input.portal-input,
+  .portal-modal-shell-body select.portal-input {
     height: 46px;
     min-height: 46px;
     border-radius: var(--portal-btn-radius, 14px);
@@ -4072,7 +4075,21 @@ h3 {
   .portal-modal-shell-body textarea.portal-field,
   .portal-modal-shell-body textarea.portal-input {
     height: auto;
-    min-height: 96px;
+    min-height: 120px;
+  }
+
+  /* Komposit-Felder (Foto-Dropzone, KI-Text) — nie auf Button-Höhe quetschen */
+  .portal-modal-shell-body .portal-field-wrap {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    min-width: 0;
+  }
+
+  .portal-modal-shell-body .portal-field-wrap .portal-file-upload,
+  .portal-modal-shell-body .portal-field-wrap .portal-file-upload.portal-btn {
+    height: auto !important;
+    min-height: 10rem !important;
   }
 
   .portal-modal-shell-body .portal-field:focus,
@@ -6195,44 +6212,197 @@ h3 {
   box-shadow: none;
 }
 
-/* Datei-Dropzone: portal-btn darf Text nicht auf 46px quetschen */
+/* Updates / Benachrichtigungen — Zeilen global (alle Portale) */
+.portal-ui .portal-notif-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.portal-ui .portal-notif-row,
+.portal-ui a.portal-notif-row,
+.portal-ui button.portal-notif-row,
+.portal-ui .portal-btn.portal-notif-row {
+  display: flex !important;
+  align-items: flex-start !important;
+  gap: 0.75rem !important;
+  width: 100% !important;
+  height: auto !important;
+  min-height: 4.5rem !important;
+  padding: 1.1rem 1.1rem !important;
+  margin: 0 !important;
+  border: 0 !important;
+  border-bottom: 1px solid var(--p2-line, rgba(20, 32, 25, 0.1)) !important;
+  border-radius: 0 !important;
+  background: var(--p2-panel, #fff) !important;
+  box-shadow: none !important;
+  text-align: left !important;
+  white-space: normal !important;
+  line-height: 1.4 !important;
+  color: inherit !important;
+  cursor: default;
+  box-sizing: border-box;
+}
+
+.portal-ui .portal-notif-list > li:last-child .portal-notif-row {
+  border-bottom: 0 !important;
+}
+
+.portal-ui .portal-notif-row--unread {
+  background: rgba(46, 125, 82, 0.05) !important;
+}
+
+.portal-ui .portal-notif-row--active {
+  cursor: pointer;
+}
+
+.portal-ui .portal-notif-row--active:hover {
+  background: var(--p2-hover, #f7f8fa) !important;
+}
+
+.portal-ui .portal-notif-row--unread.portal-notif-row--active:hover {
+  background: rgba(46, 125, 82, 0.09) !important;
+}
+
+.portal-ui .portal-notif-row__title {
+  display: block;
+  font-size: var(--p2-type-body, 14.5px);
+  font-weight: 650;
+  line-height: 1.4;
+  color: var(--p2-ink, #142019);
+  overflow-wrap: anywhere;
+  white-space: normal;
+}
+
+.portal-ui .portal-notif-row__text {
+  display: block;
+  margin-top: 0.35rem;
+  font-size: var(--p2-type-meta, 13.5px);
+  font-weight: 500;
+  line-height: 1.45;
+  color: var(--p2-sub, #55615b);
+  overflow-wrap: anywhere;
+  white-space: normal;
+}
+
+.portal-ui .portal-notif-row__time {
+  display: block;
+  margin-top: 0.4rem;
+  font-size: var(--p2-type-eyebrow, 11.5px);
+  font-weight: 500;
+  line-height: 1.35;
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--p2-faint, #8a938e);
+}
+
+.portal-ui .portal-notif-row__dot {
+  margin-top: 0.35rem;
+  width: 0.55rem;
+  height: 0.55rem;
+  flex-shrink: 0;
+  border-radius: 999px;
+}
+
+/* Updates-Cards: PortalButton darf Höhe/Padding nicht auf 46px quetschen */
+.portal-ui .portal-btn.portal-bt-card-head,
+.portal-ui button.portal-bt-card-head {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: stretch !important;
+  height: auto !important;
+  min-height: 0 !important;
+  padding: 0.75rem 0.875rem !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  white-space: normal !important;
+  line-height: 1.4 !important;
+}
+
+.portal-ui .portal-btn.portal-bt-card-foto,
+.portal-ui button.portal-bt-card-foto {
+  height: 4.5rem !important;
+  width: 4.5rem !important;
+  min-height: 0 !important;
+  padding: 0 !important;
+  border-radius: var(--p2-radius-sm, 9px) !important;
+}
+
+@media (min-width: 640px) {
+  .portal-ui .portal-btn.portal-bt-card-foto,
+  .portal-ui button.portal-bt-card-foto {
+    height: 6rem !important;
+    width: 6rem !important;
+  }
+}
+
+/* Datei-/Foto-Dropzone: eine globale Größe — egal ob button oder div */
+.portal-ui .portal-file-upload,
 .portal-ui .portal-btn.portal-file-upload,
 .portal-ui button.portal-file-upload {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-content: center !important;
   height: auto !important;
-  min-height: 7.5rem !important;
-  padding: 1.25rem 1rem !important;
-  gap: 0.4rem;
-  border: 1.5px dashed var(--p2-line, rgba(20, 32, 25, 0.18)) !important;
+  min-height: 10rem !important;
+  padding: 1.75rem 1.25rem !important;
+  gap: 0.5rem !important;
+  border: 2px dashed var(--p2-line, rgba(20, 32, 25, 0.2)) !important;
   border-radius: 16px !important;
   background: #fff !important;
   color: inherit !important;
   box-shadow: none !important;
-  white-space: normal;
+  white-space: normal !important;
   line-height: 1.35;
   font-weight: inherit;
+  text-align: center;
+  box-sizing: border-box;
 }
 
+.portal-ui .portal-file-upload--compact,
 .portal-ui .portal-btn.portal-file-upload--compact,
 .portal-ui button.portal-file-upload--compact {
-  min-height: 6.25rem !important;
-  padding: 1rem 0.875rem !important;
+  min-height: 8rem !important;
+  padding: 1.25rem 1rem !important;
+  gap: 0.4rem !important;
 }
 
+.portal-ui .portal-file-upload--preview,
 .portal-ui .portal-btn.portal-file-upload--preview,
 .portal-ui button.portal-file-upload--preview {
   min-height: 0 !important;
   padding: 0.75rem !important;
 }
 
+.portal-ui .portal-file-upload--drag,
 .portal-ui .portal-btn.portal-file-upload--drag,
 .portal-ui button.portal-file-upload--drag {
   border-color: var(--p2-primary, #2e7d52) !important;
   background: var(--p2-primary-soft, #e7f1e9) !important;
 }
 
+.portal-ui .portal-file-upload:hover:not(:disabled),
 .portal-ui .portal-btn.portal-file-upload:hover:not(:disabled),
 .portal-ui button.portal-file-upload:hover:not(:disabled) {
   background: var(--p2-hover, #f7f8fa) !important;
+}
+
+.portal-ui .portal-file-upload svg,
+.portal-ui .portal-btn.portal-file-upload svg,
+.portal-ui button.portal-file-upload svg {
+  width: 2rem;
+  height: 2rem;
+  flex-shrink: 0;
+}
+
+.portal-ui .portal-file-upload--compact svg,
+.portal-ui .portal-btn.portal-file-upload--compact svg,
+.portal-ui button.portal-file-upload--compact svg {
+  width: 1.75rem;
+  height: 1.75rem;
 }
 
 .btn-pill-primary,

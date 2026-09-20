@@ -9,8 +9,15 @@ export type KundeAuftragPositionInput = {
   leistung_name?: string | null;
   beschreibung?: string | null;
   menge?: number | null;
+  einheit?: string | null;
   lohn_fix?: number | null;
   material_fix?: number | null;
+  /** Kunden-VK (Stück) — Regie/Nachtrag nach CRM-Anerkennung */
+  preis_kunde?: number | null;
+  preis_partner?: number | null;
+  stundensatz?: number | null;
+  typ?: string | null;
+  anerkennung_status?: string | null;
   aenderung_typ?: KundeAuftragAenderungTyp | null;
   preis_alt?: number | null;
   kunde_akzeptiert_at?: string | null;
@@ -98,10 +105,27 @@ function resolvePositionNetto(
   const fromFix = nettoFromParts(pos.lohn_fix ?? 0, pos.material_fix ?? 0, menge);
   if (fromFix > 0) return fromFix;
 
+  // Regie/Nachtrag: CRM setzt preis_kunde / stundensatz / preis_partner (Stück €/h)
+  const unit =
+    (pos.preis_kunde != null && pos.preis_kunde > 0 ? pos.preis_kunde : 0) ||
+    (pos.stundensatz != null && pos.stundensatz > 0 ? pos.stundensatz : 0) ||
+    (pos.preis_partner != null && pos.preis_partner > 0 ? pos.preis_partner : 0);
+  if (unit > 0) return round2(unit * menge);
+
   const angebotRow = angebotById.get(pos.id);
   if (angebotRow) return nettoFromAngebotRow(angebotRow);
 
   return 0;
+}
+
+/** Abgelehnte / noch ungeprüfte Partner-Regie nicht im Kunden-Angebot. */
+function positionSichtbarFuerKunde(
+  pos: Pick<KundeAuftragPositionInput, "anerkennung_status">
+): boolean {
+  const a = (pos.anerkennung_status ?? "").trim().toLowerCase();
+  if (!a || a === "nicht_noetig" || a === "anerkannt") return true;
+  if (a === "abgelehnt" || a === "in_pruefung") return false;
+  return true;
 }
 
 export function positionBrauchtKundeAktion(
@@ -126,6 +150,7 @@ export function buildKundeAuftragPositionenDisplay(
   const out: PortalAuftragPositionDisplay[] = [];
 
   for (const pos of positionen) {
+    if (!positionSichtbarFuerKunde(pos)) continue;
     const typ = mapAenderungTyp(pos.aenderung_typ ?? null);
     const title = positionTitle(pos);
     const beschreibung =
@@ -146,9 +171,12 @@ export function buildKundeAuftragPositionenDisplay(
 
     const menge = pos.menge != null && pos.menge > 0 ? pos.menge : undefined;
     const gewerk = pos.gewerk_name?.trim() || undefined;
+    const einheit = pos.einheit?.trim() || undefined;
     const mengeLabel =
       menge != null
-        ? String(menge).replace(".", ",")
+        ? einheit
+          ? `${String(menge).replace(".", ",")} ${einheit}`
+          : String(menge).replace(".", ",")
         : undefined;
 
     out.push({
@@ -157,8 +185,10 @@ export function buildKundeAuftragPositionenDisplay(
       beschreibung,
       gewerk,
       menge,
+      einheit,
       mengeLabel,
       preisBrutto: displayBrutto,
+      preisNetto: netto > 0 ? netto : undefined,
       preisBruttoAlt,
       aenderungBadge: typ ?? undefined,
       entfernt: isEntfernt,
@@ -185,8 +215,14 @@ export function mapPortalAuftragPositionRow(
     leistung_name: (raw.leistung_name as string | null) ?? null,
     beschreibung: (raw.beschreibung as string | null) ?? null,
     menge: raw.menge != null ? Number(raw.menge) : null,
+    einheit: (raw.einheit as string | null) ?? null,
     lohn_fix: raw.lohn_fix != null ? Number(raw.lohn_fix) : null,
     material_fix: raw.material_fix != null ? Number(raw.material_fix) : null,
+    preis_kunde: raw.preis_kunde != null ? Number(raw.preis_kunde) : null,
+    preis_partner: raw.preis_partner != null ? Number(raw.preis_partner) : null,
+    stundensatz: raw.stundensatz != null ? Number(raw.stundensatz) : null,
+    typ: (raw.typ as string | null) ?? null,
+    anerkennung_status: (raw.anerkennung_status as string | null) ?? null,
     aenderung_typ: mapAenderungTyp(raw.aenderung_typ as string | null),
     preis_alt: raw.preis_alt != null ? Number(raw.preis_alt) : null,
     kunde_akzeptiert_at: (raw.kunde_akzeptiert_at as string | null) ?? null,

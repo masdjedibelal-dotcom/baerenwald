@@ -238,10 +238,14 @@ export function portalFlowTimeline(
   current: PortalMockStatusId
 ): Array<PortalMockStatusMeta & { done: boolean; active: boolean }> {
   const cur = portalFlowTimelineIndex(current);
+  const lastIdx = PORTAL_FLOW_TIMELINE.length - 1;
+  // Terminal „Rechnung“: letzter Balken erledigt (✓), nicht nur aktiv —
+  // analog Mieter-STG und bezahlt (Index >= length).
+  const terminalDone = cur >= lastIdx;
   return PORTAL_FLOW_TIMELINE.map((id, i) => ({
     ...PORTAL_STATUS[id],
-    done: i < cur,
-    active: i === cur,
+    done: i < cur || (terminalDone && i === lastIdx),
+    active: i === cur && cur <= lastIdx && !terminalDone,
   }));
 }
 

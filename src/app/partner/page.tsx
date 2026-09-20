@@ -19,6 +19,9 @@ export const metadata = {
   robots: { index: false, follow: false },
 };
 
+/** Nach Annehmen/Ablehnen muss router.refresh() frische Vorgänge liefern — kein RSC-Cache. */
+export const dynamic = "force-dynamic";
+
 function partnerLoginRedirect(
   searchParams?: Record<string, string | string[] | undefined>,
   hint?: string

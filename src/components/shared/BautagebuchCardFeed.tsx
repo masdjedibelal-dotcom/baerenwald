@@ -133,9 +133,10 @@ export function BautagebuchCardFeed({
                 <div className="overflow-hidden rounded-sheet border border-border-light bg-white shadow-[0_1px_2px_rgba(22,32,27,0.04)]">
                   <PortalButton
                     variant="ghost"
+                    action={false}
                     type="button"
                     onClick={() => setOpenId(open ? null : e.id)}
-                    className="flex w-full flex-col gap-1 px-3.5 py-3 text-left transition-colors hover:bg-muted/15"
+                    className="portal-bt-card-head flex w-full flex-col gap-1 px-3.5 py-3 text-left transition-colors hover:bg-muted/15"
                     aria-expanded={open}
                   >
                     <div className="flex items-start justify-between gap-2">
@@ -175,9 +176,10 @@ export function BautagebuchCardFeed({
                           {imageFotos.map((url, i) => (
                             <PortalButton
                               variant="ghost"
+                              action={false}
                               key={`${e.id}-foto-${i}`}
                               type="button"
-                              className="block h-[4.5rem] w-[4.5rem] overflow-hidden rounded-sheet border border-border-light bg-muted/20 sm:h-24 sm:w-24"
+                              className="portal-bt-card-foto block h-[4.5rem] w-[4.5rem] overflow-hidden rounded-sheet border border-border-light bg-muted/20 p-0 sm:h-24 sm:w-24"
                               onClick={() => openLightbox(imageFotos, i)}
                               aria-label={`${bautagebuchAnhangLabel(url, i)} vergrößern`}
                             >

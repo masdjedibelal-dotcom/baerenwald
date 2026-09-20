@@ -82,12 +82,15 @@ export function PartnerDirektKameraSlot({
       </p>
       <PortalButton
         variant="ghost"
+        action={false}
         type="button"
         onClick={() => pickerRef.current?.click()}
         disabled={status === "uploading"}
         className={cn(
-          "flex w-full flex-col items-center justify-center gap-2 rounded-sheet border-2 border-dashed border-border-default bg-white text-center hover:bg-[var(--p2-hover)] disabled:opacity-50",
-          compact ? "px-2 py-4" : "px-4 py-6"
+          "portal-file-upload w-full",
+          compact && "portal-file-upload--compact",
+          preview && "portal-file-upload--preview",
+          "disabled:opacity-50"
         )}
       >
         {preview ? (
@@ -96,25 +99,25 @@ export function PartnerDirektKameraSlot({
             src={preview}
             alt="Aufnahme"
             className={cn(
-              "rounded-card object-contain",
-              compact ? "max-h-24" : "max-h-40"
+              "w-full rounded-card object-contain",
+              compact ? "max-h-28" : "max-h-44"
             )}
           />
         ) : (
-          <PortalIcon n="photo" ctx="default" className={cn(compact ? "h-6 w-6" : "h-8 w-8", "text-text-secondary")} aria-hidden />
+          <PortalIcon n="photo" ctx="default" className="text-text-secondary" aria-hidden />
         )}
         {status === "uploading" ? (
-          <span className="inline-flex items-center gap-1.5 text-fs-caption text-text-secondary">
-            <PortalIcon n="loader" ctx="default" className="h-3.5 w-3.5 animate-spin" />
+          <span className="inline-flex items-center gap-1.5 text-fs-meta text-text-secondary">
+            <PortalIcon n="loader" ctx="default" className="h-4 w-4 animate-spin" />
             wird vorbereitet…
           </span>
         ) : status === "done" ? (
-          <span className="inline-flex items-center gap-1.5 text-fs-caption font-medium text-text-primary">
-            <PortalIcon n="check" ctx="default" className="h-3.5 w-3.5" />
+          <span className="inline-flex items-center gap-1.5 text-fs-meta font-medium text-text-primary">
+            <PortalIcon n="check" ctx="default" className="h-4 w-4" />
             Erfasst
           </span>
         ) : (
-          <span className="text-fs-caption font-semibold text-text-primary">
+          <span className="text-fs-body font-semibold text-text-primary">
             {isMobile ? "Foto aufnehmen oder wählen" : "Foto hochladen"}
           </span>
         )}

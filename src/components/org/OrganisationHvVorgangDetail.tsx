@@ -547,6 +547,12 @@ export function OrganisationHvVorgangDetail({
         })
       : null;
   const freigabeNichtNoetig = freigabeEntfaelltKind != null;
+  /** Hinweis-Box nur in der Angebots-Phase — bei Auftrag/Rechnung weg. */
+  const showFreigabeSchwelleInfo =
+    freigabeEntfaelltKind != null &&
+    (displayFlowStatus === "angebot" ||
+      displayFlowStatus === "freigegeben" ||
+      displayFlowStatus === "angefragt");
 
   const actionKindRaw = hvRoleActionKind(displayFlowStatus, {
     privatkunde,
@@ -852,14 +858,10 @@ export function OrganisationHvVorgangDetail({
 
   const derivedPositionen: HvDetailPosition[] = useMemo(() => {
     if (positionen.length) return positionen;
-    /** Auftrag-Positionen sind aktueller; sonst Angebots-Zeilen (Privat oft nur Auftrag). */
-    const source =
-      auftragPositionen.length > 0
-        ? auftragPositionen
-        : positionenBrutto.length > 0
-          ? positionenBrutto
-          : [];
-    return source.map((p) => {
+    /** Merge: Auftrag (inkl. anerkannte Regie) + Angebotszeilen die noch fehlen. */
+    const toRow = (
+      p: PortalAngebotPositionDisplay | PortalAuftragPositionDisplay
+    ): HvDetailPosition => {
       const netto =
         typeof p.preisNetto === "number" && p.preisNetto > 0
           ? p.preisNetto
@@ -873,7 +875,15 @@ export function OrganisationHvVorgangDetail({
         gewerk: p.gewerk?.trim() || "Leistung",
         einzel: mengeNum > 0 ? netto / mengeNum : netto,
       };
-    });
+    };
+    const byKey = new Map<string, HvDetailPosition>();
+    for (const p of positionenBrutto) {
+      byKey.set(p.title.trim().toLowerCase() || p.id, toRow(p));
+    }
+    for (const p of auftragPositionen) {
+      byKey.set(p.title.trim().toLowerCase() || p.id, toRow(p));
+    }
+    return Array.from(byKey.values());
   }, [positionen, positionenBrutto, auftragPositionen]);
 
   const sum = useMemo(() => {
@@ -1301,7 +1311,7 @@ export function OrganisationHvVorgangDetail({
           }
         />
 
-        {freigabeEntfaelltKind ? (
+        {showFreigabeSchwelleInfo && freigabeEntfaelltKind ? (
           <div className="mt-3">
             <HvFreigabeInfoBanner
               kind={freigabeEntfaelltKind}

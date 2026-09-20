@@ -1,10 +1,9 @@
 /**
- * Partner-Leistungs-Update → Portal-Glocken (HV + Kunde).
- * Sichtbar im Updates-Tab (position_eintraege via loadPartnerDokumentation).
+ * Partner-Leistungs-/BT-Update → nur HV-Glocke (CRM).
+ * Kundenportal bekommt keine HW-Updates — nur CRM-Bautagebuch.
  */
 
 import { notifyHvPartnerBautagebuch } from "@/lib/org/notify-hv-bautagebuch";
-import { notifyMieterBautagebuchEintrag } from "@/lib/melde/notify-mieter-bautagebuch";
 import { isSupabaseConfigured, supabaseAdmin } from "@/lib/supabase";
 
 export async function syncPartnerPositionEintragToKundeTimeline(opts: {
@@ -34,24 +33,15 @@ export async function syncPartnerPositionEintragToKundeTimeline(opts: {
     opts.beschreibung?.trim()?.split(/\n+/)[0]?.slice(0, 72) ||
     "Update";
 
-  const [{ data: hw }, { data: auf }] = await Promise.all([
-    opts.handwerkerId
-      ? supabaseAdmin
-          .from("handwerker")
-          .select("name")
-          .eq("id", opts.handwerkerId)
-          .maybeSingle()
-      : Promise.resolve({ data: null }),
-    supabaseAdmin
-      .from("auftraege")
-      .select("id, titel, lead_id")
-      .eq("id", auftragId)
-      .maybeSingle(),
-  ]);
+  const { data: hw } = opts.handwerkerId
+    ? await supabaseAdmin
+        .from("handwerker")
+        .select("name")
+        .eq("id", opts.handwerkerId)
+        .maybeSingle()
+    : { data: null };
 
   const handwerkerName = String(hw?.name ?? "Partner").trim() || "Partner";
-  const auftragTitel = String(auf?.titel ?? "Auftrag").trim() || "Auftrag";
-  const leadId = auf?.lead_id ? String(auf.lead_id) : null;
 
   try {
     await notifyHvPartnerBautagebuch({
@@ -62,22 +52,13 @@ export async function syncPartnerPositionEintragToKundeTimeline(opts: {
   } catch (e) {
     console.warn("[syncPartnerPositionEintrag] HV-Notify:", e);
   }
-
-  if (leadId) {
-    try {
-      await notifyMieterBautagebuchEintrag({
-        leadId,
-        handwerkerName,
-        eintragTitel,
-        auftragTitel,
-      });
-    } catch (e) {
-      console.warn("[syncPartnerPositionEintrag] Portal-Notify:", e);
-    }
-  }
 }
 
-export async function syncPartnerFreiesBautagebuchToKundeTimeline(opts: {
+/** @deprecated Alias — nur noch HV, kein Kunden-Feed. */
+export const syncPartnerFreiesBautagebuchToKundeTimeline =
+  syncPartnerFreiesBautagebuchToHv;
+
+export async function syncPartnerFreiesBautagebuchToHv(opts: {
   auftragId: string;
   titel: string;
   beschreibung?: string | null;
@@ -91,24 +72,15 @@ export async function syncPartnerFreiesBautagebuchToKundeTimeline(opts: {
 
   const eintragTitel = opts.titel.trim() || "Update";
 
-  const [{ data: hw }, { data: auf }] = await Promise.all([
-    opts.handwerkerId
-      ? supabaseAdmin
-          .from("handwerker")
-          .select("name")
-          .eq("id", opts.handwerkerId)
-          .maybeSingle()
-      : Promise.resolve({ data: null }),
-    supabaseAdmin
-      .from("auftraege")
-      .select("id, titel, lead_id")
-      .eq("id", auftragId)
-      .maybeSingle(),
-  ]);
+  const { data: hw } = opts.handwerkerId
+    ? await supabaseAdmin
+        .from("handwerker")
+        .select("name")
+        .eq("id", opts.handwerkerId)
+        .maybeSingle()
+    : { data: null };
 
   const handwerkerName = String(hw?.name ?? "Partner").trim() || "Partner";
-  const auftragTitel = String(auf?.titel ?? "Auftrag").trim() || "Auftrag";
-  const leadId = auf?.lead_id ? String(auf.lead_id) : null;
 
   try {
     await notifyHvPartnerBautagebuch({
@@ -118,19 +90,6 @@ export async function syncPartnerFreiesBautagebuchToKundeTimeline(opts: {
     });
   } catch (e) {
     console.warn("[syncPartnerFreiesBautagebuch] HV-Notify:", e);
-  }
-
-  if (leadId) {
-    try {
-      await notifyMieterBautagebuchEintrag({
-        leadId,
-        handwerkerName,
-        eintragTitel,
-        auftragTitel,
-      });
-    } catch (e) {
-      console.warn("[syncPartnerFreiesBautagebuch] Portal-Notify:", e);
-    }
   }
 
   return opts.bautagebuchEintragId ?? null;

@@ -11,7 +11,7 @@ export type VorgangAnzeigeTitelAngebot = {
 
 /**
  * Platzhalter / PosBoard-Defaults / Slugs — kein sprechender Vorgangs-Titel.
- * (z. B. „Leistungen“, „Auftrag“, „Direktauftrag — sanitär“)
+ * (z. B. „Leistungen“, „Auftrag“, „Direktauftrag — sanitär“, „fenster_tuer – Firma“)
  */
 export function isPlaceholderVorgangTitel(
   t: string | null | undefined
@@ -35,7 +35,13 @@ export function isPlaceholderVorgangTitel(
   }
   if (/^angebot(\s+[a-z0-9][\w./-]{0,48})?$/i.test(raw)) return true
   if (/^[a-z][a-z0-9_]{1,40}$/.test(raw)) return true
-  if (/^direktauftrag\s*[—\-|:·]\s*[a-z0-9_]+$/i.test(raw)) return true
+  if (/^direktauftrag\s*[\u2013\u2014\u2212\-|:·]\s*[a-z0-9_]+$/i.test(raw))
+    return true
+  // Slug als linker Teil (En- und Em-Dash): „fenster_tuer – Belal GMBH“
+  const left =
+    raw.split(/\s*[\u2013\u2014\u2212\-|:·]\s*/, 1)[0]?.trim().toLowerCase() ??
+    ''
+  if (left && left !== n && /^[a-z][a-z0-9_]*_[a-z0-9_]+$/.test(left)) return true
   return false
 }
 

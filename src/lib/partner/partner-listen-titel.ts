@@ -1,3 +1,7 @@
+import {
+  BEREICH_LABELS,
+  labelSituation,
+} from "@/lib/lead-funnel-labels";
 import type {
   PartnerAnfrageItem,
   PartnerAuftragItem,
@@ -6,7 +10,6 @@ import type { PortalAnfrageLeadSource } from "@/lib/portal/portal-anfrage-displa
 import { objektPlzOrt } from "@/lib/portal/portal-detail-item";
 import type { PortalObjekt } from "@/lib/portal/portal-objekt";
 import { isPrivatPortalKontext } from "@/lib/portal/portal-titel";
-import { labelSituation } from "@/lib/lead-funnel-labels";
 import {
   buildMeldeVorgangTitel,
   leadIstMeldeTitelQuelle,
@@ -106,19 +109,26 @@ function resolveGewerkLabel(
   gewerk_name?: string | null,
   gewerk_names?: string[]
 ): string | undefined {
-  const single = gewerk_name?.trim();
-  if (single && !isPlaceholderVorgangTitel(single) && single !== "Gewerk") {
-    return single;
-  }
+  const singleRaw = gewerk_name?.trim();
+  const singleKey = singleRaw?.toLowerCase() ?? "";
+  const singleLabel =
+    (singleKey && BEREICH_LABELS[singleKey]) ||
+    (singleRaw && !isPlaceholderVorgangTitel(singleRaw) ? singleRaw : null);
+  if (singleLabel && singleLabel !== "Gewerk") return singleLabel;
 
   const names = Array.from(
     new Set(
       (gewerk_names ?? [])
-        .map((n) => n?.trim())
-        .filter(
-          (n): n is string =>
-            Boolean(n && n !== "Gewerk" && !isPlaceholderVorgangTitel(n))
-        )
+        .map((n) => {
+          const raw = n?.trim();
+          if (!raw) return null;
+          const key = raw.toLowerCase();
+          const labeled = BEREICH_LABELS[key];
+          if (labeled) return labeled;
+          if (raw === "Gewerk" || isPlaceholderVorgangTitel(raw)) return null;
+          return raw;
+        })
+        .filter((n): n is string => Boolean(n))
     )
   );
   if (names.length === 1) return names[0];

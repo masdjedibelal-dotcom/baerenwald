@@ -181,6 +181,11 @@ export async function getPortalDataForKunde(
   const onlyLeadIds = (opts?.leadIds ?? [])
     .map((x) => String(x ?? "").trim())
     .filter(Boolean);
+  /**
+   * Detail-Scope (leadIds): Bautagebuch + Signed Fotos auch bei mode=list —
+   * sonst leere Updates ohne Bilder. Listen-Seite bleibt leicht.
+   */
+  const loadBautagebuchMedia = !listMode || onlyLeadIds.length > 0;
   const id = kundeId.trim();
   if (!id) return null;
 
@@ -527,19 +532,19 @@ export async function getPortalDataForKunde(
         supabaseAdmin
           .from("auftrag_positionen")
           .select(
-            "id, auftrag_id, gewerk_name, leistung_name, beschreibung, leistung_status, handwerker_status, handwerker_id, menge, einheit, lohn_fix, material_fix, aenderung_typ, preis_alt, kunde_akzeptiert_at"
+            "id, auftrag_id, gewerk_name, leistung_name, beschreibung, leistung_status, handwerker_status, handwerker_id, menge, einheit, lohn_fix, material_fix, aenderung_typ, preis_alt, kunde_akzeptiert_at, preis_kunde, preis_partner, stundensatz, typ, anerkennung_status"
           )
           .in("auftrag_id", auftragIds),
-        listMode
-          ? Promise.resolve(emptyChild)
-          : supabaseAdmin
+        loadBautagebuchMedia
+          ? supabaseAdmin
               .from("auftrag_bautagebuch_eintraege")
               .select(
-                "id, auftrag_id, datum, titel, beschreibung, foto_urls, fuer_kunde_freigegeben, eintrag_typ"
+                "id, auftrag_id, datum, titel, beschreibung, foto_urls, fuer_kunde_freigegeben, eintrag_typ, handwerker_id"
               )
               .in("auftrag_id", auftragIds)
               .neq("eintrag_typ", "befund")
-              .order("datum", { ascending: false }),
+              .order("datum", { ascending: false })
+          : Promise.resolve(emptyChild),
         listMode
           ? Promise.resolve(emptyChild)
           : supabaseAdmin
@@ -571,15 +576,15 @@ export async function getPortalDataForKunde(
                 "id, auftrag_id, rechnungsnummer, pdf_url, status, rechnungsdatum, gesendet_at, faellig_am, created_at, updated_at, brutto, netto, rechnung_art, abschlag_index, bezahlt_at, richtung"
               )
               .in("auftrag_id", auftragIds),
-        listMode
-          ? Promise.resolve(emptyChild)
-          : supabaseAdmin
+        loadBautagebuchMedia
+          ? supabaseAdmin
               .from("auftrag_timeline")
               .select(
                 "id, auftrag_id, typ, titel, beschreibung, foto_urls, created_at, fuer_kunde_freigegeben, handwerker_id"
               )
               .in("auftrag_id", auftragIds)
-              .eq("fuer_kunde_freigegeben", true),
+              .eq("fuer_kunde_freigegeben", true)
+          : Promise.resolve(emptyChild),
       ])
     : [
         emptyChild,
@@ -743,11 +748,16 @@ export async function getPortalDataForKunde(
     const aid = String(b.auftrag_id);
     const typ = (b.eintrag_typ ?? "tagebuch").trim();
     if (typ === "befund") return false;
+    const hwId = String(
+      (b as { handwerker_id?: string | null }).handwerker_id ?? ""
+    ).trim();
+    // Kunde: keine HW-Einträge (auch wenn früher freigegeben)
+    if (!includeHandwerkerUpdates && hwId) return false;
     const freigegeben = Boolean(b.fuer_kunde_freigegeben);
     return freigegeben || hvAuftragIds.has(aid);
   });
 
-  const bautagebuchSigned = listMode
+  const bautagebuchSigned = !loadBautagebuchMedia
     ? []
     : await Promise.all(
         bautagebuchVisible.map(async (b) => {
@@ -776,7 +786,7 @@ export async function getPortalDataForKunde(
   }
 
   // Timeline-Publish → Kunden-Feed (CRM); optional HW für HV
-  const timelineBt = listMode
+  const timelineBt = !loadBautagebuchMedia
     ? []
     : await Promise.all(
         (timeline ?? [])
@@ -837,7 +847,7 @@ export async function getPortalDataForKunde(
   }
 
   // Positions-Doku: Kunde nur CRM; HV (+ Partner) optional
-  if (!listMode && auftragIds.length > 0) {
+  if (loadBautagebuchMedia && auftragIds.length > 0) {
     const {
       loadPartnerDokumentationByAuftragIds,
       mergePortalBautagebuchEntries,
@@ -1057,8 +1067,17 @@ export async function getPortalDataForKunde(
             leistung_name: p.leistung_name,
             beschreibung: p.beschreibung,
             menge: p.menge,
+            einheit: (p as { einheit?: string | null }).einheit ?? null,
             lohn_fix: p.lohn_fix,
             material_fix: p.material_fix,
+            preis_kunde: (p as { preis_kunde?: number | null }).preis_kunde ?? null,
+            preis_partner:
+              (p as { preis_partner?: number | null }).preis_partner ?? null,
+            stundensatz: (p as { stundensatz?: number | null }).stundensatz ?? null,
+            typ: (p as { typ?: string | null }).typ ?? null,
+            anerkennung_status:
+              (p as { anerkennung_status?: string | null }).anerkennung_status ??
+              null,
             aenderung_typ: p.aenderung_typ,
             preis_alt: p.preis_alt,
             kunde_akzeptiert_at: p.kunde_akzeptiert_at,

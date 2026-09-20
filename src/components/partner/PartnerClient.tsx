@@ -190,7 +190,7 @@ export function PartnerClient({
   const detailOpenedAtRef = useRef(0);
 
   const { hold, release, flash, busy: ctxBusy } = usePortalBusy();
-  const { refreshFlash } = usePortalRefresh();
+  const { refresh, refreshFlash } = usePortalRefresh();
   const detailHoldRef = useRef(false);
 
   /** Wie HV: kurze Nav-/Filter-Übergänge. */
@@ -226,9 +226,38 @@ export function PartnerClient({
     useState<VorgangFilter>("alle");
   const [vorgaengeState, setVorgaengeState] = useState(vorgaenge);
   const hydratedMediaRef = useRef<Set<string>>(new Set());
+  /** Nach Annehmen: RSC-Props dürfen Optimistik nicht wieder auf „neu“ zurücksetzen. */
+  const pendingAcceptIdsRef = useRef<Set<string>>(new Set());
 
   useEffect(() => {
-    setVorgaengeState(vorgaenge);
+    setVorgaengeState((prev) => {
+      const pending = pendingAcceptIdsRef.current;
+      if (pending.size === 0) return vorgaenge;
+
+      return vorgaenge.map((serverV) => {
+        const ids = [serverV.id, serverV.anfrage?.id].filter(Boolean) as string[];
+        const isPending = ids.some((id) => pending.has(id));
+        if (!isPending) return serverV;
+
+        if (
+          serverV.state === "in_bearbeitung" ||
+          serverV.state === "geaendert" ||
+          serverV.state === "erledigt" ||
+          serverV.state === "abgelehnt"
+        ) {
+          for (const id of ids) pending.delete(id);
+          return serverV;
+        }
+
+        const local = prev.find(
+          (p) =>
+            p.id === serverV.id ||
+            (serverV.anfrage?.id && p.anfrage?.id === serverV.anfrage.id)
+        );
+        if (local?.state === "in_bearbeitung") return local;
+        return serverV;
+      });
+    });
     hydratedMediaRef.current = new Set();
   }, [vorgaenge]);
 
@@ -648,10 +677,12 @@ export function PartnerClient({
     setListPage(1);
     const nextFilter: VorgangFilter = opts?.declined ? "erledigt" : "auftrag";
     setVorgangListFilter(nextFilter);
-    if (opts?.declined) {
-      setVorgaengeState((prev) =>
-        prev.map((v) => {
-          if (v.id !== vorgangId && v.anfrage?.id !== vorgangId) return v;
+
+    const nowIso = new Date().toISOString();
+    setVorgaengeState((prev) =>
+      prev.map((v) => {
+        if (v.id !== vorgangId && v.anfrage?.id !== vorgangId) return v;
+        if (opts?.declined) {
           return {
             ...v,
             state: "abgelehnt",
@@ -659,9 +690,36 @@ export function PartnerClient({
               ? { ...v.anfrage, status: "abgelehnt" }
               : v.anfrage,
           };
-        })
-      );
-    }
+        }
+        // Sofort sichtbar unter „Auftrag“ — sonst bleibt state „neu“ bis RSC-Refresh
+        // und die Liste wirkt leer, bis der Nutzer die Seite neu lädt.
+        pendingAcceptIdsRef.current.add(vorgangId);
+        if (v.anfrage?.id) pendingAcceptIdsRef.current.add(v.anfrage.id);
+        pendingAcceptIdsRef.current.add(v.auftrag.id);
+        return {
+          ...v,
+          state: "in_bearbeitung",
+          handwerker_bestaetigt_at: v.handwerker_bestaetigt_at || nowIso,
+          auftrag: {
+            ...v.auftrag,
+            handwerker_bestaetigt_at:
+              v.auftrag.handwerker_bestaetigt_at || nowIso,
+            hwStatus:
+              (v.auftrag.hwStatus ?? "").trim().toLowerCase() === "abgelehnt"
+                ? v.auftrag.hwStatus
+                : "akzeptiert",
+          },
+          anfrage: v.anfrage
+            ? {
+                ...v.anfrage,
+                status: "akzeptiert",
+                bestaetigt_at: v.anfrage.bestaetigt_at || nowIso,
+              }
+            : v.anfrage,
+        };
+      })
+    );
+
     flushSync(() => {
       setSelectedId(null);
     });
@@ -670,7 +728,8 @@ export function PartnerClient({
         ? `/partner?section=vorgaenge&filter=erledigt`
         : `/partner?section=vorgaenge&filter=auftrag`
     );
-    refreshFlash();
+    // Volle RSC-Aktualisierung (mit Busy) — nicht nur flash+fire-and-forget
+    void refresh();
   }
 
   function switchSection(id: PartnerSection, filter: VorgangFilter = "alle") {

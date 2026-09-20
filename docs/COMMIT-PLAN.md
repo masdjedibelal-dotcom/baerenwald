@@ -4,6 +4,147 @@ Belal committed über GitHub Desktop auf **staging**.
 
 ---
 
+## Live-Status: Rechnung-Punkt erledigt — 2026-09-21
+
+**Commit-Text:** `fix(portal): Live-Status Punkt 5 Rechnung als erledigt bei Flow rechnung`
+
+**Befund:** Bei Flow `rechnung` war der 5. Balken nur aktiv, nicht erledigt — analog Mieter-Terminal fehlte der ✓-Zustand.
+
+**Dateien:**
+- `src/lib/portal2/status-mapping.ts` — `portalFlowTimeline`: letzter Schritt done wenn Index ≥ Rechnung
+- `docs/COMMIT-PLAN.md` — dieser Abschnitt
+
+---
+
+## Updates-Cards + HW nicht beim Kunden — 2026-09-21
+
+**Commit-Text:** `fix: Updates-Cards Design/Fotos; HW-Updates nur CRM/HV`
+
+**Befund:**
+- Card-Header als PortalButton (46px) → zerquetscht; Detail-Load ohne BT-Media → keine Bilder
+- Partner setzte `fuer_kunde_freigegeben` + Mieter-Notify → HW-Updates beim Kunden
+
+**Dateien:**
+- `src/components/shared/BautagebuchCardFeed.tsx` — action=false + Card-Klassen
+- `src/app/globals.css` — `.portal-bt-card-head` / `-foto` Höhe auto
+- `src/components/org/OrganisationEingangPanel.tsx` — CardFeed statt Accordion
+- `src/lib/portal/get-portal-data.ts` — Detail lädt BT+Fotos; Kunde filtert handwerker_id
+- `src/app/actions/partner-bautagebuch.ts` — nicht freigeben; kein Kunden-Notify
+- `src/lib/partner/sync-bautagebuch-kunde-timeline.ts` — nur noch HV-Notify
+- `docs/COMMIT-PLAN.md` — dieser Abschnitt
+
+---
+
+## Festgestellte Mängel doppelt — 2026-09-21
+
+**Commit-Text:** `fix: „Festgestellte Mängel“ aus Details (Doppelt zu Mängel)`
+
+**Befund:** Partner-Details zeigten „Festgestellte Mängel“ zusätzlich zu „Mängel“.
+
+**Dateien:**
+- `src/lib/lead-funnel-daten.ts` — Fachdetail-Filter skip festgestellte mängel
+- `src/components/partner/PartnerHausmeisterVorbefundCard.tsx` — gleicher Skip im Vorbefund
+- `docs/COMMIT-PLAN.md` — dieser Abschnitt
+
+---
+
+## Regie → Kunden-Angebot — 2026-09-21
+
+**Commit-Text:** `fix: anerkannte Regie im Kunden-Angebot (Preis + Merge)`
+
+**Befund:**
+- Portal las nur `lohn_fix` — Regie hat `preis_kunde`/`stundensatz` → 0 € / wirkte „nicht da“
+- Angebot-Tab nahm entweder nur Auftrag- oder nur Angebotszeilen (kein Merge)
+
+**Dateien:**
+- `src/lib/portal/kunde-auftrag-aenderung.ts` — Preis aus preis_kunde/stundensatz; Filter in_pruefung/abgelehnt
+- `src/lib/portal/get-portal-data.ts` — Select inkl. preis_kunde, stundensatz, anerkennung_status
+- `src/lib/vorgang/build-vorgang-detail-vm.ts` — Leistungen Angebot+Auftrag mergen
+- `src/components/org/OrganisationHvVorgangDetail.tsx` — Angebot-Tabelle mergen
+- `docs/COMMIT-PLAN.md` — dieser Abschnitt
+
+---
+
+## Freigabeschwelle-Hinweis nur Angebot + gelb — 2026-09-21
+
+**Commit-Text:** `fix: Freigabe-Info nur Angebotsphase; Warning-Tokens gelb`
+
+**Befund:**
+- Infobox „unter Freigabeschwelle“ blieb auch bei Auftrag sichtbar
+- `--warning-*` Tokens waren rot (#fff5f5 / #c0392b) statt gelb
+
+**Dateien:**
+- `src/components/org/OrganisationHvVorgangDetail.tsx` — Banner nur bei angebot/freigegeben/angefragt
+- `src/components/org/OrganisationEingangPanel.tsx` — Schwelle-/Aktions-Banner aus wenn Auftrag existiert
+- `src/app/globals.css` — `--warning-bg/border/text` auf Gelb/Amber
+- `docs/COMMIT-PLAN.md` — dieser Abschnitt
+
+---
+
+## Start-Sheet + Regie erledigbar — 2026-09-21
+
+**Commit-Text:** `fix: Sheet-Felder nicht quetschen; Regie wie Position erledigbar`
+
+**Befund:**
+- `PortalField` setzte `.portal-field` auf Komposits → Modal `height:46px` zerquetschte Foto/Beschreibung
+- Regie von Bulk-Auswahl und Bulk-Erledigt ausgeschlossen → blockierte Auftrag fertig
+
+**Dateien:**
+- `src/components/shared/PortalField.tsx` — `portal-field` nur auf native Controls
+- `src/app/globals.css` — Modal-Höhe nur input/select; Dropzone im Wrap geschützt
+- `src/components/partner/PartnerPositionLebenszyklusList.tsx` — Regie auswählbar; Sheet-Gap; Erledigt auch aus offen
+- `src/app/actions/partner-position-eintraege.ts` — Bulk inkl. Regie; Soft-Start aus offen
+- `docs/COMMIT-PLAN.md` — dieser Abschnitt
+
+---
+
+## Updates-Liste luftiger — 2026-09-21
+
+**Commit-Text:** `fix: portal-notif-row größer/luftiger (alle Portale)`
+
+**Befund:** Notif-Zeilen als PortalButton (46px) + `portal-text-label` (11.5px) + enges Padding → zu klein/eng.
+
+**Dateien:**
+- `src/app/globals.css` — `.portal-notif-row` Höhe auto, Padding, Body/Meta-Typo
+- `src/components/portal/PortalNotificationBell.tsx` — globale Klassen; Titel „Updates“; `action={false}`
+- `docs/COMMIT-PLAN.md` — dieser Abschnitt
+
+---
+
+## Foto-Dropzone global größer — 2026-09-21
+
+**Commit-Text:** `fix: portal-file-upload global (MultiFoto/Kamera/FileUpload)`
+
+**Befund:** Nachtrag/Regie nutzte `PartnerMultiFotoSlot` ohne `.portal-file-upload` → PortalButton quetschte auf 46px.
+
+**Dateien:**
+- `src/app/globals.css` — `.portal-file-upload` min-height 10rem (compact 8rem); Icon-Größe
+- `src/components/partner/PartnerMultiFotoSlot.tsx` — Klasse + `action={false}`
+- `src/components/partner/PartnerDirektKameraSlot.tsx` — dito
+- `src/components/shared/FileUploadField.tsx` — Kommentar (nutzte Klasse schon)
+- `src/components/shared/PortalDokumentUi.tsx` — `PortalDokumentUploadZone` → `.portal-file-upload`
+- `docs/COMMIT-PLAN.md` — dieser Abschnitt
+
+---
+
+## Partner Annehmen → Vorgänge sofort — 2026-09-21
+
+**Commit-Text:** `fix: Partner Annehmen sofort unter Auftrag; force-dynamic; Titel-Slugs`
+
+**Befund:** Nach Annehmen Filter „Auftrag“, lokaler State blieb „neu“ → Liste leer bis Hard-Refresh. `/partner` ohne `force-dynamic`. Titel `fenster_tuer — …` als Platzhalter nicht erkannt.
+
+**Dateien:**
+- `src/app/partner/page.tsx` — `dynamic = force-dynamic`
+- `src/components/partner/PartnerClient.tsx` — optimistischer State `in_bearbeitung` + pending-Accept gegen RSC-Rollback; `refresh()` statt nur flash
+- `src/components/portal/PortalClient.tsx` — Annehmen/HV-Feedback: `refresh()` (sichtbarer Busy)
+- `src/lib/crm-vorgang/vorgang-anzeige-titel.ts` — Placeholder auch bei `slug — Rest`
+- `src/lib/partner/partner-listen-titel.ts` — Gewerk-Slugs → `BEREICH_LABELS`
+- `docs/COMMIT-PLAN.md` — dieser Abschnitt
+
+**Weitere Portale (Muster):** nach Statuswechsel immer `usePortalRefresh().refresh()` (nicht nur `router.refresh` still) + wo Filter wechselt, lokalen Listen-State mitziehen.
+
+---
+
 ## Datei-Dropzone Höhe — 2026-09-21
 
 **Commit-Text:** `fix: FileUploadField Dropzone nicht mehr auf 46px quetschen`

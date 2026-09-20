@@ -18,7 +18,7 @@ import { OrgFreigabeBanner } from "@/components/org/OrgFreigabeBanner";
 import { OrgMeldungAktionBanner } from "@/components/org/OrgMeldungAktionBanner";
 import { HvFreigabeInfoBanner } from "@/components/org/HvFreigabeInfoBanner";
 import { HvMeldungListActions } from "@/components/org/HvMeldungListActions";
-import { BautagebuchAccordionList } from "@/components/shared/BautagebuchAccordionList";
+import { BautagebuchCardFeed } from "@/components/shared/BautagebuchCardFeed";
 import { DokumenteTabelle } from "@/components/shared/DokumenteTabelle";
 import { VorgangDetailBlocks } from "@/components/shared/vorgang-detail";
 import {
@@ -286,7 +286,7 @@ function MeldungDetail({
         </div>
       ) : null}
 
-      {!wartetOrgFreigabe && freigabeInfoKind === "schwelle" ? (
+      {!auftragId && !wartetOrgFreigabe && freigabeInfoKind === "schwelle" ? (
         <div className="mb-4">
           <HvFreigabeInfoBanner
             kind="schwelle"
@@ -303,7 +303,7 @@ function MeldungDetail({
         </div>
       ) : null}
 
-      {!wartetOrgFreigabe ? (
+      {!auftragId && !wartetOrgFreigabe ? (
         <OrgMeldungAktionBanner
           lead={lead}
           kunde={kunde}
@@ -383,7 +383,7 @@ function MeldungDetail({
       ) : null}
 
       {bautagebuchEintraege && bautagebuchEintraege.length > 0 ? (
-        <BautagebuchAccordionList
+        <BautagebuchCardFeed
           heading="Updates"
           className="!border-t-0 !pt-0"
           headerAction={

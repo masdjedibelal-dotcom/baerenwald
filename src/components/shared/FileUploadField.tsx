@@ -18,7 +18,7 @@ type FileUploadFieldProps = {
   selectedFile?: File | null;
   onChange: (files: File[]) => void;
   className?: string;
-  /** Kompakte Dropzone (z. B. Logo, Inline-Slots). */
+  /** Kompakte Dropzone (z. B. Logo, Inline-Slots). Default = globale Foto-/Datei-Zone. */
   size?: "default" | "compact";
 };
 

@@ -5,8 +5,6 @@ import { revalidatePath } from "next/cache";
 
 import { linkPortalHandwerkerToAuthUser } from "@/lib/partner/link-portal-handwerker";
 import { sendPartnerInternalBautagebuchMail } from "@/lib/partner/partner-mail";
-import { notifyHvPartnerBautagebuch } from "@/lib/org/notify-hv-bautagebuch";
-import { notifyMieterBautagebuchEintrag } from "@/lib/melde/notify-mieter-bautagebuch";
 import {
   PARTNER_MAX_BAUTAGEBUCH_ANHAENGE,
   validatePartnerBautagebuchFiles,
@@ -17,7 +15,7 @@ import {
 } from "@/lib/partner/partner-storage";
 import {
   markPartnerBautagebuchAnfrageErledigt,
-  syncPartnerFreiesBautagebuchToKundeTimeline,
+  syncPartnerFreiesBautagebuchToHv,
 } from "@/lib/partner/sync-bautagebuch-kunde-timeline";
 import { createClient } from "@/lib/supabase/server";
 import { isSupabaseConfigured, supabaseAdmin } from "@/lib/supabase";
@@ -106,16 +104,6 @@ export async function createPartnerBautagebuchEintrag(
     fotoPaths = up.paths;
   }
 
-  const {data: auftragRow, error: __dbErr73_1} = await supabaseAdmin
-    .from("auftraege")
-    .select("lead_id, titel")
-    .eq("id", auftragId)
-    .maybeSingle();
-  if (__dbErr73_1) logDbError('app/actions/partner-bautagebuch:auftraege', __dbErr73_1)
-
-  const leadId =
-    auftragRow?.lead_id != null ? String(auftragRow.lead_id).trim() : "";
-
   const { data: inserted, error } = await supabaseAdmin
     .from("auftrag_bautagebuch_eintraege")
     .insert({
@@ -125,7 +113,8 @@ export async function createPartnerBautagebuchEintrag(
       beschreibung,
       datum,
       foto_urls: fotoPaths,
-      fuer_kunde_freigegeben: true,
+      // HW-Updates nur CRM/HV — nie Kundenportal
+      fuer_kunde_freigegeben: false,
     })
     .select("id")
     .single();
@@ -141,7 +130,7 @@ export async function createPartnerBautagebuchEintrag(
     anfrageId,
   });
 
-  await syncPartnerFreiesBautagebuchToKundeTimeline({
+  await syncPartnerFreiesBautagebuchToHv({
     auftragId,
     titel,
     beschreibung: beschreibung || beschreibungRoh,
@@ -173,29 +162,6 @@ export async function createPartnerBautagebuchEintrag(
     });
   } catch (e) {
     console.warn("[partner-bautagebuch] interne Mail:", e);
-  }
-
-  try {
-    await notifyHvPartnerBautagebuch({
-      auftragId,
-      handwerkerName,
-      eintragTitel: titel,
-    });
-  } catch (e) {
-    console.warn("[partner-bautagebuch] HV-Notify:", e);
-  }
-
-  if (leadId) {
-    try {
-      await notifyMieterBautagebuchEintrag({
-        leadId,
-        handwerkerName,
-        eintragTitel: titel,
-        auftragTitel,
-      });
-    } catch (e) {
-      console.warn("[partner-bautagebuch] Mieter-Notify:", e);
-    }
   }
 
   revalidatePath("/partner");

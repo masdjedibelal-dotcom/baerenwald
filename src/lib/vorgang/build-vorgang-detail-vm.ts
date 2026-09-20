@@ -112,6 +112,23 @@ function leistungenFromAuftragDisplay(
   }));
 }
 
+/** primary gewinnt bei gleichem Titel; secondary füllt fehlende (z. B. Regie im Angebot-JSON). */
+function mergeLeistungenByTitle(
+  primary: VorgangLeistungZeile[],
+  secondary: VorgangLeistungZeile[]
+): VorgangLeistungZeile[] {
+  const map = new Map<string, VorgangLeistungZeile>();
+  for (const z of secondary) {
+    const key = z.title.trim().toLowerCase() || z.id;
+    map.set(key, z);
+  }
+  for (const z of primary) {
+    const key = z.title.trim().toLowerCase() || z.id;
+    map.set(key, z);
+  }
+  return Array.from(map.values());
+}
+
 function leistungenFromPartnerKonditionen(
   zeilen: PartnerKonditionZeile[] | undefined
 ): VorgangLeistungZeile[] {
@@ -209,9 +226,9 @@ export function buildKundeHvVorgangDetailVm(
     (FLOW_RECHNUNG.has(flow) || flow === "auftrag") &&
     auftragLeistungen.length > 0;
   const leistungen = preferAuftrag
-    ? auftragLeistungen
+    ? mergeLeistungenByTitle(auftragLeistungen, angebotLeistungen)
     : angebotLeistungen.length > 0
-      ? angebotLeistungen
+      ? mergeLeistungenByTitle(angebotLeistungen, auftragLeistungen)
       : auftragLeistungen;
 
   const pastAnfrage =

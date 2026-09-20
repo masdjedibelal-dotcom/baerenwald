@@ -172,28 +172,29 @@ export function PartnerMultiFotoSlot({
       </p>
 
       {canAdd ? (
-        <PortalButton variant="ghost"
+        <PortalButton
+          variant="ghost"
+          action={false}
           {...zoneProps}
           className={cn(
-            "flex w-full flex-col items-center justify-center gap-2 rounded-sheet border-2 border-dashed px-4 py-8 text-center transition-colors disabled:opacity-60",
-            isDragging
-              ? "border-[var(--p2-primary)] bg-[var(--p2-primary-soft)]"
-              : "border-border-default bg-white hover:bg-[var(--p2-hover)]"
+            "portal-file-upload w-full",
+            isDragging && "portal-file-upload--drag",
+            "disabled:opacity-60"
           )}
         >
           {status === "uploading" ? (
             <span className="inline-flex items-center gap-1.5 text-fs-meta text-text-secondary">
-              <PortalIcon n="loader" ctx="default" className="h-4 w-4 animate-spin" />
+              <PortalIcon n="loader" ctx="default" className="h-5 w-5 animate-spin" />
               {progressLabel ?? "wird vorbereitet…"}
             </span>
           ) : (
             <>
-              <PortalIcon n="photo" ctx="muted" className="h-8 w-8 text-text-secondary" />
-              <span className="text-fs-meta font-semibold text-text-primary">
+              <PortalIcon n="photo" ctx="muted" className="text-text-secondary" />
+              <span className="text-fs-body font-semibold text-text-primary">
                 {ctaLabel}
               </span>
               {!isMobile ? (
-                <span className="text-fs-caption text-text-tertiary">
+                <span className="portal-text-meta text-text-tertiary">
                   Mehrere Dateien gleichzeitig möglich
                 </span>
               ) : null}

@@ -340,7 +340,7 @@ export function PortalClient({
   const searchParams = useSearchParams();
   const embedded = layout === "embedded";
   const { hold, release, flash: flashShellBusy, busy: ctxBusy } = usePortalBusy();
-  const { refreshFlash } = usePortalRefresh();
+  const { refresh, refreshFlash } = usePortalRefresh();
   const detailHoldRef = useRef(false);
 
   const kundeTyp =
@@ -1348,7 +1348,7 @@ export function PortalClient({
         item={selectedItem}
         showAnlassBadge={showAnlassBadge}
         onAccepted={() => {
-          refreshFlash();
+          void refresh();
           void refetchDetailSilent();
         }}
         hwErledigt={hwErledigtByLeadId[selectedLeadId]}
@@ -1388,7 +1388,7 @@ export function PortalClient({
         }
         schwelleEur={kunde.freigabe_schwelle_eur ?? undefined}
         onHvFeedbackSubmitted={() => {
-          refreshFlash();
+          void refresh();
           void refetchDetailSilent();
         }}
         onBack={closeDetail}

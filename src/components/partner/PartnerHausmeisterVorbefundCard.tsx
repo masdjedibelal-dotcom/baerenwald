@@ -89,14 +89,26 @@ function buildChecklist(eintraege: PartnerBefundEintrag[]): {
     (e) => !/^Hausmeister-Vorbefund/i.test(String(e.titel ?? "").trim())
   );
 
+  const dropFestgestellteMaengel = (items: ChecklistItem[]): ChecklistItem[] => {
+    const hasMaengel = items.some((i) =>
+      /^m(ä|ae)ngel$/i.test(i.titel.trim())
+    );
+    if (!hasMaengel) return items;
+    return items.filter(
+      (i) => !/^festgestellte\s+m(ä|ae)ngel\b/i.test(i.titel.trim())
+    );
+  };
+
   if (points.length) {
     return {
-      items: points.map((e) => ({
-        key: e.id,
-        titel: String(e.titel ?? "").trim() || "Prüfpunkt",
-        notiz: String(e.beschreibung ?? "").trim(),
-        fotos: fotoList(e),
-      })),
+      items: dropFestgestellteMaengel(
+        points.map((e) => ({
+          key: e.id,
+          titel: String(e.titel ?? "").trim() || "Prüfpunkt",
+          notiz: String(e.beschreibung ?? "").trim(),
+          fotos: fotoList(e),
+        }))
+      ),
       sharedFotos: [],
     };
   }
@@ -107,7 +119,10 @@ function buildChecklist(eintraege: PartnerBefundEintrag[]): {
     out.push(...parseAggregateLines(String(e.beschreibung ?? ""), e.id));
     shared.push(...fotoList(e));
   }
-  return { items: out, sharedFotos: Array.from(new Set(shared)) };
+  return {
+    items: dropFestgestellteMaengel(out),
+    sharedFotos: Array.from(new Set(shared)),
+  };
 }
 
 /**
