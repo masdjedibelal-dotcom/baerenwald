@@ -1,3 +1,4 @@
+import { logDbError } from '@/lib/errors/log-db-error'
 import { NextResponse } from "next/server";
 
 import { assertOrgObjekt, requireOrgWrite } from "@/lib/org/assert-org-objekt";
@@ -76,12 +77,13 @@ export async function POST(req: Request) {
   const einheitId = body.einheitId?.trim() || null;
 
   if (einheitId) {
-    const { data: u } = await supabaseAdmin
+    const {data: u, error: __dbErr217_1} = await supabaseAdmin
       .from("objekt_einheiten")
       .select("id, bezeichnung, kunde_objekt_id")
       .eq("id", einheitId)
       .eq("kunde_objekt_id", objektId)
       .maybeSingle();
+    if (__dbErr217_1) logDbError('app/api/org/portal-einladungen/route:objekt_einheiten', __dbErr217_1)
     if (!u) {
       return NextResponse.json({ error: "Einheit nicht gefunden." }, { status: 404 });
     }

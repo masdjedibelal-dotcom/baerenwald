@@ -2,7 +2,6 @@
 
 import {
   acceptKundeAngebot,
-  rejectKundeAngebot,
 } from "@/app/actions/portal-angebot";
 import { acceptKundeAuftragAenderungen } from "@/app/actions/portal-auftrag";
 import { track } from "@/lib/analytics";
@@ -42,6 +41,12 @@ export async function runPortalDashboardInlineAction(input: {
 
     case "hv_angebot_freigabe": {
       const aktion = buttonId as "freigegeben" | "abgelehnt";
+      if (aktion === "abgelehnt") {
+        return {
+          ok: false,
+          error: "Bitte im Vorgang ablehnen.",
+        };
+      }
       const res = await fetch("/api/org/freigabe", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -52,8 +57,7 @@ export async function runPortalDashboardInlineAction(input: {
         return { ok: false, error: json.error ?? "Aktion fehlgeschlagen." };
       }
       track.orgFreigabe(aktion);
-      if (aktion === "freigegeben") orgPortalToast.freigegeben();
-      else orgPortalToast.freigabeAbgelehnt();
+      orgPortalToast.freigegeben();
       return { ok: true };
     }
 
@@ -66,10 +70,10 @@ export async function runPortalDashboardInlineAction(input: {
         return { ok: true };
       }
       if (buttonId === "ablehnen") {
-        const res = await rejectKundeAngebot(angebotId);
-        if (!res.ok) return { ok: false, error: res.error };
-        kundePortalToast.angebotAbgelehnt();
-        return { ok: true };
+        return {
+          ok: false,
+          error: "Bitte im Vorgang ablehnen.",
+        };
       }
       return { ok: false, error: "Unbekannte Aktion." };
     }

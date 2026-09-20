@@ -11,6 +11,7 @@ import {
 } from "@/lib/portal2/eigentuemer";
 import type { OrganisationObjekt } from "@/lib/org/types";
 import { isSupabaseConfigured, supabaseAdmin } from "@/lib/supabase";
+import { logDbError } from "@/lib/errors/log-db-error";
 
 export type EigentuemerPortalObjekt = Pick<
   OrganisationObjekt,
@@ -68,6 +69,7 @@ async function loadMieterByObjektIds(
     .from("objekt_einheiten")
     .select("id, bezeichnung, kunde_objekt_id")
     .in("kunde_objekt_id", objektIds);
+  if (ehErr) logDbError('lib/portal/get-eigentuemer-portal-data:objekt_einheiten', ehErr)
 
   if (ehErr || !einheiten?.length) {
     if (ehErr) {
@@ -203,12 +205,12 @@ async function loadEinheitenForEigentuemerPortal(
     return { einheiten: [], objektIdsFromEinheiten: [] };
   }
 
-  const { data: einheitRows } = await supabaseAdmin
+  const {data: einheitRows, error: __dbErr426_1} = await supabaseAdmin
     .from("objekt_einheiten")
     .select("id, bezeichnung, etage, wohnflaeche_m2, kunde_objekt_id")
     .in("id", einheitIds)
     .eq("aktiv", true);
-
+  if (__dbErr426_1) logDbError('lib/portal/get-eigentuemer-portal-data:objekt_einheiten', __dbErr426_1)
   const objektIds = Array.from(
     new Set(
       (einheitRows ?? [])
@@ -227,10 +229,11 @@ async function loadEinheitenForEigentuemerPortal(
     }
   >();
   if (objektIds.length) {
-    const { data: objs } = await supabaseAdmin
+    const {data: objs, error: __dbErr427_2} = await supabaseAdmin
       .from("kunden_objekte")
       .select("id, titel, strasse, hausnummer, plz, ort, kunde_id")
       .in("id", objektIds);
+    if (__dbErr427_2) logDbError('lib/portal/get-eigentuemer-portal-data:kunden_objekte', __dbErr427_2)
     for (const o of objs ?? []) {
       const strasse = [o.strasse, o.hausnummer]
         .map((x) => String(x ?? "").trim())
@@ -324,6 +327,7 @@ export async function getEigentuemerPortalData(kundeId: string): Promise<{
     )
     .eq("id", id)
     .maybeSingle();
+  if (kundeErr) logDbError('lib/portal/get-eigentuemer-portal-data:kunden', kundeErr)
 
   let kundeRow = (!kundeErr ? kundePrimary : null) as {
     id: string;
@@ -339,13 +343,14 @@ export async function getEigentuemerPortalData(kundeId: string): Promise<{
   } | null;
 
   if (kundeErr || !kundeRow) {
-    const { data: fallback } = await supabaseAdmin
+    const {data: fallback, error: __dbErr428_3} = await supabaseAdmin
       .from("kunden")
       .select(
         "id, name, email, plz, ort, adresse, auth_user_id, portal_modus, freigabe_schwelle_eur"
       )
       .eq("id", id)
       .maybeSingle();
+    if (__dbErr428_3) logDbError('lib/portal/get-eigentuemer-portal-data:kunden', __dbErr428_3)
     if (!fallback) return null;
     kundeRow = {
       ...(fallback as NonNullable<typeof kundeRow>),
@@ -366,6 +371,7 @@ export async function getEigentuemerPortalData(kundeId: string): Promise<{
     .from("eigentuemer_objekte")
     .select("kunde_objekt_id")
     .eq("kunde_id", id);
+  if (zuordErr) logDbError('lib/portal/get-eigentuemer-portal-data:eigentuemer_objekte', zuordErr)
 
   if (zuordErr) {
     console.warn(
@@ -391,19 +397,22 @@ export async function getEigentuemerPortalData(kundeId: string): Promise<{
   if (objektIdsFromEinheiten.length) {
     void import("@/lib/org/org-eigentuemer").then(
       ({ syncEigentuemerObjekteForPortalKunde }) =>
-        syncEigentuemerObjekteForPortalKunde(id).catch(() => {})
+        syncEigentuemerObjekteForPortalKunde(id).catch((e) => {
+          logDbError("getEigentuemerPortalData:syncObjekte", e);
+        })
     );
   }
 
   let objekte: EigentuemerPortalObjekt[] = [];
   if (objektIds.length) {
-    const { data: objRows } = await supabaseAdmin
+    const {data: objRows, error: __dbErr429_4} = await supabaseAdmin
       .from("kunden_objekte")
       .select(
         "id, kunde_id, titel, strasse, hausnummer, plz, ort, einheiten_hinweis, notizen_intern, freigabe_schwelle_eur, created_at, cover_url"
       )
       .in("id", objektIds)
       .order("titel", { ascending: true });
+    if (__dbErr429_4) logDbError('lib/portal/get-eigentuemer-portal-data:kunden_objekte', __dbErr429_4)
     objekte = (objRows ?? []) as EigentuemerPortalObjekt[];
   }
 
@@ -464,6 +473,7 @@ export async function getEigentuemerPortalData(kundeId: string): Promise<{
     .in("kunde_objekt_id", objektIds)
     .is("geloescht_am", null)
     .order("created_at", { ascending: false });
+  if (leadErr) logDbError('lib/portal/get-eigentuemer-portal-data:leads', leadErr)
 
   const mapLead = (raw: LeadRow, freigabe: string | null): LeadRow => ({
     ...raw,
@@ -554,12 +564,13 @@ export async function getEigentuemerPortalData(kundeId: string): Promise<{
     .filter((lid) => !coveredAng.has(lid));
 
   if (missingLeadIds.length) {
-    const { data: angExtra } = await supabaseAdmin
+    const {data: angExtra, error: __dbErr430_5} = await supabaseAdmin
       .from("angebote")
       .select(
         "id, angebotsnr, lead_id, kunde_objekt_id, status_einfach, gesamt_fix, gesamt_min, gesamt_max, gueltig_bis, leistungsumfang, notizen, positionen, created_at, gesendet_am, pdf_url"
       )
       .in("lead_id", missingLeadIds);
+    if (__dbErr430_5) logDbError('lib/portal/get-eigentuemer-portal-data:angebote', __dbErr430_5)
     for (const a of angExtra ?? []) {
       const lid = String((a as { lead_id: string }).lead_id);
       const lead = byId.get(lid);
@@ -584,12 +595,13 @@ export async function getEigentuemerPortalData(kundeId: string): Promise<{
     );
     const missingAuf = missingLeadIds.filter((lid) => !coveredAuf.has(lid));
     if (missingAuf.length) {
-      const { data: aufExtra } = await supabaseAdmin
+      const {data: aufExtra, error: __dbErr431_6} = await supabaseAdmin
         .from("auftraege")
         .select(
           "id, titel, status, fortschritt, start_datum, end_datum, created_at, lead_id, angebot_id"
         )
         .in("lead_id", missingAuf);
+      if (__dbErr431_6) logDbError('lib/portal/get-eigentuemer-portal-data:auftraege', __dbErr431_6)
       for (const a of aufExtra ?? []) {
         const lid = String((a as { lead_id: string }).lead_id);
         const lead = byId.get(lid);

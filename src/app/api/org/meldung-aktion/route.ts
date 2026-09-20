@@ -1,3 +1,4 @@
+import { logDbError } from '@/lib/errors/log-db-error'
 import { NextResponse } from "next/server";
 
 import { canOfferKleinreparatur } from "@/lib/org/hv-meldung-workflow";
@@ -10,6 +11,8 @@ import {
 } from "@/lib/org/objekt-hausmeister";
 import { requireOrganisationSession } from "@/lib/org/require-org-session";
 import { requireOrgWrite } from "@/lib/org/assert-org-objekt";
+import { buildSubject } from "@/lib/shared-domain/build-subject";
+import { htmlToPlainText } from "@/lib/shared-domain/html-to-plain-text";
 import { supabaseAdmin } from "@/lib/supabase";
 import { isValidEmail } from "@/lib/validation";
 import { Resend } from "resend";
@@ -59,14 +62,14 @@ export async function POST(req: Request) {
   }
 
   const orgId = session.kunde.id;
-  const { data: lead } = await supabaseAdmin
+  const {data: lead, error: __dbErr192_1} = await supabaseAdmin
     .from("leads")
     .select(
       "id, auftraggeber_kunde_id, kunde_objekt_id, hv_meldung_status, anlass, preis_max, preis_unsicher, melder_name, melder_email, funnel_daten, org_freigabe_status, freigabe_bypass_grund"
     )
     .eq("id", leadId)
     .maybeSingle();
-
+  if (__dbErr192_1) logDbError('app/api/org/meldung-aktion/route:leads', __dbErr192_1)
   if (!lead || lead.auftraggeber_kunde_id !== orgId) {
     return NextResponse.json({ error: "Meldung nicht gefunden." }, { status: 404 });
   }
@@ -124,12 +127,14 @@ export async function POST(req: Request) {
         versicherungsakte_pdf_url: null,
       })
       .eq("id", leadId);
+    if (updErr) logDbError('app/api/org/meldung-aktion/route:leads', updErr)
     if (updErr) {
       if (/versicherungsakte_pdf_url/i.test(updErr.message)) {
         const { error: retryErr } = await supabaseAdmin
           .from("leads")
           .update({ hv_meldung_status: "hm_pruefung" })
           .eq("id", leadId);
+        if (retryErr) logDbError('app/api/org/meldung-aktion/route:leads', retryErr)
         if (retryErr) {
           return NextResponse.json({ error: retryErr.message }, { status: 500 });
         }
@@ -235,6 +240,7 @@ export async function POST(req: Request) {
       .from("leads")
       .update({ hv_meldung_status: "angebot_eingefordert" })
       .eq("id", leadId);
+    if (updErr) logDbError('app/api/org/meldung-aktion/route:leads', updErr)
     if (updErr) {
       return NextResponse.json({ error: updErr.message }, { status: 500 });
     }
@@ -323,6 +329,7 @@ export async function POST(req: Request) {
     .from("leads")
     .update(patch)
     .eq("id", leadId);
+  if (updErr) logDbError('app/api/org/meldung-aktion/route:leads', updErr)
   if (updErr) {
     return NextResponse.json({ error: updErr.message }, { status: 500 });
   }
@@ -351,11 +358,12 @@ export async function POST(req: Request) {
 
   let objektTitel = "Objekt";
   if (lead.kunde_objekt_id) {
-    const { data: obj } = await supabaseAdmin
+    const {data: obj, error: __dbErr193_2} = await supabaseAdmin
       .from("kunden_objekte")
       .select("titel")
       .eq("id", lead.kunde_objekt_id)
       .maybeSingle();
+    if (__dbErr193_2) logDbError('app/api/org/meldung-aktion/route:kunden_objekte', __dbErr193_2)
     objektTitel = String(obj?.titel ?? "Objekt");
   }
 
@@ -376,15 +384,20 @@ export async function POST(req: Request) {
     const portalPath = `/portal?section=vorgaenge&id=${encodeURIComponent(leadId)}`;
     try {
       const resend = new Resend(resendKey);
+      const html = `<p>Kleinreparatur für <strong>${objektTitel}</strong>${
+        lead.melder_name ? ` (${lead.melder_name})` : ""
+      } freigegeben.</p><p><a href="${portalPath}">Zum Vorgang</a></p>`;
       await resend.emails.send({
         from:
           process.env.RESEND_FROM_SYSTEM ??
           "System <system@baerenwaldmuenchen.de>",
         to: orgEmail,
-        subject: `Kleinreparatur — ${objektTitel}`,
-        html: `<p>Kleinreparatur für <strong>${objektTitel}</strong>${
-          lead.melder_name ? ` (${lead.melder_name})` : ""
-        } freigegeben.</p><p><a href="${portalPath}">Zum Vorgang</a></p>`,
+        subject: buildSubject({
+          objekt: objektTitel,
+          ereignis: "Kleinreparatur freigegeben",
+        }),
+        html,
+        text: htmlToPlainText(html),
       });
     } catch (e) {
       console.error("[meldung-aktion] org mail:", e);

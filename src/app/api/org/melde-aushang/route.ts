@@ -1,54 +1,22 @@
-import { readFile } from "fs/promises";
-import path from "path";
-
+import { logDbError } from '@/lib/errors/log-db-error'
 import { NextResponse } from "next/server";
 
 import { SITE_CONFIG } from "@/lib/config";
 import { ensureOrgKennung } from "@/lib/org/ensure-org-kennung";
-import { generateMeldeAushangPdf } from "@/lib/org/generate-melde-aushang-pdf";
 import {
   ORG_MELDE_LEGAL_REQUIRED_ERROR,
   orgMeldeLegalUrlsReady,
 } from "@/lib/org/melde-legal-urls";
 import { buildMeldeUrl, generateMeldeQrPng } from "@/lib/org/melde-url";
 import { requireOrganisationSession } from "@/lib/org/require-org-session";
+import { PDF_UI_ERROR, renderPdfViaCrm } from "@/lib/pdf/render-via-crm";
 import { orgBrandFromKunde } from "@/lib/portal2/brand-presets";
-import {
-  isPortalDefaultMediaUrl,
-  PORTAL_HEADER_HERO_SRC,
-} from "@/lib/portal2/portal-media";
 import { supabaseAdmin } from "@/lib/supabase";
 
 export const runtime = "nodejs";
 
-async function fetchImageBytes(url: string | null | undefined): Promise<Uint8Array | null> {
-  const u = url?.trim();
-  if (!u) return null;
-  try {
-    const res = await fetch(u, { cache: "no-store" });
-    if (!res.ok) return null;
-    return new Uint8Array(await res.arrayBuffer());
-  } catch {
-    return null;
-  }
-}
-
-/** Statisches Bild aus /public (Aushang-Hero-Fallback). */
-async function loadPublicImageBytes(
-  publicPath: string
-): Promise<Uint8Array | null> {
-  try {
-    const rel = publicPath.replace(/^\//, "");
-    const abs = path.join(process.cwd(), "public", rel);
-    return new Uint8Array(await readFile(abs));
-  } catch {
-    return null;
-  }
-}
-
 /**
- * Individualisierter Aushang-PDF (Konzept „Details vereinheitlichen“).
- * Platzhalter aus Org-/Portal-Branding: Name, Farben, Logo, Hero, QR, Melde-URL, Tel, E-Mail.
+ * Individualisierter Aushang-PDF — Auth im Portal, Render im CRM (O5 HTML).
  */
 export async function GET(req: Request) {
   try {
@@ -58,9 +26,11 @@ export async function GET(req: Request) {
     return NextResponse.json(
       {
         error:
-          e instanceof Error
-            ? e.message
-            : "Aushang konnte nicht erzeugt werden.",
+          e instanceof Error && e.message === PDF_UI_ERROR
+            ? PDF_UI_ERROR
+            : e instanceof Error
+              ? e.message
+              : "Aushang konnte nicht erzeugt werden.",
       },
       { status: 500 }
     );
@@ -100,13 +70,13 @@ async function handleMeldeAushangGet(req: Request) {
   let objektAdresse = "";
 
   if (objektId) {
-    const { data: objekt } = await supabaseAdmin
+    const {data: objekt, error: __dbErr190_1} = await supabaseAdmin
       .from("kunden_objekte")
       .select("id, titel, strasse, hausnummer, plz, ort, melde_slug")
       .eq("id", objektId)
       .eq("kunde_id", org.id)
       .maybeSingle();
-
+    if (__dbErr190_1) logDbError('app/api/org/melde-aushang/route:kunden_objekte', __dbErr190_1)
     if (!objekt?.melde_slug) {
       return NextResponse.json(
         { error: "Objekt oder Melde-Link fehlt." },
@@ -129,43 +99,6 @@ async function handleMeldeAushangGet(req: Request) {
     qrPngBytes = null;
   }
 
-  const customHero = (org as { org_hero_url?: string | null }).org_hero_url;
-  const customHeroUrl =
-    customHero?.trim() && !isPortalDefaultMediaUrl(customHero)
-      ? customHero.trim()
-      : null;
-
-  const [logoRaw, customHeroBytes] = await Promise.all([
-    fetchImageBytes(org.org_logo_url ?? brand.logoUrl),
-    fetchImageBytes(customHeroUrl),
-  ]);
-
-  // WebP u. a. → PNG, sonst fehlt das Logo im PDF (pdf-lib)
-  let logoImageBytes = logoRaw;
-  let heroImageBytes: Uint8Array | null = customHeroBytes;
-  try {
-    const { imageBytesToPng } = await import("@/lib/org/aushang-image-png");
-    logoImageBytes = (await imageBytesToPng(logoRaw)) ?? logoRaw;
-    if (customHeroBytes) {
-      heroImageBytes = (await imageBytesToPng(customHeroBytes)) ?? customHeroBytes;
-    }
-  } catch (e) {
-    console.warn("[melde-aushang] Bild-Konvertierung übersprungen:", e);
-  }
-
-  // Eigenes HV-Hero, sonst Portal-Default aus /public — Fallback per URL (Serverless)
-  if (!heroImageBytes?.length) {
-    heroImageBytes = await loadPublicImageBytes(PORTAL_HEADER_HERO_SRC);
-  }
-  if (!heroImageBytes?.length) {
-    const base =
-      process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, "") ||
-      SITE_CONFIG.url?.replace(/\/$/, "") ||
-      "https://baerenwaldmuenchen.de";
-    heroImageBytes = await fetchImageBytes(`${base}${PORTAL_HEADER_HERO_SRC}`);
-  }
-
-  // Mieter-Kontakt bevorzugt (wie Melde-Flow), sonst Org-/Portal-Fallback
   const hvTelefon =
     org.mieter_kontakt_telefon?.trim() ||
     brand.tel ||
@@ -175,22 +108,19 @@ async function handleMeldeAushangGet(req: Request) {
     brand.mail ||
     SITE_CONFIG.email;
 
-  const bytes = await generateMeldeAushangPdf({
+  const logoUrl = (org.org_logo_url ?? brand.logoUrl)?.trim() || null;
+
+  const bytes = await renderPdfViaCrm("aushang", {
     orgName: brand.name,
     orgSub: brand.sub,
-    logoKuerzel: brand.logo,
     primaryColor: brand.primary,
-    primaryColorSoft: brand.soft,
     objektTitel: objektTitel || undefined,
     objektAdresse: objektAdresse || undefined,
     meldeUrl,
     qrPngBytes,
-    logoImageBytes,
-    heroImageBytes,
+    logoUrl,
     hvTelefon,
     hvEmail,
-    impressumUrl: org.impressum_url?.trim() || null,
-    datenschutzUrl: org.datenschutz_url?.trim() || null,
   });
 
   const safeName = (objektTitel || orgKennung)

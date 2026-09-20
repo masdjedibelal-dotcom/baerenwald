@@ -1,7 +1,9 @@
 "use client";
 
 import type { ReactNode } from "react";
+import { PortalButton } from "@/components/portal/PortalButton";
 
+import { PortalCheckbox } from "@/components/shared/PortalFormControls";
 import { OrganisationObjektCover } from "@/components/org/OrganisationObjektCover";
 import type { ObjCardModel } from "@/lib/portal2/objekte";
 import { cn } from "@/lib/utils";
@@ -59,8 +61,7 @@ export function OrganisationObjektCard({
           onClick={(e) => e.stopPropagation()}
           onKeyDown={(e) => e.stopPropagation()}
         >
-          <input
-            type="checkbox"
+          <PortalCheckbox
             checked={selected}
             onChange={() => onToggleSelect()}
             aria-label={`${card.name} auswählen`}
@@ -68,7 +69,8 @@ export function OrganisationObjektCard({
         </label>
       </div>
 
-      <button
+      <PortalButton
+        variant="ghost"
         type="button"
         className="portal-objekt-card-body"
         onClick={onOpen}
@@ -80,7 +82,7 @@ export function OrganisationObjektCard({
             {metaParts.join(" · ")}
           </span>
         ) : null}
-      </button>
+      </PortalButton>
 
       {actions ? (
         <div

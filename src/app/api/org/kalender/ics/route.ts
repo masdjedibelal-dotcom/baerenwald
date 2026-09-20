@@ -1,3 +1,4 @@
+import { logDbError } from '@/lib/errors/log-db-error'
 import { createHash } from "crypto";
 
 import { NextResponse } from "next/server";
@@ -25,13 +26,13 @@ export async function GET(req: Request) {
 
   const tokenHash = createHash("sha256").update(token).digest("hex");
 
-  const { data: feed } = await supabaseAdmin
+  const {data: feed, error: __dbErr184_1} = await supabaseAdmin
     .from("hv_calendar_feeds")
     .select("kunde_id, auth_user_id")
     .eq("token_hash", tokenHash)
     .eq("aktiv", true)
     .maybeSingle();
-
+  if (__dbErr184_1) logDbError('app/api/org/kalender/ics/route:hv_calendar_feeds', __dbErr184_1)
   if (!feed) {
     return new NextResponse("Unauthorized", { status: 401 });
   }
@@ -40,14 +41,14 @@ export async function GET(req: Request) {
   const start = new Date(now.getFullYear(), now.getMonth() - 1, 1).toISOString();
   const end = new Date(now.getFullYear(), now.getMonth() + 6, 0).toISOString();
 
-  const { data: events } = await supabaseAdmin
+  const {data: events, error: __dbErr185_2} = await supabaseAdmin
     .from("v_hv_kalender_events")
     .select("*")
     .eq("kunde_id", feed.kunde_id)
     .gte("event_beginn", start)
     .lte("event_beginn", end)
     .order("event_beginn", { ascending: true });
-
+  if (__dbErr185_2) logDbError('app/api/org/kalender/ics/route:v_hv_kalender_events', __dbErr185_2)
   const lines = [
     "BEGIN:VCALENDAR",
     "VERSION:2.0",

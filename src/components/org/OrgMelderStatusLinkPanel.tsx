@@ -1,6 +1,7 @@
 "use client";
 
 import { orgPortalToast } from "@/lib/shared/portal-toast";
+import { PortalButton } from "@/components/portal/PortalButton";
 
 type Props = {
   statusUrl: string;
@@ -25,12 +26,12 @@ export function OrgMelderStatusLinkPanel({ statusUrl, melderName }: Props) {
           ? `Status-Link · ${melderName.trim()}`
           : "Mieter-Status-Link"}
       </h3>
-      <p className="break-all rounded-lg border border-border-light bg-muted/40 px-3 py-2 font-mono text-xs text-text-primary">
+      <p className="break-all rounded-card border border-border-light bg-muted/40 px-3 py-2 font-mono text-xs text-text-primary">
         {statusUrl}
       </p>
-      <button type="button" className="btn-pill-outline portal-btn-compact" onClick={() => void copy()}>
+      <PortalButton variant="secondary" action={false} compact type="button" className="btn-pill-outline" onClick={() => void copy()}>
         Status-Link kopieren
-      </button>
+      </PortalButton>
     </section>
   );
 }

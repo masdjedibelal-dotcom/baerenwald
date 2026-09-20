@@ -1,3 +1,4 @@
+import { logDbError } from '@/lib/errors/log-db-error'
 import { randomUUID } from "crypto";
 
 import { GPT_VIZ_STORAGE_BUCKET } from "@/lib/gpt-viz/constants";
@@ -55,6 +56,7 @@ export async function loadImageBase64ForClaude(
     const { data, error } = await supabaseAdmin.storage
       .from(GPT_VIZ_STORAGE_BUCKET)
       .download(pathFromUrl);
+    if (error) logDbError('lib/gpt-viz/storage:query', error)
     if (error || !data) {
       throw new Error("Bild konnte nicht aus dem Storage geladen werden.");
     }
@@ -69,6 +71,7 @@ export async function loadImageBase64ForClaude(
     contentType = res.headers.get("content-type") || contentType;
   } else {
     const { data, error } = await supabaseAdmin.storage.from(GPT_VIZ_STORAGE_BUCKET).download(v);
+    if (error) logDbError('lib/gpt-viz/storage:query', error)
     if (error || !data) {
       throw new Error("Bild konnte nicht aus dem Storage geladen werden.");
     }
@@ -109,6 +112,7 @@ export async function uploadGptVizImage(
   const { error } = await supabaseAdmin.storage
     .from(GPT_VIZ_STORAGE_BUCKET)
     .upload(path, buf, { contentType, upsert: false });
+  if (error) logDbError('lib/gpt-viz/storage:query', error)
 
   if (error) return { ok: false, error: error.message };
 
@@ -128,6 +132,7 @@ export async function uploadGptVizPngBuffer(
   const { error } = await supabaseAdmin.storage
     .from(GPT_VIZ_STORAGE_BUCKET)
     .upload(pathKey, buffer, { contentType: "image/png", upsert: false });
+  if (error) logDbError('lib/gpt-viz/storage:query', error)
   if (error) return { ok: false, error: error.message };
   const { data } = supabaseAdmin.storage.from(GPT_VIZ_STORAGE_BUCKET).getPublicUrl(pathKey);
   return { ok: true, path: pathKey, publicUrl: data.publicUrl };
@@ -147,6 +152,7 @@ export async function uploadGptVizFromUrl(
     const { error } = await supabaseAdmin.storage
       .from(GPT_VIZ_STORAGE_BUCKET)
       .upload(path, buf, { contentType, upsert: false });
+    if (error) logDbError('lib/gpt-viz/storage:query', error)
     if (error) return { ok: false, error: error.message };
     const { data } = supabaseAdmin.storage.from(GPT_VIZ_STORAGE_BUCKET).getPublicUrl(path);
     return { ok: true, path, publicUrl: data.publicUrl };

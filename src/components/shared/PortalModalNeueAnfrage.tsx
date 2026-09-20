@@ -1,6 +1,6 @@
 "use client";
 
-import { MockIcon } from "@/components/shared/MockIcon";
+import { PortalIcon } from "@/components/portal/PortalIcon";
 import { PortalModalShell } from "@/components/shared/PortalModalShell";
 import {
   PORTAL_NEUE_ANFRAGE_OPTIONS,
@@ -8,6 +8,7 @@ import {
   PORTAL_NEUE_ANFRAGE_TITLE,
   type PortalNeueAnfrageActionId,
 } from "@/lib/portal2/modal-neue-anfrage";
+import { PortalButton } from "@/components/portal/PortalButton";
 
 export type PortalModalNeueAnfrageProps = {
   open?: boolean;
@@ -49,14 +50,15 @@ export function PortalModalNeueAnfrage({
       ) : null}
       <div className="portal-neue-anfrage-list">
         {options.map((opt) => (
-          <button
+          <PortalButton
+            variant="ghost"
             key={opt.id}
             type="button"
             className="portal-neue-anfrage-option"
             onClick={() => onSelect(opt.id)}
           >
             <span className="portal-neue-anfrage-icon" aria-hidden>
-              <MockIcon
+              <PortalIcon
                 ctx="active"
                 glyph={opt.glyph}
                 size={18}
@@ -69,7 +71,7 @@ export function PortalModalNeueAnfrage({
             <span className="portal-neue-anfrage-chevron" aria-hidden>
               ›
             </span>
-          </button>
+          </PortalButton>
         ))}
       </div>
     </PortalModalShell>

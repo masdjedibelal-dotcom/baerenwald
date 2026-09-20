@@ -170,7 +170,7 @@ export function breadcrumbSchema(
   };
 }
 
-/** Leistungs- & Handwerker-Detailseiten: Startseite → Leistungen (#) → aktuelle Seite */
+/** Leistungs- & Partner-Detailseiten: Startseite → Leistungen (#) → aktuelle Seite */
 export function hubDetailBreadcrumbSchema(
   pageTitle: string,
   pagePath: string

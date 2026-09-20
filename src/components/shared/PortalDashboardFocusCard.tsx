@@ -1,8 +1,8 @@
 "use client";
+import { PortalIcon } from "@/components/portal/PortalIcon";
+import { PortalButton } from "@/components/portal/PortalButton";
 
-import { ChevronRight } from "lucide-react";
 
-import { MockIcon } from "@/components/shared/MockIcon";
 import { cn } from "@/lib/utils";
 
 export type PortalFocusProgress = {
@@ -49,8 +49,8 @@ export function PortalDashboardFocusCard({
   const tone = focus.kickerTone ?? "sand";
   const dot =
     tone === "green"
-      ? "var(--org-primary, var(--p2-primary, #2e7d52))"
-      : "var(--p2-sand, #e8b04b)";
+      ? "var(--org-primary, var(--p2-primary))"
+      : "var(--p2-sand)";
 
   return (
     <article className={cn("portal-dash-focus", className)}>
@@ -64,14 +64,15 @@ export function PortalDashboardFocusCard({
           <span>{focus.kicker}</span>
         </div>
         {focus.onOpen ? (
-          <button
+          <PortalButton
+            variant="ghost"
             type="button"
             className="portal-dash-focus-open"
             onClick={focus.onOpen}
           >
             Öffnen
-            <ChevronRight className="h-4 w-4" aria-hidden />
-          </button>
+            <PortalIcon n="chevron-right" ctx="default" className="h-4 w-4" aria-hidden />
+          </PortalButton>
         ) : null}
       </div>
 
@@ -135,7 +136,8 @@ export function PortalDashboardFocusCard({
       {focus.buttons && focus.buttons.length > 0 ? (
         <div className="portal-dash-focus-actions">
           {focus.buttons.map((btn) => (
-            <button
+            <PortalButton
+              variant="ghost"
               key={btn.label}
               type="button"
               className={cn(
@@ -147,7 +149,7 @@ export function PortalDashboardFocusCard({
               onClick={btn.onClick ?? focus.onOpen}
             >
               {btn.label}
-            </button>
+            </PortalButton>
           ))}
         </div>
       ) : null}
@@ -172,14 +174,14 @@ export function PortalServiceVersprechenStrip({
       </p>
       <div className="portal-dash-sla-metrics">
         <div className="portal-dash-sla-metric">
-          <MockIcon n="zap" ctx="sidebar" size={14} />
+          <PortalIcon n="zap" ctx="sidebar" size={14} />
           <span className="portal-dash-sla-value">4 Std.</span>
           <span className="portal-dash-sla-label">
             bis zur ersten Bearbeitung
           </span>
         </div>
         <div className="portal-dash-sla-metric">
-          <MockIcon n="check" ctx="sidebar" size={14} />
+          <PortalIcon n="check" ctx="sidebar" size={14} />
           <span className="portal-dash-sla-value">6 Tage</span>
           <span className="portal-dash-sla-label">bis zur Erledigung</span>
         </div>

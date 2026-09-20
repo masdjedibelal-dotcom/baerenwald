@@ -1,3 +1,4 @@
+import { PALETTE } from "@/lib/tokens/palette";
 import type { GptVizBauErklaerung } from "@/lib/gpt-viz/types";
 
 export const ZIELBILD_W = 1080;
@@ -8,15 +9,15 @@ export type ZielbildRasterImage = {
   height: number;
 };
 
-const CREAM = "#F7F4EF";
-const CREAM_MID = "#EDE8E0";
-const GREEN_DARK = "#0F2818";
-const GREEN_MID = "#1A3D2B";
-const GREEN_ACCENT = "#2E7D52";
-const GREEN_GLOW = "#3D9966";
-const TEXT_BODY = "#1A2420";
-const TEXT_SOFT = "#4A5C54";
-const WHITE = "#FFFFFF";
+const CREAM = PALETTE.hf7f4ef;
+const CREAM_MID = PALETTE.hede8e0;
+const GREEN_DARK = PALETTE.h0f2818;
+const GREEN_MID = "var(--p2-primary-dk)";
+const GREEN_ACCENT = "var(--p2-primary)";
+const GREEN_GLOW = PALETTE.h3d9966;
+const TEXT_BODY = PALETTE.h1a2420;
+const TEXT_SOFT = "var(--p2-sub)";
+const WHITE = "var(--p2-panel)";
 
 const FONT_SANS = "system-ui, -apple-system, 'Segoe UI', sans-serif";
 const FONT_SERIF = "Georgia, 'Times New Roman', 'Palatino Linotype', serif";
@@ -100,7 +101,7 @@ function drawPhotoFrame(
   ctx.shadowBlur = 20;
   ctx.shadowOffsetY = 6;
   roundRect(ctx, x, y, w, h, radius);
-  ctx.fillStyle = "#E4EAE6";
+  ctx.fillStyle = PALETTE.he4eae6;
   ctx.fill();
   ctx.restore();
 
@@ -148,7 +149,7 @@ function drawBrandFooter(
   ctx.font = `600 19px ${FONT_SANS}`;
   ctx.fillText("Bärenwald", 44 + logoSize + 10, y + 22);
   const bwW = ctx.measureText("Bärenwald").width;
-  ctx.fillStyle = "#C8E6D4";
+  ctx.fillStyle = PALETTE.hc8e6d4;
   ctx.fillText("GPT", 44 + logoSize + 10 + bwW + 4, y + 22);
 
   ctx.fillStyle = "rgba(255,255,255,0.72)";
@@ -271,7 +272,7 @@ export function renderZielbildFeed(
   const bg = ctx.createLinearGradient(0, 0, 0, ZIELBILD_H);
   bg.addColorStop(0, CREAM);
   bg.addColorStop(0.45, CREAM_MID);
-  bg.addColorStop(1, "#E2EBE4");
+  bg.addColorStop(1, PALETTE.he2ebe4);
   ctx.fillStyle = bg;
   ctx.fillRect(0, 0, ZIELBILD_W, ZIELBILD_H);
 

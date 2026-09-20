@@ -1,3 +1,4 @@
+import { logDbError } from '@/lib/errors/log-db-error'
 import { NextResponse } from "next/server";
 
 import { writeAuditEvent } from "@/lib/audit/write-audit-event";
@@ -36,12 +37,12 @@ function parseIsoDate(raw: string | null | undefined): string | null {
 }
 
 async function assertLeadAccess(leadId: string, orgId: string) {
-  const { data: lead } = await supabaseAdmin
+  const {data: lead, error: __dbErr175_1} = await supabaseAdmin
     .from("leads")
     .select(LEAD_SELECT)
     .eq("id", leadId)
     .maybeSingle();
-
+  if (__dbErr175_1) logDbError('app/api/org/freigabe/route:leads', __dbErr175_1)
   if (
     !lead ||
     (lead.auftraggeber_kunde_id !== orgId && lead.kunde_id !== orgId)
@@ -150,6 +151,7 @@ export async function POST(req: Request) {
     .from("leads")
     .update(patch)
     .eq("id", leadId);
+  if (updErr) logDbError('app/api/org/freigabe/route:leads', updErr)
 
   if (updErr) {
     return NextResponse.json({ error: updErr.message }, { status: 500 });
@@ -162,7 +164,7 @@ export async function POST(req: Request) {
         ? "abgelehnt"
         : "beschluss_ausstehend";
 
-  await supabaseAdmin.from("org_freigabe_log").insert({
+  const { error: __dbErr176_2 } = await supabaseAdmin.from("org_freigabe_log").insert({
     lead_id: leadId,
     auftraggeber_kunde_id: orgId,
     aktion: logAktion,
@@ -170,7 +172,7 @@ export async function POST(req: Request) {
     notiz: body.notiz?.trim() || null,
     erstellt_von: "portal",
   });
-
+  if (__dbErr176_2) logDbError('app/api/org/freigabe/route:org_freigabe_log', __dbErr176_2)
   await writeAuditEvent({
     entityType: "lead",
     entityId: leadId,
@@ -236,14 +238,14 @@ export async function POST(req: Request) {
           ? `Freigabe pausiert — Versammlung geplant am ${versammlungAm}.`
           : "Freigabe pausiert — Eigentümerbeschluss erforderlich.");
 
-  await supabaseAdmin.from("lead_timeline").insert({
+  const { error: __dbErr177_3 } = await supabaseAdmin.from("lead_timeline").insert({
     lead_id: leadId,
     typ: "org_freigabe",
     titel: timelineTitel,
     beschreibung: timelineBeschreibung,
     erstellt_von: session.userId,
   });
-
+  if (__dbErr177_3) logDbError('app/api/org/freigabe/route:lead_timeline', __dbErr177_3)
   return NextResponse.json({
     ok: true,
     status: aktion,
@@ -293,6 +295,7 @@ export async function PATCH(req: Request) {
     .from("leads")
     .update(patch)
     .eq("id", leadId);
+  if (updErr) logDbError('app/api/org/freigabe/route:leads', updErr)
 
   if (updErr) {
     return NextResponse.json({ error: updErr.message }, { status: 500 });

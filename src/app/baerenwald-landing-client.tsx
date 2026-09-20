@@ -1,5 +1,5 @@
 "use client";
-
+import { PALETTE } from "@/lib/tokens/palette";
 import Image from "next/image";
 import Link from "next/link";
 import {
@@ -7,6 +7,7 @@ import {
   useState,
   type ReactNode,
 } from "react";
+import { SiteIcon } from "@/components/ui/SiteIcon";
 
 import { BaerenwaldVisionInner } from "@/components/home/BaerenwaldVisionInner";
 import {
@@ -23,6 +24,7 @@ import {
 import { SectionDivider } from "@/components/landing/SectionDividers";
 import { VermittlungSection } from "@/components/home/VermittlungSection";
 import { WarumBaerenwaldScrollSection } from "@/components/landing/WarumBaerenwaldScrollSection";
+import { CTAButton } from "@/components/ui/CTAButton";
 import { MarketingFooter } from "@/components/layout/MarketingFooter";
 import { WaveUnderline } from "@/components/ui/WaveUnderline";
 import { SITE_CONFIG } from "@/lib/config";
@@ -95,7 +97,7 @@ const PROJEKTE: readonly BaerenwaldProjekt[] = [
       "• Sofortige Vor-Ort-Analyse und technische Erstbewertung\n• Dokumentation und strukturierte Fehleraufnahme\n• Koordination eines zertifizierten Meisterbetriebs aus unserem Heizungs- und Sanitärnetzwerk\n• Austausch von Pumpe und Steuerung\n• Entlüftung, Neueinstellung und Wiederinbetriebnahme der Anlage\n• Zentrale Koordination aller beteiligten Gewerke und Abläufe",
     ergebnis:
       "Die Warmwasserversorgung wurde innerhalb von 2 Tagen vollständig wiederhergestellt — mit minimaler Ausfallzeit und nur einem zentralen Ansprechpartner für den Auftraggeber.",
-    placeholderGradient: "linear-gradient(135deg, #1A3D2B, #2E7D52)",
+    placeholderGradient: `linear-gradient(135deg, var(--fl-accent-dark), var(--fl-accent))`,
     placeholderEmoji: "⚡",
   },
   {
@@ -120,7 +122,7 @@ const PROJEKTE: readonly BaerenwaldProjekt[] = [
       "• Sofortiger Notdiensteinsatz und Übernahme der kompletten Baustellenkoordination\n• Aktivierung unseres Partnernetzwerks für kurzfristige Unterstützung\n• Organisation und Durchführung der Abbrucharbeiten\n• Koordination von Entsorgung, Containerlogistik und Baustellenabläufen\n• Sicherstellung der Stromversorgung für Abbruch und Baustellenbetrieb durch unseren Elektropartner-Meisterbetrieb\n• Laufende Abstimmung mit allen beteiligten Gewerken vor Ort",
     ergebnis:
       "Der komplette Abriss konnte trotz kritischer Ausgangslage fristgerecht umgesetzt werden. Entsorgung und Logistik wurden auch während des Engpasses organisiert, sodass die nachfolgenden Gewerke ohne Verzögerung weiterarbeiten konnten.\n\nUmsetzung durch eigene Teams und spezialisierte Meister- und Partnerbetriebe.",
-    placeholderGradient: "linear-gradient(135deg, #2D2520, #5C4033)",
+    placeholderGradient: `linear-gradient(135deg, ${PALETTE.h2d2520}, ${PALETTE.h5c4033})`,
     placeholderEmoji: "🔨",
   },
   {
@@ -142,7 +144,7 @@ const PROJEKTE: readonly BaerenwaldProjekt[] = [
       "Eigene GaLaBau-Mannschaft in unter 2 Stunden disponiert, Vor-Ort-Gefährdungsanalyse durchgeführt und beschädigten Ast fachgerecht mit Sicherungstechnik zurückgeschnitten.",
     ergebnis:
       "Gefahrenquelle am selben Tag beseitigt, Sicherheit sofort wiederhergestellt und Schnittgut vollständig entsorgt inkl. Einsatzdokumentation und Rechnung am Einsatztag.",
-    placeholderGradient: "linear-gradient(135deg, #1A2D3D, #2E5C7D)",
+    placeholderGradient: `linear-gradient(135deg, ${PALETTE.h1a2d3d}, ${PALETTE.h2e5c7d})`,
     placeholderEmoji: "🌳",
   },
   {
@@ -168,7 +170,7 @@ const PROJEKTE: readonly BaerenwaldProjekt[] = [
       "• Technische Analyse der gesamten Dachterrassenkonstruktion inklusive Abstimmung zum zulässigen Aufbaugewicht\n• Entwicklung einer Sonderlösung gemeinsam mit einem spezialisierten Estrich- und Natursteinbetrieb\n• Organisation der Materialförderung per Estrichpumpe bis in den 5. Stock\n• Herstellung eines tragfähigen Spezialaufbaus unter Berücksichtigung der statischen Anforderungen\n• Verarbeitung des Natursteins mit aufwendiger Haftbrücken-Technik: gewaschener Sand wurde in die Haftbrücke eingearbeitet und zusätzlich beidseitig verarbeitet, um Stabilität und dauerhafte Verbindung sicherzustellen\n• Laufende Abstimmung anhand des Statikerberichts zur sicheren Lastverteilung auf der Dachterrasse\n• Koordination aller beteiligten Gewerke bis zur finalen Fertigstellung",
     ergebnis:
       "Der komplette Naturstein konnte trotz der schwierigen Rahmenbedingungen vollständig verbaut werden — ohne Materialverlust und ohne massive Zusatzkosten. Die technisch anspruchsvolle Dachterrasse wurde statisch sicher umgesetzt und erfolgreich abgeschlossen. Die finale Ausführung und Übergabe erfolgte auf sehr hohem Niveau im Bereich Garten- und Landschaftsbau.",
-    placeholderGradient: "linear-gradient(135deg, #1A3D2B, #4A7D2E)",
+    placeholderGradient: `linear-gradient(135deg, var(--fl-accent-dark), ${PALETTE.h4a7d2e})`,
     placeholderEmoji: "🌿",
   },
   {
@@ -192,7 +194,7 @@ const PROJEKTE: readonly BaerenwaldProjekt[] = [
       "• Vorbereitung und Kontrolle der Holzoberflächen\n• Fachgerechte Reinigung der Terrassen- und Stegbereiche\n• Natürliche Behandlung mit biologischem Osmoholz-Öl\n• Gleichmäßige und sorgfältige Einarbeitung des Öls\n• Schutz und Pflege der Holzoberflächen für langfristige Werterhaltung\n• Abstimmung auf die bestehende Garten- und Poollandschaft",
     ergebnis:
       "Die Behandlung wurde vollständig durch das eigene Team von Bärenwald Garten- und Landschaftsbau ausgeführt. Durch die natürliche Ölbehandlung konnten die Holzoberflächen nachhaltig geschützt, optisch aufgewertet und optimal auf die Anforderungen im Außenbereich abgestimmt werden. Das Ergebnis fügt sich harmonisch in die hochwertige Garten- und Naturpoollandschaft ein und unterstützt den langfristigen Werterhalt der Anlage.\n\n✓ Ausgeführt durch eigenes Gewerk – Bärenwald Garten- und Landschaftsbau 🌿",
-    placeholderGradient: "linear-gradient(135deg, #1B2E1F, #3D6B45)",
+    placeholderGradient: `linear-gradient(135deg, ${PALETTE.h1b2e1f}, ${PALETTE.h3d6b45})`,
     placeholderEmoji: "🪵",
   },
   {
@@ -217,7 +219,7 @@ const PROJEKTE: readonly BaerenwaldProjekt[] = [
       "• Wartung der Fußbodenheizung und Heizkreisverteiler\n• Kontrolle der Heizkreispumpen und Temperaturregelung\n• Prüfung von Druck, Ventilen und Sicherheitsbauteilen\n• Überprüfung der Smart-Home-Heizungssteuerung\n• Wartung der Wasserenthärtungsanlage\n• Kontrolle und Instandsetzung von Sanitärarmaturen\n• Funktionsprüfung der gesamten Heizungs- und Sanitärtechnik\n• Fachgerechter Austausch einzelner Sanitärkomponenten",
     ergebnis:
       "Alle Arbeiten wurden professionell, sauber und zuverlässig durch die Meister Sanitär Partnerfirma umgesetzt. Die gesamte Anlage funktioniert wieder einwandfrei und wurde technisch geprüft übergeben.",
-    placeholderGradient: "linear-gradient(135deg, #1A2838, #2E4A66)",
+    placeholderGradient: `linear-gradient(135deg, ${PALETTE.h1a2838}, ${PALETTE.h2e4a66})`,
     placeholderEmoji: "🔧",
   },
   {
@@ -240,7 +242,7 @@ const PROJEKTE: readonly BaerenwaldProjekt[] = [
       "Durchgeführt wurden unter anderem:\n\n• Absperren der Wasserzufuhr\n• Ausbau der defekten Thermostat-Kartuschen\n• Demontage und Zerlegung der Unterputz-Armatur\n• Einbau und Justierung neuer Kartuschen\n• Funktions- und Dichtheitsprüfung\n• Wiederinbetriebnahme der Duschanlage",
     ergebnis:
       "Dank der schnellen Koordination durch Bärenwald und der fachgerechten Umsetzung durch den Partner-Meisterbetrieb konnte der Sanitärbereich kurzfristig wieder sicher genutzt werden.\n\nDer Kindergartenbetrieb war dadurch schnell wieder abgesichert und einsatzbereit.\n\nKoordiniert durch Bärenwald München · Umsetzung durch spezialisierten Partner-Meisterbetrieb.",
-    placeholderGradient: "linear-gradient(135deg, #1A3D2B, #2E6B8F)",
+    placeholderGradient: `linear-gradient(135deg, var(--fl-accent-dark), ${PALETTE.h2e6b8f})`,
     placeholderEmoji: "🚿",
   },
   {
@@ -268,7 +270,7 @@ const PROJEKTE: readonly BaerenwaldProjekt[] = [
       "Leistungsumfang:\n\n• Komplette Entkernung und Rückbau\n• Neuinstallation Sanitär- und Abwasserleitungen\n• Elektro-Neuinstallation inklusive Unterverteilung\n• LED-Beleuchtung und Deckenspots\n• Geberit-Unterputzsysteme\n• Feuchtraum-Trockenbau und Abdichtung\n• Estrich- und Fliesenarbeiten\n• Montage von Dusche, WC, Waschtisch und Badmöbeln\n• Installation elektrischer Fußbodenheizung\n• Endmontage, Funktionsprüfung und Übergabe",
     ergebnis:
       "Alle Arbeiten wurden professionell koordiniert und durch eigene Fachkräfte sowie Partner-Meisterbetriebe umgesetzt. Das Ergebnis ist ein modernes, hochwertiges Badezimmer mit aktueller Sanitär- und Elektrotechnik.",
-    placeholderGradient: "linear-gradient(135deg, #1A2D36, #2D5A6E)",
+    placeholderGradient: `linear-gradient(135deg, ${PALETTE.h1a2d36}, ${PALETTE.h2d5a6e})`,
     placeholderEmoji: "🛁",
   },
   {
@@ -291,7 +293,7 @@ const PROJEKTE: readonly BaerenwaldProjekt[] = [
       "• Sofortige technische Aufnahme und Dokumentation vor Ort\n• Koordination mit der zuständigen Hausverwaltung\n• Organisation und Beauftragung eines spezialisierten Meisterpartnerbetriebs\n• Planung und Begleitung des Austauschs der Hebeanlage\n• Koordination der Umsetzung bis zur vollständigen Wiederinbetriebnahme",
     ergebnis:
       "Die neue Hebeanlage wurde kurzfristig umgesetzt, fachgerecht installiert und direkt wieder in Betrieb genommen — zentral koordiniert durch Bärenwald mit minimaler Ausfallzeit und nur einem Ansprechpartner für die Hausverwaltung.",
-    placeholderGradient: "linear-gradient(135deg, #1A2D3D, #3D4D5C)",
+    placeholderGradient: `linear-gradient(135deg, ${PALETTE.h1a2d3d}, ${PALETTE.h3d4d5c})`,
     placeholderEmoji: "⚡",
   },
 ];
@@ -409,14 +411,7 @@ export default function BaerenwaldLandingClient({
           onClick={() => setMobileOpen(true)}
           aria-label="Menü öffnen"
         >
-          <svg width="22" height="22" viewBox="0 0 22 22" fill="none" aria-hidden>
-            <path
-              d="M3 6h16M3 11h16M3 16h16"
-              stroke="currentColor"
-              strokeWidth="1.8"
-              strokeLinecap="round"
-            />
-          </svg>
+          <SiteIcon n="menu" ctx="default" size={22} />
         </button>
       </header>
 
@@ -439,7 +434,7 @@ export default function BaerenwaldLandingClient({
               onClick={closeMobile}
               aria-label="Menü schließen"
             >
-              ✕
+              <SiteIcon n="x" ctx="default" size={18} aria-hidden />
             </button>
           </div>
           <nav className="site-mobile-links" aria-label="Hauptnavigation">
@@ -503,24 +498,24 @@ export default function BaerenwaldLandingClient({
                 Bärenwald bleibt von Anfang bis Ende dabei — Koordination,
                 Handwerk und Umsetzung.
               </p>
-              <div className="hero-cta-row au d5" style={{ marginTop: 28 }}>
-                <Link
+              <div className="hero-actions-row au d5" style={{ marginTop: 28 }}>
+                <CTAButton
+                  bare
+                  tone="hero"
                   href={RECHNER_HREF}
-                  className="btn-hero-cta"
+                  label={CTA.hero}
                   onClick={() =>
                     capturePostHogEvent("cta_rechner_clicked", {
                       location: "hero",
                     })
                   }
-                >
-                  {CTA.hero}
-                </Link>
+                />
                 <p
-                  className="hero-cta-sub"
+                  className="hero-actions-sub"
                   style={{
                     marginTop: 10,
                     fontSize: 13,
-                    color: "var(--fl-muted, #6b7f74)",
+                    color: "var(--fl-muted)",
                   }}
                 >
                   {CTA.heroSub}
@@ -548,13 +543,13 @@ export default function BaerenwaldLandingClient({
         <div className="hero-bottom-round" aria-hidden />
       </section>
 
-      <SectionDivider variant="baum" from="#f7f6f3" to="#2E7D52" />
+      <SectionDivider variant="baum" from="var(--fl-bg)" to="var(--fl-accent)" />
 
       <HowTimelineMotion />
 
       {leistungenSection}
 
-      <SectionDivider variant="hugel" from="#f7f6f3" to="#1A3D2B" />
+      <SectionDivider variant="hugel" from="var(--fl-bg)" to="var(--fl-accent-dark)" />
 
       <WarumBaerenwaldScrollSection />
 
@@ -567,14 +562,14 @@ export default function BaerenwaldLandingClient({
         </div>
       </section>
 
-      <SectionDivider variant="welle" from="#f7f6f3" to="#f7f6f3" />
+      <SectionDivider variant="welle" from="var(--fl-bg)" to="var(--fl-bg)" />
 
       <section className="testimonials-section">
         <div className="inner testimonials-band">
           <h2 className="checks-section-headline fade-up">Kundenstimmen</h2>
           <p
             className="checks-section-tagline fade-up d1"
-            style={{ marginBottom: "32px" }}
+            style={{ marginBottom: 32 }}
           >
             Echte Rückmeldungen aus München und Umgebung.
           </p>
@@ -582,11 +577,11 @@ export default function BaerenwaldLandingClient({
         </div>
       </section>
 
-      <SectionDivider variant="welle" from="#f7f6f3" to="#f7f6f3" />
+      <SectionDivider variant="welle" from="var(--fl-bg)" to="var(--fl-bg)" />
 
       <ProjektGalerie projekte={PROJEKTE} />
 
-      <SectionDivider variant="baum" from="#f7f6f3" to="#2E7D52" />
+      <SectionDivider variant="baum" from="var(--fl-bg)" to="var(--fl-accent)" />
 
       <section
         className="final-cta-section landing-final-cta"
@@ -600,27 +595,28 @@ export default function BaerenwaldLandingClient({
             Preisrahmen in wenigen Minuten — ein Ansprechpartner für die
             Umsetzung.
           </p>
-          <div className="final-cta-btns">
-            <Link
+          <div className="final-cta-actions">
+            <CTAButton
+              bare
+              tone="final"
               href={RECHNER_HREF}
-              className="final-cta-btn-primary btn-primary"
+              label={CTA.final}
+              className="btn-main"
               onClick={() =>
                 capturePostHogEvent("cta_rechner_clicked", {
                   location: "final_cta",
                 })
               }
-            >
-              {CTA.final}
-            </Link>
-            <a
+            />
+            <CTAButton
+              bare
+              tone="final-ghost"
               href={SITE_CONFIG.phoneHref}
-              className="final-cta-btn-ghost"
+              label={`${SITE_CONFIG.phone} anrufen`}
               onClick={() =>
                 capturePostHogEvent("cta_phone_clicked", { location: "final_cta" })
               }
-            >
-              {SITE_CONFIG.phone} anrufen
-            </a>
+            />
           </div>
         </div>
       </section>
@@ -645,15 +641,15 @@ export default function BaerenwaldLandingClient({
             })}
           </div>
           <div className="fade-up d3 faq-inner-follow-up">
-            <p className="how-tl-sub" style={{ marginTop: "20px" }}>
+            <p className="how-tl-sub" style={{ marginTop: 20 }}>
               <a href="/ratgeber/generalunternehmer-vs-einzelhandwerker-muenchen">
                 Generalunternehmer vs. Einzelhandwerker — Ratgeber lesen →
               </a>
             </p>
-            <p className="how-tl-sub" style={{ marginTop: "28px" }}>
+            <p className="how-tl-sub" style={{ marginTop: 28 }}>
               Nicht dabei? Ruf uns an — wir helfen persönlich weiter.
             </p>
-            <div style={{ marginTop: "20px", display: "flex", flexWrap: "wrap", gap: "10px", alignItems: "center" }}>
+            <div style={{ marginTop: 20, display: "flex", flexWrap: "wrap", gap: 10, alignItems: "center" }}>
               <a
                 href={SITE_CONFIG.phoneHref}
                 className="btn-cta"
@@ -668,7 +664,7 @@ export default function BaerenwaldLandingClient({
         </div>
       </section>
 
-      <SectionDivider variant="welle" from="#f7f6f3" to="#ffffff" />
+      <SectionDivider variant="welle" from="var(--fl-bg)" to="var(--fl-panel)" />
 
       <VermittlungSection />
 

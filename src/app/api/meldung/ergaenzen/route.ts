@@ -1,3 +1,4 @@
+import { logDbError } from '@/lib/errors/log-db-error'
 import { NextResponse } from "next/server";
 
 import { findKundeIdByEmail } from "@/lib/kunden/kunde-email";
@@ -97,6 +98,7 @@ export async function POST(req: Request) {
       })
       .select("id")
       .single();
+    if (error) logDbError('app/api/meldung/ergaenzen/route:kunden', error)
     if (error) {
       console.error("[ergaenzen] kunde:", error.message);
       return NextResponse.json({ error: "Speichern fehlgeschlagen." }, { status: 500 });
@@ -110,11 +112,12 @@ export async function POST(req: Request) {
 
   let plz = "80331";
   if (ctx.lead.kunde_objekt_id) {
-    const { data: objPlz } = await supabaseAdmin
+    const {data: objPlz, error: __dbErr156_1} = await supabaseAdmin
       .from("kunden_objekte")
       .select("plz")
       .eq("id", ctx.lead.kunde_objekt_id)
       .maybeSingle();
+    if (__dbErr156_1) logDbError('app/api/meldung/ergaenzen/route:kunden_objekte', __dbErr156_1)
     if (objPlz?.plz) plz = String(objPlz.plz);
   }
 
@@ -166,6 +169,7 @@ export async function POST(req: Request) {
       },
     })
     .eq("id", leadId);
+  if (updErr) logDbError('app/api/meldung/ergaenzen/route:leads', updErr)
 
   if (updErr) {
     return NextResponse.json({ error: "Speichern fehlgeschlagen." }, { status: 500 });

@@ -1,7 +1,8 @@
 "use client";
 
+import { PortalIcon } from "@/components/portal/PortalIcon";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { ImageIcon, Loader2, X } from "lucide-react";
+import { PortalButton } from "@/components/portal/PortalButton";
 
 import { normalizePartnerCameraPhoto } from "@/lib/partner/normalize-camera-photo";
 import { useImageFileDrop } from "@/hooks/useImageFileDrop";
@@ -43,6 +44,8 @@ export function PartnerMultiFotoSlot({
   const [previews, setPreviews] = useState<string[]>([]);
   const [status, setStatus] = useState<"idle" | "uploading">("idle");
   const [error, setError] = useState<string | null>(null);
+  const [progressLabel, setProgressLabel] = useState<string | null>(null);
+  const [failedBatch, setFailedBatch] = useState<File[]>([]);
 
   const files = value ?? internal;
   const busy = disabled || status === "uploading";
@@ -71,27 +74,38 @@ export function PartnerMultiFotoSlot({
       }
       const batch = incoming.slice(0, room);
       setError(null);
+      setFailedBatch([]);
       setStatus("uploading");
       try {
         const added: File[] = [];
-        for (const raw of batch) {
+        const failed: File[] = [];
+        for (let i = 0; i < batch.length; i++) {
+          const raw = batch[i];
+          setProgressLabel(`Foto ${i + 1}/${batch.length}`);
           try {
             added.push(await normalizePartnerCameraPhoto(raw));
           } catch {
-            /* skip single bad file */
+            failed.push(raw);
           }
         }
-        if (!added.length) {
+        setProgressLabel(null);
+        if (failed.length) {
+          setFailedBatch(failed);
           setError(
             isMobile
-              ? "Fotos konnten nicht verarbeitet werden. Bitte erneut aufnehmen."
-              : "Fotos konnten nicht verarbeitet werden. Bitte erneut wählen."
+              ? `${failed.length} Foto(s) fehlgeschlagen — erneut versuchen.`
+              : `${failed.length} Foto(s) fehlgeschlagen — erneut wählen oder versuchen.`
           );
+        }
+        if (!added.length && failed.length) {
           return;
         }
-        setFiles([...files, ...added]);
+        if (added.length) {
+          setFiles([...files, ...added]);
+        }
       } finally {
         setStatus("idle");
+        setProgressLabel(null);
       }
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -123,9 +137,8 @@ export function PartnerMultiFotoSlot({
   }
 
   const canAdd = files.length < max && !disabled;
-  const Icon = ImageIcon;
-  const ctaLabel = status === "uploading"
-    ? "wird vorbereitet…"
+    const ctaLabel = status === "uploading"
+    ? progressLabel ?? "wird vorbereitet…"
     : isDragging
       ? "Fotos hier ablegen"
       : isMobile
@@ -146,7 +159,7 @@ export function PartnerMultiFotoSlot({
 
   return (
     <div className={cn("space-y-2", className)}>
-      <p className="text-[12px] font-semibold text-text-secondary">
+      <p className="text-fs-caption font-semibold text-text-secondary">
         {label}
         {required ? (
           <span className="font-medium text-text-tertiary"> · Pflicht</span>
@@ -159,34 +172,34 @@ export function PartnerMultiFotoSlot({
       </p>
 
       {canAdd ? (
-        <button
+        <PortalButton variant="ghost"
           {...zoneProps}
           className={cn(
-            "flex w-full flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed px-4 py-8 text-center transition-colors disabled:opacity-60",
+            "flex w-full flex-col items-center justify-center gap-2 rounded-sheet border-2 border-dashed px-4 py-8 text-center transition-colors disabled:opacity-60",
             isDragging
-              ? "border-[var(--p2-primary,#2E7D52)] bg-[var(--p2-primary-soft,#dce8e0)]"
-              : "border-border-default bg-white hover:bg-[var(--p2-hover,#eef1ef)]"
+              ? "border-[var(--p2-primary)] bg-[var(--p2-primary-soft)]"
+              : "border-border-default bg-white hover:bg-[var(--p2-hover)]"
           )}
         >
           {status === "uploading" ? (
-            <span className="inline-flex items-center gap-1.5 text-[13px] text-text-secondary">
-              <Loader2 className="h-4 w-4 animate-spin" />
-              wird vorbereitet…
+            <span className="inline-flex items-center gap-1.5 text-fs-meta text-text-secondary">
+              <PortalIcon n="loader" ctx="default" className="h-4 w-4 animate-spin" />
+              {progressLabel ?? "wird vorbereitet…"}
             </span>
           ) : (
             <>
-              <Icon className="h-8 w-8 text-text-secondary" aria-hidden />
-              <span className="text-[13px] font-semibold text-text-primary">
+              <PortalIcon n="photo" ctx="muted" className="h-8 w-8 text-text-secondary" />
+              <span className="text-fs-meta font-semibold text-text-primary">
                 {ctaLabel}
               </span>
               {!isMobile ? (
-                <span className="text-[11.5px] text-text-tertiary">
+                <span className="text-fs-caption text-text-tertiary">
                   Mehrere Dateien gleichzeitig möglich
                 </span>
               ) : null}
             </>
           )}
-        </button>
+        </PortalButton>
       ) : null}
 
       <input
@@ -201,7 +214,7 @@ export function PartnerMultiFotoSlot({
 
       {files.length > 0 ? (
         <div className="space-y-1.5">
-          <p className="text-[11.5px] font-medium text-text-tertiary">
+          <p className="text-fs-caption font-medium text-text-tertiary">
             Vorschau · {files.length}
             {max > 1 ? ` / ${max}` : ""} · wischen · × zum Entfernen
           </p>
@@ -214,7 +227,7 @@ export function PartnerMultiFotoSlot({
               <div
                 key={`${files[i]?.name ?? "foto"}-${i}-${files[i]?.size ?? 0}`}
                 role="listitem"
-                className="relative h-[4.75rem] w-[4.75rem] shrink-0 snap-start overflow-hidden rounded-xl border border-border-default bg-white shadow-sm"
+                className="relative h-[4.75rem] w-[4.75rem] shrink-0 snap-start overflow-hidden rounded-sheet border border-border-default bg-white shadow-sm"
               >
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
@@ -223,9 +236,10 @@ export function PartnerMultiFotoSlot({
                   className="h-full w-full object-cover"
                   draggable={false}
                 />
-                <button
+                <PortalButton
+                  variant="ghost"
                   type="button"
-                  className="absolute right-1 top-1 grid h-7 w-7 place-items-center rounded-full bg-black/65 text-white shadow-sm active:scale-95"
+                  className="absolute right-1 top-1 grid h-7 w-7 place-items-center rounded-pill bg-black/65 text-white shadow-sm active:scale-95"
                   aria-label={`Foto ${i + 1} entfernen`}
                   disabled={busy}
                   onClick={(e) => {
@@ -233,8 +247,8 @@ export function PartnerMultiFotoSlot({
                     removeAt(i);
                   }}
                 >
-                  <X className="h-3.5 w-3.5" strokeWidth={2.5} />
-                </button>
+                  <PortalIcon n="x" ctx="default" className="h-3.5 w-3.5" />
+                </PortalButton>
               </div>
             ))}
           </div>
@@ -242,6 +256,16 @@ export function PartnerMultiFotoSlot({
       ) : null}
 
       {error ? <p className="text-xs text-text-secondary">{error}</p> : null}
+      {failedBatch.length > 0 && status === "idle" ? (
+        <PortalButton
+          variant="ghost"
+          type="button"
+          className="min-h-11 text-sm font-semibold text-[var(--p2-primary)]"
+          onClick={() => void addFiles(failedBatch)}
+        >
+          Erneut versuchen ({failedBatch.length})
+        </PortalButton>
+      ) : null}
     </div>
   );
 }

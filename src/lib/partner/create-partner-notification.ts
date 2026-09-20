@@ -1,3 +1,4 @@
+import { logDbError } from '@/lib/errors/log-db-error'
 import { Resend } from "resend";
 
 import { sendBrandedMail } from "@/lib/email/send-branded-mail";
@@ -102,11 +103,11 @@ function partnerNotifyBodyHtml(opts: {
     ? "Zum Vorgang im Partner-Portal →"
     : "Zum Partner-Portal →";
   return `
-    <p style="margin:0 0 12px;font-size:15px;color:#374151;line-height:1.6;">${mailBegruessungHtml("du", opts.handwerkerName)}</p>
-    <p style="margin:0 0 16px;font-size:15px;color:#374151;line-height:1.6;"><strong>${escapeHtml(opts.subjectLine)}</strong></p>
-    <p style="margin:0 0 8px;font-size:15px;color:#374151;line-height:1.6;">${ctaHint}</p>
+    <p style="margin:0 0 12px;font-size:15px;color:var(--p2-ink);line-height:1.6;">${mailBegruessungHtml("du", opts.handwerkerName)}</p>
+    <p style="margin:0 0 16px;font-size:15px;color:var(--p2-ink);line-height:1.6;"><strong>${escapeHtml(opts.subjectLine)}</strong></p>
+    <p style="margin:0 0 8px;font-size:15px;color:var(--p2-ink);line-height:1.6;">${ctaHint}</p>
     ${mailPrimaryButtonHtml(ctaLabel, opts.portalUrl)}
-    <p style="margin:24px 0 0;font-size:15px;color:#374151;line-height:1.6;">${mailTeamGrussHtml("du")}</p>
+    <p style="margin:24px 0 0;font-size:15px;color:var(--p2-ink);line-height:1.6;">${mailTeamGrussHtml("du")}</p>
   `;
 }
 
@@ -120,7 +121,7 @@ function isRechnungUeberwiesenNotify(
   );
 }
 
-/** INSERT notification + optional Resend-Mail an Handwerker. */
+/** INSERT notification + optional Resend-Mail an Partner. */
 export async function createPartnerNotification(
   input: PartnerNotifyInput
 ): Promise<{ ok: boolean; error?: string; notificationId?: string; deduplicated?: boolean }> {
@@ -161,7 +162,7 @@ export async function createPartnerNotification(
 
   if (vorgangKey && notifyTyp === "neu") {
     // Einmalig je Vorgang — auch wenn bereits gelesen (kein Spam bei erneutem Login)
-    const { data: existingAny } = await supabaseAdmin
+    const {data: existingAny, error: __dbErr372_1} = await supabaseAdmin
       .from("notifications")
       .select("id, link, typ")
       .eq("handwerker_id", handwerkerId)
@@ -169,7 +170,7 @@ export async function createPartnerNotification(
       .ilike("link", `%id=${vorgangKey}%`)
       .order("created_at", { ascending: false })
       .limit(20);
-
+    if (__dbErr372_1) logDbError('lib/partner/create-partner-notification:notifications', __dbErr372_1)
     const existingNeu = (existingAny ?? []).find(
       (row) =>
         partnerNotificationVorgangKey(String(row.link ?? "")) === vorgangKey
@@ -196,6 +197,7 @@ export async function createPartnerNotification(
     })
     .select("id")
     .single();
+  if (insErr) logDbError('lib/partner/create-partner-notification:notifications', insErr)
 
   if (insErr) return { ok: false, error: insErr.message };
 
@@ -207,12 +209,12 @@ export async function createPartnerNotification(
     link,
   });
 
-  const { data: hw } = await supabaseAdmin
+  const {data: hw, error: __dbErr373_2} = await supabaseAdmin
     .from("handwerker")
     .select("email, name")
     .eq("id", handwerkerId)
     .maybeSingle();
-
+  if (__dbErr373_2) logDbError('lib/partner/create-partner-notification:handwerker', __dbErr373_2)
   const sendMail = input.sendMail !== false;
   const to = (hw as { email?: string | null } | null)?.email?.trim();
   const resend = resendClient();
@@ -235,7 +237,7 @@ export async function createPartnerNotification(
         rechnungUeberwiesen,
       }),
       disclaimer:
-        "Du erhältst diese Mail, weil dir im Partner-Portal ein Vorgang zugewiesen wurde.",
+        "Sie erhalten diese Mail, weil Ihnen im Partner-Portal ein Vorgang zugewiesen wurde.",
       footerNote: "Bärenwald München · Partner-Portal",
     });
 

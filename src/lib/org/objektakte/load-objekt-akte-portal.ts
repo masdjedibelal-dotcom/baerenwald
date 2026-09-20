@@ -1,3 +1,4 @@
+import { logDbError } from '@/lib/errors/log-db-error'
 import { computeObjektKpisPortal } from "@/lib/org/objektakte/compute-objekt-kpis";
 import { resolveObjektVorgangKosten } from "@/lib/org/objektakte/resolve-objekt-vorgang-kosten";
 import type {
@@ -51,12 +52,13 @@ export async function loadObjektAktePortal(
   const oid = objektId.trim();
   if (!kid || !oid) return null;
 
-  const { data: objekt } = await supabaseAdmin
+  const {data: objekt, error: __dbErr330_1} = await supabaseAdmin
     .from("kunden_objekte")
     .select("id, kunde_id, titel, strasse, hausnummer, plz, ort")
     .eq("id", oid)
     .eq("kunde_id", kid)
     .maybeSingle();
+  if (__dbErr330_1) logDbError('lib/org/objektakte/load-objekt-akte-portal:kunden_objekte', __dbErr330_1)
 
   if (!objekt) return null;
 
@@ -97,10 +99,11 @@ export async function loadObjektAktePortal(
   const anlageIds = (anlagenRows ?? []).map((a) => String(a.id));
   const vorgangCounts: Record<string, number> = {};
   if (anlageIds.length) {
-    const { data: countRows } = await supabaseAdmin
+    const {data: countRows, error: __dbErr331_2} = await supabaseAdmin
       .from("leads")
       .select("objekt_anlage_id")
       .in("objekt_anlage_id", anlageIds);
+    if (__dbErr331_2) logDbError('lib/org/objektakte/load-objekt-akte-portal:leads', __dbErr331_2)
     for (const row of countRows ?? []) {
       const id = String(row.objekt_anlage_id ?? "");
       if (id) vorgangCounts[id] = (vorgangCounts[id] ?? 0) + 1;

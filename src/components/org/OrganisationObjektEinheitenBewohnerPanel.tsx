@@ -1,7 +1,8 @@
 "use client";
 
+import { PortalIcon } from "@/components/portal/PortalIcon";
 import { useCallback, useEffect, useState } from "react";
-import { UserPlus } from "lucide-react";
+import { PortalButton } from "@/components/portal/PortalButton";
 
 import {
   EinstellungenCard,
@@ -15,7 +16,7 @@ import {
 } from "@/components/shared/PortalListTable";
 import { PortalInlineLoading } from "@/components/shared/PortalInlineLoading";
 import { PORTAL_VAR } from "@/lib/portal2/tokens";
-import { orgPortalToast, portalToastError } from "@/lib/shared/portal-toast";
+import { orgPortalToast, portalToastSystemError } from "@/lib/shared/portal-toast";
 import { cn } from "@/lib/utils";
 
 type Bewohner = {
@@ -118,7 +119,7 @@ export function OrganisationObjektEinheitenBewohnerPanel({
       orgPortalToast.objektAktualisiert();
       await loadBewohner();
     } catch (err) {
-      portalToastError(err instanceof Error ? err.message : "Fehler");
+      portalToastSystemError(err, "org-bewohner-add");
     } finally {
       setBusy(false);
     }
@@ -136,7 +137,7 @@ export function OrganisationObjektEinheitenBewohnerPanel({
       orgPortalToast.objektAktualisiert();
       await loadBewohner();
     } catch (err) {
-      portalToastError(err instanceof Error ? err.message : "Fehler");
+      portalToastSystemError(err, "org-bewohner-remove");
     } finally {
       setBusy(false);
       setConfirmOpen(false);
@@ -154,13 +155,13 @@ export function OrganisationObjektEinheitenBewohnerPanel({
     <div
       className={cn(
         "space-y-3",
-        detailLayout && "rounded-xl border border-border-default bg-white p-4"
+        detailLayout && "rounded-sheet border border-border-default bg-white p-4"
       )}
     >
       <div>
         <p className="text-sm font-semibold text-text-primary">Bewohner</p>
         <p
-          className="mt-1.5 text-[13px] leading-[1.55]"
+          className="mt-1.5 text-fs-meta leading-[1.55]"
           style={{ color: PORTAL_VAR.sub }}
         >
           {BEWOHNER_INTRO}
@@ -172,7 +173,7 @@ export function OrganisationObjektEinheitenBewohnerPanel({
         empty={
           !loading && bewohner.length === 0 ? (
             <p
-              className="px-3.5 py-4 text-[13px]"
+              className="px-3.5 py-4 text-fs-meta"
               style={{ color: PORTAL_VAR.sub }}
             >
               Noch keine Bewohner erfasst.
@@ -193,12 +194,12 @@ export function OrganisationObjektEinheitenBewohnerPanel({
             return (
               <PortalListTableRow key={b.id} columns={4}>
                 <PortalListTableCell label="Name">
-                  <p className="truncate text-[13.5px] font-semibold text-text-primary">
+                  <p className="truncate text-fs-body font-semibold text-text-primary">
                     {b.name}
                   </p>
                   {kontakt ? (
                     <p
-                      className="mt-0.5 truncate text-[12px]"
+                      className="mt-0.5 truncate text-fs-caption"
                       style={{ color: PORTAL_VAR.sub }}
                     >
                       {kontakt}
@@ -206,27 +207,28 @@ export function OrganisationObjektEinheitenBewohnerPanel({
                   ) : null}
                 </PortalListTableCell>
                 <PortalListTableCell label="Wohnung">
-                  <span className="text-[13px] font-medium text-text-secondary">
+                  <span className="text-fs-meta font-medium text-text-secondary">
                     {wohnungLabel}
                   </span>
                 </PortalListTableCell>
                 <PortalListTableCell label="Etage">
-                  <span className="text-[13px] font-medium text-text-secondary">
+                  <span className="text-fs-meta font-medium text-text-secondary">
                     {etageLabel}
                   </span>
                 </PortalListTableCell>
                 <PortalListTableCell className="sm:justify-self-end">
-                  <button
+                  <PortalButton
+                    variant="danger"
                     type="button"
-                    className="rounded-[9px] border border-red-200 bg-white px-3 py-1.5 text-[12.5px] font-semibold text-red-700 hover:bg-red-50 disabled:opacity-50"
+                    className="rounded-[9px] border border-p2-danger-border bg-white px-3 py-1.5 text-fs-meta font-semibold text-p2-danger hover:bg-p2-danger-soft disabled:opacity-50"
                     disabled={busy}
                     onClick={() => {
                       setPendingRemoveId(b.id);
                       setConfirmOpen(true);
                     }}
                   >
-                    Entfernen
-                  </button>
+                    Löschen
+                  </PortalButton>
                 </PortalListTableCell>
               </PortalListTableRow>
             );
@@ -238,7 +240,7 @@ export function OrganisationObjektEinheitenBewohnerPanel({
         open={confirmOpen}
         title="Bewohner entfernen?"
         description="Bewohner wirklich entfernen?"
-        confirmLabel="Entfernen"
+        confirmLabel="Löschen"
         confirmVariant="danger"
         loading={busy}
         onConfirm={() => {
@@ -311,14 +313,15 @@ export function OrganisationObjektEinheitenBewohnerPanel({
               autoComplete="email"
             />
           </div>
-          <button
+          <PortalButton
+            variant="primary"
             type="submit"
-            className="btn-pill-primary inline-flex w-full items-center justify-center gap-2 sm:w-auto"
+            className="inline-flex w-full items-center justify-center gap-2 sm:w-auto"
             disabled={busy || !canSubmit}
           >
-            <UserPlus className="h-4 w-4" aria-hidden />
+            <PortalIcon n="user-plus" ctx="default" className="h-4 w-4" aria-hidden />
             {busy ? "Speichern…" : "Mieter anlegen"}
-          </button>
+          </PortalButton>
         </form>
       </EinstellungenCard>
     </div>

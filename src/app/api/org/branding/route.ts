@@ -1,3 +1,4 @@
+import { logDbError } from '@/lib/errors/log-db-error'
 import { NextResponse } from "next/server";
 
 import { writeAuditEvent } from "@/lib/audit/write-audit-event";
@@ -166,6 +167,7 @@ export async function PATCH(req: Request) {
       "org_anzeigename, org_sub, org_logo_kuerzel, org_primary_color, org_primary_color_dk, org_primary_color_soft, org_telefon, org_strasse, org_hausnummer, org_plz, org_ort, mieter_kontakt_email, mieter_kontakt_telefon, org_logo_url, impressum_url, datenschutz_url, org_kennung"
     )
     .single();
+  if (error) logDbError('app/api/org/branding/route:kunden', error)
 
   if (error) {
     const msg = error.message || "Speichern fehlgeschlagen.";

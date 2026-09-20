@@ -1,3 +1,4 @@
+import { logDbError } from '@/lib/errors/log-db-error'
 import { buildOrgHvMieterEventHtml } from "@/lib/email/meldung-mail-templates";
 import { sendBrandedMail } from "@/lib/email/send-branded-mail";
 import { createHvNotification } from "@/lib/org/create-hv-notification";
@@ -5,6 +6,7 @@ import {
   portalDeepLinkTabFromNotifTyp,
   withPortalDetailDeepLink,
 } from "@/lib/portal2/portal-detail-deep-link";
+import { buildSubject } from "@/lib/shared-domain/build-subject";
 import { supabaseAdmin } from "@/lib/supabase";
 import { isValidEmail } from "@/lib/validation";
 import { Resend } from "resend";
@@ -23,12 +25,12 @@ export async function notifyHvMieterEvent(input: {
   titel: string;
   body: string;
 }): Promise<void> {
-  const { data: lead } = await supabaseAdmin
+  const {data: lead, error: __dbErr319_1} = await supabaseAdmin
     .from("leads")
     .select("id, melder_name, kunde_objekt_id, auftraggeber_kunde_id")
     .eq("id", input.leadId)
     .maybeSingle();
-
+  if (__dbErr319_1) logDbError('lib/org/notify-hv-mieter-event:leads', __dbErr319_1)
   if (!lead?.auftraggeber_kunde_id) return;
 
   const kundeId = String(lead.auftraggeber_kunde_id);
@@ -48,22 +50,23 @@ export async function notifyHvMieterEvent(input: {
   const resendKey = process.env.RESEND_API_KEY;
   if (!resendKey) return;
 
-  const { data: orgKunde } = await supabaseAdmin
+  const {data: orgKunde, error: __dbErr320_2} = await supabaseAdmin
     .from("kunden")
     .select("email, name, org_anzeigename")
     .eq("id", kundeId)
     .maybeSingle();
-
+  if (__dbErr320_2) logDbError('lib/org/notify-hv-mieter-event:kunden', __dbErr320_2)
   const orgEmail = String(orgKunde?.email ?? "").trim();
   if (!orgEmail || !isValidEmail(orgEmail)) return;
 
   let objektTitel = "Objekt";
   if (lead.kunde_objekt_id) {
-    const { data: obj } = await supabaseAdmin
+    const {data: obj, error: __dbErr321_3} = await supabaseAdmin
       .from("kunden_objekte")
       .select("titel")
       .eq("id", lead.kunde_objekt_id)
       .maybeSingle();
+    if (__dbErr321_3) logDbError('lib/org/notify-hv-mieter-event:kunden_objekte', __dbErr321_3)
     objektTitel = String(obj?.titel ?? "Objekt");
   }
 
@@ -74,7 +77,10 @@ export async function notifyHvMieterEvent(input: {
         process.env.RESEND_FROM_SYSTEM ??
         "System <system@baerenwaldmuenchen.de>",
       to: orgEmail,
-      subject: input.titel,
+      subject: buildSubject({
+        objekt: objektTitel,
+        ereignis: input.titel,
+      }),
       html: buildOrgHvMieterEventHtml({
         objektTitel,
         melderName: lead.melder_name ? String(lead.melder_name) : undefined,

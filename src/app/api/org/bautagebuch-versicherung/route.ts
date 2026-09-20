@@ -1,13 +1,26 @@
+import { logDbError } from '@/lib/errors/log-db-error'
 import { NextResponse } from "next/server";
 
-import { generateBautagebuchVersicherungPdf } from "@/lib/org/generate-bautagebuch-versicherung-pdf";
 import { requireOrganisationSession } from "@/lib/org/require-org-session";
+import { PDF_UI_ERROR, renderPdfViaCrm } from "@/lib/pdf/render-via-crm";
 import { supabaseAdmin } from "@/lib/supabase";
 
 export const runtime = "nodejs";
 
-/** PDF-Export Bautagebuch für Versicherung. */
+/** PDF-Export Bautagebuch für Versicherung — Auth Portal, Render CRM (O5). */
 export async function GET(req: Request) {
+  try {
+    return await handleBautagebuchVersicherungGet(req);
+  } catch (e) {
+    console.error("[bautagebuch-versicherung] 500:", e);
+    return NextResponse.json(
+      { error: e instanceof Error ? e.message : PDF_UI_ERROR },
+      { status: 500 }
+    );
+  }
+}
+
+async function handleBautagebuchVersicherungGet(req: Request) {
   const session = await requireOrganisationSession();
   if (!session.ok) {
     return NextResponse.json({ error: session.error }, { status: session.status });
@@ -19,13 +32,13 @@ export async function GET(req: Request) {
     return NextResponse.json({ error: "auftragId fehlt." }, { status: 400 });
   }
 
-  const { data: auftrag } = await supabaseAdmin
+  const {data: auftrag, error: __dbErr160_1} = await supabaseAdmin
     .from("auftraege")
     .select("id, kunde_id, titel, lead_id, versicherungs_nr, kostentraeger")
     .eq("id", auftragId)
     .eq("kunde_id", session.kunde.id)
     .maybeSingle();
-
+  if (__dbErr160_1) logDbError('app/api/org/bautagebuch-versicherung/route:auftraege', __dbErr160_1)
   if (!auftrag) {
     return NextResponse.json({ error: "Auftrag nicht gefunden." }, { status: 404 });
   }
@@ -33,11 +46,12 @@ export async function GET(req: Request) {
   let versNr = auftrag.versicherungs_nr ? String(auftrag.versicherungs_nr) : null;
   let schadenNr: string | null = null;
   if (auftrag.lead_id) {
-    const { data: lead } = await supabaseAdmin
+    const {data: lead, error: __dbErr161_2} = await supabaseAdmin
       .from("leads")
       .select("versicherungs_nr, schaden_nr")
       .eq("id", auftrag.lead_id)
       .maybeSingle();
+    if (__dbErr161_2) logDbError('app/api/org/bautagebuch-versicherung/route:leads', __dbErr161_2)
     if (!versNr && lead?.versicherungs_nr) {
       versNr = String(lead.versicherungs_nr);
     }
@@ -46,13 +60,13 @@ export async function GET(req: Request) {
     }
   }
 
-  const { data: rows } = await supabaseAdmin
+  const {data: rows, error: __dbErr162_3} = await supabaseAdmin
     .from("auftrag_bautagebuch_eintraege")
     .select("titel, beschreibung, datum, foto_urls, eintrag_typ")
     .eq("auftrag_id", auftragId)
     .order("datum", { ascending: true });
-
-  const pdfBytes = await generateBautagebuchVersicherungPdf({
+  if (__dbErr162_3) logDbError('app/api/org/bautagebuch-versicherung/route:auftrag_bautagebuch_eintraege', __dbErr162_3)
+  const pdfBytes = await renderPdfViaCrm("bautagebuch-versicherung", {
     orgName: session.kunde.name?.trim() || "Verwaltung",
     objektTitel: String(auftrag.titel ?? "Vorgang"),
     versicherungsNr: versNr,

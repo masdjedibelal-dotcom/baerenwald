@@ -1,3 +1,4 @@
+import { logDbError } from '@/lib/errors/log-db-error'
 import { randomBytes } from "node:crypto";
 
 import { supabaseAdmin } from "@/lib/supabase";
@@ -16,7 +17,7 @@ export async function ensurePartnerAngebotHandwerkerForAuftrag(opts: {
   const auftragId = opts.auftragId.trim();
   const handwerkerId = opts.handwerkerId.trim();
   if (!auftragId || !handwerkerId) {
-    return { ok: false, error: "Auftrag oder Handwerker fehlt." };
+    return { ok: false, error: "Auftrag oder Partner fehlt." };
   }
 
   const { data: auftrag, error: aufErr } = await supabaseAdmin
@@ -24,6 +25,7 @@ export async function ensurePartnerAngebotHandwerkerForAuftrag(opts: {
     .select("id, angebot_id, lead_id, kunde_id, titel, handwerker_bestaetigt_at")
     .eq("id", auftragId)
     .maybeSingle();
+  if (aufErr) logDbError('lib/partner/ensure-partner-angebot-handwerker-for-auftrag:auftraege', aufErr)
 
   if (aufErr || !auftrag) {
     return { ok: false, error: aufErr?.message ?? "Auftrag nicht gefunden." };
@@ -64,6 +66,7 @@ export async function ensurePartnerAngebotHandwerkerForAuftrag(opts: {
       })
       .select("id")
       .single();
+    if (angErr) logDbError('lib/partner/ensure-partner-angebot-handwerker-for-auftrag:angebote', angErr)
 
     if (angErr || !ang?.id) {
       return {
@@ -78,6 +81,7 @@ export async function ensurePartnerAngebotHandwerkerForAuftrag(opts: {
       .update({ angebot_id: angebotId })
       .eq("id", auftragId)
       .is("angebot_id", null);
+    if (linkErr) logDbError('lib/partner/ensure-partner-angebot-handwerker-for-auftrag:auftraege', linkErr)
 
     if (linkErr) {
       console.warn(
@@ -114,6 +118,7 @@ export async function ensurePartnerAngebotHandwerkerForAuftrag(opts: {
     })
     .select("id")
     .single();
+  if (insErr) logDbError('lib/partner/ensure-partner-angebot-handwerker-for-auftrag:angebot_handwerker', insErr)
 
   if (insErr || !created?.id) {
     const raced = await findAnfrageId(angebotId, handwerkerId);
@@ -146,7 +151,7 @@ async function findAnfrageId(
   angebotId: string,
   handwerkerId: string
 ): Promise<string | null> {
-  const { data } = await supabaseAdmin
+  const {data, error: __dbErr377_1} = await supabaseAdmin
     .from("angebot_handwerker")
     .select("id")
     .eq("angebot_id", angebotId)
@@ -154,6 +159,7 @@ async function findAnfrageId(
     .order("created_at", { ascending: false })
     .limit(1)
     .maybeSingle();
+  if (__dbErr377_1) logDbError('lib/partner/ensure-partner-angebot-handwerker-for-auftrag:angebot_handwerker', __dbErr377_1)
   return data?.id ? String(data.id) : null;
 }
 
@@ -161,7 +167,7 @@ async function resolveGewerkId(
   auftragId: string,
   handwerkerId: string
 ): Promise<string | null> {
-  const { data: pos } = await supabaseAdmin
+  const {data: pos, error: __dbErr378_2} = await supabaseAdmin
     .from("auftrag_positionen")
     .select("gewerk_id")
     .eq("auftrag_id", auftragId)
@@ -169,9 +175,10 @@ async function resolveGewerkId(
     .not("gewerk_id", "is", null)
     .limit(1)
     .maybeSingle();
+  if (__dbErr378_2) logDbError('lib/partner/ensure-partner-angebot-handwerker-for-auftrag:auftrag_positionen', __dbErr378_2)
   if (pos?.gewerk_id) return String(pos.gewerk_id);
 
-  const { data: zuw } = await supabaseAdmin
+  const {data: zuw, error: __dbErr379_3} = await supabaseAdmin
     .from("auftrag_handwerker")
     .select("gewerk_id")
     .eq("auftrag_id", auftragId)
@@ -179,5 +186,6 @@ async function resolveGewerkId(
     .not("gewerk_id", "is", null)
     .limit(1)
     .maybeSingle();
+  if (__dbErr379_3) logDbError('lib/partner/ensure-partner-angebot-handwerker-for-auftrag:auftrag_handwerker', __dbErr379_3)
   return zuw?.gewerk_id ? String(zuw.gewerk_id) : null;
 }

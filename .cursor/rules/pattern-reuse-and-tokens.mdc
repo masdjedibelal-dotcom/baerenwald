@@ -1,0 +1,18 @@
+---
+description: Vorhandene Patterns/Tokens/Copy zuerst — keine neuen Varianten
+alwaysApply: true
+---
+
+# Pattern-Wiederverwendung, Tokens, Copy (Portal & Website)
+
+Vor **jeder** neuen UI- oder Formatierungs-Logik:
+
+1. **Suche zuerst** in `src/components/portal/`, `src/lib/portal2/`, und (sobald vorhanden) dem Portal-Pattern-Katalog.
+2. **Keine neuen Varianten** von:
+   - Modals / Dialoge → `PortalModalShell` / bestehende Sheets
+   - Status → an `portal2/status-mapping.ts` und bestehende Pills binden (keine dritte Status-Komponente)
+   - Geld / Datum → bestehende Helfer wiederverwenden (kein neues `Intl.NumberFormat` / `toLocaleDateString` außerhalb)
+3. **Token-Welten trennen**: Portal = `--p2-` (und beschlossene Portal-Tokens). Website = `--fl-`. Keine Vermischung; keine neuen Hex-Werte nahe Markengrün.
+4. **Texte** aus `portal2/status`, Labels oder i18n-Katalog — nicht frei pro Screen erfinden. Rollenbegriff einheitlich (Partner, nicht Handwerker/Fachfirma mischen).
+5. CRM-Resolver/Status-Logik nicht lokal „nachbauen“ — bei Abweichung dokumentieren und Shared-Pfad nutzen (siehe Audit Phase 2).
+6. Neue Variante nur nach **expliziter Freigabe** durch Belal.

@@ -1,5 +1,6 @@
 "use server";
 
+import { logDbError } from '@/lib/errors/log-db-error'
 import { revalidatePath } from "next/cache";
 
 import { loadAuftragFachdokuSlotsWithUrls } from "@/lib/partner/ensure-fachdoku-slots";
@@ -19,10 +20,11 @@ async function assertPartnerAuftrag(handwerkerId: string, auftragId: string) {
 }
 
 async function gewerkeForAuftrag(auftragId: string): Promise<string[]> {
-  const { data } = await supabaseAdmin
+  const {data, error: __dbErr77_1} = await supabaseAdmin
     .from("auftrag_positionen")
     .select("gewerk_name")
     .eq("auftrag_id", auftragId);
+  if (__dbErr77_1) logDbError('app/actions/partner-fachdoku:auftrag_positionen', __dbErr77_1)
   return (data ?? [])
     .map((r) => String((r as { gewerk_name?: string | null }).gewerk_name ?? ""))
     .filter(Boolean);
@@ -95,12 +97,13 @@ export async function uploadPartnerFachdokuSlot(formData: FormData): Promise<
     return { ok: false, error: "Keine Berechtigung." };
   }
 
-  const { data: slot } = await supabaseAdmin
+  const {data: slot, error: __dbErr78_2} = await supabaseAdmin
     .from("auftrag_fachdoku_slots")
     .select("id, auftrag_id, slot_code, label")
     .eq("id", slotId)
     .eq("auftrag_id", auftragId)
     .maybeSingle();
+  if (__dbErr78_2) logDbError('app/actions/partner-fachdoku:auftrag_fachdoku_slots', __dbErr78_2)
 
   if (!slot) return { ok: false, error: "Slot nicht gefunden." };
 
@@ -127,6 +130,7 @@ export async function uploadPartnerFachdokuSlot(formData: FormData): Promise<
     })
     .eq("id", slotId)
     .eq("auftrag_id", auftragId);
+  if (error) logDbError('app/actions/partner-fachdoku:auftrag_fachdoku_slots', error)
 
   if (error) return { ok: false, error: error.message };
 

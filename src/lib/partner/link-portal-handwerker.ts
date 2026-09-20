@@ -1,3 +1,4 @@
+import { logDbError } from '@/lib/errors/log-db-error'
 import { findHandwerkerForRegistration } from "@/lib/partner/partner-registration-eligibility";
 import {
   HANDWERKER_PORTAL_GESPERRT_MESSAGE,
@@ -40,12 +41,12 @@ export async function linkPortalHandwerkerToAuthUser(opts: {
     console.error("[linkPortalHandwerker] Portal-Sperre-Check fehlgeschlagen:", e);
   }
 
-  const { data: byAuth } = await supabaseAdmin
+  const {data: byAuth, error: __dbErr386_1} = await supabaseAdmin
     .from("handwerker")
     .select("id, ist_portal_gesperrt")
     .eq("auth_user_id", opts.userId)
     .maybeSingle();
-
+  if (__dbErr386_1) logDbError('lib/partner/link-portal-handwerker:handwerker', __dbErr386_1)
   if (byAuth?.id) {
     if ((byAuth as { ist_portal_gesperrt?: boolean | null }).ist_portal_gesperrt) {
       return {
@@ -62,12 +63,13 @@ export async function linkPortalHandwerkerToAuthUser(opts: {
   const byEmail = await findHandwerkerForRegistration(staffCanonical ?? email);
 
   if (!byEmail?.id && staffCanonical) {
-    const { data: staffHw } = await supabaseAdmin
+    const {data: staffHw, error: __dbErr387_2} = await supabaseAdmin
       .from("handwerker")
       .select("id, email, auth_user_id, ist_portal_gesperrt")
       .ilike("email", BAERENWALD_PRIMARY_STAFF_EMAIL)
       .limit(1)
       .maybeSingle();
+    if (__dbErr387_2) logDbError('lib/partner/link-portal-handwerker:handwerker', __dbErr387_2)
     if (staffHw?.id) {
       if ((staffHw as { ist_portal_gesperrt?: boolean | null }).ist_portal_gesperrt) {
         return {
@@ -82,10 +84,11 @@ export async function linkPortalHandwerkerToAuthUser(opts: {
         return { ok: true, handwerkerId: String(staffHw.id) };
       }
       if (!existingAuth) {
-        await supabaseAdmin
+        const { error: __dbErr388_3 } = await supabaseAdmin
           .from("handwerker")
           .update({ auth_user_id: opts.userId })
           .eq("id", staffHw.id);
+        if (__dbErr388_3) logDbError('lib/partner/link-portal-handwerker:handwerker', __dbErr388_3)
       }
       return { ok: true, handwerkerId: String(staffHw.id) };
     }
@@ -122,6 +125,7 @@ export async function linkPortalHandwerkerToAuthUser(opts: {
     .from("handwerker")
     .update({ auth_user_id: opts.userId })
     .eq("id", byEmail.id);
+  if (upErr) logDbError('lib/partner/link-portal-handwerker:handwerker', upErr)
 
   if (upErr) return { ok: false, error: upErr.message };
 

@@ -1,4 +1,6 @@
 "use client";
+import { PALETTE } from "@/lib/tokens/palette";
+import { MockIconSvg } from "@/components/shared/mock-icon-svgs";
 
 import { useCallback, useMemo, useState } from "react";
 
@@ -34,6 +36,7 @@ import {
 import { DatenschutzCheckbox } from "./DatenschutzCheckbox";
 import { NeueAnfrageResetLink } from "./NeueAnfrageResetLink";
 import { PhotoUpload } from "./PhotoUpload";
+import { CTAButton } from "@/components/ui/CTAButton";
 
 function ResultSituationBanner({ state }: { state: FunnelState }) {
   const hasRange = state.priceMin > 0 && state.priceMax > 0;
@@ -41,13 +44,13 @@ function ResultSituationBanner({ state }: { state: FunnelState }) {
 
   if (zeigtGuProjektPaketBanner(state)) {
     return (
-      <div className="mb-5 rounded-xl border border-emerald-200 bg-emerald-50/95 px-4 py-3 text-sm leading-snug text-emerald-950 shadow-sm">
-        <p className="font-semibold text-emerald-950">
+      <div className="mb-5 rounded-sheet border border-p2-primary bg-p2-primary-soft/95 px-4 py-3 text-sm leading-snug text-p2-green-dark shadow-sm">
+        <p className="font-semibold text-p2-green-dark">
           Ihr schlüsselfertiges Projekt-Angebot
         </p>
-        <p className="mt-2 text-emerald-900/95">
+        <p className="mt-2 text-p2-green-dark/95">
           Dieser Preis umfasst die komplette Ausführung inkl. Bauleitung,
-          Materiallogistik und Handwerker-Koordination. Wir übernehmen die
+          Materiallogistik und Partner-Koordination. Wir übernehmen die
           Gewährleistung für das gesamte Gewerk.
         </p>
       </div>
@@ -56,11 +59,11 @@ function ResultSituationBanner({ state }: { state: FunnelState }) {
 
   if (state.situation === "betreuung") {
     return (
-      <div className="mb-5 rounded-xl border border-teal-200 bg-teal-50/95 px-4 py-3 text-sm leading-snug text-teal-950 shadow-sm">
-        <p className="font-semibold text-teal-950">
+      <div className="mb-5 rounded-sheet border border-p2-primary-soft bg-p2-primary-soft/95 px-4 py-3 text-sm leading-snug text-p2-green-dark shadow-sm">
+        <p className="font-semibold text-p2-green-dark">
           Sorgenfreie Immobilien-Pflege
         </p>
-        <p className="mt-2 text-teal-900/95">
+        <p className="mt-2 text-p2-green-dark/95">
           Ihr Pauschalpreis für regelmäßige Qualität und Werterhalt Ihrer
           Immobilie.
         </p>
@@ -70,11 +73,11 @@ function ResultSituationBanner({ state }: { state: FunnelState }) {
 
   if (isReparaturNotfallSituation(state.situation)) {
     return (
-      <div className="mb-5 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm leading-snug text-slate-900 shadow-sm">
-        <p className="font-semibold text-slate-900">
+      <div className="mb-5 rounded-sheet border border-border-default bg-p2-bg px-4 py-3 text-sm leading-snug text-p2-ink shadow-sm">
+        <p className="font-semibold text-p2-ink">
           Professionelle Schadensbehebung
         </p>
-        <p className="mt-2 text-slate-800">
+        <p className="mt-2 text-p2-ink">
           Inklusive Anfahrt und Diagnose durch qualifizierte Fachkräfte.
         </p>
       </div>
@@ -86,28 +89,28 @@ function ResultSituationBanner({ state }: { state: FunnelState }) {
 
 const RESULT_TESTIMONIALS = [
   {
-    quote: "Transparenter Preis, pünktlicher Handwerker.",
+    quote: "Transparenter Preis, pünktlicher Partner.",
     name: "Familie K.",
     ort: "Schwabing",
     initials: "FK",
-    bg: "#eaf3de",
-    color: "#2e7d52",
+    bg: "var(--fl-status-green-bg)",
+    color: "var(--fl-accent)",
   },
   {
     quote: "Ein Anruf — alles lief. Kein Stress.",
     name: "Lena M.",
     ort: "Maxvorstadt",
     initials: "LM",
-    bg: "#e0f2f1",
-    color: "#00695c",
+    bg: PALETTE.he0f2f1,
+    color: PALETTE.h00695c,
   },
   {
     quote: "Zügig war jemand vor Ort.",
     name: "Sandra B.",
     ort: "Bogenhausen",
     initials: "SB",
-    bg: "#e3f2fd",
-    color: "#1565c0",
+    bg: PALETTE.he3f2fd,
+    color: PALETTE.h1565c0,
   },
 ] as const;
 
@@ -177,7 +180,7 @@ function BtnSpinner() {
 
 function EnvelopeIcon16() {
   return (
-    <svg
+    <MockIconSvg
       width="16"
       height="16"
       viewBox="0 0 24 24"
@@ -191,7 +194,7 @@ function EnvelopeIcon16() {
         strokeLinecap="round"
         strokeLinejoin="round"
       />
-    </svg>
+    </MockIconSvg>
   );
 }
 
@@ -391,7 +394,7 @@ function validateKomplexEmail(raw: string): string | undefined {
 
 function PhoneIconKomplex() {
   return (
-    <svg
+    <MockIconSvg
       width="18"
       height="18"
       viewBox="0 0 24 24"
@@ -405,7 +408,7 @@ function PhoneIconKomplex() {
         strokeLinecap="round"
         strokeLinejoin="round"
       />
-    </svg>
+    </MockIconSvg>
   );
 }
 
@@ -548,13 +551,13 @@ function ZuKomplexScreen({
             mit Ihnen. Melden Sie sich kurz und wir melden uns{" "}
             {SITE_CONFIG.responseSlaWithin}.
           </p>
-          <button
+          <CTAButton
+            bare
             type="button"
-            className="komplex-card-cta"
+            tone="card"
             onClick={scrollToRueckruf}
-          >
-            Beratung anfragen
-          </button>
+            label="Beratung anfragen"
+          />
         </div>
       ) : karteAnbauGarage ? (
         <div className="komplex-card">
@@ -565,13 +568,13 @@ function ZuKomplexScreen({
             Sie für ein persönliches Beratungsgespräch und eine
             Vor-Ort-Analyse.
           </p>
-          <button
+          <CTAButton
+            bare
             type="button"
-            className="komplex-card-cta"
+            tone="card"
             onClick={scrollToRueckruf}
-          >
-            Jetzt Beratung anfragen
-          </button>
+            label="Jetzt Beratung anfragen"
+          />
         </div>
       ) : karteOhneAutomatpreis ? (
         <div className="komplex-card">
@@ -581,18 +584,18 @@ function ZuKomplexScreen({
             automatische Kalkulation. Wir schauen es uns gemeinsam an und
             erstellen Ihnen ein konkretes Angebot — kostenlos und unverbindlich.
           </p>
-          <button
+          <CTAButton
+            bare
             type="button"
-            className="komplex-card-cta"
+            tone="card"
             onClick={scrollToRueckruf}
-          >
-            Jetzt Beratung anfragen
-          </button>
+            label="Jetzt Beratung anfragen"
+          />
         </div>
       ) : (
         <div className="komplex-header">
           <div className="komplex-icon" aria-hidden>
-            <svg
+            <MockIconSvg
               width="40"
               height="40"
               viewBox="0 0 24 24"
@@ -606,7 +609,7 @@ function ZuKomplexScreen({
                 strokeLinecap="round"
                 strokeLinejoin="round"
               />
-            </svg>
+            </MockIconSvg>
           </div>
           <h2 className="komplex-headline">
             {showPreisAb ? (
@@ -873,13 +876,13 @@ export function BwResultScreen({
     <div className={cn("bw-result-screen", className)}>
       <ResultSituationBanner state={state} />
       {resultModus === "notfall_akut" ? (
-        <div className="mb-5 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm leading-snug text-red-950 shadow-sm">
-          <p className="font-semibold text-red-950">
+        <div className="mb-5 rounded-sheet border border-[var(--fl-danger-line)] bg-[var(--fl-danger-tint)] px-4 py-3 text-sm leading-snug text-[var(--fl-danger)] shadow-sm">
+          <p className="font-semibold text-[var(--fl-danger)]">
             Akuter Notfall — wir priorisieren Ihre Anfrage.
           </p>
           <a
             href={SITE_CONFIG.phoneHref}
-            className="bw-akut-tel-btn mt-3 inline-flex w-full max-w-sm items-center justify-center gap-2 rounded-xl bg-funnel-accent px-4 py-3 text-base font-bold text-white"
+            className="bw-akut-tel-btn mt-3 inline-flex w-full max-w-sm items-center justify-center gap-2 rounded-button bg-funnel-accent px-4 py-3 text-base font-bold text-white"
           >
             <PhoneIconKomplex />
             {SITE_CONFIG.phone}
@@ -890,7 +893,7 @@ export function BwResultScreen({
         <div
           className={cn(
             "preis-karte",
-            sofortReparaturPrioritaet && "rounded-[18px] ring-2 ring-emerald-600/40"
+            sofortReparaturPrioritaet && "rounded-[18px] ring-2 ring-p2-primary/40"
           )}
         >
           <p className="preis-karte-kicker">
@@ -918,7 +921,7 @@ export function BwResultScreen({
           <BadErgebnisMerkmale state={state} />
 
           {shouldShowHeizungWpFoerderHint(state) ? (
-            <p className="mt-4 rounded-xl border border-emerald-200/80 bg-emerald-50/90 px-4 py-3 text-sm leading-snug text-emerald-950">
+            <p className="mt-4 rounded-sheet border border-p2-primary/80 bg-p2-primary-soft/90 px-4 py-3 text-sm leading-snug text-p2-green-dark">
               Staatliche Förderung von bis zu 70&nbsp;% möglich. Der angezeigte
               Preis ist der Bruttobetrag vor Abzug der Fördergelder.
             </p>
@@ -938,7 +941,7 @@ export function BwResultScreen({
             </p>
           ) : null}
           {isReparaturNotfallSituation(state.situation) ? (
-            <p className="mt-4 rounded-xl border border-border-default bg-surface-muted px-4 py-3 text-sm leading-snug text-text-secondary">
+            <p className="mt-4 rounded-sheet border border-border-default bg-surface-muted px-4 py-3 text-sm leading-snug text-text-secondary">
               Endgültige Abrechnung erfolgt nach tatsächlichem Materialaufwand vor
               Ort.
             </p>

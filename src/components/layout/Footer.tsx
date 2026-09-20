@@ -18,7 +18,7 @@ export function Footer({
   nextLabel = "Weiter",
   showBack = true,
   hideNext = false,
-  accentColor = "#1B4332",
+  accentColor = "var(--p2-primary-dk)",
   className,
 }: FunnelFooterProps) {
   return (
@@ -28,10 +28,10 @@ export function Footer({
         className
       )}
       style={{
-        paddingBottom: "max(12px, env(safe-area-inset-bottom))",
+        paddingBottom: "max(0.75rem, env(safe-area-inset-bottom))",
       }}
     >
-      <p className="max-w-[48%] text-left text-[11px] leading-snug text-[#999]">
+      <p className="max-w-[48%] text-left text-fs-caption leading-snug text-[var(--p2-faint2)]">
         Kein Auftragszwang · Kostenlos
       </p>
       <div className="flex shrink-0 items-center gap-2">
@@ -53,7 +53,7 @@ export function Footer({
               "rounded-[var(--r-pill)] px-5 py-2.5 text-sm font-medium text-white transition-opacity",
               nextDisabled && "cursor-not-allowed opacity-40"
             )}
-            style={{ backgroundColor: nextDisabled ? "#999" : accentColor }}
+            style={{ backgroundColor: nextDisabled ? "var(--p2-faint2)" : accentColor }}
           >
             {nextLabel}
           </button>

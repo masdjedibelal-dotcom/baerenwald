@@ -1,3 +1,4 @@
+import { logDbError } from '@/lib/errors/log-db-error'
 import { Resend } from "resend";
 
 import { SITE_CONFIG } from "@/lib/config";
@@ -25,6 +26,7 @@ import { loadKundenVertriebsKontext } from "@/lib/lead/kunden-vertrieb-status";
 import type { MarketingJourney } from "@/lib/marketing/journey-types";
 import { GPT_VIZ_SKIP_INTERN_MAIL_QUELLEN } from "@/lib/gpt-viz/constants";
 import { isSupabaseConfigured, supabaseAdmin } from "@/lib/supabase";
+import { buildSubject } from "@/lib/shared-domain/build-subject";
 
 /** CRM-Eingabe — kompatibel mit externem POST /api/lead und internem Funnel. */
 export type PersistLeadInput = {
@@ -222,7 +224,11 @@ function buildKundenBestaetigungSubject(raw: {
   if (situation === "kaputt") {
     const gewerk = kaputtGewerkLabel(bereiche);
     const dring = zeitraumDringlichkeitLabel(zeitraum);
-    return `[Reparatur-Anfrage] - ${gewerk} - ${dring}`;
+    return buildSubject({
+      objekt: [gewerk, dring].filter(Boolean).join(", ") || undefined,
+      ereignis: "Reparatur-Anfrage",
+      objektFallback: "Anfrage",
+    });
   }
   if (
     situation === "erneuern" &&
@@ -230,10 +236,18 @@ function buildKundenBestaetigungSubject(raw: {
     isErneuernProjektBereich(bereiche)
   ) {
     const projekt = guProjektDisplayName(bereiche);
-    const plzPart = plz.trim() || "—";
-    return `[GU-PROJEKT] - ${projekt} - ${plzPart}`;
+    const plzPart = plz.trim();
+    return buildSubject({
+      objekt: [projekt, plzPart].filter(Boolean).join(", ") || undefined,
+      ereignis: "GU-Projekt",
+      objektFallback: "Anfrage",
+    });
   }
-  return "Ihre Anfrage ist bei uns eingegangen";
+  return buildSubject({
+    objekt: plz.trim() || undefined,
+    ereignis: "Anfrage eingegangen",
+    objektFallback: "Anfrage",
+  });
 }
 
 function mergeFunnelDaten(
@@ -474,6 +488,7 @@ async function persistLeadInner(
       .eq("telefon", telefon)
       .limit(1)
       .maybeSingle();
+    if (errTel) logDbError('lib/lead/persist-lead:kunden', errTel)
     if (errTel) throw errTel;
     kunde_id = byTel?.id as string | undefined;
   }
@@ -502,6 +517,7 @@ async function persistLeadInner(
       })
       .select("id")
       .single();
+    if (kundeError) logDbError('lib/lead/persist-lead:kunden', kundeError)
 
     if (kundeError) {
       if (hasEmail && isKundenEmailUniqueViolation(kundeError)) {
@@ -513,16 +529,18 @@ async function persistLeadInner(
       kundeWarNeuAngelegt = true;
     }
   } else if (kundeAdresse && kunde_id) {
-    const { data: kundeRow } = await supabaseAdmin
+    const {data: kundeRow, error: __dbErr263_1} = await supabaseAdmin
       .from("kunden")
       .select("adresse")
       .eq("id", kunde_id)
       .maybeSingle();
+    if (__dbErr263_1) logDbError('lib/lead/persist-lead:kunden', __dbErr263_1)
     if (!kundeRow?.adresse?.trim()) {
-      await supabaseAdmin
+      const { error: __dbErr264_2 } = await supabaseAdmin
         .from("kunden")
         .update({ adresse: kundeAdresse })
         .eq("id", kunde_id);
+      if (__dbErr264_2) logDbError('lib/lead/persist-lead:kunden', __dbErr264_2)
     }
   }
 
@@ -578,6 +596,7 @@ async function persistLeadInner(
     .insert(leadInsert)
     .select("id")
     .single();
+  if (leadError) logDbError('lib/lead/persist-lead:leads', leadError)
 
   if (leadError) throw leadError;
 
@@ -590,6 +609,7 @@ async function persistLeadInner(
       status_neu: "neu",
       notiz: "Lead via Website erstellt",
     });
+  if (histError) logDbError('lib/lead/persist-lead:leads_status_history', histError)
 
   if (histError) {
     console.error("[persistLead] leads_status_history:", histError);
@@ -614,10 +634,11 @@ async function persistLeadInner(
       portal_registriert: kundenKontext.portal_registriert,
       anzahl_leads_gesamt: kundenKontext.anzahl_leads_gesamt,
     };
-    await supabaseAdmin
+    const { error: __dbErr265_3 } = await supabaseAdmin
       .from("leads")
       .update({ funnel_daten: funnel })
       .eq("id", leadId);
+    if (__dbErr265_3) logDbError('lib/lead/persist-lead:leads', __dbErr265_3)
   }
 
   generateLeadVertriebsAnalyse({

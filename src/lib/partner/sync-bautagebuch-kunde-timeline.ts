@@ -49,7 +49,7 @@ export async function syncPartnerPositionEintragToKundeTimeline(opts: {
       .maybeSingle(),
   ]);
 
-  const handwerkerName = String(hw?.name ?? "Handwerker").trim() || "Handwerker";
+  const handwerkerName = String(hw?.name ?? "Partner").trim() || "Partner";
   const auftragTitel = String(auf?.titel ?? "Auftrag").trim() || "Auftrag";
   const leadId = auf?.lead_id ? String(auf.lead_id) : null;
 
@@ -106,7 +106,7 @@ export async function syncPartnerFreiesBautagebuchToKundeTimeline(opts: {
       .maybeSingle(),
   ]);
 
-  const handwerkerName = String(hw?.name ?? "Handwerker").trim() || "Handwerker";
+  const handwerkerName = String(hw?.name ?? "Partner").trim() || "Partner";
   const auftragTitel = String(auf?.titel ?? "Auftrag").trim() || "Auftrag";
   const leadId = auf?.lead_id ? String(auf.lead_id) : null;
 

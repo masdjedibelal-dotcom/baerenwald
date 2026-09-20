@@ -1,5 +1,6 @@
+import { logDbError } from '@/lib/errors/log-db-error'
 import { writeAuditEvent } from "@/lib/audit/write-audit-event";
-import { generateVersicherungsTeilPdf } from "@/lib/org/generate-versicherungsakte-pdf";
+import { PDF_UI_ERROR, renderPdfViaCrm } from "@/lib/pdf/render-via-crm";
 import { buildVersicherungsakteSchadenAngaben } from "@/lib/org/versicherungsakte-schaden-angaben";
 import {
   phaseStoragePath,
@@ -56,13 +57,15 @@ async function loadLeadSignals(leadId: string): Promise<LeadSignals> {
     .select("id, durchgefuehrt_von, durchgefuehrt_am, ergebnis, vorlage_key")
     .eq("lead_id", leadId)
     .maybeSingle();
+  if (befundErr) logDbError('lib/org/ensure-versicherungsakte:lead_befunde', befundErr)
 
   if (!befundErr && leadBefund?.id) {
-    const { data: punkte } = await supabaseAdmin
+    const {data: punkte, error: __dbErr288_1} = await supabaseAdmin
       .from("lead_befund_punkte")
       .select("titel, status, notiz, foto_refs, sort_order")
       .eq("befund_id", leadBefund.id)
       .order("sort_order", { ascending: true });
+    if (__dbErr288_1) logDbError('lib/org/ensure-versicherungsakte:lead_befund_punkte', __dbErr288_1)
 
     const lines: string[] = [];
     let fotoCount = 0;
@@ -102,22 +105,24 @@ async function loadLeadSignals(leadId: string): Promise<LeadSignals> {
     }
   }
 
-  const { data: auftraege } = await supabaseAdmin
+  const {data: auftraege, error: __dbErr289_2} = await supabaseAdmin
     .from("auftraege")
     .select("id, created_at")
     .eq("lead_id", leadId)
     .order("created_at", { ascending: false });
+  if (__dbErr289_2) logDbError('lib/org/ensure-versicherungsakte:auftraege', __dbErr289_2)
 
   const hasAuftrag = (auftraege ?? []).length > 0;
 
   for (const auftrag of auftraege ?? []) {
     const auftragId = String(auftrag.id);
-    const { data: btRows } = await supabaseAdmin
+    const {data: btRows, error: __dbErr290_3} = await supabaseAdmin
       .from("auftrag_bautagebuch_eintraege")
       .select("titel, beschreibung, datum, foto_urls, eintrag_typ")
       .eq("auftrag_id", auftragId)
       .order("datum", { ascending: true })
       .limit(40);
+    if (__dbErr290_3) logDbError('lib/org/ensure-versicherungsakte:auftrag_bautagebuch_eintraege', __dbErr290_3)
 
     for (const row of btRows ?? []) {
       const typ = String(row.eintrag_typ ?? "");
@@ -144,18 +149,20 @@ async function loadLeadSignals(leadId: string): Promise<LeadSignals> {
       .from("auftrag_positionen")
       .select("id, leistung_name")
       .eq("auftrag_id", auftragId);
+    if (posErr) logDbError('lib/org/ensure-versicherungsakte:auftrag_positionen', posErr)
 
     if (!posErr && posRows?.length) {
       const posIds = posRows.map((p) => String(p.id));
       const nameById = new Map(
         posRows.map((p) => [String(p.id), String(p.leistung_name ?? "Leistung")])
       );
-      const { data: eintraege } = await supabaseAdmin
+      const {data: eintraege, error: __dbErr291_4} = await supabaseAdmin
         .from("position_eintraege")
         .select("position_id, typ, beschreibung, created_at, ereignis_zeit")
         .in("position_id", posIds)
         .order("created_at", { ascending: true })
         .limit(80);
+      if (__dbErr291_4) logDbError('lib/org/ensure-versicherungsakte:position_eintraege', __dbErr291_4)
 
       for (const e of eintraege ?? []) {
         hasHwUpdate = true;
@@ -203,6 +210,7 @@ export async function getVersicherungPdfReadinessForLead(
     .select("id, kostentraeger, hv_meldung_status, funnel_daten")
     .eq("id", id)
     .maybeSingle();
+  if (error) logDbError('lib/org/ensure-versicherungsakte:leads', error)
 
   if (error || !lead) {
     return { error: error?.message ?? "Vorgang nicht gefunden." };
@@ -242,11 +250,12 @@ export async function isVersicherungsakteBlockedByHmBefund(
 ): Promise<boolean> {
   const id = leadId?.trim();
   if (!id) return false;
-  const { data: lead } = await supabaseAdmin
+  const {data: lead, error: __dbErr292_5} = await supabaseAdmin
     .from("leads")
     .select("hv_meldung_status")
     .eq("id", id)
     .maybeSingle();
+  if (__dbErr292_5) logDbError('lib/org/ensure-versicherungsakte:leads', __dbErr292_5)
   return (
     String(lead?.hv_meldung_status ?? "")
       .trim()
@@ -284,6 +293,7 @@ export async function ensureVersicherungsakteForLead(
     )
     .eq("id", id)
     .maybeSingle();
+  if (leadErr) logDbError('lib/org/ensure-versicherungsakte:leads', leadErr)
 
   if (leadErr || !lead) {
     return { ok: false, message: leadErr?.message ?? "Vorgang nicht gefunden." };
@@ -302,13 +312,14 @@ export async function ensureVersicherungsakteForLead(
       : null;
 
   if (kundeId) {
-    const { data: kunde } = await supabaseAdmin
+    const {data: kunde, error: __dbErr293_6} = await supabaseAdmin
       .from("kunden")
       .select(
         "name, org_anzeigename, email, org_telefon, org_strasse, org_hausnummer, org_plz, org_ort, strasse, hausnummer, plz, ort"
       )
       .eq("id", kundeId)
       .maybeSingle();
+    if (__dbErr293_6) logDbError('lib/org/ensure-versicherungsakte:kunden', __dbErr293_6)
     if (kunde) {
       orgName =
         String(kunde.org_anzeigename ?? "").trim() ||
@@ -349,11 +360,12 @@ export async function ensureVersicherungsakteForLead(
   } | null = null;
   const objektId = lead.kunde_objekt_id ? String(lead.kunde_objekt_id) : null;
   if (objektId) {
-    const { data: obj } = await supabaseAdmin
+    const {data: obj, error: __dbErr294_7} = await supabaseAdmin
       .from("kunden_objekte")
       .select("titel, strasse, hausnummer, plz, ort, versicherungs_nr")
       .eq("id", objektId)
       .maybeSingle();
+    if (__dbErr294_7) logDbError('lib/org/ensure-versicherungsakte:kunden_objekte', __dbErr294_7)
     if (obj?.titel) objektTitel = String(obj.titel);
     objektAdresse =
       adresseFrom({
@@ -406,29 +418,38 @@ export async function ensureVersicherungsakteForLead(
     objekt: objektForAngaben,
   });
 
-  const pdfBytes = await generateVersicherungsTeilPdf({
-    phase,
-    absender: {
-      name: orgName,
-      zeilen: absenderZeilen,
-      telefon: absenderTel,
-      email: absenderEmail,
-    },
-    objektTitel,
-    objektAdresse,
-    versicherungsNr: versNr,
-    schadenNr: String(lead.schaden_nr ?? "").trim() || null,
-    schadendatum: (lead.created_at as string | undefined) ?? null,
-    schadenAngaben,
-    chronologie: phase === "ursache" ? signals.chronologie : [],
-    befundZeilen: phase === "ursache" ? signals.befundZeilen : [],
-    fotoHinweis: phase === "meldung" ? fotoHinweis : null,
-  });
+  let pdfBytes: Uint8Array;
+  try {
+    pdfBytes = await renderPdfViaCrm("versicherung-teil", {
+      phase,
+      absender: {
+        name: orgName,
+        zeilen: absenderZeilen,
+        telefon: absenderTel,
+        email: absenderEmail,
+      },
+      objektTitel,
+      objektAdresse,
+      versicherungsNr: versNr,
+      schadenNr: String(lead.schaden_nr ?? "").trim() || null,
+      schadendatum: (lead.created_at as string | undefined) ?? null,
+      schadenAngaben,
+      chronologie: phase === "ursache" ? signals.chronologie : [],
+      befundZeilen: phase === "ursache" ? signals.befundZeilen : [],
+      fotoHinweis: phase === "meldung" ? fotoHinweis : null,
+    });
+  } catch (e) {
+    return {
+      ok: false,
+      message: e instanceof Error ? e.message : PDF_UI_ERROR,
+    };
+  }
 
   const path = phaseStoragePath(id, phase);
   const { error: upErr } = await supabaseAdmin.storage
     .from(BUCKET)
     .upload(path, pdfBytes, { upsert: true, contentType: "application/pdf" });
+  if (upErr) logDbError('lib/org/ensure-versicherungsakte:query', upErr)
 
   if (upErr) return { ok: false, message: upErr.message };
 
@@ -448,24 +469,28 @@ export async function ensureVersicherungsakteForLead(
       .from("leads")
       .update(leadPatch)
       .eq("id", id);
+    if (leadUpErr) logDbError('lib/org/ensure-versicherungsakte:leads', leadUpErr)
     if (leadUpErr && /versicherungsakte_pdf_url/i.test(leadUpErr.message)) {
       const { versicherungsakte_pdf_url: _u, ...without } = leadPatch;
-      await supabaseAdmin.from("leads").update(without).eq("id", id);
+      const { error: __dbErr297_10 } = await supabaseAdmin.from("leads").update(without).eq("id", id);
+      if (__dbErr297_10) logDbError('lib/org/ensure-versicherungsakte:leads', __dbErr297_10)
     } else if (leadUpErr) {
       return { ok: false, message: leadUpErr.message };
     }
 
-    const { data: auftraege } = await supabaseAdmin
+    const {data: auftraege, error: __dbErr295_8} = await supabaseAdmin
       .from("auftraege")
       .select("id")
       .eq("lead_id", id);
+    if (__dbErr295_8) logDbError('lib/org/ensure-versicherungsakte:auftraege', __dbErr295_8)
     for (const a of auftraege ?? []) {
       const auftragPatch: Record<string, unknown> = {
         versicherungsakte_pdf_url: url,
         kostentraeger: "versicherung",
       };
       if (versNr) auftragPatch.versicherungs_nr = versNr;
-      await supabaseAdmin.from("auftraege").update(auftragPatch).eq("id", a.id);
+      const { error: __dbErr298_11 } = await supabaseAdmin.from("auftraege").update(auftragPatch).eq("id", a.id);
+      if (__dbErr298_11) logDbError('lib/org/ensure-versicherungsakte:auftraege', __dbErr298_11)
     }
   }
 
@@ -494,6 +519,7 @@ export async function ensureVersicherungsakteForAuftrag(
     .select("id, lead_id, kostentraeger")
     .eq("id", id)
     .maybeSingle();
+  if (error) logDbError('lib/org/ensure-versicherungsakte:auftraege', error)
 
   if (error || !auftrag) {
     return { ok: false, message: error?.message ?? "Auftrag nicht gefunden." };
@@ -517,11 +543,12 @@ export async function applyAutomatischeSchadenakteIfEnabled(
   const id = leadId?.trim();
   if (!id) return;
 
-  const { data: lead } = await supabaseAdmin
+  const {data: lead, error: __dbErr296_9} = await supabaseAdmin
     .from("leads")
     .select("id, anlass, kunde_objekt_id, kostentraeger, hv_meldung_status, funnel_daten")
     .eq("id", id)
     .maybeSingle();
+  if (__dbErr296_9) logDbError('lib/org/ensure-versicherungsakte:leads', __dbErr296_9)
 
   if (!lead?.kunde_objekt_id) return;
   if (String(lead.anlass ?? "") !== "meldung") return;
@@ -532,6 +559,7 @@ export async function applyAutomatischeSchadenakteIfEnabled(
     .select("automatische_schadenakte, versicherungs_nr")
     .eq("id", lead.kunde_objekt_id)
     .maybeSingle();
+  if (objErr) logDbError('lib/org/ensure-versicherungsakte:kunden_objekte', objErr)
 
   if (objErr) {
     if (/automatische_schadenakte/i.test(objErr.message)) return;
@@ -547,7 +575,8 @@ export async function applyAutomatischeSchadenakteIfEnabled(
   };
   if (versNr) patch.versicherungs_nr = versNr;
 
-  await supabaseAdmin.from("leads").update(patch).eq("id", id);
+  const { error: __dbErr299_12 } = await supabaseAdmin.from("leads").update(patch).eq("id", id);
+  if (__dbErr299_12) logDbError('lib/org/ensure-versicherungsakte:leads', __dbErr299_12)
 
   const result = await ensureVersicherungsakteForLead(id, {
     ...opts,

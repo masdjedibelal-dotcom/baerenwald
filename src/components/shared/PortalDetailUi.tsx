@@ -1,25 +1,21 @@
 "use client";
 
-import { Info } from "lucide-react";
-import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
-import { createPortal } from "react-dom";
+import { PortalIcon } from "@/components/portal/PortalIcon";
+import { type ReactNode } from "react";
 
 import {
   LeistungStatusDot,
   resolvePortalLeistungStatusAmpel,
 } from "@/components/shared/LeistungStatusDot";
+import { PortalButton } from "@/components/portal/PortalButton";
 import { PortalModalShell } from "@/components/shared/PortalModalShell";
 import { PortalSheetConfirm } from "@/components/shared/PortalSheetConfirm";
-import { useIsPortalMobile } from "@/lib/portal2/use-is-portal-mobile";
+import { usePortalDetailLayoutFooter } from "@/components/shared/portal-detail-layout-context";
 import { cn } from "@/lib/utils";
 import { stripHtmlToPlainText } from "@/lib/portal/portal-display";
 
-/** Footer aus `PortalDetailLayout` — Desktop: automatisch in `PortalDetailHead`. */
-const PortalDetailLayoutFooterContext = createContext<ReactNode>(null);
-
-export function usePortalDetailLayoutFooter(): ReactNode {
-  return useContext(PortalDetailLayoutFooterContext);
-}
+export { usePortalDetailLayoutFooter } from "@/components/shared/portal-detail-layout-context";
+export { PortalDetailLayout } from "@/components/shared/PortalEntityDetailLayout";
 
 /**
  * Einheitliches Bottom-Confirm — gleiches Pattern wie Dirty „Verwerfen / Weiter bearbeiten“.
@@ -193,17 +189,14 @@ export function PortalDetailInfoBox({
   if (variant === "warning") {
     return (
       <div className="portal-detail-infobox portal-detail-infobox--warn">
-        <Info className="mt-0.5 h-[17px] w-[17px] shrink-0" aria-hidden />
+        <PortalIcon n="info-circle" ctx="default" className="mt-0.5 h-[17px] w-[17px] shrink-0" aria-hidden />
         <div className="min-w-0">{children}</div>
       </div>
     );
   }
   return (
     <div className="portal-detail-infobox">
-      <Info
-        className="mt-0.5 h-[17px] w-[17px] shrink-0 text-[var(--org-primary,var(--p2-primary,#2e7d52))]"
-        aria-hidden
-      />
+      <PortalIcon n="info-circle" ctx="default" className="mt-0.5 h-[17px] w-[17px] shrink-0 text-[var(--org-primary,var(--p2-primary))]" aria-hidden />
       <div className="min-w-0">{children}</div>
     </div>
   );
@@ -340,8 +333,8 @@ export function PortalDetailLeistungenPreisListe({
               className={cn(
                 "flex items-start gap-4 px-0 py-3 sm:gap-6",
                 !hidePreise && "justify-between",
-                isEntfernt && "bg-red-50/70",
-                geaendert && "bg-amber-50/60"
+                isEntfernt && "bg-p2-danger-soft/70",
+                geaendert && "bg-warning-bg/60"
               )}
             >
               <div className="min-w-0 flex-1">
@@ -367,7 +360,7 @@ export function PortalDetailLeistungenPreisListe({
                       </p>
                     ) : null}
                     {isEntfernt ? (
-                      <p className="portal-text-meta mt-1 text-red-700">
+                      <p className="portal-text-meta mt-1 text-p2-danger">
                         Diese Leistung entfällt — bitte bestätigen.
                       </p>
                     ) : null}
@@ -384,7 +377,7 @@ export function PortalDetailLeistungenPreisListe({
                         : isEntfernt
                           ? "text-text-tertiary line-through"
                           : geaendert
-                            ? "text-amber-800"
+                            ? "text-warning-text"
                             : "text-text-primary"
                     )}
                   >
@@ -413,51 +406,6 @@ export function PortalDetailLeistungenPreisListe({
         </div>
       ) : null}
     </div>
-  );
-}
-
-export function PortalDetailLayout({
-  children,
-  footer,
-}: {
-  children: React.ReactNode;
-  footer?: React.ReactNode;
-}) {
-  const isMobile = useIsPortalMobile();
-  const hasCta = Boolean(footer);
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => setMounted(true), []);
-
-  useEffect(() => {
-    const root = document.body;
-    if (!isMobile || !hasCta) {
-      root.classList.remove("has-portal-detail-cta");
-      return;
-    }
-    root.classList.add("has-portal-detail-cta");
-    return () => {
-      root.classList.remove("has-portal-detail-cta");
-    };
-  }, [isMobile, hasCta]);
-
-  const mobileBar =
-    mounted && isMobile && footer
-      ? createPortal(
-          <div className="portal-detail-mobile-cta" role="toolbar" aria-label="Aktionen">
-            <div className="portal-detail-mobile-cta__inner">{footer}</div>
-          </div>,
-          document.body
-        )
-      : null;
-
-  return (
-    <PortalDetailLayoutFooterContext.Provider value={footer ?? null}>
-      <div className="flex flex-col">
-        <div className="portal-detail-layout space-y-5 pb-2">{children}</div>
-        {mobileBar}
-      </div>
-    </PortalDetailLayoutFooterContext.Provider>
   );
 }
 
@@ -496,34 +444,32 @@ export function PortalDetailStickyActions({
     <div className="w-full space-y-2 lg:w-auto">
       <div className="portal-action-row">
         {tertiaryLabel ? (
-          <button
-            type="button"
+          <PortalButton
+            variant="ghost"
             disabled={tertiaryDisabled || primaryLoading}
             onClick={onTertiary}
-            className="portal-action-btn portal-action-btn--ghost"
           >
             {tertiaryLabel}
-          </button>
+          </PortalButton>
         ) : null}
         {secondaryLabel ? (
-          <button
-            type="button"
+          <PortalButton
+            variant="secondary"
             disabled={secondaryDisabled || primaryLoading}
             onClick={onSecondary}
-            className="portal-action-btn portal-action-btn--secondary"
           >
             {secondaryLabel}
-          </button>
+          </PortalButton>
         ) : null}
-        <button
+        <PortalButton
           type={primaryType}
           form={primaryForm}
+          variant="primary"
           disabled={primaryDisabled || primaryLoading}
           onClick={primaryType === "button" ? onPrimary : undefined}
-          className="portal-action-btn portal-action-btn--primary"
         >
           {primaryLoading ? "Wird gesendet…" : primaryLabel}
-        </button>
+        </PortalButton>
       </div>
       {disabledHint && (primaryDisabled || secondaryDisabled) ? (
         <p className="portal-text-label normal-case tracking-normal text-center text-text-tertiary">
@@ -536,7 +482,7 @@ export function PortalDetailStickyActions({
 
 export function PortalDetailError({ message }: { message: string }) {
   return (
-    <p className="portal-text-body rounded-lg bg-red-50 px-3 py-2.5 text-red-800" role="alert">
+    <p className="portal-text-body rounded-card bg-p2-danger-soft px-3 py-2.5 text-p2-danger" role="alert">
       {message}
     </p>
   );
@@ -544,7 +490,7 @@ export function PortalDetailError({ message }: { message: string }) {
 
 export function PortalDetailSuccessBox({ children }: { children: React.ReactNode }) {
   return (
-    <div className="portal-text-body space-y-1 rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-3.5 text-emerald-900">
+    <div className="portal-text-body space-y-1 rounded-sheet border border-p2-primary bg-p2-primary-soft px-3 py-3.5 text-p2-green-dark">
       {children}
     </div>
   );
@@ -603,9 +549,9 @@ export function PortalDetailMilestoneList({
         >
           <span
             className={cn(
-              "mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-xs font-bold",
+              "mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-pill text-xs font-bold",
               m.erledigt
-                ? "bg-emerald-600 text-white"
+                ? "bg-p2-primary text-white"
                 : "border border-border-default bg-surface-page text-transparent"
             )}
             aria-hidden

@@ -3,9 +3,11 @@
 import { useEffect } from "react";
 
 import { NeueAnfrageResetLink } from "@/components/funnel/NeueAnfrageResetLink";
+import { PortalIcon } from "@/components/portal/PortalIcon";
+import { MockIconSvgWhatsApp } from "@/components/shared/mock-icon-svgs";
 import { SITE_CONFIG } from "@/lib/config";
 import { cn } from "@/lib/utils";
-import { WHATSAPP_ICON_PATH, WHATSAPP_URL_ANFRAGE } from "@/lib/whatsapp";
+import { WHATSAPP_URL_ANFRAGE } from "@/lib/whatsapp";
 
 const TIMELINE_STEPS = [
   {
@@ -22,22 +24,12 @@ const TIMELINE_STEPS = [
   },
   {
     title: "Auftrag & Umsetzung",
-    sub: "Nach Ihrer Zusage koordinieren wir alle Handwerker — Sie lehnen sich zurück.",
+    sub: "Nach Ihrer Zusage koordinieren wir alle Partner — Sie lehnen sich zurück.",
   },
 ] as const;
 
 function TimelineCheck() {
-  return (
-    <svg width="10" height="10" viewBox="0 0 10 10" fill="none" aria-hidden>
-      <path
-        d="M2 5l2.5 2.5 3.5-4"
-        stroke="white"
-        strokeWidth="1.6"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
-  );
+  return <PortalIcon n="check" ctx="default" size={10} />;
 }
 
 export interface ThankYouProps {
@@ -98,18 +90,10 @@ export function ThankYou({
       )}
     >
       <div
-        className="flex size-[52px] items-center justify-center rounded-full bg-muted text-funnel-accent"
+        className="flex size-[52px] items-center justify-center rounded-pill bg-muted text-funnel-accent"
         aria-hidden
       >
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-          <path
-            d="M20 6L9 17l-5-5"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
-        </svg>
+        <PortalIcon n="check" ctx="default" size={24} />
       </div>
       <h2 className="mt-4 text-xl font-semibold text-text-primary">
         {isBeratung
@@ -131,17 +115,9 @@ export function ThankYou({
           href={WHATSAPP_URL_ANFRAGE}
           target="_blank"
           rel="noopener noreferrer"
-          className="inline-flex items-center gap-2 text-[15px] font-semibold text-[#25D366] no-underline transition-opacity hover:opacity-90"
+          className="inline-flex items-center gap-2 text-fs-title font-semibold text-[var(--fl-whatsapp)] no-underline transition-opacity hover:opacity-90"
         >
-          <svg
-            viewBox="0 0 24 24"
-            fill="#25D366"
-            width={18}
-            height={18}
-            aria-hidden
-          >
-            <path d={WHATSAPP_ICON_PATH} />
-          </svg>
+          <MockIconSvgWhatsApp size={18} fill="currentColor" />
           WhatsApp öffnen →
         </a>
       </div>
@@ -151,7 +127,7 @@ export function ThankYou({
           <p className="mb-2 text-sm font-semibold text-text-primary">
             Ihr Wunschtermin
           </p>
-          <div className="rounded-xl bg-muted p-4">
+          <div className="rounded-sheet bg-muted p-4">
             {(
               [
                 ["Datum", dateLabel],

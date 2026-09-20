@@ -1,6 +1,7 @@
 "use client";
 
 import { usePathname } from "next/navigation";
+import { PortalButton } from "@/components/portal/PortalButton";
 
 import {
   AUTH_ADMIN_VIEW_END,
@@ -49,13 +50,13 @@ export function AdminViewBanner() {
 
   return (
     <div
-      className="sticky top-0 z-[100] border-b border-amber-300 bg-amber-50 px-4 py-2 text-sm text-amber-950"
+      className="sticky top-0 z-[100] border-b border-warning-border bg-warning-bg px-4 py-2 text-sm text-warning-text"
       role="status"
     >
       <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-2">
         <span>
           {AUTH_ADMIN_VIEW_PREFIX} {info.roleLabel} ·{" "}
-          <span className="text-amber-800/80">({info.adminEmail})</span>
+          <span className="text-warning-text/80">({info.adminEmail})</span>
         </span>
         <form
           action={signoutPath}
@@ -64,12 +65,13 @@ export function AdminViewBanner() {
             clearBannerCookie();
           }}
         >
-          <button
+          <PortalButton
+            variant="ghost"
             type="submit"
-            className="rounded-lg border border-amber-400 bg-white px-3 py-1 text-xs font-medium hover:bg-amber-100"
+            className="rounded-button border border-warning-border bg-white px-3 py-1 text-xs font-medium hover:bg-warning-bg"
           >
             {AUTH_ADMIN_VIEW_END}
-          </button>
+          </PortalButton>
         </form>
       </div>
     </div>

@@ -1,3 +1,4 @@
+import { logDbError } from '@/lib/errors/log-db-error'
 import {
   createAnthropicClient,
   getClaudeApiKey,
@@ -182,13 +183,14 @@ export async function POST(req: Request) {
     };
     if (isSupabaseConfigured()) {
       try {
-        await supabaseAdmin.from("ki_anfragen_log").insert({
+        const { error: __dbErr144_1 } = await supabaseAdmin.from("ki_anfragen_log").insert({
           session_id: body.session_id ?? null,
           anfrage_text: lastUserMessage,
           claude_antwort: JSON.stringify(offTopicPayload),
           typ: "off_topic",
           extrahiertes_json: offTopicPayload,
         });
+        if (__dbErr144_1) logDbError('app/api/ki-rechner/route:ki_anfragen_log', __dbErr144_1)
       } catch (logErr) {
         console.error("[ki-rechner] Supabase log failed:", logErr);
       }
@@ -261,13 +263,14 @@ export async function POST(req: Request) {
 
     if (isSupabaseConfigured()) {
       try {
-        await supabaseAdmin.from("ki_anfragen_log").insert({
+        const { error: __dbErr145_2 } = await supabaseAdmin.from("ki_anfragen_log").insert({
           session_id: body.session_id ?? null,
           anfrage_text: lastUserMessage,
           claude_antwort: content,
           typ,
           extrahiertes_json: parsed ?? null,
         });
+        if (__dbErr145_2) logDbError('app/api/ki-rechner/route:ki_anfragen_log', __dbErr145_2)
       } catch (logErr) {
         console.error("[ki-rechner] Supabase log failed:", logErr);
       }

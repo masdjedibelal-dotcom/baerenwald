@@ -1,3 +1,4 @@
+import { logDbError } from '@/lib/errors/log-db-error'
 import { createClient } from "@supabase/supabase-js";
 import { createServerClient, type CookieOptions } from "@supabase/ssr";
 import { cookies } from "next/headers";
@@ -53,7 +54,7 @@ async function resolveEmailForRole(role: DevPortalRole): Promise<string | null> 
     const forced = process.env.E2E_ORG_EMAIL?.trim();
     if (forced) return forced;
 
-    const { data } = await supabaseAdmin
+    const {data, error: __dbErr137_1} = await supabaseAdmin
       .from("kunden")
       .select("email, auth_user_id")
       .eq("portal_modus", "organisation")
@@ -61,6 +62,7 @@ async function resolveEmailForRole(role: DevPortalRole): Promise<string | null> 
       .not("auth_user_id", "is", null)
       .limit(1)
       .maybeSingle();
+    if (__dbErr137_1) logDbError('app/api/dev/auto-login/route:kunden', __dbErr137_1)
     return data?.email?.trim() ?? null;
   }
 
@@ -68,20 +70,21 @@ async function resolveEmailForRole(role: DevPortalRole): Promise<string | null> 
     const forced = process.env.E2E_PARTNER_EMAIL?.trim();
     if (forced) return forced;
 
-    const { data } = await supabaseAdmin
+    const {data, error: __dbErr138_2} = await supabaseAdmin
       .from("handwerker")
       .select("email, auth_user_id")
       .not("email", "is", null)
       .not("auth_user_id", "is", null)
       .limit(1)
       .maybeSingle();
+    if (__dbErr138_2) logDbError('app/api/dev/auto-login/route:handwerker', __dbErr138_2)
     return data?.email?.trim() ?? null;
   }
 
   const forced = process.env.E2E_PRIVAT_EMAIL?.trim();
   if (forced) return forced;
 
-  const { data } = await supabaseAdmin
+  const {data, error: __dbErr139_3} = await supabaseAdmin
     .from("kunden")
     .select("email, auth_user_id")
     .eq("portal_modus", "privat")
@@ -89,6 +92,7 @@ async function resolveEmailForRole(role: DevPortalRole): Promise<string | null> 
     .not("auth_user_id", "is", null)
     .limit(1)
     .maybeSingle();
+  if (__dbErr139_3) logDbError('app/api/dev/auto-login/route:kunden', __dbErr139_3)
   return data?.email?.trim() ?? null;
 }
 

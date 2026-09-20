@@ -1,4 +1,5 @@
 "use client";
+import { PALETTE } from "@/lib/tokens/palette";
 
 type Props = {
   error: Error & { digest?: string };
@@ -18,24 +19,24 @@ export default function GlobalError({ error, reset }: Props) {
           justifyContent: "center",
           padding: "2rem",
           fontFamily: "system-ui, sans-serif",
-          background: "#f7f6f3",
-          color: "#1e1c1a",
+          background: "var(--p2-bg)",
+          color: "var(--p2-ink)",
           textAlign: "center",
         }}
       >
-        <h1 style={{ margin: "0 0 12px", fontSize: "1.5rem" }}>Etwas ist schiefgelaufen</h1>
-        <p style={{ margin: "0 0 24px", color: "#524e4a", maxWidth: 400 }}>
+        <h1 style={{ margin: "0 0 0.75rem", fontSize: "1.5rem" }}>Etwas ist schiefgelaufen</h1>
+        <p style={{ margin: "0 0 1.5rem", color: PALETTE.h524e4a, maxWidth: 400 }}>
           {process.env.NODE_ENV === "development" ? error.message : "Bitte Seite neu laden."}
         </p>
         <button
           type="button"
           onClick={() => reset()}
           style={{
-            padding: "12px 24px",
+            padding: "0.75rem 1.5rem",
             borderRadius: 8,
             border: "none",
-            background: "#2e7d52",
-            color: "#fff",
+            background: "var(--p2-primary)",
+            color: "var(--p2-panel)",
             fontWeight: 600,
             cursor: "pointer",
           }}

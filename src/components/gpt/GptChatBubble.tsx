@@ -76,7 +76,7 @@ export function GptChatBubble({
                 key={a.id}
                 type="button"
                 disabled={disabled}
-                className="gpt-chat-cta-btn"
+                className="gpt-chat-cta-action"
                 onClick={() => onAction(a.id)}
               >
                 {a.label}

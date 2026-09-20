@@ -1,0 +1,2366 @@
+{
+  "total": 390,
+  "hits": [
+    {
+      "file": "src/lib/partner/get-partner-data.ts",
+      "fileHits": [
+        {
+          "line": 7,
+          "s": ";\nimport {\n  aggregateAuftragHandwerkerStatus,\n  resolveAuftragPortalPhase,\n  type PartnerPortalPhase,\n} from ",
+          "count": 1
+        },
+        {
+          "line": 13,
+          "s": ";\nimport {\n  mapAngebotHandwerkerRow,\n  PARTNER_ANGEBOT_EMBED,\n  PARTNER_LEAD_EMBED,\n} from ",
+          "count": 1
+        },
+        {
+          "line": 24,
+          "s": ";\nimport {\n  extractPartnerLeadGateFromAngebotHandwerkerRow,\n  extractPartnerLeadGateFromAuftragRow,\n  isPartnerBlockedB",
+          "count": 1
+        },
+        {
+          "line": 35,
+          "s": ";\nimport { resolveHandwerkerAnsprechpartner } from ",
+          "count": 1
+        },
+        {
+          "line": 42,
+          "s": ";\nimport type { PartnerHandwerkerBewertungProfil } from ",
+          "count": 1
+        },
+        {
+          "line": 62,
+          "s": ";\nimport {\n  loadHandwerkerComplianceBundle,\n  loadRahmenvertrag,\n  vertragKontextForAngebot,\n  type PartnerVertragKonte",
+          "count": 1
+        },
+        {
+          "line": 81,
+          "s": ";\nimport { pickPrimaryAngebotHandwerkerAnfrage } from ",
+          "count": 1
+        },
+        {
+          "line": 82,
+          "s": ";\n\nexport type PartnerAnfrageItem = {\n  id: string;\n  angebot_id: string;\n  status: string;\n  gewerk_name: string;\n  /**",
+          "count": 1
+        },
+        {
+          "line": 199,
+          "s": ";\n  own: boolean;\n  handwerker_id: string | null;\n};\n\nexport type PartnerAuftragItem = {\n  id: string;\n  titel: string;\n",
+          "count": 2
+        },
+        {
+          "line": 451,
+          "s": "\n          ? (row as { leistungsumfang: string }).leistungsumfang.trim() || null\n          : null,\n    });\n  }\n  return ",
+          "count": 1
+        },
+        {
+          "line": 497,
+          "s": ";\n      const intern = internByLead.get(lid);\n      const useIntern = Boolean(row.ohne_lv) && ang?.ist_partner_einholung",
+          "count": 2
+        },
+        {
+          "line": 637,
+          "s": ",\n      anfragenRowsError.message\n    );\n  }\n\n  const rawRows = (ahRows ?? []) as Array<Record<string, unknown>>;\n  cons",
+          "count": 2
+        },
+        {
+          "line": 661,
+          "s": " ||\n      (leadRaw as { geloescht_am?: string | null }).geloescht_am\n    ) {\n      return false;\n    }\n    const gate = ",
+          "count": 1
+        },
+        {
+          "line": 1033,
+          "s": ");\n      const hwStatus = aggregateAuftragHandwerkerStatus(\n        hwStatusByAuftrag.get(aid) ?? [],\n        ownPos.map",
+          "count": 1
+        },
+        {
+          "line": 1076,
+          "s": ",\n        lead,\n        positionen,\n        bautagebuch: btByAuftrag.get(aid) ?? [],\n        portalPhase,\n        hwStat",
+          "count": 1
+        },
+        {
+          "line": 1128,
+          "s": " && rvMeta.trim()) {\n      void acceptCrmRahmenvertragLoggedIn();\n      const healed = await persistPortalRahmenvertragA",
+          "count": 4
+        },
+        {
+          "line": 1229,
+          "s": ";\n          if (linkedAng) {\n            angebotId = linkedAng;\n            auftragAngebotIdByAuftragId.set(a.id, linked",
+          "count": 1
+        },
+        {
+          "line": 1494,
+          "s": ")) {\n    void ensurePartnerOffenNotifications({\n      handwerkerId: id,\n      offen,\n      vorgaenge,\n    });\n  }\n\n  ret",
+          "count": 1
+        },
+        {
+          "line": 473,
+          "s": ";\n}\n\nasync function mapAngebotHandwerkerRows(\n  rows: Array",
+          "count": 1,
+          "jsx": true
+        }
+      ],
+      "n": 25
+    },
+    {
+      "file": "src/lib/ratgeber/articles/guide-pages.ts",
+      "fileHits": [
+        {
+          "line": 39,
+          "s": "Ein Projektleiter für alle Handwerker",
+          "count": 1
+        },
+        {
+          "line": 53,
+          "s": "Generalunternehmer oder einzelner Handwerker — was ist besser für mein Projekt?",
+          "count": 1
+        },
+        {
+          "line": 59,
+          "s": "Wann reicht ein einzelner Handwerker?",
+          "count": 1
+        },
+        {
+          "line": 72,
+          "s": "Auf Plattformen stellst du eine Anfrage und vergleichst Angebote verschiedener Handwerker — du koordinierst danach selbs",
+          "count": 1
+        },
+        {
+          "line": 90,
+          "s": "Bärenwald als Generalunternehmer — nicht der einzelne Handwerker. Du musst nicht herausfinden, welcher Betrieb für einen",
+          "count": 1
+        },
+        {
+          "line": 146,
+          "s": "Was passiert wenn ein Handwerker ausfällt?",
+          "count": 1
+        },
+        {
+          "line": 147,
+          "s": "Bärenwald koordiniert Ersatz aus dem Partnernetzwerk — du bemerkst es meist nicht. Das ist der Unterschied zu einem einz",
+          "count": 1
+        },
+        {
+          "line": 171,
+          "s": "Zuverlässigen Handwerker finden München",
+          "count": 1
+        },
+        {
+          "line": 175,
+          "s": "Zuverlässigen Handwerker in München finden — so gehst du vor",
+          "count": 1
+        },
+        {
+          "line": 181,
+          "s": "Woran erkenne ich einen seriösen Handwerker in München?",
+          "count": 1
+        },
+        {
+          "line": 185,
+          "s": "Wo finde ich gute Handwerker in München?",
+          "count": 1
+        },
+        {
+          "line": 189,
+          "s": "Was sind typische Warnsignale bei Handwerkern in München?",
+          "count": 1
+        },
+        {
+          "line": 193,
+          "s": "Wie lange muss ich in München auf einen Handwerker warten?",
+          "count": 1
+        },
+        {
+          "line": 198,
+          "s": "Weil die Koordination mehrerer Handwerker zeitaufwändig und nervenaufreibend ist. Wenn der Fliesenleger einen Tag zu spä",
+          "count": 1
+        },
+        {
+          "line": 207,
+          "s": "Muss ich den günstigsten Handwerker nehmen?",
+          "count": 1
+        },
+        {
+          "line": 211,
+          "s": "Was tue ich wenn der Handwerker nicht fertig wird?",
+          "count": 1
+        },
+        {
+          "line": 223,
+          "s": ",\n};\n\nexport const notfallHandwerkerMuenchen: RatgeberData = {\n  slug: ",
+          "count": 1
+        },
+        {
+          "line": 228,
+          "s": "Notfall Handwerker München",
+          "count": 1
+        },
+        {
+          "line": 233,
+          "s": "Notfall-Handwerker in München — wer kommt schnell und was kostet das?",
+          "count": 1
+        },
+        {
+          "line": 273,
+          "s": "Was ist der Unterschied zu einem normalen Handwerker-Notdienst?",
+          "count": 1
+        },
+        {
+          "line": 274,
+          "s": "Bärenwald koordiniert den passenden Fachbetrieb für dein spezifisches Problem — du musst nicht selbst herausfinden, welc",
+          "count": 1
+        },
+        {
+          "line": 330,
+          "s": "Sobald mehr als ein Gewerk beteiligt ist und die Gewerke voneinander abhängen. Faustregel: wenn du mehr als 3 verschiede",
+          "count": 1
+        }
+      ],
+      "n": 22
+    },
+    {
+      "file": "src/lib/partner/partner-konditionen.ts",
+      "fileHits": [
+        {
+          "line": 2,
+          "s": ";\nimport { positionBrauchtHandwerkerAktion as crmPositionBrauchtHandwerkerAktion } from ",
+          "count": 2
+        },
+        {
+          "line": 13,
+          "s": ",\n]);\n\nexport function positionHandwerkerErledigt(\n  handwerkerStatus: string | null | undefined\n): boolean {\n  return (",
+          "count": 1
+        },
+        {
+          "line": 19,
+          "s": ";\n}\n\nexport function positionHandwerkerAbgeschlossen(\n  handwerkerStatus: string | null | undefined\n): boolean {\n  retur",
+          "count": 1
+        },
+        {
+          "line": 25,
+          "s": ").toLowerCase());\n}\n\n/** CRM hat die Leistung an den Handwerker gesendet (handwerker_status gesetzt). */\nexport function",
+          "count": 2
+        },
+        {
+          "line": 32,
+          "s": ").trim());\n}\n\nexport function positionBrauchtHandwerkerAktion(\n  statusOrPos:\n    | string\n    | null\n    | undefined\n  ",
+          "count": 1
+        },
+        {
+          "line": 42,
+          "s": " && statusOrPos !== null) {\n    return crmPositionBrauchtHandwerkerAktion({\n      handwerker_id: statusOrPos.handwerker_",
+          "count": 2
+        },
+        {
+          "line": 56,
+          "s": "\n  > & {\n    anerkennung_status?: string | null;\n  }\n): boolean {\n  if (!positionIstHandwerkerZugewiesen(position.handwe",
+          "count": 1
+        },
+        {
+          "line": 73,
+          "s": ").trim().toLowerCase();\n  const hwAbgeschlossen = positionHandwerkerAbgeschlossen(position.handwerker_status);\n\n  if (hw",
+          "count": 1
+        },
+        {
+          "line": 94,
+          "s": ";\n  return positionen\n    .filter((p) => {\n      if (!positionBrauchtVorgangAktion(p)) return false;\n      if (gewerkNam",
+          "count": 2
+        },
+        {
+          "line": 522,
+          "s": ";\n  if (positionHandwerkerAbgeschlossen(opts?.handwerker_status)) return ",
+          "count": 1
+        },
+        {
+          "line": 590,
+          "s": "\n    );\n  });\n\n  // Reine Erstzuweisung / LV-Preisabfrage ohne angenommene Position ≠ Nachreichung\n  if (!hadAcceptedPos",
+          "count": 1
+        },
+        {
+          "line": 808,
+          "s": ";\n  }\n  return out;\n}\n\n/** CRM-Preise aus Zeilen (Handwerker bearbeitet Preise nicht mehr). */\nexport function buildKond",
+          "count": 1
+        }
+      ],
+      "n": 16
+    },
+    {
+      "file": "src/app/actions/partner-auftrag-bestaetigen.ts",
+      "fileHits": [
+        {
+          "line": 8,
+          "s": ";\nimport { isHandwerkerAblehnungGrund } from ",
+          "count": 1
+        },
+        {
+          "line": 9,
+          "s": ";\nimport { linkPortalHandwerkerToAuthUser } from ",
+          "count": 1
+        },
+        {
+          "line": 22,
+          "s": ";\nimport { ensurePartnerAngebotHandwerkerForAuftrag } from ",
+          "count": 1
+        },
+        {
+          "line": 23,
+          "s": ";\nimport { syncAngebotHandwerkerAfterAuftragAccept } from ",
+          "count": 1
+        },
+        {
+          "line": 337,
+          "s": " };\n\n  const link = await linkPortalHandwerkerToAuthUser({\n    userId: user.id,\n    email: user.email,\n  });\n  if (!link",
+          "count": 1
+        },
+        {
+          "line": 661,
+          "s": ") {\n    const ensured = await ensurePartnerAngebotHandwerkerForAuftrag({\n      auftragId: opts.auftragId,\n      handwerk",
+          "count": 1
+        },
+        {
+          "line": 735,
+          "s": " };\n\n  const link = await linkPortalHandwerkerToAuthUser({\n    userId: user.id,\n    email: user.email,\n  });\n  if (!link",
+          "count": 1
+        },
+        {
+          "line": 758,
+          "s": ",\n      projektvertragNoetig: istBauprojekt,\n      gelesen: opts.gelesen,\n      verbindlich: opts.verbindlich,\n    });\n ",
+          "count": 1
+        },
+        {
+          "line": 790,
+          "s": ";\n  if (!grundRaw || !isHandwerkerAblehnungGrund(grundRaw)) {\n    return { ok: false, error: ",
+          "count": 1
+        },
+        {
+          "line": 799,
+          "s": " };\n\n  const link = await linkPortalHandwerkerToAuthUser({\n    userId: user.id,\n    email: user.email,\n  });\n  if (!link",
+          "count": 1
+        },
+        {
+          "line": 912,
+          "s": ";\n  if (!grundRaw || !isHandwerkerAblehnungGrund(grundRaw)) {\n    return { ok: false, error: ",
+          "count": 1
+        },
+        {
+          "line": 921,
+          "s": " };\n\n  const link = await linkPortalHandwerkerToAuthUser({\n    userId: user.id,\n    email: user.email,\n  });\n  if (!link",
+          "count": 1
+        }
+      ],
+      "n": 12
+    },
+    {
+      "file": "src/components/partner/PartnerAuftragDetail.tsx",
+      "fileHits": [
+        {
+          "line": 51,
+          "s": ";\nimport type {\n  PartnerAuftragItem,\n  PartnerHandwerkerProfil,\n} from ",
+          "count": 1
+        },
+        {
+          "line": 77,
+          "s": ";\n\nexport function PartnerAuftragDetail({\n  item,\n  vorgangState,\n  handwerker,\n  onBack,\n  focusAbnahme,\n  deepLinkProt",
+          "count": 1
+        },
+        {
+          "line": 213,
+          "s": ");\n      await refresh();\n    } finally {\n      setAbschlussBusy(false);\n    }\n  }\n\n  async function confirmDeleteDoc() ",
+          "count": 1
+        },
+        {
+          "line": 225,
+          "s": ") {\n        const res = await deletePartnerHwAuftragDokument({\n          anfrageId: item.angebotHandwerkerId,\n          ",
+          "count": 1
+        },
+        {
+          "line": 237,
+          "s": ");\n          return;\n        }\n        const res = await deletePartnerHwAuftragDokument({\n          anfrageId: item.ange",
+          "count": 1
+        },
+        {
+          "line": 250,
+          "s": ");\n        return;\n      }\n      partnerPortalToast.complianceGeloescht(deleteDoc.name);\n      setDeleteDoc(null);\n     ",
+          "count": 1
+        },
+        {
+          "line": 277,
+          "s": ")\n          .map((f) => f.label);\n        if (firmMissing.length > 0) {\n          setFirmendatenMissing(firmMissing);\n  ",
+          "count": 1
+        },
+        {
+          "line": 302,
+          "s": ", item.angebotHandwerkerId);\n    for (const f of angebotPdfs) fd.append(",
+          "count": 1
+        },
+        {
+          "line": 303,
+          "s": ", f);\n    await runUpload(async () => {\n      const res = await submitPartnerAngebotPdf(fd);\n      if (!res.ok) {\n      ",
+          "count": 1
+        },
+        {
+          "line": 321,
+          "s": ", item.angebotHandwerkerId);\n    fd.set(",
+          "count": 1
+        },
+        {
+          "line": 710,
+          "s": "}\n        loading={abschlussBusy}\n        onConfirm={() => void confirmAuftragErledigt()}\n        onCancel={() => {\n    ",
+          "count": 1
+        }
+      ],
+      "n": 11
+    },
+    {
+      "file": "src/lib/portal2/handwerker-display.ts",
+      "fileHits": [
+        {
+          "line": 1,
+          "s": ";\nimport type {\n  HandwerkerDisplay,\n  HandwerkerDisplaySource,\n} from ",
+          "count": 2
+        },
+        {
+          "line": 33,
+          "s": " && Number.isFinite(gesamt)) {\n    return gesamt;\n  }\n  return undefined;\n}\n\n/** Handwerker-Stamm → Mock-HANDWERKER-Anze",
+          "count": 5
+        },
+        {
+          "line": 49,
+          "s": ";\n  const trade = formatHandwerkerTrade(src.gewerkNamen, src.gewerke);\n  const rating = resolveHandwerkerRating(src);\n\n ",
+          "count": 4
+        }
+      ],
+      "n": 11
+    },
+    {
+      "file": "src/app/actions/partner-auto-dokumente.ts",
+      "fileHits": [
+        {
+          "line": 12,
+          "s": ";\nimport { linkPortalHandwerkerToAuthUser } from ",
+          "count": 1
+        },
+        {
+          "line": 20,
+          "s": ";\nimport {\n  formatPlzOrt,\n  formatStrasseNr,\n  resolveHandwerkerAnschrift,\n} from ",
+          "count": 1
+        },
+        {
+          "line": 88,
+          "s": " };\n  const link = await linkPortalHandwerkerToAuthUser({\n    userId: user.id,\n    email: user.email,\n  });\n  if (!link.",
+          "count": 1
+        },
+        {
+          "line": 99,
+          "s": ";\n}\n\nasync function loadHandwerkerAbsender(handwerkerId: string): Promise<{\n  absender: PartnerDocAbsender;\n  logoPath: ",
+          "count": 1
+        },
+        {
+          "line": 137,
+          "s": ");\n  const anschrift = resolveHandwerkerAnschrift({\n    strasse: (row.strasse as string | null) ?? null,\n    hausnummer:",
+          "count": 1
+        },
+        {
+          "line": 450,
+          "s": " };\n  }\n\n  const { ensurePartnerAngebotHandwerkerForAuftrag } = await import(\n    ",
+          "count": 1
+        },
+        {
+          "line": 454,
+          "s": "\n  );\n  const ensured = await ensurePartnerAngebotHandwerkerForAuftrag({\n    auftragId: id,\n    handwerkerId,\n    markAc",
+          "count": 1
+        },
+        {
+          "line": 528,
+          "s": " };\n  if (!resolved.ok) return resolved;\n  const { ctx } = resolved;\n\n  const hw = await loadHandwerkerAbsender(auth.han",
+          "count": 1
+        },
+        {
+          "line": 885,
+          "s": ");\n  return { ok: true, path: upload.path, dokumentNr };\n}\n\n/**\n * Nach Firmendaten-Save: offene angenommene Vorgänge oh",
+          "count": 1
+        }
+      ],
+      "n": 9
+    },
+    {
+      "file": "src/app/api/internal/partner-notify/route.ts",
+      "fileHits": [
+        {
+          "line": 4,
+          "s": ";\nimport { notifyHandwerkerNewAnfrage } from ",
+          "count": 1
+        },
+        {
+          "line": 5,
+          "s": ";\nimport { notifyHandwerkerAngebotAntwort } from ",
+          "count": 1
+        },
+        {
+          "line": 6,
+          "s": ";\nimport { notifyHandwerkerAngebotBestaetigt } from ",
+          "count": 1
+        },
+        {
+          "line": 7,
+          "s": ";\nimport { notifyHandwerkerLeistungZuweisung } from ",
+          "count": 1
+        },
+        {
+          "line": 64,
+          "s": ").trim();\n\n  // Legacy-Kurzpfad: nur anfrageId → New-Anfrage-Mail + In-App ohne Doppel-Mail\n  if (anfrageId && !body.han",
+          "count": 1
+        },
+        {
+          "line": 155,
+          "s": " && isSupabaseConfigured()) {\n    const result = await notifyHandwerkerNewAnfrage(anfrageId);\n    if (!result.ok) {\n    ",
+          "count": 2
+        },
+        {
+          "line": 171,
+          "s": ")) {\n    const result = await notifyHandwerkerLeistungZuweisung({\n      auftragId,\n      handwerkerId,\n      positionIds",
+          "count": 1
+        },
+        {
+          "line": 185,
+          "s": ")) {\n    const result = await notifyHandwerkerAngebotAntwort({\n      anfrageId,\n      typ: ",
+          "count": 1
+        }
+      ],
+      "n": 9
+    },
+    {
+      "file": "src/lib/ratgeber/articles/guide-seo-content.ts",
+      "fileHits": [
+        {
+          "line": 14,
+          "s": "Wann lohnt sich ein Generalunternehmer in München — und wann reicht ein einzelner Handwerker? Entscheidungshilfe mit Kos",
+          "count": 1
+        },
+        {
+          "line": 16,
+          "s": "Für Projekte mit einem Gewerk (z.B. nur Malerarbeiten) reicht ein einzelner Handwerker. Sobald mehrere Gewerke zusammens",
+          "count": 1
+        },
+        {
+          "line": 32,
+          "s": "Zuverlässigen Handwerker finden München 2026 — Checkliste & Tipps",
+          "count": 1
+        },
+        {
+          "line": 34,
+          "s": "Wie finde ich einen zuverlässigen Handwerker in München? Checkliste mit 7 Kriterien, typische Fehler und warum viele auf",
+          "count": 1
+        },
+        {
+          "line": 36,
+          "s": "Einen zuverlässigen Handwerker in München erkennst du an: schriftlichem Kostenvoranschlag, nachweisbarem Meisterbrief od",
+          "count": 1
+        },
+        {
+          "line": 42,
+          "s": "Notfall Handwerker München 2026 — wer kommt schnell bei Heizung, Rohrbruch & Co.",
+          "count": 1
+        },
+        {
+          "line": 44,
+          "s": "Notfall-Handwerker in München: wer kommt bei Heizungsausfall, Rohrbruch, Stromausfall oder Sturmschaden schnell? Ablauf,",
+          "count": 1
+        },
+        {
+          "line": 46,
+          "s": "Bei einem Handwerker-Notfall in München (Heizungsausfall, Rohrbruch, Stromausfall, Sturmschaden) koordiniert Bärenwald M",
+          "count": 1
+        },
+        {
+          "line": 54,
+          "s": "Checkliste für Renovierungen in München: 10 Punkte die du vor dem Start klären musst — von Genehmigungen über Handwerker",
+          "count": 1
+        }
+      ],
+      "n": 9
+    },
+    {
+      "file": "src/app/handwerker-muenchen/page.tsx",
+      "fileHits": [
+        {
+          "line": 6,
+          "s": ";\nimport type { HandwerkerContentItem } from ",
+          "count": 1
+        },
+        {
+          "line": 7,
+          "s": ";\n\nconst content = handwerkerContent as HandwerkerContentItem[];\n\nconst LEISTUNGEN = [\n  ",
+          "count": 1
+        },
+        {
+          "line": 34,
+          "s": "Handwerker München — alle Stadtteile & Leistungen | Bärenwald",
+          "count": 1
+        },
+        {
+          "line": 37,
+          "s": "Handwerker in München und Umgebung — Malerarbeiten, Badsanierung, Elektriker, Heizung und mehr. Alle Stadtteile auf eine",
+          "count": 1
+        },
+        {
+          "line": 69,
+          "s": ">Handwerker München</span>\n            </nav>\n\n            <h1 className=",
+          "count": 1
+        },
+        {
+          "line": 72,
+          "s": ">\n              Handwerker München —\n              <br />\n              alle Stadtteile\n            </h1>\n            <p",
+          "count": 1
+        },
+        {
+          "line": 69,
+          "s": "Handwerker München",
+          "count": 1,
+          "jsx": true
+        },
+        {
+          "line": 72,
+          "s": "\n              Handwerker München —\n              ",
+          "count": 1,
+          "jsx": true
+        }
+      ],
+      "n": 8
+    },
+    {
+      "file": "src/lib/partner/handwerker-bewertung-display.ts",
+      "fileHits": [
+        {
+          "line": 6,
+          "s": ";\n\nexport type HandwerkerBewertungScores = Record<HandwerkerBewertungKategorieKey, number>;\n\nexport const HANDWERKER_BEW",
+          "count": 3
+        },
+        {
+          "line": 18,
+          "s": " },\n] as const;\n\nexport type PartnerAuftragBewertung = HandwerkerBewertungScores & {\n  updated_at?: string | null;\n};\n\ne",
+          "count": 5
+        }
+      ],
+      "n": 8
+    },
+    {
+      "file": "src/lib/ratgeber/articles/batch.ts",
+      "fileHits": [
+        {
+          "line": 40,
+          "s": "Material und Handwerker werden festgelegt — transparentes Festpreisangebot.",
+          "count": 1
+        },
+        {
+          "line": 86,
+          "s": "Bärenwald plant alle Handwerker, synchronisiert Wasser und Heizung, Fliesen, Elektro und neue Wände (Trockenbau) und häl",
+          "count": 1
+        },
+        {
+          "line": 88,
+          "s": "Ein Projektleiter für alle Handwerker",
+          "count": 1
+        },
+        {
+          "line": 346,
+          "s": "Festpreise pro Handwerker oder Generalübernehmer-Paket.",
+          "count": 1
+        },
+        {
+          "line": 373,
+          "s": "Verfügbarkeit Handwerker München",
+          "count": 1
+        },
+        {
+          "line": 384,
+          "s": "Parallele Handwerker auf der Baustelle",
+          "count": 1
+        },
+        {
+          "line": 404,
+          "s": "Klare Übergaben zwischen den Handwerkern dokumentiert",
+          "count": 1
+        },
+        {
+          "line": 796,
+          "s": "Bärenwald setzt einen Masterterminplan — jeder Handwerker bekommt klare Schnittstellen, damit Silikon und Maler nicht zu",
+          "count": 1
+        }
+      ],
+      "n": 8
+    },
+    {
+      "file": "src/lib/partner/build-partner-vorgaenge.ts",
+      "fileHits": [
+        {
+          "line": 4,
+          "s": ";\nimport { pickPrimaryAngebotHandwerkerAnfrage } from ",
+          "count": 1
+        },
+        {
+          "line": 11,
+          "s": ";\nimport {\n  ableitenVorgangState,\n  resolveHandwerkerBestaetigtAt,\n  type VorgangFilter,\n  type VorgangState,\n  vorgang",
+          "count": 1
+        },
+        {
+          "line": 18,
+          "s": ";\n\nexport type PartnerVorgangItem = {\n  id: string;\n  state: VorgangState;\n  auftrag: PartnerAuftragItem;\n  anfrage?: Pa",
+          "count": 3
+        },
+        {
+          "line": 68,
+          "s": ",\n    angebotHandwerkerId: anfrage.id,\n    angebotHwStatus: anfrage.hw_status ?? null,\n    angebotHwEingereichtAt: anfra",
+          "count": 2
+        }
+      ],
+      "n": 7
+    },
+    {
+      "file": "src/lib/partner/partner-portal-phase.ts",
+      "fileHits": [
+        {
+          "line": 25,
+          "s": "]);\n\n/** Eingabe für Phasen-Auflösung — Nachreichungs-Felder optional (z. B. E-Mail-Links). */\nexport type ResolveAngebo",
+          "count": 1
+        },
+        {
+          "line": 46,
+          "s": "\n    >\n  >;\n\nexport function resolveAngebotHandwerkerPhase(\n  item: ResolveAngebotHandwerkerPhaseInput\n): PartnerPortalP",
+          "count": 2
+        },
+        {
+          "line": 80,
+          "s": ";\n}\n\n/** Aggregierter HW-Status für einen Auftrag (Zuweisung + Positionen). */\nexport function aggregateAuftragHandwerke",
+          "count": 1
+        },
+        {
+          "line": 130,
+          "s": ";\n}\n\n/** Auftrag in „Anfragen“, solange HW noch antworten soll oder Preiseinigung läuft. */\nexport function isAuftragAnf",
+          "count": 1
+        },
+        {
+          "line": 144,
+          "s": " && item.angebotHandwerkerId) {\n    if (ahSt === ",
+          "count": 1
+        },
+        {
+          "line": 149,
+          "s": ") return false;\n  return !HW_BEANTWORTET.has(h);\n}\n\n/** Auftrag in „Aufträge“ — nach CRM-Freigabe/Annahme (kein Projektv",
+          "count": 1
+        }
+      ],
+      "n": 7
+    },
+    {
+      "file": "src/app/actions/partner-todos.ts",
+      "fileHits": [
+        {
+          "line": 4,
+          "s": ";\n\nimport { linkPortalHandwerkerToAuthUser } from ",
+          "count": 1
+        },
+        {
+          "line": 8,
+          "s": ";\n\nexport type PartnerTodoActionResult = { ok: true } | { ok: false; error: string };\n\nasync function requireHandwerkerI",
+          "count": 1
+        },
+        {
+          "line": 23,
+          "s": " };\n\n  const link = await linkPortalHandwerkerToAuthUser({\n    userId: user.id,\n    email: user.email,\n  });\n  if (!link",
+          "count": 2
+        },
+        {
+          "line": 63,
+          "s": ");\n  return { ok: true };\n}\n\nexport async function togglePartnerTodo(\n  id: string,\n  erledigt: boolean\n): Promise<Partn",
+          "count": 1
+        },
+        {
+          "line": 84,
+          "s": ");\n  return { ok: true };\n}\n\nexport async function deletePartnerTodo(id: string): Promise<PartnerTodoActionResult> {\n  c",
+          "count": 1
+        }
+      ],
+      "n": 6
+    },
+    {
+      "file": "src/app/actions/partner-vertrag.ts",
+      "fileHits": [
+        {
+          "line": 7,
+          "s": ";\nimport { linkPortalHandwerkerToAuthUser } from ",
+          "count": 1
+        },
+        {
+          "line": 8,
+          "s": ";\nimport { findHandwerkerForRegistration } from ",
+          "count": 1
+        },
+        {
+          "line": 39,
+          "s": " };\n\n  const link = await linkPortalHandwerkerToAuthUser({\n    userId: user.id,\n    email: user.email,\n  });\n  if (!link",
+          "count": 1
+        },
+        {
+          "line": 120,
+          "s": ");\n  return crm;\n}\n\nexport type PartnerRahmenvertragAcceptResult = { ok: true } | { ok: false; error: string };\n\n/** Reg",
+          "count": 1
+        },
+        {
+          "line": 143,
+          "s": " };\n\n  const hw = await findHandwerkerForRegistration(email);\n\n  if (!hw?.id) {\n    return {\n      ok: false,\n      erro",
+          "count": 1
+        },
+        {
+          "line": 191,
+          "s": " };\n\n  const link = await linkPortalHandwerkerToAuthUser({\n    userId: user.id,\n    email: user.email,\n  });\n  if (!link",
+          "count": 1
+        }
+      ],
+      "n": 6
+    },
+    {
+      "file": "src/components/partner/PartnerFirmendatenScreen.tsx",
+      "fileHits": [
+        {
+          "line": 23,
+          "s": ";\nimport type {\n  PartnerHandwerkerProfil,\n  PartnerProfilKontext,\n} from ",
+          "count": 1
+        },
+        {
+          "line": 27,
+          "s": ";\nimport { resolveHandwerkerAnschrift } from ",
+          "count": 1
+        },
+        {
+          "line": 30,
+          "s": ";\n\ntype Draft = {\n  firma: string;\n  inhaber: string;\n  strasse: string;\n  hausnummer: string;\n  plz: string;\n  ort: str",
+          "count": 1
+        },
+        {
+          "line": 53,
+          "s": ";\n  const anschrift = resolveHandwerkerAnschrift(h);\n  const logo =\n    (h.firma || h.name || ",
+          "count": 1
+        },
+        {
+          "line": 87,
+          "s": ";\n}\n\n/**\n * Handwerker — Tab „Daten“: Anschrift, Steuer, Bank in einem Bearbeiten/Speichern.\n */\nexport function Partner",
+          "count": 2
+        }
+      ],
+      "n": 6
+    },
+    {
+      "file": "src/lib/partner/link-portal-handwerker.ts",
+      "fileHits": [
+        {
+          "line": 2,
+          "s": ";\nimport {\n  HANDWERKER_PORTAL_GESPERRT_MESSAGE,\n  isHandwerkerPortalGesperrt,\n} from ",
+          "count": 1
+        },
+        {
+          "line": 12,
+          "s": ";\n\nexport type LinkPortalHandwerkerResult =\n  | { ok: true; handwerkerId: string }\n  | { ok: false; error: string; signO",
+          "count": 5
+        }
+      ],
+      "n": 6
+    },
+    {
+      "file": "src/lib/partner/partner-position-erledigt.ts",
+      "fileHits": [
+        {
+          "line": 1,
+          "s": ";\nimport {\n  positionBrauchtVorgangAktion,\n  positionHandwerkerErledigt,\n  positionIstHandwerkerZugewiesen,\n} from ",
+          "count": 2
+        },
+        {
+          "line": 10,
+          "s": ";\n\nexport { positionHandwerkerErledigt } from ",
+          "count": 1
+        },
+        {
+          "line": 47,
+          "s": ") return false;\n    return (\n      positionIstHandwerkerZugewiesen(p.handwerker_status) &&\n      !positionBrauchtVorgang",
+          "count": 2
+        },
+        {
+          "line": 94,
+          "s": ">>\n): boolean {\n  if (!positionen.length) return false;\n  return positionen.every((p) => positionHandwerkerErledigt(p.ha",
+          "count": 1
+        }
+      ],
+      "n": 6
+    },
+    {
+      "file": "src/app/actions/partner-angebote.ts",
+      "fileHits": [
+        {
+          "line": 4,
+          "s": ";\n\nimport { linkPortalHandwerkerToAuthUser } from ",
+          "count": 1
+        },
+        {
+          "line": 41,
+          "s": " };\n  }\n\n  const link = await linkPortalHandwerkerToAuthUser({\n    userId: user.id,\n    email: user.email,\n  });\n\n  if (",
+          "count": 1
+        },
+        {
+          "line": 162,
+          "s": " };\n  }\n\n  const link = await linkPortalHandwerkerToAuthUser({\n    userId: user.id,\n    email: user.email,\n  });\n\n  if (",
+          "count": 1
+        },
+        {
+          "line": 302,
+          "s": " };\n  }\n\n  const link = await linkPortalHandwerkerToAuthUser({\n    userId: user.id,\n    email: user.email,\n  });\n\n  if (",
+          "count": 1
+        },
+        {
+          "line": 502,
+          "s": " };\n  }\n\n  const link = await linkPortalHandwerkerToAuthUser({\n    userId: user.id,\n    email: user.email,\n  });\n  if (!",
+          "count": 1
+        }
+      ],
+      "n": 5
+    },
+    {
+      "file": "src/app/actions/partner-notifications.ts",
+      "fileHits": [
+        {
+          "line": 4,
+          "s": ";\n\nimport { linkPortalHandwerkerToAuthUser } from ",
+          "count": 1
+        },
+        {
+          "line": 33,
+          "s": " };\n\n  const link = await linkPortalHandwerkerToAuthUser({\n    userId: user.id,\n    email: user.email,\n  });\n  if (!link",
+          "count": 1
+        },
+        {
+          "line": 83,
+          "s": " };\n\n  const link = await linkPortalHandwerkerToAuthUser({\n    userId: user.id,\n    email: user.email,\n  });\n  if (!link",
+          "count": 1
+        },
+        {
+          "line": 153,
+          "s": " };\n\n  const link = await linkPortalHandwerkerToAuthUser({\n    userId: user.id,\n    email: user.email,\n  });\n  if (!link",
+          "count": 1
+        },
+        {
+          "line": 203,
+          "s": " };\n\n  const link = await linkPortalHandwerkerToAuthUser({\n    userId: user.id,\n    email: user.email,\n  });\n  if (!link",
+          "count": 1
+        }
+      ],
+      "n": 5
+    },
+    {
+      "file": "src/app/actions/partner-profil.ts",
+      "fileHits": [
+        {
+          "line": 4,
+          "s": ";\n\nimport { linkPortalHandwerkerToAuthUser } from ",
+          "count": 1
+        },
+        {
+          "line": 6,
+          "s": ";\nimport { composeHandwerkerAdresse } from ",
+          "count": 1
+        },
+        {
+          "line": 50,
+          "s": " };\n\n  const link = await linkPortalHandwerkerToAuthUser({\n    userId: user.id,\n    email: user.email,\n  });\n  if (!link",
+          "count": 1
+        },
+        {
+          "line": 78,
+          "s": "));\n  let ort = ortRaw;\n  let plzResolved = plz;\n  if (!plzResolved && !ort && plzOrtCombined) {\n    const m = plzOrtCom",
+          "count": 1
+        },
+        {
+          "line": 194,
+          "s": " };\n\n  const link = await linkPortalHandwerkerToAuthUser({\n    userId: user.id,\n    email: user.email,\n  });\n  if (!link",
+          "count": 1
+        }
+      ],
+      "n": 5
+    },
+    {
+      "file": "src/components/handwerker/HandwerkerSeoPage.tsx",
+      "fileHits": [
+        {
+          "line": 6,
+          "s": ";\nimport type { HandwerkerContentItem } from ",
+          "count": 1
+        },
+        {
+          "line": 10,
+          "s": ", {\n    minimumFractionDigits: Number.isInteger(n) ? 0 : 2,\n    maximumFractionDigits: 2,\n  }).format(n);\n}\n\n/** Erster ",
+          "count": 1
+        },
+        {
+          "line": 32,
+          "s": "Handwerker SEO: fehlende Konfiguration für Leistung „${data.leistung}“",
+          "count": 1
+        },
+        {
+          "line": 51,
+          "s": ">Handwerker München</Link>\n              <span className=",
+          "count": 1
+        },
+        {
+          "line": 51,
+          "s": "Handwerker München",
+          "count": 1,
+          "jsx": true
+        }
+      ],
+      "n": 5
+    },
+    {
+      "file": "src/components/partner/VorgangCard.tsx",
+      "fileHits": [
+        {
+          "line": 7,
+          "s": ";\nimport type { PartnerHandwerkerProfil } from ",
+          "count": 1
+        },
+        {
+          "line": 13,
+          "s": ";\n\ntype VorgangCardHandwerker = Pick<\n  PartnerHandwerkerProfil,\n  | ",
+          "count": 2
+        },
+        {
+          "line": 75,
+          "s": ",\n    projektvertrag_bestaetigt_am: auftrag.projektvertrag_bestaetigt_am,\n    projektvertrag: auftrag.vertrag?.projektve",
+          "count": 1
+        },
+        {
+          "line": 108,
+          "s": " &&\n    auftrag.id === vorgang.anfrage!.id;\n\n  if (anfrageOnlyStub && vorgang.anfrage?.ohne_lv) {\n    return (\n      <Pa",
+          "count": 1
+        }
+      ],
+      "n": 5
+    },
+    {
+      "file": "src/lib/partner/notify-partner-zuweisung.ts",
+      "fileHits": [
+        {
+          "line": 2,
+          "s": ";\nimport {\n  sendHandwerkerLeistungZuweisungMail,\n  type LeistungZuweisungMailLeistung,\n  type PartnerAuftragMailVariant",
+          "count": 1
+        },
+        {
+          "line": 152,
+          "s": ";\n  let angebotHandwerker: {\n    id: string;\n    status: string;\n    antwort_at?: string | null;\n    gesendet_at?: strin",
+          "count": 1
+        },
+        {
+          "line": 187,
+          "s": ")),\n    positionStatuses: (allePos ?? []).map((p) => p.handwerker_status as string | null),\n    angebotHandwerker,\n  });",
+          "count": 2
+        },
+        {
+          "line": 213,
+          "s": " };\n  }\n\n  const mail = await sendHandwerkerLeistungZuweisungMail({\n    to,\n    handwerkerName: (hw.name as string)?.tri",
+          "count": 1
+        }
+      ],
+      "n": 5
+    },
+    {
+      "file": "src/lib/partner/partner-anfrage-status.ts",
+      "fileHits": [
+        {
+          "line": 8,
+          "s": ";\nimport {\n  hasPartnerKonditionenNachreichungAusstehend,\n  positionBrauchtHandwerkerAktion,\n} from ",
+          "count": 1
+        },
+        {
+          "line": 12,
+          "s": ";\n\n/** Status, in denen der Handwerker noch annehmen/ablehnen kann. */\nconst PENDING_STATUS = new Set([\n  ",
+          "count": 1
+        },
+        {
+          "line": 180,
+          "s": ") return true;\n\n  if (\n    input.auftrag.positionen.some((p) => positionBrauchtHandwerkerAktion(p))\n  ) {\n    return tru",
+          "count": 1
+        },
+        {
+          "line": 255,
+          "s": ") return false;\n\n  const hatOffenePosition = item.positionen.some((p) =>\n    positionBrauchtHandwerkerAktion(p)\n  );\n\n  ",
+          "count": 1
+        },
+        {
+          "line": 294,
+          "s": "\n> & {\n  positionen: Array<{\n    start_datum?: string | null;\n    handwerker_status?: string | null;\n    handwerker_id?:",
+          "count": 1
+        }
+      ],
+      "n": 5
+    },
+    {
+      "file": "src/lib/portal/get-portal-data.ts",
+      "fileHits": [
+        {
+          "line": 156,
+          "s": ";\n\nexport type PortalDataLoadOpts = {\n  /**\n   * list (Default für Dashboard): ohne Signed URLs / schwere Medien.\n   * f",
+          "count": 1
+        },
+        {
+          "line": 179,
+          "s": ";\n  const includeHandwerkerUpdates = Boolean(opts?.includeHandwerkerUpdates);\n  const onlyLeadIds = (opts?.leadIds ?? []",
+          "count": 2
+        },
+        {
+          "line": 789,
+          "s": ") return includeHandwerkerUpdates;\n            if (typ !== ",
+          "count": 1
+        },
+        {
+          "line": 844,
+          "s": ");\n    const partnerDoku = await loadPartnerDokumentationByAuftragIds(auftragIds, {\n      sources: includeHandwerkerUpda",
+          "count": 1
+        }
+      ],
+      "n": 5
+    },
+    {
+      "file": "src/app/partner/page.tsx",
+      "fileHits": [
+        {
+          "line": 9,
+          "s": ";\nimport { getPartnerDataForHandwerker } from ",
+          "count": 1
+        },
+        {
+          "line": 10,
+          "s": ";\nimport { linkPortalHandwerkerToAuthUser } from ",
+          "count": 1
+        },
+        {
+          "line": 65,
+          "s": "));\n  }\n\n  const link = await linkPortalHandwerkerToAuthUser({\n    userId: user.id,\n    email: user.email,\n  });\n\n  if (",
+          "count": 1
+        },
+        {
+          "line": 125,
+          "s": ">\n              Abmelden\n            </button>\n          </form>\n        </div>\n      </PartnerAuthShell>\n    );\n  }\n\n  ",
+          "count": 1
+        }
+      ],
+      "n": 4
+    },
+    {
+      "file": "src/components/partner/PartnerAuftragAnfrageDetail.tsx",
+      "fileHits": [
+        {
+          "line": 36,
+          "s": ";\nimport { positionBrauchtHandwerkerAktion } from ",
+          "count": 1
+        },
+        {
+          "line": 88,
+          "s": ").trim()) ||\n            positionBrauchtHandwerkerAktion(p)\n        )\n      : item.positionen.filter((p) => positionBrau",
+          "count": 2
+        },
+        {
+          "line": 111,
+          "s": ", res.error);\n          return;\n        }\n        partnerPortalToast.auftragAngenommen();\n        acceptedForAuto = true",
+          "count": 1
+        }
+      ],
+      "n": 4
+    },
+    {
+      "file": "src/components/partner/PartnerStammdatenForm.tsx",
+      "fileHits": [
+        {
+          "line": 11,
+          "s": ";\nimport type { PartnerHandwerkerProfil } from ",
+          "count": 1
+        },
+        {
+          "line": 12,
+          "s": ";\nimport { formatHandwerkerTrade } from ",
+          "count": 1
+        },
+        {
+          "line": 18,
+          "s": ";\n\nexport function PartnerStammdatenForm({ handwerker }: { handwerker: PartnerHandwerkerProfil }) {\n  const router = use",
+          "count": 1
+        },
+        {
+          "line": 51,
+          "s": ">\n          {formatHandwerkerTrade(handwerker.gewerkNamen, handwerker.gewerke)}\n        </p>\n      ) : null}\n\n      {han",
+          "count": 1
+        }
+      ],
+      "n": 4
+    },
+    {
+      "file": "src/lib/partner/vorgang-state.ts",
+      "fileHits": [
+        {
+          "line": 26,
+          "s": ",\n]);\n\nexport function isVorgangAuftragErledigt(auftragStatus: string): boolean {\n  return ERLEDIGT_AUFTRAG_STATUS.has(a",
+          "count": 1
+        },
+        {
+          "line": 81,
+          "s": ";\n\n  if (\n    isHandwerkerVorgangAbgelehnt({\n      hwStatus: input.hwStatus,\n      anfrageStatus: input.anfrageStatus,\n ",
+          "count": 1
+        },
+        {
+          "line": 94,
+          "s": ";\n\n  // Fallback ohne Timestamp: alle eigenen Positionen final erledigt.\n  const eigene = input.positionen.filter((p) =>",
+          "count": 2
+        }
+      ],
+      "n": 4
+    },
+    {
+      "file": "src/lib/portal/vorgang-erledigt.ts",
+      "fileHits": [
+        {
+          "line": 1,
+          "s": ";\nimport { positionHandwerkerErledigt } from ",
+          "count": 1
+        },
+        {
+          "line": 12,
+          "s": ");\n}\n\n/** Position vom Handwerker oder CRM als erledigt markiert. */\nexport function positionPortalErledigt(\n  position:",
+          "count": 2
+        },
+        {
+          "line": 28,
+          "s": "\n  );\n}\n\n/**\n * Alle aktiven Auftragspositionen erledigt — unabhängig vom Handwerker.\n * Offene oder noch nicht zugewies",
+          "count": 1
+        }
+      ],
+      "n": 4
+    },
+    {
+      "file": "src/lib/portal2/basisdaten.ts",
+      "fileHits": [
+        {
+          "line": 23,
+          "s": ";\n\nexport {\n  formatHandwerkerTrade,\n  resolveHandwerkerRating,\n  toHandwerkerDisplay,\n  toHandwerkerDisplayList,\n} from",
+          "count": 4
+        }
+      ],
+      "n": 4
+    },
+    {
+      "file": "src/app/actions/partner-auftrag-erledigt.ts",
+      "fileHits": [
+        {
+          "line": 4,
+          "s": ";\n\nimport { linkPortalHandwerkerToAuthUser } from ",
+          "count": 1
+        },
+        {
+          "line": 31,
+          "s": " };\n  }\n\n  const link = await linkPortalHandwerkerToAuthUser({\n    userId: user.id,\n    email: user.email,\n  });\n\n  if (",
+          "count": 2
+        }
+      ],
+      "n": 3
+    },
+    {
+      "file": "src/app/actions/partner-compliance.ts",
+      "fileHits": [
+        {
+          "line": 4,
+          "s": ";\n\nimport { linkPortalHandwerkerToAuthUser } from ",
+          "count": 1
+        },
+        {
+          "line": 32,
+          "s": " };\n\n  const link = await linkPortalHandwerkerToAuthUser({\n    userId: user.id,\n    email: user.email,\n  });\n  if (!link",
+          "count": 1
+        },
+        {
+          "line": 110,
+          "s": " };\n\n  const link = await linkPortalHandwerkerToAuthUser({\n    userId: user.id,\n    email: user.email,\n  });\n  if (!link",
+          "count": 1
+        }
+      ],
+      "n": 3
+    },
+    {
+      "file": "src/app/actions/partner-fachdoku.ts",
+      "fileHits": [
+        {
+          "line": 6,
+          "s": ";\nimport { linkPortalHandwerkerToAuthUser } from ",
+          "count": 1
+        },
+        {
+          "line": 46,
+          "s": " };\n\n  const link = await linkPortalHandwerkerToAuthUser({\n    userId: user.id,\n    email: user.email,\n  });\n  if (!link",
+          "count": 1
+        },
+        {
+          "line": 88,
+          "s": " };\n\n  const link = await linkPortalHandwerkerToAuthUser({\n    userId: user.id,\n    email: user.email,\n  });\n  if (!link",
+          "count": 1
+        }
+      ],
+      "n": 3
+    },
+    {
+      "file": "src/lib/account/require-account-session.ts",
+      "fileHits": [
+        {
+          "line": 5,
+          "s": ";\nimport { linkPortalHandwerkerToAuthUser } from ",
+          "count": 1
+        },
+        {
+          "line": 15,
+          "s": ";\n      entityId: string;\n    }\n  | { ok: false; status: number; error: string };\n\n/** Auth-Session → verknüpfter Kunde ",
+          "count": 1
+        },
+        {
+          "line": 59,
+          "s": ",\n      entityId: kundeLink.kundeId,\n    };\n  }\n\n  const hwLink = await linkPortalHandwerkerToAuthUser({\n    userId: use",
+          "count": 1
+        }
+      ],
+      "n": 3
+    },
+    {
+      "file": "src/lib/partner/load-partner-compliance-data.ts",
+      "fileHits": [
+        {
+          "line": 388,
+          "s": "\n  >\n> {\n  const [typen, alleGewerke, handwerkerGewerke, dokumente] = await Promise.all([\n    loadComplianceTypen(),\n   ",
+          "count": 2
+        },
+        {
+          "line": 422,
+          "s": ">;\n  auftragIdByAngebotId: Map<string, string>;\n  vertragByAuftragId: Map<string, PartnerVertragKontext>;\n}> {\n  const e",
+          "count": 1
+        }
+      ],
+      "n": 3
+    },
+    {
+      "file": "src/lib/partner/notify-partner-angebot-antwort.ts",
+      "fileHits": [
+        {
+          "line": 12,
+          "s": ";\n\n/** Nach CRM-Rückfrage oder -Ablehnung: Mail an Handwerker. */\nexport async function notifyHandwerkerAngebotAntwort(i",
+          "count": 2
+        },
+        {
+          "line": 57,
+          "s": " };\n  }\n\n  const gw = one(raw.gewerke) as { name: string } | null;\n  const ang = one(raw.angebote) as {\n    notizen?: st",
+          "count": 1
+        }
+      ],
+      "n": 3
+    },
+    {
+      "file": "src/lib/partner/notify-partner-angebot-bestaetigt.ts",
+      "fileHits": [
+        {
+          "line": 5,
+          "s": ";\n\nfunction one<T>(x: T | T[] | null | undefined): T | null {\n  if (x == null) return null;\n  return Array.isArray(x) ? ",
+          "count": 2
+        },
+        {
+          "line": 55,
+          "s": " };\n  }\n\n  const gw = one(raw.gewerke) as { name: string } | null;\n  const ang = one(raw.angebote) as {\n    notizen?: st",
+          "count": 1
+        }
+      ],
+      "n": 3
+    },
+    {
+      "file": "src/lib/portal/ki-assist.ts",
+      "fileHits": [
+        {
+          "line": 79,
+          "s": "Modus: Bautagebuch-Eintrag (Handwerker-Dokumentation, kundensichtbar möglich).\nKlar, sachlich, deutsch, kurz. Keine erfu",
+          "count": 1
+        },
+        {
+          "line": 104,
+          "s": "Modus: Abnahmeprotokoll / Vorbehalte / Mängelbeschreibung (Handwerker).\nSachlich, konkret, deutsch. Keine erfundenen Män",
+          "count": 1
+        },
+        {
+          "line": 129,
+          "s": "Modus: Notiz zu einem Hausmeister-Prüfpunkt (Vorbefund).\nKlar, sachlich, deutsch, kurz. Für Verwaltung und ggf. Handwerk",
+          "count": 1
+        }
+      ],
+      "n": 3
+    },
+    {
+      "file": "src/app/[slug]/page.tsx",
+      "fileHits": [
+        {
+          "line": 2,
+          "s": ";\n\nimport { HandwerkerSeoPage } from ",
+          "count": 1
+        },
+        {
+          "line": 7,
+          "s": ";\nimport type { HandwerkerContentItem } from ",
+          "count": 1
+        }
+      ],
+      "n": 2
+    },
+    {
+      "file": "src/app/actions/assert-partner-email-allowed.ts",
+      "fileHits": [
+        {
+          "line": 1,
+          "s": ";\n\nimport {\n  HANDWERKER_PORTAL_GESPERRT_MESSAGE,\n  isHandwerkerPortalGesperrt,\n} from ",
+          "count": 1
+        },
+        {
+          "line": 16,
+          "s": " };\n  }\n\n  try {\n    const gesperrt = await isHandwerkerPortalGesperrt({ email: norm });\n    if (gesperrt) {\n      retur",
+          "count": 1
+        }
+      ],
+      "n": 2
+    },
+    {
+      "file": "src/app/actions/partner-abnahmeprotokoll.ts",
+      "fileHits": [
+        {
+          "line": 12,
+          "s": ";\nimport { linkPortalHandwerkerToAuthUser } from ",
+          "count": 1
+        },
+        {
+          "line": 72,
+          "s": " };\n  }\n\n  const link = await linkPortalHandwerkerToAuthUser({\n    userId: user.id,\n    email: user.email,\n  });\n\n  if (",
+          "count": 1
+        }
+      ],
+      "n": 2
+    },
+    {
+      "file": "src/app/actions/partner-bautagebuch.ts",
+      "fileHits": [
+        {
+          "line": 4,
+          "s": ";\n\nimport { linkPortalHandwerkerToAuthUser } from ",
+          "count": 1
+        },
+        {
+          "line": 45,
+          "s": " };\n  }\n\n  const link = await linkPortalHandwerkerToAuthUser({\n    userId: user.id,\n    email: user.email,\n  });\n\n  if (",
+          "count": 1
+        }
+      ],
+      "n": 2
+    },
+    {
+      "file": "src/app/actions/partner-hw-kalkulation.ts",
+      "fileHits": [
+        {
+          "line": 4,
+          "s": ";\n\nimport { linkPortalHandwerkerToAuthUser } from ",
+          "count": 1
+        },
+        {
+          "line": 37,
+          "s": " };\n\n  const link = await linkPortalHandwerkerToAuthUser({\n    userId: user.id,\n    email: user.email,\n  });\n  if (!link",
+          "count": 1
+        }
+      ],
+      "n": 2
+    },
+    {
+      "file": "src/app/actions/partner-position-eintraege.ts",
+      "fileHits": [
+        {
+          "line": 6,
+          "s": ";\nimport { linkPortalHandwerkerToAuthUser } from ",
+          "count": 1
+        },
+        {
+          "line": 35,
+          "s": " };\n  }\n  const link = await linkPortalHandwerkerToAuthUser({\n    userId: user.id,\n    email: user.email,\n  });\n  if (!l",
+          "count": 1
+        }
+      ],
+      "n": 2
+    },
+    {
+      "file": "src/app/actions/partner-positions-anfrage.ts",
+      "fileHits": [
+        {
+          "line": 6,
+          "s": ";\nimport { linkPortalHandwerkerToAuthUser } from ",
+          "count": 1
+        },
+        {
+          "line": 24,
+          "s": " };\n  }\n  const link = await linkPortalHandwerkerToAuthUser({\n    userId: user.id,\n    email: user.email,\n  });\n  if (!l",
+          "count": 1
+        }
+      ],
+      "n": 2
+    },
+    {
+      "file": "src/app/actions/partner-rueckfrage-termine.ts",
+      "fileHits": [
+        {
+          "line": 6,
+          "s": ";\nimport { linkPortalHandwerkerToAuthUser } from ",
+          "count": 1
+        },
+        {
+          "line": 22,
+          "s": " };\n  const link = await linkPortalHandwerkerToAuthUser({\n    userId: user.id,\n    email: user.email,\n  });\n  if (!link.",
+          "count": 1
+        }
+      ],
+      "n": 2
+    },
+    {
+      "file": "src/app/actions/portal-signup-otp.ts",
+      "fileHits": [
+        {
+          "line": 15,
+          "s": ";\nimport { linkPortalHandwerkerToAuthUser } from ",
+          "count": 1
+        },
+        {
+          "line": 326,
+          "s": ") {\n    const link = await linkPortalHandwerkerToAuthUser({\n      userId: result.userId,\n      email,\n    });\n    if (!l",
+          "count": 1
+        }
+      ],
+      "n": 2
+    },
+    {
+      "file": "src/app/api/internal/partner-notify-anfrage/route.ts",
+      "fileHits": [
+        {
+          "line": 2,
+          "s": ";\n\nimport { notifyHandwerkerNewAnfrage } from ",
+          "count": 1
+        },
+        {
+          "line": 34,
+          "s": ").trim();\n  const result = await notifyHandwerkerNewAnfrage(anfrageId);\n  if (!result.ok) {\n    return NextResponse.json",
+          "count": 1
+        }
+      ],
+      "n": 2
+    },
+    {
+      "file": "src/app/api/internal/partner-notify-angebot-antwort/route.ts",
+      "fileHits": [
+        {
+          "line": 2,
+          "s": ";\n\nimport {\n  notifyHandwerkerAngebotAntwort,\n  type PartnerAngebotAntwortTyp,\n} from ",
+          "count": 1
+        },
+        {
+          "line": 43,
+          "s": " }, { status: 400 });\n  }\n\n  const result = await notifyHandwerkerAngebotAntwort({\n    anfrageId: String(body.anfrageId ",
+          "count": 1
+        }
+      ],
+      "n": 2
+    },
+    {
+      "file": "src/app/api/internal/partner-notify-angebot-bestaetigt/route.ts",
+      "fileHits": [
+        {
+          "line": 2,
+          "s": ";\n\nimport { notifyHandwerkerAngebotBestaetigt } from ",
+          "count": 1
+        },
+        {
+          "line": 34,
+          "s": ").trim();\n  const result = await notifyHandwerkerAngebotBestaetigt(anfrageId, {\n    bitteBestaetigen: Boolean(body.bitte",
+          "count": 1
+        }
+      ],
+      "n": 2
+    },
+    {
+      "file": "src/app/api/internal/partner-notify-zuweisung/route.ts",
+      "fileHits": [
+        {
+          "line": 1,
+          "s": ";\n\nimport { notifyHandwerkerLeistungZuweisung } from ",
+          "count": 1
+        },
+        {
+          "line": 30,
+          "s": " }, { status: 400 });\n  }\n\n  const result = await notifyHandwerkerLeistungZuweisung({\n    auftragId: String(body.auftrag",
+          "count": 1
+        }
+      ],
+      "n": 2
+    },
+    {
+      "file": "src/app/api/partner/ki-korrigieren/route.ts",
+      "fileHits": [
+        {
+          "line": 8,
+          "s": ";\nimport { linkPortalHandwerkerToAuthUser } from ",
+          "count": 1
+        },
+        {
+          "line": 60,
+          "s": " },\n      { status: 401 }\n    );\n  }\n\n  const link = await linkPortalHandwerkerToAuthUser({\n    userId: user.id,\n    ema",
+          "count": 1
+        }
+      ],
+      "n": 2
+    },
+    {
+      "file": "src/app/api/portal/ki-assist/route.ts",
+      "fileHits": [
+        {
+          "line": 16,
+          "s": ";\nimport { linkPortalHandwerkerToAuthUser } from ",
+          "count": 1
+        },
+        {
+          "line": 77,
+          "s": " },\n        { status: 401 }\n      );\n    }\n    const link = await linkPortalHandwerkerToAuthUser({\n      userId: user.id",
+          "count": 1
+        }
+      ],
+      "n": 2
+    },
+    {
+      "file": "src/app/baerenwald-landing-client.tsx",
+      "fileHits": [
+        {
+          "line": 42,
+          "s": "Transparente Preisspanne, pünktlicher Handwerker — genau das was wir gesucht haben. Kein Stress mit verschiedenen Betrie",
+          "count": 1
+        },
+        {
+          "line": 537,
+          "s": "Handwerker-Team bei der Koordination einer Renovierung in München",
+          "count": 1
+        }
+      ],
+      "n": 2
+    },
+    {
+      "file": "src/app/partner/auth/callback/route.ts",
+      "fileHits": [
+        {
+          "line": 1,
+          "s": ";\n\nimport { linkPortalHandwerkerToAuthUser } from ",
+          "count": 1
+        },
+        {
+          "line": 9,
+          "s": ";\n\n  if (code) {\n    const supabase = await createClient();\n    const { error } = await supabase.auth.exchangeCodeForSes",
+          "count": 1
+        }
+      ],
+      "n": 2
+    },
+    {
+      "file": "src/components/handwerker/StadtteilLinksSection.tsx",
+      "fileHits": [
+        {
+          "line": 1,
+          "s": ";\n\nimport type { HandwerkerContentItem } from ",
+          "count": 1
+        },
+        {
+          "line": 3,
+          "s": ";\n\nexport function StadtteilLinksSection({\n  links,\n  leistungLabel,\n}: {\n  links: HandwerkerContentItem[];\n  leistungLa",
+          "count": 1
+        }
+      ],
+      "n": 2
+    },
+    {
+      "file": "src/components/partner/PartnerAbschlussModal.tsx",
+      "fileHits": [
+        {
+          "line": 374,
+          "s": "\n                  style={{ color: PORTAL_VAR.sub }}\n                >\n                  Handwerker vor Ort *\n          ",
+          "count": 1
+        },
+        {
+          "line": 376,
+          "s": "\n                  Handwerker vor Ort *\n                ",
+          "count": 1,
+          "jsx": true
+        }
+      ],
+      "n": 2
+    },
+    {
+      "file": "src/components/shared/PortalShell.tsx",
+      "fileHits": [
+        {
+          "line": 41,
+          "s": " (Handwerker): meist ohne ",
+          "count": 1
+        },
+        {
+          "line": 84,
+          "s": ": Sidebar-Button + Mobile-FAB (rechts).\n   * Typisch org/kunde; Handwerker (",
+          "count": 1
+        }
+      ],
+      "n": 2
+    },
+    {
+      "file": "src/lib/crm-vorgang/handwerker-aktion-offen.ts",
+      "fileHits": [
+        {
+          "line": 6,
+          "s": "])\n\n/** Position wartet auf Handwerker-Antwort oder Zuweisung. */\nexport function positionBrauchtHandwerkerAktion(pos: P",
+          "count": 2
+        }
+      ],
+      "n": 2
+    },
+    {
+      "file": "src/lib/crm-vorgang/types.ts",
+      "fileHits": [
+        {
+          "line": 103,
+          "s": " (Resolver + Listen-Metadaten). */\nexport type VorgangListeRow = ResolvedVorgang & {\n  leadId: string\n  kundeId?: string",
+          "count": 1
+        },
+        {
+          "line": 129,
+          "s": " | null\n  /** Nur eingehend: angebot_handwerker.id für Ensure/Deep-Link. */\n  angebotHandwerkerId?: string | null\n  /** ",
+          "count": 1
+        }
+      ],
+      "n": 2
+    },
+    {
+      "file": "src/lib/handwerker-stadtteil.ts",
+      "fileHits": [
+        {
+          "line": 5,
+          "s": ";\nimport type { HandwerkerContentItem } from ",
+          "count": 1
+        },
+        {
+          "line": 18,
+          "s": ",\n};\n\nexport function handwerkerLeistungKeysFromRechnerSlug(\n  rechnerSlug: string\n): string[] {\n  return Object.entries",
+          "count": 1
+        }
+      ],
+      "n": 2
+    },
+    {
+      "file": "src/lib/partner/create-partner-notification.ts",
+      "fileHits": [
+        {
+          "line": 48,
+          "s": ")\n    .then(async ({ resolveHandwerkerAuthUserId }) => {\n      const { buildPushPayloadFromNotif } = await import(",
+          "count": 1
+        },
+        {
+          "line": 52,
+          "s": "\n      );\n      const uid = await resolveHandwerkerAuthUserId(input.handwerkerId);\n      if (!uid) return;\n      const s",
+          "count": 1
+        }
+      ],
+      "n": 2
+    },
+    {
+      "file": "src/lib/partner/handwerker-ablehnung.ts",
+      "fileHits": [
+        {
+          "line": 6,
+          "s": ",\n] as const;\n\nexport type HandwerkerAblehnungGrund =\n  (typeof HANDWERKER_ABLEHNUNG_GRUND_VALUES)[number];\n\nexport cons",
+          "count": 2
+        }
+      ],
+      "n": 2
+    },
+    {
+      "file": "src/lib/partner/handwerker-anschrift.ts",
+      "fileHits": [
+        {
+          "line": 42,
+          "s": ");\n}\n\n/** Legacy-Zeile „Straße Nr, PLZ Ort“. */\nexport function composeHandwerkerAdresse(parts: HandwerkerAnschriftParts",
+          "count": 2
+        }
+      ],
+      "n": 2
+    },
+    {
+      "file": "src/lib/partner/map-partner-anfrage-handwerker.ts",
+      "fileHits": [
+        {
+          "line": 71,
+          "s": "\n>;\n\nexport async function mapAngebotHandwerkerRow(\n  row: Record<string, unknown>,\n  objektById: Map<string, PartnerKun",
+          "count": 1
+        },
+        {
+          "line": 72,
+          "s": ";\n\nexport async function mapAngebotHandwerkerRow(\n  row: Record",
+          "count": 1,
+          "jsx": true
+        }
+      ],
+      "n": 2
+    },
+    {
+      "file": "src/lib/partner/notify-partner-anfrage.ts",
+      "fileHits": [
+        {
+          "line": 4,
+          "s": ";\n\nfunction one<T>(x: T | T[] | null | undefined): T | null {\n  if (x == null) return null;\n  return Array.isArray(x) ? ",
+          "count": 2
+        }
+      ],
+      "n": 2
+    },
+    {
+      "file": "src/lib/partner/partner-auftrag-dokumente.ts",
+      "fileHits": [
+        {
+          "line": 3,
+          "s": ";\nimport {\n  partnerAbschlussRelevantePositionen,\n  positionHandwerkerErledigt,\n} from ",
+          "count": 1
+        },
+        {
+          "line": 141,
+          "s": ") return true;\n\n  const relevant = partnerAbschlussRelevantePositionen(item.positionen ?? []);\n  return (\n    relevant.l",
+          "count": 1
+        }
+      ],
+      "n": 2
+    },
+    {
+      "file": "src/lib/partner/partner-onboarding-gaps.ts",
+      "fileHits": [
+        {
+          "line": 5,
+          "s": ";\nimport type {\n  PartnerHandwerkerProfil,\n  PartnerProfilKontext,\n} from ",
+          "count": 1
+        },
+        {
+          "line": 17,
+          "s": ",\n]);\n\nexport function isHandwerkskarteHochgeladen(\n  items: PartnerComplianceItem[]\n): boolean {\n  const card = items.f",
+          "count": 1
+        }
+      ],
+      "n": 2
+    },
+    {
+      "file": "src/lib/partner/resolve-partner-portal-link.ts",
+      "fileHits": [
+        {
+          "line": 11,
+          "s": "]);\n\nexport type ZuweisungPortalLinkInput = {\n  auftragId: string;\n  auftragStatus: string;\n  zuweisungStatuses: string[",
+          "count": 2
+        }
+      ],
+      "n": 2
+    },
+    {
+      "file": "src/lib/portal2/hv-detail-adapters.ts",
+      "fileHits": [
+        {
+          "line": 42,
+          "s": ";\n}\n\nexport function buildHvOffersFromItem(\n  item: KundePortalDetailItem,\n  handwerkerName?: string | null\n): HvOfferCa",
+          "count": 1
+        },
+        {
+          "line": 55,
+          "s": ";\n  return [\n    {\n      id: item.id,\n      name:\n        handwerkerName?.trim() ||\n        (fromHandwerker ? ",
+          "count": 1
+        }
+      ],
+      "n": 2
+    },
+    {
+      "file": "src/lib/push/resolve-recipients.ts",
+      "fileHits": [
+        {
+          "line": 29,
+          "s": ").trim();\n    if (uid) ids.add(uid);\n  }\n\n  return Array.from(ids);\n}\n\n/** Auth-User eines Handwerker-Kontos. */\nexport ",
+          "count": 2
+        }
+      ],
+      "n": 2
+    },
+    {
+      "file": "src/lib/ratgeber/articles/seo-content.ts",
+      "fileHits": [
+        {
+          "line": 145,
+          "s": "Wie läuft eine Badrenovierung in München ab? Reihenfolge der Handwerker, Stillstandszeiten und was Altbau & WEG besonder",
+          "count": 1
+        },
+        {
+          "line": 147,
+          "s": "Eine Badrenovierung läuft in dieser Reihenfolge ab: Planung → Demontage → Leitungen (Sanitär + Elektro) → Estrich → Flie",
+          "count": 1
+        }
+      ],
+      "n": 2
+    },
+    {
+      "file": "src/lib/shared-domain/status-map.ts",
+      "fileHits": [
+        {
+          "line": 7,
+          "s": ", „Gesendet Handwerker“.\n *\n * ── CRM → Mieter-Timeline (Melde-Status) ──────────────────────────────\n * Mieter-Stufen b",
+          "count": 2
+        }
+      ],
+      "n": 2
+    },
+    {
+      "file": "src/lib/vorgang/vorgang-phase.ts",
+      "fileHits": [
+        {
+          "line": 29,
+          "s": ",\n};\n\n/**\n * CRM → Mieter-Timeline (kanonische Zuordnung, Glossar + status-map Kommentar).\n *\n * | CRM-Signal           ",
+          "count": 1
+        },
+        {
+          "line": 89,
+          "s": ";\n  }\n\n  /* Handwerker vor Ort — Abnahme ohne Mängel ist oben schon Erledigt */\n  const vorOrt =\n    Boolean(lead.mieter",
+          "count": 1
+        }
+      ],
+      "n": 2
+    },
+    {
+      "file": "src/app/actions/partner-rahmenvertrag-preview.ts",
+      "fileHits": [
+        {
+          "line": 1,
+          "s": ";\n\nimport { findHandwerkerForRegistration } from ",
+          "count": 1
+        }
+      ],
+      "n": 1
+    },
+    {
+      "file": "src/app/actions/portal-auftrag.ts",
+      "fileHits": [
+        {
+          "line": 14,
+          "s": ";\n\nexport type AcceptKundeAuftragAenderungenResult =\n  | { ok: true }\n  | { ok: false; error: string };\n\n/**\n * Kunde ni",
+          "count": 1
+        }
+      ],
+      "n": 1
+    },
+    {
+      "file": "src/app/api/account/delete/route.ts",
+      "fileHits": [
+        {
+          "line": 11,
+          "s": ";\n\ntype Body = {\n  confirm?: boolean;\n  password?: string;\n  forceOpenVorgaenge?: boolean;\n};\n\n/**\n * B1 — Konto löschen",
+          "count": 1
+        }
+      ],
+      "n": 1
+    },
+    {
+      "file": "src/app/api/org/vorgang-feedback/route.ts",
+      "fileHits": [
+        {
+          "line": 12,
+          "s": ";\n  sterne?: number;\n  freitext?: string;\n};\n\n/** HV: Feedback oder Mängelmeldung nach Handwerker-Abschluss. */\nexport a",
+          "count": 1
+        }
+      ],
+      "n": 1
+    },
+    {
+      "file": "src/app/sitemap.ts",
+      "fileHits": [
+        {
+          "line": 3,
+          "s": ";\nimport type { HandwerkerContentItem } from ",
+          "count": 1
+        }
+      ],
+      "n": 1
+    },
+    {
+      "file": "src/components/funnel/ResultScreen.tsx",
+      "fileHits": [
+        {
+          "line": 28,
+          "s": "\n    >\n      Wir prüfen nach Ihrer Anfrage die Verfügbarkeit unserer Handwerker und\n      melden uns {SITE_CONFIG.respon",
+          "count": 1
+        }
+      ],
+      "n": 1
+    },
+    {
+      "file": "src/components/partner/PartnerClient.tsx",
+      "fileHits": [
+        {
+          "line": 44,
+          "s": ";\nimport type {\n  PartnerAnfrageItem,\n  PartnerAuftragItem,\n  PartnerHandwerkerProfil,\n  PartnerProfilKontext,\n  Partner",
+          "count": 1
+        }
+      ],
+      "n": 1
+    },
+    {
+      "file": "src/components/partner/PartnerHwDashboard.tsx",
+      "fileHits": [
+        {
+          "line": 30,
+          "s": " },\n];\n\ntype Props = {\n  firmName: string;\n  kpis: PartnerHwDashboardKpis;\n  recent: PartnerHwRecentItem[];\n  actionSlid",
+          "count": 1
+        }
+      ],
+      "n": 1
+    },
+    {
+      "file": "src/components/partner/PartnerKiKorrekturField.tsx",
+      "fileHits": [
+        {
+          "line": 8,
+          "s": ";\n\ntype Props = {\n  scope: Scope;\n  name?: string;\n  value: string;\n  onChange: (value: string) => void;\n  rows?: number",
+          "count": 1
+        }
+      ],
+      "n": 1
+    },
+    {
+      "file": "src/components/partner/PartnerOnboardingReminderBanner.tsx",
+      "fileHits": [
+        {
+          "line": 10,
+          "s": ";\nimport type {\n  PartnerHandwerkerProfil,\n  PartnerProfilKontext,\n} from ",
+          "count": 1
+        }
+      ],
+      "n": 1
+    },
+    {
+      "file": "src/components/partner/PartnerProfilPanel.tsx",
+      "fileHits": [
+        {
+          "line": 3,
+          "s": ";\nimport type {\n  PartnerProfilKontext,\n  PartnerHandwerkerProfil,\n} from ",
+          "count": 1
+        }
+      ],
+      "n": 1
+    },
+    {
+      "file": "src/lib/crm-vorgang/portal-resolve.ts",
+      "fileHits": [
+        {
+          "line": 141,
+          "s": ",\n            titel: input.auftrag.titel,\n            created_at: input.auftrag.created_at ?? created,\n            handw",
+          "count": 1
+        }
+      ],
+      "n": 1
+    },
+    {
+      "file": "src/lib/crm-vorgang/role-status-ui.ts",
+      "fileHits": [
+        {
+          "line": 53,
+          "s": ",\n  }));\n}\n\nexport function buildMieterTimelineSteps(resolved: ResolvedVorgang): TimelineStepView[] {\n  return buildMiet",
+          "count": 1
+        }
+      ],
+      "n": 1
+    },
+    {
+      "file": "src/lib/org/create-hv-notification.ts",
+      "fileHits": [
+        {
+          "line": 20,
+          "s": " — selbst erledigt / Fachfirma)\n * - Handwerker-Update / Bautagebuch (",
+          "count": 1
+        }
+      ],
+      "n": 1
+    },
+    {
+      "file": "src/lib/org/notify-hv-partner-erledigt.ts",
+      "fileHits": [
+        {
+          "line": 8,
+          "s": ";\n\n/** HV-Glocke: Handwerker hat Leistungen als erledigt gemeldet. */\nexport async function notifyHvPartnerErledigt(inpu",
+          "count": 1
+        }
+      ],
+      "n": 1
+    },
+    {
+      "file": "src/lib/partner/ensure-partner-angebot-handwerker-for-auftrag.ts",
+      "fileHits": [
+        {
+          "line": 88,
+          "s": "[ensurePartnerAngebotHandwerkerForAuftrag] auftrag link:",
+          "count": 1
+        }
+      ],
+      "n": 1
+    },
+    {
+      "file": "src/lib/partner/handwerker-portal-gesperrt.ts",
+      "fileHits": [
+        {
+          "line": 22,
+          "s": "))\n  );\n}\n\n/** Prüft, ob ein Partner (per ID / E-Mail) vom Portal ausgeschlossen ist. */\nexport async function isHandwer",
+          "count": 1
+        }
+      ],
+      "n": 1
+    },
+    {
+      "file": "src/lib/partner/notify-vor-ort-start.ts",
+      "fileHits": [
+        {
+          "line": 32,
+          "s": ";\n\n  // Mieter-STG: eigener Schritt „Handwerker vor Ort“\n  const { error: __dbErr412_3 } = await supabaseAdmin\n    .from",
+          "count": 1
+        }
+      ],
+      "n": 1
+    },
+    {
+      "file": "src/lib/partner/partner-anfrage-projekt-start.ts",
+      "fileHits": [
+        {
+          "line": 58,
+          "s": ";\n}\n\n/**\n * Geplanter Projektstart (YYYY-MM-DD).\n * Priorität: explizites start_datum → Zeitraum-Slug relativ zu gesende",
+          "count": 1
+        }
+      ],
+      "n": 1
+    },
+    {
+      "file": "src/lib/partner/partner-leistungen-display.ts",
+      "fileHits": [
+        {
+          "line": 11,
+          "s": "));\n  return Number.isFinite(n) ? n : 0;\n}\n\nfunction resolveMwstSatz(raw: Record<string, unknown>, fallback = 19): numbe",
+          "count": 1
+        }
+      ],
+      "n": 1
+    },
+    {
+      "file": "src/lib/partner/partner-offen-status.ts",
+      "fileHits": [
+        {
+          "line": 59,
+          "s": ";\n}\n\n/** Sichtbar im Tab „Offen“ (Handwerker-Aktion nötig). */\nexport function isPartnerAngebotOffenListItem(item: Angeb",
+          "count": 1
+        }
+      ],
+      "n": 1
+    },
+    {
+      "file": "src/lib/partner/partner-registration-eligibility.ts",
+      "fileHits": [
+        {
+          "line": 3,
+          "s": ";\n\nexport type PartnerRegistrationCheckResult =\n  | { ok: true }\n  | { ok: false; error: string };\n\nfunction normalizePa",
+          "count": 1
+        }
+      ],
+      "n": 1
+    },
+    {
+      "file": "src/lib/partner/partner-vorgang-display.ts",
+      "fileHits": [
+        {
+          "line": 14,
+          "s": ";\n\nexport function resolvePartnerHandwerkerCrmDisplay(\n  vorgang: PartnerVorgangItem\n): ReturnType<typeof resolveVorgang",
+          "count": 1
+        }
+      ],
+      "n": 1
+    },
+    {
+      "file": "src/lib/partner/sync-angebot-handwerker.ts",
+      "fileHits": [
+        {
+          "line": 5,
+          "s": ";\n\n/**\n * Nach Annahme einer Auftrags-Zuweisung: zugehörige angebot_handwerker-Zeile(n)\n * auf „akzeptiert“ setzen (oder",
+          "count": 1
+        }
+      ],
+      "n": 1
+    },
+    {
+      "file": "src/lib/portal/build-kunde-vorgaenge.ts",
+      "fileHits": [
+        {
+          "line": 145,
+          "s": ";\n  return s || null;\n}\n\ntype PortalAngebot = {\n  id: string;\n  titel?: string | null;\n  leistungsumfang?: string | null",
+          "count": 1
+        }
+      ],
+      "n": 1
+    },
+    {
+      "file": "src/lib/portal/get-portal-vorgang-detail.ts",
+      "fileHits": [
+        {
+          "line": 78,
+          "s": ",\n    leadIds: [leadId],\n    includeHandwerkerUpdates: Boolean(opts.hvPortalMode),\n  });\n  if (!data) return null;\n\n  co",
+          "count": 1
+        }
+      ],
+      "n": 1
+    },
+    {
+      "file": "src/lib/portal/load-auftraege-by-lead-ids.ts",
+      "fileHits": [
+        {
+          "line": 4,
+          "s": ";\n\nexport type PortalAuftragByLeadSnapshot = PortalAuftragKontext & {\n  id: string;\n  lead_id: string;\n  titel?: string ",
+          "count": 1
+        }
+      ],
+      "n": 1
+    },
+    {
+      "file": "src/lib/portal/load-partner-dokumentation.ts",
+      "fileHits": [
+        {
+          "line": 30,
+          "s": ": Kunde sieht nur CRM-Bautagebuch, keine Handwerker-Updates.\n * HV: ",
+          "count": 1
+        }
+      ],
+      "n": 1
+    },
+    {
+      "file": "src/lib/portal/portal-termin.ts",
+      "fileHits": [
+        {
+          "line": 24,
+          "s": ");\n  return { vorgeschlagen, bestaetigt };\n}\n\n/** Termin-Phase: Handwerker hat Slot vorgeschlagen oder Mieter hat bestät",
+          "count": 1
+        }
+      ],
+      "n": 1
+    },
+    {
+      "file": "src/lib/portal/reclaim-orphan-portal-auth.ts",
+      "fileHits": [
+        {
+          "line": 47,
+          "s": ", true)\n      .limit(1)\n      .maybeSingle(),\n  ]);\n\n  return Boolean(kunde.data?.id || hw.data?.id || mitglied.data?.id",
+          "count": 1
+        }
+      ],
+      "n": 1
+    },
+    {
+      "file": "src/lib/portal2/basisdaten-types.ts",
+      "fileHits": [
+        {
+          "line": 23,
+          "s": " — Anzeigeform. */\nexport type HandwerkerDisplay = {\n  id: string;\n  name: string;\n  /** Gewerke, Mock-Feld ",
+          "count": 1
+        }
+      ],
+      "n": 1
+    },
+    {
+      "file": "src/lib/portal2/dashboard-actions/resolve-partner.ts",
+      "fileHits": [
+        {
+          "line": 3,
+          "s": ";\n\nfunction vorgangSortTs(v: PartnerVorgangItem): number {\n  const raw =\n    v.anfrage?.gesendet_at ||\n    v.anfrage?.an",
+          "count": 1
+        }
+      ],
+      "n": 1
+    },
+    {
+      "file": "src/lib/portal2/dashboard-focus.ts",
+      "fileHits": [
+        {
+          "line": 14,
+          "s": ";\n\ntype FocusSeed = {\n  title: string;\n  subtitle?: string | null;\n  onOpen?: () => void;\n  /** Betrag formatiert, falls",
+          "count": 1
+        }
+      ],
+      "n": 1
+    },
+    {
+      "file": "src/lib/portal2/einstellungen-ui.ts",
+      "fileHits": [
+        {
+          "line": 17,
+          "s": ";\n}\n\n/** Handwerker Firmendaten — Mock Copy 1:1. */\nexport const HW_FIRMEN_CARD_TITLE =\n  ",
+          "count": 1
+        }
+      ],
+      "n": 1
+    },
+    {
+      "file": "src/lib/portal2/hv-wartet-auf-hw.ts",
+      "fileHits": [
+        {
+          "line": 41,
+          "s": ",\n    };\n  }\n\n  const pos = signals.positionen ?? [];\n  if (auftragBrauchtHandwerkerAktion(pos)) {\n    return {\n      ki",
+          "count": 1
+        }
+      ],
+      "n": 1
+    },
+    {
+      "file": "src/lib/portal2/portal-media.ts",
+      "fileHits": [
+        {
+          "line": 25,
+          "s": ",\n  /** Hausmeister teilt Handwerker-Hero (Vor-Ort). */\n  hausmeister: ",
+          "count": 1
+        }
+      ],
+      "n": 1
+    },
+    {
+      "file": "src/lib/portal2/status-mapping.ts",
+      "fileHits": [
+        {
+          "line": 20,
+          "s": ";\n\n/**\n * Zusätzliche Signale, die der Resolver allein nicht trägt\n * (HV-Freigabe-Detail, HW-Angebot, Signatur).\n */\nex",
+          "count": 1
+        }
+      ],
+      "n": 1
+    },
+    {
+      "file": "src/lib/vorgang/vorgang-detail-vm.ts",
+      "fileHits": [
+        {
+          "line": 13,
+          "s": " // Adresse + Zutritt für Handwerker\n  | ",
+          "count": 1
+        }
+      ],
+      "n": 1
+    }
+  ]
+}

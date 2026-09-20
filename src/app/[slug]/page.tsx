@@ -44,7 +44,7 @@ export async function generateMetadata({
   };
 }
 
-export default function HandwerkerSeoSlugPage({ params }: PageProps) {
+export default function PartnerSeoSlugPage({ params }: PageProps) {
   const data = bySlug.get(params.slug);
   if (!data) notFound();
 

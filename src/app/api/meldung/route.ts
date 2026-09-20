@@ -1,3 +1,4 @@
+import { logDbError } from '@/lib/errors/log-db-error'
 import { NextResponse } from "next/server";
 
 import {
@@ -141,10 +142,11 @@ export async function POST(req: Request) {
   /** Ohne Objekt-Link: gleiche Anschrift wie bestehendes Objekt → zuordnen. */
   let matchedObjektId = objekt?.id ?? null;
   if (!matchedObjektId && leadStrasse && leadHausnummer) {
-    const { data: orgObjekte } = await supabaseAdmin
+    const {data: orgObjekte, error: __dbErr157_1} = await supabaseAdmin
       .from("kunden_objekte")
       .select("id, titel, strasse, hausnummer, plz, ort")
       .eq("kunde_id", orgRow.id);
+    if (__dbErr157_1) logDbError('app/api/meldung/route:kunden_objekte', __dbErr157_1)
     const hit = (orgObjekte ?? []).find((o) =>
       addressesMatch(
         {

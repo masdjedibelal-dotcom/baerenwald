@@ -1,10 +1,12 @@
 "use client";
+import { PALETTE } from "@/lib/tokens/palette";
+import { PortalButton } from "@/components/portal/PortalButton";
 
 import { PORTAL_VAR } from "@/lib/portal2/tokens";
 import { cn } from "@/lib/utils";
 import type { ReactNode } from "react";
 
-/** Listen-Eyebrow — Deep Green 11.5/800 Uppercase `#7A857F`. */
+/** Listen-Eyebrow — Deep Green 11.5/800 Uppercase, muted. */
 export function PortalListeEyebrow({ children }: { children: ReactNode }) {
   return <p className="portal-liste-eyebrow">{children}</p>;
 }
@@ -14,29 +16,34 @@ export function PortalListeTitle({ children }: { children: ReactNode }) {
   return <h1 className="portal-liste-title">{children}</h1>;
 }
 
-/** Filter-Chip — aktiv `#1A3D2B`, inaktiv weiß ohne Border. */
+/** Filter-Chip — aktiv `var(--p2-primary-dk)`, inaktiv weiß ohne Border. */
 export function PortalListeFilterChip({
   active,
   onClick,
   children,
   count,
   countBadge,
+  disabled,
 }: {
   active: boolean;
   onClick: () => void;
   children: ReactNode;
   count?: number;
   countBadge?: number | null;
+  disabled?: boolean;
 }) {
   const showBadge = countBadge != null && countBadge > 0;
 
   return (
-    <button
+    <PortalButton
+      variant="ghost"
       type="button"
+      disabled={disabled}
       onClick={onClick}
       className={cn(
         "portal-liste-chip",
-        active && "portal-liste-chip--active"
+        active && "portal-liste-chip--active",
+        disabled && "opacity-60"
       )}
     >
       {children}
@@ -54,13 +61,13 @@ export function PortalListeFilterChip({
         <span
           className="portal-liste-chip-badge"
           style={{
-            color: active ? PORTAL_VAR.greenDark : "#1a2e1f",
-            background: active ? "#fff" : "var(--p2-sand, #e8b04b)",
+            color: active ? PORTAL_VAR.greenDark : PALETTE.h1a2e1f,
+            background: active ? "var(--p2-panel)" : "var(--p2-sand)",
           }}
         >
           {countBadge}
         </span>
       ) : null}
-    </button>
+    </PortalButton>
   );
 }

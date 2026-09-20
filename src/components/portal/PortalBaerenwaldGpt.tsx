@@ -1,7 +1,8 @@
 "use client";
 
+import { PortalIcon } from "@/components/portal/PortalIcon";
 import { useRouter } from "next/navigation";
-import { X } from "lucide-react";
+import { PortalButton } from "@/components/portal/PortalButton";
 
 import { GptStudioChat } from "@/components/gpt/GptStudioChat";
 import { cn } from "@/lib/utils";
@@ -34,14 +35,15 @@ export function PortalBaerenwaldGpt({
       <div className="portal-gpt-shell portal-gpt-shell--embedded">
         {onClose ? (
           <div className="portal-gpt-shell-bar">
-            <button
+            <PortalButton
+              variant="ghost"
               type="button"
               onClick={onClose}
               className="portal-gpt-shell-close"
               aria-label="Schließen"
             >
-              <X className="h-5 w-5" />
-            </button>
+              <PortalIcon n="x" ctx="default" className="h-5 w-5" />
+            </PortalButton>
             <p className="portal-gpt-shell-title">KI-Assistent · BärenwaldGPT</p>
           </div>
         ) : null}
@@ -52,7 +54,8 @@ export function PortalBaerenwaldGpt({
 
   return (
     <div className="portal-gpt-shell portal-gpt-shell--overlay fixed inset-0 z-[210] bg-black/45 lg:hidden">
-      <button
+      <PortalButton
+        variant="ghost"
         type="button"
         className="absolute inset-0"
         onClick={onClose}
@@ -64,14 +67,15 @@ export function PortalBaerenwaldGpt({
         )}
       >
         <div className="portal-gpt-shell-bar">
-          <button
+          <PortalButton
+            variant="ghost"
             type="button"
             onClick={onClose}
             className="portal-gpt-shell-close"
             aria-label="Schließen"
           >
-            <X className="h-5 w-5" />
-          </button>
+            <PortalIcon n="x" ctx="default" className="h-5 w-5" />
+          </PortalButton>
           <p className="portal-gpt-shell-title">KI-Assistent · BärenwaldGPT</p>
         </div>
         <div className="portal-gpt-body portal-gpt-chat-active min-h-0 flex-1 overflow-hidden">

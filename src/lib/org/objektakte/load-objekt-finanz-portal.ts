@@ -1,3 +1,4 @@
+import { logDbError } from '@/lib/errors/log-db-error'
 import type { ObjektHistorieRowPortal } from "@/lib/org/objektakte/types";
 import { loadObjektAktePortal } from "@/lib/org/objektakte/load-objekt-akte-portal";
 import { kostentraegerLabel } from "@/lib/vorgang/kostentraeger";
@@ -84,13 +85,13 @@ export async function loadObjektFinanzPortal(input: {
   const akte = await loadObjektAktePortal(kid, oid);
   if (!akte) return null;
 
-  const { data: objekt } = await supabaseAdmin
+  const {data: objekt, error: __dbErr332_1} = await supabaseAdmin
     .from("kunden_objekte")
     .select("id, titel, strasse, hausnummer, plz, ort")
     .eq("id", oid)
     .eq("kunde_id", kid)
     .maybeSingle();
-
+  if (__dbErr332_1) logDbError('lib/org/objektakte/load-objekt-finanz-portal:kunden_objekte', __dbErr332_1)
   if (!objekt) return null;
 
   const historieImZeitraum = akte.historie.filter((r) =>
@@ -119,19 +120,21 @@ export async function loadObjektFinanzPortal(input: {
 
   let rechnungen: Rec[] = [];
   if (leadIds.length) {
-    const { data: auftraege } = await supabaseAdmin
+    const {data: auftraege, error: __dbErr333_2} = await supabaseAdmin
       .from("auftraege")
       .select("id, lead_id")
       .in("lead_id", leadIds);
+    if (__dbErr333_2) logDbError('lib/org/objektakte/load-objekt-finanz-portal:auftraege', __dbErr333_2)
     const auftragIds = (auftraege ?? []).map((a) => String(a.id));
     const auftragToLead = new Map(
       (auftraege ?? []).map((a) => [String(a.id), String(a.lead_id)] as const)
     );
 
-    const { data: angebote } = await supabaseAdmin
+    const {data: angebote, error: __dbErr334_3} = await supabaseAdmin
       .from("angebote")
       .select("id, lead_id")
       .in("lead_id", leadIds);
+    if (__dbErr334_3) logDbError('lib/org/objektakte/load-objekt-finanz-portal:angebote', __dbErr334_3)
     const angebotToLead = new Map(
       (angebote ?? []).map((a) => [String(a.id), String(a.lead_id)] as const)
     );

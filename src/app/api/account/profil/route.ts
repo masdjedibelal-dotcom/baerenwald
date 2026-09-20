@@ -1,3 +1,4 @@
+import { logDbError } from '@/lib/errors/log-db-error'
 import { NextResponse } from "next/server";
 
 import { requireAccountSession } from "@/lib/account/require-account-session";
@@ -59,6 +60,7 @@ export async function PATCH(req: Request) {
     .eq("id", session.entityId)
     .select("id, name, email, telefon")
     .single();
+  if (error) logDbError('app/api/account/profil/route:kunden', error)
 
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });

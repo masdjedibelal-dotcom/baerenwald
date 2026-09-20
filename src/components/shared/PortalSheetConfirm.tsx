@@ -3,6 +3,7 @@
 import { useEffect, useId, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 
+import { PortalButton } from "@/components/portal/PortalButton";
 import { PORTAL_MODAL_Z_INDEX } from "@/lib/portal2/modal-shell";
 import { cn } from "@/lib/utils";
 
@@ -101,28 +102,21 @@ export function PortalSheetConfirm({
         ) : null}
         {children}
         <div className="portal-modal-discard-actions portal-action-row">
-          <button
-            type="button"
-            className="portal-action-btn portal-action-btn--secondary"
+          <PortalButton
+            variant="secondary"
             onClick={onCancel}
             disabled={loading}
           >
             {cancelLabel}
-          </button>
-          <button
-            type="button"
-            className={cn(
-              "portal-action-btn",
-              confirmVariant === "danger"
-                ? "portal-action-btn--danger"
-                : "portal-action-btn--primary",
-              loading && "opacity-60"
-            )}
+          </PortalButton>
+          <PortalButton
+            variant={confirmVariant === "danger" ? "danger" : "primary"}
+            className={cn(loading && "opacity-60")}
             onClick={onConfirm}
             disabled={loading}
           >
             {loading ? "Bitte warten…" : confirmLabel}
-          </button>
+          </PortalButton>
         </div>
         {loading ? (
           <div

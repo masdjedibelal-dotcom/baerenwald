@@ -1,5 +1,6 @@
 "use server";
 
+import { logDbError } from '@/lib/errors/log-db-error'
 import { revalidatePath } from "next/cache";
 
 import { createClient } from "@/lib/supabase/server";
@@ -43,6 +44,7 @@ export async function submitOrgHvAbnahme(input: {
     .eq("id", input.auftragId)
     .eq("kunde_id", kunde.id)
     .maybeSingle();
+  if (auftragErr) logDbError('app/actions/org-hv-abnahme:auftraege', auftragErr)
 
   if (auftragErr || !auftrag) {
     return { ok: false, error: "Auftrag nicht gefunden." };
@@ -61,6 +63,7 @@ export async function submitOrgHvAbnahme(input: {
     },
     { onConflict: "auftrag_id" }
   );
+  if (error) logDbError('app/actions/org-hv-abnahme:hv_portal_abnahmen', error)
 
   if (error) {
     console.error("[org-hv-abnahme]", error.message);

@@ -25,10 +25,18 @@ const HV_PHASE: Record<string, string> = {
 
 function pillKind(resolved: ResolvedVorgang): VorgangDisplayStatus['pillKind'] {
   if (resolved.unterstatus === 'storniert' || resolved.unterstatus === 'abgebrochen') return 'storniert'
+  if (
+    resolved.unterstatus === 'hm_erledigt' ||
+    resolved.unterstatus === 'abgeschlossen'
+  ) {
+    return 'fertig'
+  }
   if (resolved.phase === 'anfrage') return 'neu'
   if (
     resolved.phase === 'angebot' &&
-    (resolved.unterstatus === 'gesendet' || resolved.unterstatus === 'entwurf')
+    (resolved.unterstatus === 'gesendet' ||
+      resolved.unterstatus === 'gesendet_kunde' ||
+      resolved.unterstatus === 'entwurf')
   ) {
     return 'warten'
   }
@@ -55,10 +63,10 @@ export function resolveVorgangDisplay(resolved: ResolvedVorgang, role: PortalRol
 
   // Terminal ohne Rechnung: nicht „Neu“ / „In Bearbeitung“
   if (
-    resolved.unterstatus === 'abgeschlossen' ||
-    resolved.unterstatus === 'hm_erledigt'
+    resolved.unterstatus === "abgeschlossen" ||
+    resolved.unterstatus === "hm_erledigt"
   ) {
-    phaseLabel = 'Erledigt'
+    phaseLabel = "Erledigt";
   }
 
   const metaParts: string[] = []

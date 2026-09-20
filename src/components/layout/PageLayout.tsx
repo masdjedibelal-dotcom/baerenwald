@@ -13,6 +13,7 @@ import { usePathname } from "next/navigation";
 
 import "@/app/baerenwald-landing.css";
 import { MarketingFooter } from "@/components/layout/MarketingFooter";
+import { SiteIcon } from "@/components/ui/SiteIcon";
 import {
   LEISTUNGEN,
   RATGEBER,
@@ -23,16 +24,7 @@ import {
 type DropdownId = "leistungen" | "ratgeber" | "information";
 
 function Chevron() {
-  return (
-    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" aria-hidden>
-      <path
-        d="M6 9l6 6 6-6"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinecap="round"
-      />
-    </svg>
-  );
+  return <SiteIcon n="chevron-down" ctx="default" size={11} aria-hidden />;
 }
 
 function headerLeistungenActive(pathname: string) {
@@ -277,14 +269,7 @@ export function PageLayout({ children }: PageLayoutProps) {
             onClick={() => setMobileOpen(true)}
             aria-label="Menü öffnen"
           >
-            <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
-              <path
-                d="M3 6h16M3 11h16M3 16h16"
-                stroke="currentColor"
-                strokeWidth="1.8"
-                strokeLinecap="round"
-              />
-            </svg>
+            <SiteIcon n="menu" ctx="default" size={22} aria-hidden />
           </button>
         </div>
       </header>
@@ -308,7 +293,7 @@ export function PageLayout({ children }: PageLayoutProps) {
               onClick={() => setMobileOpen(false)}
               aria-label="Menü schließen"
             >
-              ✕
+              <SiteIcon n="x" ctx="default" size={18} aria-hidden />
             </button>
           </div>
 

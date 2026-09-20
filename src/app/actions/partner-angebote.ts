@@ -1,5 +1,6 @@
 "use server";
 
+import { logDbError } from '@/lib/errors/log-db-error'
 import { revalidatePath } from "next/cache";
 
 import { linkPortalHandwerkerToAuthUser } from "@/lib/partner/link-portal-handwerker";
@@ -65,6 +66,7 @@ export async function submitPartnerAngebotPdf(
     )
     .eq("id", anfrageId)
     .maybeSingle();
+  if (error) logDbError('app/actions/partner-angebote:angebot_handwerker', error)
 
   if (error || !row) {
     return { ok: false, error: "Anfrage nicht gefunden." };
@@ -122,6 +124,7 @@ export async function submitPartnerAngebotPdf(
     })
     .eq("id", anfrageId)
     .eq("handwerker_id", link.handwerkerId);
+  if (upErr) logDbError('app/actions/partner-angebote:angebot_handwerker', upErr)
 
   if (upErr) return { ok: false, error: upErr.message };
 
@@ -184,6 +187,7 @@ export async function submitPartnerEinholungAngebotPdf(
     )
     .eq("id", anfrageId)
     .maybeSingle();
+  if (error) logDbError('app/actions/partner-angebote:angebot_handwerker', error)
 
   if (error || !row) {
     return { ok: false, error: "Anfrage nicht gefunden." };
@@ -241,6 +245,7 @@ export async function submitPartnerEinholungAngebotPdf(
     })
     .eq("id", anfrageId)
     .eq("handwerker_id", link.handwerkerId);
+  if (upErr) logDbError('app/actions/partner-angebote:angebot_handwerker', upErr)
 
   if (upErr) return { ok: false, error: upErr.message };
 
@@ -323,6 +328,7 @@ export async function submitPartnerRechnung(
     )
     .eq("id", anfrageId)
     .maybeSingle();
+  if (error) logDbError('app/actions/partner-angebote:angebot_handwerker', error)
 
   if (error || !row) {
     return { ok: false, error: "Anfrage nicht gefunden." };
@@ -387,6 +393,7 @@ export async function submitPartnerRechnung(
     .eq("handwerker_id", link.handwerkerId)
     .is("hw_rechnung_eingereicht_at", null)
     .select("id");
+  if (upErr) logDbError('app/actions/partner-angebote:angebot_handwerker', upErr)
 
   if (upErr) {
     return { ok: false, error: upErr.message };
@@ -395,7 +402,7 @@ export async function submitPartnerRechnung(
     return { ok: false, error: "Rechnung wurde bereits eingereicht." };
   }
 
-  const { data: mailCtx } = await supabaseAdmin
+  const {data: mailCtx, error: __dbErr34_1} = await supabaseAdmin
     .from("angebot_handwerker")
     .select(
       `
@@ -407,6 +414,7 @@ export async function submitPartnerRechnung(
     )
     .eq("id", anfrageId)
     .maybeSingle();
+  if (__dbErr34_1) logDbError('app/actions/partner-angebote:angebot_handwerker', __dbErr34_1)
 
   if (mailCtx) {
     const m = mailCtx as Record<string, unknown>;
@@ -510,6 +518,7 @@ export async function deletePartnerHwAuftragDokument(input: {
     )
     .eq("id", anfrageId)
     .maybeSingle();
+  if (error) logDbError('app/actions/partner-angebote:angebot_handwerker', error)
 
   if (error || !row) {
     return { ok: false, error: "Anfrage nicht gefunden." };
@@ -538,6 +547,7 @@ export async function deletePartnerHwAuftragDokument(input: {
       })
       .eq("id", anfrageId)
       .eq("handwerker_id", link.handwerkerId);
+    if (upErr) logDbError('app/actions/partner-angebote:angebot_handwerker', upErr)
     if (upErr) return { ok: false, error: upErr.message };
     revalidatePath("/partner");
     return { ok: true };
@@ -564,6 +574,7 @@ export async function deletePartnerHwAuftragDokument(input: {
     })
     .eq("id", anfrageId)
     .eq("handwerker_id", link.handwerkerId);
+  if (upErr) logDbError('app/actions/partner-angebote:angebot_handwerker', upErr)
 
   if (upErr) return { ok: false, error: upErr.message };
 

@@ -30,7 +30,7 @@ type Props = {
   actionSlides?: PortalDashboardActionSlide[];
   onActionRefresh?: () => void | Promise<void>;
   onOpenFilter: (filter: OrgVorgangFilter) => void;
-  onOpenItem: (id: string) => void;
+  onOpenItem: (id: string, opts?: { focus?: string }) => void;
   heroImageUrl?: string | null;
 };
 

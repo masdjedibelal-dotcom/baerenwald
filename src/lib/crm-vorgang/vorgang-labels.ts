@@ -1,52 +1,13 @@
+// SYNCED FROM CRM — do not edit
 import type { VorgangPhase } from '@/lib/crm-vorgang/types'
-
-const LEAD_UNTERSTATUS: Record<string, string> = {
-  neu: 'Neu',
-  kontaktiert: 'Kontaktiert',
-  termin: 'Termin',
-  abgebrochen: 'Verloren',
-  storniert: 'Storniert',
-}
-
-const ANGEBOT_UNTERSTATUS: Record<string, string> = {
-  entwurf: 'Entwurf',
-  gesendet: 'Gesendet',
-  angenommen: 'Angenommen',
-  abgelehnt: 'Abgelehnt',
-  abgelaufen: 'Abgelaufen',
-  ersetzt: 'Ersetzt',
-  storniert: 'Storniert',
-}
-
-const AUFTRAG_UNTERSTATUS: Record<string, string> = {
-  offen: 'Offen',
-  in_arbeit: 'In Arbeit',
-  abnahme: 'Abnahme',
-  abgeschlossen: 'Abgeschlossen',
-  storniert: 'Storniert',
-}
-
-const RECHNUNG_UNTERSTATUS: Record<string, string> = {
-  entwurf: 'Entwurf',
-  gesendet: 'Gesendet',
-  bezahlt: 'Bezahlt',
-  storniert: 'Storniert',
-}
+import {
+  PHASE_UNTERSTATUS_VALUES as MAP_PHASE_VALUES,
+  statusLabel,
+  type VorgangPhaseKey,
+} from '@/lib/shared-domain/status-map'
 
 export function unterstatusLabel(phase: VorgangPhase, unterstatus: string): string {
-  const key = unterstatus.trim().toLowerCase()
-  switch (phase) {
-    case 'anfrage':
-      return LEAD_UNTERSTATUS[key] ?? key
-    case 'angebot':
-      return ANGEBOT_UNTERSTATUS[key] ?? key
-    case 'auftrag':
-      return AUFTRAG_UNTERSTATUS[key] ?? key
-    case 'rechnung':
-      return RECHNUNG_UNTERSTATUS[key] ?? key
-    default:
-      return key
-  }
+  return statusLabel(phase as VorgangPhaseKey, unterstatus)
 }
 
 const HV_KANALE = new Set([
@@ -73,7 +34,7 @@ export function kanalMetaFromLead(kanal: string | null | undefined): string | nu
 
 export const ACTOR_LABELS: Record<string, string> = {
   freigabe: 'Kunde',
-  handwerker: 'Handwerker',
+  handwerker: 'Partner',
   kunde: 'Kunde',
   bw: 'Bärenwald',
 }
@@ -84,3 +45,7 @@ export const PHASE_LABELS: Record<VorgangPhase, string> = {
   auftrag: 'Auftrag',
   rechnung: 'Rechnung',
 }
+
+/** Kanonische Unterstatus-Werte pro Phase (Spec §8 Filter) — aus status-map. */
+export const PHASE_UNTERSTATUS_VALUES: Record<VorgangPhase, readonly string[]> =
+  MAP_PHASE_VALUES

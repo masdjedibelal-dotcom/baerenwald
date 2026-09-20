@@ -196,7 +196,7 @@ export function VermittlungSection() {
               Partnern in München zusammen — etwa Handwerk, Planung, Service
               oder verwandte Gewerke. Melden Sie sich gern unverbindlich.
             </p>
-            <a href={PARTNER_MAILTO} className="vermittlung-partner-cta-btn">
+            <a href={PARTNER_MAILTO} className="vermittlung-partner-cta-action">
               Kontakt aufnehmen →
             </a>
           </div>

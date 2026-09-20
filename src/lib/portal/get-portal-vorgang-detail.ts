@@ -1,3 +1,4 @@
+import { logDbError } from '@/lib/errors/log-db-error'
 import { buildKundeVorgaenge } from "@/lib/portal/build-kunde-vorgaenge";
 import type { KundePortalDetailItem } from "@/lib/portal/portal-detail-item";
 import { findKundeVorgangByQueryId } from "@/lib/portal/portal-detail-item";
@@ -8,12 +9,12 @@ async function resolveLeadIdForVorgang(
   vorgangId: string,
   kundeId: string
 ): Promise<string | null> {
-  const { data: leadDirect } = await supabaseAdmin
+  const {data: leadDirect, error: __dbErr439_1} = await supabaseAdmin
     .from("leads")
     .select("id, kunde_id, auftraggeber_kunde_id, geloescht_am")
     .eq("id", vorgangId)
     .maybeSingle();
-
+  if (__dbErr439_1) logDbError('lib/portal/get-portal-vorgang-detail:leads', __dbErr439_1)
   if (leadDirect?.id) {
     if ((leadDirect as { geloescht_am?: string | null }).geloescht_am) return null;
     const allowed =
@@ -40,11 +41,12 @@ async function resolveLeadIdForVorgang(
     (auf?.lead_id != null ? String(auf.lead_id) : "");
   if (!leadId) return null;
 
-  const { data: lead } = await supabaseAdmin
+  const {data: lead, error: __dbErr440_2} = await supabaseAdmin
     .from("leads")
     .select("id, kunde_id, auftraggeber_kunde_id, geloescht_am")
     .eq("id", leadId)
     .maybeSingle();
+  if (__dbErr440_2) logDbError('lib/portal/get-portal-vorgang-detail:leads', __dbErr440_2)
   if (!lead) return null;
   if ((lead as { geloescht_am?: string | null }).geloescht_am) return null;
   const allowed =

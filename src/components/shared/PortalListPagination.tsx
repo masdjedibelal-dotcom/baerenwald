@@ -1,5 +1,6 @@
 "use client";
 
+import { PortalButton } from "@/components/portal/PortalButton";
 type PortalListPaginationProps = {
   totalItems: number;
   itemLabel: string;
@@ -34,25 +35,27 @@ export function PortalListPagination({
       </p>
       {totalPages > 1 ? (
         <div className="portal-list-pagination-nav">
-          <button
+          <PortalButton
+            variant="ghost"
             type="button"
             onClick={() => onPageChange(Math.max(1, safePage - 1))}
             disabled={safePage <= 1}
             aria-label="Vorherige Seite"
           >
             ←
-          </button>
+          </PortalButton>
           <span>
             {safePage} / {totalPages}
           </span>
-          <button
+          <PortalButton
+            variant="ghost"
             type="button"
             onClick={() => onPageChange(Math.min(totalPages, safePage + 1))}
             disabled={safePage >= totalPages}
             aria-label="Nächste Seite"
           >
             →
-          </button>
+          </PortalButton>
         </div>
       ) : null}
     </div>

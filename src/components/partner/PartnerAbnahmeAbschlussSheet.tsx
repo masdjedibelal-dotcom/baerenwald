@@ -1,13 +1,16 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
-import { ChevronLeft, Plus, Trash2 } from "lucide-react";
+import { PortalIcon } from "@/components/portal/PortalIcon";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
+import { PortalDate, PortalInput } from "@/components/shared/PortalFormControls";
 import { submitPartnerAbnahmeNachSignatur } from "@/app/actions/partner-abnahmeprotokoll";
 import { PortalDetailError } from "@/components/shared/PortalDetailUi";
 import { PartnerKiKorrekturField } from "@/components/partner/PartnerKiKorrekturField";
+import { PortalButton } from "@/components/portal/PortalButton";
 import { PortalContentBusy } from "@/components/shared/PortalContentBusy";
 import { PortalModalShell } from "@/components/shared/PortalModalShell";
+import { PortalSheetConfirm } from "@/components/shared/PortalSheetConfirm";
 import { PortalSheetStepProgress } from "@/components/shared/PortalSheetUi";
 import { usePortalRefresh } from "@/components/shared/usePortalRefresh";
 import { SignatureCanvas } from "@/components/shared/SignatureCanvas";
@@ -20,9 +23,11 @@ import {
   type PortalAbnahmeMangel,
   type PortalAbnahmePunkt,
 } from "@/lib/partner/abnahme-types";
+import { useFormZwischenstand } from "@/lib/portal2/form-zwischenstand";
 import { PORTAL_VAR } from "@/lib/portal2/tokens";
 import { partnerPortalToast } from "@/lib/shared/portal-toast";
 import { cn } from "@/lib/utils";
+import { CONFIRM, EMPTY } from '@/lib/portal-copy'
 
 type LeistungOption = {
   id: string;
@@ -37,11 +42,31 @@ const STEPS = [
   { id: "leistungen", label: "Leistungen" },
   { id: "maengel", label: "Mängel" },
   { id: "angaben", label: "Angaben" },
-  { id: "sig_hw", label: "Handwerker vor Ort" },
+  { id: "sig_hw", label: "Partner vor Ort" },
   { id: "sig_kunde", label: "Kunde vor Ort" },
 ] as const;
 
 type Step = (typeof STEPS)[number]["id"];
+
+type AbnahmeAbschlussDraft = {
+  step: Step;
+  punkte: PortalAbnahmePunkt[];
+  maengel: PortalAbnahmeMangel[];
+  ort: string;
+  abnahmeDatum: string;
+  projektbezeichnung: string;
+  vertreter: string;
+  ergebnis: PortalAbnahmeErgebnis;
+  ergebnisTouched: boolean;
+  notizen: string;
+  showNotiz: boolean;
+  hwName: string;
+  kundeName: string;
+  hwSig: string | null;
+  kundeSig: string | null;
+  hwHasSig: boolean;
+  kundeHasSig: boolean;
+};
 
 type Props = {
   open: boolean;
@@ -154,6 +179,91 @@ export function PartnerAbnahmeAbschlussSheet({
     // Nur beim Öffnen vorbefüllen — nicht bei jedem Parent-Rerender
     // eslint-disable-next-line react-hooks/exhaustive-deps -- open gate
   }, [open]);
+
+  const abnahmeDraftData = useMemo<AbnahmeAbschlussDraft>(
+    () => ({
+      step,
+      punkte,
+      maengel,
+      ort,
+      abnahmeDatum,
+      projektbezeichnung,
+      vertreter,
+      ergebnis,
+      ergebnisTouched,
+      notizen,
+      showNotiz,
+      hwName,
+      kundeName,
+      hwSig,
+      kundeSig,
+      hwHasSig,
+      kundeHasSig,
+    }),
+    [
+      step,
+      punkte,
+      maengel,
+      ort,
+      abnahmeDatum,
+      projektbezeichnung,
+      vertreter,
+      ergebnis,
+      ergebnisTouched,
+      notizen,
+      showNotiz,
+      hwName,
+      kundeName,
+      hwSig,
+      kundeSig,
+      hwHasSig,
+      kundeHasSig,
+    ]
+  );
+
+  const onRestoreAbnahmeDraft = useCallback((data: AbnahmeAbschlussDraft) => {
+    if (STEPS.some((s) => s.id === data.step)) setStep(data.step);
+    if (Array.isArray(data.punkte)) setPunkte(data.punkte);
+    if (Array.isArray(data.maengel)) setMaengel(data.maengel);
+    if (typeof data.ort === "string") setOrt(data.ort);
+    if (typeof data.abnahmeDatum === "string")
+      setAbnahmeDatum(data.abnahmeDatum);
+    if (typeof data.projektbezeichnung === "string")
+      setProjektbezeichnung(data.projektbezeichnung);
+    if (typeof data.vertreter === "string") setVertreter(data.vertreter);
+    if (
+      data.ergebnis === "abgenommen" ||
+      data.ergebnis === "mit_vorbehalt" ||
+      data.ergebnis === "verweigert"
+    ) {
+      setErgebnis(data.ergebnis);
+    }
+    if (typeof data.ergebnisTouched === "boolean")
+      setErgebnisTouched(data.ergebnisTouched);
+    if (typeof data.notizen === "string") setNotizen(data.notizen);
+    if (typeof data.showNotiz === "boolean") setShowNotiz(data.showNotiz);
+    if (typeof data.hwName === "string") setHwName(data.hwName);
+    if (typeof data.kundeName === "string") setKundeName(data.kundeName);
+    setHwSig(typeof data.hwSig === "string" ? data.hwSig : null);
+    setKundeSig(typeof data.kundeSig === "string" ? data.kundeSig : null);
+    if (typeof data.hwHasSig === "boolean") setHwHasSig(data.hwHasSig);
+    if (typeof data.kundeHasSig === "boolean") setKundeHasSig(data.kundeHasSig);
+  }, []);
+
+  /* FORM_ZWISCHENSTAND: partner-abschluss */
+  const {
+    promptOpen: zwischenstandPromptOpen,
+    promptTitle: zwischenstandPromptTitle,
+    acceptRestore: zwischenAcceptRestore,
+    declineRestore: zwischenDeclineRestore,
+    clear: clearAbnahmeZwischenstand,
+    savedHint: zwischenSavedHint,
+  } = useFormZwischenstand<AbnahmeAbschlussDraft>({
+    storageKey: `bw:partner-abnahme-draft:${auftragId}`,
+    enabled: open,
+    data: abnahmeDraftData,
+    onRestore: onRestoreAbnahmeDraft,
+  });
 
   useEffect(() => {
     if (ergebnisTouched) return;
@@ -285,7 +395,7 @@ export function PartnerAbnahmeAbschlussSheet({
         return;
       }
       if (!vertreter.trim()) {
-        setError("Handwerker vor Ort (Name) ist Pflicht.");
+        setError("Partner vor Ort (Name) ist Pflicht.");
         return;
       }
       if (!hwName.trim()) setHwName(vertreter.trim());
@@ -323,9 +433,9 @@ export function PartnerAbnahmeAbschlussSheet({
 
   function submitBlockReason(): string | null {
     if (!hwNameOk) {
-      return "Bitte den vollen Namen des Handwerkers ausschreiben (mind. 3 Zeichen).";
+      return "Bitte den vollen Namen des Partners ausschreiben (mind. 3 Zeichen).";
     }
-    if (!hwHasSig || !hwSig?.trim()) return "Bitte die Handwerker-Signatur zeichnen.";
+    if (!hwHasSig || !hwSig?.trim()) return "Bitte die Partner-Signatur zeichnen.";
     if (!kundeNameOk) {
       return "Bitte den vollen Namen des Kunden ausschreiben (mind. 3 Zeichen).";
     }
@@ -362,6 +472,7 @@ export function PartnerAbnahmeAbschlussSheet({
         setLoading(false);
         return;
       }
+      clearAbnahmeZwischenstand();
       partnerPortalToast.abschlussSigniert();
       // Busy vom Modal sofort lösen — sonst hält PortalModalShell den
       // globalen Shell-Busy fest, wenn open=false und loading noch true.
@@ -399,12 +510,14 @@ export function PartnerAbnahmeAbschlussSheet({
         : step === "angaben"
           ? "Abnahme-Angaben"
           : step === "sig_hw"
-            ? "Handwerker vor Ort"
+            ? "Partner vor Ort"
             : "Kunde vor Ort";
 
   const subtitle = loading
     ? "Bitte warten — danach kehren Sie zum Vorgang zurück"
-    : `Schritt ${stepIndex + 1} von ${STEPS.length}: ${stepMeta.label}`;
+    : `Schritt ${stepIndex + 1} von ${STEPS.length}: ${stepMeta.label}${
+        zwischenSavedHint ? ` · ${zwischenSavedHint}` : ""
+      }`;
 
   return (
     <PortalModalShell
@@ -422,6 +535,17 @@ export function PartnerAbnahmeAbschlussSheet({
       busyTitle="Abnahmedokument wird abgeschlossen…"
       busyBody="Signaturen werden gespeichert und das Protokoll erstellt."
     >
+      {/* FORM_ZWISCHENSTAND: partner-abschluss */}
+      <PortalSheetConfirm
+        open={zwischenstandPromptOpen}
+        placement="standalone"
+        title={zwischenstandPromptTitle}
+        cancelLabel={CONFIRM.restoreDecline}
+        confirmLabel={CONFIRM.restoreDraft}
+        confirmVariant="primary"
+        onCancel={zwischenDeclineRestore}
+        onConfirm={zwischenAcceptRestore}
+      />
       {loading ? (
         <PortalContentBusy
           title="Abnahmedokument wird abgeschlossen…"
@@ -451,7 +575,8 @@ export function PartnerAbnahmeAbschlussSheet({
                       ? "Erledigte Positionen werden vorausgefüllt."
                       : `${punkte.length} Leistung${punkte.length === 1 ? "" : "en"} im Protokoll`}
                   </p>
-                  <button
+                  <PortalButton
+                    variant="ghost"
                     type="button"
                     className="portal-sheet-chip"
                     style={{
@@ -459,19 +584,19 @@ export function PartnerAbnahmeAbschlussSheet({
                     }}
                     onClick={() => setAddMode("wahl")}
                   >
-                    <Plus className="h-3.5 w-3.5" aria-hidden />
+                    <PortalIcon n="plus" ctx="default" className="h-3.5 w-3.5" aria-hidden />
                     Hinzufügen
-                  </button>
+                  </PortalButton>
                 </div>
 
                 {punkte.length === 0 ? (
-                  <button
-                    type="button"
-                    className="portal-action-btn portal-action-btn--secondary portal-action-btn--block"
+                  <PortalButton
+                    variant="secondary"
+                    block
                     onClick={() => setAddMode("wahl")}
                   >
                     Erste Leistung hinzufügen
-                  </button>
+                  </PortalButton>
                 ) : (
                   <ul className="space-y-2">
                     {punkte.map((p) => {
@@ -482,7 +607,7 @@ export function PartnerAbnahmeAbschlussSheet({
                           className="portal-sheet-card"
                         >
                           <div className="flex items-start gap-2">
-                            <input
+                            <PortalInput
                               value={p.leistung_name}
                               onChange={(e) =>
                                 setPunkte((prev) =>
@@ -493,11 +618,12 @@ export function PartnerAbnahmeAbschlussSheet({
                                   )
                                 )
                               }
-                              className="portal-input min-w-0 flex-1 rounded-lg border border-border-default px-2.5 py-2 text-[14px] font-semibold"
+                              className="portal-input min-w-0 flex-1 rounded-field border border-border-default px-2.5 py-2 text-fs-body font-semibold"
                             />
-                            <button
+                            <PortalButton
+                              variant="ghost"
                               type="button"
-                              aria-label="Entfernen"
+                              aria-label="Löschen"
                               className="shrink-0 p-2 text-text-tertiary"
                               onClick={() =>
                                 setPunkte((prev) =>
@@ -505,10 +631,11 @@ export function PartnerAbnahmeAbschlussSheet({
                                 )
                               }
                             >
-                              <Trash2 className="h-4 w-4" />
-                            </button>
+                              <PortalIcon n="trash" ctx="default" className="h-4 w-4" />
+                            </PortalButton>
                           </div>
-                          <button
+                          <PortalButton
+                            variant="ghost"
                             type="button"
                             className="portal-text-meta mt-1.5"
                             style={{ color: PORTAL_VAR.primary }}
@@ -521,7 +648,7 @@ export function PartnerAbnahmeAbschlussSheet({
                               : p.beschreibung?.trim()
                                 ? "Beschreibung bearbeiten"
                                 : "Beschreibung (optional)"}
-                          </button>
+                          </PortalButton>
                           {openDetail ? (
                             <PartnerKiKorrekturField
                               scope="abnahmeprotokoll"
@@ -556,16 +683,17 @@ export function PartnerAbnahmeAbschlussSheet({
 
                 <div className="flex items-center justify-between gap-2">
                   <p
-                    className="text-[14px] font-semibold"
+                    className="text-fs-body font-semibold"
                     style={{ color: PORTAL_VAR.ink }}
                   >
                     {maengel.length === 0
-                      ? "Keine Mängel"
+                      ? EMPTY.maengel
                       : maengel.length === 1
                         ? "1 Mangel"
                         : `${maengel.length} Mängel`}
                   </p>
-                  <button
+                  <PortalButton
+                    variant="ghost"
                     type="button"
                     className="portal-sheet-chip"
                     style={{
@@ -577,9 +705,9 @@ export function PartnerAbnahmeAbschlussSheet({
                       setAddMode("mangel");
                     }}
                   >
-                    <Plus className="h-3.5 w-3.5" aria-hidden />
+                    <PortalIcon n="plus" ctx="default" className="h-3.5 w-3.5" aria-hidden />
                     Mangel
-                  </button>
+                  </PortalButton>
                 </div>
 
                 {maengel.length > 0 ? (
@@ -587,10 +715,10 @@ export function PartnerAbnahmeAbschlussSheet({
                     {maengel.map((m) => (
                       <li
                         key={m.id}
-                        className="rounded-xl border border-amber-200 bg-amber-50/40 px-3 py-2.5"
+                        className="rounded-sheet border border-warning-border bg-warning-bg/40 px-3 py-2.5"
                       >
                         <div className="flex items-start gap-2">
-                          <input
+                          <PortalInput
                             value={m.titel}
                             onChange={(e) =>
                               setMaengel((prev) =>
@@ -601,11 +729,12 @@ export function PartnerAbnahmeAbschlussSheet({
                                 )
                               )
                             }
-                            className="portal-input min-w-0 flex-1 rounded-lg border border-border-default bg-white px-2.5 py-2 text-[14px] font-semibold"
+                            className="portal-input min-w-0 flex-1 rounded-field border border-border-default bg-white px-2.5 py-2 text-fs-body font-semibold"
                           />
-                          <button
+                          <PortalButton
+                            variant="ghost"
                             type="button"
-                            aria-label="Entfernen"
+                            aria-label="Löschen"
                             className="shrink-0 p-2 text-text-tertiary"
                             onClick={() =>
                               setMaengel((prev) =>
@@ -613,8 +742,8 @@ export function PartnerAbnahmeAbschlussSheet({
                               )
                             }
                           >
-                            <Trash2 className="h-4 w-4" />
-                          </button>
+                            <PortalIcon n="trash" ctx="default" className="h-4 w-4" />
+                          </PortalButton>
                         </div>
                         {m.beschreibung?.trim() ? (
                           <p className="portal-text-meta mt-1.5 leading-snug text-text-secondary">
@@ -639,11 +768,11 @@ export function PartnerAbnahmeAbschlussSheet({
                   <span className="portal-sheet-field-label">
                     Projekt *
                   </span>
-                  <input
+                  <PortalInput
                     value={projektbezeichnung}
                     onChange={(e) => setProjektbezeichnung(e.target.value)}
                     placeholder="Objekt- oder Auftragsname"
-                    className="portal-input w-full rounded-xl border border-border-default px-3 py-3 text-[15px]"
+                    className="portal-input w-full rounded-field border border-border-default px-3 py-3 text-fs-title"
                     required
                   />
                 </label>
@@ -653,11 +782,10 @@ export function PartnerAbnahmeAbschlussSheet({
                     <span className="portal-sheet-field-label">
                       Datum *
                     </span>
-                    <input
-                      type="date"
+                    <PortalDate
                       value={abnahmeDatum}
                       onChange={(e) => setAbnahmeDatum(e.target.value)}
-                      className="portal-input w-full rounded-xl border border-border-default px-3 py-3 text-[15px]"
+                      className="portal-input w-full rounded-field border border-border-default px-3 py-3 text-fs-title"
                       required
                     />
                   </label>
@@ -665,11 +793,11 @@ export function PartnerAbnahmeAbschlussSheet({
                     <span className="portal-sheet-field-label">
                       Ort *
                     </span>
-                    <input
+                    <PortalInput
                       value={ort}
                       onChange={(e) => setOrt(e.target.value)}
                       placeholder="Ort der Abnahme"
-                      className="portal-input w-full rounded-xl border border-border-default px-3 py-3 text-[15px]"
+                      className="portal-input w-full rounded-field border border-border-default px-3 py-3 text-fs-title"
                       required
                     />
                   </label>
@@ -677,13 +805,13 @@ export function PartnerAbnahmeAbschlussSheet({
 
                 <label className="block space-y-1">
                   <span className="portal-sheet-field-label">
-                    Handwerker vor Ort *
+                    Partner vor Ort *
                   </span>
-                  <input
+                  <PortalInput
                     value={vertreter}
                     onChange={(e) => setVertreter(e.target.value)}
-                    placeholder="Name des Handwerkers"
-                    className="portal-input w-full rounded-xl border border-border-default px-3 py-3 text-[15px]"
+                    placeholder="Name des Partners"
+                    className="portal-input w-full rounded-field border border-border-default px-3 py-3 text-fs-title"
                     required
                   />
                 </label>
@@ -697,18 +825,18 @@ export function PartnerAbnahmeAbschlussSheet({
                       <label
                         key={key}
                         className={cn(
-                          "flex cursor-pointer items-center gap-3 rounded-xl border px-3.5 py-3 text-[14px] font-semibold",
+                          "flex cursor-pointer items-center gap-3 rounded-sheet border px-3.5 py-3 text-fs-body font-semibold",
                           ergebnis === key
                             ? "border-accent bg-accent-light text-text-primary"
                             : "border-border-light bg-white text-text-secondary"
                         )}
                       >
-                        <input
+                        <PortalInput
                           type="radio"
                           name="abnahme_ergebnis"
                           value={key}
                           checked={ergebnis === key}
-                          className="h-4 w-4 accent-[var(--portal-primary,#1f6a3f)]"
+                          className="h-4 w-4 accent-[var(--portal-primary)]"
                           onChange={() => {
                             setErgebnisTouched(true);
                             setErgebnis(key);
@@ -731,14 +859,15 @@ export function PartnerAbnahmeAbschlussSheet({
                     placeholder="Kurz notieren oder einsprechen"
                   />
                 ) : (
-                  <button
+                  <PortalButton
+                    variant="ghost"
                     type="button"
                     className="portal-text-body font-semibold"
                     style={{ color: PORTAL_VAR.primary }}
                     onClick={() => setShowNotiz(true)}
                   >
                     + Interne Notiz hinzufügen
-                  </button>
+                  </PortalButton>
                 )}
               </div>
             ) : null}
@@ -750,18 +879,18 @@ export function PartnerAbnahmeAbschlussSheet({
                 </p>
                 <label className="block space-y-1.5">
                   <span className="portal-sheet-field-label">
-                    Handwerker vor Ort *
+                    Partner vor Ort *
                   </span>
-                  <input
+                  <PortalInput
                     value={hwName}
                     onChange={(e) => setHwName(e.target.value)}
-                    className="portal-input w-full rounded-xl border border-border-default px-3 py-3 text-[15px]"
+                    className="portal-input w-full rounded-field border border-border-default px-3 py-3 text-fs-title"
                     autoComplete="name"
                   />
                 </label>
                 <div>
                   <p className="mb-1.5 portal-sheet-field-label">
-                    Signatur Handwerker *
+                    Signatur Partner *
                   </p>
                   <SignatureCanvas
                     onChange={(has, url) => {
@@ -782,10 +911,10 @@ export function PartnerAbnahmeAbschlussSheet({
                   <span className="portal-sheet-field-label">
                     Kunde vor Ort *
                   </span>
-                  <input
+                  <PortalInput
                     value={kundeName}
                     onChange={(e) => setKundeName(e.target.value)}
-                    className="portal-input w-full rounded-xl border border-border-default px-3 py-3 text-[15px]"
+                    className="portal-input w-full rounded-field border border-border-default px-3 py-3 text-fs-title"
                     autoComplete="name"
                   />
                 </label>
@@ -805,39 +934,30 @@ export function PartnerAbnahmeAbschlussSheet({
           </div>
 
           <div
-            className="-mx-1 mt-3 border-t bg-[var(--portal-surface,#fff)] px-1 pt-3"
+            className="-mx-1 mt-3 border-t bg-[var(--portal-surface)] px-1 pt-3"
             style={{ borderColor: PORTAL_VAR.line }}
           >
             <div className="portal-action-row">
               {stepIndex > 0 ? (
-                <button
-                  type="button"
-                  className="portal-action-btn portal-action-btn--secondary"
-                  onClick={goBack}
-                >
-                  <ChevronLeft className="h-4 w-4 shrink-0" aria-hidden />
+                <PortalButton variant="secondary" onClick={goBack}>
+                  <PortalIcon n="chevron-left" ctx="default" className="h-4 w-4 shrink-0" aria-hidden />
                   Zurück
-                </button>
+                </PortalButton>
               ) : null}
               {step === "sig_kunde" ? (
-                <button
-                  type="button"
-                  className="portal-action-btn portal-action-btn--primary"
+                <PortalButton
+                  variant="primary"
                   disabled={!canSubmit}
                   onClick={() => void submit()}
                 >
                   Protokoll abschließen
-                </button>
+                </PortalButton>
               ) : (
-                <button
-                  type="button"
-                  className="portal-action-btn portal-action-btn--primary"
-                  onClick={goNext}
-                >
+                <PortalButton variant="primary" onClick={goNext}>
                   {step === "maengel" && maengel.length === 0
-                    ? "Keine Mängel — weiter"
+                    ? EMPTY.maengelWeiter
                     : "Weiter"}
-                </button>
+                </PortalButton>
               )}
             </div>
             {step === "sig_kunde" && !canSubmit ? (
@@ -875,9 +995,8 @@ export function PartnerAbnahmeAbschlussSheet({
           <div className="space-y-3">
             {addMode === "wahl" ? (
               <div className="portal-action-row">
-                <button
-                  type="button"
-                  className="portal-action-btn portal-action-btn--secondary"
+                <PortalButton
+                  variant="secondary"
                   onClick={() => {
                     setDraftTitel("");
                     setDraftBeschreibung("");
@@ -885,15 +1004,14 @@ export function PartnerAbnahmeAbschlussSheet({
                   }}
                 >
                   Leer — freie Leistung
-                </button>
-                <button
-                  type="button"
-                  className="portal-action-btn portal-action-btn--primary"
+                </PortalButton>
+                <PortalButton
+                  variant="primary"
                   disabled={!availableLeistungen.length}
                   onClick={() => setAddMode("erkannt")}
                 >
                   Erkannt — aus Auftrag
-                </button>
+                </PortalButton>
               </div>
             ) : null}
             {addMode === "wahl" && !availableLeistungen.length ? (
@@ -908,10 +1026,10 @@ export function PartnerAbnahmeAbschlussSheet({
                   <span className="portal-sheet-field-label">
                     Titel *
                   </span>
-                  <input
+                  <PortalInput
                     value={draftTitel}
                     onChange={(e) => setDraftTitel(e.target.value)}
-                    className="portal-input w-full rounded-xl border border-border-default px-3 py-3 text-[15px]"
+                    className="portal-input w-full rounded-field border border-border-default px-3 py-3 text-fs-title"
                   />
                 </label>
                 <PartnerKiKorrekturField
@@ -929,18 +1047,17 @@ export function PartnerAbnahmeAbschlussSheet({
                     <span className="portal-sheet-field-label">
                       Frist (optional)
                     </span>
-                    <input
-                      type="date"
+                    <PortalDate
                       value={draftFrist}
                       onChange={(e) => setDraftFrist(e.target.value)}
-                      className="portal-input w-full rounded-xl border border-border-default px-3 py-3"
+                      className="portal-input w-full rounded-field border border-border-default px-3 py-3"
                     />
                   </label>
                 ) : null}
                 <div className="mt-1">
-                  <button
-                    type="button"
-                    className="portal-action-btn portal-action-btn--primary portal-action-btn--block"
+                  <PortalButton
+                    variant="primary"
+                    block
                     disabled={draftTitel.trim().length < 2}
                     onClick={() => {
                       const ok =
@@ -949,7 +1066,7 @@ export function PartnerAbnahmeAbschlussSheet({
                     }}
                   >
                     Hinzufügen
-                  </button>
+                  </PortalButton>
                 </div>
               </div>
             ) : null}
@@ -959,7 +1076,8 @@ export function PartnerAbnahmeAbschlussSheet({
                 <ul className="max-h-48 space-y-1 overflow-y-auto">
                   {availableLeistungen.map((l) => (
                     <li key={l.id}>
-                      <button
+                      <PortalButton
+                        variant="ghost"
                         type="button"
                         className={cn(
                           "portal-sheet-card portal-sheet-card--selectable",
@@ -978,7 +1096,7 @@ export function PartnerAbnahmeAbschlussSheet({
                             dokumentiert
                           </span>
                         ) : null}
-                      </button>
+                      </PortalButton>
                     </li>
                   ))}
                 </ul>
@@ -988,10 +1106,10 @@ export function PartnerAbnahmeAbschlussSheet({
                       <span className="portal-sheet-field-label">
                         Titel
                       </span>
-                      <input
+                      <PortalInput
                         value={draftTitel}
                         onChange={(e) => setDraftTitel(e.target.value)}
-                        className="portal-input w-full rounded-xl border border-border-default px-3 py-3"
+                        className="portal-input w-full rounded-field border border-border-default px-3 py-3"
                       />
                     </label>
                     <PartnerKiKorrekturField
@@ -1005,16 +1123,16 @@ export function PartnerAbnahmeAbschlussSheet({
                       placeholder="Tippen — KI formuliert kundenfertig"
                     />
                     <div className="mt-1">
-                      <button
-                        type="button"
-                        className="portal-action-btn portal-action-btn--primary portal-action-btn--block"
+                      <PortalButton
+                        variant="primary"
+                        block
                         disabled={draftTitel.trim().length < 2}
                         onClick={() => {
                           if (addErkanntLeistung()) resetDraft();
                         }}
                       >
                         Hinzufügen
-                      </button>
+                      </PortalButton>
                     </div>
                   </>
                 ) : null}

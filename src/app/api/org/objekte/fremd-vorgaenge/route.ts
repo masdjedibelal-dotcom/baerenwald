@@ -1,3 +1,4 @@
+import { logDbError } from '@/lib/errors/log-db-error'
 import { NextResponse } from "next/server";
 
 import { GPT_VIZ_STORAGE_BUCKET } from "@/lib/gpt-viz/constants";
@@ -29,6 +30,7 @@ export async function GET(req: Request) {
     .select("*")
     .eq("kunde_objekt_id", objektId)
     .order("datum", { ascending: false });
+  if (error) logDbError('app/api/org/objekte/fremd-vorgaenge/route:fremd_vorgaenge', error)
 
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
@@ -74,6 +76,7 @@ export async function POST(req: Request) {
     const { error: upErr } = await supabaseAdmin.storage
       .from(GPT_VIZ_STORAGE_BUCKET)
       .upload(path, buf, { contentType: file.type, upsert: false });
+    if (upErr) logDbError('app/api/org/objekte/fremd-vorgaenge/route:query', upErr)
     if (!upErr) {
       const { data: pub } = supabaseAdmin.storage
         .from(GPT_VIZ_STORAGE_BUCKET)
@@ -97,6 +100,7 @@ export async function POST(req: Request) {
     })
     .select("id")
     .single();
+  if (error) logDbError('app/api/org/objekte/fremd-vorgaenge/route:fremd_vorgaenge', error)
 
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
@@ -124,6 +128,7 @@ export async function DELETE(req: Request) {
     .delete()
     .eq("id", id)
     .eq("kunde_id", session.kunde.id);
+  if (error) logDbError('app/api/org/objekte/fremd-vorgaenge/route:fremd_vorgaenge', error)
 
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });

@@ -33,14 +33,14 @@ export function PortalInboxEmpty({
     >
       <p
         className={cn(
-          "font-bold text-[var(--p2-ink,#142019)]",
-          compact ? "text-[14.5px]" : "text-[15.5px]"
+          "font-bold text-[var(--p2-ink)]",
+          compact ? "text-fs-title" : "text-fs-title"
         )}
       >
         {title}
       </p>
       {description ? (
-        <p className="mt-1.5 max-w-sm text-[13.5px] leading-relaxed text-[var(--p2-sub,#55615b)]">
+        <p className="mt-1.5 max-w-sm text-fs-body leading-relaxed text-[var(--p2-sub)]">
           {description}
         </p>
       ) : null}

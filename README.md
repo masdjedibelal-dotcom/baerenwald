@@ -1,36 +1,31 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Bärenwald — Website + Portale
+
+Next.js-App für Website, HV-/Partner-/Kunden-Portal und Melde-Funnel.
 
 ## Getting Started
-a
-First, run the development server:
 
 ```bash
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Öffnet [http://localhost:3000](http://localhost:3000). Env: `.env.example` → `.env.local`.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## `@`-Alias (O2)
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Pfad-Alias `@/*` → `./src/*` ist **doppelt** verdrahtet und bleibt so:
 
-## Learn More
+1. **`tsconfig.json`:** `baseUrl: "."` + `paths["@/*"]` — für TypeScript, IDE und Next-Typeresolution.
+2. **`next.config.mjs` (Webpack):** `config.resolve.alias["@"]` → `src/` — weil allein die tsconfig-`paths` in diesem Projekt unzuverlässig waren (Build/Netlify: Module not found für `@/…`).
 
-To learn more about Next.js, take a look at the following resources:
+Beide beibehalten; nicht auf nur eine Variante reduzieren.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## PDF-Rendering (O5)
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+Portal erzeugt keine PDFs lokal (kein Chromium, kein produktives pdf-lib). Stattdessen:
 
-## Deploy on Vercel
+- Org-/Partner-Routen laden Daten und prüfen Rechte.
+- Server-seitig: `POST` an CRM `/api/pdf/render` mit `Authorization: Bearer ${PDF_SERVICE_SECRET}`.
+- Env: `PDF_SERVICE_SECRET` (gleicher Wert wie CRM) + `NEXT_PUBLIC_CRM_URL` / `CRM_DASHBOARD_URL` als Basis.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Siehe CRM `docs/AUDIT-BLOCKER.md` **M10**.

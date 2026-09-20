@@ -1,4 +1,11 @@
+// SYNCED FROM CRM — do not edit
+import { leadWartetAufHvStartFreigabe } from '@/lib/crm-vorgang/anfrage-akut-schwelle'
 import { kanalMetaFromLead, unterstatusLabel } from '@/lib/crm-vorgang/vorgang-labels'
+import {
+  isPlaceholderVorgangTitel,
+  resolveAkteVorgangTitel,
+} from '@/lib/crm-vorgang/vorgang-anzeige-titel'
+import { leadIstHavarie } from '@/lib/crm-vorgang/hv-lead-helpers'
 import type {
   ResolveVorgangInput,
   ResolvedVorgang,
@@ -10,6 +17,28 @@ import type {
   VorgangRechnungInput,
 } from '@/lib/crm-vorgang/types'
 
+/**
+ * Kanonischer Vorgang-Resolver (final Spec):
+ * - Phase nie aus vorgang_phase lesen — immer aus Entity-Kette ableiten
+ * - Storno-Regel: neueste nicht-stornierte Entität gewinnt (Rechnung > Auftrag > Angebot > Anfrage)
+ * - Actor-Priorität: handwerker > kunde > bw
+ *   (Org-Freigabe ist kein eigener Vorgangs-Status mehr — Angebot „gesendet“ = wartet auf Annehmen/Ablehnen)
+ * - Output-Shape: `ResolvedVorgang` in `@/lib/crm-vorgang/types`
+ *
+ * A7 Parität: Fixtures in `shared/crm-vorgang/resolve-vorgang.fixtures.json`
+ * (+ Kopie `resolve-vorgang.fixtures.json` hier) — Portal und CRM byte-identisch halten.
+ * Fine-Stages: `mapAngebotStatusEinfach` (status_einfach vor Legacy-status).
+ * Rechnungs-Gewinn: `isPhaseWinningRechnung` (nur Voll; Abschlag/Schluss = Satelliten).
+ */
+
+/** Actor-Priorität (höher = wichtiger). */
+export const ACTOR_PRIORITY: Record<VorgangActor, number> = {
+  freigabe: 4,
+  handwerker: 3,
+  kunde: 2,
+  bw: 1,
+}
+
 function entityTs(x: { updated_at?: string | null; created_at: string }): string {
   return x.updated_at?.trim() || x.created_at
 }
@@ -19,17 +48,24 @@ function pickNewest<T>(items: T[], ts: (x: T) => string): T | null {
   return [...items].sort((a, b) => ts(b).localeCompare(ts(a)))[0] ?? null
 }
 
-function mapAngebotStatusEinfach(angebot: VorgangAngebotInput): string {
+/**
+ * Unterstatus für Angebote: `status_einfach` hat Vorrang (inkl. Fine-Stages).
+ * Legacy-`status` wird auf status_einfach-Äquivalent gemappt.
+ */
+export function mapAngebotStatusEinfach(angebot: VorgangAngebotInput): string {
   const einfach = angebot.status_einfach?.trim().toLowerCase()
-  if (einfach === 'gesendet_kunde') return 'gesendet'
   if (einfach) return einfach
   const legacy = (angebot.status ?? '').trim().toLowerCase()
   switch (legacy) {
     case 'entwurf':
       return 'entwurf'
     case 'gesendet_handwerker':
+      return 'gesendet_handwerker'
     case 'handwerker_akzeptiert':
+      return 'handwerker_akzeptiert'
     case 'gesendet_kunde':
+      return 'gesendet_kunde'
+    case 'gesendet':
       return 'gesendet'
     case 'kunde_akzeptiert':
       return 'angenommen'
@@ -42,7 +78,7 @@ function mapAngebotStatusEinfach(angebot: VorgangAngebotInput): string {
 
 export function isAngebotStorniert(angebot: VorgangAngebotInput): boolean {
   const einfach = mapAngebotStatusEinfach(angebot)
-  return einfach === 'abgelehnt' || einfach === 'ersetzt'
+  return einfach === 'abgelehnt' || einfach === 'ersetzt' || einfach === 'storniert'
 }
 
 export function isAuftragStorniert(auftrag: VorgangAuftragInput): boolean {
@@ -51,6 +87,37 @@ export function isAuftragStorniert(auftrag: VorgangAuftragInput): boolean {
 
 export function isRechnungStorniert(rechnung: VorgangRechnungInput): boolean {
   return rechnung.status === 'storniert'
+}
+
+/**
+ * Weitere Rechnungszeilen in der Liste (nicht der Stamm-Vorgang).
+ * Abschlag- und Schlussrechnung sind Satelliten — Auftrag bleibt unter „Aufträge“ sichtbar.
+ * Nur Vollrechnung (ohne Abschlagsplan) zieht den Stamm in die Rechnungsphase.
+ */
+export function isSatellitenRechnung(rechnung: VorgangRechnungInput): boolean {
+  const art = (rechnung.rechnung_art ?? 'voll').trim().toLowerCase()
+  return art === 'abschlag' || art === 'schluss'
+}
+
+/**
+ * Gestellte Vollrechnung zieht den Stamm in die Rechnungsphase.
+ * Abschläge und Schlussrechnung bleiben Satelliten am Auftrag.
+ */
+export function isPhaseWinningRechnung(rechnung: VorgangRechnungInput): boolean {
+  const st = (rechnung.status ?? '').trim().toLowerCase()
+  if (!st || st === 'storniert' || st === 'entwurf') return false
+  if (String(rechnung.beleg_typ ?? '').toLowerCase() === 'gutschrift') return false
+  if (isSatellitenRechnung(rechnung)) return false
+  return true
+}
+
+/** Gestellte Endabrechnung vorhanden (Voll oder Schluss) — kein „Rechnung ausstehend“. */
+export function hatGestellteEndabrechnung(rechnung: VorgangRechnungInput): boolean {
+  const st = (rechnung.status ?? '').trim().toLowerCase()
+  if (!st || st === 'storniert' || st === 'entwurf') return false
+  if (String(rechnung.beleg_typ ?? '').toLowerCase() === 'gutschrift') return false
+  const art = (rechnung.rechnung_art ?? 'voll').trim().toLowerCase()
+  return art === 'voll' || art === 'schluss'
 }
 
 function pickNewestActive<T>(
@@ -63,32 +130,32 @@ function pickNewestActive<T>(
   return null
 }
 
-function leadAnfrageUnterstatus(leadStatus: string, forceStorniert: boolean): string {
+function leadAnfrageUnterstatus(
+  leadStatus: string,
+  forceStorniert: boolean,
+  hvMeldungStatus?: string | null
+): string {
   if (forceStorniert) return 'storniert'
+  const hv = String(hvMeldungStatus ?? '')
+    .trim()
+    .toLowerCase()
+  // HM selbst erledigt — auch wenn lead.status noch „neu“ (Alt-/Inkonsistenz)
+  if (hv === 'hm_erledigt') return 'hm_erledigt'
+
   const s = leadStatus.trim().toLowerCase()
   if (s === 'neu' || s === 'kontaktiert' || s === 'termin' || s === 'abgebrochen') return s
-  if (s === 'abgebrochen') return 'abgebrochen'
+  // Lead schon weiter (Angebot/Auftrag/…) — nicht als offene Anfrage „Neu“ anzeigen
+  if (s === 'angebot' || s === 'auftrag' || s === 'abgeschlossen' || s === 'hm_erledigt') {
+    return s === 'hm_erledigt' ? 'hm_erledigt' : 'abgeschlossen'
+  }
   return 'neu'
 }
 
-function funnelKategorie(funnelDaten: unknown): string | null {
-  if (!funnelDaten || typeof funnelDaten !== 'object') return null
-  const kat = (funnelDaten as { melde_kategorie?: unknown }).melde_kategorie
-  return typeof kat === 'string' ? kat : null
-}
-
-function funnelIstAkut(funnelDaten: unknown): boolean {
-  if (!funnelDaten || typeof funnelDaten !== 'object') return false
-  const fd = funnelDaten as { notfall?: unknown; havarie?: unknown }
-  return fd.notfall === true || fd.havarie === true
-}
 
 function isNotfall(input: ResolveVorgangInput): boolean {
   const lead = input.lead
   if ((lead.hv_meldung_status ?? '').trim() === 'notmassnahme') return true
-  if (lead.situation === 'notfall') return true
-  if (funnelIstAkut(lead.funnel_daten)) return true
-  return funnelKategorie(lead.funnel_daten) === 'notfall'
+  return leadIstHavarie(lead)
 }
 
 function isUeberfaellig(faellig: string | null | undefined, now = new Date()): boolean {
@@ -99,6 +166,16 @@ function isUeberfaellig(faellig: string | null | undefined, now = new Date()): b
   const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
   const due = new Date(d.getFullYear(), d.getMonth(), d.getDate())
   return due < today
+}
+
+/** Angebot wartet auf Kundenentscheidung (Portal und/oder Mail — beides „gesendet“). */
+function angebotWartetAufKunde(status: string): boolean {
+  return (
+    status === 'gesendet' ||
+    status === 'gesendet_kunde' ||
+    status === 'entwurf' ||
+    status === 'abgelaufen'
+  )
 }
 
 function resolveActor(
@@ -117,25 +194,20 @@ function resolveActor(
   const candidates: { actor: VorgangActor; rank: number }[] = []
 
   if (phase === 'auftrag' && auftragAktiv?.handwerkerAktionOffen) {
-    candidates.push({ actor: 'handwerker', rank: 3 })
+    candidates.push({ actor: 'handwerker', rank: ACTOR_PRIORITY.handwerker })
   }
 
   if (phase === 'angebot' && angebotAktiv) {
     const st = mapAngebotStatusEinfach(angebotAktiv)
-    if (
-      st === 'gesendet' ||
-      st === 'gesendet_kunde' ||
-      st === 'entwurf' ||
-      st === 'abgelaufen'
-    ) {
-      candidates.push({ actor: 'kunde', rank: 2 })
+    if (angebotWartetAufKunde(st)) {
+      candidates.push({ actor: 'kunde', rank: ACTOR_PRIORITY.kunde })
     } else if (st === 'gesendet_handwerker') {
-      candidates.push({ actor: 'handwerker', rank: 3 })
+      candidates.push({ actor: 'handwerker', rank: ACTOR_PRIORITY.handwerker })
     }
   }
 
   if (badges.notfall) {
-    candidates.push({ actor: 'bw', rank: 1 })
+    candidates.push({ actor: 'bw', rank: ACTOR_PRIORITY.bw })
   }
 
   if (!candidates.length) {
@@ -154,13 +226,16 @@ type PhasePick = {
   updatedAt: string
 }
 
+/** Storno-Regel: neueste nicht-stornierte Entität gewinnt (Kette Rechnung→Auftrag→Angebot→Anfrage).
+ * Versendete Vollrechnung gewinnt die Stamm-Phase; Abschläge und Schlussrechnung bleiben Satelliten. */
 function resolvePhase(input: ResolveVorgangInput): PhasePick {
   const lead = input.lead
   const angebote = input.angebote ?? []
   const auftraege = input.auftraege ?? []
   const rechnungen = input.rechnungen ?? []
+  const phaseRechnungen = rechnungen.filter(isPhaseWinningRechnung)
 
-  const rechnungAktiv = pickNewestActive(rechnungen, isRechnungStorniert, entityTs)
+  const rechnungAktiv = pickNewestActive(phaseRechnungen, isRechnungStorniert, entityTs)
   if (rechnungAktiv) {
     return {
       phase: 'rechnung',
@@ -190,8 +265,8 @@ function resolvePhase(input: ResolveVorgangInput): PhasePick {
     }
   }
 
-  if (rechnungen.length > 0 && rechnungen.every(isRechnungStorniert)) {
-    const r = pickNewest(rechnungen, entityTs)!
+  if (phaseRechnungen.length > 0 && phaseRechnungen.every(isRechnungStorniert)) {
+    const r = pickNewest(phaseRechnungen, entityTs)!
     return {
       phase: 'rechnung',
       entityId: r.id,
@@ -219,36 +294,51 @@ function resolvePhase(input: ResolveVorgangInput): PhasePick {
     }
   }
 
-  const hv = (lead.hv_meldung_status ?? '').trim().toLowerCase()
-  if (hv === 'hm_erledigt' || hv === 'abgeschlossen') {
-    return {
-      phase: 'auftrag',
-      entityId: lead.id,
-      unterstatus: 'abgeschlossen',
-      updatedAt: entityTs(lead),
-    }
-  }
-
   return {
     phase: 'anfrage',
     entityId: lead.id,
-    unterstatus: leadAnfrageUnterstatus(lead.status, false),
+    unterstatus: leadAnfrageUnterstatus(lead.status, false, lead.hv_meldung_status),
     updatedAt: entityTs(lead),
   }
 }
 
-function buildTitel(input: ResolveVorgangInput): string {
-  if (input.titel?.trim()) return input.titel.trim()
-  const lead = input.lead
-  const bereich = lead.bereiche?.[0]?.trim()
-  const situation = lead.situation?.trim()
-  const ort = lead.plz?.trim()
-  const parts = [situation, bereich, ort].filter(Boolean)
-  if (parts.length) return parts.join(' — ')
-  return 'Vorgang'
+function buildTitel(
+  input: ResolveVorgangInput,
+  angebotAktiv: VorgangAngebotInput | null | undefined
+): string {
+  const angebote = input.angebote ?? []
+  const angebot =
+    angebotAktiv ??
+    angebote.find((a) =>
+      Boolean(a.leistungsumfang?.trim() || a.notizen?.trim() || a.titel?.trim())
+    ) ??
+    angebote[0] ??
+    null
+
+  const auftragTitel =
+    input.auftraege?.find(
+      (a) => a.titel?.trim() && !isPlaceholderVorgangTitel(a.titel)
+    )?.titel ??
+    input.auftraege?.find((a) => a.titel?.trim())?.titel ??
+    null
+
+  return resolveAkteVorgangTitel({
+    angebot: angebot
+      ? {
+          leistungsumfang: angebot.leistungsumfang,
+          notizen: angebot.notizen,
+          titel: angebot.titel,
+        }
+      : null,
+    auftragTitel,
+    situation: input.lead.situation,
+    bereiche: input.lead.bereiche,
+    // Nie Kundenname — nur expliziter Vorgangs-Titel falls gesetzt
+    fallback: input.titel?.trim() || null,
+  })
 }
 
-/** Kanonische Ableitung — nie aus vorgang_phase lesen. */
+/** Kanonische Ableitung — nie aus vorgang_phase lesen. Output: `ResolvedVorgang`. */
 export function resolveVorgang(input: ResolveVorgangInput): ResolvedVorgang {
   const lead = input.lead
   const angebote = input.angebote ?? []
@@ -259,17 +349,19 @@ export function resolveVorgang(input: ResolveVorgangInput): ResolvedVorgang {
 
   let unterstatus = pick.unterstatus
   if (pick.phase === 'anfrage' && unterstatus !== 'storniert') {
-    unterstatus = leadAnfrageUnterstatus(lead.status, false)
+    unterstatus = leadAnfrageUnterstatus(lead.status, false, lead.hv_meldung_status)
   }
 
   const angebotAktiv =
     pick.phase === 'angebot'
-      ? angebote.find((a) => a.id === pick.entityId) ?? pickNewestActive(angebote, isAngebotStorniert, entityTs)
+      ? angebote.find((a) => a.id === pick.entityId) ??
+        pickNewestActive(angebote, isAngebotStorniert, entityTs)
       : pickNewestActive(angebote, isAngebotStorniert, entityTs)
 
   const auftragAktiv =
     pick.phase === 'auftrag'
-      ? auftraege.find((a) => a.id === pick.entityId) ?? pickNewestActive(auftraege, isAuftragStorniert, entityTs)
+      ? auftraege.find((a) => a.id === pick.entityId) ??
+        pickNewestActive(auftraege, isAuftragStorniert, entityTs)
       : pickNewestActive(auftraege, isAuftragStorniert, entityTs)
 
   const rechnungAktiv =
@@ -279,6 +371,8 @@ export function resolveVorgang(input: ResolveVorgangInput): ResolvedVorgang {
 
   const badges: ResolvedVorgangBadges = {}
   if (isNotfall(input)) badges.notfall = true
+  if (leadWartetAufHvStartFreigabe(input.lead)) badges.wartet_freigabe = true
+  // org_freigabe_status bleibt Datenfeld; kein eigener Vorgangs-Status / Badge mehr
 
   const { actor, needsAction } = resolveActor(
     input,
@@ -304,9 +398,120 @@ export function resolveVorgang(input: ResolveVorgangInput): ResolvedVorgang {
     badges,
     ueberfaellig,
     kanalMeta: kanalMetaFromLead(lead.kanal),
-    titel: buildTitel(input),
+    titel: buildTitel(input, angebotAktiv),
     entityId: pick.entityId,
     entityType: pick.phase,
     updatedAt: pick.updatedAt,
   }
+}
+
+/** Eigener Rechnungs-Vorgang für eine weitere Rechnung (neben dem Stamm). */
+export function resolveSatellitenRechnungVorgang(
+  input: ResolveVorgangInput,
+  rechnung: VorgangRechnungInput
+): ResolvedVorgang {
+  const st = (rechnung.status ?? '').trim().toLowerCase()
+  const titelFallback = input.titel?.trim() || 'Rechnung'
+  const belegTyp = String(rechnung.beleg_typ ?? 'rechnung').toLowerCase()
+  const nr = rechnung.rechnungsnummer?.trim()
+
+  if (belegTyp === 'gutschrift') {
+    const unterstatus =
+      st === 'bezahlt' ? 'bezahlt' : st === 'storniert' ? 'storniert' : st === 'entwurf' ? 'entwurf' : 'gesendet'
+    return {
+      phase: 'rechnung',
+      unterstatus,
+      unterstatusLabel:
+        unterstatus === 'entwurf'
+          ? 'Storno-Gutschrift'
+          : unterstatusLabel('rechnung', unterstatus),
+      needsAction: false,
+      actor: null,
+      badges: {},
+      ueberfaellig: false,
+      kanalMeta: kanalMetaFromLead(input.lead.kanal) ?? null,
+      titel: nr ? `Storno-Gutschrift ${nr}` : 'Storno-Gutschrift',
+      entityId: rechnung.id,
+      entityType: 'rechnung',
+      updatedAt: entityTs(rechnung),
+    }
+  }
+
+  // Stornierte RE sind keine phase-winning Entities — direkt als Satellit „storniert“ ausweisen
+  if (st === 'storniert') {
+    return {
+      phase: 'rechnung',
+      unterstatus: 'storniert',
+      unterstatusLabel: unterstatusLabel('rechnung', 'storniert'),
+      needsAction: false,
+      actor: null,
+      badges: {},
+      ueberfaellig: false,
+      kanalMeta: kanalMetaFromLead(input.lead.kanal) ?? null,
+      titel: satellitenRechnungTitel(rechnung, titelFallback),
+      entityId: rechnung.id,
+      entityType: 'rechnung',
+      updatedAt: entityTs(rechnung),
+    }
+  }
+  const forced: VorgangRechnungInput = { ...rechnung, rechnung_art: 'voll' }
+  const resolved = resolveVorgang({
+    lead: input.lead,
+    angebote: input.angebote,
+    auftraege: [],
+    rechnungen: [forced],
+    titel: input.titel,
+  })
+  return {
+    ...resolved,
+    titel: satellitenRechnungTitel(rechnung, resolved.titel),
+  }
+}
+
+/**
+ * FAB-/Direktrechnung ohne Lead/Auftrag: immer Rechnungsphase —
+ * auch als Entwurf (sonst fällt resolveVorgang auf synthetische Anfrage zurück).
+ */
+export function resolveStandaloneDirektrechnung(input: {
+  rechnung: VorgangRechnungInput
+  titel: string
+  kundeName?: string | null
+}): ResolvedVorgang {
+  const r = input.rechnung
+  const st = (r.status ?? '').trim().toLowerCase() || 'entwurf'
+  const unterstatus = st === 'storniert' ? 'storniert' : st
+  const ueberfaellig =
+    unterstatus === 'gesendet' && isUeberfaellig(r.faellig)
+  return {
+    phase: 'rechnung',
+    unterstatus,
+    unterstatusLabel: unterstatusLabel('rechnung', unterstatus),
+    needsAction: false,
+    actor: null,
+    badges: {},
+    ueberfaellig,
+    kanalMeta: 'Direktkunde',
+    titel: input.titel,
+    entityId: r.id,
+    entityType: 'rechnung',
+    updatedAt: entityTs(r),
+  }
+}
+
+export function satellitenRechnungTitel(
+  rechnung: VorgangRechnungInput,
+  fallbackTitel: string
+): string {
+  const art = (rechnung.rechnung_art ?? '').trim().toLowerCase()
+  const nr = rechnung.rechnungsnummer?.trim()
+  if (art === 'schluss') {
+    return nr ? `Schlussrechnung ${nr}` : 'Schlussrechnung'
+  }
+  if (art === 'abschlag') {
+    const idx = rechnung.abschlag_index
+    const base =
+      idx != null && Number.isFinite(Number(idx)) ? `Abschlag ${idx}` : 'Abschlagsrechnung'
+    return nr ? `${base} · ${nr}` : base
+  }
+  return nr || fallbackTitel
 }

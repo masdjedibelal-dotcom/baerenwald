@@ -1,7 +1,7 @@
 "use client";
 
+import { PortalIcon } from "@/components/portal/PortalIcon";
 import { useEffect, useState } from "react";
-import { Check } from "lucide-react";
 
 import {
   getFunnelSessionContactPrefill,
@@ -243,10 +243,10 @@ export function FunnelPortalAuthGate({
           {MEIN_BAERENWALD_VORTEILE.map((text) => (
             <li key={text} className="flex items-start gap-2.5 text-sm text-text-primary">
               <span
-                className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-funnel-accent/15 text-funnel-accent"
+                className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-pill bg-funnel-accent/15 text-funnel-accent"
                 aria-hidden
               >
-                <Check className="h-3.5 w-3.5" strokeWidth={2.5} />
+                <PortalIcon n="check" ctx="default" className="h-3.5 w-3.5" />
               </span>
               <span>{text}</span>
             </li>
@@ -256,7 +256,7 @@ export function FunnelPortalAuthGate({
 
       {error ? (
         <p
-          className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-900"
+          className="rounded-card border border-[var(--fl-danger-line)] bg-[var(--fl-danger-tint)] px-3 py-2 text-sm text-[var(--fl-danger)]"
           role="alert"
         >
           {error}
@@ -266,7 +266,7 @@ export function FunnelPortalAuthGate({
       {phase === "auth" ? (
         <>
           <div
-            className="grid grid-cols-2 gap-1 rounded-full border border-border-default bg-surface-muted p-1"
+            className="grid grid-cols-2 gap-1 rounded-pill border border-border-default bg-surface-muted p-1"
             role="tablist"
             aria-label="Anmelden oder registrieren"
           >
@@ -285,7 +285,7 @@ export function FunnelPortalAuthGate({
                   aria-selected={on}
                   onClick={() => switchTab(item.id)}
                   className={cn(
-                    "rounded-full px-3 py-2 text-sm font-semibold transition-colors",
+                    "rounded-pill px-3 py-2 text-sm font-semibold transition-colors",
                     on
                       ? "bg-funnel-accent text-white shadow-sm"
                       : "text-text-secondary hover:text-text-primary"
@@ -322,7 +322,7 @@ export function FunnelPortalAuthGate({
               <button
                 type="submit"
                 disabled={busy || !email.trim() || password.length < 8}
-                className="w-full rounded-full bg-funnel-accent px-6 py-3 text-sm font-semibold text-white transition-opacity disabled:opacity-40"
+                className="w-full rounded-pill bg-funnel-accent px-6 py-3 text-sm font-semibold text-white transition-opacity disabled:opacity-40"
               >
                 {busy ? "Anmelden…" : "Anmelden →"}
               </button>
@@ -432,7 +432,7 @@ export function FunnelPortalAuthGate({
               <button
                 type="submit"
                 disabled={busy}
-                className="w-full rounded-full bg-funnel-accent px-6 py-3 text-sm font-semibold text-white transition-opacity disabled:opacity-40"
+                className="w-full rounded-pill bg-funnel-accent px-6 py-3 text-sm font-semibold text-white transition-opacity disabled:opacity-40"
               >
                 {busy ? "Konto wird angelegt…" : "Registrieren →"}
               </button>
@@ -463,7 +463,7 @@ export function FunnelPortalAuthGate({
           <button
             type="submit"
             disabled={busy || code.length !== 4}
-            className="w-full rounded-full bg-funnel-accent px-6 py-3 text-sm font-semibold text-white transition-opacity disabled:opacity-40"
+            className="w-full rounded-pill bg-funnel-accent px-6 py-3 text-sm font-semibold text-white transition-opacity disabled:opacity-40"
           >
             {busy ? "Prüfen…" : "Code bestätigen →"}
           </button>

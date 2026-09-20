@@ -1,7 +1,9 @@
 "use client";
+import { MockIconSvg } from "@/components/shared/mock-icon-svgs";
 
 import { useCallback, useRef, useState } from "react";
 
+import { optimizeImageForUpload } from "@/lib/media/optimize-image-for-upload";
 import { cn } from "@/lib/utils";
 
 const MAX_FILE_SIZE = 8 * 1024 * 1024;
@@ -28,66 +30,21 @@ function isAcceptedUploadFile(file: File): boolean {
   return false;
 }
 
-async function compressImage(
-  file: File,
-  maxWidth = 1920,
-  maxHeight = 1920,
-  quality = 0.75
-): Promise<File> {
-  if (!file.type.startsWith("image/")) {
+type FileProgress = {
+  name: string;
+  status: "pending" | "compressing" | "done" | "error";
+  error?: string;
+  raw?: File;
+};
+
+async function compressImage(file: File): Promise<File> {
+  if (
+    !file.type.startsWith("image/") &&
+    !/\.(jpe?g|png|heic|heif|webp)$/i.test(file.name)
+  ) {
     return file;
   }
-
-  return new Promise((resolve) => {
-    const img = new Image();
-    const url = URL.createObjectURL(file);
-
-    img.onload = () => {
-      URL.revokeObjectURL(url);
-
-      let { width, height } = img;
-
-      if (width > maxWidth || height > maxHeight) {
-        const ratio = Math.min(maxWidth / width, maxHeight / height);
-        width = Math.round(width * ratio);
-        height = Math.round(height * ratio);
-      }
-
-      const canvas = document.createElement("canvas");
-      canvas.width = width;
-      canvas.height = height;
-
-      const ctx = canvas.getContext("2d");
-      ctx?.drawImage(img, 0, 0, width, height);
-
-      canvas.toBlob(
-        (blob) => {
-          if (!blob) {
-            resolve(file);
-            return;
-          }
-          if (blob.size < file.size) {
-            resolve(
-              new File([blob], file.name, {
-                type: "image/jpeg",
-              })
-            );
-          } else {
-            resolve(file);
-          }
-        },
-        "image/jpeg",
-        quality
-      );
-    };
-
-    img.onerror = () => {
-      URL.revokeObjectURL(url);
-      resolve(file);
-    };
-
-    img.src = url;
-  });
+  return optimizeImageForUpload(file, { maxEdge: 2000 });
 }
 
 export interface PhotoUploadProps {
@@ -141,6 +98,7 @@ export function PhotoUpload({
   const [uploadError, setUploadError] = useState("");
   const [isCompressing, setIsCompressing] = useState(false);
   const [compressionNotice, setCompressionNotice] = useState("");
+  const [progress, setProgress] = useState<FileProgress[]>([]);
   const noticeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const readPreview = useCallback((file: File) => {
@@ -178,19 +136,51 @@ export function PhotoUpload({
 
       setUploadError("");
       setIsCompressing(true);
-      const compressed = await Promise.all(
-        incoming.map((file) => compressImage(file))
+      setProgress(
+        incoming.map((f) => ({
+          name: f.name,
+          status: "pending" as const,
+          raw: f,
+        }))
       );
-      setIsCompressing(false);
 
+      const compressed: File[] = [];
       let savedImages = 0;
-      for (let i = 0; i < incoming.length; i++) {
-        const raw = incoming[i];
-        if (!raw.type.startsWith("image/")) continue;
-        const out = compressed[i];
-        if (!out.type.startsWith("image/")) continue;
-        savedImages += Math.max(0, raw.size - out.size);
+
+      for (const raw of incoming) {
+        setProgress((prev) =>
+          prev.map((p) =>
+            p.name === raw.name ? { ...p, status: "compressing", raw } : p
+          )
+        );
+        try {
+          const out = await compressImage(raw);
+          if (raw.type.startsWith("image/") && out.type.startsWith("image/")) {
+            savedImages += Math.max(0, raw.size - out.size);
+          }
+          compressed.push(out);
+          setProgress((prev) =>
+            prev.map((p) =>
+              p.name === raw.name ? { ...p, status: "done" } : p
+            )
+          );
+        } catch {
+          setProgress((prev) =>
+            prev.map((p) =>
+              p.name === raw.name
+                ? {
+                    ...p,
+                    status: "error",
+                    error: "Abbruch — erneut versuchen",
+                    raw,
+                  }
+                : p
+            )
+          );
+        }
       }
+
+      setIsCompressing(false);
       if (savedImages > 100 * 1024) {
         showCompressionNotice(savedImages);
       }
@@ -233,6 +223,14 @@ export function PhotoUpload({
     [files, maxFiles, onChange, readPreview, showCompressionNotice]
   );
 
+  const retryFailed = useCallback(() => {
+    const failed = progress
+      .filter((p) => p.status === "error" && p.raw)
+      .map((p) => p.raw!);
+    if (!failed.length) return;
+    void processIncomingFiles(failed);
+  }, [processIncomingFiles, progress]);
+
   const onInput = (e: React.ChangeEvent<HTMLInputElement>) => {
     const list = e.target.files ? Array.from(e.target.files) : [];
     void processIncomingFiles(list);
@@ -261,6 +259,8 @@ export function PhotoUpload({
   };
 
   const hasFiles = files.length > 0;
+  const failedCount = progress.filter((p) => p.status === "error").length;
+  const doneCount = progress.filter((p) => p.status === "done").length;
 
   return (
     <div className={cn(className)}>
@@ -282,14 +282,14 @@ export function PhotoUpload({
         onDragLeave={() => setDragOver(false)}
         onDrop={onDrop}
         className={cn(
-          "photo-upload-area relative w-full cursor-pointer rounded-xl border-2 border-dashed border-border-default p-6 text-center transition-colors hover:border-text-tertiary",
+          "photo-upload-area relative w-full cursor-pointer rounded-sheet border-2 border-dashed border-border-default p-6 text-center transition-colors hover:border-text-tertiary",
           dragOver && "border-funnel-accent bg-funnel-accent-hover",
           hasFiles && !uploadHasError && "border-funnel-accent bg-funnel-accent-hover",
           uploadHasError && "photo-upload-error"
         )}
       >
         <div className="mx-auto mb-2 text-text-tertiary" aria-hidden>
-          <svg
+          <MockIconSvg
             className="mx-auto size-10"
             viewBox="0 0 24 24"
             fill="none"
@@ -310,11 +310,11 @@ export function PhotoUpload({
               strokeWidth="1.5"
               strokeLinecap="round"
             />
-          </svg>
+          </MockIconSvg>
         </div>
         <p className="text-sm font-medium text-text-primary">{buttonTitle}</p>
         <p className="mt-1 text-xs text-text-tertiary">{buttonHint}</p>
-        <p className="mt-0.5 text-[11px] text-text-tertiary">
+        <p className="mt-0.5 text-fs-caption text-text-tertiary">
           Max. {maxFiles} Dateien · je max. 8 MB, gesamt max. 30 MB
         </p>
       </button>
@@ -327,8 +327,29 @@ export function PhotoUpload({
       {isCompressing ? (
         <p className="photo-compressing">
           <span className="btn-spinner btn-spinner--dark" aria-hidden />
-          Fotos werden optimiert…
+          {progress.length > 0
+            ? `Foto ${Math.min(doneCount + 1, progress.length)}/${progress.length} wird optimiert…`
+            : "Fotos werden optimiert…"}
         </p>
+      ) : null}
+      {progress.length > 0 && !isCompressing ? (
+        <ul className="mt-2 space-y-1 text-fs-caption text-text-secondary">
+          {progress.map((p) => (
+            <li key={p.name} className="flex items-center justify-between gap-2">
+              <span className="min-w-0 truncate">{p.name}</span>
+              <span>{p.status === "done" ? "✓" : p.status === "error" ? "Abbruch" : "–"}</span>
+            </li>
+          ))}
+        </ul>
+      ) : null}
+      {failedCount > 0 ? (
+        <button
+          type="button"
+          className="mt-2 min-h-11 text-sm font-semibold text-funnel-accent underline-offset-2 hover:underline"
+          onClick={retryFailed}
+        >
+          Erneut versuchen ({failedCount})
+        </button>
       ) : null}
       {compressionNotice ? (
         <p className="photo-compressing photo-compressing--notice">
@@ -347,7 +368,7 @@ export function PhotoUpload({
             const src = previews[key];
             return (
               <li key={key} className="relative">
-                <div className="size-16 overflow-hidden rounded-lg border border-border-default bg-muted">
+                <div className="size-16 overflow-hidden rounded-card border border-border-default bg-muted">
                   {src ? (
                     // eslint-disable-next-line @next/next/no-img-element
                     <img
@@ -356,7 +377,7 @@ export function PhotoUpload({
                       className="size-full object-cover"
                     />
                   ) : (
-                    <div className="flex size-full items-center justify-center text-[10px] text-text-tertiary">
+                    <div className="flex size-full items-center justify-center text-fs-caption text-text-tertiary">
                       …
                     </div>
                   )}
@@ -364,7 +385,7 @@ export function PhotoUpload({
                 <button
                   type="button"
                   onClick={() => removeAt(i)}
-                  className="absolute -right-1 -top-1 flex size-5 items-center justify-center rounded-full bg-funnel-accent text-xs text-white"
+                  className="absolute -right-1 -top-1 flex size-5 items-center justify-center rounded-pill bg-funnel-accent text-xs text-white"
                   aria-label="Entfernen"
                 >
                   ×
@@ -392,7 +413,7 @@ export function PhotoUpload({
             {list.map((ex) => (
               <figure
                 key={`${ex.src}-${ex.label ?? ""}`}
-                className="photo-upload-example overflow-hidden rounded-xl border border-border-default bg-muted/40"
+                className="photo-upload-example overflow-hidden rounded-sheet border border-border-default bg-muted/40"
               >
                 <div className="relative aspect-[4/3] w-full bg-muted">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -403,12 +424,12 @@ export function PhotoUpload({
                     loading="lazy"
                     decoding="async"
                   />
-                  <span className="absolute left-2.5 top-2.5 rounded-md bg-black/55 px-2 py-0.5 text-[11px] font-semibold tracking-wide text-white">
+                  <span className="absolute left-2.5 top-2.5 rounded-field bg-black/55 px-2 py-0.5 text-fs-caption font-semibold tracking-wide text-white">
                     So fotografieren
                     {ex.label ? ` · ${ex.label}` : ""}
                   </span>
                 </div>
-                <figcaption className="px-3 py-2.5 text-[12.5px] leading-snug text-text-secondary">
+                <figcaption className="px-3 py-2.5 text-fs-meta leading-snug text-text-secondary">
                   {ex.tip}
                 </figcaption>
               </figure>

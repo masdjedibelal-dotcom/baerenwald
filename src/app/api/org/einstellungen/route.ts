@@ -1,3 +1,4 @@
+import { logDbError } from '@/lib/errors/log-db-error'
 import { NextResponse } from "next/server";
 
 import { writeAuditEvent } from "@/lib/audit/write-audit-event";
@@ -66,6 +67,7 @@ export async function PATCH(req: Request) {
       "freigabe_modus, freigabe_schwelle_eur, notfall_direkt, akut_fall_ids, kleinreparatur_aktiv, hm_auto_zuweisen"
     )
     .single();
+  if (error) logDbError('app/api/org/einstellungen/route:kunden', error)
 
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });

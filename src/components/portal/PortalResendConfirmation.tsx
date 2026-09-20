@@ -1,7 +1,9 @@
 "use client";
 
 import { useState } from "react";
+import { PortalButton } from "@/components/portal/PortalButton";
 
+import { PortalInput } from "@/components/shared/PortalFormControls";
 import { resendPortalSignupCode } from "@/app/actions/portal-signup-otp";
 import type { PortalOtpBrand } from "@/lib/funnel/funnel-portal-otp";
 import { cn } from "@/lib/utils";
@@ -39,7 +41,7 @@ export function PortalResendConfirmation({
 
   if (sent) {
     return (
-      <p className={cn("portal-text-body text-emerald-800", className)}>
+      <p className={cn("portal-text-body text-p2-primary", className)}>
         Neuer Bestätigungscode wurde gesendet.
       </p>
     );
@@ -49,24 +51,25 @@ export function PortalResendConfirmation({
     <div className={cn("space-y-2", className)}>
       <label className="block space-y-1">
         <span className="portal-form-label">E-Mail für neuen Code</span>
-        <input
+        <PortalInput
           type="email"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
-          className="portal-input w-full rounded-xl border border-border-default bg-surface-card px-3 py-2.5"
+          className="portal-input w-full rounded-field border border-border-default bg-surface-card px-3 py-2.5"
         />
       </label>
       {error ? (
-        <p className="portal-text-meta text-red-700">{error}</p>
+        <p className="portal-text-meta text-p2-danger">{error}</p>
       ) : null}
-      <button
+      <PortalButton
+        variant="secondary"
         type="button"
         disabled={loading}
         onClick={() => void resend()}
-        className="btn-pill-outline w-full !py-2.5 disabled:opacity-60"
+        className="w-full !py-2.5 disabled:opacity-60"
       >
         {loading ? "Wird gesendet…" : "Code erneut senden"}
-      </button>
+      </PortalButton>
     </div>
   );
 }

@@ -109,7 +109,7 @@ const portalHvFreigabe = resolvePortalKundeVorgangStatus({
 });
 if (
   portalHvFreigabe.label !== "In Bearbeitung" ||
-  portalHvFreigabe.resolverActionHint !== "Freigabe ausstehend"
+  portalHvFreigabe.resolverActionHint !== "Angebot liegt vor"
 ) {
   failed++;
   console.error(
@@ -146,7 +146,8 @@ const freigabeFx = RESOLVE_VORGANG_FIXTURES.find((f) => f.id === "2-freigabe-aus
 if (freigabeFx) {
   const resolved = resolveVorgang(freigabeFx.input);
   const hv = resolveRoleStatus(resolved, "hv");
-  if (hv.listLabel !== "In Bearbeitung" || hv.actionHint !== "Freigabe ausstehend") {
+  // CRM: org_freigabe ist kein Actor mehr — Angebot „gesendet“ → Kunde
+  if (hv.listLabel !== "In Bearbeitung" || hv.actionHint !== "Angebot liegt vor") {
     failed++;
     console.error("  ✗ role-status-hv", hv.listLabel, hv.actionHint);
   } else {
@@ -161,9 +162,9 @@ const auftragFx = RESOLVE_VORGANG_FIXTURES.find((f) => f.id === "3-hw-anfrage-of
 if (auftragFx) {
   const resolved = resolveVorgang(auftragFx.input);
   const mieter = resolveRoleStatus(resolved, "mieter");
-  if (mieter.timelineStep !== "beauftragt" || mieter.listLabel !== "Bestätigung") {
+  if (mieter.timelineStep !== "beauftragt" || mieter.listLabel !== "Beauftragt") {
     failed++;
-    console.error("  ✗ role-status-beauftragt", mieter.timelineStep);
+    console.error("  ✗ role-status-beauftragt", mieter.timelineStep, mieter.listLabel);
   } else {
     console.log("  ✓ role-status-beauftragt");
   }

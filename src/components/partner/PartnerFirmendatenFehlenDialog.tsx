@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 
+import { PortalButton } from "@/components/portal/PortalButton";
 import { PortalModalShell } from "@/components/shared/PortalModalShell";
 import {
   einstellungenNavStorageKey,
@@ -72,20 +73,12 @@ export function PartnerFirmendatenFehlenDialog({
     >
       <p className="portal-text-body text-text-secondary">{body}</p>
       <div className="portal-action-row mt-5">
-        <button
-          type="button"
-          onClick={onDismiss}
-          className="portal-action-btn portal-action-btn--secondary"
-        >
+        <PortalButton variant="secondary" onClick={onDismiss}>
           Alles klar
-        </button>
-        <button
-          type="button"
-          onClick={goFirmeneinstellungen}
-          className="portal-action-btn portal-action-btn--primary"
-        >
+        </PortalButton>
+        <PortalButton variant="primary" onClick={goFirmeneinstellungen}>
           Zu Firmeneinstellungen
-        </button>
+        </PortalButton>
       </div>
     </PortalModalShell>
   );

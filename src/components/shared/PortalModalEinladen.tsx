@@ -1,7 +1,9 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { PortalButton } from "@/components/portal/PortalButton";
 
+import { PortalInput, PortalSelect } from "@/components/shared/PortalFormControls";
 import { PortalModalShell } from "@/components/shared/PortalModalShell";
 import { buildMeldeQrUrl } from "@/lib/org/melde-url";
 import type { OrganisationObjekt } from "@/lib/org/types";
@@ -18,6 +20,7 @@ import { buildPortalEinladungMailto } from "@/lib/portal2/portal-einladungen";
 import type { PortalEinladungHvBlock } from "@/lib/portal2/portal-einladungen";
 import { orgPortalToast, portalToastError } from "@/lib/shared/portal-toast";
 import { usePortalBusy } from "@/components/shared/PortalBusyContext";
+import { TOAST } from '@/lib/portal-copy'
 
 export type PortalModalEinladenProps = {
   open?: boolean;
@@ -111,8 +114,7 @@ export function PortalModalEinladen({
           });
           const json = (await res.json()) as { error?: string; url?: string };
           if (!res.ok || !json.url) {
-            portalToastError(
-              "Einladung nicht erstellt",
+            portalToastError(TOAST.einladung_nicht_erstellt,
               json.error ??
                 "Migration noch nicht freigegeben oder Serverfehler."
             );
@@ -158,7 +160,7 @@ export function PortalModalEinladen({
       orgPortalToast.linkKopiert();
       window.setTimeout(() => setCopied(false), 2000);
     } catch {
-      portalToastError("Kopieren fehlgeschlagen");
+      portalToastError(TOAST.kopieren_fehlgeschlagen);
     }
   }
 
@@ -186,7 +188,7 @@ export function PortalModalEinladen({
         <div className="portal-einladen-body">
           <label className="portal-einladen-label">
             Objekt
-            <select
+            <PortalSelect
               className="portal-einladen-select"
               value={objektId}
               onChange={(e) => {
@@ -202,12 +204,12 @@ export function PortalModalEinladen({
                   {o.titel}
                 </option>
               ))}
-            </select>
+            </PortalSelect>
           </label>
 
           <label className="portal-einladen-label">
             Einheit (optional)
-            <select
+            <PortalSelect
               className="portal-einladen-select"
               value={einheitId}
               onChange={(e) => {
@@ -221,11 +223,11 @@ export function PortalModalEinladen({
                   {u.bezeichnung}
                 </option>
               ))}
-            </select>
+            </PortalSelect>
           </label>
 
           <div className="portal-einladen-row">
-            <input
+            <PortalInput
               className="portal-einladen-input"
               readOnly
               value={busy ? "Link wird erzeugt…" : link}
@@ -234,14 +236,15 @@ export function PortalModalEinladen({
                 busy ? undefined : "Link erscheint nach Erzeugung"
               }
             />
-            <button
+            <PortalButton
+              variant="ghost"
               type="button"
               className="portal-einladen-copy"
               onClick={() => void copyLink()}
               disabled={!link || busy}
             >
               {copied ? "Kopiert" : PORTAL_EINLADEN_COPY}
-            </button>
+            </PortalButton>
           </div>
 
           <div className="portal-einladen-actions">
@@ -286,15 +289,17 @@ export function PortalModalEinladen({
             >
               {PORTAL_EINLADEN_MAIL}
             </a>
-            <button
+            <PortalButton
+              variant="ghost"
               type="button"
               className="portal-einladen-secondary"
               disabled={!link}
               onClick={() => setQrOpen((v) => !v)}
             >
               {qrOpen ? PORTAL_EINLADEN_QR_HIDE : PORTAL_EINLADEN_QR}
-            </button>
-            <button
+            </PortalButton>
+            <PortalButton
+              variant="ghost"
               type="button"
               className="portal-einladen-secondary"
               disabled={busy || !objektId}
@@ -307,7 +312,7 @@ export function PortalModalEinladen({
               }
             >
               Neu erzeugen
-            </button>
+            </PortalButton>
           </div>
 
           {qrOpen && qrSrc ? (

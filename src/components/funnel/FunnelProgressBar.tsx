@@ -1,4 +1,5 @@
 "use client";
+import { MockIconSvg } from "@/components/shared/mock-icon-svgs";
 
 import { Fragment } from "react";
 
@@ -31,7 +32,7 @@ export interface FunnelProgressBarProps {
 
 function CheckIcon({ className }: { className?: string }) {
   return (
-    <svg
+    <MockIconSvg
       className={className}
       width="14"
       height="14"
@@ -46,7 +47,7 @@ function CheckIcon({ className }: { className?: string }) {
         strokeLinecap="round"
         strokeLinejoin="round"
       />
-    </svg>
+    </MockIconSvg>
   );
 }
 
@@ -80,7 +81,7 @@ export function FunnelProgressBar({
                 {i > 0 ? (
                   <div
                     className={cn(
-                      "progress-connector mx-0.5 h-0.5 min-w-[12px] flex-1 rounded-full sm:mx-1",
+                      "progress-connector mx-0.5 h-0.5 min-w-[12px] flex-1 rounded-pill sm:mx-1",
                       i <= currentB2BStep - 1
                         ? "bg-funnel-accent"
                         : "bg-border-default"
@@ -91,7 +92,7 @@ export function FunnelProgressBar({
                 <div className="progress-step flex w-16 shrink-0 flex-col items-center gap-1 sm:w-20">
                   <div
                     className={cn(
-                      "progress-dot flex size-8 items-center justify-center rounded-full border-2 text-xs font-medium transition-colors",
+                      "progress-dot flex size-8 items-center justify-center rounded-pill border-2 text-xs font-medium transition-colors",
                       done &&
                         "border-funnel-accent bg-funnel-accent text-white",
                       active &&
@@ -109,7 +110,7 @@ export function FunnelProgressBar({
                   </div>
                   <span
                     className={cn(
-                      "progress-label text-center text-[10px] leading-tight text-text-tertiary sm:text-xs",
+                      "progress-label text-center text-fs-caption leading-tight text-text-tertiary sm:text-xs",
                       active && "font-medium text-funnel-accent"
                     )}
                   >
@@ -144,7 +145,7 @@ export function FunnelProgressBar({
               {i > 0 ? (
                 <div
                   className={cn(
-                    "mx-0.5 h-0.5 min-w-[8px] flex-1 rounded-full sm:mx-1",
+                    "mx-0.5 h-0.5 min-w-[8px] flex-1 rounded-pill sm:mx-1",
                     step - 1 < currentStep
                       ? "bg-funnel-accent"
                       : "bg-border-default"
@@ -155,7 +156,7 @@ export function FunnelProgressBar({
               <div className="flex w-12 shrink-0 flex-col items-center gap-1 sm:w-16">
                 <div
                   className={cn(
-                    "flex size-8 items-center justify-center rounded-full border-2 text-xs font-medium transition-colors",
+                    "flex size-8 items-center justify-center rounded-pill border-2 text-xs font-medium transition-colors",
                     done &&
                       "border-funnel-accent bg-funnel-accent text-white",
                     active &&
@@ -173,7 +174,7 @@ export function FunnelProgressBar({
                 </div>
                 <span
                   className={cn(
-                    "text-center text-[10px] leading-tight text-text-tertiary sm:text-xs",
+                    "text-center text-fs-caption leading-tight text-text-tertiary sm:text-xs",
                     active && "font-medium text-funnel-accent"
                   )}
                 >

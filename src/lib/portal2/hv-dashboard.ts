@@ -1,3 +1,4 @@
+import { PALETTE } from "@/lib/tokens/palette";
 /**
  * Portal 2.0 D1 — HV Dashboard (`screenDashboard`) KPI-Logik.
  * Labels/Farben 1:1 Mock; Zählungen über A4 `resolvePortalFlowStatus`.
@@ -27,16 +28,16 @@ export const HV_DASHBOARD_KPI_DEFS = [
     id: "offen" as const,
     label: "Offen",
     chipLabel: "Offen",
-    color: "#8A5A06",
-    bg: "#fef3c7",
+    color: "var(--p2-sand-text)",
+    bg: PALETTE.hfef3c7,
     filter: "offen" as const,
   },
   {
     id: "in_arbeit" as const,
     label: "In Arbeit",
     chipLabel: "In Arbeit",
-    color: "#0f766e",
-    bg: "#ccfbf1",
+    color: "var(--p2-status-teal)",
+    bg: PALETTE.hccfbf1,
     filter: "in_arbeit" as const,
   },
   {
@@ -54,6 +55,7 @@ export type HvDashboardKpiId = (typeof HV_DASHBOARD_KPI_DEFS)[number]["id"];
 export type HvDashboardLeadSlice = {
   id: string;
   status?: string | null;
+  vorgang_phase?: string | null;
   situation?: string | null;
   funnel_daten?: unknown;
   kanal?: string | null;

@@ -1,3 +1,4 @@
+import { PALETTE } from "@/lib/tokens/palette";
 /**
  * Portal 2.0 B4 — notifData Typen, Farben, Templates.
  * Quelle: Baerenwald Portale (5).html `notifData()`
@@ -36,43 +37,43 @@ export const PORTAL_NOTIF_VISUAL: Record<PortalNotifTyp, PortalNotifVisual> = {
   angebot: {
     typ: "angebot",
     title: "Angebot zur Entscheidung",
-    iconBg: "#E4ECF7",
-    iconFg: "#1F4FA8",
+    iconBg: "var(--p2-status-blue-bg)",
+    iconFg: "var(--p2-status-blue)",
     glyph: "📄",
   },
   termin: {
     typ: "termin",
     title: "Termin bestätigt",
-    iconBg: "#E7F1E9",
-    iconFg: "#2E7D52",
+    iconBg: "var(--p2-primary-soft)",
+    iconFg: "var(--p2-primary)",
     glyph: "📅",
   },
   status: {
     typ: "status",
     title: "Vorgang abgeschlossen",
-    iconBg: "#EEF0F2",
-    iconFg: "#5B6470",
+    iconBg: PALETTE.heef0f2,
+    iconFg: "var(--p2-sub)",
     glyph: "✓",
   },
   freigabe: {
     typ: "freigabe",
     title: "Kostenfreigabe nötig",
-    iconBg: "#FBF1D6",
-    iconFg: "#8A5A06",
+    iconBg: "var(--p2-status-sand-bg)",
+    iconFg: "var(--p2-sand-text)",
     glyph: "€",
   },
   info: {
     typ: "info",
     title: "Feedback erwünscht",
-    iconBg: "#EEF0F2",
-    iconFg: "#5B6470",
+    iconBg: PALETTE.heef0f2,
+    iconFg: "var(--p2-sub)",
     glyph: "★",
   },
   auftrag: {
     typ: "auftrag",
     title: "Neuer Auftrag",
-    iconBg: "#E4ECF7",
-    iconFg: "#1F4FA8",
+    iconBg: "var(--p2-status-blue-bg)",
+    iconFg: "var(--p2-status-blue)",
     glyph: "🔧",
   },
 };
@@ -134,7 +135,7 @@ export const PORTAL_NOTIF_TEMPLATES = {
   },
   mieter: {
     termin:
-      "Der Handwerker kommt am {Datum}, {Zeitfenster}. Bitte Zugang ermöglichen.",
+      "Der Partner kommt am {Datum}, {Zeitfenster}. Bitte Zugang ermöglichen.",
     status: 'Ihre Meldung „{titel}" wird bearbeitet.',
     info: "Ihr Vorgang ist abgeschlossen — wie zufrieden waren Sie?",
   },

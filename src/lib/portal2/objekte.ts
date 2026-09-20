@@ -439,7 +439,7 @@ export const OBJ_MIETER_MENU = {
   erneut: "Portal-Link senden",
   bearbeiten: "Bearbeiten",
   vorgaenge: "Vorgänge ansehen",
-  entfernen: "Entfernen",
+  entfernen: "Löschen",
 } as const;
 
 export const OBJ_MIETER_PORTAL_STATUS = {

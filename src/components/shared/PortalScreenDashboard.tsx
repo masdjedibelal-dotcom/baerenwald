@@ -1,7 +1,8 @@
 "use client";
 
-import { ChevronRight } from "lucide-react";
+import { PortalIcon } from "@/components/portal/PortalIcon";
 import type { ReactNode } from "react";
+import { PortalButton } from "@/components/portal/PortalButton";
 
 import { PortalDashboardActionCarousel } from "@/components/shared/PortalDashboardActionCarousel";
 import { portalDayGreetingPhrase } from "@/lib/portal2/greeting";
@@ -124,14 +125,15 @@ export function PortalScreenDashboard({
               );
               if (tile.onClick) {
                 return (
-                  <button
+                  <PortalButton
+                    variant="ghost"
                     key={tile.id}
                     type="button"
                     onClick={tile.onClick}
                     className={className}
                   >
                     {inner}
-                  </button>
+                  </PortalButton>
                 );
               }
               return (
@@ -163,13 +165,14 @@ export function PortalScreenDashboard({
         <div className="portal-dash-recent">
           <div className="portal-dash-recent-head">
             <h2 className="portal-dash-recent-title">{recentTitle}</h2>
-            <button
+            <PortalButton
+              variant="ghost"
               type="button"
               onClick={onOpenAll}
               className="portal-dash-recent-all"
             >
               {recentAllLabel}
-            </button>
+            </PortalButton>
           </div>
 
           <div className="portal-dash-recent-list">
@@ -177,7 +180,8 @@ export function PortalScreenDashboard({
               <div className="portal-dash-recent-empty">{recentEmpty}</div>
             ) : (
               recent.map((v) => (
-                <button
+                <PortalButton
+                  variant="ghost"
                   key={v.id}
                   type="button"
                   onClick={() => onOpenItem(v.id)}
@@ -194,11 +198,8 @@ export function PortalScreenDashboard({
                   >
                     {v.statusLabel}
                   </span>
-                  <ChevronRight
-                    className="portal-dash-recent-chevron"
-                    aria-hidden
-                  />
-                </button>
+                  <PortalIcon n="chevron-right" ctx="default" className="portal-dash-recent-chevron" aria-hidden />
+                </PortalButton>
               ))
             )}
           </div>

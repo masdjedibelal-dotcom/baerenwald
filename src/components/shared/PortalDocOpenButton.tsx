@@ -3,6 +3,7 @@
 import type { ReactNode, MouseEvent } from "react";
 import { useState } from "react";
 
+import { PortalButton } from "@/components/portal/PortalButton";
 import { useOptionalPortalDocViewer } from "@/components/shared/PortalDocViewerContext";
 import {
   detectPortalDocKind,
@@ -11,7 +12,6 @@ import {
   triggerPortalDocDownload,
   type PortalDocKind,
 } from "@/lib/portal2/doc-viewer";
-import { cn } from "@/lib/utils";
 
 type Props = {
   href: string;
@@ -76,8 +76,8 @@ export function PortalDocOpenButton({
   }
 
   return (
-    <button type="button" className={cn(className)} onClick={onClick} disabled={busy}>
+    <PortalButton variant="secondary" action={false} className={className} onClick={onClick} disabled={busy}>
       {children}
-    </button>
+    </PortalButton>
   );
 }

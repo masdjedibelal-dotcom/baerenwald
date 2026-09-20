@@ -3,6 +3,7 @@
  * und Portal-Objekt-Zuordnung (`eigentuemer_objekte`) synchron halten.
  */
 
+import { logDbError } from '@/lib/errors/log-db-error'
 import { supabaseAdmin } from "@/lib/supabase";
 
 export type OrgEigentuemerPerson = {
@@ -51,6 +52,7 @@ export async function listOrgEigentuemer(
     .eq("aktiv", true)
     .is("anonymisiert_am", null)
     .order("name", { ascending: true });
+  if (error) logDbError('lib/org/org-eigentuemer:einheit_bewohner', error)
 
   if (error) {
     console.warn("[org-eigentuemer] list:", error.message);
@@ -67,10 +69,11 @@ export async function listOrgEigentuemer(
 
   const objektLabelByEinheit = new Map<string, string>();
   if (einheitIds.length) {
-    const { data: einheiten } = await supabaseAdmin
+    const {data: einheiten, error: __dbErr335_1} = await supabaseAdmin
       .from("objekt_einheiten")
       .select("id, bezeichnung, kunde_objekt_id")
       .in("id", einheitIds);
+    if (__dbErr335_1) logDbError('lib/org/org-eigentuemer:objekt_einheiten', __dbErr335_1)
     const objektIds = Array.from(
       new Set(
         (einheiten ?? [])
@@ -80,10 +83,11 @@ export async function listOrgEigentuemer(
     );
     const titelByObjekt = new Map<string, string>();
     if (objektIds.length) {
-      const { data: objs } = await supabaseAdmin
+      const {data: objs, error: __dbErr336_2} = await supabaseAdmin
         .from("kunden_objekte")
         .select("id, titel")
         .in("id", objektIds);
+      if (__dbErr336_2) logDbError('lib/org/org-eigentuemer:kunden_objekte', __dbErr336_2)
       for (const o of objs ?? []) {
         titelByObjekt.set(String(o.id), String(o.titel ?? "").trim() || "Objekt");
       }
@@ -141,13 +145,14 @@ export async function syncEigentuemerObjekteForPortalKunde(
   const pid = portalKundeId.trim();
   if (!pid) return;
 
-  const { data: rows } = await supabaseAdmin
+  const {data: rows, error: __dbErr337_3} = await supabaseAdmin
     .from("einheit_bewohner")
     .select("objekt_einheit_id, objekt_einheiten(kunde_objekt_id)")
     .eq("portal_kunde_id", pid)
     .eq("rolle", "eigentuemer")
     .eq("aktiv", true)
     .is("anonymisiert_am", null);
+  if (__dbErr337_3) logDbError('lib/org/org-eigentuemer:einheit_bewohner', __dbErr337_3)
 
   const objektIds = new Set<string>();
   for (const r of rows ?? []) {
@@ -164,17 +169,19 @@ export async function syncEigentuemerObjekteForPortalKunde(
   }
 
   for (const objektId of Array.from(objektIds)) {
-    const { data: existing } = await supabaseAdmin
+    const {data: existing, error: __dbErr338_4} = await supabaseAdmin
       .from("eigentuemer_objekte")
       .select("id")
       .eq("kunde_id", pid)
       .eq("kunde_objekt_id", objektId)
       .maybeSingle();
+    if (__dbErr338_4) logDbError('lib/org/org-eigentuemer:eigentuemer_objekte', __dbErr338_4)
     if (existing?.id) continue;
-    await supabaseAdmin.from("eigentuemer_objekte").insert({
+    const { error: __dbErr342_8 } = await supabaseAdmin.from("eigentuemer_objekte").insert({
       kunde_id: pid,
       kunde_objekt_id: objektId,
     });
+    if (__dbErr342_8) logDbError('lib/org/org-eigentuemer:eigentuemer_objekte', __dbErr342_8)
   }
 }
 
@@ -185,17 +192,19 @@ export async function ensureEigentuemerObjektLink(input: {
   const portalKundeId = input.portalKundeId.trim();
   const objektId = input.objektId.trim();
   if (!portalKundeId || !objektId) return;
-  const { data: existing } = await supabaseAdmin
+  const {data: existing, error: __dbErr339_5} = await supabaseAdmin
     .from("eigentuemer_objekte")
     .select("id")
     .eq("kunde_id", portalKundeId)
     .eq("kunde_objekt_id", objektId)
     .maybeSingle();
+  if (__dbErr339_5) logDbError('lib/org/org-eigentuemer:eigentuemer_objekte', __dbErr339_5)
   if (existing?.id) return;
-  await supabaseAdmin.from("eigentuemer_objekte").insert({
+  const { error: __dbErr343_9 } = await supabaseAdmin.from("eigentuemer_objekte").insert({
     kunde_id: portalKundeId,
     kunde_objekt_id: objektId,
   });
+  if (__dbErr343_9) logDbError('lib/org/org-eigentuemer:eigentuemer_objekte', __dbErr343_9)
 }
 
 /**
@@ -221,6 +230,7 @@ export async function assignExistingEigentuemerToEinheit(input: {
     .eq("kunde_id", input.orgKundeId)
     .eq("aktiv", true)
     .maybeSingle();
+  if (srcErr) logDbError('lib/org/org-eigentuemer:einheit_bewohner', srcErr)
 
   if (srcErr || !source?.id) {
     return { ok: false, error: "Eigentümer nicht gefunden." };
@@ -235,21 +245,23 @@ export async function assignExistingEigentuemerToEinheit(input: {
     };
   }
 
-  const { data: einheit } = await supabaseAdmin
+  const {data: einheit, error: __dbErr340_6} = await supabaseAdmin
     .from("objekt_einheiten")
     .select("id, kunde_objekt_id")
     .eq("id", input.einheitId)
     .maybeSingle();
+  if (__dbErr340_6) logDbError('lib/org/org-eigentuemer:objekt_einheiten', __dbErr340_6)
   if (!einheit?.id) {
     return { ok: false, error: "Einheit nicht gefunden." };
   }
 
-  const { data: obj } = await supabaseAdmin
+  const {data: obj, error: __dbErr341_7} = await supabaseAdmin
     .from("kunden_objekte")
     .select("id")
     .eq("id", einheit.kunde_objekt_id)
     .eq("kunde_id", input.orgKundeId)
     .maybeSingle();
+  if (__dbErr341_7) logDbError('lib/org/org-eigentuemer:kunden_objekte', __dbErr341_7)
   if (!obj?.id) {
     return { ok: false, error: "Objekt nicht gefunden." };
   }
@@ -312,6 +324,7 @@ export async function assignExistingEigentuemerToEinheit(input: {
     })
     .select("id")
     .single();
+  if (insErr) logDbError('lib/org/org-eigentuemer:einheit_bewohner', insErr)
 
   if (insErr || !inserted?.id) {
     return {

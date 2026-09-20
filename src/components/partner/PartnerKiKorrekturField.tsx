@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 
+import { PortalInput, PortalTextarea } from "@/components/shared/PortalFormControls";
 import { PortalKiAssistField } from "@/components/shared/PortalKiAssistField";
 import { cn } from "@/lib/utils";
 
@@ -80,24 +81,24 @@ export function PartnerKiKorrekturField({
         required={required}
       >
         {singleLine ? (
-          <input
+          <PortalInput
             type="text"
             name={name}
             required={required}
             value={value}
             onChange={(e) => onTextChange(e.target.value)}
             placeholder={placeholder}
-            className="portal-input w-full rounded-xl border border-border-default px-3 py-2.5"
+            className="portal-input w-full rounded-field border border-border-default px-3 py-2.5"
           />
         ) : (
-          <textarea
+          <PortalTextarea
             name={name}
             rows={rows}
             required={required}
             value={value}
             onChange={(e) => onTextChange(e.target.value)}
             placeholder={placeholder}
-            className="portal-input w-full min-h-[160px] resize-y rounded-xl border border-border-default px-3 py-3 text-[15px] leading-relaxed"
+            className="portal-input w-full min-h-[160px] resize-y rounded-field border border-border-default px-3 py-3 text-fs-title leading-relaxed"
           />
         )}
       </PortalKiAssistField>

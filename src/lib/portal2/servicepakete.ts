@@ -1,3 +1,4 @@
+import { PALETTE } from "@/lib/tokens/palette";
 /**
  * Portal 2.0 D5 — Servicepakete (Richtpreise nach Objektgröße).
  */
@@ -44,8 +45,8 @@ export const SERVICEPAKETE: ServicepaketCard[] = [
     preis: "149 €",
     zyklus: "/ Monat",
     preisEur: 149,
-    tint: "#E8EEF6",
-    accent: "#2E7D52",
+    tint: PALETTE.he8eef6,
+    accent: "var(--p2-primary)",
     ic: "🛠",
     desc: "Regelmäßige Grundwartung für kleinere Objekte — ideal für Einzelhäuser und kleine Wohnanlagen.",
     feats: [
@@ -62,8 +63,8 @@ export const SERVICEPAKETE: ServicepaketCard[] = [
     preis: "349 €",
     zyklus: "/ Monat",
     preisEur: 349,
-    tint: "#DDEEDF",
-    accent: "#1F6A3F",
+    tint: "var(--p2-status-green-bg)",
+    accent: "var(--p2-status-green)",
     ic: "🏠",
     desc: "Rundum-Betreuung inkl. Notdienst und bevorzugter Terminvergabe für Ihre Bestandsobjekte.",
     feats: [
@@ -81,8 +82,8 @@ export const SERVICEPAKETE: ServicepaketCard[] = [
     preis: "690 €",
     zyklus: "/ Monat",
     preisEur: 690,
-    tint: "#F3ECFB",
-    accent: "#5B3FA8",
+    tint: PALETTE.hf3ecfb,
+    accent: PALETTE.h5b3fa8,
     ic: "⭐",
     desc: "Maximale Absicherung mit festem Objektbetreuer und garantierten Reaktionszeiten für große Portfolios.",
     feats: [

@@ -12,6 +12,7 @@ import { AUTOMATED_CUSTOMER_EMAIL_BCC } from "@/lib/email/resend-bcc";
 import { getPostHogClient } from "@/lib/posthog-server";
 import { getClientIp } from "@/lib/request-ip";
 import { checkRateLimit } from "@/lib/rate-limit";
+import { buildInternSubject } from "@/lib/shared-domain/build-subject";
 import { isValidEmail, isValidPlz } from "@/lib/validation";
 
 export type SavePriceBody = {
@@ -116,7 +117,10 @@ export async function POST(request: Request) {
       const { error: err2 } = await sendBrandedMail(resend, {
         from,
         to: SITE_CONFIG.email,
-        subject: `Rechner: Preis gespeichert — ${email}`,
+        subject: buildInternSubject({
+          objekt: email,
+          ereignis: "Preis gespeichert",
+        }),
         html: internalHtml,
       });
       if (err2) sendError = err2.message;

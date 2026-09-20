@@ -1,5 +1,7 @@
 /** Portal-KI-Assist: Scopes + bw-apply Parsing (CRM-kompatibel). */
 
+import { PORTAL_COPY } from '@/lib/copy/portal-copy'
+
 export type PortalKiAssistScope =
   | "funnel_beschreibung"
   | "bautagebuch"
@@ -76,7 +78,7 @@ ${BW_APPLY_HINT}`,
     intro:
       "Ich formuliere den Tagebuch-Eintrag. Beschreiben Sie kurz, was gemacht wurde — danach können Sie den Text übernehmen.",
     placeholder: "z. B. „Sauberer, kundensichtbar“ oder Stichworte zum Tag…",
-    systemHint: `Modus: Bautagebuch-Eintrag (Handwerker-Dokumentation, kundensichtbar möglich).
+    systemHint: `Modus: Bautagebuch-Eintrag (Partner-Dokumentation, kundensichtbar möglich).
 Klar, sachlich, deutsch, kurz. Keine erfundenen Fakten oder Mengen.
 ${BW_APPLY_HINT}`,
     quickPrompts: [
@@ -101,7 +103,7 @@ ${BW_APPLY_HINT}`,
     intro:
       "Ich helfe bei Protokoll- oder Mängeltext. Sagen Sie, was rein soll — danach übernehmen.",
     placeholder: "z. B. „Arbeiten zusammenfassen“ oder „Mängel klarer“…",
-    systemHint: `Modus: Abnahmeprotokoll / Vorbehalte / Mängelbeschreibung (Handwerker).
+    systemHint: `Modus: Abnahmeprotokoll / Vorbehalte / Mängelbeschreibung (Partner).
 Sachlich, konkret, deutsch. Keine erfundenen Mängel.
 ${BW_APPLY_HINT}`,
     quickPrompts: [
@@ -127,7 +129,7 @@ ${BW_APPLY_HINT}`,
       "Ich formuliere die Prüfpunkt-Notiz. Stichworte reichen — danach übernehmen.",
     placeholder: "z. B. „Klarer und kürzer“ oder Stichworte zum Befund…",
     systemHint: `Modus: Notiz zu einem Hausmeister-Prüfpunkt (Vorbefund).
-Klar, sachlich, deutsch, kurz. Für Verwaltung und ggf. Handwerker lesbar.
+Klar, sachlich, deutsch, kurz. Für Verwaltung und ggf. ${PORTAL_COPY.partner} lesbar.
 Keine erfundenen Befunde. Du-Form vermeiden — neutral oder Sie.
 ${BW_APPLY_HINT}`,
     quickPrompts: [

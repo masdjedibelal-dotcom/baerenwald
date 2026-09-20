@@ -1,3 +1,5 @@
+import { PALETTE } from "@/lib/tokens/palette";
+import { BRAND_PRESET_COLORS } from "@/lib/tokens/brand-preset-colors";
 import { PORTAL_C } from "@/lib/portal2/tokens";
 import {
   formatPlzOrt,
@@ -24,37 +26,37 @@ export const BRAND_PRESETS: readonly BrandPreset[] = [
   {
     id: "blau",
     name: "Steiner-Blau",
-    primary: "#22508C",
-    primaryDk: "#1b426f",
-    soft: "#E8EEF6",
+    primary: BRAND_PRESET_COLORS.blau.primary,
+    primaryDk: BRAND_PRESET_COLORS.blau.primaryDk,
+    soft: BRAND_PRESET_COLORS.blau.soft,
   },
   {
     id: "anthra",
     name: "Anthrazit",
-    primary: "#363B41",
-    primaryDk: "#24282d",
-    soft: "#ECEEF0",
+    primary: BRAND_PRESET_COLORS.anthra.primary,
+    primaryDk: BRAND_PRESET_COLORS.anthra.primaryDk,
+    soft: BRAND_PRESET_COLORS.anthra.soft,
   },
   {
     id: "gruen",
     name: "Waldgrün",
-    primary: "#2E7D52",
-    primaryDk: "#1A3D2B",
-    soft: "#E7F1E9",
+    primary: BRAND_PRESET_COLORS.gruen.primary,
+    primaryDk: BRAND_PRESET_COLORS.gruen.primaryDk,
+    soft: BRAND_PRESET_COLORS.gruen.soft,
   },
   {
     id: "bordeaux",
     name: "Bordeaux",
-    primary: "#8C2F45",
-    primaryDk: "#6f2537",
-    soft: "#F6E9EC",
+    primary: BRAND_PRESET_COLORS.bordeaux.primary,
+    primaryDk: BRAND_PRESET_COLORS.bordeaux.primaryDk,
+    soft: BRAND_PRESET_COLORS.bordeaux.soft,
   },
   {
     id: "petrol",
     name: "Petrol",
-    primary: "#1F6E78",
-    primaryDk: "#17555d",
-    soft: "#E6F0F1",
+    primary: BRAND_PRESET_COLORS.petrol.primary,
+    primaryDk: BRAND_PRESET_COLORS.petrol.primaryDk,
+    soft: BRAND_PRESET_COLORS.petrol.soft,
   },
 ] as const;
 
@@ -80,9 +82,9 @@ export const ORG_BRAND_DEFAULT: OrgBrand = {
   name: "Immobilien Steiner GmbH",
   sub: "Verwaltung",
   logo: "IS",
-  primary: "#22508C",
-  primaryDk: "#1b426f",
-  soft: "#E8EEF6",
+  primary: PALETTE.h22508c,
+  primaryDk: PALETTE.h1b426f,
+  soft: PALETTE.he8eef6,
   tel: "030 555 12 00",
   mail: "service@steiner-immo.de",
   strasse: "Kurfürstendamm 210",

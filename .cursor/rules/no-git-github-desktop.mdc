@@ -1,0 +1,17 @@
+---
+description: Kein Git durch den Agenten — nur Dateien + Commit-Vorlage
+alwaysApply: true
+---
+
+# Kein Git — Versionierung nur über GitHub Desktop
+
+## Absolute Verbote
+
+- **Keine Git-Befehle**: kein `status`, `diff`, `log`, `add`, `commit`, `push`, `pull`, `checkout`, `branch`, `merge`, `rebase`, `stash`, `fetch`, `remote`, `show`, `rev-parse`.
+- Kein `gh` für Commits/Pushes.
+
+## Stattdessen
+
+1. Nur Dateien im Arbeitsordner bearbeiten.
+2. Nach jedem abgeschlossenen Auftrag/Block: **Commit-Vorlage** (Liste geänderter Dateien + ein Satz je Datei).
+3. Belal versioniert über **GitHub Desktop**; Staging und Prod sollen denselben Stand haben (Merge staging → main).

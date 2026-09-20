@@ -58,7 +58,7 @@ export function PartnerHwDashboard({
 }: Props) {
   return (
     <PortalScreenDashboard
-      roleLabel="Handwerker"
+      roleLabel="Partner"
       hello={firmName}
       avatarName={firmName}
       brandSubline={firmName}

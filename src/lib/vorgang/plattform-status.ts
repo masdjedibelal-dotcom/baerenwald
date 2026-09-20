@@ -91,17 +91,17 @@ export function plattformStatusLabelForLead(
 export function plattformStatusPillClass(key: PlattformStatusKey): string {
   switch (key) {
     case "neu":
-      return "tag bg-orange-100 text-orange-800";
+      return "tag bg-warning-bg text-warning-text";
     case "wartet_freigabe":
-      return "tag bg-amber-100 text-amber-900";
+      return "tag bg-warning-bg text-warning-text";
     case "in_ausfuehrung":
-      return "tag bg-blue-100 text-blue-800";
+      return "tag bg-p2-bg text-p2-ink";
     case "erledigt":
-      return "tag bg-emerald-100 text-emerald-700";
+      return "tag bg-p2-primary-soft text-p2-primary";
     case "notfall":
-      return "tag bg-red-100 text-red-800";
+      return "tag bg-p2-danger-soft text-p2-danger";
     case "storniert":
-      return "tag bg-neutral-200 text-neutral-600";
+      return "tag bg-p2-bg text-p2-faint";
     default:
       return "tag bg-muted text-text-secondary";
   }

@@ -16,9 +16,9 @@ export function InfoBox({ variant, children, className }: InfoBoxProps) {
       className={cn(
         "rounded-[var(--r)] px-[13px] py-2.5 text-xs leading-[1.55]",
         variant === "info" &&
-          "border border-[#DCE6FF] bg-[#F6F8FE] text-[#315AA8]",
+          "border border-[var(--fl-status-blue-bg)] bg-[var(--fl-status-blue-bg)] text-[var(--fl-status-blue)]",
         variant === "warn" &&
-          "border border-[#F2CFCF] bg-[#FFF7F7] text-[#C0392B]",
+          "border border-[var(--fl-danger-line)] bg-[var(--fl-danger-tint)] text-[var(--fl-danger)]",
         className
       )}
     >

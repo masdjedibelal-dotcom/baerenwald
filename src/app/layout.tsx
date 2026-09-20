@@ -28,12 +28,12 @@ export const metadata: Metadata = {
   metadataBase: new URL(BASE_URL),
 
   title: {
-    default: "Bärenwald München — Handwerker aus einer Hand",
+    default: "Bärenwald München — Partner aus einer Hand",
     template: "%s — Bärenwald München",
   },
 
   description:
-    "Handwerker München — ein Ansprechpartner für alle Gewerke. Preisrahmen online berechnen. Malerarbeiten, Bad, Elektro, Heizung. Unverbindlich.",
+    "Partner München — ein Ansprechpartner für alle Gewerke. Preisrahmen online berechnen. Malerarbeiten, Bad, Elektro, Heizung. Unverbindlich.",
 
   authors: [{ name: "Beran Cakmak" }],
   creator: "Bärenwald München",
@@ -59,9 +59,9 @@ export const metadata: Metadata = {
     locale: "de_DE",
     url: BASE_URL,
     siteName: "Bärenwald München",
-    title: "Bärenwald München — Handwerker aus einer Hand",
+    title: "Bärenwald München — Partner aus einer Hand",
     description:
-      "Handwerker München — ein Ansprechpartner für alle Gewerke. Preisrahmen online berechnen. Malerarbeiten, Bad, Elektro, Heizung. Unverbindlich.",
+      "Partner München — ein Ansprechpartner für alle Gewerke. Preisrahmen online berechnen. Malerarbeiten, Bad, Elektro, Heizung. Unverbindlich.",
     images: [
       {
         url: OG_IMAGE.url,
@@ -74,9 +74,9 @@ export const metadata: Metadata = {
 
   twitter: {
     card: "summary_large_image",
-    title: "Bärenwald München — Handwerker aus einer Hand",
+    title: "Bärenwald München — Partner aus einer Hand",
     description:
-      "Handwerker München — ein Ansprechpartner für alle Gewerke. Preisrahmen online berechnen. Malerarbeiten, Bad, Elektro, Heizung.",
+      "Partner München — ein Ansprechpartner für alle Gewerke. Preisrahmen online berechnen. Malerarbeiten, Bad, Elektro, Heizung.",
     images: [OG_IMAGE.url],
   },
 

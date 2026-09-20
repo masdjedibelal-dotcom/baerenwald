@@ -1,3 +1,4 @@
+import { PALETTE } from "@/lib/tokens/palette";
 /**
  * Portal 2.0 D7 — Privat/Gewerbe/Mieter Dashboard-KPIs (`screenDashboard` privat-Variante).
  */
@@ -12,7 +13,7 @@ export const GEWERBE_DASHBOARD_ROLE_LABEL = "" as const;
 export const PRIVAT_DASHBOARD_RECENT_TITLE = "Zuletzt" as const;
 export const PRIVAT_DASHBOARD_RECENT_ALL = "Alle ansehen" as const;
 export const PRIVAT_DASHBOARD_EMPTY_RECENT =
-  "Noch keine Vorgänge — deine Anfragen erscheinen hier." as const;
+  "Noch keine Vorgänge — Ihre Anfragen erscheinen hier." as const;
 export const PRIVAT_DASHBOARD_KPI_SECTION = "Vorgänge" as const;
 
 export type PrivatDashboardKpiId = "offen" | "in_arbeit" | "erledigt";
@@ -21,20 +22,20 @@ export const PRIVAT_DASHBOARD_KPI_DEFS = [
   {
     id: "offen" as const,
     label: "Offen",
-    color: "#8A5A06",
-    bg: "#fef3c7",
+    color: "var(--p2-sand-text)",
+    bg: PALETTE.hfef3c7,
   },
   {
     id: "in_arbeit" as const,
     label: "In Arbeit",
-    color: "#0f766e",
-    bg: "#ccfbf1",
+    color: "var(--p2-status-teal)",
+    bg: PALETTE.hccfbf1,
   },
   {
     id: "erledigt" as const,
     label: "Erledigt",
-    color: "#2E7D52",
-    bg: "#E7F1E9",
+    color: "var(--p2-primary)",
+    bg: "var(--p2-primary-soft)",
   },
 ] as const;
 

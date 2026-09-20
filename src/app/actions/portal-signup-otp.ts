@@ -1,5 +1,6 @@
 "use server";
 
+import { logDbError } from '@/lib/errors/log-db-error'
 import { assertPartnerEmailAllowed } from "@/app/actions/assert-partner-email-allowed";
 import { assertPortalEmailAllowed } from "@/app/actions/assert-portal-email-allowed";
 import { acceptPartnerRahmenvertragForEmail } from "@/app/actions/partner-vertrag";
@@ -28,12 +29,12 @@ export type PortalSignupOtpResult = { ok: true } | { ok: false; error: string };
 async function resolveUnconfirmedUserId(
   email: string
 ): Promise<string | null> {
-  const { data: row } = await supabaseAdmin
+  const {data: row, error: __dbErr123_1} = await supabaseAdmin
     .from("funnel_portal_otp")
     .select("user_id")
     .eq("email", email)
     .maybeSingle();
-
+  if (__dbErr123_1) logDbError('app/actions/portal-signup-otp:funnel_portal_otp', __dbErr123_1)
   if (row?.user_id) return String(row.user_id);
 
   const { data: list } = await supabaseAdmin.auth.admin.listUsers({

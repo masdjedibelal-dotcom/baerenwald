@@ -10,6 +10,7 @@ import {
   portalNavSectionId,
   type PortalNavKey,
 } from "@/lib/portal2/nav-items";
+import { PortalButton } from "@/components/portal/PortalButton";
 
 type Props = {
   onOpen: (sectionId: string) => void;
@@ -24,7 +25,7 @@ export function OrganisationMehrScreen({ onOpen }: Props) {
       <div>
         <PortalListeEyebrow>Menü</PortalListeEyebrow>
         <PortalListeTitle>Mehr</PortalListeTitle>
-        <p className="mt-1 text-[14px] text-[#55615B]">
+        <p className="mt-1 text-fs-body text-[var(--p2-sub)]">
           Service, Marktplatz und Einstellungen
         </p>
       </div>
@@ -34,7 +35,8 @@ export function OrganisationMehrScreen({ onOpen }: Props) {
           const sectionId = portalNavSectionId("org", tile.key);
           if (!sectionId) return null;
           return (
-            <button
+            <PortalButton
+              variant="ghost"
               key={tile.key}
               type="button"
               onClick={() => onOpen(sectionId)}
@@ -53,7 +55,7 @@ export function OrganisationMehrScreen({ onOpen }: Props) {
                   {tile.tag}
                 </span>
               ) : null}
-            </button>
+            </PortalButton>
           );
         })}
       </div>

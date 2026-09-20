@@ -1,3 +1,4 @@
+import { logDbError } from '@/lib/errors/log-db-error'
 import { NextResponse } from "next/server";
 
 import { createClient } from "@/lib/supabase/server";
@@ -53,12 +54,13 @@ export async function POST(req: Request) {
     },
     { onConflict: "endpoint" }
   );
+  if (error) logDbError('app/api/push/subscribe/route:push_subscriptions', error)
 
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
-  await supabaseAdmin.from("push_prefs").upsert(
+  const { error: __dbErr241_1 } = await supabaseAdmin.from("push_prefs").upsert(
     {
       auth_user_id: user.id,
       push_enabled: true,
@@ -66,6 +68,7 @@ export async function POST(req: Request) {
     },
     { onConflict: "auth_user_id" }
   );
+  if (__dbErr241_1) logDbError('app/api/push/subscribe/route:push_prefs', __dbErr241_1)
 
   return NextResponse.json({ ok: true });
 }

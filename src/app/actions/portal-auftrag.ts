@@ -1,5 +1,6 @@
 "use server";
 
+import { logDbError } from '@/lib/errors/log-db-error'
 import { revalidatePath } from "next/cache";
 
 import {
@@ -56,6 +57,7 @@ export async function acceptKundeAuftragAenderungen(
       "id, aenderung_typ, kunde_akzeptiert_at, gewerk_name, leistung_name, beschreibung, menge, lohn_fix, material_fix, preis_alt"
     )
     .eq("auftrag_id", id);
+  if (loadErr) logDbError('app/actions/portal-auftrag:auftrag_positionen', loadErr)
 
   if (loadErr) {
     console.error("[acceptKundeAuftragAenderungen]", loadErr.message);
@@ -79,6 +81,7 @@ export async function acceptKundeAuftragAenderungen(
       .update({ kunde_akzeptiert_at: now })
       .eq("id", posId)
       .eq("auftrag_id", id);
+    if (upErr) logDbError('app/actions/portal-auftrag:auftrag_positionen', upErr)
 
     if (upErr) {
       console.error("[acceptKundeAuftragAenderungen]", upErr.message);

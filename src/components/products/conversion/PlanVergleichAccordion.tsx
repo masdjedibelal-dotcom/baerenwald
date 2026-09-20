@@ -1,6 +1,6 @@
 "use client";
 
-import { Check, ChevronDown, Minus } from "lucide-react";
+import { PortalIcon } from "@/components/portal/PortalIcon";
 import { useState } from "react";
 
 import type { VergleichColumn, VergleichRow } from "@/lib/products/plan-vergleich";
@@ -17,14 +17,14 @@ function Cell({ value }: { value: string }) {
   if (value === "yes") {
     return (
       <span className="conversion-vergleich-icon conversion-vergleich-icon--yes" aria-hidden>
-        <Check size={16} strokeWidth={2.5} />
+        <PortalIcon n="check" ctx="default" size={16} />
       </span>
     );
   }
   if (value === "no" || value === "—") {
     return (
       <span className="conversion-vergleich-icon conversion-vergleich-icon--no" aria-hidden>
-        <Minus size={16} strokeWidth={2} />
+        <PortalIcon n="minus" ctx="default" size={16} />
       </span>
     );
   }
@@ -55,11 +55,7 @@ export function PlanVergleichAccordion({
         aria-expanded={open}
       >
         <span>{open ? "Weniger anzeigen" : toggleLabel}</span>
-        <ChevronDown
-          size={18}
-          className={`conversion-vergleich-toggle-icon${open ? " conversion-vergleich-toggle-icon--open" : ""}`}
-          aria-hidden
-        />
+        <PortalIcon n="chevron-down" ctx="default" size={18} className={`conversion-vergleich-toggle-icon${open ? " conversion-vergleich-toggle-icon--open" : ""}`} aria-hidden />
       </button>
 
       {open ? (

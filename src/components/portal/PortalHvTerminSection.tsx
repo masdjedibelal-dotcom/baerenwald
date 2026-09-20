@@ -14,6 +14,8 @@ import {
   type PortalTerminSlot,
 } from "@/lib/portal/portal-termin";
 import { portalToastSuccess } from "@/lib/shared/portal-toast";
+import { PortalButton } from "@/components/portal/PortalButton";
+import { TOAST } from '@/lib/portal-copy'
 
 export function PortalHvTerminSection({
   auftragId,
@@ -41,7 +43,7 @@ export function PortalHvTerminSection({
       setMsg(res.error);
       return;
     }
-    portalToastSuccess("Termin bestätigt", "Der Handwerker wurde informiert.");
+    portalToastSuccess(TOAST.termin_bestaetigt, "Der Partner wurde informiert.");
     router.refresh();
   }
 
@@ -60,7 +62,7 @@ export function PortalHvTerminSection({
   if (bestaetigt) {
     return (
       <PortalDetailSection title="Termin">
-        <div className="portal-text-body rounded-xl border border-border-light bg-white px-3 py-3">
+        <div className="portal-text-body rounded-sheet border border-border-light bg-white px-3 py-3">
           <p className="font-semibold text-text-primary">
             {readOnly ? "Bestätigter Termin" : "Ihr Termin"}
           </p>
@@ -75,7 +77,7 @@ export function PortalHvTerminSection({
   if (readOnly) {
     return (
       <PortalDetailSection title="Terminvorschläge">
-        <div className="portal-text-body space-y-2 rounded-xl border border-border-light bg-white p-3">
+        <div className="portal-text-body space-y-2 rounded-sheet border border-border-light bg-white p-3">
           <p className="portal-text-meta text-text-secondary">
             Warte auf Terminwahl durch den Melder.
           </p>
@@ -83,7 +85,7 @@ export function PortalHvTerminSection({
             {vorgeschlagen.map((s) => (
               <li
                 key={s.id}
-                className="rounded-lg border border-border-light bg-background px-3 py-2"
+                className="rounded-card border border-border-light bg-background px-3 py-2"
               >
                 <span className="font-medium text-text-primary">
                   {formatMeldeSlotLine(s)}
@@ -98,41 +100,41 @@ export function PortalHvTerminSection({
 
   return (
     <PortalDetailSection title="Terminvorschläge">
-      <div className="portal-text-body space-y-2 rounded-xl border border-border-light bg-white p-3">
+      <div className="portal-text-body space-y-2 rounded-sheet border border-border-light bg-white p-3">
         <p className="portal-text-meta text-text-secondary">
-          Bitte wähle einen Termin — der Handwerker wurde informiert.
+          Bitte wähle einen Termin — der Partner wurde informiert.
         </p>
         <ul className="space-y-2">
           {vorgeschlagen.map((s) => (
             <li
               key={s.id}
-              className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-border-light bg-background px-3 py-2"
+              className="flex flex-wrap items-center justify-between gap-2 rounded-card border border-border-light bg-background px-3 py-2"
             >
               <span className="font-medium text-text-primary">
                 {formatMeldeSlotLine(s)}
               </span>
               <div className="flex gap-2">
-                <button
+                <PortalButton variant="secondary" action={false} compact
                   type="button"
-                  className="btn-pill-outline portal-btn-compact"
                   disabled={busy != null}
                   onClick={() => void confirmSlot(s.id)}
                 >
                   {busy === s.id ? "…" : "Bestätigen"}
-                </button>
-                <button
+                </PortalButton>
+                <PortalButton
+                  variant="ghost"
                   type="button"
                   className="portal-text-label normal-case tracking-normal text-text-tertiary underline"
                   disabled={busy != null}
                   onClick={() => void declineSlot(s.id)}
                 >
                   Passt nicht
-                </button>
+                </PortalButton>
               </div>
             </li>
           ))}
         </ul>
-        {msg ? <p className="portal-text-meta text-red-700">{msg}</p> : null}
+        {msg ? <p className="portal-text-meta text-p2-danger">{msg}</p> : null}
       </div>
     </PortalDetailSection>
   );

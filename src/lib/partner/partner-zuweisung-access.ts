@@ -3,6 +3,7 @@
  * Status `ersetzt` → kein Schreibzugriff / keine Portalsicht (außer Eingangsrechnung).
  */
 
+import { logDbError } from '@/lib/errors/log-db-error'
 import { supabaseAdmin } from "@/lib/supabase";
 
 const INACTIVE = new Set(["ersetzt", "abgelehnt"]);
@@ -23,25 +24,25 @@ export async function resolvePartnerAuftragZugriff(
   const aid = auftragId.trim();
   if (!hwId || !aid) return { ok: false, reason: "fehlt" };
 
-  const { data: zuweisungen } = await supabaseAdmin
+  const {data: zuweisungen, error: __dbErr415_1} = await supabaseAdmin
     .from("auftrag_handwerker")
     .select("id, status")
     .eq("auftrag_id", aid)
     .eq("handwerker_id", hwId);
-
+  if (__dbErr415_1) logDbError('lib/partner/partner-zuweisung-access:auftrag_handwerker', __dbErr415_1)
   const rows = zuweisungen ?? [];
   const active = rows.filter(
     (z) => !INACTIVE.has(String((z as { status?: string }).status ?? "").toLowerCase())
   );
   if (active.length > 0) return { ok: true, mode: "active" };
 
-  const { data: pos } = await supabaseAdmin
+  const {data: pos, error: __dbErr416_2} = await supabaseAdmin
     .from("auftrag_positionen")
     .select("id")
     .eq("auftrag_id", aid)
     .eq("handwerker_id", hwId)
     .limit(1);
-
+  if (__dbErr416_2) logDbError('lib/partner/partner-zuweisung-access:auftrag_positionen', __dbErr416_2)
   if (pos?.length) return { ok: true, mode: "active" };
 
   /* Ersetzt, aber früher zugewiesen → nur Eingangsrechnung */

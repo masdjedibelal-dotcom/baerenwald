@@ -1,11 +1,14 @@
 "use client";
 
+import { PortalIcon } from "@/components/portal/PortalIcon";
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import { Camera, Check, ChevronDown } from "lucide-react";
 
+import { PortalCheckbox, PortalInput, PortalSelect, PortalTextarea } from "@/components/shared/PortalFormControls";
 import { PartnerDirektKameraSlot } from "@/components/partner/PartnerDirektKameraSlot";
 import { PartnerKiKorrekturField } from "@/components/partner/PartnerKiKorrekturField";
 import { PartnerMultiFotoSlot } from "@/components/partner/PartnerMultiFotoSlot";
+import { PortalButton } from "@/components/portal/PortalButton";
+import { PortalField } from "@/components/shared/PortalField";
 import {
   paintPortalBusyNow,
   PORTAL_BUSY_MIN_MS,
@@ -28,10 +31,12 @@ import {
   formatZeitMinuten,
   lebenszyklusLabel,
 } from "@/lib/partner/position-lebenszyklus";
+import { useFieldErrors } from "@/lib/portal2/form-schema";
 import { HW_DOKU_STORY } from "@/lib/portal2/hw-doku-story";
 import { PORTAL_C, PORTAL_VAR } from "@/lib/portal2/tokens";
 import { portalToastError, portalToastSuccess } from "@/lib/shared/portal-toast";
 import { cn } from "@/lib/utils";
+import { EMPTY, TOAST } from '@/lib/portal-copy'
 
 export type LebenszyklusPosition = {
   id: string;
@@ -177,20 +182,21 @@ function PositionActionIconBtn({
   children: ReactNode;
 }) {
   return (
-    <button
+    <PortalButton
+      variant="primary"
       type="button"
       aria-label={label}
       title={label}
       onClick={onClick}
       className={cn(
-        "inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full transition-colors",
+        "inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-pill transition-colors",
         variant === "primary"
-          ? "bg-[var(--p2-primary,#2E7D52)] text-white"
+          ? "bg-[var(--p2-primary)] text-white"
           : "border border-border-default bg-white text-text-primary"
       )}
     >
       {children}
-    </button>
+    </PortalButton>
   );
 }
 
@@ -237,6 +243,8 @@ export function PartnerPositionLebenszyklusList({
   const autoOpenedRef = useRef(false);
   const updateOpenedRef = useRef(false);
   const sheetFormRef = useRef<HTMLFormElement>(null);
+  const { fieldErrors, applyFieldErrors, clearFieldErrors, clearField } =
+    useFieldErrors();
   const { runBusy } = usePortalBusy();
   const preferredSet = useMemo(
     () => new Set(preferredPositionIds.map((id) => id.trim()).filter(Boolean)),
@@ -266,7 +274,7 @@ export function PartnerPositionLebenszyklusList({
     const map = new Map<string, PartnerTagebuchListenEintrag[]>();
     for (const e of updates) {
       // Nur eigene HW-Updates (CRM-Einträge bleiben im CRM)
-      if (e.quelleLabel !== "Handwerker") continue;
+      if (e.quelleLabel !== "Partner") continue;
       const ids =
         e.leistungIds?.length > 0
           ? e.leistungIds
@@ -408,8 +416,7 @@ export function PartnerPositionLebenszyklusList({
               formData.append("fotos", await normalizePartnerCameraPhoto(f));
             }
           } catch {
-            portalToastError(
-              "Foto konnte nicht verarbeitet werden. Bitte erneut versuchen."
+            portalToastError(TOAST.foto_konnte_nicht_verarbeitet_werden_bitte_erneu
             );
             return;
           }
@@ -448,11 +455,11 @@ export function PartnerPositionLebenszyklusList({
   function submitLeistungsUpdate() {
     if (submitting) return;
     if (!tbSelected.length) {
-      portalToastError("Mindestens eine Leistung auswählen.");
+      portalToastError(TOAST.mindestens_eine_leistung_auswaehlen);
       return;
     }
     if (!tbTitel.trim() && !tbBeschreibung.trim() && !tbFotos.length) {
-      portalToastError("Titel, Text oder Foto angeben.");
+      portalToastError(TOAST.titel_text_oder_foto_angeben);
       return;
     }
     const formData = new FormData();
@@ -471,8 +478,7 @@ export function PartnerPositionLebenszyklusList({
               formData.append("fotos", await normalizePartnerCameraPhoto(f));
             }
           } catch {
-            portalToastError(
-              "Foto konnte nicht verarbeitet werden. Bitte erneut versuchen."
+            portalToastError(TOAST.foto_konnte_nicht_verarbeitet_werden_bitte_erneu
             );
             return;
           }
@@ -505,8 +511,7 @@ export function PartnerPositionLebenszyklusList({
       formData.set(field, await normalizePartnerCameraPhoto(raw));
       return true;
     } catch {
-      portalToastError(
-        "Foto konnte nicht verarbeitet werden. Bitte erneut versuchen."
+      portalToastError(TOAST.foto_konnte_nicht_verarbeitet_werden_bitte_erneu
       );
       return false;
     }
@@ -524,8 +529,7 @@ export function PartnerPositionLebenszyklusList({
       }
       return true;
     } catch {
-      portalToastError(
-        "Foto konnte nicht verarbeitet werden. Bitte erneut versuchen."
+      portalToastError(TOAST.foto_konnte_nicht_verarbeitet_werden_bitte_erneu
       );
       return false;
     }
@@ -552,30 +556,33 @@ export function PartnerPositionLebenszyklusList({
     }
     formData.delete("foto_start");
 
+    /* FORM_VALIDATION: partner-position-lebenszyklus */
     if (sheetIsRegie && (mode === "start" || mode === "erledigt")) {
+      const errors: Record<string, string> = {};
       if (mode === "start" && !hasFoto(formData, "foto")) {
-        portalToastError("Bitte ein Start-Foto hinzufügen.");
-        return;
+        errors.foto = TOAST.bitte_ein_start_foto_hinzufuegen;
       }
       if (mode === "erledigt" && !hasFoto(formData, "foto_ende")) {
-        portalToastError("Bitte ein Ende-Foto hinzufügen.");
-        return;
+        errors.foto = TOAST.bitte_ein_ende_foto_hinzufuegen;
       }
       const beschr = String(formData.get("beschreibung") ?? "").trim();
       if (!beschr) {
-        portalToastError("Bitte eine kurze Beschreibung angeben.");
-        return;
+        errors.beschreibung = TOAST.bitte_eine_kurze_beschreibung_angeben;
       }
       // Gesamtzeit erst beim Abschluss — Start und Ende sind zeitlich getrennt
       if (mode === "erledigt") {
         const std = Number(formData.get("zeitStd") ?? 0);
         const min = Number(formData.get("zeitMin") ?? 0);
         if (!Number.isFinite(std) || !Number.isFinite(min) || std * 60 + min <= 0) {
-          portalToastError("Bitte die tatsächliche Zeit Aufwand auswählen.");
-          return;
+          errors.zeit = TOAST.bitte_die_tatsaechliche_zeit_aufwand_auswaehlen;
         }
       }
+      if (Object.keys(errors).length) {
+        applyFieldErrors(errors, sheetFormRef.current);
+        return;
+      }
     }
+    clearFieldErrors();
 
     paintPortalBusyNow(setSubmitting);
     void (async () => {
@@ -604,8 +611,7 @@ export function PartnerPositionLebenszyklusList({
                 formData.append("fotos", await normalizePartnerCameraPhoto(f));
               }
             } catch {
-              portalToastError(
-                "Foto konnte nicht verarbeitet werden. Bitte erneut versuchen."
+              portalToastError(TOAST.foto_konnte_nicht_verarbeitet_werden_bitte_erneu
               );
               return;
             }
@@ -652,7 +658,7 @@ export function PartnerPositionLebenszyklusList({
                 portalToastError(res.error);
                 return;
               }
-              portalToastSuccess("Update gespeichert.");
+              portalToastSuccess(TOAST.update_gespeichert);
             } else {
               if (
                 hasEnde &&
@@ -674,9 +680,7 @@ export function PartnerPositionLebenszyklusList({
               portalToastSuccess(HW_DOKU_STORY.positionEndeToast);
             }
           } catch {
-            portalToastError(
-              "Speichern fehlgeschlagen — Foto zu groß oder Verbindung unterbrochen. Bitte erneut versuchen."
-            );
+            portalToastError(TOAST.speichern_fehlgeschlagen_foto);
             return;
           }
 
@@ -687,7 +691,7 @@ export function PartnerPositionLebenszyklusList({
           setSheetFotos([]);
         }, Math.max(PORTAL_BUSY_MIN_MS, 600));
       } catch {
-        portalToastError("Speichern fehlgeschlagen. Bitte erneut versuchen.");
+        portalToastError(TOAST.speichern_fehlgeschlagen_bitte_erneut_versuchen);
       } finally {
         setSubmitting(false);
       }
@@ -708,11 +712,11 @@ export function PartnerPositionLebenszyklusList({
 
   function submitNachtrag() {
     if (nachtragTitel.trim().length < 4) {
-      portalToastError("Titel mind. 4 Zeichen.");
+      portalToastError(TOAST.titel_mind_4_zeichen);
       return;
     }
     if (nachtragBegruendung.trim().length < 8) {
-      portalToastError("Begründung mind. 8 Zeichen.");
+      portalToastError(TOAST.begruendung_mind_8_zeichen);
       return;
     }
     const formData = new FormData();
@@ -734,8 +738,7 @@ export function PartnerPositionLebenszyklusList({
               formData.append("fotos", await normalizePartnerCameraPhoto(f));
             }
           } catch {
-            portalToastError(
-              "Foto konnte nicht verarbeitet werden. Bitte erneut versuchen."
+            portalToastError(TOAST.foto_konnte_nicht_verarbeitet_werden_bitte_erneu
             );
             return;
           }
@@ -744,8 +747,7 @@ export function PartnerPositionLebenszyklusList({
             portalToastError(res.error);
             return;
           }
-          portalToastSuccess(
-            "Nachtrag eingereicht — noch zur Prüfung durch Bärenwald."
+          portalToastSuccess(TOAST.nachtrag_eingereicht_noch_zur_pruefung_durch_bae
           );
           await onDone?.();
           setNachtragOpen(false);
@@ -773,7 +775,7 @@ export function PartnerPositionLebenszyklusList({
     <div className="space-y-4">
       <div>
         <h3
-          className="text-[20px] font-bold leading-tight"
+          className="text-fs-head font-bold leading-tight"
           style={{
             color: PORTAL_VAR.ink,
             fontFamily: "var(--p2-font-head, " + PORTAL_VAR.head + ")",
@@ -785,10 +787,10 @@ export function PartnerPositionLebenszyklusList({
 
       <div>
         <div className="mt-0 flex items-center justify-between gap-2">
-          <p className="text-[12.5px] font-semibold" style={{ color: PORTAL_VAR.sub }}>
+          <p className="text-fs-meta font-semibold" style={{ color: PORTAL_VAR.sub }}>
             Fortschritt
           </p>
-          <p className="text-[12.5px] font-semibold" style={{ color: PORTAL_VAR.sub }}>
+          <p className="text-fs-meta font-semibold" style={{ color: PORTAL_VAR.sub }}>
             {erledigtCount} von {actionablePositionen.length} erledigt
           </p>
         </div>
@@ -796,9 +798,9 @@ export function PartnerPositionLebenszyklusList({
           <div className="mt-2 flex flex-wrap items-center gap-2">
             {bulkSelected.length > 0 ? (
               <>
-                <button
+                <PortalButton
+                  variant="secondary"
                   type="button"
-                  className="btn-pill-outline"
                   disabled={submitting}
                   onClick={() => {
                     setTbSelected([...bulkSelected]);
@@ -810,39 +812,39 @@ export function PartnerPositionLebenszyklusList({
                   }}
                 >
                   Update ({bulkSelected.length})
-                </button>
-                <button
+                </PortalButton>
+                <PortalButton
+                  variant="primary"
                   type="button"
-                  className="btn-pill-primary"
                   disabled={submitting}
                   onClick={openBulkErledigt}
                 >
                   {bulkSelected.length} als erledigt
-                </button>
-                <button
+                </PortalButton>
+                <PortalButton
+                  variant="secondary"
                   type="button"
-                  className="btn-pill-outline"
                   disabled={submitting}
                   onClick={() => setBulkSelected([])}
                 >
                   Auswahl aufheben
-                </button>
+                </PortalButton>
               </>
             ) : null}
             {bulkSelected.length < bulkSelectableIds.length ? (
-              <button
+              <PortalButton
+                variant="secondary"
                 type="button"
-                className="btn-pill-outline"
                 disabled={submitting}
                 onClick={selectAllBulk}
               >
                 Alle auswählen
-              </button>
+              </PortalButton>
             ) : null}
           </div>
         ) : null}
         <div
-          className="mt-1.5 h-2 overflow-hidden rounded-full"
+          className="mt-1.5 h-2 overflow-hidden rounded-pill"
           style={{ background: PORTAL_C.line2 }}
           role="progressbar"
           aria-valuenow={erledigtCount}
@@ -851,7 +853,7 @@ export function PartnerPositionLebenszyklusList({
           aria-valuetext={`${progressPct} Prozent`}
         >
           <div
-            className="h-full rounded-full transition-[width] duration-300 ease-out"
+            className="h-full rounded-pill transition-[width] duration-300 ease-out"
             style={{
               width: `${Math.max(0, Math.min(100, progressPct))}%`,
               backgroundColor: PORTAL_C.primary,
@@ -862,7 +864,7 @@ export function PartnerPositionLebenszyklusList({
 
       {preferredSet.size > 0 ? (
         <p
-          className="rounded-xl border border-amber-300 bg-amber-50 px-3.5 py-3 text-[13.5px] font-bold leading-snug text-amber-950"
+          className="rounded-sheet border border-warning-border bg-warning-bg px-3.5 py-3 text-fs-body font-bold leading-snug text-warning-text"
           role="status"
         >
           {HW_DOKU_STORY.preferredBanner}
@@ -871,7 +873,7 @@ export function PartnerPositionLebenszyklusList({
 
       {sortedPositionen.length === 0 ? (
         <div className="px-0 py-5 text-center" data-testid="hw-first-job-empty">
-          <p className="text-[14px] font-bold" style={{ color: PORTAL_VAR.ink }}>
+          <p className="text-fs-body font-bold" style={{ color: PORTAL_VAR.ink }}>
             Noch keine Leistung
           </p>
         </div>
@@ -912,15 +914,16 @@ export function PartnerPositionLebenszyklusList({
                     className={cn(
                       "px-0 py-3",
                       isBlocked && "opacity-70",
-                      isPreferred && !isBlocked && "bg-amber-50/60"
+                      isPreferred && !isBlocked && "bg-warning-bg/60"
                     )}
                   >
                     <div className="flex items-start gap-2.5">
                       {!readOnly && !isBlocked && !isRegie ? (
-                        <button
+                        <PortalButton
+                          variant="primary"
                           type="button"
                           className={cn(
-                            "mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-md border",
+                            "mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-field border",
                             bulkSelected.includes(p.id)
                               ? "border-accent bg-accent text-white"
                               : "border-border-default bg-white"
@@ -930,12 +933,12 @@ export function PartnerPositionLebenszyklusList({
                           onClick={() => toggleBulk(p.id)}
                         >
                           {bulkSelected.includes(p.id) ? (
-                            <Check className="h-3 w-3" strokeWidth={3} />
+                            <PortalIcon n="check" ctx="default" className="h-3 w-3" />
                           ) : null}
-                        </button>
+                        </PortalButton>
                       ) : (
                         <div
-                          className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-md border border-border-default bg-white"
+                          className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-field border border-border-default bg-white"
                           aria-hidden
                         />
                       )}
@@ -944,7 +947,7 @@ export function PartnerPositionLebenszyklusList({
                         <div className="flex items-start justify-between gap-2">
                           <p
                             className={cn(
-                              "text-[14.5px] font-bold leading-snug",
+                              "text-fs-title font-bold leading-snug",
                               isBlocked
                                 ? "text-text-secondary"
                                 : "text-text-primary"
@@ -955,7 +958,7 @@ export function PartnerPositionLebenszyklusList({
                           {preisLabel ? (
                             <p
                               className={cn(
-                                "hidden shrink-0 text-[14.5px] font-bold tabular-nums sm:block",
+                                "hidden shrink-0 text-fs-title font-bold tabular-nums sm:block",
                                 isBlocked
                                   ? "text-text-tertiary"
                                   : "text-text-primary"
@@ -965,11 +968,11 @@ export function PartnerPositionLebenszyklusList({
                             </p>
                           ) : null}
                         </div>
-                        <p className="mt-0.5 text-[12.5px] text-text-tertiary">
+                        <p className="mt-0.5 text-fs-meta text-text-tertiary">
                           {meta}
                         </p>
                         {isRegie ? (
-                          <div className="mt-1.5 space-y-0.5 text-[12.5px] text-text-secondary">
+                          <div className="mt-1.5 space-y-0.5 text-fs-meta text-text-secondary">
                             <p className="flex justify-between gap-3">
                               <span className="shrink-0 text-text-tertiary">
                                 Arbeitsstunden
@@ -993,7 +996,7 @@ export function PartnerPositionLebenszyklusList({
                           </div>
                         ) : null}
                         {inPruefung ? (
-                          <p className="mt-1 text-[12.5px] font-semibold text-amber-800">
+                          <p className="mt-1 text-fs-meta font-semibold text-warning-text">
                             Eingereicht — noch zur Prüfung. Nach Freigabe wie
                             üblich starten und abschließen.
                           </p>
@@ -1003,26 +1006,26 @@ export function PartnerPositionLebenszyklusList({
                         {showUpdateBtn || showErledigtBtn ? (
                           <div className="mt-2.5 hidden flex-row flex-wrap gap-2 sm:flex">
                             {showUpdateBtn ? (
-                              <button
+                              <PortalButton
+                                variant="primary"
                                 type="button"
-                                className="btn-pill-primary"
                                 onClick={() =>
                                   setSheet({ mode: updateMode, position: p })
                                 }
                               >
                                 {updateLabel}
-                              </button>
+                              </PortalButton>
                             ) : null}
                             {showErledigtBtn ? (
-                              <button
+                              <PortalButton
+                                variant="secondary"
                                 type="button"
-                                className="btn-pill-outline"
                                 onClick={() =>
                                   setSheet({ mode: "erledigt", position: p })
                                 }
                               >
                                 {erledigtLabel}
-                              </button>
+                              </PortalButton>
                             ) : null}
                           </div>
                         ) : null}
@@ -1039,7 +1042,7 @@ export function PartnerPositionLebenszyklusList({
                                 setSheet({ mode: updateMode, position: p })
                               }
                             >
-                              <Camera className="h-[18px] w-[18px]" strokeWidth={2.25} />
+                              <PortalIcon n="photo" ctx="default" className="h-[18px] w-[18px]" />
                             </PositionActionIconBtn>
                           ) : null}
                           {showErledigtBtn ? (
@@ -1050,7 +1053,7 @@ export function PartnerPositionLebenszyklusList({
                                 setSheet({ mode: "erledigt", position: p })
                               }
                             >
-                              <Check className="h-[18px] w-[18px]" strokeWidth={2.5} />
+                              <PortalIcon n="check" ctx="default" className="h-[18px] w-[18px]" />
                             </PositionActionIconBtn>
                           ) : null}
                         </div>
@@ -1064,30 +1067,28 @@ export function PartnerPositionLebenszyklusList({
               })}
             </ul>
           ) : (
-            <p className="px-0 py-4 text-center text-[13.5px] text-text-tertiary">
+            <p className="px-0 py-4 text-center text-fs-body text-text-tertiary">
               Alle offenen Leistungen erledigt.
             </p>
           )}
 
           {erledigtPositionen.length > 0 ? (
             <div className="border-t border-border-light pt-1">
-              <button
+              <PortalButton
+                variant="ghost"
                 type="button"
                 className="flex min-h-[48px] w-full items-center justify-between gap-3 px-0 py-2.5 text-left"
                 aria-expanded={erledigtAccordionOpen}
                 onClick={() => setErledigtAccordionOpen((o) => !o)}
               >
-                <span className="text-[13.5px] font-bold text-text-primary">
+                <span className="text-fs-body font-bold text-text-primary">
                   {erledigtPositionen.length} erledigt
                 </span>
-                <ChevronDown
-                  className={cn(
+                <PortalIcon n="chevron-down" ctx="default" className={cn(
                     "h-5 w-5 shrink-0 text-text-tertiary transition-transform",
                     erledigtAccordionOpen && "rotate-180"
-                  )}
-                  aria-hidden
-                />
-              </button>
+                  )} aria-hidden />
+              </PortalButton>
               {erledigtAccordionOpen ? (
                 <ul className="divide-y divide-border-light border-t border-border-light">
                   {erledigtPositionen.map((p) => {
@@ -1104,23 +1105,23 @@ export function PartnerPositionLebenszyklusList({
                       <li key={p.id} className="px-0 py-3">
                         <div className="flex items-start gap-2.5">
                           <div
-                            className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-md border border-accent bg-accent text-white"
+                            className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-field border border-accent bg-accent text-white"
                             aria-hidden
                           >
-                            <Check className="h-3 w-3" strokeWidth={3} />
+                            <PortalIcon n="check" ctx="default" className="h-3 w-3" />
                           </div>
                           <div className="min-w-0 flex-1">
                             <div className="flex items-start justify-between gap-2">
-                              <p className="text-[14.5px] font-bold leading-snug text-text-primary">
+                              <p className="text-fs-title font-bold leading-snug text-text-primary">
                                 {p.leistung_name}
                               </p>
                               {preisLabel ? (
-                                <p className="shrink-0 text-[14.5px] font-bold tabular-nums text-text-primary">
+                                <p className="shrink-0 text-fs-title font-bold tabular-nums text-text-primary">
                                   {preisLabel}
                                 </p>
                               ) : null}
                             </div>
-                            <p className="mt-0.5 text-[12.5px] text-text-tertiary">
+                            <p className="mt-0.5 text-fs-meta text-text-tertiary">
                               {meta}
                             </p>
                             <PartnerLeistungUpdatesAccordion
@@ -1140,15 +1141,16 @@ export function PartnerPositionLebenszyklusList({
 
       {!readOnly ? (
         <div className="space-y-2">
-          <button
+          <PortalButton
+            variant="ghost"
             type="button"
-            className="w-full rounded-[10px] border border-dashed px-3 py-3 text-[13.5px] font-semibold text-text-primary"
-            style={{ borderColor: PORTAL_VAR.line, background: "#fff" }}
+            className="w-full rounded-[10px] border border-dashed px-3 py-3 text-fs-body font-semibold text-text-primary"
+            style={{ borderColor: PORTAL_VAR.line, background: "var(--p2-panel)" }}
             onClick={() => setNachtragOpen(true)}
           >
             + Nachtrag / Regie
-          </button>
-          <p className="text-[11.5px] leading-relaxed text-text-tertiary">
+          </PortalButton>
+          <p className="text-fs-caption leading-relaxed text-text-tertiary">
             Zusätzliche Arbeit erst melden — Bärenwald prüft und weist zu.
           </p>
         </div>
@@ -1212,19 +1214,31 @@ export function PartnerPositionLebenszyklusList({
             ) : null}
 
             {sheetIsRegie && sheet.mode === "start" ? (
-              <PartnerDirektKameraSlot
-                name="foto_start"
-                captureAtName="captureAt_start"
-                label="Start-Foto"
+              <PortalField
+                name="foto"
+                error={fieldErrors.foto}
                 required
-              />
+              >
+                <PartnerDirektKameraSlot
+                  name="foto_start"
+                  captureAtName="captureAt_start"
+                  label="Start-Foto"
+                  required
+                />
+              </PortalField>
             ) : sheetIsRegie && sheet.mode === "erledigt" ? (
-              <PartnerDirektKameraSlot
-                name="foto_ende"
-                captureAtName="captureAt_ende"
-                label="Ende-Foto"
+              <PortalField
+                name="foto"
+                error={fieldErrors.foto}
                 required
-              />
+              >
+                <PartnerDirektKameraSlot
+                  name="foto_ende"
+                  captureAtName="captureAt_ende"
+                  label="Ende-Foto"
+                  required
+                />
+              </PortalField>
             ) : (
               <PartnerMultiFotoSlot
                 label={
@@ -1240,25 +1254,39 @@ export function PartnerPositionLebenszyklusList({
             )}
 
             <div className="mt-4">
-              <PartnerKiKorrekturField
-                scope="bautagebuch"
-                label="Beschreibung"
-                value={beschreibung}
-                onChange={setBeschreibung}
-                rows={8}
+              <PortalField
+                name="beschreibung"
+                error={fieldErrors.beschreibung}
                 required={textPflicht}
-                leistungName={sheet.position.leistung_name}
-                auftragTitel={auftragTitel}
-                placeholder="Kurz beschreiben…"
-              />
+              >
+                <PartnerKiKorrekturField
+                  scope="bautagebuch"
+                  label="Beschreibung"
+                  value={beschreibung}
+                  onChange={(v) => {
+                    setBeschreibung(v);
+                    clearField("beschreibung");
+                  }}
+                  rows={8}
+                  required={textPflicht}
+                  leistungName={sheet.position.leistung_name}
+                  auftragTitel={auftragTitel}
+                  placeholder="Kurz beschreiben…"
+                />
+              </PortalField>
             </div>
 
             {sheetIsRegie &&
             (sheet.mode === "fortschritt" || sheet.mode === "erledigt") ? (
-              <div className="mt-3 space-y-1">
-                <p className="portal-form-label">Tatsächliche Zeit Aufwand</p>
+              <PortalField
+                name="zeit"
+                label="Tatsächliche Zeit Aufwand"
+                error={fieldErrors.zeit}
+                required={sheet.mode === "erledigt"}
+                className="mt-3"
+              >
                 <div className="flex items-center gap-1.5">
-                  <select
+                  <PortalSelect
                     name="zeitStd"
                     defaultValue={
                       sheet.position.zeit_minuten_summe
@@ -1266,18 +1294,19 @@ export function PartnerPositionLebenszyklusList({
                         : 0
                     }
                     aria-label="Stunden"
-                    className="portal-input min-w-0 flex-1 rounded-xl border border-border-default px-2 py-2.5"
+                    className="portal-input min-w-0 flex-1 rounded-field border border-border-default px-2 py-2.5"
+                    onChange={() => clearField("zeit")}
                   >
                     {Array.from({ length: 49 }, (_, h) => (
                       <option key={h} value={h}>
                         {String(h).padStart(2, "0")} Std
                       </option>
                     ))}
-                  </select>
-                  <span className="text-[14px] font-semibold text-text-tertiary">
+                  </PortalSelect>
+                  <span className="text-fs-body font-semibold text-text-tertiary">
                     :
                   </span>
-                  <select
+                  <PortalSelect
                     name="zeitMin"
                     defaultValue={
                       sheet.position.zeit_minuten_summe
@@ -1285,26 +1314,28 @@ export function PartnerPositionLebenszyklusList({
                         : 0
                     }
                     aria-label="Minuten"
-                    className="portal-input min-w-0 flex-1 rounded-xl border border-border-default px-2 py-2.5"
+                    className="portal-input min-w-0 flex-1 rounded-field border border-border-default px-2 py-2.5"
+                    onChange={() => clearField("zeit")}
                   >
                     {Array.from({ length: 60 }, (_, m) => (
                       <option key={m} value={m}>
                         {String(m).padStart(2, "0")} Min
                       </option>
                     ))}
-                  </select>
+                  </PortalSelect>
                 </div>
-              </div>
+              </PortalField>
             ) : null}
 
             <div className="mt-5">
-              <button
+              <PortalButton
+                variant="primary"
                 type="submit"
-                className="btn-pill-primary w-full"
+                className="w-full"
                 disabled={submitting}
               >
                 {submitting ? "Speichern…" : "Speichern"}
-              </button>
+              </PortalButton>
             </div>
           </form>
             );
@@ -1334,7 +1365,7 @@ export function PartnerPositionLebenszyklusList({
       >
         <div className="flex flex-col gap-3">
           {bulkSelected.length > 1 ? (
-            <ul className="max-h-28 space-y-1 overflow-y-auto rounded-xl border border-border-light px-3 py-2">
+            <ul className="max-h-28 space-y-1 overflow-y-auto rounded-sheet border border-border-light px-3 py-2">
               {bulkSelected.map((id) => {
                 const name =
                   sortedPositionen.find((p) => p.id === id)?.leistung_name ??
@@ -1342,7 +1373,7 @@ export function PartnerPositionLebenszyklusList({
                 return (
                   <li
                     key={id}
-                    className="text-[13px] font-semibold text-text-primary"
+                    className="text-fs-meta font-semibold text-text-primary"
                   >
                     {name}
                   </li>
@@ -1366,9 +1397,10 @@ export function PartnerPositionLebenszyklusList({
             auftragTitel={auftragTitel}
             placeholder="Kurz beschreiben… (wird bei jeder Position hinterlegt)"
           />
-          <button
+          <PortalButton
+            variant="primary"
             type="button"
-            className="btn-pill-primary mt-2 w-full"
+            className="mt-2 w-full"
             disabled={submitting}
             onClick={submitBulkErledigt}
           >
@@ -1377,7 +1409,7 @@ export function PartnerPositionLebenszyklusList({
               : bulkSelected.length === 1
                 ? "Als erledigt speichern"
                 : `${bulkSelected.length} als erledigt speichern`}
-          </button>
+          </PortalButton>
         </div>
       </PortalModalShell>
 
@@ -1402,14 +1434,14 @@ export function PartnerPositionLebenszyklusList({
         <div className="flex flex-col gap-3">
           <div>
             <p className="portal-form-label">Leistungen</p>
-            <p className="mt-0.5 text-[11.5px] text-text-tertiary">
+            <p className="mt-0.5 text-fs-caption text-text-tertiary">
               Eine oder mehrere Leistungen für dieses Update.
             </p>
             {sortedPositionen.length > 0 ? (
               <div className="mt-1.5 flex flex-wrap items-center gap-2">
-                <button
+                <PortalButton
+                  variant="secondary"
                   type="button"
-                  className="btn-pill-outline"
                   disabled={
                     submitting ||
                     tbSelected.length === sortedPositionen.length
@@ -1421,10 +1453,10 @@ export function PartnerPositionLebenszyklusList({
                   }}
                 >
                   Alle auswählen
-                </button>
-                <span className="text-[11.5px] text-text-tertiary">
+                </PortalButton>
+                <span className="text-fs-caption text-text-tertiary">
                   {tbSelected.length === 0
-                    ? "Keine gewählt"
+                    ? EMPTY.gewaehlt
                     : `${tbSelected.length} von ${sortedPositionen.length}`}
                 </span>
               </div>
@@ -1436,11 +1468,10 @@ export function PartnerPositionLebenszyklusList({
                 return (
                   <li
                     key={p.id}
-                    className="rounded-lg border border-border-light px-2.5 py-2"
+                    className="rounded-card border border-border-light px-2.5 py-2"
                   >
                     <label className="flex cursor-pointer items-start gap-2">
-                      <input
-                        type="checkbox"
+                      <PortalCheckbox
                         className="mt-1"
                         checked={checked}
                         disabled={submitting}
@@ -1456,14 +1487,13 @@ export function PartnerPositionLebenszyklusList({
                           });
                         }}
                       />
-                      <span className="min-w-0 flex-1 text-[13.5px] font-semibold">
+                      <span className="min-w-0 flex-1 text-fs-body font-semibold">
                         {p.leistung_name}
                       </span>
                     </label>
                     {checked && !alreadyDone ? (
-                      <label className="ml-6 mt-1 flex items-center gap-2 text-[12px] text-text-secondary">
-                        <input
-                          type="checkbox"
+                      <label className="ml-6 mt-1 flex items-center gap-2 text-fs-caption text-text-secondary">
+                        <PortalCheckbox
                           checked={tbErledigt.includes(p.id)}
                           disabled={submitting}
                           onChange={() =>
@@ -1510,14 +1540,15 @@ export function PartnerPositionLebenszyklusList({
             onChange={setTbFotos}
             disabled={submitting}
           />
-          <button
+          <PortalButton
+            variant="primary"
             type="button"
-            className="btn-pill-primary mt-2 w-full"
+            className="mt-2 w-full"
             disabled={submitting}
             onClick={submitLeistungsUpdate}
           >
             {submitting ? "Speichern…" : "Speichern"}
-          </button>
+          </PortalButton>
         </div>
       </PortalModalShell>
 
@@ -1550,86 +1581,86 @@ export function PartnerPositionLebenszyklusList({
             disabled={submitting}
           />
           <label className="flex flex-col gap-1">
-            <span className="text-[11.5px] font-bold tracking-wide text-text-tertiary">
+            <span className="text-fs-caption font-bold tracking-wide text-text-tertiary">
               Titel *
             </span>
-            <input
+            <PortalInput
               value={nachtragTitel}
               onChange={(e) => setNachtragTitel(e.target.value)}
               required
               minLength={4}
               placeholder="z. B. Zusätzliche Leitung verlegen"
-              className="portal-input w-full rounded-xl border border-border-default px-3 py-2.5"
+              className="portal-input w-full rounded-field border border-border-default px-3 py-2.5"
             />
           </label>
           <label className="flex flex-col gap-1">
-            <span className="text-[11.5px] font-bold tracking-wide text-text-tertiary">
+            <span className="text-fs-caption font-bold tracking-wide text-text-tertiary">
               Begründung *
             </span>
-            <textarea
+            <PortalTextarea
               value={nachtragBegruendung}
               onChange={(e) => setNachtragBegruendung(e.target.value)}
               required
               minLength={8}
               rows={8}
               placeholder="Warum nötig? Was wurde vorgefunden?"
-              className="portal-input w-full min-h-[160px] resize-y rounded-xl border border-border-default px-3 py-3 text-[15px] leading-relaxed"
+              className="portal-input w-full min-h-[160px] resize-y rounded-field border border-border-default px-3 py-3 text-fs-title leading-relaxed"
             />
           </label>
           <div className="grid grid-cols-2 gap-2">
             <label className="flex flex-col gap-1">
-              <span className="text-[11.5px] font-bold tracking-wide text-text-tertiary">
+              <span className="text-fs-caption font-bold tracking-wide text-text-tertiary">
                 Stundensatz in €
               </span>
-              <input
+              <PortalInput
                 type="text"
                 inputMode="decimal"
                 value={nachtragStundensatz}
                 onChange={(e) => setNachtragStundensatz(e.target.value)}
                 placeholder="z. B. 65"
-                className="portal-input w-full rounded-xl border border-border-default px-3 py-2.5"
+                className="portal-input w-full rounded-field border border-border-default px-3 py-2.5"
               />
             </label>
             <div className="flex flex-col gap-1">
-              <span className="text-[11.5px] font-bold tracking-wide text-text-tertiary">
+              <span className="text-fs-caption font-bold tracking-wide text-text-tertiary">
                 Geschätzte Zeit Aufwand
               </span>
               <div className="flex items-center gap-1.5">
-                <select
+                <PortalSelect
                   value={nachtragHours}
                   onChange={(e) => setNachtragHours(Number(e.target.value))}
                   aria-label="Stunden"
-                  className="portal-input min-w-0 flex-1 rounded-xl border border-border-default px-2 py-2.5"
+                  className="portal-input min-w-0 flex-1 rounded-field border border-border-default px-2 py-2.5"
                 >
                   {Array.from({ length: 49 }, (_, h) => (
                     <option key={h} value={h}>
                       {String(h).padStart(2, "0")}
                     </option>
                   ))}
-                </select>
-                <span className="text-[14px] font-semibold text-text-tertiary">
+                </PortalSelect>
+                <span className="text-fs-body font-semibold text-text-tertiary">
                   :
                 </span>
-                <select
+                <PortalSelect
                   value={nachtragMins}
                   onChange={(e) => setNachtragMins(Number(e.target.value))}
                   aria-label="Minuten"
-                  className="portal-input min-w-0 flex-1 rounded-xl border border-border-default px-2 py-2.5"
+                  className="portal-input min-w-0 flex-1 rounded-field border border-border-default px-2 py-2.5"
                 >
                   {Array.from({ length: 60 }, (_, m) => (
                     <option key={m} value={m}>
                       {String(m).padStart(2, "0")}
                     </option>
                   ))}
-                </select>
+                </PortalSelect>
               </div>
             </div>
           </div>
         </div>
         <div className="mt-5">
-          <button
-            type="button"
-            className="portal-action-btn portal-action-btn--primary portal-action-btn--block"
+          <PortalButton
+            variant="primary"
+            block
             disabled={
               submitting ||
               nachtragTitel.trim().length < 4 ||
@@ -1638,7 +1669,7 @@ export function PartnerPositionLebenszyklusList({
             onClick={() => submitNachtrag()}
           >
             {submitting ? "Senden…" : "Zur Prüfung"}
-          </button>
+          </PortalButton>
         </div>
       </PortalModalShell>
     </div>

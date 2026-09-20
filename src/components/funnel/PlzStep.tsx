@@ -8,7 +8,8 @@ import {
   getZeitraumOptions,
   needsZeitraumSelection,
 } from "@/lib/funnel/config";
-import { BwIcon } from "@/components/ui/BwIcon";
+import { PortalIcon } from "@/components/portal/PortalIcon";
+import { MockIconSvg } from "@/components/shared/mock-icon-svgs";
 import type { Situation } from "@/lib/funnel/types";
 
 export interface PlzStepProps {
@@ -84,7 +85,7 @@ export function PlzStep({
         {isAusserhalb && (
           <div className="plz-ausserhalb-box">
             <div className="plz-ausserhalb-icon" aria-hidden>
-              <svg
+              <MockIconSvg
                 width="28"
                 height="28"
                 viewBox="0 0 24 24"
@@ -105,7 +106,7 @@ export function PlzStep({
                   stroke="currentColor"
                   strokeWidth="1.75"
                 />
-              </svg>
+              </MockIconSvg>
             </div>
             <div className="plz-ausserhalb-text">
               <p className="plz-ausserhalb-head">
@@ -165,7 +166,7 @@ export function PlzStep({
                 >
                   {c.icon ? (
                     <span className="funnel-tile-icon-wrap" aria-hidden>
-                      <BwIcon name={c.icon} size={22} />
+                      <PortalIcon asset={c.icon} size={22} />
                     </span>
                   ) : c.emoji ? (
                     <span className="funnel-tile-emoji" aria-hidden>

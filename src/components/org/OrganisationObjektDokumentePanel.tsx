@@ -1,7 +1,8 @@
 "use client";
 
-import { ChevronDown } from "lucide-react";
+import { PortalIcon } from "@/components/portal/PortalIcon";
 import { useEffect, useMemo, useState } from "react";
+import { PortalButton } from "@/components/portal/PortalButton";
 
 import { DokumenteTabelle } from "@/components/shared/DokumenteTabelle";
 import { PortalInboxEmpty } from "@/components/shared/PortalEmptyState";
@@ -135,10 +136,11 @@ export function OrganisationObjektDokumentePanel({
           return (
             <section
               key={g.leadId}
-              className="overflow-hidden rounded-xl border border-border-default bg-white shadow-[0_1px_0_rgba(0,0,0,0.03)]"
+              className="overflow-hidden rounded-sheet border border-border-default bg-white shadow-[0_1px_0_rgba(0,0,0,0.03)]"
             >
               <div className="flex items-stretch gap-1">
-                <button
+                <PortalButton
+                  variant="ghost"
                   type="button"
                   onClick={() =>
                     setOpenId((prev) => (prev === g.leadId ? null : g.leadId))
@@ -147,11 +149,11 @@ export function OrganisationObjektDokumentePanel({
                   aria-expanded={open}
                 >
                   <div className="min-w-0 flex-1">
-                    <p className="truncate text-[13.5px] font-semibold text-text-primary">
+                    <p className="truncate text-fs-body font-semibold text-text-primary">
                       {g.title}
                     </p>
                     <p
-                      className="mt-0.5 truncate text-[12.5px]"
+                      className="mt-0.5 truncate text-fs-meta"
                       style={{ color: PORTAL_VAR.sub }}
                     >
                       {g.subtitle}
@@ -160,22 +162,20 @@ export function OrganisationObjektDokumentePanel({
                       {g.dokumente.length === 1 ? "Datei" : "Dateien"}
                     </p>
                   </div>
-                  <ChevronDown
-                    className={cn(
+                  <PortalIcon n="chevron-down" ctx="default" className={cn(
                       "h-5 w-5 shrink-0 text-text-tertiary transition-transform",
                       open && "rotate-180"
-                    )}
-                    aria-hidden
-                  />
-                </button>
+                    )} aria-hidden />
+                </PortalButton>
                 {onOpenVorgang ? (
-                  <button
+                  <PortalButton
+                    variant="ghost"
                     type="button"
                     onClick={() => onOpenVorgang(g.leadId)}
-                    className="shrink-0 self-center px-3 text-[12px] font-semibold text-accent hover:underline"
+                    className="shrink-0 self-center px-3 text-fs-caption font-semibold text-accent hover:underline"
                   >
                     Vorgang
-                  </button>
+                  </PortalButton>
                 ) : null}
               </div>
               {open ? (

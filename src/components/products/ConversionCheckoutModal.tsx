@@ -1,7 +1,7 @@
 "use client";
 
+import { PortalIcon } from "@/components/portal/PortalIcon";
 import { useEffect, useMemo, useRef, type ReactNode } from "react";
-import { X } from "lucide-react";
 
 import {
   formatProduktPreisRange,
@@ -123,7 +123,7 @@ export function ConversionCheckoutModal({
             onClick={onClose}
             aria-label="Schließen"
           >
-            <X size={20} />
+            <PortalIcon n="x" ctx="default" size={20} />
           </button>
         </header>
 

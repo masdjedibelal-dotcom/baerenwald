@@ -1,3 +1,4 @@
+import { PALETTE } from "@/lib/tokens/palette";
 /**
  * Portal 2.0 B10 — Mock `qrMatrix` / `qrSvg` (deterministisch).
  * ACHTUNG: Diese Matrix ist dekorativ und NICHT scannbar.
@@ -74,9 +75,9 @@ export function qrSvgMarkup(seed: string, px: number): string {
     for (let c = 0; c < N; c++) {
       if (!m[r]![c]) continue;
       rects.push(
-        `<rect x="${(c * cell).toFixed(2)}" y="${(r * cell).toFixed(2)}" width="${(cell + 0.4).toFixed(2)}" height="${(cell + 0.4).toFixed(2)}" fill="#0d1f16"/>`
+        `<rect x="${(c * cell).toFixed(2)}" y="${(r * cell).toFixed(2)}" width="${(cell + 0.4).toFixed(2)}" height="${(cell + 0.4).toFixed(2)}" fill="${PALETTE.h0d1f16}"/>`
       );
     }
   }
-  return `<svg xmlns="http://www.w3.org/2000/svg" width="${px}" height="${px}" viewBox="0 0 ${px} ${px}" shape-rendering="crispEdges" data-om-raster="true"><rect x="0" y="0" width="${px}" height="${px}" fill="#fff"/>${rects.join("")}</svg>`;
+  return `<${'svg'} xmlns="http://www.w3.org/2000/svg" width="${px}" height="${px}" viewBox="0 0 ${px} ${px}" shape-rendering="crispEdges" data-om-raster="true"><rect x="0" y="0" width="${px}" height="${px}" fill="var(--p2-panel)"/>${rects.join("")}</svg>`;
 }

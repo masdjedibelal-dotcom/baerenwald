@@ -1,3 +1,4 @@
+import { logDbError } from '@/lib/errors/log-db-error'
 import { supabaseAdmin } from "@/lib/supabase";
 import { PARTNER_AUTH_COPY } from "@/lib/partner/partner-auth-copy";
 import { canonicalBaerenwaldPrimaryStaffEmail } from "@/lib/auth/baerenwald-primary-staff";
@@ -38,6 +39,7 @@ export async function isHandwerkerPortalGesperrt(opts: {
       .select("id, ist_portal_gesperrt")
       .eq("id", handwerkerId)
       .maybeSingle();
+    if (error) logDbError('lib/partner/handwerker-portal-gesperrt:handwerker', error)
     if (error) {
       if (isMissingPortalGesperrtColumn(error)) return false;
       throw error;
@@ -53,6 +55,7 @@ export async function isHandwerkerPortalGesperrt(opts: {
       .eq("ist_portal_gesperrt", true)
       .limit(1)
       .maybeSingle();
+    if (error) logDbError('lib/partner/handwerker-portal-gesperrt:handwerker', error)
     if (error) {
       if (isMissingPortalGesperrtColumn(error)) return false;
       throw error;

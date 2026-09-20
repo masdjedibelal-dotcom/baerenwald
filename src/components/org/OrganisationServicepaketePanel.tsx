@@ -1,16 +1,7 @@
 "use client";
 
-import {
-  CalendarCheck2,
-  ClipboardList,
-  Eye,
-  Flower2,
-  Shield,
-  Snowflake,
-  Sparkles,
-  Wrench,
-} from "lucide-react";
 
+import { PortalIcon } from "@/components/portal/PortalIcon";
 import { PORTAL_VAR } from "@/lib/portal2/tokens";
 
 const MODULES = [
@@ -18,25 +9,25 @@ const MODULES = [
     id: "hausmeister",
     label: "Hausmeister",
     hint: "Objektbegehung, Kleinstreparaturen, Meldungen vor Ort",
-    Icon: Wrench,
+    icon: "wrench",
   },
   {
     id: "reinigung",
     label: "Reinigung",
     hint: "Treppenhaus, Gemeinschaftsflächen, dokumentiertes Putzprotokoll",
-    Icon: Sparkles,
+    icon: "sparkles",
   },
   {
     id: "garten",
     label: "Gartenpflege",
     hint: "Außenanlage, Schnitt, saisonale Pflege",
-    Icon: Flower2,
+    icon: "flower",
   },
   {
     id: "winter",
     label: "Winterdienst",
     hint: "Räumen, Streuen, Nachweis je Einsatztag",
-    Icon: Snowflake,
+    icon: "snowflake",
   },
 ] as const;
 
@@ -45,19 +36,19 @@ const STEPS = [
     n: "01",
     title: "Module buchen",
     body: "Hausmeister, Reinigung, Gartenpflege und Winterdienst einzeln fürs Objekt zuschalten — wie im Katalog, ohne Paketzwang.",
-    Icon: ClipboardList,
+    icon: "clipboard-list",
   },
   {
     n: "02",
     title: "Routinen abarbeiten",
     body: "Tägliche oder wöchentliche Checklisten auf der Startseite. Vorlagen nutzen, anpassen, Punkt für Punkt erledigen.",
-    Icon: CalendarCheck2,
+    icon: "calendar-check",
   },
   {
     n: "03",
     title: "Protokoll für alle",
     body: "Erledigte Checklisten als Protokoll am Objekt — einsehbar für Verwaltung, Mieter und Eigentümer.",
-    Icon: Eye,
+    icon: "eye",
   },
 ] as const;
 
@@ -74,10 +65,10 @@ export function OrganisationServicepaketePanel() {
             Objekt-Services
           </h2>
           <span
-            className="rounded-full px-2.5 py-0.5 text-[11px] font-bold uppercase tracking-wide"
+            className="rounded-pill px-2.5 py-0.5 text-fs-caption font-bold uppercase tracking-wide"
             style={{
-              background: "var(--accent-light, #E7F1E9)",
-              color: "var(--org-primary, var(--accent, #2E7D52))",
+              background: "var(--accent-light)",
+              color: "var(--org-primary, var(--accent))",
             }}
           >
             In Kürze
@@ -98,16 +89,16 @@ export function OrganisationServicepaketePanel() {
           >
             <div className="flex items-center gap-3">
               <span
-                className="grid h-11 w-11 place-items-center rounded-xl"
+                className="grid h-11 w-11 place-items-center rounded-sheet"
                 style={{
-                  background: "var(--accent-light, #E7F1E9)",
-                  color: "var(--org-primary, var(--accent, #2E7D52))",
+                  background: "var(--accent-light)",
+                  color: "var(--org-primary, var(--accent))",
                 }}
               >
-                <s.Icon className="h-5 w-5" aria-hidden />
+                <PortalIcon n={s.icon} ctx="default" className="h-5 w-5" />
               </span>
               <span
-                className="text-[12px] font-bold tabular-nums"
+                className="text-fs-caption font-bold tabular-nums"
                 style={{ color: PORTAL_VAR.faint }}
               >
                 Schritt {s.n}
@@ -127,16 +118,16 @@ export function OrganisationServicepaketePanel() {
           {MODULES.map((m) => (
             <li
               key={m.id}
-              className="flex items-start gap-3 rounded-2xl border border-border-default bg-white p-4"
+              className="flex items-start gap-3 rounded-sheet border border-border-default bg-white p-4"
             >
               <span
-                className="grid h-10 w-10 shrink-0 place-items-center rounded-xl"
+                className="grid h-10 w-10 shrink-0 place-items-center rounded-sheet"
                 style={{
-                  background: "var(--accent-light, #E7F1E9)",
-                  color: "var(--org-primary, var(--accent, #2E7D52))",
+                  background: "var(--accent-light)",
+                  color: "var(--org-primary, var(--accent))",
                 }}
               >
-                <m.Icon className="h-5 w-5" aria-hidden />
+                <PortalIcon n={m.icon} ctx="default" className="h-5 w-5" />
               </span>
               <div className="min-w-0">
                 <p className="font-semibold text-text-primary">{m.label}</p>
@@ -150,17 +141,13 @@ export function OrganisationServicepaketePanel() {
       </div>
 
       <div
-        className="flex items-start gap-3 rounded-2xl border px-4 py-3.5"
+        className="flex items-start gap-3 rounded-sheet border px-4 py-3.5"
         style={{
-          borderColor: "var(--border-default, #e3e6ea)",
-          background: "var(--muted, #f6f7f8)",
+          borderColor: "var(--border-default)",
+          background: "var(--muted)",
         }}
       >
-        <Shield
-          className="mt-0.5 h-5 w-5 shrink-0"
-          style={{ color: "var(--org-primary, var(--accent, #2E7D52))" }}
-          aria-hidden
-        />
+        <PortalIcon n="shield-check" ctx="default" className="mt-0.5 h-5 w-5 shrink-0" style={{ color: "var(--org-primary, var(--accent))" }} aria-hidden />
         <p className="portal-text-body leading-relaxed text-text-secondary">
           Buchung und Live-Routinen folgen in einem nächsten Release. Bestehende
           Service-Anfragen aus der Vergangenheit bleiben in Ihren Vorgängen

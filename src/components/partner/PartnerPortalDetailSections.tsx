@@ -3,8 +3,8 @@
 import {
   PartnerDetailKeyValues,
   PartnerDetailLeistungenList,
-  PartnerDetailSection,
 } from "@/components/partner/PartnerDetailUi";
+import { PortalDetailCard } from "@/components/shared/PortalDetailCard";
 import {
   PortalDetailLeistungenPreisListe,
 } from "@/components/shared/PortalDetailUi";
@@ -40,7 +40,7 @@ export function PartnerPortalDetailSections({
   return (
     <>
       {visible.map((section) => (
-        <PartnerDetailSection key={section.heading} title={section.heading}>
+        <PortalDetailCard key={section.heading} title={section.heading}>
           {section.rows && section.rows.length > 0 ? (
             <PartnerDetailKeyValues
               rows={section.rows.map((row) => ({
@@ -62,18 +62,18 @@ export function PartnerPortalDetailSections({
               {section.text}
             </p>
           ) : null}
-        </PartnerDetailSection>
+        </PortalDetailCard>
       ))}
 
       {leistungen && leistungen.length > 0 ? (
-        <PartnerDetailSection title="Leistungen">
+        <PortalDetailCard title="Leistungen">
           <PortalDetailLeistungenPreisListe
             items={leistungen}
             gesamtBrutto={gesamtBrutto}
             gesamtLabel={gesamtLabel ?? "Gesamtpreis Brutto inkl. MwSt."}
             hidePreise={hidePreise}
           />
-        </PartnerDetailSection>
+        </PortalDetailCard>
       ) : null}
     </>
   );

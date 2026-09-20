@@ -34,7 +34,7 @@ export function resolveKundeDashboardActions(
             id: "ablehnen",
             label: "Ablehnen",
             variant: "secondary",
-            mode: "inline",
+            mode: "open",
           },
           {
             id: "annehmen",

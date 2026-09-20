@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
+import { PortalCheckbox } from "@/components/shared/PortalFormControls";
 import { confirmPartnerProjektvertrag } from "@/app/actions/partner-vertrag";
 import { PartnerPflichtenCard } from "@/components/partner/PartnerPflichtenCard";
 import {
@@ -11,6 +12,8 @@ import {
 } from "@/components/partner/PartnerDetailUi";
 import { partnerPortalToast } from "@/lib/shared/portal-toast";
 import type { PartnerAnfrageItem } from "@/lib/partner/get-partner-data";
+import { PortalButton } from "@/components/portal/PortalButton";
+import { cn } from "@/lib/utils";
 
 export function PartnerAngebotAuftragAnnehmen({
   item,
@@ -26,11 +29,19 @@ export function PartnerAngebotAuftragAnnehmen({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [confirmOpen, setConfirmOpen] = useState(false);
+  const [highlight, setHighlight] = useState(false);
 
   const auftragId = item.auftrag_id?.trim();
   if (!auftragId) return null;
 
   const kannBestaetigen = gelesen && verbindlich;
+
+  function focusAck() {
+    const el = document.getElementById("partner-pflichten-ack");
+    el?.scrollIntoView({ behavior: "smooth", block: "center" });
+    setHighlight(true);
+    window.setTimeout(() => setHighlight(false), 2200);
+  }
 
   async function onConfirm() {
     if (!auftragId) return;
@@ -55,9 +66,14 @@ export function PartnerAngebotAuftragAnnehmen({
     return (
       <>
         <div className="space-y-3">
-          <label className="flex cursor-pointer items-start gap-3">
-            <input
-              type="checkbox"
+          <label
+            id={!gelesen ? "partner-pflichten-ack" : undefined}
+            className={cn(
+              "flex cursor-pointer items-start gap-3 rounded-field transition-[box-shadow,background-color]",
+              highlight && !gelesen && "partner-pflichten-ack--pulse"
+            )}
+          >
+            <PortalCheckbox
               checked={gelesen}
               onChange={(e) => setGelesen(e.target.checked)}
               className="mt-1"
@@ -66,9 +82,14 @@ export function PartnerAngebotAuftragAnnehmen({
               Ich habe den Projekt-Nachunternehmervertrag gelesen.
             </span>
           </label>
-          <label className="flex cursor-pointer items-start gap-3">
-            <input
-              type="checkbox"
+          <label
+            id={gelesen && !verbindlich ? "partner-pflichten-ack" : undefined}
+            className={cn(
+              "flex cursor-pointer items-start gap-3 rounded-field transition-[box-shadow,background-color]",
+              highlight && gelesen && !verbindlich && "partner-pflichten-ack--pulse"
+            )}
+          >
+            <PortalCheckbox
               checked={verbindlich}
               onChange={(e) => setVerbindlich(e.target.checked)}
               className="mt-1"
@@ -79,14 +100,21 @@ export function PartnerAngebotAuftragAnnehmen({
           </label>
           {error ? <PartnerDetailError message={error} /> : null}
         </div>
-        <button
-          type="button"
-          disabled={!kannBestaetigen || loading}
-          onClick={() => setConfirmOpen(true)}
-          className="btn-pill-primary portal-btn w-full sm:w-auto"
+        <PortalButton
+          variant="secondary"
+          action={false}
+          disabled={loading}
+          onClick={() => {
+            if (!kannBestaetigen) {
+              focusAck();
+              return;
+            }
+            setConfirmOpen(true);
+          }}
+          className="btn-pill-primary w-full sm:w-auto"
         >
           {loading ? "Wird gesendet…" : "Auftrag annehmen"}
-        </button>
+        </PortalButton>
         <PartnerConfirmDialog
           open={confirmOpen}
           title="Auftrag annehmen?"

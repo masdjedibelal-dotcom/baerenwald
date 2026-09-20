@@ -1,7 +1,7 @@
 import { cn } from "@/lib/utils";
 
 /**
- * Einheitlicher Zähler (Glocke, Nav, Listen, Tabs) — Mock-Badge `#D93B3B`.
+ * Einheitlicher Zähler (Glocke, Nav, Listen, Tabs) — Mock-Badge `p2-danger`.
  * `corner` = oben rechts am Icon; sonst inline neben dem Label.
  */
 export function PortalCountBadge({

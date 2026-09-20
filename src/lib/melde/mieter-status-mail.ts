@@ -1,3 +1,4 @@
+import { logDbError } from '@/lib/errors/log-db-error'
 import { notifyHvMieterEvent } from "@/lib/org/notify-hv-mieter-event";
 import {
   MELDE_NOTIF_COPY,
@@ -16,14 +17,14 @@ const MAIL_STUFEN = new Set<MieterStatusStufe>(["beauftragt", "erledigt"]);
 
 /** Statuswechsel Beauftragt/Erledigt — HV + Portal-Glocke für verknüpften Kunden. */
 export async function notifyMieterStatusChange(leadId: string): Promise<void> {
-  const { data: lead } = await supabaseAdmin
+  const {data: lead, error: __dbErr266_1} = await supabaseAdmin
     .from("leads")
     .select(
       "id, melder_name, hv_meldung_status, vorgang_phase, org_freigabe_status, kunde_objekt_id, auftraggeber_kunde_id"
     )
     .eq("id", leadId)
     .maybeSingle();
-
+  if (__dbErr266_1) logDbError('lib/melde/mieter-status-mail:leads', __dbErr266_1)
   if (!lead) return;
 
   const stufe = resolveMieterStatusStufe(lead);
@@ -83,9 +84,10 @@ export async function setLeadVorgangPhase(
   leadId: string,
   phase: string
 ): Promise<void> {
-  await supabaseAdmin
+  const { error: __dbErr267_2 } = await supabaseAdmin
     .from("leads")
     .update({ vorgang_phase: phase, updated_at: new Date().toISOString() })
     .eq("id", leadId);
+  if (__dbErr267_2) logDbError('lib/melde/mieter-status-mail:leads', __dbErr267_2)
   await notifyMieterStatusChange(leadId);
 }

@@ -1,10 +1,10 @@
 "use client";
 
-import Link from "next/link";
 import { motion, useInView } from "framer-motion";
 import { useRef } from "react";
 
-import { BwIcon } from "@/components/ui/BwIcon";
+import { SiteIcon } from "@/components/ui/SiteIcon";
+import { CTAButton } from "@/components/ui/CTAButton";
 import { HOME_HOW_STEPS } from "@/lib/home-how-steps";
 
 function HowStepCard({
@@ -29,7 +29,7 @@ function HowStepCard({
         {step.step}
       </span>
       <span className="how-step-card-icon" aria-hidden>
-        <BwIcon name={step.icon} size={28} />
+        <SiteIcon asset={step.icon} size={28} />
       </span>
       <h3 className="how-step-card-title">{step.title}</h3>
       <p className="how-step-card-desc">{step.desc}</p>
@@ -55,9 +55,12 @@ export function HowTimelineMotion() {
         </div>
 
         <div className="how-tl-cta-wrap fade-up d2">
-          <Link href="/kontakt" className="how-tl-cta-btn">
-            Kontakt aufnehmen →
-          </Link>
+          <CTAButton
+            bare
+            href="/kontakt"
+            label="Kontakt aufnehmen →"
+            className="how-tl-cta-action"
+          />
         </div>
       </div>
     </section>

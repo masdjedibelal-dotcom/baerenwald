@@ -413,11 +413,11 @@ export function stammDokumentStatusPillClass(
   status: PartnerComplianceItemStatus
 ): string {
   if (status === "erledigt" || status === "ablauf_warnung") {
-    return "tag bg-emerald-100 text-emerald-700";
+    return "tag bg-p2-primary-soft text-p2-primary";
   }
-  if (status === "in_pruefung") return "tag bg-amber-100 text-amber-800";
+  if (status === "in_pruefung") return "tag bg-warning-bg text-warning-text";
   if (status === "abgelehnt" || status === "abgelaufen") {
-    return "tag bg-red-100 text-red-700";
+    return "tag bg-p2-danger-soft text-p2-danger";
   }
   return "tag bg-muted text-text-secondary";
 }

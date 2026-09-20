@@ -1,6 +1,6 @@
 "use client";
 
-import { MockIcon } from "@/components/shared/MockIcon";
+import { PortalIcon } from "@/components/portal/PortalIcon";
 import {
   PORTAL_NAV_ICONS,
   type MockIconCtx,
@@ -28,5 +28,5 @@ export function PortalNavIcon({
       : active
         ? "nav-active"
         : "nav";
-  return <MockIcon n={n} ctx={ctx} size={size} />;
+  return <PortalIcon n={n} ctx={ctx} size={size} />;
 }

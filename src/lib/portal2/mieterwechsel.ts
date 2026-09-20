@@ -1,3 +1,4 @@
+import { PALETTE } from "@/lib/tokens/palette";
 /**
  * Turn-Paket „Mieterwechsel“ — Welle-3-Preise (netto München).
  * Keine neuen Preise: baut auf `katalog_produkte` / Seed auf.
@@ -83,8 +84,8 @@ export const MIETERWECHSEL_STUFEN: MieterwechselStufeCard[] = [
     id: 1,
     name: "Übergabefertig",
     produktSlug: "uebergabe-stufe-1",
-    tint: "#E8EEF6",
-    accent: "#2E7D52",
+    tint: PALETTE.he8eef6,
+    accent: "var(--p2-primary)",
     ic: "🔑",
     desc: "Endabnahme, Kleinreparaturen, Silikon, Feinreinigung und digitales Übergabeprotokoll — Fixpreis nach Wohnungsgröße.",
     feats: [
@@ -101,8 +102,8 @@ export const MIETERWECHSEL_STUFEN: MieterwechselStufeCard[] = [
     id: 2,
     name: "Neuvermietungsfertig",
     produktSlug: "uebergabe-stufe-2",
-    tint: "#DDEEDF",
-    accent: "#1F6A3F",
+    tint: "var(--p2-status-green-bg)",
+    accent: "var(--p2-status-green)",
     ic: "🏠",
     desc: "Alles aus Stufe 1 plus Malerarbeiten komplett, Bohrlöcher und Kleinteile — mit m²-Automatik als Fixpreis.",
     feats: [
@@ -118,8 +119,8 @@ export const MIETERWECHSEL_STUFEN: MieterwechselStufeCard[] = [
     id: 3,
     name: "Renoviert",
     produktSlug: "uebergabe-stufe-3",
-    tint: "#F5F0E8",
-    accent: "#8B6914",
+    tint: PALETTE.hf5f0e8,
+    accent: PALETTE.h8b6914,
     ic: "✨",
     desc: "Stufe 2 plus Module nach Bedarf — Boden, Bad-Auffrischung, Elektro-Sichtteile. Live-Indikation, verbindlich per Angebot.",
     feats: [

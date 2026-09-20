@@ -16,7 +16,7 @@ import {
 } from "@/components/shared/PortalInviteMailtoSheet";
 import { PortalInboxEmpty } from "@/components/shared/PortalEmptyState";
 import { PortalModalShell } from "@/components/shared/PortalModalShell";
-import { MockIcon } from "@/components/shared/MockIcon";
+import { PortalIcon } from "@/components/portal/PortalIcon";
 import {
   PortalListeEyebrow,
   PortalListeTitle,
@@ -51,6 +51,8 @@ import {
 import { orgPortalToast, portalToastError } from "@/lib/shared/portal-toast";
 import { usePortalBusy } from "@/components/shared/PortalBusyContext";
 import { portalEinladungHvFromKunde } from "@/lib/portal2/portal-einladungen";
+import { PortalButton } from "@/components/portal/PortalButton";
+import { TOAST } from '@/lib/portal-copy'
 
 type Props = {
   objekte: OrganisationObjekt[];
@@ -187,7 +189,7 @@ export function OrganisationObjektePanel({
       })
     );
     if (ok) orgPortalToast.linkKopiert();
-    else portalToastError("Kopieren fehlgeschlagen", "Bitte den Link manuell kopieren.");
+    else portalToastError(TOAST.kopieren_fehlgeschlagen, "Bitte den Link manuell kopieren.");
   };
 
   const activeObjekt =
@@ -276,7 +278,7 @@ export function OrganisationObjektePanel({
         inviteUrl?: string | null;
       };
       if (!hmRes.ok) {
-        portalToastError("Hausmeister nicht gespeichert", hmJson.error);
+        portalToastError(TOAST.hausmeister_nicht_gespeichert, hmJson.error);
       } else if (hmJson.inviteMailto) {
         setInviteMailtoReady({
           mailto: hmJson.inviteMailto,
@@ -293,7 +295,7 @@ export function OrganisationObjektePanel({
 
   const requestDeleteObjekt = (o: OrganisationObjekt) => {
     if (objektHasActiveVorgaenge(aktiveById[o.id] ?? 0)) {
-      portalToastError("Löschen nicht möglich", OBJ_DELETE_BLOCKED);
+      portalToastError(TOAST.loeschen_nicht_moeglich, OBJ_DELETE_BLOCKED);
       return;
     }
     setConfirmAction({ kind: "delete", objekt: o });
@@ -309,7 +311,7 @@ export function OrganisationObjektePanel({
         );
         const json = (await res.json()) as { error?: string };
         if (!res.ok) {
-          portalToastError("Löschen fehlgeschlagen", json.error);
+          portalToastError(TOAST.loeschen_fehlgeschlagen, json.error);
           return;
         }
         orgPortalToast.objektGeloescht();
@@ -351,7 +353,7 @@ export function OrganisationObjektePanel({
           objekt?: { id?: string };
         };
         if (!res.ok) {
-          portalToastError("Kopieren fehlgeschlagen", json.error);
+          portalToastError(TOAST.kopieren_fehlgeschlagen, json.error);
           return;
         }
         orgPortalToast.objektAngelegt();
@@ -390,8 +392,7 @@ export function OrganisationObjektePanel({
           if (!res.ok) blocked += 1;
         }
         if (blocked > 0) {
-          portalToastError(
-            "Teilweise nicht gelöscht",
+          portalToastError(TOAST.teilweise_nicht_geloescht,
             `${blocked} Objekt(e) hatten offene Vorgänge oder einen Fehler.`
           );
         } else {
@@ -489,13 +490,14 @@ export function OrganisationObjektePanel({
           <p className="portal-text-body text-text-secondary">
             Objekt wird geladen…
           </p>
-          <button
+          <PortalButton
+            variant="ghost"
             type="button"
-            className="text-[13px] font-semibold text-accent"
+            className="text-fs-meta font-semibold text-accent"
             onClick={() => setMode({ kind: "list" })}
           >
             ‹ Zurück zur Liste
-          </button>
+          </PortalButton>
         </div>
       );
     }
@@ -538,7 +540,8 @@ export function OrganisationObjektePanel({
           <PortalListeEyebrow>Verwaltung</PortalListeEyebrow>
           <PortalListeTitle>Objekte</PortalListeTitle>
         </div>
-        <button
+        <PortalButton
+          variant="ghost"
           type="button"
           className="portal-objekt-create"
           onClick={() =>
@@ -548,31 +551,30 @@ export function OrganisationObjektePanel({
             })
           }
         >
-          <MockIcon n="plus" ctx="sidebar" size={16} />
+          <PortalIcon n="plus" ctx="sidebar" size={16} />
           Objekt
-        </button>
+        </PortalButton>
       </div>
 
       {selected.length > 0 ? (
         <div className="flex flex-wrap items-center gap-2 rounded-[10px] border border-accent bg-accent-light px-3.5 py-2.5">
-          <span className="text-[13px] font-bold text-accent">
+          <span className="text-fs-meta font-bold text-accent">
             {selected.length} ausgewählt
           </span>
-          <button
+          <PortalButton variant="danger" action={false} compact
             type="button"
             disabled={busy}
-            className="btn-pill-outline portal-btn-compact portal-danger ml-auto"
+            className="portal-danger ml-auto"
             onClick={() => requestBulkDelete()}
           >
             Löschen
-          </button>
-          <button
+          </PortalButton>
+          <PortalButton variant="secondary" action={false} compact
             type="button"
-            className="btn-pill-outline portal-btn-compact"
             onClick={() => setSelected([])}
           >
             Auswahl aufheben
-          </button>
+          </PortalButton>
         </div>
       ) : null}
 

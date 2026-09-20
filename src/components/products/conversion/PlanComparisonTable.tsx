@@ -1,6 +1,6 @@
 "use client";
 
-import { Check, Info, Minus } from "lucide-react";
+import { PortalIcon } from "@/components/portal/PortalIcon";
 import { Fragment, useCallback, useEffect, useRef, useState } from "react";
 
 import { PlanLeistungenHinweis } from "@/components/products/conversion/PlanLeistungenHinweis";
@@ -42,7 +42,7 @@ function FeatureInfoButton({
       aria-controls={`plan-feature-info-${rowId}`}
       aria-label={`Mehr zu ${label}`}
     >
-      <Info size={14} strokeWidth={2.25} aria-hidden />
+      <PortalIcon n="info-circle" ctx="default" size={14} aria-hidden />
     </button>
   );
 }
@@ -90,14 +90,14 @@ function FeatureCell({ value }: { value: ComparisonFeatureValue }) {
   if (value === "yes") {
     return (
       <span className="plan-comparison-icon plan-comparison-icon--yes" aria-hidden>
-        <Check size={18} strokeWidth={2.5} />
+        <PortalIcon n="check" ctx="default" size={18} />
       </span>
     );
   }
   if (value === "no") {
     return (
       <span className="plan-comparison-icon plan-comparison-icon--no" aria-hidden>
-        <Minus size={18} strokeWidth={2} />
+        <PortalIcon n="minus" ctx="default" size={18} />
       </span>
     );
   }

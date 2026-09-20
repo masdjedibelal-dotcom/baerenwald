@@ -53,7 +53,7 @@ export const PORTAL_ONBOARDING_SLIDES: OnboardingSlide[] = [
     body: "Termine, Bautagebuch-Einträge und Dokumente — so bleiben Sie informiert, auch ohne Vor-Ort-Termin.",
     highlights: [
       "Fortschritt Ihres Auftrags live verfolgen",
-      "Bautagebuch mit Fotos vom Handwerker-Team lesen",
+      "Bautagebuch mit Fotos vom Partner-Team lesen",
       "Rechnungen und Unterlagen jederzeit herunterladen",
     ],
   },

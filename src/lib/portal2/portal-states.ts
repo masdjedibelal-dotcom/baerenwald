@@ -1,3 +1,4 @@
+import { PALETTE } from "@/lib/tokens/palette";
 /**
  * Portal 2.0 Fehler-/Leer-Zustände — Mock `screenState` Texte 1:1
  * Quelle: Baerenwald Portale (5).html
@@ -72,8 +73,8 @@ export function resolvePortalStateCopy(
       return {
         kind,
         glyph: "▤",
-        iconBg: "var(--p2-primary-soft, #E7F1E9)",
-        iconFg: "var(--org-primary, var(--p2-primary, #2E7D52))",
+        iconBg: "var(--p2-primary-soft)",
+        iconFg: "var(--org-primary, var(--p2-primary))",
         title: PORTAL_EMPTY_TITLE,
         subtitle: portalEmptySubtitle(role),
         primaryLabel: canCreate ? `+ ${opts!.createLabel}` : null,
@@ -84,8 +85,8 @@ export function resolvePortalStateCopy(
       return {
         kind,
         glyph: "🔍",
-        iconBg: "#eef0f2",
-        iconFg: "var(--p2-faint, #6A746F)",
+        iconBg: PALETTE.heef0f2,
+        iconFg: "var(--p2-faint)",
         title: "Seite nicht gefunden",
         subtitle:
           "Der aufgerufene Vorgang existiert nicht mehr oder wurde verschoben.",
@@ -96,8 +97,8 @@ export function resolvePortalStateCopy(
       return {
         kind,
         glyph: "🔒",
-        iconBg: "#FBF1D6",
-        iconFg: "#8A5A06",
+        iconBg: "var(--p2-status-sand-bg)",
+        iconFg: "var(--p2-sand-text)",
         title: "Kein Zugriff",
         subtitle:
           "Für diesen Bereich fehlt Ihnen die Berechtigung. Wenden Sie sich an Ihre Verwaltung oder Bärenwald.",
@@ -108,8 +109,8 @@ export function resolvePortalStateCopy(
       return {
         kind,
         glyph: "⚠",
-        iconBg: "var(--p2-danger-soft, #FCE3E3)",
-        iconFg: "var(--p2-danger, #A1242A)",
+        iconBg: "var(--p2-danger-soft)",
+        iconFg: "var(--p2-danger)",
         title: "Etwas ist schiefgelaufen",
         subtitle:
           "Wir konnten die Daten nicht laden. Bitte versuchen Sie es in einem Moment erneut.",
@@ -120,8 +121,8 @@ export function resolvePortalStateCopy(
       return {
         kind,
         glyph: "📡",
-        iconBg: "#eef0f2",
-        iconFg: "var(--p2-faint, #6A746F)",
+        iconBg: PALETTE.heef0f2,
+        iconFg: "var(--p2-faint)",
         title: "Keine Verbindung",
         subtitle:
           "Sie sind offline. Prüfen Sie Ihre Internetverbindung — Ihre Eingaben bleiben gespeichert.",

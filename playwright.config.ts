@@ -61,7 +61,7 @@ export default defineConfig({
     },
     {
       name: "hv-spec",
-      testMatch: /tc-\d+.*\.spec\.ts/,
+      testMatch: /(?:tc-\d+|kernjourneys).*\.spec\.ts/,
       grepInvert: /@crm/,
       use: {
         ...devices["Desktop Chrome"],

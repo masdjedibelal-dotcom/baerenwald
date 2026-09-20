@@ -1,3 +1,4 @@
+import { logDbError } from '@/lib/errors/log-db-error'
 import { NextResponse } from "next/server";
 
 import { ensureOrgKennung } from "@/lib/org/ensure-org-kennung";
@@ -63,13 +64,13 @@ async function handleMeldeQrGet(req: Request) {
   let label = orgKennung;
 
   if (objektId) {
-    const { data: objekt } = await supabaseAdmin
+    const {data: objekt, error: __dbErr191_1} = await supabaseAdmin
       .from("kunden_objekte")
       .select("id, titel, melde_slug")
       .eq("id", objektId)
       .eq("kunde_id", org.id)
       .maybeSingle();
-
+    if (__dbErr191_1) logDbError('app/api/org/melde-qr/route:kunden_objekte', __dbErr191_1)
     if (!objekt?.melde_slug) {
       return NextResponse.json(
         { error: "Objekt oder Melde-Link fehlt." },

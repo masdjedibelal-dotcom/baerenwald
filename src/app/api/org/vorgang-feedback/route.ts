@@ -1,3 +1,4 @@
+import { logDbError } from '@/lib/errors/log-db-error'
 import { NextResponse } from "next/server";
 
 import { sendHvMaengelInternMail } from "@/lib/partner/partner-mail";
@@ -47,23 +48,25 @@ export async function POST(req: Request) {
     );
   }
 
-  const { data: lead } = await supabaseAdmin
+  const {data: lead, error: __dbErr222_1} = await supabaseAdmin
     .from("leads")
     .select("id, auftraggeber_kunde_id, vorgang_phase, hv_meldung_status")
     .eq("id", leadId)
     .maybeSingle();
+  if (__dbErr222_1) logDbError('app/api/org/vorgang-feedback/route:leads', __dbErr222_1)
 
   if (!lead || lead.auftraggeber_kunde_id !== session.kunde.id) {
     return NextResponse.json({ error: "Nicht gefunden." }, { status: 404 });
   }
 
-  const { data: auftrag } = await supabaseAdmin
+  const {data: auftrag, error: __dbErr223_2} = await supabaseAdmin
     .from("auftraege")
     .select("id, titel, status, fortschritt")
     .eq("lead_id", leadId)
     .order("created_at", { ascending: false })
     .limit(1)
     .maybeSingle();
+  if (__dbErr223_2) logDbError('app/api/org/vorgang-feedback/route:auftraege', __dbErr223_2)
 
   const { data: positionen } = auftrag
     ? await supabaseAdmin
@@ -82,7 +85,7 @@ export async function POST(req: Request) {
 
   if (!bereit) {
     return NextResponse.json(
-      { error: "Feedback erst nach Handwerker-Abschluss möglich." },
+      { error: "Feedback erst nach Partner-Abschluss möglich." },
       { status: 400 }
     );
   }
@@ -95,6 +98,7 @@ export async function POST(req: Request) {
     sterne: feedbackTyp === "bewertung" ? sterne : null,
     freitext,
   });
+  if (error) logDbError('app/api/org/vorgang-feedback/route:hv_vorgang_feedback', error)
 
   if (error) {
     if (error.code === "23505") {

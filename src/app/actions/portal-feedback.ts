@@ -1,5 +1,6 @@
 "use server";
 
+import { logDbError } from '@/lib/errors/log-db-error'
 import { revalidatePath } from "next/cache";
 
 import { linkPortalKundeToAuthUser } from "@/lib/portal/link-portal-kunde";
@@ -29,11 +30,12 @@ async function assertKundeLead(leadId: string) {
   });
   if (!link.ok) return { ok: false as const, error: link.error };
 
-  const { data: lead } = await supabaseAdmin
+  const {data: lead, error: __dbErr121_1} = await supabaseAdmin
     .from("leads")
     .select("id, kunde_id, vorgang_phase, hv_meldung_status")
     .eq("id", leadId)
     .maybeSingle();
+  if (__dbErr121_1) logDbError('app/actions/portal-feedback:leads', __dbErr121_1)
 
   if (!lead || String(lead.kunde_id) !== link.kundeId) {
     return { ok: false as const, error: "Vorgang nicht gefunden." };
@@ -59,13 +61,14 @@ export async function submitPortalMieterFeedback(input: {
   const auth = await assertKundeLead(leadId);
   if (!auth.ok) return auth;
 
-  const { data: auftrag } = await supabaseAdmin
+  const {data: auftrag, error: __dbErr122_2} = await supabaseAdmin
     .from("auftraege")
     .select("id, status, fortschritt")
     .eq("lead_id", leadId)
     .order("created_at", { ascending: false })
     .limit(1)
     .maybeSingle();
+  if (__dbErr122_2) logDbError('app/actions/portal-feedback:auftraege', __dbErr122_2)
 
   const { data: positionen } = auftrag
     ? await supabaseAdmin
@@ -95,6 +98,7 @@ export async function submitPortalMieterFeedback(input: {
     },
     { onConflict: "lead_id" }
   );
+  if (error) logDbError('app/actions/portal-feedback:mieter_feedback', error)
 
   if (error) {
     console.error("[submitPortalMieterFeedback]", error.message);

@@ -4,11 +4,12 @@ import type { ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
+import { PortalInput, PortalTextarea } from "@/components/shared/PortalFormControls";
 import {
   deletePartnerComplianceDokument,
   uploadPartnerComplianceDokument,
 } from "@/app/actions/partner-compliance";
-import { PartnerDetailSection } from "@/components/partner/PartnerDetailUi";
+import { PortalDetailCard } from "@/components/shared/PortalDetailCard";
 import { FileUploadField } from "@/components/shared/FileUploadField";
 import { PortalDokumentCard } from "@/components/shared/PortalDokumentCard";
 import {
@@ -18,16 +19,17 @@ import {
 } from "@/components/shared/PortalDokumentUi";
 import { PortalConfirmDialog } from "@/components/shared/PortalDetailUi";
 import { PortalModalShell } from "@/components/shared/PortalModalShell";
+import { PortalStatusPill } from "@/components/shared/PortalStatusPill";
 import { usePortalUploadBusy } from "@/components/shared/usePortalUploadBusy";
 import {
   stammDokumentStatusLabel,
-  stammDokumentStatusPillClass,
   EIGENES_STAMM_DOKUMENT_TYP,
   type PartnerComplianceItem,
+  type PartnerComplianceItemStatus,
 } from "@/lib/partner/partner-compliance";
 import type { PartnerRahmenvertrag } from "@/lib/partner/compliance-summary";
 import { partnerPortalToast } from "@/lib/shared/portal-toast";
-import { cn } from "@/lib/utils";
+import type { PortalStatusTone } from "@/lib/shared/portal-status-pill";
 
 function fmtDatum(v?: string | null): string {
   if (!v) return "—";
@@ -36,21 +38,13 @@ function fmtDatum(v?: string | null): string {
   return d.toLocaleDateString("de-DE");
 }
 
-function StatusPill({
-  label,
-  className,
-}: {
-  label: string | null;
-  className: string;
-}) {
-  if (!label) return null;
-  return (
-    <span className={cn("tag inline-flex text-[11px]", className)}>{label}</span>
-  );
-}
-
-function rahmenStatusPillClass(akzeptiert: boolean): string {
-  return akzeptiert ? "bg-emerald-100 text-emerald-700" : "bg-muted text-text-secondary";
+function stammDokumentTone(
+  status: PartnerComplianceItemStatus
+): PortalStatusTone {
+  if (status === "erledigt" || status === "ablauf_warnung") return "fertig";
+  if (status === "in_pruefung") return "warn";
+  if (status === "abgelehnt" || status === "abgelaufen") return "danger";
+  return "neutral";
 }
 
 type UploadDraft = {
@@ -86,7 +80,6 @@ function ComplianceDokumentItem({
     item.dokument?.hochgeladen_am ?? item.dokument?.freigegeben_am
   );
   const statusLabel = stammDokumentStatusLabel(item.status);
-  const statusClass = stammDokumentStatusPillClass(item.status);
   const description =
     item.status === "abgelehnt" && item.dokument?.ablehnung_grund
       ? item.dokument.ablehnung_grund
@@ -118,7 +111,12 @@ function ComplianceDokumentItem({
           <PortalDokumentMetaLine
             datum={datum !== "—" ? datum : null}
             status={
-              <StatusPill label={statusLabel} className={statusClass} />
+              statusLabel ? (
+                <PortalStatusPill
+                  label={statusLabel}
+                  tone={stammDokumentTone(item.status)}
+                />
+              ) : null
             }
           />
         }
@@ -137,9 +135,9 @@ function ComplianceDokumentItem({
       />
       <PortalConfirmDialog
         open={confirmOpen}
-        title="Dokument entfernen?"
-        description={`„${item.bezeichnung}“ wirklich entfernen?`}
-        confirmLabel="Entfernen"
+        title="Dokument löschen?"
+        description={`„${item.bezeichnung}“ wirklich löschen?`}
+        confirmLabel="Löschen"
         confirmVariant="danger"
         loading={loading}
         onConfirm={() => void onDelete()}
@@ -176,10 +174,7 @@ function RahmenvertragDokumentItem({
           datum={datum !== "—" ? datum : null}
           status={
             akzeptiert ? (
-              <StatusPill
-                label="Erledigt"
-                className={rahmenStatusPillClass(true)}
-              />
+              <PortalStatusPill label="Erledigt" tone="fertig" />
             ) : null
           }
         />
@@ -279,7 +274,7 @@ export function PartnerStammDokumenteListe({
   return (
     <>
       {/* Kein Section-Titel — Tab heißt schon „Stammunterlagen“. */}
-      <PartnerDetailSection>
+      <PortalDetailCard>
         <div className="space-y-2.5">
           <RahmenvertragDokumentItem
             rahmenvertrag={rahmenvertrag}
@@ -306,7 +301,7 @@ export function PartnerStammDokumenteListe({
         {footer ? (
           <div className="mt-4 border-t border-border-light pt-4">{footer}</div>
         ) : null}
-      </PartnerDetailSection>
+      </PortalDetailCard>
 
       <PortalModalShell
         open={uploadOpen}
@@ -327,7 +322,7 @@ export function PartnerStammDokumenteListe({
           <span className="portal-text-label normal-case text-text-tertiary">
             Titel
           </span>
-          <input
+          <PortalInput
             className="portal-field w-full"
             value={draft.titel}
             onChange={(e) =>
@@ -341,7 +336,7 @@ export function PartnerStammDokumenteListe({
           <span className="portal-text-label normal-case text-text-tertiary">
             Beschreibung (optional)
           </span>
-          <textarea
+          <PortalTextarea
             className="portal-field w-full min-h-[72px] resize-y"
             value={draft.beschreibung}
             onChange={(e) =>
@@ -363,7 +358,7 @@ export function PartnerStammDokumenteListe({
           }
         />
         {formError ? (
-          <p className="portal-text-meta text-red-700" role="alert">
+          <p className="portal-text-meta text-p2-danger" role="alert">
             {formError}
           </p>
         ) : null}

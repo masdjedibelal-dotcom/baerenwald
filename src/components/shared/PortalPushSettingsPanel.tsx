@@ -13,7 +13,13 @@ import {
   setPushEnabled,
 } from "@/lib/push/client";
 import type { PushPortalScope } from "@/lib/push/types";
-import { portalToastError, portalToastSuccess } from "@/lib/shared/portal-toast";
+import {
+  portalToastError,
+  portalToastSuccess,
+  portalToastSystemError,
+} from "@/lib/shared/portal-toast";
+import { PortalButton } from "@/components/portal/PortalButton";
+import { TOAST } from '@/lib/portal-copy'
 
 type Props = {
   portal: PushPortalScope;
@@ -91,8 +97,10 @@ export function PortalPushSettingsPanel({ portal }: Props) {
         refreshHint();
       });
     } catch (e) {
-      portalToastError(
-        e instanceof Error ? e.message : "Einstellung konnte nicht gespeichert werden."
+      portalToastSystemError(
+        e,
+        "portal-push-settings",
+        "Einstellung konnte nicht gespeichert werden."
       );
       refreshHint();
     } finally {
@@ -110,7 +118,7 @@ export function PortalPushSettingsPanel({ portal }: Props) {
           portalToastError(json.error || "Test fehlgeschlagen.");
           return;
         }
-        portalToastSuccess("Testnachricht gesendet");
+        portalToastSuccess(TOAST.testnachricht_gesendet);
       });
     } finally {
       setBusy(false);
@@ -136,14 +144,14 @@ export function PortalPushSettingsPanel({ portal }: Props) {
       />
 
       {enabled ? (
-        <button
+        <PortalButton variant="secondary" action={false} compact
           type="button"
-          className="btn-pill-outline portal-btn-compact"
+          className="btn-pill-outline"
           disabled={busy}
           onClick={() => void sendTest()}
         >
           Testnachricht senden
-        </button>
+        </PortalButton>
       ) : null}
     </EinstellungenSectionCard>
   );

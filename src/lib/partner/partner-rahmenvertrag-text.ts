@@ -43,4 +43,4 @@ Der Partner sichert den Zugang zu seinem Portal-Konto (starkes Passwort, keine W
 
 ———
 
-Mit der Bestätigung akzeptierst du den Rahmenvertrag inklusive Anlage 1 (AVV) und Anlage 2.`;
+Mit der Bestätigung akzeptieren Sie den Rahmenvertrag inklusive Anlage 1 (AVV) und Anlage 2.`;

@@ -1,7 +1,8 @@
 "use client";
 
-import { Pencil } from "lucide-react";
+import { PortalIcon } from "@/components/portal/PortalIcon";
 import { useEffect, useState, type ReactNode } from "react";
+import { PortalButton } from "@/components/portal/PortalButton";
 
 import { resolveObjektCoverSrc } from "@/lib/portal2/portal-media";
 import { cn } from "@/lib/utils";
@@ -61,25 +62,27 @@ export function PortalDetailCover({
       <div className="portal-dash-hero-scrim" aria-hidden />
 
       {onBack ? (
-        <button
+        <PortalButton
+          variant="ghost"
           type="button"
           onClick={onBack}
           className="portal-detail-cover-back"
         >
           {backLabel}
-        </button>
+        </PortalButton>
       ) : null}
 
       {onEdit ? (
-        <button
+        <PortalButton
+          variant="ghost"
           type="button"
           onClick={onEdit}
           className="portal-detail-cover-edit"
           title={editLabel}
           aria-label={editLabel}
         >
-          <Pencil className="h-3.5 w-3.5" aria-hidden />
-        </button>
+          <PortalIcon n="pencil" ctx="default" className="h-3.5 w-3.5" aria-hidden />
+        </PortalButton>
       ) : null}
 
       <div className="portal-detail-hero-inner">

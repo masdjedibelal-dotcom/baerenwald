@@ -1,4 +1,6 @@
 "use client";
+import { PALETTE } from "@/lib/tokens/palette";
+import { PortalIcon } from "@/components/portal/PortalIcon";
 
 import { Component, type ReactNode } from "react";
 
@@ -29,47 +31,39 @@ export class FunnelErrorBoundary extends Component<Props, State> {
       return (
         <div
           style={{
-            maxWidth: "480px",
-            margin: "80px auto",
-            padding: "0 24px",
+            maxWidth: 480,
+            margin: "5rem auto",
+            padding: "0 1.5rem",
             textAlign: "center",
           }}
         >
           <div
             style={{
-              marginBottom: "20px",
+              marginBottom: 20,
               display: "flex",
               justifyContent: "center",
-              color: "#6B6560",
+              color: "var(--fl-faint)",
             }}
             aria-hidden
           >
-            <svg width="40" height="40" viewBox="0 0 24 24" fill="none">
-              <path
-                d="M12 9v4M12 17h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"
-                stroke="currentColor"
-                strokeWidth="1.75"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            </svg>
+            <PortalIcon n="alert-triangle" ctx="default" size={40} />
           </div>
           <h2
             style={{
-              fontSize: "20px",
+              fontSize: 20,
               fontWeight: 800,
-              marginBottom: "12px",
-              color: "#1E1C1A",
+              marginBottom: 12,
+              color: "var(--fl-ink)",
             }}
           >
             Kurze Unterbrechung
           </h2>
           <p
             style={{
-              fontSize: "14px",
-              color: "#6B6560",
+              fontSize: 14,
+              color: "var(--fl-faint)",
               lineHeight: 1.6,
-              marginBottom: "24px",
+              marginBottom: 24,
             }}
           >
             Etwas ist schiefgelaufen. Rufen Sie uns einfach direkt an — wir helfen
@@ -80,27 +74,27 @@ export class FunnelErrorBoundary extends Component<Props, State> {
             style={{
               display: "inline-flex",
               alignItems: "center",
-              gap: "8px",
-              background: "#2E7D52",
+              gap: 8,
+              background: "var(--fl-accent)",
               color: "white",
-              borderRadius: "999px",
-              padding: "12px 24px",
-              fontSize: "15px",
+              borderRadius: 999,
+              padding: "0.75rem 1.5rem",
+              fontSize: 15,
               fontWeight: 700,
               textDecoration: "none",
             }}
           >
             Jetzt anrufen →
           </a>
-          <div style={{ marginTop: "16px" }}>
+          <div style={{ marginTop: 16 }}>
             <button
               type="button"
               onClick={() => window.location.reload()}
               style={{
                 background: "none",
                 border: "none",
-                fontSize: "13px",
-                color: "#9E9890",
+                fontSize: 13,
+                color: PALETTE.h9e9890,
                 cursor: "pointer",
               }}
             >

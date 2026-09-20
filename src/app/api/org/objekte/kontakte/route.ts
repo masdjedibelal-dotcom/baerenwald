@@ -1,3 +1,4 @@
+import { logDbError } from '@/lib/errors/log-db-error'
 import { NextResponse } from "next/server";
 
 import {
@@ -38,6 +39,7 @@ export async function GET(req: Request) {
     .eq("aktiv", true)
     .neq("rolle", "hausmeister")
     .order("sort_order", { ascending: true });
+  if (error) logDbError('app/api/org/objekte/kontakte/route:objekt_kontakte', error)
 
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
@@ -93,6 +95,7 @@ export async function POST(req: Request) {
     })
     .select("id")
     .single();
+  if (error) logDbError('app/api/org/objekte/kontakte/route:objekt_kontakte', error)
 
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
@@ -123,12 +126,13 @@ export async function PATCH(req: Request) {
     return NextResponse.json({ error: "id fehlt." }, { status: 400 });
   }
 
-  const { data: existing } = await supabaseAdmin
+  const {data: existing, error: __dbErr211_1} = await supabaseAdmin
     .from("objekt_kontakte")
     .select("id")
     .eq("id", id)
     .eq("kunde_id", session.kunde.id)
     .maybeSingle();
+  if (__dbErr211_1) logDbError('app/api/org/objekte/kontakte/route:objekt_kontakte', __dbErr211_1)
   if (!existing) {
     return NextResponse.json({ error: "Nicht gefunden." }, { status: 404 });
   }
@@ -152,6 +156,7 @@ export async function PATCH(req: Request) {
     .from("objekt_kontakte")
     .update(patch)
     .eq("id", id);
+  if (error) logDbError('app/api/org/objekte/kontakte/route:objekt_kontakte', error)
 
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
@@ -179,6 +184,7 @@ export async function DELETE(req: Request) {
     .update({ aktiv: false, updated_at: new Date().toISOString() })
     .eq("id", id)
     .eq("kunde_id", session.kunde.id);
+  if (error) logDbError('app/api/org/objekte/kontakte/route:objekt_kontakte', error)
 
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });

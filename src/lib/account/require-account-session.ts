@@ -1,3 +1,4 @@
+import { logDbError } from '@/lib/errors/log-db-error'
 import {
   linkPortalKundeToAuthUser,
   resolveLinkedPortalKundeId,
@@ -83,11 +84,11 @@ export async function requireAccountSession(): Promise<AccountSession> {
 }
 
 export async function countOpenKundeVorgaenge(kundeId: string): Promise<number> {
-  const { count } = await supabaseAdmin
+  const {count, error: __dbErr252_1} = await supabaseAdmin
     .from("leads")
     .select("id", { count: "exact", head: true })
     .eq("kunde_id", kundeId)
     .not("vorgang_phase", "in", '("abgeschlossen","storniert","abgelehnt")');
-
+  if (__dbErr252_1) logDbError('lib/account/require-account-session:leads', __dbErr252_1)
   return count ?? 0;
 }

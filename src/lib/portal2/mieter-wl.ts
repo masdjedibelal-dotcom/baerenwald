@@ -4,7 +4,7 @@
  */
 
 import { MIETER_STG } from "@/lib/portal2/status";
-import type { MeldeLang } from "@/lib/melden/melde-i18n";
+import type { MeldeLang } from "@/lib/melden/melde-copy";
 
 export type MieterWlBrand = {
   name: string;

@@ -1,7 +1,6 @@
 "use client";
 
 import {
-  PartnerDetailSection,
   PartnerDetailSuccessBox,
 } from "@/components/partner/PartnerDetailUi";
 import { PortalDetailCard } from "@/components/shared/PortalDetailCard";
@@ -39,5 +38,5 @@ export function PartnerAuftragErledigtSection({
   if (layout === "cta") {
     return <PortalDetailCard title="Abschluss">{success}</PortalDetailCard>;
   }
-  return <PartnerDetailSection title="Abschluss">{success}</PartnerDetailSection>;
+  return <PortalDetailCard title="Abschluss">{success}</PortalDetailCard>;
 }

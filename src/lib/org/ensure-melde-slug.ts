@@ -1,3 +1,4 @@
+import { logDbError } from '@/lib/errors/log-db-error'
 import {
   isValidMeldeSlug,
   suggestMeldeSlugFromAddress,
@@ -11,12 +12,13 @@ export async function allocateMeldeSlug(
   let candidate = base.trim().toLowerCase();
   let suffix = 2;
   for (let i = 0; i < 50; i++) {
-    const { data } = await supabaseAdmin
+    const {data, error: __dbErr280_1} = await supabaseAdmin
       .from("kunden_objekte")
       .select("id")
       .eq("kunde_id", kundeId)
       .ilike("melde_slug", candidate)
       .maybeSingle();
+    if (__dbErr280_1) logDbError('lib/org/ensure-melde-slug:kunden_objekte', __dbErr280_1)
     if (!data) return candidate;
     candidate = `${base}-${suffix}`;
     suffix += 1;
@@ -50,11 +52,12 @@ export async function ensureMeldeSlugsForKunde(
       const melde_slug = await allocateMeldeSlug(kundeId, base);
       if (!isValidMeldeSlug(melde_slug)) return;
 
-      await supabaseAdmin
+      const { error: __dbErr281_2 } = await supabaseAdmin
         .from("kunden_objekte")
         .update({ melde_slug, updated_at: new Date().toISOString() })
         .eq("id", o.id)
         .eq("kunde_id", kundeId);
+      if (__dbErr281_2) logDbError('lib/org/ensure-melde-slug:kunden_objekte', __dbErr281_2)
     })
   );
 }

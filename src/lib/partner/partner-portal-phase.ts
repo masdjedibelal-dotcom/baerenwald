@@ -170,7 +170,7 @@ export function auftragHwStatusLabel(status: string | null | undefined): string 
     ausstehend: "Ausstehend",
     warten: "Warten auf Antwort",
     zugewiesen: "Zugewiesen",
-    akzeptiert: "Angenommen",
+    akzeptiert: "Akzeptiert",
     abgelehnt: "Abgelehnt",
   };
   return map[s] ?? status ?? "Ausstehend";

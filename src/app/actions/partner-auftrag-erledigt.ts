@@ -1,5 +1,6 @@
 "use server";
 
+import { logDbError } from '@/lib/errors/log-db-error'
 import { revalidatePath } from "next/cache";
 
 import { linkPortalHandwerkerToAuthUser } from "@/lib/partner/link-portal-handwerker";
@@ -60,12 +61,12 @@ export async function markPartnerAuftragErledigt(
     return { ok: false, error: "Kein Zugriff auf diesen Auftrag." };
   }
 
-  const { data: auftrag } = await supabaseAdmin
+  const {data: auftrag, error: __dbErr59_1} = await supabaseAdmin
     .from("auftraege")
     .select("id, titel, status, lead_id")
     .eq("id", id)
     .maybeSingle();
-
+  if (__dbErr59_1) logDbError('app/actions/partner-auftrag-erledigt:auftraege', __dbErr59_1)
   if (!auftrag) return { ok: false, error: "Auftrag nicht gefunden." };
 
   const st = String(auftrag.status ?? "").toLowerCase();
@@ -73,7 +74,7 @@ export async function markPartnerAuftragErledigt(
     return { ok: false, error: "Auftrag ist bereits abgeschlossen." };
   }
 
-  const { data: ahRow } = await supabaseAdmin
+  const {data: ahRow, error: __dbErr60_2} = await supabaseAdmin
     .from("auftrag_handwerker")
     .select("id, erledigt_gemeldet_am")
     .eq("auftrag_id", id)
@@ -82,19 +83,19 @@ export async function markPartnerAuftragErledigt(
     .order("created_at", { ascending: false })
     .limit(1)
     .maybeSingle();
-
+  if (__dbErr60_2) logDbError('app/actions/partner-auftrag-erledigt:auftrag_handwerker', __dbErr60_2)
   if (ahRow?.erledigt_gemeldet_am) {
     return { ok: true };
   }
 
-  const { data: positionen } = await supabaseAdmin
+  const {data: positionen, error: __dbErr61_3} = await supabaseAdmin
     .from("auftrag_positionen")
     .select(
       "id, leistung_name, handwerker_status, leistung_status, aenderung_typ, anerkennung_status, handwerker_id"
     )
     .eq("auftrag_id", id)
     .eq("handwerker_id", auth.handwerkerId);
-
+  if (__dbErr61_3) logDbError('app/actions/partner-auftrag-erledigt:auftrag_positionen', __dbErr61_3)
   const rows = positionen ?? [];
   const relevant = partnerAbschlussRelevantePositionen(rows);
   if (!relevant.length) {
@@ -144,6 +145,7 @@ export async function markPartnerAuftragErledigt(
       leistung_status: "erledigt",
     })
     .in("id", ids);
+  if (updateErr) logDbError('app/actions/partner-auftrag-erledigt:auftrag_positionen', updateErr)
 
   if (updateErr && /leistung_status/i.test(updateErr.message)) {
     ({ error: updateErr } = await supabaseAdmin
@@ -161,6 +163,7 @@ export async function markPartnerAuftragErledigt(
     .from("auftrag_handwerker")
     .update({ erledigt_gemeldet_am: now })
     .eq("id", ahRow.id);
+  if (ahErr) logDbError('app/actions/partner-auftrag-erledigt:auftrag_handwerker', ahErr)
   if (ahErr) {
     console.error("[markPartnerAuftragErledigt] ah", ahErr.message);
     // Positionen sind schon auf erledigt — CTA erkennt das als Fallback.
@@ -173,13 +176,13 @@ export async function markPartnerAuftragErledigt(
     }
   }
 
-  const { data: hw } = await supabaseAdmin
+  const {data: hw, error: __dbErr62_4} = await supabaseAdmin
     .from("handwerker")
     .select("name, firma")
     .eq("id", auth.handwerkerId)
     .maybeSingle();
-
-  const handwerkerName = hw?.firma?.trim() || hw?.name?.trim() || "Handwerker";
+  if (__dbErr62_4) logDbError('app/actions/partner-auftrag-erledigt:handwerker', __dbErr62_4)
+  const handwerkerName = hw?.firma?.trim() || hw?.name?.trim() || "Partner";
   const leistungen = rows
     .filter((p) => ids.includes(String(p.id)))
     .map((p) => String(p.leistung_name ?? "Leistung").trim())

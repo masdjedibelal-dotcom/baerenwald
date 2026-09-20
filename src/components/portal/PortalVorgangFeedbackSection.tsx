@@ -3,11 +3,13 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
+import { PortalTextarea } from "@/components/shared/PortalFormControls";
 import { submitPortalMieterFeedback } from "@/app/actions/portal-feedback";
 import { usePortalBusy } from "@/components/shared/PortalBusyContext";
 import { PortalDetailSuccessBox } from "@/components/shared/PortalDetailUi";
 import { kundePortalToast } from "@/lib/shared/portal-toast";
 import { cn } from "@/lib/utils";
+import { PortalButton } from "@/components/portal/PortalButton";
 
 export function PortalVorgangFeedbackSection({
   leadId,
@@ -35,7 +37,7 @@ export function PortalVorgangFeedbackSection({
         <PortalDetailSuccessBox>
           <p className="font-semibold">Danke für Ihr Feedback!</p>
           {s > 0 ? (
-            <p className="portal-text-meta mt-1 text-amber-600">
+            <p className="portal-text-meta mt-1 text-warning-text">
               {"★".repeat(s)}
               {"☆".repeat(5 - s)}
             </p>
@@ -81,40 +83,41 @@ export function PortalVorgangFeedbackSection({
         Wie war der Service?
       </p>
       {error ? (
-        <p className="portal-text-meta text-red-700" role="alert">
+        <p className="portal-text-meta text-p2-danger" role="alert">
           {error}
         </p>
       ) : null}
       <form onSubmit={onSubmit} className="space-y-3">
         <div className="flex gap-1">
           {[1, 2, 3, 4, 5].map((n) => (
-            <button
+            <PortalButton
+              variant="ghost"
               key={n}
               type="button"
               className={cn(
                 "text-2xl transition-colors",
-                n <= sterne ? "text-amber-500" : "text-muted"
+                n <= sterne ? "text-warning-text" : "text-muted"
               )}
               onClick={() => setSterne(n)}
               aria-label={`${n} Sterne`}
             >
               ★
-            </button>
+            </PortalButton>
           ))}
         </div>
-        <textarea
+        <PortalTextarea
           className="input-field w-full min-h-[72px]"
           placeholder="Optional: Anmerung"
           value={freitext}
           onChange={(e) => setFreitext(e.target.value)}
         />
-        <button
+        <PortalButton variant="secondary" action={false}
           type="submit"
-          className="btn-pill-outline portal-btn w-full sm:w-auto"
+          className="w-full sm:w-auto"
           disabled={busy || sterne < 1}
         >
           {busy ? "Wird gesendet…" : "Feedback senden"}
-        </button>
+        </PortalButton>
       </form>
     </article>
   );

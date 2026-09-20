@@ -3,7 +3,9 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useState } from "react";
+import { PortalButton } from "@/components/portal/PortalButton";
 
+import { PortalCheckbox, PortalInput } from "@/components/shared/PortalFormControls";
 import { verifyPartnerRegistrationEmail } from "@/app/actions/partner-registration";
 import { assertPartnerEmailAllowed } from "@/app/actions/assert-partner-email-allowed";
 import { getPartnerRahmenvertragPreview } from "@/app/actions/partner-rahmenvertrag-preview";
@@ -132,7 +134,7 @@ export function PartnerRegisterForm() {
         title={previewLoading ? "E-Mail wird geprüft…" : "Konto wird angelegt…"}
         body={
           previewLoading
-            ? "Einen Moment — wir prüfen deinen Partner-Zugang."
+            ? "Einen Moment — wir prüfen Ihren Partner-Zugang."
             : "Einen Moment — Vertrag und Konto werden eingerichtet, danach kommt der Code."
         }
       />
@@ -162,7 +164,7 @@ export function PartnerRegisterForm() {
       <PartnerRegisterStepNav current={step} />
 
       {error ? (
-        <p className="rounded-lg bg-red-50 px-3 py-2 portal-text-body text-red-800">
+        <p className="rounded-card bg-p2-danger-soft px-3 py-2 portal-text-body text-p2-danger">
           {error}
         </p>
       ) : null}
@@ -171,25 +173,26 @@ export function PartnerRegisterForm() {
         <div className="space-y-4">
           <label className="block space-y-1.5">
             <span className="portal-form-label">Partner-E-Mail</span>
-            <input
+            <PortalInput
               type="email"
               required
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="portal-input w-full rounded-xl border border-border-default bg-surface-card px-3 py-3 focus:border-accent"
-              placeholder="deine@firma.de"
+              className="portal-input w-full rounded-field border border-border-default bg-surface-card px-3 py-3 focus:border-accent"
+              placeholder="name@firma.de"
             />
           </label>
           <p className="portal-text-meta text-text-tertiary">
             {PARTNER_AUTH_COPY.registerEmailHint}
           </p>
-          <button
+          <PortalButton
+            variant="primary"
             type="button"
             onClick={() => void goToStep2()}
-            className="btn-pill-primary w-full !py-2.5"
+            className="w-full !py-2.5"
           >
             Weiter zu den Bedingungen
-          </button>
+          </PortalButton>
         </div>
       ) : null}
 
@@ -210,20 +213,22 @@ export function PartnerRegisterForm() {
             error={rahmenError ? BEDINGUNGEN_ERROR : null}
           />
           <div className="flex gap-2">
-            <button
+            <PortalButton
+              variant="secondary"
               type="button"
               onClick={() => setStep(1)}
-              className="btn-pill-outline flex-1 !py-2.5"
+              className="flex-1 !py-2.5"
             >
               Zurück
-            </button>
-            <button
+            </PortalButton>
+            <PortalButton
+              variant="primary"
               type="button"
               onClick={goToStep3}
-              className="btn-pill-primary flex-1 !py-2.5"
+              className="flex-1 !py-2.5"
             >
               Weiter
-            </button>
+            </PortalButton>
           </div>
         </div>
       ) : null}
@@ -232,25 +237,24 @@ export function PartnerRegisterForm() {
         <form onSubmit={onSubmit} className="space-y-4">
           <label className="block space-y-1.5">
             <span className="portal-form-label">Passwort (min. 8 Zeichen)</span>
-            <input
+            <PortalInput
               type="password"
               required
               minLength={8}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="portal-input w-full rounded-xl border border-border-default bg-surface-card px-3 py-3 focus:border-accent"
+              className="portal-input w-full rounded-field border border-border-default bg-surface-card px-3 py-3 focus:border-accent"
             />
           </label>
 
-          <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-border-light bg-muted/20 p-3">
-            <input
-              type="checkbox"
+          <label className="flex cursor-pointer items-start gap-3 rounded-field border border-border-light bg-muted/20 p-3">
+            <PortalCheckbox
               checked={datenschutz}
               onChange={(e) => {
                 setDatenschutz(e.target.checked);
                 if (e.target.checked) setDatenschutzError(false);
               }}
-              className="mt-0.5 h-5 w-5 shrink-0 accent-[#2E7D52]"
+              className="mt-0.5 h-5 w-5 shrink-0 accent-[var(--p2-primary)]"
             />
             <span className="portal-text-body text-text-primary">
               Ich habe die{" "}
@@ -266,25 +270,27 @@ export function PartnerRegisterForm() {
             </span>
           </label>
           {datenschutzError ? (
-            <p className="portal-text-body text-red-700">
+            <p className="portal-text-body text-p2-danger">
               Bitte stimme der Datenschutzerklärung zu.
             </p>
           ) : null}
 
           <div className="flex gap-2">
-            <button
+            <PortalButton
+              variant="secondary"
               type="button"
               onClick={() => setStep(2)}
-              className="btn-pill-outline flex-1 !py-2.5"
+              className="flex-1 !py-2.5"
             >
               Zurück
-            </button>
-            <button
+            </PortalButton>
+            <PortalButton
+              variant="primary"
               type="submit"
-              className="btn-pill-primary flex-1 !py-2.5"
+              className="flex-1 !py-2.5"
             >
               Konto anlegen
-            </button>
+            </PortalButton>
           </div>
         </form>
       ) : null}

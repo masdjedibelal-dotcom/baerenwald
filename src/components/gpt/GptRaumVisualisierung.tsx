@@ -8,6 +8,7 @@ import { GptVizEinstieg } from "@/components/gpt/GptVizEinstieg";
 import { GptVizLeadForm } from "@/components/gpt/GptVizLeadForm";
 import { GptVizRaumAnalysePanel } from "@/components/gpt/GptVizRaumAnalyse";
 import { GptVizWunschEditor } from "@/components/gpt/GptVizWunschEditor";
+import { CTAButton } from "@/components/ui/CTAButton";
 import { GPT_VIZ_LIMITS } from "@/lib/gpt-viz/constants";
 import type {
   GptVizBauErklaerung,
@@ -320,22 +321,22 @@ export function GptRaumVisualisierung({
           />
           <div className="gpt-viz-actions">
             {istUrls.length === 0 ? (
-              <button
+              <CTAButton
+                bare
+                tone="viz-outline"
                 type="button"
-                className="gpt-viz-btn gpt-viz-btn--outline"
                 onClick={() => setStep("upload")}
-              >
-                Raumfoto hinzufügen
-              </button>
+                label="Raumfoto hinzufügen"
+              />
             ) : (
-              <button
+              <CTAButton
+                bare
+                tone="viz"
                 type="button"
-                className="gpt-viz-btn gpt-viz-btn--primary"
                 disabled={loading || !wunschText.trim()}
                 onClick={() => void handleRender()}
-              >
-                So visualisieren
-              </button>
+                label="So visualisieren"
+              />
             )}
           </div>
         </div>
@@ -371,22 +372,22 @@ export function GptRaumVisualisierung({
           )}
           <div className="gpt-viz-actions">
             {istUrls.length === 0 ? (
-              <button
+              <CTAButton
+                bare
+                tone="viz-outline"
                 type="button"
-                className="gpt-viz-btn gpt-viz-btn--outline"
                 onClick={() => setStep("upload")}
-              >
-                Raumfoto hinzufügen
-              </button>
+                label="Raumfoto hinzufügen"
+              />
             ) : (
-              <button
+              <CTAButton
+                bare
+                tone="viz"
                 type="button"
-                className="gpt-viz-btn gpt-viz-btn--primary"
                 disabled={loading || !wunschText.trim()}
                 onClick={() => void handleRender()}
-              >
-                {loading ? "Visualisiere …" : "So visualisieren"}
-              </button>
+                label={loading ? "Visualisiere …" : "So visualisieren"}
+              />
             )}
           </div>
         </div>
@@ -402,13 +403,13 @@ export function GptRaumVisualisierung({
           />
           {rendersLeft > 0 ? (
             <div className="gpt-viz-actions">
-              <button
+              <CTAButton
+                bare
+                tone="viz-outline"
                 type="button"
-                className="gpt-viz-btn gpt-viz-btn--outline"
                 onClick={() => setStep("wunsch")}
-              >
-                Anpassen ({rendersLeft} übrig)
-              </button>
+                label={`Anpassen (${rendersLeft} übrig)`}
+              />
             </div>
           ) : null}
         </div>
@@ -433,21 +434,21 @@ export function GptRaumVisualisierung({
             </p>
           ) : null}
           <div className="gpt-viz-actions" style={{ marginTop: "0.75rem" }}>
-            <button
+            <CTAButton
+              bare
+              tone="viz"
               type="button"
-              className="gpt-viz-btn gpt-viz-btn--primary"
               onClick={() => setStep("lead")}
-            >
-              Projekt an Bärenwald senden
-            </button>
+              label="Projekt an Bärenwald senden"
+            />
             {onBeratung ? (
-              <button
+              <CTAButton
+                bare
+                tone="viz-outline"
                 type="button"
-                className="gpt-viz-btn gpt-viz-btn--outline"
                 onClick={onBeratung}
-              >
-                Noch Fragen? Zur Beratung
-              </button>
+                label="Noch Fragen? Zur Beratung"
+              />
             ) : null}
           </div>
         </div>
@@ -460,18 +461,18 @@ export function GptRaumVisualisierung({
       {error ? <p className="gpt-viz-error">{error}</p> : null}
 
       {step !== "einstieg" && step !== "lead" ? (
-        <button
+        <CTAButton
+          bare
+          tone="viz-outline"
           type="button"
-          className="gpt-viz-btn gpt-viz-btn--outline"
-          style={{ alignSelf: "flex-start", marginTop: "0.25rem" }}
+          className="mt-1 self-start"
           onClick={() => {
             setStep("einstieg");
             setEinstieg(null);
             setError(null);
           }}
-        >
-          Neu starten
-        </button>
+          label="Neu starten"
+        />
       ) : null}
     </div>
   );

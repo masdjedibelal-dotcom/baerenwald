@@ -1,3 +1,4 @@
+import { logDbError } from '@/lib/errors/log-db-error'
 import { resolveLeadObjektId } from "@/lib/org/match-lead-objekt";
 import { getPortalDataForKunde } from "@/lib/portal/get-portal-data";
 import {
@@ -39,6 +40,7 @@ async function loadOrgObjekte(kundeId: string): Promise<OrganisationObjekt[]> {
     .select(selectFull)
     .eq("kunde_id", kundeId)
     .order("titel", { ascending: true });
+  if (objErr) logDbError('lib/org/get-organisation-portal-data:kunden_objekte', objErr)
 
   let rawObjekte = (objekteRows ?? []) as OrganisationObjekt[];
   if (
@@ -47,22 +49,24 @@ async function loadOrgObjekte(kundeId: string): Promise<OrganisationObjekt[]> {
       objErr.message
     )
   ) {
-    const { data: fallback } = await supabaseAdmin
+    const {data: fallback, error: __dbErr304_1} = await supabaseAdmin
       .from("kunden_objekte")
       .select(
         "id, kunde_id, titel, strasse, hausnummer, plz, ort, typ, melde_slug, melde_aktiv, einheiten_hinweis, notizen_intern, kostenstelle_nr, freigabe_schwelle_eur, cover_url, created_at"
       )
       .eq("kunde_id", kundeId)
       .order("titel", { ascending: true });
+    if (__dbErr304_1) logDbError('lib/org/get-organisation-portal-data:kunden_objekte', __dbErr304_1)
     rawObjekte = (fallback ?? []) as OrganisationObjekt[];
   } else if (objErr && /typ/i.test(objErr.message)) {
-    const { data: fallback } = await supabaseAdmin
+    const {data: fallback, error: __dbErr305_2} = await supabaseAdmin
       .from("kunden_objekte")
       .select(
         "id, kunde_id, titel, strasse, hausnummer, plz, ort, melde_slug, melde_aktiv, einheiten_hinweis, notizen_intern, kostenstelle_nr, freigabe_schwelle_eur, created_at"
       )
       .eq("kunde_id", kundeId)
       .order("titel", { ascending: true });
+    if (__dbErr305_2) logDbError('lib/org/get-organisation-portal-data:kunden_objekte', __dbErr305_2)
     rawObjekte = (fallback ?? []) as OrganisationObjekt[];
   } else if (objErr) {
     console.error("[getOrganisationPortalData] objekte", objErr.message);
@@ -72,10 +76,11 @@ async function loadOrgObjekte(kundeId: string): Promise<OrganisationObjekt[]> {
   const objektIds = rawObjekte.map((o) => o.id);
   const einheitenCountById: Record<string, number> = {};
   if (objektIds.length) {
-    const { data: ehRows } = await supabaseAdmin
+    const {data: ehRows, error: __dbErr306_3} = await supabaseAdmin
       .from("objekt_einheiten")
       .select("kunde_objekt_id, aktiv")
       .in("kunde_objekt_id", objektIds);
+    if (__dbErr306_3) logDbError('lib/org/get-organisation-portal-data:objekt_einheiten', __dbErr306_3)
     for (const row of ehRows ?? []) {
       const oid = String(
         (row as { kunde_objekt_id?: string }).kunde_objekt_id ?? ""
@@ -360,6 +365,7 @@ export async function getOrganisationPortalData(
         .in("typ", ["bautagebuch", "handwerker_update"])
         .order("created_at", { ascending: false })
         .limit(300);
+      if (tlErr) logDbError('lib/org/get-organisation-portal-data:auftrag_timeline', tlErr)
       if (tlErr) {
         console.warn("[org-portal] timeline bautagebuch:", tlErr.message);
       } else {
@@ -601,11 +607,11 @@ export async function getOrganisationPortalData(
 
   const auftragIds = Object.values(auftragIdByLeadId);
   if (auftragIds.length) {
-    const { data: abnahmeRows } = await supabaseAdmin
+    const {data: abnahmeRows, error: __dbErr307_4} = await supabaseAdmin
       .from("hv_portal_abnahmen")
       .select("lead_id, art, anmerkung, signiert_name, signiert_am")
       .in("auftrag_id", auftragIds);
-
+    if (__dbErr307_4) logDbError('lib/org/get-organisation-portal-data:hv_portal_abnahmen', __dbErr307_4)
     for (const row of abnahmeRows ?? []) {
       const lid = String((row as { lead_id?: string | null }).lead_id ?? "");
       if (!lid) continue;

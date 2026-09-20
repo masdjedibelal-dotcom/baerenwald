@@ -61,7 +61,7 @@ export function VorgangLeistungenListe({
               key={p.id}
               className={cn(
                 "flex items-start gap-4 px-0 py-3",
-                removed && "bg-red-50/70"
+                removed && "bg-p2-danger-soft/70"
               )}
             >
               <div className="min-w-0 flex-1">
@@ -86,7 +86,7 @@ export function VorgangLeistungenListe({
                   </p>
                 ) : null}
                 {p.aenderungBadge && p.aenderungBadge !== "entfernt" ? (
-                  <p className="portal-text-meta mt-1 text-amber-800">
+                  <p className="portal-text-meta mt-1 text-warning-text">
                     {p.aenderungBadge === "neu" ? "Neu" : "Geändert"}
                   </p>
                 ) : null}

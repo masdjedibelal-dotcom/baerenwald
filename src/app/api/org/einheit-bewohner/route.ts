@@ -1,3 +1,4 @@
+import { logDbError } from '@/lib/errors/log-db-error'
 import { NextResponse } from "next/server";
 
 import {
@@ -29,10 +30,11 @@ async function resolveOrCreateEinheit(
     const ok = await assertOrgEinheit(input.kundeId, input.einheitId);
     if (!ok) return { error: "Einheit nicht gefunden.", status: 404 };
     if (input.etage) {
-      await supabaseAdmin
+      const { error: __dbErr169_7 } = await supabaseAdmin
         .from("objekt_einheiten")
         .update({ etage: input.etage })
         .eq("id", input.einheitId);
+      if (__dbErr169_7) logDbError('app/api/org/einheit-bewohner/route:objekt_einheiten', __dbErr169_7)
     }
     return { id: input.einheitId };
   }
@@ -41,28 +43,31 @@ async function resolveOrCreateEinheit(
   if (!objektId) return { error: "Objekt erforderlich.", status: 400 };
 
   const bezeichnung = input.wohnung?.trim() || "Allgemein";
-  const { data: objekt } = await supabaseAdmin
+  const {data: objekt, error: __dbErr163_1} = await supabaseAdmin
     .from("kunden_objekte")
     .select("id")
     .eq("id", objektId)
     .eq("kunde_id", input.kundeId)
     .maybeSingle();
+  if (__dbErr163_1) logDbError('app/api/org/einheit-bewohner/route:kunden_objekte', __dbErr163_1)
   if (!objekt) return { error: "Objekt nicht gefunden.", status: 404 };
 
-  const { data: existing } = await supabaseAdmin
+  const {data: existing, error: __dbErr164_2} = await supabaseAdmin
     .from("objekt_einheiten")
     .select("id")
     .eq("kunde_objekt_id", objektId)
     .eq("aktiv", true)
     .ilike("bezeichnung", bezeichnung)
     .maybeSingle();
+  if (__dbErr164_2) logDbError('app/api/org/einheit-bewohner/route:objekt_einheiten', __dbErr164_2)
 
   if (existing?.id) {
     if (input.etage) {
-      await supabaseAdmin
+      const { error: __dbErr170_8 } = await supabaseAdmin
         .from("objekt_einheiten")
         .update({ etage: input.etage })
         .eq("id", existing.id);
+      if (__dbErr170_8) logDbError('app/api/org/einheit-bewohner/route:objekt_einheiten', __dbErr170_8)
     }
     return { id: existing.id };
   }
@@ -77,6 +82,7 @@ async function resolveOrCreateEinheit(
     .insert(insertRow)
     .select("id")
     .single();
+  if (error) logDbError('app/api/org/einheit-bewohner/route:objekt_einheiten', error)
 
   if (error) {
     if (/etage/i.test(error.message)) {
@@ -127,33 +133,36 @@ async function createBewohnerWithWohnung(input: {
     return { ok: false, error: "Name und Objekt erforderlich." };
   }
 
-  const { data: objekt } = await supabaseAdmin
+  const {data: objekt, error: __dbErr165_3} = await supabaseAdmin
     .from("kunden_objekte")
     .select("id")
     .eq("id", objektId)
     .eq("kunde_id", input.kundeId)
     .maybeSingle();
+  if (__dbErr165_3) logDbError('app/api/org/einheit-bewohner/route:kunden_objekte', __dbErr165_3)
   if (!objekt) return { ok: false, error: "Objekt nicht gefunden." };
 
   const bezeichnung = input.wohnung?.trim() || "Allgemein";
   const etage = input.etage?.trim() || null;
   const rolle = input.rolle === "eigentuemer" ? "eigentuemer" : "mieter";
 
-  const { data: existing } = await supabaseAdmin
+  const {data: existing, error: __dbErr166_4} = await supabaseAdmin
     .from("objekt_einheiten")
     .select("id")
     .eq("kunde_objekt_id", objektId)
     .eq("aktiv", true)
     .ilike("bezeichnung", bezeichnung)
     .maybeSingle();
+  if (__dbErr166_4) logDbError('app/api/org/einheit-bewohner/route:objekt_einheiten', __dbErr166_4)
 
   let einheitId = existing?.id ?? "";
   if (einheitId) {
     if (etage) {
-      await supabaseAdmin
+      const { error: __dbErr171_9 } = await supabaseAdmin
         .from("objekt_einheiten")
         .update({ etage })
         .eq("id", einheitId);
+      if (__dbErr171_9) logDbError('app/api/org/einheit-bewohner/route:objekt_einheiten', __dbErr171_9)
     }
   } else {
     const { data: created, error } = await supabaseAdmin
@@ -161,6 +170,7 @@ async function createBewohnerWithWohnung(input: {
       .insert({ kunde_objekt_id: objektId, bezeichnung, etage })
       .select("id")
       .single();
+    if (error) logDbError('app/api/org/einheit-bewohner/route:objekt_einheiten', error)
     if (error) {
       if (!/etage/i.test(error.message)) {
         return { ok: false, error: error.message };
@@ -209,6 +219,7 @@ async function createBewohnerWithWohnung(input: {
     .insert(insertRow)
     .select("id")
     .single();
+  if (bewErr) logDbError('app/api/org/einheit-bewohner/route:einheit_bewohner', bewErr)
 
   if (
     bewErr &&
@@ -266,6 +277,7 @@ export async function GET(req: Request) {
       .eq("aktiv", true)
       .is("anonymisiert_am", null)
       .order("created_at", { ascending: true });
+    if (error) logDbError('app/api/org/einheit-bewohner/route:einheit_bewohner', error)
     if (error) {
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
@@ -279,10 +291,11 @@ export async function GET(req: Request) {
     );
   }
 
-  const { data: einheiten } = await supabaseAdmin
+  const {data: einheiten, error: __dbErr167_5} = await supabaseAdmin
     .from("objekt_einheiten")
     .select("id")
     .eq("kunde_objekt_id", objektId);
+  if (__dbErr167_5) logDbError('app/api/org/einheit-bewohner/route:objekt_einheiten', __dbErr167_5)
   const ids = (einheiten ?? []).map((e) => e.id);
   if (!ids.length) {
     return NextResponse.json({ bewohner: [] });
@@ -295,6 +308,7 @@ export async function GET(req: Request) {
     .eq("kunde_id", session.kunde.id)
     .eq("aktiv", true)
     .is("anonymisiert_am", null);
+  if (error) logDbError('app/api/org/einheit-bewohner/route:einheit_bewohner', error)
 
   if (error) {
     if (/etage/i.test(error.message)) {
@@ -439,6 +453,7 @@ export async function POST(req: Request) {
     .insert(insertRow)
     .select("id")
     .single();
+  if (error) logDbError('app/api/org/einheit-bewohner/route:einheit_bewohner', error)
 
   if (error && /rolle|sondereigentum|miete_hinweis|notiz|selbstbewohnt/i.test(error.message)) {
     ({ data, error } = await supabaseAdmin
@@ -464,7 +479,7 @@ export async function POST(req: Request) {
   // Gleiche E-Mail wie bestehender Portal-Eigentümer → Portal-Link + Objekt-Sync
   if (rolle === "eigentuemer" && body.email?.trim()) {
     const emailNorm = body.email.trim().toLowerCase();
-    const { data: sibling } = await supabaseAdmin
+    const {data: sibling, error: __dbErr168_6} = await supabaseAdmin
       .from("einheit_bewohner")
       .select("portal_kunde_id")
       .eq("kunde_id", session.kunde.id)
@@ -475,14 +490,16 @@ export async function POST(req: Request) {
       .neq("id", data.id)
       .limit(1)
       .maybeSingle();
+    if (__dbErr168_6) logDbError('app/api/org/einheit-bewohner/route:einheit_bewohner', __dbErr168_6)
     const portalId = sibling?.portal_kunde_id
       ? String(sibling.portal_kunde_id)
       : "";
     if (portalId) {
-      await supabaseAdmin
+      const { error: __dbErr172_10 } = await supabaseAdmin
         .from("einheit_bewohner")
         .update({ portal_kunde_id: portalId })
         .eq("id", data.id);
+      if (__dbErr172_10) logDbError('app/api/org/einheit-bewohner/route:einheit_bewohner', __dbErr172_10)
       await syncEigentuemerObjekteForPortalKunde(portalId);
     }
   }
@@ -555,6 +572,7 @@ export async function PATCH(req: Request) {
     .update(patch)
     .eq("id", id)
     .eq("kunde_id", session.kunde.id);
+  if (error) logDbError('app/api/org/einheit-bewohner/route:einheit_bewohner', error)
 
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
@@ -582,6 +600,7 @@ export async function DELETE(req: Request) {
     .update({ aktiv: false, updated_at: new Date().toISOString() })
     .eq("id", id)
     .eq("kunde_id", session.kunde.id);
+  if (error) logDbError('app/api/org/einheit-bewohner/route:einheit_bewohner', error)
 
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });

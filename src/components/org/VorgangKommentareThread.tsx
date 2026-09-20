@@ -1,7 +1,9 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { PortalButton } from "@/components/portal/PortalButton";
 
+import { PortalTextarea } from "@/components/shared/PortalFormControls";
 import { fmtPortalDate } from "@/lib/shared/portal-detail-format";
 
 type Kommentar = {
@@ -80,7 +82,7 @@ export function VorgangKommentareThread({
           <li className="portal-text-meta text-text-tertiary">Noch keine Nachrichten.</li>
         ) : (
           items.map((k) => (
-            <li key={k.id} className="rounded-xl bg-muted/40 p-3 text-sm">
+            <li key={k.id} className="rounded-sheet bg-muted/40 p-3 text-sm">
               <p className="text-xs text-text-tertiary">
                 {ROLLE_LABELS[k.actor_rolle] ?? k.actor_rolle}
                 {k.actor_name ? ` · ${k.actor_name}` : ""} · {fmtPortalDate(k.created_at)}
@@ -92,16 +94,16 @@ export function VorgangKommentareThread({
       </ul>
       {!readOnly ? (
         <form onSubmit={send} className="space-y-2">
-          <textarea
-            className="portal-input min-h-[80px] w-full rounded-xl border border-border-default px-3 py-2.5 text-sm"
+          <PortalTextarea
+            className="portal-input min-h-[80px] w-full rounded-field border border-border-default px-3 py-2.5 text-sm"
             placeholder="Nachricht an Bärenwald…"
             value={text}
             onChange={(e) => setText(e.target.value)}
           />
-          {error ? <p className="text-sm text-red-600">{error}</p> : null}
-          <button type="submit" className="btn-pill-primary" disabled={busy || !text.trim()}>
+          {error ? <p className="text-sm text-p2-danger">{error}</p> : null}
+          <PortalButton variant="primary" type="submit"  disabled={busy || !text.trim()}>
             {busy ? "Senden…" : "Senden"}
-          </button>
+          </PortalButton>
         </form>
       ) : null}
     </section>

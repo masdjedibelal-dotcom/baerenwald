@@ -2,7 +2,9 @@
 
 import { useCallback, useEffect, useState } from "react";
 
-import { portalToastError } from "@/lib/shared/portal-toast";
+import { PortalDate, PortalInput } from "@/components/shared/PortalFormControls";
+import { portalToastSystemError } from "@/lib/shared/portal-toast";
+import { PortalButton } from "@/components/portal/PortalButton";
 
 type Item = {
   id: string;
@@ -56,7 +58,7 @@ export function OrganisationObjektFremdVorgaengePanel({ objektId }: { objektId: 
       setFile(null);
       await load();
     } catch (err) {
-      portalToastError(err instanceof Error ? err.message : "Fehler");
+      portalToastSystemError(err, "org-fremd-vorgaenge");
     } finally {
       setBusy(false);
     }
@@ -70,9 +72,9 @@ export function OrganisationObjektFremdVorgaengePanel({ objektId }: { objektId: 
       </p>
       <ul className="space-y-2">
         {items.map((f) => (
-          <li key={f.id} className="rounded-lg border border-border-light p-3 text-sm">
+          <li key={f.id} className="rounded-card border border-border-light p-3 text-sm">
             <div className="flex flex-wrap items-center gap-2">
-              <span className="tag bg-neutral-200 text-neutral-700">extern</span>
+              <span className="tag bg-p2-bg text-p2-sub">extern</span>
               <span className="font-medium">{f.titel}</span>
             </div>
             <p className="mt-1 text-text-secondary">
@@ -88,15 +90,15 @@ export function OrganisationObjektFremdVorgaengePanel({ objektId }: { objektId: 
         ))}
       </ul>
       <form onSubmit={add} className="space-y-2 border-t border-border-light pt-4">
-        <input className="input-field w-full" placeholder="Titel" value={titel} onChange={(e) => setTitel(e.target.value)} required />
+        <PortalInput className="input-field w-full" placeholder="Titel" value={titel} onChange={(e) => setTitel(e.target.value)} required />
         <div className="grid grid-cols-2 gap-2">
-          <input type="date" className="input-field" value={datum} onChange={(e) => setDatum(e.target.value)} />
-          <input className="input-field" placeholder="Betrag €" value={betrag} onChange={(e) => setBetrag(e.target.value)} />
+          <PortalDate className="input-field" value={datum} onChange={(e) => setDatum(e.target.value)} />
+          <PortalInput className="input-field" placeholder="Betrag €" value={betrag} onChange={(e) => setBetrag(e.target.value)} />
         </div>
         <input type="file" className="text-sm" onChange={(e) => setFile(e.target.files?.[0] ?? null)} />
-        <button type="submit" className="btn-pill-outline portal-btn-compact" disabled={busy}>
+        <PortalButton variant="secondary" action={false} compact type="submit" className="btn-pill-outline" disabled={busy}>
           Eintrag dokumentieren
-        </button>
+        </PortalButton>
       </form>
     </div>
   );

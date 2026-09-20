@@ -1,3 +1,4 @@
+import { logDbError } from '@/lib/errors/log-db-error'
 import { NextResponse } from "next/server";
 
 import { writeAuditEvent } from "@/lib/audit/write-audit-event";
@@ -49,13 +50,13 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Produkt und Objekt erforderlich." }, { status: 400 });
   }
 
-  const { data: objekt } = await supabaseAdmin
+  const {data: objekt, error: __dbErr186_1} = await supabaseAdmin
     .from("kunden_objekte")
     .select("id, kunde_id, titel, plz, strasse, hausnummer")
     .eq("id", kundeObjektId)
     .eq("kunde_id", session.kunde.id)
     .maybeSingle();
-
+  if (__dbErr186_1) logDbError('app/api/org/katalog/bestellen/route:kunden_objekte', __dbErr186_1)
   if (!objekt) {
     return NextResponse.json({ error: "Objekt nicht gefunden." }, { status: 404 });
   }
@@ -109,6 +110,7 @@ export async function POST(req: Request) {
       })
       .select("id")
       .single();
+    if (aboErr) logDbError('app/api/org/katalog/bestellen/route:objekt_abos', aboErr)
     if (aboErr) {
       return NextResponse.json({ error: aboErr.message }, { status: 500 });
     }
@@ -162,6 +164,7 @@ export async function POST(req: Request) {
     })
     .select("id")
     .single();
+  if (leadErr) logDbError('app/api/org/katalog/bestellen/route:leads', leadErr)
 
   if (leadErr || !lead) {
     return NextResponse.json({ error: leadErr?.message ?? "Lead fehlgeschlagen." }, { status: 500 });

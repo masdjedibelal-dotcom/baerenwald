@@ -52,6 +52,6 @@ export function stadtteilSectionLabel(
 ): string {
   if (fallbackLabel?.trim()) return fallbackLabel.trim();
   const key = handwerkerLeistungKeys[0];
-  if (!key) return "Handwerker";
+  if (!key) return "Partner";
   return HANDWERKER_LEISTUNG_LABELS[key] ?? key;
 }

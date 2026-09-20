@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 
+import { PortalInput, PortalTextarea } from "@/components/shared/PortalFormControls";
 import {
   previewPartnerAutoDokument,
   submitPartnerAutoAngebot,
@@ -10,6 +11,7 @@ import {
 } from "@/app/actions/partner-auto-dokumente";
 import { updatePartnerProfil } from "@/app/actions/partner-profil";
 import { PartnerDetailError } from "@/components/partner/PartnerDetailUi";
+import { PortalButton } from "@/components/portal/PortalButton";
 import { PortalModalShell } from "@/components/shared/PortalModalShell";
 import { usePortalUploadBusy } from "@/components/shared/usePortalUploadBusy";
 import type { AutoDocRegieOverride } from "@/lib/partner/partner-auto-doc-positionen";
@@ -86,48 +88,48 @@ function RechnungDokumentVorschau({
 
   return (
     <div className="space-y-3">
-      <p className="text-[12.5px]" style={{ color: PORTAL_VAR.sub }}>
-        Vorschau dessen, was du absendest. Nur die{" "}
+      <p className="text-fs-meta" style={{ color: PORTAL_VAR.sub }}>
+        Vorschau dessen, was Sie absenden. Nur die{" "}
         {art === "angebot" ? "Angebotsnummer" : "Rechnungsnummer"} kannst du
         noch ändern — der Rest entspricht dem PDF.
       </p>
 
       <div
-        className="overflow-hidden rounded-xl bg-white shadow-sm"
-        style={{ border: `1px solid ${PORTAL_VAR.line}` }}
+        className="overflow-hidden rounded-sheet bg-white shadow-sm"
+        style={{ border: `0.0625rem solid ${PORTAL_VAR.line}` }}
       >
         <div className="space-y-5 p-4 sm:p-5">
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div className="min-w-0 space-y-0.5">
               <p
-                className="text-[15px] font-bold"
+                className="text-fs-title font-bold"
                 style={{ color: PORTAL_VAR.ink }}
               >
                 {fd.firma || "Dein Betrieb"}
               </p>
               {absenderZeile ? (
-                <p className="text-[12px]" style={{ color: PORTAL_VAR.sub }}>
+                <p className="text-fs-caption" style={{ color: PORTAL_VAR.sub }}>
                   {absenderZeile}
                 </p>
               ) : null}
               {fd.telefon ? (
-                <p className="text-[12px]" style={{ color: PORTAL_VAR.sub }}>
+                <p className="text-fs-caption" style={{ color: PORTAL_VAR.sub }}>
                   Tel. {fd.telefon}
                 </p>
               ) : null}
             </div>
             <div className="text-right">
               <p
-                className="text-[15px] font-bold tracking-wide"
+                className="text-fs-title font-bold tracking-wide"
                 style={{ color: PORTAL_VAR.ink }}
               >
                 {art === "rechnung" ? "RECHNUNG" : "ANGEBOT"}
               </p>
-              <p className="text-[12px]" style={{ color: PORTAL_VAR.sub }}>
+              <p className="text-fs-caption" style={{ color: PORTAL_VAR.sub }}>
                 Datum {heute}
               </p>
               {art === "rechnung" && leistungsZeitraum?.trim() ? (
-                <p className="text-[12px]" style={{ color: PORTAL_VAR.sub }}>
+                <p className="text-fs-caption" style={{ color: PORTAL_VAR.sub }}>
                   Leistungszeitraum {leistungsZeitraum.trim()}
                 </p>
               ) : null}
@@ -136,37 +138,37 @@ function RechnungDokumentVorschau({
 
           <div
             className="grid gap-3 sm:grid-cols-2"
-            style={{ borderTop: `1px solid ${PORTAL_VAR.line2}` }}
+            style={{ borderTop: `0.0625rem solid ${PORTAL_VAR.line2}` }}
           >
             <div className="pt-3">
               <p
-                className="mb-1 text-[10px] font-semibold uppercase tracking-wide"
+                className="mb-1 text-fs-caption font-semibold uppercase tracking-wide"
                 style={{ color: PORTAL_VAR.faint }}
               >
                 Empfänger
               </p>
               <p
-                className="text-[13px] font-semibold"
+                className="text-fs-meta font-semibold"
                 style={{ color: PORTAL_VAR.ink }}
               >
                 {emp.firma}
               </p>
-              <p className="text-[12px]" style={{ color: PORTAL_VAR.sub }}>
+              <p className="text-fs-caption" style={{ color: PORTAL_VAR.sub }}>
                 {emp.strasse}
               </p>
-              <p className="text-[12px]" style={{ color: PORTAL_VAR.sub }}>
+              <p className="text-fs-caption" style={{ color: PORTAL_VAR.sub }}>
                 {emp.plzOrt}
               </p>
             </div>
             <div className="pt-3 sm:text-right">
               <label className="inline-block space-y-1 sm:ml-auto sm:text-left">
                 <span
-                  className="block text-[10px] font-semibold uppercase tracking-wide"
+                  className="block text-fs-caption font-semibold uppercase tracking-wide"
                   style={{ color: PORTAL_VAR.faint }}
                 >
                   {art === "angebot" ? "Angebotsnummer *" : "Rechnungsnummer *"}
                 </span>
-                <input
+                <PortalInput
                   type="text"
                   value={dokumentNr}
                   onChange={(e) => onDokumentNrChange(e.target.value)}
@@ -182,14 +184,14 @@ function RechnungDokumentVorschau({
             <div>
               {preview.betreff ? (
                 <p
-                  className="text-[13px] font-semibold"
+                  className="text-fs-meta font-semibold"
                   style={{ color: PORTAL_VAR.ink }}
                 >
                   {preview.betreff}
                 </p>
               ) : null}
               {preview.objektOrt ? (
-                <p className="text-[12px]" style={{ color: PORTAL_VAR.sub }}>
+                <p className="text-fs-caption" style={{ color: PORTAL_VAR.sub }}>
                   Objekt: {preview.objektOrt}
                 </p>
               ) : null}
@@ -198,10 +200,10 @@ function RechnungDokumentVorschau({
 
           <div className="space-y-0">
             <div
-              className="grid grid-cols-[1fr_auto] gap-2 pb-1.5 text-[10px] font-semibold uppercase tracking-wide"
+              className="grid grid-cols-[1fr_auto] gap-2 pb-1.5 text-fs-caption font-semibold uppercase tracking-wide"
               style={{
                 color: PORTAL_VAR.faint,
-                borderBottom: `1px solid ${PORTAL_VAR.line2}`,
+                borderBottom: `0.0625rem solid ${PORTAL_VAR.line2}`,
               }}
             >
               <span>Position</span>
@@ -212,12 +214,12 @@ function RechnungDokumentVorschau({
                 key={`${p.titel}-${i}`}
                 className="grid grid-cols-[1fr_auto] gap-2 py-2.5"
                 style={{
-                  borderBottom: `1px solid ${PORTAL_VAR.line2}`,
+                  borderBottom: `0.0625rem solid ${PORTAL_VAR.line2}`,
                 }}
               >
                 <div className="min-w-0">
                   <p
-                    className="text-[13px] font-semibold"
+                    className="text-fs-meta font-semibold"
                     style={{ color: PORTAL_VAR.ink }}
                   >
                     {p.titel}
@@ -227,7 +229,7 @@ function RechnungDokumentVorschau({
                   </p>
                   {p.beschreibung ? (
                     <p
-                      className="mt-0.5 whitespace-pre-wrap text-[12px]"
+                      className="mt-0.5 whitespace-pre-wrap text-fs-caption"
                       style={{ color: PORTAL_VAR.sub }}
                     >
                       {p.beschreibung}
@@ -235,7 +237,7 @@ function RechnungDokumentVorschau({
                   ) : null}
                   {!ku && p.mwstSatz > 0 ? (
                     <p
-                      className="mt-0.5 text-[11px]"
+                      className="mt-0.5 text-fs-caption"
                       style={{ color: PORTAL_VAR.faint }}
                     >
                       zzgl. {p.mwstSatz}&nbsp;% MwSt.
@@ -243,7 +245,7 @@ function RechnungDokumentVorschau({
                   ) : null}
                 </div>
                 <span
-                  className="shrink-0 text-[13px] font-semibold tabular-nums"
+                  className="shrink-0 text-fs-meta font-semibold tabular-nums"
                   style={{ color: PORTAL_VAR.ink }}
                 >
                   {fmtEur(p.netto)}
@@ -252,7 +254,7 @@ function RechnungDokumentVorschau({
             ))}
           </div>
 
-          <div className="ml-auto w-full max-w-[16rem] space-y-1 text-[13px]">
+          <div className="ml-auto w-full max-w-[16rem] space-y-1 text-fs-meta">
             <div className="flex justify-between gap-4">
               <span style={{ color: PORTAL_VAR.sub }}>Summe netto</span>
               <span
@@ -263,7 +265,7 @@ function RechnungDokumentVorschau({
               </span>
             </div>
             {ku ? (
-              <p className="text-[11px]" style={{ color: PORTAL_VAR.faint }}>
+              <p className="text-fs-caption" style={{ color: PORTAL_VAR.faint }}>
                 MwSt. 0,00 € (Kleinunternehmer §19 UStG)
               </p>
             ) : (
@@ -278,7 +280,7 @@ function RechnungDokumentVorschau({
               </div>
             )}
             <div
-              className="flex justify-between gap-4 border-t pt-1.5 text-[14px] font-bold"
+              className="flex justify-between gap-4 border-t pt-1.5 text-fs-body font-bold"
               style={{ borderColor: PORTAL_VAR.line2, color: PORTAL_VAR.ink }}
             >
               <span>{ku ? "Gesamt" : "Brutto"}</span>
@@ -288,14 +290,14 @@ function RechnungDokumentVorschau({
 
           {art === "rechnung" && fd.iban ? (
             <div
-              className="space-y-0.5 pt-1 text-[12px]"
+              className="space-y-0.5 pt-1 text-fs-caption"
               style={{
-                borderTop: `1px solid ${PORTAL_VAR.line2}`,
+                borderTop: `0.0625rem solid ${PORTAL_VAR.line2}`,
                 color: PORTAL_VAR.sub,
               }}
             >
               <p
-                className="text-[10px] font-semibold uppercase tracking-wide"
+                className="text-fs-caption font-semibold uppercase tracking-wide"
                 style={{ color: PORTAL_VAR.faint }}
               >
                 Zahlung
@@ -308,7 +310,7 @@ function RechnungDokumentVorschau({
           ) : null}
 
           {(fd.steuernummer || fd.ustid || ku) && (
-            <p className="text-[11px]" style={{ color: PORTAL_VAR.faint }}>
+            <p className="text-fs-caption" style={{ color: PORTAL_VAR.faint }}>
               {[
                 fd.steuernummer ? `Steuernr.: ${fd.steuernummer}` : null,
                 fd.ustid ? `USt-IdNr.: ${fd.ustid}` : null,
@@ -516,7 +518,7 @@ export function PartnerDokumentPreviewModal({
     if (!nr) {
       setError(
         art === "rechnung"
-          ? "Bitte deine Rechnungsnummer eintragen."
+          ? "Bitte Ihre Rechnungsnummer eintragen."
           : "Bitte eine Angebotsnummer eintragen."
       );
       return;
@@ -568,12 +570,12 @@ export function PartnerDokumentPreviewModal({
 
   const subtitle =
     step === "ask"
-      ? "Aus Firmendaten und Leistungen — sichtbar bei dir und bei Bärenwald unter Dokumente."
+      ? "Aus Firmendaten und Leistungen — sichtbar bei Ihnen und bei Bärenwald unter Dokumente."
       : step === "fehlend"
-        ? "Angaben werden in deinen Firmendaten gespeichert."
+        ? "Angaben werden in Ihren Firmendaten gespeichert."
         : art === "angebot"
-          ? "So sieht dein Angebot aus — Nummer kannst du noch anpassen."
-          : "So sieht deine Rechnung aus — nur die Nummer kannst du noch anpassen, dann Absenden.";
+          ? "So sieht Ihr Angebot aus — Nummer können Sie noch anpassen."
+          : "So sieht Ihre Rechnung aus — nur die Nummer können Sie noch anpassen, dann Absenden.";
 
   const firmMissingKeys = new Set(
     (preview?.missingFields ?? [])
@@ -613,14 +615,14 @@ export function PartnerDokumentPreviewModal({
         <div className="min-h-0 flex-1 space-y-4 overflow-y-auto pb-4">
           {step === "ask" ? (
             <div className="space-y-3">
-              <p className="text-[14px] leading-relaxed" style={{ color: PORTAL_VAR.sub }}>
+              <p className="text-fs-body leading-relaxed" style={{ color: PORTAL_VAR.sub }}>
                 {art === "angebot"
-                  ? "Wir erstellen automatisch dein Angebot an Bärenwald. Es erscheint unter Dokumente bei dir und bei Bärenwald."
-                  : "Wir erstellen automatisch deine Rechnung. Regiepositionen übernehmen wir mit Stundensatz aus der Anmeldung und der tatsächlichen Zeit aus dem Erledigt-Eintrag — ohne erneute Abfrage."}
+                  ? "Wir erstellen automatisch Ihr Angebot an Bärenwald. Es erscheint unter Dokumente bei Ihnen und bei Bärenwald."
+                  : "Wir erstellen automatisch Ihre Rechnung. Regiepositionen übernehmen wir mit Stundensatz aus der Anmeldung und der tatsächlichen Zeit aus dem Erledigt-Eintrag — ohne erneute Abfrage."}
               </p>
-              <p className="text-[12.5px]" style={{ color: PORTAL_VAR.faint }}>
-                Fehlende Pflichtangaben kannst du im nächsten Schritt nachtragen.
-                Mit „Nein“ gehst du ohne automatisches Dokument weiter — die Frage kommt beim nächsten Mal erneut.
+              <p className="text-fs-meta" style={{ color: PORTAL_VAR.faint }}>
+                Fehlende Pflichtangaben können Sie im nächsten Schritt nachtragen.
+                Mit „Nein“ gehen Sie ohne automatisches Dokument weiter — die Frage kommt beim nächsten Mal erneut.
               </p>
             </div>
           ) : null}
@@ -629,19 +631,19 @@ export function PartnerDokumentPreviewModal({
             <div className="space-y-4">
               {firmMissingKeys.size > 0 ? (
                 <div className="space-y-3">
-                  <p className="text-[12px] font-bold uppercase tracking-wide text-text-tertiary">
+                  <p className="text-fs-caption font-bold uppercase tracking-wide text-text-tertiary">
                     Firmendaten
                   </p>
                   {(firmMissingKeys.has("firma") ||
                     firmMissingKeys.has("Firmenname")) && (
                     <label className="block space-y-1">
-                      <span className="text-[12px] font-semibold text-text-tertiary">
+                      <span className="text-fs-caption font-semibold text-text-tertiary">
                         Firmenname *
                       </span>
-                      <input
+                      <PortalInput
                         value={firma}
                         onChange={(e) => setFirma(e.target.value)}
-                        className="portal-input w-full rounded-xl border border-border-default px-3 py-2.5"
+                        className="portal-input w-full rounded-field border border-border-default px-3 py-2.5"
                       />
                     </label>
                   )}
@@ -650,43 +652,43 @@ export function PartnerDokumentPreviewModal({
                     firmMissingKeys.has("Anschrift (Straße + PLZ/Ort)")) && (
                     <>
                       <label className="block space-y-1">
-                        <span className="text-[12px] font-semibold text-text-tertiary">
+                        <span className="text-fs-caption font-semibold text-text-tertiary">
                           Straße *
                         </span>
-                        <input
+                        <PortalInput
                           value={strasse}
                           onChange={(e) => setStrasse(e.target.value)}
-                          className="portal-input w-full rounded-xl border border-border-default px-3 py-2.5"
+                          className="portal-input w-full rounded-field border border-border-default px-3 py-2.5"
                         />
                       </label>
                       <label className="block space-y-1">
-                        <span className="text-[12px] font-semibold text-text-tertiary">
+                        <span className="text-fs-caption font-semibold text-text-tertiary">
                           Hausnummer
                         </span>
-                        <input
+                        <PortalInput
                           value={hausnummer}
                           onChange={(e) => setHausnummer(e.target.value)}
-                          className="portal-input w-full rounded-xl border border-border-default px-3 py-2.5"
+                          className="portal-input w-full rounded-field border border-border-default px-3 py-2.5"
                         />
                       </label>
                       <label className="block space-y-1">
-                        <span className="text-[12px] font-semibold text-text-tertiary">
+                        <span className="text-fs-caption font-semibold text-text-tertiary">
                           PLZ *
                         </span>
-                        <input
+                        <PortalInput
                           value={plz}
                           onChange={(e) => setPlz(e.target.value)}
-                          className="portal-input w-full rounded-xl border border-border-default px-3 py-2.5"
+                          className="portal-input w-full rounded-field border border-border-default px-3 py-2.5"
                         />
                       </label>
                       <label className="block space-y-1">
-                        <span className="text-[12px] font-semibold text-text-tertiary">
+                        <span className="text-fs-caption font-semibold text-text-tertiary">
                           Ort *
                         </span>
-                        <input
+                        <PortalInput
                           value={ort}
                           onChange={(e) => setOrt(e.target.value)}
-                          className="portal-input w-full rounded-xl border border-border-default px-3 py-2.5"
+                          className="portal-input w-full rounded-field border border-border-default px-3 py-2.5"
                         />
                       </label>
                     </>
@@ -694,13 +696,13 @@ export function PartnerDokumentPreviewModal({
                   {firmMissingKeys.has("telefon") ||
                   firmMissingKeys.has("Telefon") ? (
                     <label className="block space-y-1">
-                      <span className="text-[12px] font-semibold text-text-tertiary">
+                      <span className="text-fs-caption font-semibold text-text-tertiary">
                         Telefon *
                       </span>
-                      <input
+                      <PortalInput
                         value={telefon}
                         onChange={(e) => setTelefon(e.target.value)}
-                        className="portal-input w-full rounded-xl border border-border-default px-3 py-2.5"
+                        className="portal-input w-full rounded-field border border-border-default px-3 py-2.5"
                       />
                     </label>
                   ) : null}
@@ -708,36 +710,36 @@ export function PartnerDokumentPreviewModal({
                     firmMissingKeys.has("Steuernummer oder USt-IdNr.")) && (
                     <>
                       <label className="block space-y-1">
-                        <span className="text-[12px] font-semibold text-text-tertiary">
+                        <span className="text-fs-caption font-semibold text-text-tertiary">
                           Steuernummer
                         </span>
-                        <input
+                        <PortalInput
                           value={steuernummer}
                           onChange={(e) => setSteuernummer(e.target.value)}
-                          className="portal-input w-full rounded-xl border border-border-default px-3 py-2.5"
+                          className="portal-input w-full rounded-field border border-border-default px-3 py-2.5"
                         />
                       </label>
                       <label className="block space-y-1">
-                        <span className="text-[12px] font-semibold text-text-tertiary">
+                        <span className="text-fs-caption font-semibold text-text-tertiary">
                           USt-IdNr.
                         </span>
-                        <input
+                        <PortalInput
                           value={ustid}
                           onChange={(e) => setUstid(e.target.value)}
-                          className="portal-input w-full rounded-xl border border-border-default px-3 py-2.5"
+                          className="portal-input w-full rounded-field border border-border-default px-3 py-2.5"
                         />
                       </label>
                     </>
                   )}
                   {firmMissingKeys.has("iban") || firmMissingKeys.has("IBAN") ? (
                     <label className="block space-y-1">
-                      <span className="text-[12px] font-semibold text-text-tertiary">
+                      <span className="text-fs-caption font-semibold text-text-tertiary">
                         IBAN *
                       </span>
-                      <input
+                      <PortalInput
                         value={iban}
                         onChange={(e) => setIban(e.target.value)}
-                        className="portal-input w-full rounded-xl border border-border-default px-3 py-2.5"
+                        className="portal-input w-full rounded-field border border-border-default px-3 py-2.5"
                       />
                     </label>
                   ) : null}
@@ -754,17 +756,17 @@ export function PartnerDokumentPreviewModal({
                 return (
                   <div
                     key={pid}
-                    className="space-y-2 rounded-xl border border-amber-200 bg-amber-50/40 p-3"
+                    className="space-y-2 rounded-sheet border border-warning-border bg-warning-bg/40 p-3"
                   >
-                    <p className="text-[13px] font-bold text-amber-950">
+                    <p className="text-fs-meta font-bold text-warning-text">
                       Regieposition
                     </p>
                     {fields.some((f) => f.key.startsWith("regie_titel")) ? (
                       <label className="block space-y-1">
-                        <span className="text-[12px] font-semibold text-text-tertiary">
+                        <span className="text-fs-caption font-semibold text-text-tertiary">
                           Titel *
                         </span>
-                        <input
+                        <PortalInput
                           value={draft.titel}
                           onChange={(e) =>
                             setRegieDraft((prev) => ({
@@ -772,15 +774,15 @@ export function PartnerDokumentPreviewModal({
                               [pid]: { ...draft, titel: e.target.value },
                             }))
                           }
-                          className="portal-input w-full rounded-xl border border-border-default px-3 py-2.5"
+                          className="portal-input w-full rounded-field border border-border-default px-3 py-2.5"
                         />
                       </label>
                     ) : null}
                     <label className="block space-y-1">
-                      <span className="text-[12px] font-semibold text-text-tertiary">
+                      <span className="text-fs-caption font-semibold text-text-tertiary">
                         Beschreibung
                       </span>
-                      <textarea
+                      <PortalTextarea
                         value={draft.beschreibung}
                         onChange={(e) =>
                           setRegieDraft((prev) => ({
@@ -789,15 +791,15 @@ export function PartnerDokumentPreviewModal({
                           }))
                         }
                         rows={2}
-                        className="portal-input w-full rounded-xl border border-border-default px-3 py-2.5"
+                        className="portal-input w-full rounded-field border border-border-default px-3 py-2.5"
                       />
                     </label>
                     {fields.some((f) => f.key.startsWith("regie_zeit")) ? (
                       <label className="block space-y-1">
-                        <span className="text-[12px] font-semibold text-text-tertiary">
+                        <span className="text-fs-caption font-semibold text-text-tertiary">
                           Zeit (Minuten) *
                         </span>
-                        <input
+                        <PortalInput
                           type="number"
                           min={0}
                           value={draft.zeitMin}
@@ -807,16 +809,16 @@ export function PartnerDokumentPreviewModal({
                               [pid]: { ...draft, zeitMin: e.target.value },
                             }))
                           }
-                          className="portal-input w-full rounded-xl border border-border-default px-3 py-2.5"
+                          className="portal-input w-full rounded-field border border-border-default px-3 py-2.5"
                         />
                       </label>
                     ) : null}
                     {fields.some((f) => f.key.startsWith("regie_satz")) ? (
                       <label className="block space-y-1">
-                        <span className="text-[12px] font-semibold text-text-tertiary">
+                        <span className="text-fs-caption font-semibold text-text-tertiary">
                           Stundensatz (€) *
                         </span>
-                        <input
+                        <PortalInput
                           type="number"
                           min={0}
                           step="0.01"
@@ -827,7 +829,7 @@ export function PartnerDokumentPreviewModal({
                               [pid]: { ...draft, satz: e.target.value },
                             }))
                           }
-                          className="portal-input w-full rounded-xl border border-border-default px-3 py-2.5"
+                          className="portal-input w-full rounded-field border border-border-default px-3 py-2.5"
                         />
                       </label>
                     ) : null}
@@ -861,59 +863,54 @@ export function PartnerDokumentPreviewModal({
           {step === "ask" ? (
             <>
               {allowSkip ? (
-                <button
-                  type="button"
+                <PortalButton
+                  variant="secondary"
                   disabled={loading}
                   onClick={onClose}
-                  className="portal-action-btn portal-action-btn--secondary"
                 >
                   {cancelLabel}
-                </button>
+                </PortalButton>
               ) : null}
-              <button
-                type="button"
+              <PortalButton
+                variant="primary"
                 disabled={loading}
                 onClick={() => void handleJa()}
-                className="portal-action-btn portal-action-btn--primary"
               >
                 {loading ? "Prüfe…" : "Ja, erstellen"}
-              </button>
+              </PortalButton>
             </>
           ) : null}
 
           {step === "fehlend" ? (
             <>
-              <button
-                type="button"
+              <PortalButton
+                variant="secondary"
                 disabled={loading}
                 onClick={onClose}
-                className="portal-action-btn portal-action-btn--secondary"
               >
                 {cancelLabel}
-              </button>
-              <button
-                type="button"
+              </PortalButton>
+              <PortalButton
+                variant="primary"
                 disabled={loading}
                 onClick={() => void saveFehlendAndContinue()}
-                className="portal-action-btn portal-action-btn--primary"
               >
                 {loading ? "Speichern…" : "Weiter zur Vorschau"}
-              </button>
+              </PortalButton>
             </>
           ) : null}
 
           {step === "preview" ? (
             <>
-              <button
-                type="button"
+              <PortalButton
+                variant="secondary"
                 disabled={loading}
                 onClick={onClose}
-                className="portal-action-btn portal-action-btn--secondary"
               >
                 Abbrechen
-              </button>
-              <button
-                type="button"
+              </PortalButton>
+              <PortalButton
+                variant="primary"
                 disabled={
                   loading ||
                   !preview ||
@@ -921,10 +918,9 @@ export function PartnerDokumentPreviewModal({
                   !dokumentNr.trim()
                 }
                 onClick={() => void onSubmit()}
-                className="portal-action-btn portal-action-btn--primary"
               >
                 {previewSubmitLabel}
-              </button>
+              </PortalButton>
             </>
           ) : null}
         </div>

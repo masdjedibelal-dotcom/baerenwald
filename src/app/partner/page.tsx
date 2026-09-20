@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { PartnerAuthFlowHint } from "@/components/partner/PartnerAuthFlowHint";
 import { PartnerAuthShell } from "@/components/partner/PartnerAuthShell";
 import { PartnerClient } from "@/components/partner/PartnerClient";
+import { PortalContentBusy } from "@/components/shared/PortalContentBusy";
 import { PARTNER_AUTH_COPY } from "@/lib/partner/partner-auth-copy";
 import { getPartnerDataForHandwerker } from "@/lib/partner/get-partner-data";
 import { linkPortalHandwerkerToAuthUser } from "@/lib/partner/link-portal-handwerker";
@@ -146,7 +147,7 @@ export default async function PartnerDashboardPage({
   return (
     <Suspense
       fallback={
-        <p className="px-4 py-8 text-center portal-text-body text-text-secondary">Portal wird geladen…</p>
+        <PortalContentBusy variant="page" />
       }
     >
       <PartnerClient

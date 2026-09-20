@@ -1,3 +1,4 @@
+import { PALETTE } from "@/lib/tokens/palette";
 export function fmtPortalDate(v?: string | null): string {
   if (!v) return "—";
   const d = new Date(v);
@@ -59,19 +60,19 @@ export function portalDetailStatusPillClass(status: string): string {
     s.includes("abgeschlossen") ||
     s.includes("fertig")
   ) {
-    return "tag bg-emerald-100 text-emerald-700";
+    return "tag bg-p2-primary-soft text-p2-primary";
   }
   if (s === "abgelehnt" || s === "storniert" || s === "antwort_abgelaufen") {
-    return "tag bg-red-100 text-red-700";
+    return "tag bg-p2-danger-soft text-p2-danger";
   }
   if (s === "geaendert" || s === "ergaenzung" || s.includes("geändert")) {
-    return "tag bg-violet-100 text-violet-800";
+    return "tag bg-p2-bg text-p2-ink";
   }
   if (s === "neu") {
-    return "tag bg-orange-100 text-orange-800";
+    return "tag bg-warning-bg text-warning-text";
   }
   if (s === "bautagebuch" || s.includes("tagebuch")) {
-    return "tag bg-amber-100 text-amber-900";
+    return "tag bg-warning-bg text-warning-text";
   }
   if (
     s === "in_arbeit" ||
@@ -83,10 +84,10 @@ export function portalDetailStatusPillClass(status: string): string {
     s.includes("arbeit") ||
     s.includes("aktiv")
   ) {
-    return "tag bg-blue-100 text-blue-800";
+    return "tag bg-p2-bg text-p2-ink";
   }
   if (s.includes("angebot") || s.includes("gesendet") || s.includes("entwurf")) {
-    return "tag bg-amber-100 text-amber-800";
+    return "tag bg-warning-bg text-warning-text";
   }
   return "tag bg-muted text-text-secondary";
 }
@@ -107,19 +108,19 @@ export function portalDetailStatusPillStyle(status: string): {
     s.includes("abgeschlossen") ||
     s.includes("fertig")
   ) {
-    return { color: "#4B5563", backgroundColor: "#EAEDEC" };
+    return { color: PALETTE.h4b5563, backgroundColor: "var(--p2-status-done-bg)" };
   }
   if (s === "abgelehnt" || s === "storniert" || s === "antwort_abgelaufen") {
-    return { color: "#b91c1c", backgroundColor: "#fee2e2" };
+    return { color: PALETTE.hb91c1c, backgroundColor: PALETTE.hfee2e2 };
   }
   if (s === "geaendert" || s === "ergaenzung" || s.includes("geändert")) {
-    return { color: "#6d28d9", backgroundColor: "#ede9fe" };
+    return { color: PALETTE.h6d28d9, backgroundColor: PALETTE.hede9fe };
   }
   if (s === "neu" || s === "aktion") {
-    return { color: "#C2410C", backgroundColor: "#FFF7ED" };
+    return { color: "var(--p2-status-new)", backgroundColor: "var(--p2-status-new-bg)" };
   }
   if (s === "bautagebuch" || s.includes("tagebuch")) {
-    return { color: "#8A5A06", backgroundColor: "#FBF1D6" };
+    return { color: "var(--p2-sand-text)", backgroundColor: "var(--p2-status-sand-bg)" };
   }
   if (
     s === "in_arbeit" ||
@@ -131,12 +132,12 @@ export function portalDetailStatusPillStyle(status: string): {
     s.includes("arbeit") ||
     s.includes("aktiv")
   ) {
-    return { color: "#1F4FA8", backgroundColor: "#E4ECF7" };
+    return { color: "var(--p2-status-blue)", backgroundColor: "var(--p2-status-blue-bg)" };
   }
   if (s.includes("angebot") || s.includes("gesendet") || s.includes("entwurf")) {
-    return { color: "#8A5A06", backgroundColor: "#FBF1D6" };
+    return { color: "var(--p2-sand-text)", backgroundColor: "var(--p2-status-sand-bg)" };
   }
-  return { color: "#4B5563", backgroundColor: "#EAEDEC" };
+  return { color: PALETTE.h4b5563, backgroundColor: "var(--p2-status-done-bg)" };
 }
 
 /** @deprecated Alias für Partner-Importe */

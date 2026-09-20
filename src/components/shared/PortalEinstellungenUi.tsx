@@ -1,9 +1,13 @@
 "use client";
 
-import { useEffect, useState, type ReactNode } from "react";
-import { Pencil, Plus } from "lucide-react";
+import { PortalIcon } from "@/components/portal/PortalIcon";
+import { useState, type ReactNode } from "react";
 
-import { PortalDetailInfoBox } from "@/components/shared/PortalDetailUi";
+import { PortalInput } from "@/components/shared/PortalFormControls";
+import {
+  PortalConfirmDialog,
+  PortalDetailInfoBox,
+} from "@/components/shared/PortalDetailUi";
 import { PortalModalShell } from "@/components/shared/PortalModalShell";
 import { InfoTip } from "@/components/ui/InfoTip";
 import {
@@ -16,12 +20,14 @@ import {
   PORTAL_SECTION_CARD_CLASS,
 } from "@/lib/portal2/section-card-contract";
 import { PORTAL_VAR } from "@/lib/portal2/tokens";
+import { portalToastSystemError } from "@/lib/shared/portal-toast";
 import { cn } from "@/lib/utils";
+import { PortalButton } from "@/components/portal/PortalButton";
 
 /**
  * Accent-Kreis „+“ für Section-Köpfe (Hinzufügen).
  * Regel: Section-Add = dieser Button; Listen-CTA oben rechts = `btn-pill-primary`;
- * Sticky/entscheidend = `portal-action-btn`.
+ * Sticky/entscheidend = `PortalButton` (`portal-btn` + `portal-action-btn`).
  */
 export function PortalSectionAddButton({
   onClick,
@@ -35,19 +41,20 @@ export function PortalSectionAddButton({
   className?: string;
 }) {
   return (
-    <button
+    <PortalButton
+      variant="primary"
       type="button"
       onClick={onClick}
       disabled={disabled}
       aria-label={label}
       title={label}
       className={cn(
-        "inline-flex h-9 w-9 items-center justify-center rounded-full bg-accent text-white shadow-sm transition-colors hover:bg-accent-hover disabled:cursor-not-allowed disabled:opacity-50",
+        "inline-flex h-9 w-9 items-center justify-center rounded-pill bg-accent text-white shadow-sm transition-colors hover:bg-accent-hover disabled:cursor-not-allowed disabled:opacity-50",
         className
       )}
     >
-      <Plus className="h-4 w-4" aria-hidden strokeWidth={2.25} />
-    </button>
+      <PortalIcon n="plus" ctx="default" className="h-4 w-4" aria-hidden />
+    </PortalButton>
   );
 }
 
@@ -116,7 +123,7 @@ export function EinstellungenEdField({
       <span className="portal-text-label font-semibold normal-case tracking-normal text-text-primary">
         {label}
       </span>
-      <input
+      <PortalInput
         type={type}
         className="portal-field w-full"
         value={value}
@@ -193,7 +200,7 @@ export function EinstellungenLogoRow({
 }) {
   return (
     <div className="flex items-center gap-3.5">
-      <div className="flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-border-default bg-white">
+      <div className="flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-sheet border border-border-default bg-white">
         {preview ?? (
           <span className="font-[family-name:var(--font-display)] text-sm font-bold text-text-primary">
             {fallbackLabel}
@@ -203,18 +210,18 @@ export function EinstellungenLogoRow({
       {!readOnly && onUploadClick ? (
         <>
           {fileInput}
-          <button
+          <PortalButton variant="secondary" action={false} compact
             type="button"
             disabled={uploadBusy}
             onClick={onUploadClick}
-            className="btn-pill-outline portal-btn-compact shrink-0 disabled:opacity-50"
+            className="shrink-0 disabled:opacity-50"
           >
             {uploadBusy
               ? "Wird hochgeladen…"
               : hasLogo
                 ? "Logo ersetzen"
                 : "Logo hochladen"}
-          </button>
+          </PortalButton>
         </>
       ) : null}
       <div className="min-w-0 flex-1" aria-hidden />
@@ -252,15 +259,16 @@ export function EinstellungenSectionHeader({
             <PortalSectionAddButton onClick={onAdd} label={addLabel} />
           ) : null}
           {onEdit ? (
-            <button
+            <PortalButton
+              variant="ghost"
               type="button"
               onClick={onEdit}
               aria-label={editLabel}
               title={editLabel}
-              className="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-[#EEF4F0] text-[#2E7D52] transition-colors hover:bg-[#e2ebe5]"
+              className="inline-flex h-11 w-11 min-h-11 min-w-11 items-center justify-center rounded-sheet bg-[var(--p2-hover)] text-[var(--p2-primary)] transition-colors hover:bg-[var(--p2-hover)]"
             >
-              <Pencil className="h-4 w-4" aria-hidden strokeWidth={2.25} />
-            </button>
+              <PortalIcon n="pencil" ctx="default" className="h-4 w-4" aria-hidden />
+            </PortalButton>
           ) : null}
         </div>
       ) : null}
@@ -282,7 +290,7 @@ export function EinstellungenEditModal({
   onClose,
   onSave,
   saving,
-  saveDisabled,
+  saveDisabled: _saveDisabled,
   saveLabel = "Speichern",
   dirty: dirtyProp,
 }: {
@@ -293,20 +301,20 @@ export function EinstellungenEditModal({
   onClose: () => void;
   onSave: () => void | Promise<void>;
   saving?: boolean;
+  /** @deprecated Feld-Leere nicht mehr über confirmDisabled — Validierung im onSave. */
   saveDisabled?: boolean;
   saveLabel?: string;
   /** Wenn gesetzt: überschreibt Auto-Dirty aus Form-Input. */
   dirty?: boolean;
 }) {
-  const [touched, setTouched] = useState(false);
-  useEffect(() => {
-    if (!open) setTouched(false);
-  }, [open]);
-
-  const dirty = dirtyProp ?? touched;
-
   async function handleSave() {
-    await onSave();
+    try {
+      await onSave();
+    } catch (err) {
+      portalToastSystemError(err, "einstellungen-save", undefined, {
+        onRetry: () => void handleSave(),
+      });
+    }
   }
 
   return (
@@ -316,20 +324,18 @@ export function EinstellungenEditModal({
       subtitle={subtitle}
       onClose={onClose}
       variant="edit"
-      dirty={dirty && !saving}
+      {...(saving
+        ? { dirty: false as const }
+        : dirtyProp !== undefined
+          ? { dirty: dirtyProp }
+          : {})}
       closeOnBackdrop={!saving}
       busy={Boolean(saving)}
       onConfirm={() => void handleSave()}
       confirmLabel={saving ? "Speichern…" : saveLabel}
-      confirmDisabled={Boolean(saving || saveDisabled)}
+      confirmDisabled={Boolean(saving)}
     >
-      <div
-        className="portal-sheet-form-group"
-        onInput={() => setTouched(true)}
-        onChange={() => setTouched(true)}
-      >
-        {children}
-      </div>
+      <div className="portal-sheet-form-group">{children}</div>
     </PortalModalShell>
   );
 }
@@ -349,7 +355,8 @@ export function EinstellungenChoiceCard({
   disabled?: boolean;
 }) {
   return (
-    <button
+    <PortalButton
+      variant="primary"
       type="button"
       disabled={disabled}
       onClick={onSelect}
@@ -362,13 +369,13 @@ export function EinstellungenChoiceCard({
     >
       <span
         className={cn(
-          "mt-0.5 flex h-[18px] w-[18px] shrink-0 items-center justify-center rounded-full border-2",
-          selected ? "border-accent" : "border-[#c5cbc8]"
+          "mt-0.5 flex h-[18px] w-[18px] shrink-0 items-center justify-center rounded-pill border-2",
+          selected ? "border-accent" : "border-[var(--p2-border-soft)]"
         )}
         aria-hidden
       >
         {selected ? (
-          <span className="h-2 w-2 rounded-full bg-accent" />
+          <span className="h-2 w-2 rounded-pill bg-accent" />
         ) : null}
       </span>
       <span className="min-w-0">
@@ -377,7 +384,7 @@ export function EinstellungenChoiceCard({
           {description}
         </span>
       </span>
-    </button>
+    </PortalButton>
   );
 }
 
@@ -436,7 +443,7 @@ export function EinstellungenSchwelleSlider({
 }) {
   return (
     <div className="flex items-center gap-3">
-      <input
+      <PortalInput
         type="range"
         min={min}
         max={max}
@@ -505,13 +512,13 @@ export function EinstellungenEuroSlider({
           Schwellenwert
         </span>
         <span
-          className="text-[24px] font-extrabold tabular-nums leading-none"
-          style={{ color: "#2E7D52" }}
+          className="text-fs-head font-extrabold tabular-nums leading-none"
+          style={{ color: "var(--p2-primary)" }}
         >
           {label}
         </span>
       </div>
-      <input
+      <PortalInput
         type="range"
         min={min}
         max={max}
@@ -519,7 +526,7 @@ export function EinstellungenEuroSlider({
         disabled={disabled}
         value={Number.isFinite(value) ? value : min}
         onChange={(e) => onChange(Number(e.target.value))}
-        className="h-2 w-full cursor-pointer appearance-none rounded-full bg-border-default accent-[#2E7D52] disabled:cursor-not-allowed disabled:opacity-60"
+        className="h-2 w-full cursor-pointer appearance-none rounded-pill bg-border-default accent-[var(--p2-primary)] disabled:cursor-not-allowed disabled:opacity-60"
         aria-valuemin={min}
         aria-valuemax={max}
         aria-valuenow={value}
@@ -618,29 +625,30 @@ export function EinstellungenToggle({
       className={cn(
         nested
           ? PORTAL_NESTED_PANEL_CLASS
-          : "rounded-[11px] border border-border-default bg-[var(--p2-panel,#fff)] px-3.5 py-[13px] shadow-sm",
+          : "rounded-[11px] border border-border-default bg-[var(--p2-panel)] px-3.5 py-[13px] shadow-sm",
         disabled && "opacity-60"
       )}
     >
       <div className="flex w-full items-start gap-3">
-        <button
+        <PortalButton
+          variant="primary"
           type="button"
           disabled={disabled}
           aria-pressed={checked}
           onClick={() => onChange(!checked)}
           className={cn(
-            "relative mt-0.5 h-7 w-12 shrink-0 rounded-full transition-colors disabled:cursor-not-allowed",
-            checked ? "bg-[#2E7D52]" : "bg-[#cfd4d2]"
+            "relative mt-0.5 h-7 w-12 shrink-0 rounded-pill transition-colors disabled:cursor-not-allowed",
+            checked ? "bg-[var(--p2-primary)]" : "bg-[var(--p2-toggle-off)]"
           )}
         >
           <span
             className={cn(
-              "absolute top-[3px] h-[22px] w-[22px] rounded-full bg-white shadow transition-[left]",
+              "absolute top-[3px] h-[22px] w-[22px] rounded-pill bg-white shadow transition-[left]",
               checked ? "left-[23px]" : "left-[3px]"
             )}
             aria-hidden
           />
-        </button>
+        </PortalButton>
         <div className="min-w-0 flex-1">
           <div className="portal-text-body font-bold text-text-primary">
             {title}
@@ -654,5 +662,68 @@ export function EinstellungenToggle({
       </div>
       {children ? <div className="mt-3">{children}</div> : null}
     </div>
+  );
+}
+
+/**
+ * Toggle mit Sofort-Speichern nach Bestätigung (Einstellungen außerhalb Edit-Modal).
+ */
+export function EinstellungenInstantToggle({
+  checked,
+  title,
+  description,
+  confirmTitle,
+  confirmDescription,
+  onSave,
+  disabled,
+  nested,
+}: {
+  checked: boolean;
+  title: ReactNode;
+  description?: ReactNode;
+  confirmTitle: string;
+  confirmDescription: string;
+  onSave: (next: boolean) => Promise<void>;
+  disabled?: boolean;
+  nested?: boolean;
+}) {
+  const [pendingNext, setPendingNext] = useState<boolean | null>(null);
+  const [busy, setBusy] = useState(false);
+
+  return (
+    <>
+      <EinstellungenToggle
+        checked={checked}
+        title={title}
+        description={description}
+        nested={nested}
+        disabled={disabled || busy}
+        onChange={(next) => setPendingNext(next)}
+      />
+      <PortalConfirmDialog
+        open={pendingNext !== null}
+        title={confirmTitle}
+        description={confirmDescription}
+        confirmLabel="Speichern"
+        loading={busy}
+        onCancel={() => {
+          if (busy) return;
+          setPendingNext(null);
+        }}
+        onConfirm={() => {
+          if (pendingNext === null || busy) return;
+          const next = pendingNext;
+          setBusy(true);
+          void (async () => {
+            try {
+              await onSave(next);
+              setPendingNext(null);
+            } finally {
+              setBusy(false);
+            }
+          })();
+        }}
+      />
+    </>
   );
 }

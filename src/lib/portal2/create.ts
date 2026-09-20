@@ -1,5 +1,6 @@
 /**
  * Portal 2.0 Create — Mock `canCreate()` / `createLabel()`.
+ * N8: keine Nav-Rolle `mieter` — Mieter-WL über `kunde_privat` / hvPortalMode.
  */
 
 import type { FunnelChannel } from "@/lib/funnel/funnel-variant";
@@ -12,17 +13,17 @@ export function portalCanCreate(role: PortalNavRole): boolean {
 
 /**
  * Mock `createLabel()`:
- * Mieter / Privatkunde „Schaden melden“ · Eigentümer „Anfrage erstellen“ · sonst „Neuer Vorgang“.
+ * Privat „Schaden melden“ · Eigentümer/HM „Anfrage erstellen“ · sonst „Neuer Vorgang“.
  */
 export function portalCreateLabel(role: PortalNavRole): string {
-  if (role === "mieter" || role === "kunde_privat") return "Schaden melden";
-  if (role === "eigentuemer") return "Anfrage erstellen";
+  if (role === "kunde_privat") return "Schaden melden";
+  if (role === "eigentuemer" || role === "hausmeister")
+    return "Anfrage erstellen";
   return "Neuer Vorgang";
 }
 
 /**
  * FAB/Create-Funnel-Channel — nicht mit Label vermischen.
- * Mieter: `portal_mieter` (forceKaputt → nur Reparatur & Notfall, kein Umbau/Betreuung).
  */
 export function portalCreateChannel(
   role: PortalNavRole
@@ -30,8 +31,8 @@ export function portalCreateChannel(
   FunnelChannel,
   "portal_privat" | "portal_eigentuemer" | "portal_mieter"
 > {
-  if (role === "eigentuemer") return "portal_eigentuemer";
-  if (role === "mieter") return "portal_mieter";
+  if (role === "eigentuemer" || role === "hausmeister")
+    return "portal_eigentuemer";
   if (role === "kunde_privat") return "portal_privat";
   return "portal_privat";
 }
@@ -39,7 +40,7 @@ export function portalCreateChannel(
 /**
  * Create-Kanal für MeinBärenwald-PortalClient (ohne HV-Embedded).
  * Privat = Website-Flow mit Preis (`portal_privat`).
- * Gewerbe teilt denselben Kanal. Mieter-WL bleibt `portal_mieter`.
+ * Gewerbe teilt denselben Kanal. Mieter-WL bleibt `portal_mieter` via hvPortalMode.
  */
 export function portalClientCreateChannel(opts: {
   hvPortalMode?: boolean;

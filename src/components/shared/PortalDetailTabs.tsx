@@ -1,6 +1,7 @@
 "use client";
 
 import type { ReactNode } from "react";
+import { PortalButton } from "@/components/portal/PortalButton";
 
 import { PortalCountBadge } from "@/components/shared/PortalNavCountBadge";
 import { cn } from "@/lib/utils";
@@ -38,7 +39,8 @@ export function PortalDetailTabs({
           {tabs.map((t) => {
             const on = activeId === t.id;
             return (
-              <button
+              <PortalButton
+                variant="ghost"
                 key={t.id}
                 type="button"
                 role="tab"
@@ -51,7 +53,7 @@ export function PortalDetailTabs({
               >
                 {t.label}
                 <PortalCountBadge count={t.badge ?? 0} />
-              </button>
+              </PortalButton>
             );
           })}
         </div>

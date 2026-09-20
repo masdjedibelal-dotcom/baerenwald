@@ -1,3 +1,4 @@
+import { logDbError } from '@/lib/errors/log-db-error'
 import { createHvNotification } from "@/lib/org/create-hv-notification";
 import {
   buildMeldeVorgangTitel,
@@ -13,22 +14,22 @@ export async function notifyHvPartnerBautagebuch(input: {
   handwerkerName: string;
   eintragTitel: string;
 }): Promise<void> {
-  const { data: auftrag } = await supabaseAdmin
+  const {data: auftrag, error: __dbErr313_1} = await supabaseAdmin
     .from("auftraege")
     .select("id, titel, lead_id")
     .eq("id", input.auftragId)
     .maybeSingle();
-
+  if (__dbErr313_1) logDbError('lib/org/notify-hv-bautagebuch:auftraege', __dbErr313_1)
   if (!auftrag?.lead_id) return;
 
-  const { data: lead } = await supabaseAdmin
+  const {data: lead, error: __dbErr314_2} = await supabaseAdmin
     .from("leads")
     .select(
       "auftraggeber_kunde_id, situation, bereiche, funnel_daten, kontakt_nachricht, notizen"
     )
     .eq("id", auftrag.lead_id)
     .maybeSingle();
-
+  if (__dbErr314_2) logDbError('lib/org/notify-hv-bautagebuch:leads', __dbErr314_2)
   const kundeId = lead?.auftraggeber_kunde_id
     ? String(lead.auftraggeber_kunde_id)
     : null;

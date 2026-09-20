@@ -2,6 +2,7 @@
 
 import type { ObjektKpiPortal } from "@/lib/org/objektakte/types";
 import { PORTAL_VAR } from "@/lib/portal2/tokens";
+import { PortalButton } from "@/components/portal/PortalButton";
 
 type Props = {
   kpis: ObjektKpiPortal;
@@ -55,13 +56,13 @@ export function OrganisationObjektKpiCard({
           <p className="portal-text-section">Kennzahlen</p>
         </div>
         {onBerichtClick ? (
-          <button
+          <PortalButton variant="primary" action={false}
             type="button"
             onClick={onBerichtClick}
-            className="btn-pill-primary portal-btn text-[13px]"
+            className="text-fs-meta"
           >
             Bericht erstellen
-          </button>
+          </PortalButton>
         ) : null}
       </div>
 
@@ -76,7 +77,7 @@ export function OrganisationObjektKpiCard({
             </>
           );
           const style = {
-            background: "#fff",
+            background: "var(--p2-panel)",
             border: `0.5px solid ${PORTAL_VAR.line}`,
             borderRadius: 12,
             padding: "14px 14px",
@@ -84,7 +85,8 @@ export function OrganisationObjektKpiCard({
           };
           if (tile.onClick) {
             return (
-              <button
+              <PortalButton
+                variant="ghost"
                 key={tile.id}
                 type="button"
                 onClick={tile.onClick}
@@ -92,7 +94,7 @@ export function OrganisationObjektKpiCard({
                 className="transition hover:border-primary/30"
               >
                 {inner}
-              </button>
+              </PortalButton>
             );
           }
           return (

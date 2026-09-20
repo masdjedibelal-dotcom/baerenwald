@@ -3,13 +3,12 @@
 import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 
-import { HvObjektFilterPopover } from "@/components/org/HvObjektFilterPopover";
 import { PortalClient } from "@/components/portal/PortalClient";
 import {
   PortalListeEyebrow,
-  PortalListeFilterChip,
   PortalListeTitle,
 } from "@/components/shared/PortalListeChrome";
+import { PortalListeFilterBar } from "@/components/shared/PortalListeFilterBar";
 import { filterOrgLeadsByObjektIds } from "@/lib/org/filter-leads-by-objekt";
 import {
   type OrgVorgangFilter,
@@ -127,29 +126,24 @@ function HvListeChrome({
         <PortalListeEyebrow>{HV_LISTE_PAGE_EYEBROW}</PortalListeEyebrow>
         <PortalListeTitle>{HV_LISTE_PAGE_TITLE}</PortalListeTitle>
       </div>
-      <div className="relative z-30 -mx-1 flex items-center gap-2 px-1 py-3.5">
-        <div className="flex min-w-0 flex-1 items-center gap-2 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-          {HV_CHIPS.map((chip) => (
-            <PortalListeFilterChip
-              key={chip.id}
-              active={chip.id === filter}
-              onClick={() => onFilterChange(chip.id)}
-            >
-              {chip.label}
-            </PortalListeFilterChip>
-          ))}
-        </div>
-        <div className="shrink-0">
-          <HvObjektFilterPopover
-            objekte={objekte.map((o) => ({
-              id: o.id,
-              titel: o.titel,
-            }))}
-            selectedIds={selectedObjektIds}
-            onChange={onObjektIdsChange}
-          />
-        </div>
-      </div>
+      <PortalListeFilterBar
+        value={filter}
+        onChange={onFilterChange}
+        options={HV_CHIPS.map((chip) => ({
+          id: chip.id,
+          label: chip.label,
+        }))}
+        multiSelect={{
+          options: objekte.map((o) => ({
+            id: o.id,
+            label: o.titel,
+          })),
+          selectedIds: selectedObjektIds,
+          onChange: onObjektIdsChange,
+          allLabel: "Alle Objekte",
+          title: "Objekte",
+        }}
+      />
     </div>
   );
 }

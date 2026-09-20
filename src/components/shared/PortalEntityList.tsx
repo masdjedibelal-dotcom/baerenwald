@@ -1,6 +1,7 @@
 'use client';
 
 import type { ReactNode } from "react";
+import { PortalButton } from "@/components/portal/PortalButton";
 
 import { useIsPortalMobile } from "@/lib/portal2/use-is-portal-mobile";
 import { cn } from "@/lib/utils";
@@ -63,7 +64,8 @@ export function PortalEntityList({
           <li key={r.id}>
             <div className="portal-entity-card-row">
               {r.onClick ? (
-                <button
+                <PortalButton
+                  variant="ghost"
                   type="button"
                   className="portal-entity-card-hit"
                   onClick={r.onClick}
@@ -75,7 +77,7 @@ export function PortalEntityList({
                   {r.meta ? (
                     <div className="portal-entity-card-meta">{r.meta}</div>
                   ) : null}
-                </button>
+                </PortalButton>
               ) : (
                 <div className="portal-entity-card-hit portal-entity-card-hit--static">
                   <div className="portal-entity-card-top">
@@ -132,7 +134,8 @@ export function PortalEntityList({
           role="row"
         >
           {r.onClick ? (
-            <button
+            <PortalButton
+              variant="ghost"
               type="button"
               className="portal-entity-list__hit"
               onClick={r.onClick}
@@ -155,7 +158,7 @@ export function PortalEntityList({
                   {cell}
                 </span>
               ))}
-            </button>
+            </PortalButton>
           ) : (
             <div className="portal-entity-list__hit portal-entity-list__hit--static">
               {r.cells.map((cell, i) => (

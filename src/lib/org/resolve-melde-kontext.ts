@@ -1,3 +1,4 @@
+import { logDbError } from '@/lib/errors/log-db-error'
 import { unstable_noStore as noStore } from "next/cache";
 
 import { supabaseAdmin, isSupabaseConfigured } from "@/lib/supabase";
@@ -144,6 +145,7 @@ async function loadOrganisation(orgSlug: string): Promise<OrgRow | null> {
       .ilike("org_kennung", orgSlug)
       .eq("portal_modus", "organisation")
       .limit(1);
+    if (orgErr) logDbError('lib/org/resolve-melde-kontext:kunden', orgErr)
 
     if (orgErr) throw orgErr;
     if (orgRows?.[0]) return orgRows[0] as unknown as OrgRow;
@@ -153,6 +155,7 @@ async function loadOrganisation(orgSlug: string): Promise<OrgRow | null> {
       .select(select)
       .ilike("org_kennung", orgSlug)
       .limit(1);
+    if (fbErr) logDbError('lib/org/resolve-melde-kontext:kunden', fbErr)
 
     if (fbErr) throw fbErr;
     return (fallback?.[0] as unknown as OrgRow | undefined) ?? null;
@@ -201,25 +204,25 @@ export async function resolveMeldeKontext(
     return { ok: false, code: "not_found", message: "Organisation unbekannt." };
   }
 
-  const { data: objekteRowsRaw } = await supabaseAdmin
+  const {data: objekteRowsRaw, error: __dbErr367_1} = await supabaseAdmin
     .from("kunden_objekte")
     .select(
       "id, titel, strasse, hausnummer, plz, ort, melde_slug, melde_aktiv, einheiten_hinweis"
     )
     .eq("kunde_id", org.id)
     .order("titel", { ascending: true });
-
+  if (__dbErr367_1) logDbError('lib/org/resolve-melde-kontext:kunden_objekte', __dbErr367_1)
   const objekteRowsAll = (objekteRowsRaw ?? []) as ObjektRow[];
   await ensureMeldeSlugsForKunde(org.id, objekteRowsAll);
 
-  const { data: objekteRowsReloaded } = await supabaseAdmin
+  const {data: objekteRowsReloaded, error: __dbErr368_2} = await supabaseAdmin
     .from("kunden_objekte")
     .select(
       "id, titel, strasse, hausnummer, plz, ort, melde_slug, melde_aktiv, einheiten_hinweis"
     )
     .eq("kunde_id", org.id)
     .order("titel", { ascending: true });
-
+  if (__dbErr368_2) logDbError('lib/org/resolve-melde-kontext:kunden_objekte', __dbErr368_2)
   const objekteRows = (objekteRowsReloaded ?? objekteRowsAll) as ObjektRow[];
 
   const objekte = objekteRows.map((row) => {
@@ -282,27 +285,27 @@ export async function resolveMeldeKontext(
 export async function resolveEinladungKontext(token: string) {
   if (!isSupabaseConfigured()) return null;
 
-  const { data: lead } = await supabaseAdmin
+  const {data: lead, error: __dbErr369_3} = await supabaseAdmin
     .from("leads")
     .select(
       "id, einladung_token, einladung_status, melder_name, melder_einheit, melder_telefon, melder_email, kunde_objekt_id, auftraggeber_kunde_id, kontakt_nachricht, funnel_daten, situation, bereiche, zeitraum"
     )
     .eq("einladung_token", token)
     .maybeSingle();
-
+  if (__dbErr369_3) logDbError('lib/org/resolve-melde-kontext:leads', __dbErr369_3)
   if (!lead?.id || lead.einladung_status !== "offen") return null;
 
   const auftraggeberId = lead.auftraggeber_kunde_id as string | null;
   if (!auftraggeberId) return null;
 
-  const { data: org } = await supabaseAdmin
+  const {data: org, error: __dbErr370_4} = await supabaseAdmin
     .from("kunden")
     .select(
       "id, name, org_kennung, org_anzeigename, org_logo_url, org_logo_kuerzel, org_sub, org_primary_color, org_primary_color_dk, org_primary_color_soft, mieter_kontakt_telefon, mieter_kontakt_email, impressum_url, datenschutz_url"
     )
     .eq("id", auftraggeberId)
     .maybeSingle();
-
+  if (__dbErr370_4) logDbError('lib/org/resolve-melde-kontext:kunden', __dbErr370_4)
   let objekt: {
     titel: string;
     adresseZeile: string;
@@ -313,11 +316,12 @@ export async function resolveEinladungKontext(token: string) {
   } | null = null;
 
   if (lead.kunde_objekt_id) {
-    const { data: obj } = await supabaseAdmin
+    const {data: obj, error: __dbErr371_5} = await supabaseAdmin
       .from("kunden_objekte")
       .select("titel, strasse, hausnummer, plz, ort")
       .eq("id", lead.kunde_objekt_id)
       .maybeSingle();
+    if (__dbErr371_5) logDbError('lib/org/resolve-melde-kontext:kunden_objekte', __dbErr371_5)
     if (obj) {
       objekt = {
         titel: String(obj.titel),

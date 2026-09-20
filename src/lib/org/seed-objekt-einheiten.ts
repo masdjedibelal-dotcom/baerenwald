@@ -1,3 +1,4 @@
+import { logDbError } from '@/lib/errors/log-db-error'
 import { parseEinheitenCount } from "@/lib/portal2/objekte";
 import { supabaseAdmin } from "@/lib/supabase";
 
@@ -27,6 +28,7 @@ export async function ensureDefaultObjektEinheiten(
     .from("objekt_einheiten")
     .select("id, bezeichnung, aktiv, sort_order")
     .eq("kunde_objekt_id", id);
+  if (error) logDbError('lib/org/seed-objekt-einheiten:objekt_einheiten', error)
 
   if (error) return 0;
 
@@ -70,6 +72,7 @@ export async function ensureDefaultObjektEinheiten(
   const { error: insertErr } = await supabaseAdmin
     .from("objekt_einheiten")
     .insert(rows);
+  if (insertErr) logDbError('lib/org/seed-objekt-einheiten:objekt_einheiten', insertErr)
 
   if (insertErr) return 0;
   return rows.length;

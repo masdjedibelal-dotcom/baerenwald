@@ -1,3 +1,4 @@
+import { logDbError } from '@/lib/errors/log-db-error'
 import { createClient } from "@/lib/supabase/server";
 import {
   linkPortalKundeToAuthUser,
@@ -50,6 +51,7 @@ export async function requireEigentuemerSession(): Promise<EigentuemerSessionRes
     .select("id, name, email, telefon, portal_modus")
     .eq("id", kundeId)
     .maybeSingle();
+  if (error) logDbError('lib/portal/require-eigentuemer-session:kunden', error)
 
   if (error || !kunde) {
     return { ok: false, status: 404, error: "Kundendaten nicht gefunden." };

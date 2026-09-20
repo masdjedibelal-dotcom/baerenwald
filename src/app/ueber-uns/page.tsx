@@ -65,7 +65,7 @@ export default function UeberUnsPage() {
         <section className="article-section article-section--lg content-section--white">
           <div className="article-section-inner">
             <div className="article-body legal-body">
-              <p className="text-base text-gray-700 mb-8">
+              <p className="text-base text-p2-sub mb-8">
                 Bärenwald München koordiniert Handwerksprojekte in München und
                 Umgebung — von der kleinen Reparatur bis zur Komplettsanierung.
                 Als Generalunternehmer übernimmt Bärenwald die Planung,
@@ -90,7 +90,7 @@ export default function UeberUnsPage() {
 
               <h2>Unser Ansatz</h2>
               <p>
-                Wir wollen nicht einfach Handwerker vermitteln wie ein normales
+                Wir wollen nicht einfach Partner vermitteln wie ein normales
                 Portal. Wir wollen Handwerk, Koordination und Prozesse in ein
                 nachvollziehbares System bringen.
               </p>
@@ -164,13 +164,13 @@ Sondern ein strukturierter Ablauf zwischen Kunde, Handwerk und Umsetzung.`}
               >
                 <Link
                   href="/kontakt"
-                  className="btn-pill-primary inline-flex py-2.5 px-5 text-[13px]"
+                  className="btn-pill-primary inline-flex py-2.5 px-5 text-fs-meta"
                 >
                   Kontakt aufnehmen →
                 </Link>
                 <Link
                   href="/leistungen"
-                  className="inline-flex items-center rounded-full border border-border-default px-5 py-2.5 text-[13px] font-semibold text-text-primary hover:bg-muted"
+                  className="inline-flex items-center rounded-pill border border-border-default px-5 py-2.5 text-fs-meta font-semibold text-text-primary hover:bg-muted"
                 >
                   Alle Leistungen
                 </Link>

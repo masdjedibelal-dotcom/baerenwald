@@ -1,3 +1,4 @@
+import { logDbError } from '@/lib/errors/log-db-error'
 import { NextResponse } from "next/server";
 
 import { writeAuditEvent } from "@/lib/audit/write-audit-event";
@@ -52,13 +53,13 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Kostenträger ungültig." }, { status: 400 });
   }
 
-  const { data: objekt } = await supabaseAdmin
+  const {data: objekt, error: __dbErr226_1} = await supabaseAdmin
     .from("kunden_objekte")
     .select("id, titel, plz, strasse, hausnummer, freigabe_schwelle_eur")
     .eq("id", kundeObjektId)
     .eq("kunde_id", session.kunde.id)
     .maybeSingle();
-
+  if (__dbErr226_1) logDbError('app/api/org/vorgang-manuell/route:kunden_objekte', __dbErr226_1)
   if (!objekt) {
     return NextResponse.json({ error: "Objekt nicht gefunden." }, { status: 404 });
   }
@@ -115,8 +116,8 @@ export async function POST(req: Request) {
     leadPatch.versicherungs_nr = versicherungsNr;
   }
 
-  await supabaseAdmin.from("leads").update(leadPatch).eq("id", result.id);
-
+  const { error: __dbErr227_2 } = await supabaseAdmin.from("leads").update(leadPatch).eq("id", result.id);
+  if (__dbErr227_2) logDbError('app/api/org/vorgang-manuell/route:leads', __dbErr227_2)
   const { finalizeOrgSelfCreatedLead } = await import(
     "@/lib/org/finalize-org-self-created-lead"
   );

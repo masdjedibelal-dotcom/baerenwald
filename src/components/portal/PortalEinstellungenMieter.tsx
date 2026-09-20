@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import { PortalButton } from "@/components/portal/PortalButton";
 
 import { PortalKontoSicherheitPanel } from "@/components/shared/PortalKontoSicherheitPanel";
 import { PortalEinstellungenShell } from "@/components/shared/PortalEinstellungenShell";
@@ -23,6 +24,7 @@ import {
 } from "@/lib/portal2/einstellungen-ui";
 import { portalToastError, portalToastSuccess } from "@/lib/shared/portal-toast";
 import { cn } from "@/lib/utils";
+import { TOAST } from '@/lib/portal-copy'
 
 type Props = {
   name?: string | null;
@@ -104,7 +106,7 @@ export function PortalEinstellungenMieter({
       }
       setSavedTel(editTel.trim());
       setEditOpen(false);
-      portalToastSuccess("Telefon gespeichert.");
+      portalToastSuccess(TOAST.telefon_gespeichert);
       router.refresh();
     } finally {
       setBusy(false);
@@ -145,7 +147,8 @@ export function PortalEinstellungenMieter({
                     aria-label={MIETER_SPRACHE_TITLE}
                   >
                     {(["de", "en"] as const).map((l) => (
-                      <button
+                      <PortalButton
+                        variant="primary"
                         key={l}
                         type="button"
                         onClick={() => setUiLang(l)}
@@ -157,7 +160,7 @@ export function PortalEinstellungenMieter({
                         )}
                       >
                         {l}
-                      </button>
+                      </PortalButton>
                     ))}
                   </div>
                 </EinstellungenSectionCard>

@@ -1,5 +1,6 @@
 "use client";
 
+import { PortalIcon } from "@/components/portal/PortalIcon";
 import {
   createContext,
   useCallback,
@@ -12,12 +13,12 @@ import {
   type ReactNode,
 } from "react";
 import { createPortal } from "react-dom";
-import { Check, X } from "lucide-react";
 
 import {
   lockPortalBodyScroll,
   unlockPortalBodyScroll,
 } from "@/lib/portal2/lock-portal-body-scroll";
+import { PortalButton } from "@/components/portal/PortalButton";
 import { PortalSheetConfirm } from "@/components/shared/PortalSheetConfirm";
 import {
   PORTAL_MODAL_SCRIM,
@@ -30,6 +31,8 @@ import {
 import {
   portalToastDiscarded,
 } from "@/lib/shared/portal-toast";
+import { useAutoFormDirty } from "@/lib/portal2/form-dirty";
+import { CONFIRM } from "@/lib/portal-copy";
 import { cn } from "@/lib/utils";
 
 /** Verschachtelte Modals (z. B. KI im Sheet) jeweils eine Schicht höher. */
@@ -118,7 +121,7 @@ export type PortalModalShellProps = {
   closeOnBackdrop?: boolean;
   /**
    * Unsaved changes — X / Backdrop / Escape / Browser-Back
-   * öffnen Confirm „Nicht gespeichert“ statt sofort zu schließen.
+   * öffnen Confirm. Ohne Prop: Auto aus Formularfeldern. Override: true/false.
    */
   dirty?: boolean;
   className?: string;
@@ -163,7 +166,7 @@ export function PortalModalShell({
   maxWidth: maxWidthProp,
   size = "default",
   closeOnBackdrop = true,
-  dirty = false,
+  dirty: dirtyProp,
   className,
   headerExtra,
   onConfirm,
@@ -196,11 +199,19 @@ export function PortalModalShell({
     hasAutoConfirm && confirmPlacement === "header" && !isEdit;
 
   const [discardOpen, setDiscardOpen] = useState(false);
+  const [mounted, setMounted] = useState(false);
   const layerIdRef = useRef(Symbol("portal-modal"));
   const inHistoryStackRef = useRef(false);
-  const dirtyRef = useRef(dirty);
-  dirtyRef.current = dirty;
+  const panelRef = useRef<HTMLDivElement>(null);
+  const overlayRef = useRef<HTMLDivElement>(null);
+  const effectiveDirty = useAutoFormDirty(panelRef, open && mounted, dirtyProp);
+  const dirtyRef = useRef(effectiveDirty);
+  dirtyRef.current = effectiveDirty;
   const depth = useContext(PortalModalDepthContext);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   /**
    * Kein globaler PortalBusy-Hold über `busy`.
@@ -246,9 +257,8 @@ export function PortalModalShell({
     footer ??
     (showFooterConfirm ? (
       <div className="portal-modal-shell-footer-actions">
-        <button
-          type="button"
-          className="portal-action-btn portal-action-btn--secondary"
+        <PortalButton
+          variant="secondary"
           disabled={busy}
           onClick={() => {
             if (busy) return;
@@ -256,10 +266,9 @@ export function PortalModalShell({
           }}
         >
           Abbrechen
-        </button>
-        <button
-          type="button"
-          className="portal-action-btn portal-action-btn--primary"
+        </PortalButton>
+        <PortalButton
+          variant="primary"
           disabled={busy || confirmDisabled}
           onClick={() => {
             if (busy || confirmDisabled) return;
@@ -267,7 +276,7 @@ export function PortalModalShell({
           }}
         >
           {confirmLabel}
-        </button>
+        </PortalButton>
       </div>
     ) : null);
 
@@ -351,16 +360,95 @@ export function PortalModalShell({
     };
   }, [open]);
 
-  const [mounted, setMounted] = useState(false);
+  /* S7: visualViewport — aktives Feld + Speichern über der Tastatur */
   useEffect(() => {
-    setMounted(true);
-  }, []);
+    if (!open || !mounted) return;
+    const overlay = overlayRef.current;
+    const vv = window.visualViewport;
+    if (!overlay || !vv) return;
+
+    const sync = () => {
+      const clientH = document.documentElement.clientHeight || window.innerHeight;
+      const coverH = Math.max(
+        window.innerHeight,
+        clientH,
+        Math.round(vv.height + vv.offsetTop)
+      );
+      const visibleBottom = Math.round(vv.offsetTop + vv.height);
+      const belowVisible = Math.max(0, coverH - visibleBottom);
+      const byInner = Math.max(0, window.innerHeight - vv.height - vv.offsetTop);
+      const byClient = Math.max(0, clientH - vv.height);
+      const rawKb = Math.min(byInner, byClient);
+      const kb =
+        rawKb > 100
+          ? Math.min(Math.round(rawKb), Math.round(window.innerHeight * 0.55))
+          : 0;
+
+      overlay.style.top = "0";
+      overlay.style.left = "0";
+      overlay.style.right = "0";
+      overlay.style.bottom = "0";
+      overlay.style.width = "100%";
+      overlay.style.height = `${coverH}px`;
+      overlay.style.minHeight = `${coverH}px`;
+      overlay.style.paddingBottom = `${belowVisible}px`;
+      overlay.style.setProperty("--keyboard-inset", kb > 40 ? `${kb}px` : "0px");
+      document.body.classList.toggle("kb-open", kb > 40 || belowVisible > 100);
+    };
+
+    const onFocusIn = (e: FocusEvent) => {
+      sync();
+      const t = e.target;
+      if (!(t instanceof HTMLElement)) return;
+      if (!overlay.contains(t)) return;
+      if (
+        !/^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName) &&
+        !t.isContentEditable
+      ) {
+        return;
+      }
+      const keepVisible = () => {
+        t.scrollIntoView({ block: "nearest", behavior: "smooth" });
+        const footer = overlay.querySelector(
+          ".portal-modal-shell-footer"
+        ) as HTMLElement | null;
+        footer?.scrollIntoView({ block: "nearest", behavior: "smooth" });
+      };
+      requestAnimationFrame(() => {
+        keepVisible();
+        window.setTimeout(keepVisible, 280);
+      });
+    };
+
+    sync();
+    vv.addEventListener("resize", sync);
+    vv.addEventListener("scroll", sync);
+    window.addEventListener("focusin", onFocusIn);
+    window.addEventListener("focusout", sync);
+    return () => {
+      vv.removeEventListener("resize", sync);
+      vv.removeEventListener("scroll", sync);
+      window.removeEventListener("focusin", onFocusIn);
+      window.removeEventListener("focusout", sync);
+      overlay.style.top = "";
+      overlay.style.left = "";
+      overlay.style.right = "";
+      overlay.style.bottom = "";
+      overlay.style.width = "";
+      overlay.style.height = "";
+      overlay.style.minHeight = "";
+      overlay.style.paddingBottom = "";
+      overlay.style.removeProperty("--keyboard-inset");
+      document.body.classList.remove("kb-open");
+    };
+  }, [open, mounted]);
 
   if (!open || !mounted) return null;
 
   const shell = (
     <PortalModalDepthContext.Provider value={depth + 1}>
       <div
+        ref={overlayRef}
         className={cn(
           "portal-ui portal-modal-shell",
           `portal-modal-shell--${variant}`,
@@ -376,6 +464,7 @@ export function PortalModalShell({
         onClick={closeOnBackdrop ? () => attemptDismiss(false) : undefined}
       >
         <div
+          ref={panelRef}
           className={cn(
             "portal-modal-shell-panel",
             `portal-modal-shell-panel--${variant}`
@@ -401,7 +490,7 @@ export function PortalModalShell({
               disabled={busy}
               onClick={() => attemptDismiss(false)}
             >
-              <X size={18} strokeWidth={2} aria-hidden />
+              <PortalIcon n="x" ctx="default" size={18} aria-hidden />
             </button>
             <div className="portal-modal-shell-heading">
               <h2 id={titleId} className="portal-modal-shell-title">
@@ -427,7 +516,7 @@ export function PortalModalShell({
                       onConfirm?.();
                     }}
                   >
-                    <Check strokeWidth={2.6} aria-hidden />
+                    <PortalIcon n="check" ctx="default" aria-hidden />
                   </button>
                 ) : null}
               </div>
@@ -472,10 +561,10 @@ export function PortalModalShell({
         <PortalSheetConfirm
           open={discardOpen && !busy}
           placement="nested"
-          title="Nicht gespeichert"
-          description="Ihre Änderungen werden verworfen."
-          cancelLabel="Weiter bearbeiten"
-          confirmLabel="Verwerfen"
+          title={CONFIRM.dirty}
+          description={CONFIRM.dirtyBody}
+          cancelLabel={CONFIRM.continueEditing}
+          confirmLabel={CONFIRM.discard}
           confirmVariant="danger"
           onCancel={() => setDiscardOpen(false)}
           onConfirm={() => {

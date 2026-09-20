@@ -1,3 +1,4 @@
+import { logDbError } from '@/lib/errors/log-db-error'
 import { NextResponse } from "next/server";
 
 import { buildEinladungUrl } from "@/lib/org/melde-url";
@@ -41,13 +42,13 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Pflichtfelder fehlen." }, { status: 400 });
   }
 
-  const { data: objekt } = await supabaseAdmin
+  const {data: objekt, error: __dbErr197_1} = await supabaseAdmin
     .from("kunden_objekte")
     .select("id, titel, plz, strasse, hausnummer")
     .eq("id", objektId)
     .eq("kunde_id", session.kunde.id)
     .maybeSingle();
-
+  if (__dbErr197_1) logDbError('app/api/org/meldung-vorab/route:kunden_objekte', __dbErr197_1)
   if (!objekt) {
     return NextResponse.json({ error: "Objekt nicht gefunden." }, { status: 404 });
   }

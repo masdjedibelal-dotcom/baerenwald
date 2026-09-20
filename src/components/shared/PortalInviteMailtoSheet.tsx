@@ -2,8 +2,10 @@
 
 import { useEffect, useState } from "react";
 
+import { PortalButton } from "@/components/portal/PortalButton";
 import { PortalModalShell } from "@/components/shared/PortalModalShell";
 import { orgPortalToast, portalToastError } from "@/lib/shared/portal-toast";
+import { TOAST } from '@/lib/portal-copy'
 
 export type PortalInviteMailtoReady = {
   mailto: string;
@@ -58,7 +60,7 @@ export function PortalInviteMailtoSheet({
       setCopied(true);
       orgPortalToast.linkKopiert();
     } catch {
-      portalToastError("Kopieren fehlgeschlagen");
+      portalToastError(TOAST.kopieren_fehlgeschlagen);
     }
   }
 
@@ -83,29 +85,25 @@ export function PortalInviteMailtoSheet({
       variant="confirm"
       footer={
         <div className="flex flex-col gap-2">
-          <button
-            type="button"
-            className="portal-action-btn portal-action-btn--primary portal-action-btn--block"
+          <PortalButton
+            variant="primary"
+            block
             disabled={!mailto}
             onClick={openMail}
           >
             Mail-App öffnen
-          </button>
-          <button
-            type="button"
-            className="portal-action-btn portal-action-btn--secondary portal-action-btn--block"
+          </PortalButton>
+          <PortalButton
+            variant="secondary"
+            block
             disabled={!url}
             onClick={() => void copyAgain()}
           >
             {copied ? "Link kopiert" : "Link kopieren"}
-          </button>
-          <button
-            type="button"
-            className="portal-action-btn portal-action-btn--ghost portal-action-btn--block"
-            onClick={onClose}
-          >
+          </PortalButton>
+          <PortalButton variant="ghost" block onClick={onClose}>
             Fertig
-          </button>
+          </PortalButton>
         </div>
       }
     >
@@ -114,7 +112,7 @@ export function PortalInviteMailtoSheet({
         öffnen“ — oder kopiere den Link und sende ihn selbst.
       </p>
       {url ? (
-        <p className="mt-3 break-all rounded-[10px] border border-border-light bg-white px-3 py-2.5 text-[12.5px] text-text-secondary">
+        <p className="mt-3 break-all rounded-[10px] border border-border-light bg-white px-3 py-2.5 text-fs-meta text-text-secondary">
           {url}
         </p>
       ) : null}

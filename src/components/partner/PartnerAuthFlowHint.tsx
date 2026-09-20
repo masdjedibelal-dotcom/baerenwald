@@ -22,7 +22,7 @@ export function PartnerAuthFlowHint({ variant }: { variant: Variant }) {
       : PARTNER_AUTH_COPY.loginHint;
 
   return (
-    <p className="rounded-lg bg-muted/60 px-3 py-2 portal-text-meta text-text-secondary">
+    <p className="rounded-card bg-muted/60 px-3 py-2 portal-text-meta text-text-secondary">
       {text}
     </p>
   );

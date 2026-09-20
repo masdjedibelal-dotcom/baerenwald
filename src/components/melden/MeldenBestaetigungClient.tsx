@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useMemo, useState } from "react";
+import { PortalButton } from "@/components/portal/PortalButton";
 
 import {
   MieterWlBtn,
@@ -103,7 +104,7 @@ export function MeldenBestaetigungClient({
         </p>
 
         {referenz?.trim() ? (
-          <p className="text-[13px] leading-relaxed text-[#4a5c54] text-center mt-1 max-w-[340px]">
+          <p className="text-fs-meta leading-relaxed text-[var(--p2-sub)] text-center mt-1 max-w-[340px]">
             {t.ref_de}:{" "}
             <strong className="tabular-nums tracking-wide">{referenz.trim()}</strong>
           </p>
@@ -119,16 +120,17 @@ export function MeldenBestaetigungClient({
               <MieterWlBtn href={statusUrl} kind="ghost">
                 {t.track_de}
               </MieterWlBtn>
-              <button
+              <PortalButton
+                variant="ghost"
                 type="button"
                 className="mieter-wl-btn mieter-wl-btn--ghost w-full"
                 onClick={() => void copyLink()}
               >
                 {copied ? t.copied_de : t.copy_de}
-              </button>
+              </PortalButton>
             </>
           ) : (
-            <p className="text-[13px] leading-relaxed text-[#4a5c54] text-center">
+            <p className="text-fs-meta leading-relaxed text-[var(--p2-sub)] text-center">
               Bitte wenden Sie sich bei Fragen an Ihre Verwaltung.
             </p>
           )}
@@ -144,9 +146,9 @@ export function MeldenBestaetigungClient({
           {objektAuswahlHref ? (
             <Link
               href={objektAuswahlHref}
-              className="block text-center text-sm font-medium text-[#6b756f]"
+              className="block text-center text-sm font-medium text-[var(--p2-link-muted)]"
             >
-              Schließen
+              Abbrechen
             </Link>
           ) : null}
         </div>

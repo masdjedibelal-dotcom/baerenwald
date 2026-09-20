@@ -80,7 +80,7 @@ export function resolveVersicherungPdfReadiness(
     !input.hasHwUpdate &&
     !input.hasHmBefund
   ) {
-    ursacheBlockers.push("Wartet auf Handwerker-Update vor Ort.");
+    ursacheBlockers.push("Wartet auf Partner-Update vor Ort.");
   }
 
   if (
@@ -90,7 +90,7 @@ export function resolveVersicherungPdfReadiness(
     ursacheBlockers.length === 0
   ) {
     ursacheBlockers.push(
-      "Ursache noch nicht dokumentiert (Hausmeister- oder Handwerker-Befund)."
+      "Ursache noch nicht dokumentiert (Hausmeister- oder Partner-Befund)."
     );
   }
 

@@ -1,6 +1,7 @@
 "use client";
 
-import { WHATSAPP_ICON_PATH, WHATSAPP_URL_ANFRAGE } from "@/lib/whatsapp";
+import { WHATSAPP_URL_ANFRAGE } from "@/lib/whatsapp";
+import { SiteIcon } from "@/components/ui/SiteIcon";
 
 export function WhatsAppFloat() {
   return (
@@ -11,9 +12,11 @@ export function WhatsAppFloat() {
       className="whatsapp-float"
       aria-label="WhatsApp schreiben"
     >
-      <svg viewBox="0 0 24 24" fill="white" width={28} height={28} aria-hidden>
-        <path d={WHATSAPP_ICON_PATH} />
-      </svg>
+      <SiteIcon
+        asset="brand-whatsapp"
+        size={28}
+        style={{ filter: "brightness(0) invert(1)" }}
+      />
     </a>
   );
 }

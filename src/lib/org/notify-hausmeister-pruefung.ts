@@ -1,6 +1,9 @@
+import { logDbError } from '@/lib/errors/log-db-error'
 import { SITE_CONFIG } from "@/lib/config";
 import { buildMeldeVorgangTitel } from "@/lib/org/melde-vorgang-titel";
 import { withPortalDetailDeepLink } from "@/lib/portal2/portal-detail-deep-link";
+import { buildSubject } from "@/lib/shared-domain/build-subject";
+import { htmlToPlainText } from "@/lib/shared-domain/html-to-plain-text";
 import { supabaseAdmin } from "@/lib/supabase";
 import { isValidEmail } from "@/lib/validation";
 import { Resend } from "resend";
@@ -23,23 +26,24 @@ export async function notifyHausmeisterPruefung(input: {
     return { ok: false, error: "RESEND_API_KEY fehlt.", skipped: true };
   }
 
-  const { data: lead } = await supabaseAdmin
+  const {data: lead, error: __dbErr311_1} = await supabaseAdmin
     .from("leads")
     .select(
       "id, situation, bereiche, funnel_daten, kontakt_nachricht, notizen, melder_name, melder_einheit, kunde_objekt_id"
     )
     .eq("id", input.leadId)
     .maybeSingle();
-
+  if (__dbErr311_1) logDbError('lib/org/notify-hausmeister-pruefung:leads', __dbErr311_1)
   if (!lead) return { ok: false, error: "Lead nicht gefunden." };
 
   let objektTitel = "Objekt";
   if (lead.kunde_objekt_id) {
-    const { data: obj } = await supabaseAdmin
+    const {data: obj, error: __dbErr312_2} = await supabaseAdmin
       .from("kunden_objekte")
       .select("titel")
       .eq("id", lead.kunde_objekt_id)
       .maybeSingle();
+    if (__dbErr312_2) logDbError('lib/org/notify-hausmeister-pruefung:kunden_objekte', __dbErr312_2)
     objektTitel = String(obj?.titel ?? "Objekt");
   }
 
@@ -68,19 +72,24 @@ export async function notifyHausmeisterPruefung(input: {
 
   try {
     const resend = new Resend(resendKey);
+    const html = `<p>Hallo ${escapeHtml(name)},</p>
+<p>für <strong>${escapeHtml(objektTitel)}</strong> steht eine Hausmeister-Prüfung an${
+      vorgangTitel ? `: <em>${escapeHtml(vorgangTitel)}</em>` : ""
+    }${wer ? ` (${escapeHtml(wer)})` : ""}.</p>
+<p>Bitte im Verwaltungs-Portal prüfen und dokumentieren:</p>
+<p><a href="${escapeHtml(portalUrl)}">Zum Vorgang im Portal</a></p>
+<p>Sie melden sich mit dem bestehenden Verwaltungs-Zugang an.</p>`;
     await resend.emails.send({
       from:
         process.env.RESEND_FROM_SYSTEM ??
         "System <system@baerenwaldmuenchen.de>",
       to,
-      subject: `Hausmeister-Prüfung — ${objektTitel}`,
-      html: `<p>Hallo ${escapeHtml(name)},</p>
-<p>für <strong>${escapeHtml(objektTitel)}</strong> steht eine Hausmeister-Prüfung an${
-        vorgangTitel ? `: <em>${escapeHtml(vorgangTitel)}</em>` : ""
-      }${wer ? ` (${escapeHtml(wer)})` : ""}.</p>
-<p>Bitte im Verwaltungs-Portal prüfen und dokumentieren:</p>
-<p><a href="${escapeHtml(portalUrl)}">Zum Vorgang im Portal</a></p>
-<p>Sie melden sich mit dem bestehenden Verwaltungs-Zugang an.</p>`,
+      subject: buildSubject({
+        objekt: objektTitel,
+        ereignis: "Hausmeister-Prüfung",
+      }),
+      html,
+      text: htmlToPlainText(html),
     });
     return { ok: true };
   } catch (e) {

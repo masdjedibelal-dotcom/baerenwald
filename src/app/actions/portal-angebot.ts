@@ -1,5 +1,6 @@
 "use server";
 
+import { logDbError } from '@/lib/errors/log-db-error'
 import { randomBytes } from "crypto";
 import { revalidatePath } from "next/cache";
 
@@ -67,6 +68,7 @@ export async function acceptKundeAngebot(
     )
     .eq("id", id)
     .maybeSingle();
+  if (loadErr) logDbError('app/actions/portal-angebot:angebote', loadErr)
 
   if (loadErr || !angebot) {
     return { ok: false, error: "Angebot wurde nicht gefunden." };
@@ -88,13 +90,14 @@ export async function acceptKundeAngebot(
   } | null = null;
 
   if (leadId) {
-    const { data: lead } = await supabaseAdmin
+    const {data: lead, error: __dbErr107_1} = await supabaseAdmin
       .from("leads")
       .select(
         "kunde_id, auftraggeber_kunde_id, org_freigabe_status, hv_meldung_status, freigabe_bypass_grund, funnel_daten"
       )
       .eq("id", leadId)
       .maybeSingle();
+    if (__dbErr107_1) logDbError('app/actions/portal-angebot:leads', __dbErr107_1)
     leadRow = lead;
     if (!belongsToKunde) {
       const leadKunde =
@@ -156,16 +159,16 @@ export async function acceptKundeAngebot(
     };
   }
 
-  const { data: existingAuftrag } = await supabaseAdmin
+  const {data: existingAuftrag, error: __dbErr108_2} = await supabaseAdmin
     .from("auftraege")
     .select("id")
     .eq("angebot_id", id)
     .maybeSingle();
-
+  if (__dbErr108_2) logDbError('app/actions/portal-angebot:auftraege', __dbErr108_2)
   if (existingAuftrag?.id) {
     const existingId = String(existingAuftrag.id);
     /* Nachziehen, falls Portal früher ohne Positionen angelegt hat. */
-    const { count } = await supabaseAdmin
+    const {count} = await supabaseAdmin
       .from("auftrag_positionen")
       .select("id", { count: "exact", head: true })
       .eq("auftrag_id", existingId);
@@ -178,6 +181,7 @@ export async function acceptKundeAngebot(
         const { error: posErr } = await supabaseAdmin
           .from("auftrag_positionen")
           .insert(posRows);
+        if (posErr) logDbError('app/actions/portal-angebot:auftrag_positionen', posErr)
         if (posErr) {
           console.error(
             "[acceptKundeAngebot] auftrag_positionen nachziehen",
@@ -202,6 +206,7 @@ export async function acceptKundeAngebot(
       updated_at: now,
     })
     .eq("id", id);
+  if (upErr) logDbError('app/actions/portal-angebot:angebote', upErr)
 
   if (upErr) {
     console.error("[acceptKundeAngebot] angebot", upErr.message);
@@ -210,12 +215,12 @@ export async function acceptKundeAngebot(
 
   // Andere Angebote am Lead entwerten (inkl. frühere Annahmen) — eine aktive Version.
   if (leadId) {
-    const { data: siblings } = await supabaseAdmin
+    const {data: siblings, error: __dbErr109_3} = await supabaseAdmin
       .from("angebote")
       .select("id, status, status_einfach")
       .eq("lead_id", leadId)
       .neq("id", id);
-
+    if (__dbErr109_3) logDbError('app/actions/portal-angebot:angebote', __dbErr109_3)
     for (const row of siblings ?? []) {
       const st = String(row.status_einfach ?? "")
         .trim()
@@ -238,21 +243,24 @@ export async function acceptKundeAngebot(
         .from("angebote")
         .update(patch)
         .eq("id", row.id as string);
+      if (sibErr) logDbError('app/actions/portal-angebot:angebote', sibErr)
       if (sibErr && /ersetzt_durch|column|schema cache/i.test(sibErr.message)) {
         delete patch.ersetzt_durch;
-        await supabaseAdmin.from("angebote").update(patch).eq("id", row.id as string);
+        const { error: __dbErr116_10 } = await supabaseAdmin.from("angebote").update(patch).eq("id", row.id as string);
+        if (__dbErr116_10) logDbError('app/actions/portal-angebot:angebote', __dbErr116_10)
       }
     }
   }
 
   // Bereits Auftrag zu anderem Angebot am Lead? → kein zweiter Auftrag.
   if (leadId) {
-    const { data: leadAuftraege } = await supabaseAdmin
+    const {data: leadAuftraege, error: __dbErr110_4} = await supabaseAdmin
       .from("auftraege")
       .select("id, angebot_id, status")
       .eq("lead_id", leadId)
       .neq("status", "storniert")
       .limit(10);
+    if (__dbErr110_4) logDbError('app/actions/portal-angebot:auftraege', __dbErr110_4)
     const anderer = (leadAuftraege ?? []).find(
       (a) => String(a.angebot_id ?? "") !== id
     );
@@ -270,11 +278,12 @@ export async function acceptKundeAngebot(
   let istBauprojekt = false;
 
   if (leadId) {
-    const { data: leadRow } = await supabaseAdmin
+    const {data: leadRow, error: __dbErr111_5} = await supabaseAdmin
       .from("leads")
       .select("kunde_id, auftraggeber_kunde_id, ist_bauprojekt, titel, gewerk")
       .eq("id", leadId)
       .maybeSingle();
+    if (__dbErr111_5) logDbError('app/actions/portal-angebot:leads', __dbErr111_5)
     if (leadRow) {
       istBauprojekt = leadRow.ist_bauprojekt === true;
       resolvedKundeId =
@@ -291,11 +300,12 @@ export async function acceptKundeAngebot(
     }
   }
 
-  const { data: kundeRow } = await supabaseAdmin
+  const {data: kundeRow, error: __dbErr112_6} = await supabaseAdmin
     .from("kunden")
     .select("name")
     .eq("id", resolvedKundeId)
     .maybeSingle();
+  if (__dbErr112_6) logDbError('app/actions/portal-angebot:kunden', __dbErr112_6)
   if (kundeRow?.name) {
     titel = `${titel} — ${kundeRow.name}`.slice(0, 240);
   }
@@ -325,6 +335,7 @@ export async function acceptKundeAngebot(
     })
     .select("id")
     .single();
+  if (aErr) logDbError('app/actions/portal-angebot:auftraege', aErr)
 
   if (aErr || !auftrag?.id) {
     console.error("[acceptKundeAngebot] auftrag", aErr?.message);
@@ -340,13 +351,14 @@ export async function acceptKundeAngebot(
     const { error: posErr } = await supabaseAdmin
       .from("auftrag_positionen")
       .insert(posRows);
+    if (posErr) logDbError('app/actions/portal-angebot:auftrag_positionen', posErr)
     if (posErr) {
       console.error("[acceptKundeAngebot] auftrag_positionen", posErr.message);
     }
   }
 
   if (leadId) {
-    await supabaseAdmin
+    const { error: __dbErr117_11 } = await supabaseAdmin
       .from("leads")
       .update({
         status: "auftrag",
@@ -356,8 +368,8 @@ export async function acceptKundeAngebot(
         updated_at: now,
       })
       .eq("id", leadId);
-
-    await supabaseAdmin.from("lead_timeline").insert({
+    if (__dbErr117_11) logDbError('app/actions/portal-angebot:leads', __dbErr117_11)
+    const { error: __dbErr118_12 } = await supabaseAdmin.from("lead_timeline").insert({
       lead_id: leadId,
       angebot_id: id,
       typ: "angebot",
@@ -365,7 +377,7 @@ export async function acceptKundeAngebot(
       beschreibung: "Über das Kunden-/HV-Portal angenommen.",
       erstellt_von: user.id,
     });
-
+    if (__dbErr118_12) logDbError('app/actions/portal-angebot:lead_timeline', __dbErr118_12)
     const crmNotify = await notifyCrmOrgPortal({
       leadId,
       typ: "angebot_entscheidung",
@@ -389,15 +401,44 @@ export type RejectKundeAngebotResult =
   | { ok: true }
   | { ok: false; error: string };
 
+export type RejectKundeAngebotInput = {
+  /** Pflicht — CRM `angebote.ablehnung_grund` */
+  grund: string;
+  /** Pflicht-Freitext — CRM `angebote.ablehnung_notiz` */
+  notiz?: string;
+};
+
 /**
- * Kunde lehnt gesendetes Angebot im Portal ab (mit optionalem Grund).
+ * Kunde/HV lehnt gesendetes Angebot im Portal ab (Pflicht-Grund + Notiz → CRM).
  */
 export async function rejectKundeAngebot(
   angebotId: string,
-  grund?: string
+  input?: string | RejectKundeAngebotInput
 ): Promise<RejectKundeAngebotResult> {
   const id = angebotId.trim();
   if (!id) return { ok: false, error: "Ungültiges Angebot." };
+
+  const grundRaw =
+    typeof input === "string"
+      ? input
+      : input && typeof input === "object"
+        ? String(input.grund ?? "")
+        : "";
+  const notizRaw =
+    typeof input === "object" && input
+      ? String(input.notiz ?? "")
+      : "";
+  const grundTrim = grundRaw.trim().slice(0, 80);
+  const notizTrim = notizRaw.trim().slice(0, 500);
+  if (!grundTrim) {
+    return { ok: false, error: "Bitte einen Ablehnungsgrund angeben." };
+  }
+  if (!notizTrim || notizTrim.length < 3) {
+    return {
+      ok: false,
+      error: "Bitte eine kurze Begründung eingeben.",
+    };
+  }
 
   if (!isSupabaseConfigured()) {
     return { ok: false, error: "Portal ist nicht konfiguriert." };
@@ -425,6 +466,7 @@ export async function rejectKundeAngebot(
     )
     .eq("id", id)
     .maybeSingle();
+  if (loadErr) logDbError('app/actions/portal-angebot:angebote', loadErr)
 
   if (loadErr || !angebot) {
     return { ok: false, error: "Angebot wurde nicht gefunden." };
@@ -437,11 +479,12 @@ export async function rejectKundeAngebot(
 
   let belongsToKunde = angebotKundeId === kundeId;
   if (!belongsToKunde && leadId) {
-    const { data: lead } = await supabaseAdmin
+    const {data: lead, error: __dbErr113_7} = await supabaseAdmin
       .from("leads")
       .select("kunde_id, auftraggeber_kunde_id")
       .eq("id", leadId)
       .maybeSingle();
+    if (__dbErr113_7) logDbError('app/actions/portal-angebot:leads', __dbErr113_7)
     const leadKunde =
       lead?.auftraggeber_kunde_id != null
         ? String(lead.auftraggeber_kunde_id)
@@ -477,11 +520,12 @@ export async function rejectKundeAngebot(
     };
   }
 
-  const { data: existingAuftrag } = await supabaseAdmin
+  const {data: existingAuftrag, error: __dbErr114_8} = await supabaseAdmin
     .from("auftraege")
     .select("id")
     .eq("angebot_id", id)
     .maybeSingle();
+  if (__dbErr114_8) logDbError('app/actions/portal-angebot:auftraege', __dbErr114_8)
   if (existingAuftrag?.id) {
     return {
       ok: false,
@@ -490,16 +534,22 @@ export async function rejectKundeAngebot(
   }
 
   const now = new Date().toISOString();
-  const grundTrim = (grund ?? "").trim().slice(0, 500);
+  const timelineGrund = `${grundTrim}${notizTrim ? `: ${notizTrim}` : ""}`.slice(
+    0,
+    500
+  );
 
   const { error: upErr } = await supabaseAdmin
     .from("angebote")
     .update({
       status: "abgelehnt",
       status_einfach: "abgelehnt",
+      ablehnung_grund: grundTrim,
+      ablehnung_notiz: notizTrim,
       updated_at: now,
     })
     .eq("id", id);
+  if (upErr) logDbError('app/actions/portal-angebot:angebote', upErr)
 
   if (upErr) {
     console.error("[rejectKundeAngebot] angebot", upErr.message);
@@ -512,11 +562,12 @@ export async function rejectKundeAngebot(
       updated_at: now,
     };
     /* Ablehnung = Freigabe beendet — sonst bleibt CRM-Card auf „ausstehend/wartend“. */
-    const { data: leadRow } = await supabaseAdmin
+    const {data: leadRow, error: __dbErr115_9} = await supabaseAdmin
       .from("leads")
       .select("org_freigabe_status")
       .eq("id", leadId)
       .maybeSingle();
+    if (__dbErr115_9) logDbError('app/actions/portal-angebot:leads', __dbErr115_9)
     const freigabe = String(leadRow?.org_freigabe_status ?? "")
       .trim()
       .toLowerCase();
@@ -528,26 +579,22 @@ export async function rejectKundeAngebot(
       leadPatch.org_freigabe_status = "abgelehnt";
     }
 
-    await supabaseAdmin.from("leads").update(leadPatch).eq("id", leadId);
-
-    await supabaseAdmin.from("lead_timeline").insert({
+    const { error: __dbErr119_13 } = await supabaseAdmin.from("leads").update(leadPatch).eq("id", leadId);
+    if (__dbErr119_13) logDbError('app/actions/portal-angebot:leads', __dbErr119_13)
+    const { error: __dbErr120_14 } = await supabaseAdmin.from("lead_timeline").insert({
       lead_id: leadId,
       angebot_id: id,
       typ: "angebot",
       titel: "Angebot abgelehnt",
-      beschreibung: grundTrim
-        ? `Über das Kundenportal abgelehnt. Grund: ${grundTrim}`
-        : "Über das Kundenportal abgelehnt.",
+      beschreibung: `Über das Portal abgelehnt. Grund: ${timelineGrund}`,
       erstellt_von: user.id,
     });
-
+    if (__dbErr120_14) logDbError('app/actions/portal-angebot:lead_timeline', __dbErr120_14)
     const crmNotify = await notifyCrmOrgPortal({
       leadId,
       typ: "angebot_entscheidung",
       aktion: "abgelehnt",
-      notiz: grundTrim
-        ? `Angebot im Portal abgelehnt. Grund: ${grundTrim}`
-        : "Angebot im Portal abgelehnt.",
+      notiz: `Angebot im Portal abgelehnt. Grund: ${timelineGrund}`,
     });
     if (!crmNotify.ok) {
       console.warn(

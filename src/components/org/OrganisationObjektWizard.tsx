@@ -1,7 +1,9 @@
 "use client";
 
 import { useState } from "react";
+import { PortalButton } from "@/components/portal/PortalButton";
 
+import { PortalCheckbox, PortalInput, PortalSelect } from "@/components/shared/PortalFormControls";
 import {
   EinstellungenCard,
   EinstellungenEuroSlider,
@@ -58,7 +60,8 @@ function OptRow({
   onSelect: () => void;
 }) {
   return (
-    <button
+    <PortalButton
+      variant="primary"
       type="button"
       onClick={onSelect}
       className={cn(
@@ -70,7 +73,7 @@ function OptRow({
     >
       <span
         className={cn(
-          "flex h-5 w-5 shrink-0 items-center justify-center rounded-full border text-[11px]",
+          "flex h-5 w-5 shrink-0 items-center justify-center rounded-pill border text-fs-caption",
           selected
             ? "border-accent bg-accent text-white"
             : "border-border-default text-transparent"
@@ -79,7 +82,7 @@ function OptRow({
         ✓
       </span>
       {label}
-    </button>
+    </PortalButton>
   );
 }
 
@@ -172,7 +175,7 @@ export function OrganisationObjektWizard({
           <span className="portal-text-label mb-1.5 block text-text-secondary">
             Bezeichnung
           </span>
-          <input
+          <PortalInput
             className="portal-field w-full"
             placeholder="WEG Mustermannstraße 1"
             value={draft.name ?? ""}
@@ -199,7 +202,7 @@ export function OrganisationObjektWizard({
             <span className="portal-text-label mb-1.5 block text-text-secondary">
               Straße
             </span>
-            <input
+            <PortalInput
               className="portal-field w-full"
               placeholder="Mustermannstraße"
               value={draft.strasse ?? ""}
@@ -210,7 +213,7 @@ export function OrganisationObjektWizard({
             <span className="portal-text-label mb-1.5 block text-text-secondary">
               Nr.
             </span>
-            <input
+            <PortalInput
               className="portal-field w-full"
               placeholder="1"
               value={draft.hausnummer ?? ""}
@@ -223,7 +226,7 @@ export function OrganisationObjektWizard({
             <span className="portal-text-label mb-1.5 block text-text-secondary">
               PLZ
             </span>
-            <input
+            <PortalInput
               className="portal-field w-full"
               placeholder="80331"
               inputMode="numeric"
@@ -236,7 +239,7 @@ export function OrganisationObjektWizard({
             <span className="portal-text-label mb-1.5 block text-text-secondary">
               Ort
             </span>
-            <input
+            <PortalInput
               className="portal-field w-full"
               placeholder="München"
               autoComplete="address-level2"
@@ -256,27 +259,29 @@ export function OrganisationObjektWizard({
             Anzahl Wohneinheiten
           </span>
           <div className="flex items-center gap-3">
-            <button
+            <PortalButton
+              variant="ghost"
               type="button"
               className="flex h-[42px] w-[42px] items-center justify-center rounded-[10px] border border-border-default bg-white text-xl text-text-secondary"
               onClick={() => set("we", Math.max(1, we - 1))}
             >
               −
-            </button>
-            <input
+            </PortalButton>
+            <PortalInput
               type="number"
               min={1}
               className="w-20 rounded-[10px] border border-border-default px-3 py-3 text-center text-base font-bold"
               value={we}
               onChange={(e) => set("we", e.target.value)}
             />
-            <button
+            <PortalButton
+              variant="ghost"
               type="button"
               className="flex h-[42px] w-[42px] items-center justify-center rounded-[10px] border border-border-default bg-white text-xl text-text-secondary"
               onClick={() => set("we", we + 1)}
             >
               ＋
-            </button>
+            </PortalButton>
           </div>
           {isEfh ? (
             <p className="mt-2 text-xs text-text-tertiary">
@@ -284,7 +289,7 @@ export function OrganisationObjektWizard({
             </p>
           ) : null}
         </div>
-        <p className="rounded-[10px] bg-muted px-3.5 py-2.5 text-[12.5px] leading-relaxed text-text-secondary">
+        <p className="rounded-[10px] bg-muted px-3.5 py-2.5 text-fs-meta leading-relaxed text-text-secondary">
           Beim Anlegen entstehen automatisch WE 1, WE 2, … — danach unter
           „Einheiten“ nur noch bearbeiten und Mieter/Eigentümer zuordnen.
         </p>
@@ -293,7 +298,7 @@ export function OrganisationObjektWizard({
   } else if (step === "verwaltung") {
     content = (
       <div className="flex flex-col gap-3.5">
-        <p className="rounded-[10px] bg-muted px-3.5 py-2.5 text-[12.5px] leading-relaxed text-text-secondary">
+        <p className="rounded-[10px] bg-muted px-3.5 py-2.5 text-fs-meta leading-relaxed text-text-secondary">
           Pflicht — jeder Objekt braucht einen Hausmeister. Bestehenden wählen
           oder neu anlegen.
         </p>
@@ -301,7 +306,7 @@ export function OrganisationObjektWizard({
           <span className="portal-text-label mb-1.5 block text-text-secondary">
             Hausmeister
           </span>
-          <select
+          <PortalSelect
             className="portal-field w-full"
             value={
               draft.hmMode === "new"
@@ -326,7 +331,7 @@ export function OrganisationObjektWizard({
                 </option>
               ))}
             <option value="__new__">＋ Neu anlegen</option>
-          </select>
+          </PortalSelect>
         </label>
         {draft.hmMode === "new" ||
         (!draft.hmId && Boolean(draft.hmName?.trim())) ? (
@@ -335,7 +340,7 @@ export function OrganisationObjektWizard({
               <span className="portal-text-label mb-1.5 block text-text-secondary">
                 Name
               </span>
-              <input
+              <PortalInput
                 className="portal-field w-full"
                 placeholder="Name"
                 value={draft.hmName ?? draft.kontakt ?? ""}
@@ -348,13 +353,12 @@ export function OrganisationObjektWizard({
               />
             </label>
             <label className="flex items-start gap-3 rounded-[10px] border border-border-light bg-white p-3">
-              <input
-                type="checkbox"
+              <PortalCheckbox
                 className="mt-0.5"
                 checked={Boolean(draft.hmPortalZugang)}
                 onChange={(e) => set("hmPortalZugang", e.target.checked)}
               />
-              <span className="text-[13px] text-text-secondary">
+              <span className="text-fs-meta text-text-secondary">
                 Portal einladen — Konto erst nach Registrierung über den Link
                 aktiv; sieht dann nur eigene Objekte
               </span>
@@ -364,7 +368,7 @@ export function OrganisationObjektWizard({
                 <span className="portal-text-label mb-1.5 block text-text-secondary">
                   E-Mail
                 </span>
-                <input
+                <PortalInput
                   type="email"
                   className="portal-field w-full"
                   placeholder="name@firma.de"
@@ -398,20 +402,20 @@ export function OrganisationObjektWizard({
     );
   } else {
     const row = (k: string, v: string | number | undefined) => (
-      <div key={k} className="text-[13px]">
+      <div key={k} className="text-fs-meta">
         <b>{k}: </b>
         {v === undefined || v === "" ? "—" : String(v)}
       </div>
     );
     content = (
       <div className="py-3 text-center">
-        <p className="mb-2 text-[28px]" aria-hidden>
+        <p className="mb-2 text-fs-head" aria-hidden>
           🏢
         </p>
-        <p className="mb-3.5 font-[family-name:var(--font-display)] text-[17px] font-bold text-text-primary">
+        <p className="mb-3.5 font-[family-name:var(--font-display)] text-fs-title font-bold text-text-primary">
           {editMode ? "Änderungen prüfen" : "Objekt anlegen"}
         </p>
-        <div className="flex flex-col gap-1.5 rounded-[10px] bg-muted p-3.5 text-left text-[13px]">
+        <div className="flex flex-col gap-1.5 rounded-[10px] bg-muted p-3.5 text-left text-fs-meta">
           {row("Bezeichnung", draft.name)}
           {row("Typ", draft.typ)}
           {row(
@@ -462,9 +466,10 @@ export function OrganisationObjektWizard({
       >
         <div className={isModal ? "mb-4" : "mb-5"}>
           {stepIndex > 0 || !isModal ? (
-            <button
+            <PortalButton
+              variant="ghost"
               type="button"
-              className="mb-3 text-[13px] font-semibold text-accent"
+              className="mb-3 text-fs-meta font-semibold text-accent"
               onClick={() => {
                 if (stepIndex === 0) onCancel();
                 else {
@@ -474,14 +479,14 @@ export function OrganisationObjektWizard({
               }}
             >
               ‹ {stepIndex === 0 ? "Abbrechen" : "Zurück"}
-            </button>
+            </PortalButton>
           ) : null}
           <div className="mb-2 flex gap-1.5">
             {OBJ_WIZ_STEPS.map((_, si) => (
               <div
                 key={si}
                 className={cn(
-                  "h-1.5 flex-1 rounded-full",
+                  "h-1.5 flex-1 rounded-pill",
                   si <= stepIndex ? "bg-accent" : "bg-border-default"
                 )}
               />
@@ -490,7 +495,7 @@ export function OrganisationObjektWizard({
           <p className="mb-1.5 text-xs font-semibold text-text-tertiary">
             Schritt {stepIndex + 1} von {OBJ_WIZ_STEPS.length}
           </p>
-          <h2 className="font-[family-name:var(--font-display)] text-[22px] font-bold leading-tight text-text-primary md:text-[23px]">
+          <h2 className="font-[family-name:var(--font-display)] text-fs-head font-bold leading-tight text-text-primary md:text-fs-head">
             {titles[step]}
           </h2>
         </div>
@@ -499,7 +504,7 @@ export function OrganisationObjektWizard({
           {err ? (
             <div
               role="alert"
-              className="portal-danger-soft flex items-center gap-2 rounded-[9px] border px-3 py-2.5 text-[12.5px] font-semibold"
+              className="portal-danger-soft flex items-center gap-2 rounded-[9px] border px-3 py-2.5 text-fs-meta font-semibold"
             >
               <span aria-hidden>⚠</span>
               {err}
@@ -513,19 +518,20 @@ export function OrganisationObjektWizard({
         className={cn(
           "border-t border-border-default",
           isModal
-            ? "shrink-0 bg-[var(--p2-bg-content,#f6f7f6)] px-1 pb-[var(--portal-safe-pad-bottom)] pt-3"
+            ? "shrink-0 bg-[var(--p2-bg-content)] px-1 pb-[var(--portal-safe-pad-bottom)] pt-3"
             : "mt-6 pt-4"
         )}
       >
-        <button
+        <PortalButton
+          variant="primary"
           type="button"
           disabled={busy || (!valid && step !== "fertig")}
           onClick={() => void advance()}
           className={cn(
-            "w-full rounded-[10px] px-4 py-3.5 text-[15px] font-semibold text-white",
+            "w-full rounded-[10px] px-4 py-3.5 text-fs-title font-semibold text-white",
             valid || step === "fertig"
               ? "bg-accent hover:opacity-95"
-              : "cursor-not-allowed bg-[#B9C4BC]"
+              : "cursor-not-allowed bg-[var(--p2-btn-disabled)]"
           )}
         >
           {busy
@@ -535,7 +541,7 @@ export function OrganisationObjektWizard({
               : editMode
                 ? "Speichern"
                 : "Objekt anlegen"}
-        </button>
+        </PortalButton>
       </div>
     </div>
   );

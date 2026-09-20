@@ -2,6 +2,7 @@
  * Positions-/CRM-Updates → Portal-Bautagebuch-Form (Updates-Tab).
  */
 
+import { logDbError } from '@/lib/errors/log-db-error'
 import { resolvePartnerFileUrl } from "@/lib/partner/partner-storage";
 import { isSupabaseConfigured, supabaseAdmin } from "@/lib/supabase";
 
@@ -46,6 +47,7 @@ export async function loadPartnerDokumentationByAuftragIds(
     .from("auftrag_positionen")
     .select("id, auftrag_id, leistung_name")
     .in("auftrag_id", ids);
+  if (posErr) logDbError('lib/portal/load-partner-dokumentation:auftrag_positionen', posErr)
 
   if (posErr) {
     if (/does not exist|schema cache/i.test(posErr.message)) return out;
@@ -96,10 +98,11 @@ export async function loadPartnerDokumentationByAuftragIds(
   const eintragIds = (rows ?? []).map((r) => String(r.id));
   const fotosByEintrag = new Map<string, string[]>();
   if (eintragIds.length > 0) {
-    const { data: fotos } = await supabaseAdmin
+    const {data: fotos, error: __dbErr457_1} = await supabaseAdmin
       .from("eintrag_fotos")
       .select("eintrag_id, storage_path")
       .in("eintrag_id", eintragIds);
+    if (__dbErr457_1) logDbError('lib/portal/load-partner-dokumentation:eintrag_fotos', __dbErr457_1)
     for (const f of fotos ?? []) {
       const eid = String(f.eintrag_id);
       const path = String(f.storage_path ?? "").trim();

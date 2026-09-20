@@ -1,3 +1,4 @@
+import { logDbError } from '@/lib/errors/log-db-error'
 import { NextResponse } from "next/server";
 
 import {
@@ -32,22 +33,24 @@ export async function PATCH(
   const { id } = await ctx.params;
   const body = (await req.json()) as Body;
 
-  const { data: row } = await supabaseAdmin
+  const {data: row, error: __dbErr212_1} = await supabaseAdmin
     .from("objekt_pruefpflichten")
     .select("id, kunde_objekt_id, typ_schluessel")
     .eq("id", id)
     .maybeSingle();
+  if (__dbErr212_1) logDbError('app/api/org/objekte/pruefpflichten/[id]/route:objekt_pruefpflichten', __dbErr212_1)
 
   if (!row) {
     return NextResponse.json({ error: "Eintrag nicht gefunden." }, { status: 404 });
   }
 
-  const { data: objekt } = await supabaseAdmin
+  const {data: objekt, error: __dbErr213_2} = await supabaseAdmin
     .from("kunden_objekte")
     .select("id")
     .eq("id", row.kunde_objekt_id)
     .eq("kunde_id", session.kunde.id)
     .maybeSingle();
+  if (__dbErr213_2) logDbError('app/api/org/objekte/pruefpflichten/[id]/route:kunden_objekte', __dbErr213_2)
 
   if (!objekt) {
     return NextResponse.json({ error: "Objekt nicht gefunden." }, { status: 404 });
@@ -102,6 +105,7 @@ export async function PATCH(
     .from("objekt_pruefpflichten")
     .update(patch)
     .eq("id", id);
+  if (error) logDbError('app/api/org/objekte/pruefpflichten/[id]/route:objekt_pruefpflichten', error)
 
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });

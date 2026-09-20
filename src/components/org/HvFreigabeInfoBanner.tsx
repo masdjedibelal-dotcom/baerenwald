@@ -1,7 +1,7 @@
 "use client";
 
+import { PortalIcon } from "@/components/portal/PortalIcon";
 import Link from "next/link";
-import { Info } from "lucide-react";
 
 import {
   freigabeBypassInfoCopy,
@@ -28,16 +28,16 @@ export function HvFreigabeInfoBanner({ kind, schwelleLabel }: Props) {
 
   return (
     <div
-      className="portal-text-body flex gap-3 rounded-xl border border-amber-200 bg-amber-50 px-3.5 py-3.5 text-amber-950"
+      className="portal-text-body flex gap-3 rounded-sheet border border-warning-border bg-warning-bg px-3.5 py-3.5 text-warning-text"
       role="status"
     >
-      <Info className="mt-0.5 h-4 w-4 shrink-0 text-amber-700" aria-hidden />
+      <PortalIcon n="info-circle" ctx="default" className="mt-0.5 h-4 w-4 shrink-0 text-warning-text" aria-hidden />
       <div className="min-w-0 flex-1">
         <div className="flex items-start justify-between gap-3">
-          <p className="font-semibold text-amber-950">{title}</p>
+          <p className="font-semibold text-warning-text">{title}</p>
           <Link
             href={EINSTELLUNGEN_HREF}
-            className="portal-text-meta shrink-0 font-semibold text-amber-900 underline-offset-2 hover:underline"
+            className="portal-text-meta inline-flex min-h-[44px] shrink-0 items-center font-semibold text-warning-text underline-offset-2 hover:underline"
             onClick={() => {
               try {
                 sessionStorage.setItem(
@@ -52,7 +52,7 @@ export function HvFreigabeInfoBanner({ kind, schwelleLabel }: Props) {
             Einstellungen
           </Link>
         </div>
-        <p className="mt-1 text-[13px] leading-snug text-amber-900/90">{body}</p>
+        <p className="mt-1 text-fs-meta leading-snug text-warning-text/90">{body}</p>
       </div>
     </div>
   );

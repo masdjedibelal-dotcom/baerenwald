@@ -3,6 +3,7 @@
 import { formatCurrencyEUR } from "@/lib/price-calc";
 import type { BwCalculatePriceResult } from "@/lib/funnel/price-calc";
 import type { GuidedFunnelDraft } from "@/lib/guided-chat/types";
+import { CTAButton } from "@/components/ui/CTAButton";
 import { cn } from "@/lib/utils";
 
 type ChatPriceCardProps = {
@@ -56,14 +57,14 @@ export function ChatPriceCard({
 
       <div className="gpt-guided-price-actions">
         {onAnfrage ? (
-          <button
+          <CTAButton
+            bare
+            tone="guided"
             type="button"
-            className="gpt-guided-primary-btn"
             disabled={disabled}
             onClick={onAnfrage}
-          >
-            Anfrage senden
-          </button>
+            label="Anfrage senden"
+          />
         ) : null}
         {onAnpassen ? (
           <button

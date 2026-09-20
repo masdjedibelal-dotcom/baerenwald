@@ -18,6 +18,7 @@ import {
   labelZeitraum,
   labelZugaenglichkeit,
 } from "@/lib/lead-funnel-labels";
+import { buildInternSubject } from "@/lib/shared-domain/build-subject";
 
 export type NormalizedFunnelDaten = {
   situation: string | null;
@@ -443,12 +444,15 @@ export function buildInternNotificationSubject(input: {
   const bereiche_labels =
     input.bereiche
       ?.map((b) => labelBereich(b))
-      .join(" · ") ?? "";
+      .join(", ") ?? "";
   const plz = input.plz?.trim();
-  let subject = `Neue Anfrage: ${input.name.trim() || "—"}`;
-  if (bereiche_labels) subject += ` — ${bereiche_labels}`;
-  if (plz) subject += ` · ${plz}`;
-  return subject;
+  const name = input.name.trim();
+  const objekt =
+    [name, bereiche_labels, plz].filter(Boolean).join(", ") || undefined;
+  return buildInternSubject({
+    objekt,
+    ereignis: "Neue Anfrage",
+  });
 }
 
 export {

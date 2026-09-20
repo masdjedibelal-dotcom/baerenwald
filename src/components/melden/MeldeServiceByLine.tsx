@@ -16,7 +16,7 @@ export function MeldeServiceByLine({
   return (
     <Tag
       className={cn(
-        "text-[10.5px] leading-snug text-text-tertiary/80",
+        "text-fs-caption leading-snug text-text-tertiary/80",
         className
       )}
     >

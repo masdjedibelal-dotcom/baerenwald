@@ -1,4 +1,5 @@
 "use client";
+import { PALETTE } from "@/lib/tokens/palette";
 
 import { cn } from "@/lib/utils";
 
@@ -142,9 +143,9 @@ export function HWLeadForm({
         </div>
         <p
           style={{
-            fontSize: "12px",
-            color: "#9CA3AF",
-            marginTop: "12px",
+            fontSize: 12,
+            color: PALETTE.h9ca3af,
+            marginTop: 12,
             lineHeight: 1.5,
           }}
         >
@@ -153,7 +154,7 @@ export function HWLeadForm({
           <a
             href="/datenschutz"
             style={{
-              color: "#2E7D52",
+              color: "var(--fl-accent)",
               textDecoration: "underline",
             }}
           >
@@ -161,7 +162,7 @@ export function HWLeadForm({
           </a>
           .
         </p>
-        <p className="text-[11px] leading-relaxed text-text-tertiary">
+        <p className="text-fs-caption leading-relaxed text-text-tertiary">
           Unverbindlicher Preisrahmen / Preisindikation auf Basis unserer
           Projekterfahrung in München. Verbindliches Festpreisangebot nach
           Vor-Ort-Termin.

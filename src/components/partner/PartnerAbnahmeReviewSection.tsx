@@ -1,7 +1,7 @@
 "use client";
 
+import { PortalIcon } from "@/components/portal/PortalIcon";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { FileText } from "lucide-react";
 
 import { getPartnerAbnahmeStatus } from "@/app/actions/partner-abnahmeprotokoll";
 import { PortalDetailCard } from "@/components/shared/PortalDetailCard";
@@ -45,26 +45,26 @@ function freigabeBadge(
   if (sent) {
     return {
       label: "An Kunden / in Unterlagen",
-      className: "bg-emerald-100 text-emerald-800",
+      className: "bg-p2-primary-soft text-p2-primary",
     };
   }
   const s = String(status ?? "").toLowerCase();
   if (s === "zur_freigabe") {
     return {
       label: "Zur Freigabe an Bärenwald",
-      className: "bg-amber-100 text-amber-900",
+      className: "bg-warning-bg text-warning-text",
     };
   }
   if (s === "freigegeben") {
     return {
       label: "Freigegeben",
-      className: "bg-sky-100 text-sky-800",
+      className: "bg-p2-bg text-p2-ink",
     };
   }
   if (s === "abgelehnt") {
     return {
       label: "Abgelehnt — Nacharbeit nötig",
-      className: "bg-rose-100 text-rose-800",
+      className: "bg-p2-danger-soft text-p2-danger",
     };
   }
   return null;
@@ -163,7 +163,7 @@ export function PartnerAbnahmeReviewSection({
   if (loading && !status?.pdf_url && !status?.freigabe_status) {
     return (
       <PortalDetailCard title="Abschluss">
-        <p className="text-[13px]" style={{ color: PORTAL_VAR.sub }}>
+        <p className="text-fs-meta" style={{ color: PORTAL_VAR.sub }}>
           Protokoll wird geladen …
         </p>
       </PortalDetailCard>
@@ -184,16 +184,16 @@ export function PartnerAbnahmeReviewSection({
         <div className="space-y-4">
           <div className="flex items-start gap-3">
             <div
-              className="grid h-10 w-10 shrink-0 place-items-center rounded-xl"
+              className="grid h-10 w-10 shrink-0 place-items-center rounded-sheet"
               style={{ background: PORTAL_VAR.primarySoft, color: PORTAL_VAR.primary }}
             >
-              <FileText className="h-5 w-5" aria-hidden />
+              <PortalIcon n="file-text" ctx="default" className="h-5 w-5" aria-hidden />
             </div>
             <div className="min-w-0 flex-1">
-              <p className="text-[14.5px] font-bold text-text-primary">
+              <p className="text-fs-title font-bold text-text-primary">
                 Auftrag abgeschlossen
               </p>
-              <p className="mt-0.5 text-[12.5px] text-text-tertiary">
+              <p className="mt-0.5 text-fs-meta text-text-tertiary">
                 {[
                   status.abnahme_datum
                     ? `Datum ${new Date(status.abnahme_datum).toLocaleDateString("de-DE")}`
@@ -209,7 +209,7 @@ export function PartnerAbnahmeReviewSection({
               {badge ? (
                 <span
                   className={cn(
-                    "mt-2 inline-block rounded-full px-2.5 py-0.5 text-[11.5px] font-bold",
+                    "mt-2 inline-block rounded-pill px-2.5 py-0.5 text-fs-caption font-bold",
                     badge.className
                   )}
                 >
@@ -217,7 +217,7 @@ export function PartnerAbnahmeReviewSection({
                 </span>
               ) : null}
               {!erledigt && freigabe === "abgelehnt" ? (
-                <p className="mt-2 text-[12.5px] text-text-secondary">
+                <p className="mt-2 text-fs-meta text-text-secondary">
                   Der Abschluss wurde abgelehnt. Bitte Nacharbeit erledigen und
                   erneut abschließen.
                 </p>
@@ -247,10 +247,10 @@ export function PartnerAbnahmeReviewSection({
                 href={status.pdf_url}
                 name="Abschlussprotokoll"
                 kind="pdf"
-                className="block w-full overflow-hidden rounded-xl border border-border-light bg-muted/20 text-left lg:hidden"
+                className="block w-full overflow-hidden rounded-sheet border border-border-light bg-muted/20 text-left lg:hidden"
               >
                 <p
-                  className="px-3 py-4 text-center text-[12.5px] font-semibold"
+                  className="px-3 py-4 text-center text-fs-meta font-semibold"
                   style={{ color: PORTAL_VAR.primary }}
                 >
                   PDF öffnen

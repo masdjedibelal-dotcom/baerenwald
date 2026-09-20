@@ -1,15 +1,10 @@
 "use client";
 
+import { PortalIcon } from "@/components/portal/PortalIcon";
 import type { ReactNode } from "react";
-import type { LucideIcon } from "lucide-react";
-import {
-  AlertTriangle,
-  Calendar,
-  ChevronRight,
-  Hammer,
-  MapPin,
-} from "lucide-react";
+import { PortalButton } from "@/components/portal/PortalButton";
 
+import { PortalCheckbox } from "@/components/shared/PortalFormControls";
 import {
   portalListItemBorderStyle,
   portalListItemClass,
@@ -21,7 +16,7 @@ import { cn } from "@/lib/utils";
 
 export type PortalListCardAccent = "anfrage" | "angebot" | "auftrag";
 
-/** String-Keys — Lucide-Komponenten dürfen nicht Server→Client serialisiert werden. */
+/** String-Keys — PortalIcon `n` (keine Lucide-Komponenten Server→Client). */
 export type PortalListCardMetaIcon =
   | "map-pin"
   | "calendar"
@@ -31,13 +26,6 @@ export type PortalListCardMetaIcon =
 export type PortalListCardMeta = {
   icon?: PortalListCardMetaIcon;
   text: string;
-};
-
-const META_ICONS: Record<PortalListCardMetaIcon, LucideIcon> = {
-  "map-pin": MapPin,
-  calendar: Calendar,
-  hammer: Hammer,
-  "alert-triangle": AlertTriangle,
 };
 
 /** @deprecated Prefer PortalListVariant from layout-chrome */
@@ -127,11 +115,6 @@ function TrailingActionsSlot({ children }: { children: ReactNode }) {
   );
 }
 
-/** Klassische Notif-Badge: oben rechts, rot mit weißer Zahl. */
-function AttentionCornerBadge({ count }: { count: number }) {
-  return <PortalCountBadge count={count} variant="corner" className="z-10" />;
-}
-
 /**
  * Vorgangs-Listenzeile — C1: weiße Karte auf Page-BG (`card` / `responsive`).
  */
@@ -162,7 +145,8 @@ export function PortalListCard({
 
   if (variant === "row") {
     return (
-      <button
+      <PortalButton
+        variant="ghost"
         type="button"
         onClick={onClick}
         className={cn(
@@ -174,11 +158,11 @@ export function PortalListCard({
         )}
       >
         {showAttention ? (
-          <AttentionCornerBadge count={attentionBadge!} />
+          <PortalCountBadge count={attentionBadge!} variant="corner" className="z-10" />
         ) : null}
         {media ? (
           <div
-            className="w-20 shrink-0 overflow-hidden rounded-lg"
+            className="w-20 shrink-0 overflow-hidden rounded-card"
             onClick={(e) => e.stopPropagation()}
             onKeyDown={(e) => e.stopPropagation()}
           >
@@ -203,10 +187,7 @@ export function PortalListCard({
             </div>
             <div className="flex shrink-0 items-center gap-1.5 self-center pt-3.5">
               {showChevron ? (
-                <ChevronRight
-                  className="h-5 w-5 text-[var(--p2-faint2,#9aa39e)]"
-                  aria-hidden
-                />
+                <PortalIcon n="chevron-right" ctx="muted" className="h-5 w-5 text-[var(--p2-faint2)]" aria-hidden />
               ) : null}
             </div>
           </div>
@@ -214,16 +195,16 @@ export function PortalListCard({
           {meta.length > 0 ? (
             <ul className="mt-2 space-y-1">
               {meta.map((m, i) => {
-                const Icon = m.icon ? META_ICONS[m.icon] : null;
                 return (
                   <li
                     key={`${m.text}-${i}`}
                     className="portal-text-meta flex items-center gap-2 text-text-secondary"
                   >
-                    {Icon ? (
-                      <Icon
+                    {m.icon ? (
+                      <PortalIcon
+                        n={m.icon}
+                        ctx="muted"
                         className="h-4 w-4 shrink-0 text-text-tertiary"
-                        aria-hidden
                       />
                     ) : null}
                     <span className="truncate">{m.text}</span>
@@ -241,7 +222,7 @@ export function PortalListCard({
             <p className="portal-text-meta mt-2 text-text-tertiary">{hint}</p>
           ) : null}
         </div>
-      </button>
+      </PortalButton>
     );
   }
 
@@ -262,7 +243,7 @@ export function PortalListCard({
       style={isCardShell ? portalListItemBorderStyle(variant) : undefined}
     >
       {showAttention ? (
-        <AttentionCornerBadge count={attentionBadge!} />
+        <PortalCountBadge count={attentionBadge!} variant="corner" className="z-10" />
       ) : null}
       {hasMedia ? (
         <div
@@ -289,9 +270,8 @@ export function PortalListCard({
         )}
       >
         {showCheckbox ? (
-          <input
-            type="checkbox"
-            className="mt-1.5 h-4 w-4 shrink-0 rounded border-gray-300"
+          <PortalCheckbox
+            className="mt-1.5 h-4 w-4 shrink-0 rounded-card border-p2-line"
             checked={checked}
             onChange={(e) => {
               e.stopPropagation();
@@ -307,7 +287,8 @@ export function PortalListCard({
         ) : null}
 
         <div className="min-w-0 flex-1">
-          <button
+          <PortalButton
+            variant="ghost"
             type="button"
             onClick={onClick}
             className="flex w-full min-w-0 items-start gap-3.5 text-left"
@@ -351,12 +332,9 @@ export function PortalListCard({
             </div>
 
             {showChevron ? (
-              <ChevronRight
-                className="portal-list-card-chevron shrink-0"
-                aria-hidden
-              />
+              <PortalIcon n="chevron-right" ctx="row" className="portal-list-card-chevron shrink-0" aria-hidden />
             ) : null}
-          </button>
+          </PortalButton>
 
           {footer ? <div className="mt-2">{footer}</div> : null}
           {trailingActions ? (

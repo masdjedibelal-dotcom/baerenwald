@@ -1,3 +1,4 @@
+import { MAIL_COLORS } from "@/lib/tokens/mail-colors";
 import { SITE_CONFIG } from "@/lib/config";
 import { meldeKategorieLabel } from "@/lib/org/melde-kategorien";
 import {
@@ -6,6 +7,7 @@ import {
   mailPrimaryButtonHtml,
   mailTeamGrussHtml,
 } from "@/lib/email/mail-shell";
+import { buildSubject } from "@/lib/shared-domain/build-subject";
 
 function esc(s: string): string {
   return s
@@ -35,10 +37,10 @@ function wrapOrgMail(opts: {
       ? mailPrimaryButtonHtml(opts.ctaLabel, opts.ctaHref)
       : "";
   const bodyHtml = `
-    <p style="margin:0 0 12px;font-size:15px;color:#374151;line-height:1.6;">${mailBegruessungHtml("sie")}</p>
+    <p style="margin:0 0 12px;font-size:15px;color:${MAIL_COLORS.gray700};line-height:1.6;">${mailBegruessungHtml("sie")}</p>
     ${opts.bodyInnerHtml}
     ${cta}
-    <p style="margin:24px 0 0;font-size:15px;color:#374151;line-height:1.6;">${mailTeamGrussHtml("sie")}</p>
+    <p style="margin:24px 0 0;font-size:15px;color:${MAIL_COLORS.gray700};line-height:1.6;">${mailTeamGrussHtml("sie")}</p>
   `;
   return buildStandardMailHtml({
     preheader: opts.preheader,
@@ -73,19 +75,24 @@ export function buildMelderBestaetigungHtml(input: {
   return buildStandardMailHtml({
     preheader: `Meldung eingegangen — ${kat}`,
     bodyHtml: `
-      <p style="margin:0 0 12px;font-size:15px;color:#374151;line-height:1.6;">${mailBegruessungHtml("sie", input.melderName)}</p>
-      <p style="margin:0 0 12px;font-size:15px;color:#374151;line-height:1.6;">wir haben Ihre <strong>${esc(kat)}</strong>-Meldung für <strong>${esc(input.objektTitel)}</strong> erhalten.</p>
-      <p style="margin:0 0 12px;font-size:15px;color:#374151;line-height:1.6;">${intro}</p>
+      <p style="margin:0 0 12px;font-size:15px;color:${MAIL_COLORS.gray700};line-height:1.6;">${mailBegruessungHtml("sie", input.melderName)}</p>
+      <p style="margin:0 0 12px;font-size:15px;color:${MAIL_COLORS.gray700};line-height:1.6;">wir haben Ihre <strong>${esc(kat)}</strong>-Meldung für <strong>${esc(input.objektTitel)}</strong> erhalten.</p>
+      <p style="margin:0 0 12px;font-size:15px;color:${MAIL_COLORS.gray700};line-height:1.6;">${intro}</p>
       ${statusBlock}
-      ${input.referenz ? `<p style="margin:12px 0 0;font-size:15px;color:#6B7280;">Referenz: ${esc(input.referenz)}</p>` : ""}
-      <p style="margin:16px 0 0;font-size:15px;color:#6B7280;">${footer}</p>
-      <p style="margin:24px 0 0;font-size:15px;color:#374151;line-height:1.6;">${mailTeamGrussHtml("sie")}</p>
+      ${input.referenz ? `<p style="margin:12px 0 0;font-size:15px;color:${MAIL_COLORS.muted};">Referenz: ${esc(input.referenz)}</p>` : ""}
+      <p style="margin:16px 0 0;font-size:15px;color:${MAIL_COLORS.muted};">${footer}</p>
+      <p style="margin:24px 0 0;font-size:15px;color:${MAIL_COLORS.gray700};line-height:1.6;">${mailTeamGrussHtml("sie")}</p>
     `,
   });
 }
 
 export function buildMelderBestaetigungSubject(kategorie: string): string {
-  return `Meldung eingegangen — ${meldeKategorieLabel(kategorie)}`;
+  // Mieter-Versand aus (MIETER_EMAIL_ENABLED=false); Subject leicht F5-ähnlich.
+  return buildSubject({
+    objekt: meldeKategorieLabel(kategorie),
+    ereignis: "Meldung eingegangen",
+    objektFallback: "Meldung",
+  });
 }
 
 /** M3 — HV: Angebot eingefordert (Bestätigung) */
@@ -97,9 +104,12 @@ export function buildOrgAngebotEingefordertHtml(input: {
 }): string {
   const link = orgPortalDeepLink(input.portalPath);
   return wrapOrgMail({
-    preheader: `Angebot eingefordert — ${input.objektTitel}`,
+    preheader: buildSubject({
+      objekt: input.objektTitel,
+      ereignis: "Angebot eingefordert",
+    }),
     bodyInnerHtml: `
-      <p style="margin:0;font-size:15px;color:#374151;line-height:1.6;">Für <strong>${esc(input.objektTitel)}</strong>${input.melderName ? ` (${esc(input.melderName)})` : ""} erstellt Bärenwald ein Angebot. Sie sehen es im Portal, sobald es vorliegt.</p>
+      <p style="margin:0;font-size:15px;color:${MAIL_COLORS.gray700};line-height:1.6;">Für <strong>${esc(input.objektTitel)}</strong>${input.melderName ? ` (${esc(input.melderName)})` : ""} erstellt Bärenwald ein Angebot. Sie sehen es im Portal, sobald es vorliegt.</p>
     `,
     ctaHref: link,
     ctaLabel: "Zum Auftraggeber-Portal →",
@@ -116,11 +126,11 @@ export function buildMelderEinladungHtml(input: {
   return buildStandardMailHtml({
     preheader: `Meldung ergänzen — ${input.objektTitel}`,
     bodyHtml: `
-      <p style="margin:0 0 12px;font-size:15px;color:#374151;line-height:1.6;">${mailBegruessungHtml("sie", input.melderName)}</p>
-      <p style="margin:0 0 12px;font-size:15px;color:#374151;line-height:1.6;">${esc(input.orgName)} hat eine Meldung für <strong>${esc(input.objektTitel)}</strong> vorgemerkt. Bitte ergänzen Sie kurz Details und Fotos:</p>
+      <p style="margin:0 0 12px;font-size:15px;color:${MAIL_COLORS.gray700};line-height:1.6;">${mailBegruessungHtml("sie", input.melderName)}</p>
+      <p style="margin:0 0 12px;font-size:15px;color:${MAIL_COLORS.gray700};line-height:1.6;">${esc(input.orgName)} hat eine Meldung für <strong>${esc(input.objektTitel)}</strong> vorgemerkt. Bitte ergänzen Sie kurz Details und Fotos:</p>
       ${mailPrimaryButtonHtml("Meldung ergänzen", input.link)}
-      <p style="margin:12px 0 0;font-size:15px;color:#6B7280;word-break:break-all;">Link: ${esc(input.link)}</p>
-      <p style="margin:24px 0 0;font-size:15px;color:#374151;line-height:1.6;">${mailTeamGrussHtml("sie")}</p>
+      <p style="margin:12px 0 0;font-size:15px;color:${MAIL_COLORS.muted};word-break:break-all;">Link: ${esc(input.link)}</p>
+      <p style="margin:24px 0 0;font-size:15px;color:${MAIL_COLORS.gray700};line-height:1.6;">${mailTeamGrussHtml("sie")}</p>
     `,
   });
 }
@@ -134,10 +144,10 @@ export function buildMelderAbgelehntHtml(input: {
   return buildStandardMailHtml({
     preheader: `Meldung abgeschlossen — ${input.objektTitel}`,
     bodyHtml: `
-      <p style="margin:0 0 12px;font-size:15px;color:#374151;line-height:1.6;">${mailBegruessungHtml("sie", input.melderName)}</p>
-      <p style="margin:0 0 12px;font-size:15px;color:#374151;line-height:1.6;">${esc(input.orgName)} hat Ihre Meldung für <strong>${esc(input.objektTitel)}</strong> ohne Beauftragung abgeschlossen.</p>
-      <p style="margin:0;font-size:15px;color:#374151;line-height:1.6;">Bei Rückfragen wenden Sie sich bitte direkt an Ihre Verwaltung.</p>
-      <p style="margin:24px 0 0;font-size:15px;color:#374151;line-height:1.6;">${mailTeamGrussHtml("sie")}</p>
+      <p style="margin:0 0 12px;font-size:15px;color:${MAIL_COLORS.gray700};line-height:1.6;">${mailBegruessungHtml("sie", input.melderName)}</p>
+      <p style="margin:0 0 12px;font-size:15px;color:${MAIL_COLORS.gray700};line-height:1.6;">${esc(input.orgName)} hat Ihre Meldung für <strong>${esc(input.objektTitel)}</strong> ohne Beauftragung abgeschlossen.</p>
+      <p style="margin:0;font-size:15px;color:${MAIL_COLORS.gray700};line-height:1.6;">Bei Rückfragen wenden Sie sich bitte direkt an Ihre Verwaltung.</p>
+      <p style="margin:24px 0 0;font-size:15px;color:${MAIL_COLORS.gray700};line-height:1.6;">${mailTeamGrussHtml("sie")}</p>
     `,
   });
 }
@@ -150,9 +160,12 @@ export function buildOrgKleinreparaturHtml(input: {
 }): string {
   const link = orgPortalDeepLink(input.portalPath);
   return wrapOrgMail({
-    preheader: `Sofort beauftragt — ${input.objektTitel}`,
+    preheader: buildSubject({
+      objekt: input.objektTitel,
+      ereignis: "Kleinreparatur freigegeben",
+    }),
     bodyInnerHtml: `
-      <p style="margin:0;font-size:15px;color:#374151;line-height:1.6;"><strong>${esc(input.objektTitel)}</strong>${input.melderName ? ` · ${esc(input.melderName)}` : ""} — Kleinreparatur: Der Handwerker rückt ohne formales Angebot aus und kann direkt starten.</p>
+      <p style="margin:0;font-size:15px;color:${MAIL_COLORS.gray700};line-height:1.6;"><strong>${esc(input.objektTitel)}</strong>${input.melderName ? ` · ${esc(input.melderName)}` : ""} — Kleinreparatur: Der Partner rückt ohne formales Angebot aus und kann direkt starten.</p>
     `,
     ctaHref: link,
     ctaLabel: "Zum Auftraggeber-Portal →",
@@ -167,9 +180,12 @@ export function buildOrgAngebotFreigabeHtml(input: {
 }): string {
   const link = orgPortalDeepLink(input.portalPath);
   return wrapOrgMail({
-    preheader: `Angebot entscheiden — ${input.objektTitel}`,
+    preheader: buildSubject({
+      objekt: input.objektTitel,
+      ereignis: "Angebot entscheiden",
+    }),
     bodyInnerHtml: `
-      <p style="margin:0;font-size:15px;color:#374151;line-height:1.6;">Für <strong>${esc(input.objektTitel)}</strong>${input.betrag ? ` (${esc(input.betrag)})` : ""} liegt ein Angebot vor. Bitte im Portal annehmen oder ablehnen.</p>
+      <p style="margin:0;font-size:15px;color:${MAIL_COLORS.gray700};line-height:1.6;">Für <strong>${esc(input.objektTitel)}</strong>${input.betrag ? ` (${esc(input.betrag)})` : ""} liegt ein Angebot vor. Bitte im Portal annehmen oder ablehnen.</p>
     `,
     ctaHref: link,
     ctaLabel: "Zum Auftraggeber-Portal →",
@@ -189,10 +205,13 @@ export function buildOrgAngebotUnterSchwelleHtml(input: {
       ? ` (${esc(input.schwelleLabel.trim())})`
       : "";
   return wrapOrgMail({
-    preheader: `Angebot unter Freigabeschwelle — ${input.objektTitel}`,
+    preheader: buildSubject({
+      objekt: input.objektTitel,
+      ereignis: "Angebot zur Information",
+    }),
     bodyInnerHtml: `
-      <p style="margin:0 0 12px;font-size:15px;color:#374151;line-height:1.6;">Für <strong>${esc(input.objektTitel)}</strong>${input.betrag ? ` liegt ein Angebot (${esc(input.betrag)})` : " liegt ein Angebot"} unter Ihrer Freigabeschwelle${schwelle}.</p>
-      <p style="margin:0;font-size:15px;color:#374151;line-height:1.6;">Aufgrund Ihrer erteilten Freigabeschwelle ist eine Annahme oder Ablehnung <strong>nicht nötig</strong> — wir kümmern uns direkt um den Auftrag. Den Stand sehen Sie jederzeit im Auftraggeber-Portal.</p>
+      <p style="margin:0 0 12px;font-size:15px;color:${MAIL_COLORS.gray700};line-height:1.6;">Für <strong>${esc(input.objektTitel)}</strong>${input.betrag ? ` liegt ein Angebot (${esc(input.betrag)})` : " liegt ein Angebot"} unter Ihrer Freigabeschwelle${schwelle}.</p>
+      <p style="margin:0;font-size:15px;color:${MAIL_COLORS.gray700};line-height:1.6;">Aufgrund Ihrer erteilten Freigabeschwelle ist eine Annahme oder Ablehnung <strong>nicht nötig</strong> — wir kümmern uns direkt um den Auftrag. Den Stand sehen Sie jederzeit im Auftraggeber-Portal.</p>
     `,
     ctaHref: link,
     ctaLabel: "Zum Auftraggeber-Portal →",
@@ -212,10 +231,13 @@ export function buildOrgHvMieterEventHtml(input: {
     ? ` (${esc(input.melderName.trim())})`
     : "";
   return wrapOrgMail({
-    preheader: `${input.eventTitel} — ${input.objektTitel}`,
+    preheader: buildSubject({
+      objekt: input.objektTitel,
+      ereignis: input.eventTitel,
+    }),
     bodyInnerHtml: `
-      <p style="margin:0 0 12px;font-size:15px;color:#374151;line-height:1.6;"><strong>${esc(input.eventTitel)}</strong> — <strong>${esc(input.objektTitel)}</strong>${melder}</p>
-      <p style="margin:0;font-size:15px;color:#374151;line-height:1.6;">${esc(input.eventBody)}</p>
+      <p style="margin:0 0 12px;font-size:15px;color:${MAIL_COLORS.gray700};line-height:1.6;"><strong>${esc(input.eventTitel)}</strong> — <strong>${esc(input.objektTitel)}</strong>${melder}</p>
+      <p style="margin:0;font-size:15px;color:${MAIL_COLORS.gray700};line-height:1.6;">${esc(input.eventBody)}</p>
     `,
     ctaHref: link,
     ctaLabel: "Zum Auftraggeber-Portal →",
@@ -229,10 +251,13 @@ export function buildOrgWirKuemmernUnsHtml(input: {
 }): string {
   const link = orgPortalDeepLink(input.portalPath);
   return wrapOrgMail({
-    preheader: `Wir kümmern uns um Ihren Vorgang — ${input.objektTitel}`,
+    preheader: buildSubject({
+      objekt: input.objektTitel,
+      ereignis: "Wir kümmern uns",
+    }),
     bodyInnerHtml: `
-      <p style="margin:0 0 12px;font-size:15px;color:#374151;line-height:1.6;"><strong>Wir kümmern uns um Ihren Vorgang</strong> — <strong>${esc(input.objektTitel)}</strong>.</p>
-      <p style="margin:0;font-size:15px;color:#374151;line-height:1.6;">Den aktuellen Stand sehen Sie jederzeit im Auftraggeber-Portal.</p>
+      <p style="margin:0 0 12px;font-size:15px;color:${MAIL_COLORS.gray700};line-height:1.6;"><strong>Wir kümmern uns um Ihren Vorgang</strong> — <strong>${esc(input.objektTitel)}</strong>.</p>
+      <p style="margin:0;font-size:15px;color:${MAIL_COLORS.gray700};line-height:1.6;">Den aktuellen Stand sehen Sie jederzeit im Auftraggeber-Portal.</p>
     `,
     ctaHref: link,
     ctaLabel: "Zum Auftraggeber-Portal →",

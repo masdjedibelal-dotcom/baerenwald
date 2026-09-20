@@ -1,6 +1,7 @@
 "use client";
 
-import { Download, Loader2 } from "lucide-react";
+import { SiteIcon } from "@/components/ui/SiteIcon";
+import { CTAButton } from "@/components/ui/CTAButton";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 import {
@@ -99,7 +100,7 @@ export function GptZielbildCard({
       <div className="gpt-zielbild-card-preview">
         {loading ? (
           <div className="gpt-zielbild-card-loading">
-            <Loader2 className="h-6 w-6 animate-spin" aria-hidden />
+            <SiteIcon n="loader" ctx="default" className="h-6 w-6 animate-spin" aria-hidden />
             <span>Zielbild wird erstellt …</span>
           </div>
         ) : previewUrl ? (
@@ -110,24 +111,26 @@ export function GptZielbildCard({
         )}
       </div>
 
-      <button
+      <CTAButton
+        bare
+        tone="viz"
         type="button"
-        className="gpt-viz-btn gpt-viz-btn--primary gpt-zielbild-download"
+        className="gpt-zielbild-download"
         disabled={loading || downloading || !previewUrl}
         onClick={() => void handleDownload()}
       >
         {downloading ? (
           <>
-            <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
+            <SiteIcon n="loader" ctx="default" className="h-4 w-4 animate-spin" aria-hidden />
             Wird gespeichert …
           </>
         ) : (
           <>
-            <Download className="h-4 w-4" aria-hidden />
+            <SiteIcon n="download" ctx="default" className="h-4 w-4" aria-hidden />
             Zielbild herunterladen
           </>
         )}
-      </button>
+      </CTAButton>
 
       {error ? <p className="gpt-viz-error">{error}</p> : null}
     </div>

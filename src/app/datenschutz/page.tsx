@@ -114,7 +114,7 @@ export default function DatenschutzPage() {
                 (berechtigtes Interesse an sicherer, nachvollziehbarer Kundenkommunikation).
               </p>
 
-              <strong id="partner-portal">3a. Bärenwald Partner (Handwerkerportal)</strong>
+              <strong id="partner-portal">3a. Bärenwald Partner (Partnerportal)</strong>
               <p>
                 Unter{" "}
                 <a href="/partner/login">Bärenwald Partner</a> können Handwerksbetriebe
@@ -339,7 +339,7 @@ export default function DatenschutzPage() {
               <p>
                 PostHog Inc.
                 <br />
-                2261 Market Street #4008
+                2261 Market Street, Suite 4008
                 <br />
                 San Francisco, CA 94114, USA
               </p>

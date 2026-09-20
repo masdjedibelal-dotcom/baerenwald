@@ -1,7 +1,8 @@
 "use client";
 
+import { PortalIcon } from "@/components/portal/PortalIcon";
 import { useRef, useState, type ReactNode } from "react";
-import { Download, Trash2, Upload } from "lucide-react";
+import { PortalButton } from "@/components/portal/PortalButton";
 
 import { PdfFileIcon } from "@/components/shared/PdfFileIcon";
 import { PortalDocOpenButton } from "@/components/shared/PortalDocOpenButton";
@@ -9,7 +10,7 @@ import { triggerPortalDocDownload } from "@/lib/portal2/doc-viewer";
 import { cn } from "@/lib/utils";
 
 const ACTION_BTN =
-  "portal-touch-target inline-grid place-items-center rounded-lg border border-border-light bg-white transition-colors";
+  "portal-touch-target inline-grid place-items-center rounded-card border border-border-light bg-white transition-colors";
 
 function normalizeHref(url: string): string {
   return /^https?:\/\//i.test(url) || url.startsWith("/") || url.startsWith("blob:")
@@ -98,26 +99,28 @@ export function PortalDokumentActions({
       {showOpen ? (
         <>
           {onOpen ? (
-            <button
+            <PortalButton
+              variant="danger"
               type="button"
               onClick={onOpen}
-              className={cn(ACTION_BTN, "text-[#c62828] hover:bg-red-50")}
+              className={cn(ACTION_BTN, "text-[var(--p2-danger)] hover:bg-p2-danger-soft")}
               aria-label={`${name} ansehen`}
             >
               <PdfFileIcon className="h-5 w-5" />
-            </button>
+            </PortalButton>
           ) : (
             <PortalDocOpenButton
               href={url}
               name={name}
               kind="pdf"
-              className={cn(ACTION_BTN, "text-[#c62828] hover:bg-red-50")}
+              className={cn(ACTION_BTN, "text-[var(--p2-danger)] hover:bg-p2-danger-soft")}
             >
               <PdfFileIcon className="h-5 w-5" />
               <span className="sr-only">{`${name} ansehen`}</span>
             </PortalDocOpenButton>
           )}
-          <button
+          <PortalButton
+            variant="ghost"
             type="button"
             onClick={() => void onDownloadClick()}
             disabled={dlBusy}
@@ -127,12 +130,13 @@ export function PortalDokumentActions({
             )}
             aria-label={`${name} herunterladen`}
           >
-            <Download className="h-4 w-4" />
-          </button>
+            <PortalIcon n="download" ctx="default" className="h-4 w-4" />
+          </PortalButton>
         </>
       ) : null}
       {kannHochladen && onUploadClick ? (
-        <button
+        <PortalButton
+          variant="primary"
           type="button"
           disabled={loading}
           onClick={onUploadClick}
@@ -142,22 +146,23 @@ export function PortalDokumentActions({
           )}
           aria-label={`${name} hochladen`}
         >
-          <Upload className="h-4 w-4" />
-        </button>
+          <PortalIcon n="upload" ctx="default" className="h-4 w-4" />
+        </PortalButton>
       ) : null}
       {kannLoeschen && onDelete ? (
-        <button
+        <PortalButton
+          variant="danger"
           type="button"
           disabled={loading}
           onClick={onDelete}
           className={cn(
             ACTION_BTN,
-            "text-red-700 hover:bg-red-50 disabled:opacity-50"
+            "text-p2-danger hover:bg-p2-danger-soft disabled:opacity-50"
           )}
           aria-label={`${name} löschen`}
         >
-          <Trash2 className="h-4 w-4" />
-        </button>
+          <PortalIcon n="trash" ctx="default" className="h-4 w-4" />
+        </PortalButton>
       ) : null}
     </div>
   );
@@ -218,11 +223,11 @@ export function PortalDokumentUploadZone({
       className={cn(
         "cursor-pointer outline-none transition-colors",
         stacked
-          ? "flex items-center gap-2.5 rounded-xl border-2 border-dashed border-border-default bg-white px-3.5 py-3.5"
-          : "flex flex-col items-center justify-center gap-1 rounded-xl border-2 border-dashed border-border-default bg-white px-4 py-5 text-center",
+          ? "flex items-center gap-2.5 rounded-sheet border-2 border-dashed border-border-default bg-white px-3.5 py-3.5"
+          : "flex flex-col items-center justify-center gap-1 rounded-sheet border-2 border-dashed border-border-default bg-white px-4 py-5 text-center",
         dragOver && "border-accent bg-accent-light/25",
         disabled && "cursor-not-allowed opacity-60",
-        !disabled && "hover:bg-[var(--p2-hover,#eef1ef)]",
+        !disabled && "hover:bg-[var(--p2-hover)]",
         className
       )}
       onClick={activate}
@@ -258,15 +263,12 @@ export function PortalDokumentUploadZone({
           }}
         />
       ) : null}
-      <Upload
-        className={cn(
+      <PortalIcon n="upload" ctx="default" className={cn(
           "shrink-0 text-text-secondary",
           stacked ? "h-5 w-5 text-accent" : "h-5 w-5"
-        )}
-        aria-hidden
-      />
+        )} aria-hidden />
       <div className={cn(stacked ? "min-w-0 text-left" : undefined)}>
-        <p className="text-[13.5px] font-semibold text-text-primary">{label}</p>
+        <p className="text-fs-body font-semibold text-text-primary">{label}</p>
         {hint ? (
           <p className="portal-text-meta text-text-tertiary">{hint}</p>
         ) : null}

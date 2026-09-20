@@ -1,3 +1,4 @@
+import { logDbError } from '@/lib/errors/log-db-error'
 import { NextResponse } from "next/server";
 
 import {
@@ -21,12 +22,13 @@ type Body = {
 };
 
 async function assertObjekt(kundeId: string, objektId: string) {
-  const { data } = await supabaseAdmin
+  const {data, error: __dbErr214_1} = await supabaseAdmin
     .from("kunden_objekte")
     .select("id")
     .eq("id", objektId)
     .eq("kunde_id", kundeId)
     .maybeSingle();
+  if (__dbErr214_1) logDbError('app/api/org/objekte/pruefpflichten/route:kunden_objekte', __dbErr214_1)
   return Boolean(data);
 }
 
@@ -52,6 +54,7 @@ export async function GET(req: Request) {
     .eq("kunde_objekt_id", objektId)
     .eq("status", "aktiv")
     .order("naechste_faellig", { ascending: true });
+  if (error) logDbError('app/api/org/objekte/pruefpflichten/route:objekt_pruefpflichten', error)
 
   if (error) {
     if (/objekt_pruefpflichten|does not exist/i.test(error.message)) {
@@ -119,6 +122,7 @@ export async function POST(req: Request) {
     })
     .select("id")
     .single();
+  if (error) logDbError('app/api/org/objekte/pruefpflichten/route:objekt_pruefpflichten', error)
 
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });

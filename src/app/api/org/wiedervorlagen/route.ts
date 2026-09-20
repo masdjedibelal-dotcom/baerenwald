@@ -1,3 +1,4 @@
+import { logDbError } from '@/lib/errors/log-db-error'
 import { NextResponse } from "next/server";
 
 import { requireOrganisationSession } from "@/lib/org/require-org-session";
@@ -24,6 +25,7 @@ export async function GET() {
     .lte("wiedervorlage_am", today)
     .order("wiedervorlage_am", { ascending: true })
     .limit(20);
+  if (error) logDbError('app/api/org/wiedervorlagen/route:akten_notizen', error)
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
@@ -59,6 +61,7 @@ export async function PATCH(req: Request) {
     .update({ erledigt_am: new Date().toISOString() })
     .eq("id", id)
     .eq("kunde_id", session.kunde.id);
+  if (error) logDbError('app/api/org/wiedervorlagen/route:akten_notizen', error)
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   return NextResponse.json({ ok: true });

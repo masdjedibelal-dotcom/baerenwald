@@ -19,6 +19,7 @@ import type { KundePortalDetailItem } from "@/lib/portal/portal-detail-item";
 import type { PortalBautagebuchEntry } from "@/lib/portal/portal-detail-item";
 import { emitPortalNotificationsChanged } from "@/lib/portal2/notif-refresh";
 import { ensurePortalVorgangNotificationHref } from "@/lib/portal2/portal-detail-deep-link";
+import { EMPTY } from "@/lib/portal-copy";
 import {
   paintPortalBusyNow,
   PORTAL_BUSY_MIN_MS,
@@ -69,8 +70,14 @@ const PortalVorgangDetail = dynamic(
 import { PortalLegalFooter } from "@/components/shared/PortalLegalFooter";
 import { PortalShell } from "@/components/shared/PortalShell";
 import { PortalHeaderSearch } from "@/components/shared/PortalHeaderSearch";
+import {
+  buildListReturnUrl,
+  parseReturn,
+} from "@/lib/list-return-url";
+import { useListUrlState } from "@/hooks/useListUrlState";
 import { PortalInboxEmpty } from "@/components/shared/PortalEmptyState";
-import { PortalEmptyState } from "@/components/shared/PortalStateView";
+import { PortalActionMenu } from "@/components/shared/PortalActionMenu";
+import { PORTAL_EMPTY_TITLE, portalEmptySubtitle } from "@/lib/portal2/portal-states";
 import { PortalListCard } from "@/components/shared/PortalListCard";
 import {
   PORTAL_LIST_PAGE_SIZE,
@@ -138,6 +145,7 @@ import {
 } from "@/lib/portal2/status";
 import type { MieterHvBrand } from "@/lib/portal/load-mieter-hv-brand";
 import { cn } from "@/lib/utils";
+import { PortalButton } from "@/components/portal/PortalButton";
 
 type PortalKunde = {
   name?: string | null;
@@ -396,7 +404,20 @@ export function PortalClient({
     () =>
       Boolean(forceDetailId?.trim() || searchParams.get("id")?.trim())
   );
-  const [listPage, setListPage] = useState(1);
+  const [listPage, setListPageLocal] = useState(1);
+  const listUrl = useListUrlState({
+    keys: ["filter", "page", "q"],
+    pageParam: "page",
+  });
+  const setListPage = (n: number) => {
+    setListPageLocal(n);
+    if (!embedded) listUrl.setState({ page: n });
+  };
+  // URL page → local when not embedded
+  useEffect(() => {
+    if (embedded) return;
+    if (listUrl.seite !== listPage) setListPageLocal(listUrl.seite);
+  }, [embedded, listUrl.seite]); // eslint-disable-line react-hooks/exhaustive-deps
   const [gptOpen, setGptOpen] = useState(false);
   const [createOpen, setCreateOpen] = useState(false);
   const [pageBusy, setPageBusy] = useState(false);
@@ -971,7 +992,7 @@ export function PortalClient({
   }
 
   /** Sofort Loading + Detail öffnen (Liste, Dashboard, Deeplink-Hilfen). */
-  function openVorgangById(vorgangId: string) {
+  function openVorgangById(vorgangId: string, opts?: { focus?: string }) {
     ignoreUrlDetailRef.current = false;
     const matched = findKundeVorgangByQueryId(vorgaengeItems, vorgangId);
     const id = matched?.id ?? vorgangId.trim();
@@ -985,17 +1006,17 @@ export function PortalClient({
       setSelectedId(id);
     });
     onHvDetailOpenChange?.(true);
+    const focus =
+      opts?.focus === "ablehnen" ? "&focus=ablehnen" : "";
     if (embedded && hvPortalMode) {
       const f = hvListeFilterForUrl();
-      router.replace(
-        `/portal?section=vorgaenge&filter=${f}&id=${encodeURIComponent(id)}`,
-        { scroll: false }
-      );
+      const listHref = listUrl.listHrefWithState();
+      const detail = `/portal?section=vorgaenge&filter=${f}&id=${encodeURIComponent(id)}${focus}`;
+      router.replace(buildListReturnUrl(listHref, detail), { scroll: false });
     } else if (!embedded) {
-      router.replace(
-        `/portal?section=vorgaenge&id=${encodeURIComponent(id)}`,
-        { scroll: false }
-      );
+      const listHref = listUrl.listHrefWithState();
+      const detail = `/portal?section=vorgaenge&id=${encodeURIComponent(id)}${focus}`;
+      router.replace(buildListReturnUrl(listHref, detail), { scroll: false });
     }
   }
 
@@ -1018,9 +1039,13 @@ export function PortalClient({
     onHvDetailOpenChange?.(false);
     if (embedded && hvPortalMode) {
       const f = hvListeFilterForUrl();
-      router.replace(`/portal?section=vorgaenge&filter=${f}`, { scroll: false });
+      const fallback = `/portal?section=vorgaenge&filter=${f}`;
+      router.replace(parseReturn(searchParams, fallback), { scroll: false });
     } else if (!embedded) {
-      router.replace(`/portal?section=vorgaenge`, { scroll: false });
+      router.replace(
+        parseReturn(searchParams, "/portal?section=vorgaenge"),
+        { scroll: false }
+      );
     }
   }
 
@@ -1065,6 +1090,17 @@ export function PortalClient({
         showLeftAccent={false}
         showChevron
         attentionBadge={btUnread > 0 ? btUnread : null}
+        trailingActions={
+          <PortalActionMenu
+            title="Aktionen"
+            items={[
+              {
+                label: "Details",
+                onClick: () => openVorgang(row),
+              },
+            ]}
+          />
+        }
       />
     );
   }
@@ -1097,11 +1133,12 @@ export function PortalClient({
       <div className={portalListStackClass("responsive")}>
         {paginatedRows.length === 0 ? (
           vorgaengeItems.length === 0 ? (
-            <PortalEmptyState
-              role={
-                hvPortalMode ? "hv" : isPrivatLike ? "mieter" : "kunde"
-              }
+            <PortalInboxEmpty
               compact
+              title={PORTAL_EMPTY_TITLE}
+              description={portalEmptySubtitle(
+                hvPortalMode ? "hv" : isPrivatLike ? "mieter" : "kunde"
+              )}
             />
           ) : (
             <PortalInboxEmpty
@@ -1109,19 +1146,19 @@ export function PortalClient({
               title={
                 hvPortalMode && controlledHvListeFilter
                   ? controlledHvListeFilter === "alle"
-                    ? "Keine Vorgänge."
+                    ? EMPTY.vorgaenge
                     : controlledHvListeFilter === "offen"
-                      ? "Keine offenen Vorgänge."
+                      ? EMPTY.vorgaengeOffen
                       : controlledHvListeFilter === "in_arbeit"
-                        ? "Keine Vorgänge in Arbeit."
-                        : "Keine erledigten Vorgänge."
+                        ? EMPTY.vorgaengeArbeit
+                        : EMPTY.vorgaengeErledigt
                   : isPrivatLike
-                    ? "Noch keine Vorgänge"
+                    ? EMPTY.nochKeineVorgaenge
                     : vorgangFilter === "alle"
-                      ? "Keine Vorgänge."
+                      ? EMPTY.vorgaenge
                       : vorgangFilter === "aktiv"
-                        ? "Keine aktiven Vorgänge."
-                        : "Keine erledigten Vorgänge."
+                        ? EMPTY.vorgaengeAktiv
+                        : EMPTY.vorgaengeErledigt
               }
             />
           )
@@ -1239,7 +1276,7 @@ export function PortalClient({
         </div>
         {showEmbeddedBusy ? (
           <div
-            className="absolute inset-0 z-[80] bg-[var(--surface-page,#fff)]"
+            className="absolute inset-0 z-[80] bg-[var(--surface-page)]"
             role="presentation"
           >
             <div className="sticky top-[max(1rem,18vh)] flex justify-center px-3 py-6">
@@ -1315,11 +1352,18 @@ export function PortalClient({
           onClick: () => setCreateOpen(true),
         }}
         headerSearch={
-          <PortalHeaderSearch
-            onSubmit={() => {
-              switchSection("vorgaenge");
-            }}
-          />
+          embedded ? undefined : (
+            <PortalHeaderSearch
+              apiPath="/api/portal/suche"
+              role="kunde"
+              onSelect={(hit) => {
+                const idMatch = hit.href.match(/[?&]id=([^&]+)/);
+                const id = idMatch ? decodeURIComponent(idMatch[1]!) : "";
+                if (id) openVorgangById(id);
+                else router.replace(hit.href, { scroll: false });
+              }}
+            />
+          )
         }
         notifications={
           <PortalUserNotificationBell
@@ -1329,9 +1373,9 @@ export function PortalClient({
         }
         headerRoleBadge={
           <form action="/portal/auth/signout" method="post">
-            <button type="submit" className="btn-pill-outline portal-btn-compact">
+            <PortalButton variant="secondary" action={false} compact type="submit" className="btn-pill-outline">
               Abmelden
-            </button>
+            </PortalButton>
           </form>
         }
       >

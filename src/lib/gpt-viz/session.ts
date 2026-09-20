@@ -1,3 +1,4 @@
+import { logDbError } from '@/lib/errors/log-db-error'
 import type {
   GptProjektBrief,
   GptVizBauErklaerung,
@@ -58,6 +59,7 @@ export async function createGptVizSession(opts?: {
     .insert(insert)
     .select("*")
     .single();
+  if (error) logDbError('lib/gpt-viz/session:gpt_raum_sessions', error)
   if (error || !data) return null;
   return mapRow(data as Record<string, unknown>);
 }
@@ -101,6 +103,7 @@ export async function updateGptVizSession(
     .eq("id", sessionId)
     .select("*")
     .single();
+  if (error) logDbError('lib/gpt-viz/session:gpt_raum_sessions', error)
   if (error || !data) return null;
   return mapRow(data as Record<string, unknown>);
 }

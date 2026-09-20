@@ -5,11 +5,11 @@ import { useEffect, useState } from "react";
 import {
   EinstellungenEditModal,
   EinstellungenEuroSlider,
+  EinstellungenInstantToggle,
   EinstellungenPfList,
   EinstellungenPfRow,
   EinstellungenSectionCard,
   EinstellungenSheetCard,
-  EinstellungenToggle,
 } from "@/components/shared/PortalEinstellungenUi";
 import {
   SofortmassnahmeAkutTitle,
@@ -31,6 +31,7 @@ import {
 } from "@/lib/portal2/einstellungen";
 import { PORTAL_VAR } from "@/lib/portal2/tokens";
 import { orgPortalToast, portalToastError } from "@/lib/shared/portal-toast";
+import { EMPTY, TOAST } from "@/lib/portal-copy";
 
 type Props = {
   kunde: OrganisationKunde;
@@ -46,6 +47,8 @@ function schwelleAktivFromKunde(
 
 /**
  * Freigabe-Regeln: Sofortmaßnahme (Fälle) → unter Schwelle → optional Betrag.
+ * Toggles (Akut, Unter-Schwelle, HmAuto) mit Instant-Save+Confirm auf der Card;
+ * EditModal: Fälle + Euro-Slider.
  */
 export function OrganisationFreigabeRegelnPanel({
   kunde,
@@ -71,10 +74,7 @@ export function OrganisationFreigabeRegelnPanel({
 
   const [editOpen, setEditOpen] = useState(false);
   const [editSchwelle, setEditSchwelle] = useState(schwelle);
-  const [editSchwelleAktiv, setEditSchwelleAktiv] = useState(schwelleAktiv);
-  const [editAkut, setEditAkut] = useState(akutDirekt);
   const [editAkutFaelle, setEditAkutFaelle] = useState(akutFaelle);
-  const [editHmAuto, setEditHmAuto] = useState(hmAuto);
   const [saving, setSaving] = useState(false);
   const [migratedModus, setMigratedModus] = useState(false);
 
@@ -139,10 +139,7 @@ export function OrganisationFreigabeRegelnPanel({
 
   function openEdit() {
     setEditSchwelle(schwelle);
-    setEditSchwelleAktiv(schwelleAktiv);
-    setEditAkut(akutDirekt);
     setEditAkutFaelle(akutFaelle);
-    setEditHmAuto(hmAuto);
     setEditOpen(true);
   }
 
@@ -151,57 +148,73 @@ export function OrganisationFreigabeRegelnPanel({
     setEditOpen(false);
   }
 
-  function onToggleUnterSchwelle(next: boolean) {
-    setEditSchwelleAktiv(next);
-    if (next && editSchwelle <= 0) {
-      setEditSchwelle(500);
+  async function patchEinstellungen(body: Record<string, unknown>) {
+    const res = await fetch("/api/org/einstellungen", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        freigabe_modus: "freigabe",
+        kleinreparatur_aktiv: false,
+        ...body,
+      }),
+    });
+    const json = (await res.json()) as { error?: string };
+    if (!res.ok) {
+      portalToastError(TOAST.nichtGespeichert, json.error);
+      throw new Error(json.error ?? "save failed");
     }
+    orgPortalToast.einstellungenGespeichert();
+    onSaved();
+  }
+
+  async function saveToggleAkut(next: boolean) {
+    await patchEinstellungen({ notfall_direkt: next });
+    setAkutDirekt(next);
+  }
+
+  async function saveToggleSchwelle(next: boolean) {
+    const eur = next
+      ? snapEinstellungenSchwelle(Math.max(schwelle || 500, 500))
+      : null;
+    await patchEinstellungen({ freigabe_schwelle_eur: eur });
+    setSchwelleAktiv(next);
+    if (next && eur != null) setSchwelle(eur);
+  }
+
+  async function saveToggleHmAuto(next: boolean) {
+    await patchEinstellungen({ hm_auto_zuweisen: next });
+    setHmAuto(next);
   }
 
   async function saveEdit() {
     if (!isAdmin) return;
     setSaving(true);
     try {
-      const res = await fetch("/api/org/einstellungen", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          freigabe_modus: "freigabe",
-          freigabe_schwelle_eur: editSchwelleAktiv
-            ? snapEinstellungenSchwelle(Math.max(editSchwelle, 500))
-            : null,
-          kleinreparatur_aktiv: false,
-          notfall_direkt: editAkut,
-          akut_fall_ids: editAkutFaelle,
-          hm_auto_zuweisen: editHmAuto,
-        }),
+      await patchEinstellungen({
+        freigabe_schwelle_eur: schwelleAktiv
+          ? snapEinstellungenSchwelle(Math.max(editSchwelle, 500))
+          : null,
+        akut_fall_ids: editAkutFaelle,
       });
-      const json = (await res.json()) as { error?: string };
-      if (!res.ok) {
-        portalToastError("Nicht gespeichert", json.error);
-        return;
+      if (schwelleAktiv) {
+        setSchwelle(snapEinstellungenSchwelle(Math.max(editSchwelle, 500)));
       }
-      const nextSchwelle = editSchwelleAktiv
-        ? snapEinstellungenSchwelle(Math.max(editSchwelle, 500))
-        : schwelle;
-      setSchwelle(nextSchwelle);
-      setSchwelleAktiv(editSchwelleAktiv);
-      setAkutDirekt(editAkut);
       setAkutFaelle(editAkutFaelle);
-      setHmAuto(editHmAuto);
       setEditOpen(false);
-      orgPortalToast.einstellungenGespeichert();
-      onSaved();
     } catch {
-      portalToastError("Nicht gespeichert");
+      /* toast already */
     } finally {
       setSaving(false);
     }
   }
 
+  const formDirty =
+    JSON.stringify(editAkutFaelle) !== JSON.stringify(akutFaelle) ||
+    (schwelleAktiv && editSchwelle !== schwelle);
+
   const faelleValue =
     akutFaelle.length === 0
-      ? "Keine (nichts geht direkt)"
+      ? EMPTY.freigabeNichtsDirekt
       : akutFaelle.length === 1
         ? "1 Fall"
         : `${akutFaelle.length} Fälle`;
@@ -214,34 +227,96 @@ export function OrganisationFreigabeRegelnPanel({
     >
       {!isAdmin ? (
         <p
-          className="text-[13px] leading-[1.55]"
+          className="text-fs-meta leading-[1.55]"
           style={{ color: PORTAL_VAR.sub }}
         >
           Nur Administratoren können Freigabe-Regeln und Schwellen ändern.
         </p>
       ) : null}
 
-      <EinstellungenPfList>
-        <EinstellungenPfRow
-          label={<SofortmassnahmeAkutTitle />}
-          value={akutDirekt ? "Ja" : "Nein"}
+      <div className="mb-3 space-y-2.5">
+        <EinstellungenInstantToggle
+          nested
+          checked={akutDirekt}
+          disabled={!isAdmin}
+          title={<SofortmassnahmeAkutTitle />}
+          description={
+            akutDirekt
+              ? `${EINSTELLUNGEN_AKUT_INTRO} Aktiv: Nur die ausgewählten Fälle ohne Ihre Freigabe, nur Info.`
+              : "Aus: Auch Sofortmaßnahmen laufen über Angebot und Freigabe."
+          }
+          confirmTitle={
+            akutDirekt
+              ? "Sofortmaßnahme ausschalten?"
+              : "Sofortmaßnahme einschalten?"
+          }
+          confirmDescription={
+            akutDirekt
+              ? "Auch Sofortmaßnahmen brauchen dann Ihre Freigabe."
+              : "Ausgewählte Fälle laufen ohne Freigabe (nur Info)."
+          }
+          onSave={saveToggleAkut}
         />
-        <EinstellungenPfRow label="Sofortmaßnahme-Fälle" value={faelleValue} />
-        <EinstellungenPfRow
-          label={EINSTELLUNGEN_UNTER_SCHWELLE_TITLE}
-          value={schwelleAktiv ? "Ja" : "Nein"}
+
+        <EinstellungenPfList>
+          <EinstellungenPfRow label="Sofortmaßnahme-Fälle" value={faelleValue} />
+        </EinstellungenPfList>
+
+        <EinstellungenInstantToggle
+          nested
+          checked={schwelleAktiv}
+          disabled={!isAdmin}
+          title={EINSTELLUNGEN_UNTER_SCHWELLE_TITLE}
+          description={
+            schwelleAktiv
+              ? EINSTELLUNGEN_UNTER_SCHWELLE_INTRO
+              : "Aus: Jedes Angebot braucht Ihre Freigabe, unabhängig vom Betrag."
+          }
+          confirmTitle={
+            schwelleAktiv
+              ? "Unter-Schwelle ausschalten?"
+              : "Unter-Schwelle einschalten?"
+          }
+          confirmDescription={
+            schwelleAktiv
+              ? "Jedes Angebot braucht dann Ihre Freigabe."
+              : `Angebote unter ${formatEinstellungenSchwelle(schwelle || 500)} ohne Freigabe.`
+          }
+          onSave={saveToggleSchwelle}
         />
+
         {schwelleAktiv ? (
-          <EinstellungenPfRow
-            label={EINSTELLUNGEN_SCHWELLE_BETRAG_TITLE}
-            value={formatEinstellungenSchwelle(schwelle)}
-          />
+          <EinstellungenPfList>
+            <EinstellungenPfRow
+              label={EINSTELLUNGEN_SCHWELLE_BETRAG_TITLE}
+              value={formatEinstellungenSchwelle(schwelle)}
+            />
+          </EinstellungenPfList>
         ) : null}
-        <EinstellungenPfRow
-          label="Automatisch an Hausmeister"
-          value={hmAuto ? "Ja" : "Nein"}
+
+        <EinstellungenInstantToggle
+          nested
+          checked={hmAuto}
+          disabled={!isAdmin}
+          title="Automatisch an Hausmeister"
+          description={
+            hmAuto
+              ? "Aktiv: Neue Meldungen (nicht Sofortmaßnahme) gehen direkt in die Hausmeister-Prüfung."
+              : "Aus: Sie starten den Hausmeister-Pfad manuell am Vorgang."
+          }
+          confirmTitle={
+            hmAuto
+              ? "Hausmeister-Auto ausschalten?"
+              : "Hausmeister-Auto einschalten?"
+          }
+          confirmDescription={
+            hmAuto
+              ? "Neue Meldungen gehen nicht mehr automatisch an den Hausmeister."
+              : "Neue Meldungen (nicht Sofortmaßnahme) gehen direkt in die Hausmeister-Prüfung."
+          }
+          onSave={saveToggleHmAuto}
         />
-      </EinstellungenPfList>
+      </div>
 
       <EinstellungenEditModal
         open={editOpen}
@@ -249,17 +324,8 @@ export function OrganisationFreigabeRegelnPanel({
         onClose={closeEdit}
         onSave={() => void saveEdit()}
         saving={saving}
+        dirty={formDirty}
       >
-        <EinstellungenToggle
-          checked={editAkut}
-          onChange={setEditAkut}
-          title={<SofortmassnahmeAkutTitle />}
-          description={
-            editAkut
-              ? `${EINSTELLUNGEN_AKUT_INTRO} Aktiv: Nur die ausgewählten Fälle ohne Ihre Freigabe, nur Info.`
-              : "Aus: Auch Sofortmaßnahmen laufen über Angebot und Freigabe."
-          }
-        />
         <EinstellungenSheetCard
           title="Sofortmaßnahme-Fälle"
           description="Leer = nichts geht direkt — unabhängig vom Schalter oben."
@@ -270,17 +336,11 @@ export function OrganisationFreigabeRegelnPanel({
             disabled={saving}
           />
         </EinstellungenSheetCard>
-        <EinstellungenToggle
-          checked={editSchwelleAktiv}
-          onChange={onToggleUnterSchwelle}
-          title={EINSTELLUNGEN_UNTER_SCHWELLE_TITLE}
-          description={
-            editSchwelleAktiv
-              ? EINSTELLUNGEN_UNTER_SCHWELLE_INTRO
-              : "Aus: Jedes Angebot braucht Ihre Freigabe, unabhängig vom Betrag."
-          }
-        >
-          {editSchwelleAktiv ? (
+        {schwelleAktiv ? (
+          <EinstellungenSheetCard
+            title={EINSTELLUNGEN_SCHWELLE_BETRAG_TITLE}
+            description={EINSTELLUNGEN_UNTER_SCHWELLE_INTRO}
+          >
             <EinstellungenEuroSlider
               value={editSchwelle}
               min={Math.max(EINSTELLUNGEN_SCHWELLE_SLIDER_MIN, 500)}
@@ -291,18 +351,8 @@ export function OrganisationFreigabeRegelnPanel({
                 setEditSchwelle(snapEinstellungenSchwelle(Math.max(v, 500)))
               }
             />
-          ) : null}
-        </EinstellungenToggle>
-        <EinstellungenToggle
-          checked={editHmAuto}
-          onChange={setEditHmAuto}
-          title="Automatisch an Hausmeister"
-          description={
-            editHmAuto
-              ? "Aktiv: Neue Meldungen (nicht Sofortmaßnahme) gehen direkt in die Hausmeister-Prüfung."
-              : "Aus: Sie starten den Hausmeister-Pfad manuell am Vorgang."
-          }
-        />
+          </EinstellungenSheetCard>
+        ) : null}
       </EinstellungenEditModal>
     </EinstellungenSectionCard>
   );

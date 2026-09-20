@@ -1,3 +1,4 @@
+import { logDbError } from '@/lib/errors/log-db-error'
 import { NextResponse } from "next/server";
 
 import {
@@ -55,11 +56,12 @@ export async function POST(request: Request) {
 
   const anfrageId = String(body.anfrageId ?? "").trim();
   if (typ === "rueckfrage" && anfrageId) {
-    const { data: row } = await supabaseAdmin
+    const {data: row, error: __dbErr142_1} = await supabaseAdmin
       .from("angebot_handwerker")
       .select("handwerker_id, angebote(notizen)")
       .eq("id", anfrageId)
       .maybeSingle();
+    if (__dbErr142_1) logDbError('app/api/internal/partner-notify-angebot-antwort/route:angebot_handwerker', __dbErr142_1)
     if (row?.handwerker_id) {
       await createPartnerNotification({
         handwerkerId: String(row.handwerker_id),

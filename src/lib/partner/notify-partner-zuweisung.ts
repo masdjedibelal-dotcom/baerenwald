@@ -1,3 +1,4 @@
+import { logDbError } from '@/lib/errors/log-db-error'
 import { createPartnerNotification } from "@/lib/partner/create-partner-notification";
 import {
   sendHandwerkerLeistungZuweisungMail,
@@ -69,12 +70,13 @@ export async function notifyHandwerkerLeistungZuweisung(input: {
     .select("id, name, email, firma, aktiv")
     .eq("id", handwerkerId)
     .maybeSingle();
+  if (hwErr) logDbError('lib/partner/notify-partner-zuweisung:handwerker', hwErr)
 
   if (hwErr || !hw) {
-    return { ok: false, error: hwErr?.message ?? "Handwerker nicht gefunden." };
+    return { ok: false, error: hwErr?.message ?? "Partner nicht gefunden." };
   }
   if (hw.aktiv === false) {
-    return { ok: false, error: "Handwerker ist nicht aktiv." };
+    return { ok: false, error: "Partner ist nicht aktiv." };
   }
 
   const { data: auftrag, error: aErr } = await supabaseAdmin
@@ -84,6 +86,7 @@ export async function notifyHandwerkerLeistungZuweisung(input: {
     )
     .eq("id", auftragId)
     .maybeSingle();
+  if (aErr) logDbError('lib/partner/notify-partner-zuweisung:auftraege', aErr)
 
   if (aErr || !auftrag) {
     return { ok: false, error: aErr?.message ?? "Auftrag nicht gefunden." };
@@ -157,7 +160,7 @@ export async function notifyHandwerkerLeistungZuweisung(input: {
   } | null = null;
 
   if (angebotId) {
-    const { data: ahRow } = await supabaseAdmin
+    const {data: ahRow, error: __dbErr409_1} = await supabaseAdmin
       .from("angebot_handwerker")
       .select(
         "id, status, antwort_at, gesendet_at, hw_eingereicht_at, hw_status"
@@ -165,6 +168,7 @@ export async function notifyHandwerkerLeistungZuweisung(input: {
       .eq("angebot_id", angebotId)
       .eq("handwerker_id", handwerkerId)
       .maybeSingle();
+    if (__dbErr409_1) logDbError('lib/partner/notify-partner-zuweisung:angebot_handwerker', __dbErr409_1)
     if (ahRow) {
       angebotHandwerker = {
         id: String(ahRow.id),
@@ -205,8 +209,8 @@ export async function notifyHandwerkerLeistungZuweisung(input: {
   if (!to) {
     // Glocke trotzdem — Mail optional
     return notify.ok
-      ? { ok: true, mailSent: false, error: "Handwerker hat keine E-Mail." }
-      : { ok: false, error: notify.error ?? "Handwerker hat keine E-Mail." };
+      ? { ok: true, mailSent: false, error: "Partner hat keine E-Mail." }
+      : { ok: false, error: notify.error ?? "Partner hat keine E-Mail." };
   }
 
   const mail = await sendHandwerkerLeistungZuweisungMail({

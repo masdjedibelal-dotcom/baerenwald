@@ -9,14 +9,14 @@ const TRUST_CONTENT = {
   intro: {
     image: "/images/trust-koordination.jpg",
     imageAlt:
-      "Bärenwald Projektleiter koordiniert Handwerker in einer Münchner Wohnung",
+      "Bärenwald Projektleiter koordiniert Partner in einer Münchner Wohnung",
     eyebrow: "Unsere Vision",
     headline: "Handwerk neu gedacht.",
     text: "Ein Ansprechpartner der alles koordiniert. Volle Preistransparenz von Anfang an. Statusupdates während des Projekts und digitales Abnahmeprotokoll am Ende — so wie es sein sollte.",
   },
   preis: {
     image: "/images/trust-preis.jpg",
-    imageAlt: "Handwerker zeigt Kunden transparentes Angebot auf Tablet",
+    imageAlt: "Partner zeigt Kunden transparentes Angebot auf Tablet",
     eyebrow: "Keine Überraschungen",
     headline: "Der Preis steht\nbevor wir anfangen.",
     text: "Unser Rechner zeigt Ihnen einen unverbindlichen Preisrahmen — eine ehrliche Preisindikation auf Basis unserer Projekterfahrung in München, noch bevor Sie anrufen. Nach dem Vor-Ort-Termin bekommen Sie ein verbindliches Festpreisangebot. Kein Nachtrag ohne Ihre Zustimmung.",
@@ -24,7 +24,7 @@ const TRUST_CONTENT = {
   qualitaet: {
     image: "/images/trust-qualitaet.jpg",
     imageAlt:
-      "Handwerker und Kunde bei digitaler Abnahme in frisch renoviertem Raum",
+      "Partner und Kunde bei digitaler Abnahme in frisch renoviertem Raum",
     eyebrow: "Unser Versprechen",
     headline: "Sauber übergeben.\nDigital dokumentiert.",
     text: "Wir hinterlassen Ihr Zuhause so wie wir es vorgefunden haben — nur besser. Jedes Projekt wird mit einem digitalen Abnahmeprotokoll abgeschlossen. Damit Sie wissen, was gemacht wurde und alles zur Aufbewahrung haben.",

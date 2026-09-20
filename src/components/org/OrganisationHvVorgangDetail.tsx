@@ -23,12 +23,17 @@ import { VorgangDetailSectionNav } from "@/components/shared/VorgangDetailSectio
 import { HvFreigabeInfoBanner } from "@/components/org/HvFreigabeInfoBanner";
 import { OrganisationVersicherungsakteTab } from "@/components/org/OrganisationVersicherungsakteTab";
 import { OrgHmBefundPanel } from "@/components/org/OrgHmBefundPanel";
+import { PortalButton } from "@/components/portal/PortalButton";
 import {
   hvFreigabeEntfaellt,
   resolveAngebotZugestelltForHvFreigabe,
 } from "@/lib/org/freigabe-bypass";
 import { fetchObjektHmDelegierbar } from "@/lib/org/fetch-objekt-hm-delegierbar";
 import { acceptKundeAngebot, rejectKundeAngebot } from "@/app/actions/portal-angebot";
+import {
+  PortalAngebotAblehnenModal,
+  type PortalAngebotAblehnenPayload,
+} from "@/components/shared/PortalAngebotAblehnenModal";
 import {
   countUnreadBautagebuch,
   getBautagebuchLastSeenAt,
@@ -66,6 +71,7 @@ import {
   type PortalDokument,
 } from "@/lib/portal/portal-dokumente";
 import { cn } from "@/lib/utils";
+import { EMPTY } from '@/lib/portal-copy'
 
 export type OrganisationHvVorgangDetailProps = {
   idLabel: string;
@@ -196,7 +202,7 @@ function DetailCard({
       headerAction={
         badge && badge > 0 ? (
           <span
-            className="inline-flex h-5 min-w-[1.25rem] items-center justify-center rounded-full px-1.5 text-[10px] font-bold"
+            className="inline-flex h-5 min-w-[1.25rem] items-center justify-center rounded-pill px-1.5 text-fs-caption font-bold"
             style={{
               background: PORTAL_VAR.dangerSoft,
               color: PORTAL_VAR.danger,
@@ -216,7 +222,7 @@ function ActionBtn({
   label,
   mobileLabel,
   onClick,
-  kind = "primary",
+  variant = "primary",
   disabled,
   loading,
   className,
@@ -225,7 +231,7 @@ function ActionBtn({
   /** Optional kürzerer Text nur auf Mobil (&lt; sm). */
   mobileLabel?: string;
   onClick: () => void;
-  kind?: "primary" | "secondary" | "ghost" | "danger";
+  variant?: "primary" | "secondary" | "ghost" | "danger";
   disabled?: boolean;
   loading?: boolean;
   className?: string;
@@ -233,22 +239,12 @@ function ActionBtn({
   const shown = loading ? "Wird geladen…" : label;
   const shownMobile = loading ? "…" : mobileLabel;
   return (
-    <button
-      type="button"
+    <PortalButton
+      variant={variant}
       disabled={disabled || loading}
       onClick={onClick}
       aria-busy={loading || undefined}
-      className={cn(
-        "portal-action-btn",
-        kind === "ghost"
-          ? "portal-action-btn--ghost"
-          : kind === "secondary"
-            ? "portal-action-btn--secondary"
-            : kind === "danger"
-              ? "portal-action-btn--danger"
-              : "portal-action-btn--primary",
-        className
-      )}
+      className={className}
     >
       {shownMobile ? (
         <>
@@ -258,7 +254,7 @@ function ActionBtn({
       ) : (
         shown
       )}
-    </button>
+    </PortalButton>
   );
 }
 
@@ -272,13 +268,13 @@ function PositionenTable({
   return (
     <div
       className="overflow-hidden rounded-[9px]"
-      style={{ border: `1px solid ${PORTAL_VAR.line}` }}
+      style={{ border: `0.0625rem solid ${PORTAL_VAR.line}` }}
     >
       {positionen.map((p, i) => (
         <div
           key={i}
           className="portal-text-meta flex justify-between px-3 py-2.5"
-          style={{ borderBottom: `1px solid ${PORTAL_VAR.line2}` }}
+          style={{ borderBottom: `0.0625rem solid ${PORTAL_VAR.line2}` }}
         >
           <div>
             <div className="font-semibold" style={{ color: PORTAL_VAR.ink }}>
@@ -293,7 +289,7 @@ function PositionenTable({
           </span>
         </div>
       ))}
-      <div className="flex flex-col gap-1 bg-[var(--p2-primary-soft,#e7f1e9)]/50 px-3 py-2.5">
+      <div className="flex flex-col gap-1 bg-[var(--p2-primary-soft)]/50 px-3 py-2.5">
         <div
           className="portal-text-meta flex justify-between"
           style={{ color: PORTAL_VAR.sub }}
@@ -400,6 +396,7 @@ export function OrganisationHvVorgangDetail({
   const [error, setError] = useState<string | null>(null);
   const [accepted, setAccepted] = useState(false);
   const [rejected, setRejected] = useState(false);
+  const [rejectOpen, setRejectOpen] = useState(false);
   const [btUnread, setBtUnread] = useState(0);
   const [hasHmKontakt, setHasHmKontakt] = useState(false);
   const [hmPortalZugang, setHmPortalZugang] = useState(false);
@@ -631,10 +628,10 @@ export function OrganisationHvVorgangDetail({
                           style={{ color: PORTAL_VAR.ink }}
                         >
                           <span
-                            className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[11px] font-bold text-white"
+                            className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-pill text-fs-caption font-bold text-white"
                             style={{
                               background:
-                                l.ok === false ? "#8A5A06" : PORTAL_VAR.primary,
+                                l.ok === false ? "var(--p2-sand-text)" : PORTAL_VAR.primary,
                             }}
                             aria-hidden
                           >
@@ -658,8 +655,8 @@ export function OrganisationHvVorgangDetail({
                       {abnahmeCheckliste.maengel.map((m) => (
                         <li
                           key={m.titel}
-                          className="portal-text-meta flex items-start gap-2 rounded-lg px-2.5 py-2"
-                          style={{ background: "#FBF1D6", color: "#8A5A06" }}
+                          className="portal-text-meta flex items-start gap-2 rounded-card px-2.5 py-2"
+                          style={{ background: "var(--p2-status-sand-bg)", color: "var(--p2-sand-text)" }}
                         >
                           <span className="font-semibold">{m.titel}</span>
                           {m.status ? (
@@ -695,10 +692,10 @@ export function OrganisationHvVorgangDetail({
                       style={{ color: PORTAL_VAR.ink }}
                     >
                       <span
-                        className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[11px] font-bold text-white"
+                        className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-pill text-fs-caption font-bold text-white"
                         style={{
                           background:
-                            l.ok === false ? "#8A5A06" : PORTAL_VAR.primary,
+                            l.ok === false ? "var(--p2-sand-text)" : PORTAL_VAR.primary,
                         }}
                         aria-hidden
                       >
@@ -722,8 +719,8 @@ export function OrganisationHvVorgangDetail({
                   {abnahmeCheckliste.maengel.map((m) => (
                     <li
                       key={m.titel}
-                      className="portal-text-meta flex items-start gap-2 rounded-lg px-2.5 py-2"
-                      style={{ background: "#FBF1D6", color: "#8A5A06" }}
+                      className="portal-text-meta flex items-start gap-2 rounded-card px-2.5 py-2"
+                      style={{ background: "var(--p2-status-sand-bg)", color: "var(--p2-sand-text)" }}
                     >
                       <span className="font-semibold">{m.titel}</span>
                       {m.status ? (
@@ -958,7 +955,7 @@ export function OrganisationHvVorgangDetail({
     }
   };
 
-  const rejectAngebotAct = async () => {
+  const rejectAngebotAct = async (payload: PortalAngebotAblehnenPayload) => {
     const id = (angebotId ?? empfohlen?.id ?? "").trim();
     if (!id) {
       setError("Kein Angebot zum Ablehnen hinterlegt.");
@@ -968,11 +965,15 @@ export function OrganisationHvVorgangDetail({
     setError(null);
     try {
       await runBusy(async () => {
-        const res = await rejectKundeAngebot(id);
+        const res = await rejectKundeAngebot(id, {
+          grund: payload.grund,
+          notiz: payload.notiz,
+        });
         if (!res.ok) {
           setError(res.error);
           return;
         }
+        setRejectOpen(false);
         setRejected(true);
         kundePortalToast.angebotAbgelehnt();
         await onUpdated();
@@ -993,6 +994,12 @@ export function OrganisationHvVorgangDetail({
       (canAcceptAngebot ||
         (actionKind === "angebot" && Boolean(resolvedAngebotId)))
   );
+
+  useEffect(() => {
+    if (searchParams.get("focus")?.trim() !== "ablehnen") return;
+    if (!showAcceptCta) return;
+    setRejectOpen(true);
+  }, [searchParams, showAcceptCta]);
 
   const hmSelbstErledigt = hvStatusNorm === "hm_erledigt";
 
@@ -1170,21 +1177,21 @@ export function OrganisationHvVorgangDetail({
   const hmErledigtBanner =
     hmSelbstErledigt && !mieterStatusMode ? (
       <PortalDetailInfoBox variant="warning">
-        <p className="font-semibold text-amber-950">
+        <p className="font-semibold text-warning-text">
           Vom Hausmeister erledigt
         </p>
-        <p className="portal-text-body mt-1 text-amber-900/90">
+        <p className="portal-text-body mt-1 text-warning-text/90">
           Die Vor-Ort-Prüfung ist abgeschlossen — Bärenwald muss hier nichts
           mehr tun. Dokumentierte Prüfpunkte finden Sie unter Tab „Checkliste“.
         </p>
         {showHmTab ? (
-          <button
-            type="button"
-            className="portal-action-btn portal-action-btn--secondary mt-3"
+          <PortalButton
+            variant="secondary"
+            className="mt-3"
             onClick={() => setActiveSection("hm_pruefung")}
           >
             Zur Checkliste
-          </button>
+          </PortalButton>
         ) : null}
       </PortalDetailInfoBox>
     ) : null;
@@ -1192,30 +1199,30 @@ export function OrganisationHvVorgangDetail({
   const hmPruefungBanner =
     hvStatusNorm === "hm_pruefung" && !mieterStatusMode ? (
       <PortalDetailInfoBox variant="warning">
-        <p className="font-semibold text-amber-950">
+        <p className="font-semibold text-warning-text">
           {hausmeisterActor ? "Hausmeister-Prüfung" : "Hausmeister-Prüfung läuft"}
         </p>
-        <p className="portal-text-body mt-1 text-amber-900/90">
+        <p className="portal-text-body mt-1 text-warning-text/90">
           {hausmeisterActor
             ? "Unter Tab „Checkliste“ Punkte prüfen — danach selbst erledigen oder an Bärenwald weitergeben."
             : "Der Vorgang liegt beim Hausmeister. Ergebnis erscheint unter Tab „Checkliste“, sobald die Prüfung abgeschlossen ist."}
         </p>
         {hausmeisterActor ? (
-          <button
-            type="button"
-            className="portal-action-btn portal-action-btn--primary mt-3"
+          <PortalButton
+            variant="primary"
+            className="mt-3"
             onClick={() => setActiveSection("hm_pruefung")}
           >
             Zur Checkliste
-          </button>
+          </PortalButton>
         ) : showHmTab ? (
-          <button
-            type="button"
-            className="portal-action-btn portal-action-btn--secondary mt-3"
+          <PortalButton
+            variant="secondary"
+            className="mt-3"
             onClick={() => setActiveSection("hm_pruefung")}
           >
             Zum Tab Checkliste
-          </button>
+          </PortalButton>
         ) : null}
       </PortalDetailInfoBox>
     ) : null;
@@ -1237,14 +1244,14 @@ export function OrganisationHvVorgangDetail({
         primaryDisabled={busy}
         primaryLoading={busy}
         secondaryLabel={HV_DETAIL_COPY.ablehnen}
-        onSecondary={() => void rejectAngebotAct()}
+        onSecondary={() => setRejectOpen(true)}
         secondaryDisabled={busy}
       />
     ) : showFreigabeButtons ? (
       <div className="portal-action-row flex-wrap">
         <ActionBtn
           label={HV_DETAIL_COPY.ablehnen}
-          kind="secondary"
+          variant="secondary"
           disabled={busy}
           loading={busyAktion === "ablehnen"}
           onClick={() => void meldungAct("ablehnen")}
@@ -1252,7 +1259,7 @@ export function OrganisationHvVorgangDetail({
         {hasHmKontakt ? (
           <ActionBtn
             label="Hausmeister"
-            kind="secondary"
+            variant="secondary"
             disabled={busy}
             loading={busyAktion === "hm_begutachten"}
             onClick={() => void meldungAct("hm_begutachten")}
@@ -1260,6 +1267,7 @@ export function OrganisationHvVorgangDetail({
         ) : null}
         <ActionBtn
           label="Direkt Bärenwald"
+          variant="primary"
           mobileLabel="Bärenwald"
           disabled={busy}
           loading={busyAktion === "direkt_baerenwald"}
@@ -1269,6 +1277,7 @@ export function OrganisationHvVorgangDetail({
     ) : undefined;
 
   return (
+    <>
     <PortalDetailLayout footer={actionFooter}>
       <div className="flex flex-col">
       <PortalDetailCover
@@ -1360,7 +1369,7 @@ export function OrganisationHvVorgangDetail({
             >
               {angebotTabPanel}
               {error ? (
-                <p className="portal-text-meta font-semibold text-red-700" role="alert">
+                <p className="portal-text-meta font-semibold text-p2-danger" role="alert">
                   {error}
                 </p>
               ) : null}
@@ -1401,7 +1410,7 @@ export function OrganisationHvVorgangDetail({
           ) : null}
 
           {activeSection !== "angebot" && error ? (
-            <p className="portal-text-meta font-semibold text-red-700" role="alert">
+            <p className="portal-text-meta font-semibold text-p2-danger" role="alert">
               {error}
             </p>
           ) : null}
@@ -1435,7 +1444,7 @@ export function OrganisationHvVorgangDetail({
                       href={doc.href!}
                       name={doc.name}
                       kind="pdf"
-                      className="block w-full overflow-hidden rounded-xl border border-[var(--portal-primary,#2E7D52)]/30 bg-[var(--portal-primary,#2E7D52)]/5 text-left"
+                      className="block w-full overflow-hidden rounded-sheet border border-[var(--portal-primary)]/30 bg-[var(--portal-primary)]/5 text-left"
                     >
                       <p
                         className="portal-text-meta px-3 py-4 text-center font-semibold"
@@ -1452,7 +1461,7 @@ export function OrganisationHvVorgangDetail({
                 className="!border-0 !pt-0"
                 emptyText={
                   abnahmeProtokolle.length > 0
-                    ? "Keine weiteren Dokumente."
+                    ? EMPTY.dokumenteWeitere
                     : HV_DETAIL_COPY.dokumenteEmpty
                 }
                 dokumente={dokumenteOhneAbnahme.map((d) => ({
@@ -1469,5 +1478,15 @@ export function OrganisationHvVorgangDetail({
       </div>
       </div>
     </PortalDetailLayout>
+    <PortalAngebotAblehnenModal
+      open={rejectOpen}
+      loading={busy}
+      onClose={() => {
+        if (busy) return;
+        setRejectOpen(false);
+      }}
+      onConfirm={(payload) => void rejectAngebotAct(payload)}
+    />
+    </>
   );
 }

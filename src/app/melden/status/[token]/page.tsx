@@ -1,3 +1,4 @@
+import { logDbError } from '@/lib/errors/log-db-error'
 import { MeldeFehlerClient } from "@/components/melden/MeldeFehlerClient";
 import { MeldeStatusClient } from "@/components/melden/MeldeStatusClient";
 import {
@@ -115,14 +116,14 @@ export default async function MeldeStatusPage({ params }: Props) {
     return <NeutralTokenFehler />;
   }
 
-  const { data: lead } = await supabaseAdmin
+  const {data: lead, error: __dbErr244_1} = await supabaseAdmin
     .from("leads")
     .select(
       "id, melder_name, melder_einheit, created_at, hv_meldung_status, vorgang_phase, org_freigabe_status, freigabe_bypass_grund, mieter_vor_ort_at, kunde_objekt_id, auftraggeber_kunde_id, storniert_am, kontakt_nachricht, anlass, funnel_daten, situation, bereiche, zeitraum, plz, geloescht_am, status"
     )
     .eq("melde_tracking_token", trimmed)
     .maybeSingle();
-
+  if (__dbErr244_1) logDbError('app/melden/status/[token]/page:leads', __dbErr244_1)
   /* Hard-Delete / Token unbekannt — neutral, ohne Org-/BW-Branding (F-012/F-014) */
   if (!lead) {
     return <NeutralTokenFehler />;
@@ -160,11 +161,12 @@ export default async function MeldeStatusPage({ params }: Props) {
   const anhaenge: Array<{ id: string; name: string; datum?: string; href: string }> =
     [];
   if (auftragId) {
-    const { data: protokolle } = await supabaseAdmin
+    const {data: protokolle, error: __dbErr245_2} = await supabaseAdmin
       .from("auftrag_abnahmeprotokolle")
       .select("id, abnahme_datum, pdf_url, created_at, an_kunde_gesendet_at")
       .eq("auftrag_id", auftragId)
       .order("created_at", { ascending: false });
+    if (__dbErr245_2) logDbError('app/melden/status/[token]/page:auftrag_abnahmeprotokolle', __dbErr245_2)
     for (const p of protokolle ?? []) {
       const href = String((p as { pdf_url?: string }).pdf_url ?? "").trim();
       if (!href) continue;
@@ -182,11 +184,12 @@ export default async function MeldeStatusPage({ params }: Props) {
 
   let objektTitel = "Objekt";
   if (lead.kunde_objekt_id) {
-    const { data: obj } = await supabaseAdmin
+    const {data: obj, error: __dbErr246_3} = await supabaseAdmin
       .from("kunden_objekte")
       .select("titel")
       .eq("id", lead.kunde_objekt_id)
       .maybeSingle();
+    if (__dbErr246_3) logDbError('app/melden/status/[token]/page:kunden_objekte', __dbErr246_3)
     objektTitel = String(obj?.titel ?? "Objekt");
   }
 

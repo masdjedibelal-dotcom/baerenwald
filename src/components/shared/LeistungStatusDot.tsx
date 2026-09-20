@@ -3,9 +3,9 @@ import { cn } from "@/lib/utils";
 export type LeistungStatusAmpel = "gruen" | "gelb" | "rot";
 
 const AMPLE_CLASS: Record<LeistungStatusAmpel, string> = {
-  gruen: "bg-emerald-500",
-  gelb: "bg-amber-400",
-  rot: "bg-red-500",
+  gruen: "bg-p2-primary",
+  gelb: "bg-warning-bg",
+  rot: "bg-p2-danger",
 };
 
 const AMPLE_LABEL: Record<LeistungStatusAmpel, string> = {
@@ -38,7 +38,7 @@ export function LeistungStatusDot({
   return (
     <span
       className={cn(
-        "inline-block h-2.5 w-2.5 shrink-0 rounded-full ring-2 ring-surface-card",
+        "inline-block h-2.5 w-2.5 shrink-0 rounded-pill ring-2 ring-surface-card",
         AMPLE_CLASS[status],
         className
       )}

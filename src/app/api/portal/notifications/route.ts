@@ -1,3 +1,4 @@
+import { logDbError } from '@/lib/errors/log-db-error'
 import { NextResponse } from "next/server";
 
 import { createClient } from "@/lib/supabase/server";
@@ -30,6 +31,7 @@ export async function GET() {
     .eq("empfaenger_user_id", user.id)
     .order("created_at", { ascending: false })
     .limit(120);
+  if (error) logDbError('app/api/portal/notifications/route:portal_notifications', error)
 
   if (error) {
     // Relation fehlt vor Migration
@@ -71,10 +73,11 @@ export async function GET() {
     )
   );
   if (angebotRefs.length) {
-    const { data: leads } = await supabaseAdmin
+    const {data: leads, error: __dbErr236_1} = await supabaseAdmin
       .from("leads")
       .select("id, auftraggeber_kunde_id")
       .in("id", angebotRefs);
+    if (__dbErr236_1) logDbError('app/api/portal/notifications/route:leads', __dbErr236_1)
     const mieterLeadIds = new Set(
       (leads ?? [])
         .filter((l) =>
@@ -124,6 +127,7 @@ export async function PATCH(req: Request) {
       .update({ gelesen: true, gelesen_am: now })
       .eq("empfaenger_user_id", user.id)
       .eq("gelesen", false);
+    if (error) logDbError('app/api/portal/notifications/route:portal_notifications', error)
 
     if (error) {
       if (/portal_notifications|does not exist|schema cache/i.test(error.message)) {
@@ -147,11 +151,12 @@ export async function PATCH(req: Request) {
 
   if (vorgangRefs.length) {
     const refSet = new Set(vorgangRefs);
-    const { data: unread } = await supabaseAdmin
+    const {data: unread, error: __dbErr237_2} = await supabaseAdmin
       .from("portal_notifications")
       .select("id, vorgang_ref, link")
       .eq("empfaenger_user_id", user.id)
       .eq("gelesen", false);
+    if (__dbErr237_2) logDbError('app/api/portal/notifications/route:portal_notifications', __dbErr237_2)
 
     const ids = (unread ?? [])
       .filter((r) => {
@@ -169,6 +174,7 @@ export async function PATCH(req: Request) {
       .update({ gelesen: true, gelesen_am: now })
       .eq("empfaenger_user_id", user.id)
       .in("id", ids);
+    if (error) logDbError('app/api/portal/notifications/route:portal_notifications', error)
 
     if (error) {
       if (/portal_notifications|does not exist|schema cache/i.test(error.message)) {
@@ -189,6 +195,7 @@ export async function PATCH(req: Request) {
     .update({ gelesen: true, gelesen_am: now })
     .eq("empfaenger_user_id", user.id)
     .in("id", ids);
+  if (error) logDbError('app/api/portal/notifications/route:portal_notifications', error)
 
   if (error) {
     if (/portal_notifications|does not exist|schema cache/i.test(error.message)) {

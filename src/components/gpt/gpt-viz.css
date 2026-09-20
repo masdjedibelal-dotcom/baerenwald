@@ -11,13 +11,13 @@
 .gpt-viz-step-title {
   font-size: 1.05rem;
   font-weight: 600;
-  color: var(--org-primary-dk, var(--p2-green-dark, #1a3d2b));
+  color: var(--org-primary-dk, var(--fl-accent-dark));
   margin: 0;
 }
 
 .gpt-viz-muted {
   font-size: 0.85rem;
-  color: #5c6b62;
+  color: var(--fl-faint-3);
   margin: 0;
   line-height: 1.45;
 }
@@ -31,7 +31,7 @@
   border: 1px solid rgba(46, 125, 82, 0.2);
   border-radius: 12px;
   padding: 1rem;
-  background: #fff;
+  background: var(--fl-panel);
   text-align: left;
   cursor: pointer;
   transition: border-color 0.15s, box-shadow 0.15s;
@@ -45,13 +45,13 @@
 .gpt-viz-card h3 {
   margin: 0 0 0.35rem;
   font-size: 0.95rem;
-  color: var(--org-primary-dk, var(--p2-green-dark, #1a3d2b));
+  color: var(--org-primary-dk, var(--fl-accent-dark));
 }
 
 .gpt-viz-card p {
   margin: 0;
   font-size: 0.82rem;
-  color: #5c6b62;
+  color: var(--fl-faint-3);
 }
 
 .gpt-viz-upload {
@@ -73,7 +73,7 @@
   cursor: pointer;
   font-size: 0.9rem;
   font-weight: 500;
-  color: var(--org-primary, var(--p2-primary, #2e7d52));
+  color: var(--org-primary, var(--fl-accent));
 }
 
 .gpt-viz-preview {
@@ -99,7 +99,7 @@
   margin: 0 0 0.35rem;
   font-size: 0.75rem;
   font-weight: 600;
-  color: #5c6b62;
+  color: var(--fl-faint-3);
   text-transform: uppercase;
   letter-spacing: 0.03em;
 }
@@ -116,7 +116,7 @@
   display: block;
   font-size: 0.8rem;
   font-weight: 600;
-  color: #3d5247;
+  color: var(--fl-faint-4);
   margin-bottom: 0.35rem;
 }
 
@@ -128,7 +128,7 @@
   padding: 0.65rem 0.75rem;
   font-size: 0.88rem;
   resize: vertical;
-  background: #fff;
+  background: var(--fl-panel);
 }
 
 .gpt-viz-chips {
@@ -139,8 +139,8 @@
 
 .gpt-viz-chip {
   border: 1px solid rgba(46, 125, 82, 0.3);
-  background: #f5faf7;
-  color: var(--org-primary-dk, var(--p2-green-dark, #1a3d2b));
+  background: var(--fl-bg-green-tint);
+  color: var(--org-primary-dk, var(--fl-accent-dark));
   border-radius: 999px;
   padding: 0.35rem 0.75rem;
   font-size: 0.78rem;
@@ -148,9 +148,9 @@
 }
 
 .gpt-viz-chip--active {
-  background: var(--org-primary, var(--p2-primary, #2e7d52));
-  color: #fff;
-  border-color: var(--org-primary, var(--p2-primary, #2e7d52));
+  background: var(--org-primary, var(--fl-accent));
+  color: var(--fl-panel);
+  border-color: var(--org-primary, var(--fl-accent));
 }
 
 .gpt-viz-stil-grid {
@@ -162,7 +162,7 @@
   border: 1px solid rgba(0, 0, 0, 0.1);
   border-radius: 10px;
   padding: 0.65rem 0.75rem;
-  background: #fff;
+  background: var(--fl-panel);
   text-align: left;
   cursor: pointer;
 }
@@ -170,12 +170,12 @@
 .gpt-viz-stil strong {
   display: block;
   font-size: 0.85rem;
-  color: var(--org-primary-dk, var(--p2-green-dark, #1a3d2b));
+  color: var(--org-primary-dk, var(--fl-accent-dark));
 }
 
 .gpt-viz-stil span {
   font-size: 0.78rem;
-  color: #5c6b62;
+  color: var(--fl-faint-3);
 }
 
 .gpt-viz-before-after {
@@ -192,7 +192,7 @@
 .gpt-viz-result-layout .gpt-chat-image-img {
   max-height: min(520px, 75vh);
   object-fit: contain;
-  background: #f4f6f5;
+  background: var(--fl-bg-neutral);
 }
 
 @media (min-width: 720px) {
@@ -204,7 +204,7 @@
 .gpt-zielbild-card {
   border: 1px solid rgba(26, 61, 43, 0.12);
   border-radius: 18px;
-  background: linear-gradient(180deg, #faf8f5 0%, #ffffff 100%);
+  background: linear-gradient(180deg, var(--fl-bg-cream) 0%, var(--fl-panel) 100%);
   padding: 0.75rem;
   display: flex;
   flex-direction: column;
@@ -224,13 +224,13 @@
   font-size: 0.95rem;
   font-weight: 700;
   letter-spacing: -0.02em;
-  color: var(--org-primary-dk, var(--p2-green-dark, #1a3d2b));
+  color: var(--org-primary-dk, var(--fl-accent-dark));
 }
 
 .gpt-zielbild-card-hint {
   margin: 0;
   font-size: 0.72rem;
-  color: #5c6b62;
+  color: var(--fl-faint-3);
   line-height: 1.4;
 }
 
@@ -238,7 +238,7 @@
   border-radius: 14px;
   overflow: hidden;
   border: 1px solid rgba(0, 0, 0, 0.05);
-  background: #f0f4f1;
+  background: var(--fl-bg-mint);
   min-height: 160px;
   max-width: 100%;
   aspect-ratio: 4 / 5;
@@ -277,7 +277,7 @@
   gap: 0.5rem;
   padding: 1.5rem;
   font-size: 0.8rem;
-  color: #5c6b62;
+  color: var(--fl-faint-3);
 }
 
 .gpt-zielbild-download {
@@ -301,13 +301,13 @@
 
 .gpt-chat-compare-details {
   font-size: 0.78rem;
-  color: #5c6b62;
+  color: var(--fl-faint-3);
 }
 
 .gpt-chat-compare-details summary {
   cursor: pointer;
   font-weight: 600;
-  color: var(--org-primary, var(--p2-primary, #2e7d52));
+  color: var(--org-primary, var(--fl-accent));
   margin-bottom: 0.35rem;
 }
 
@@ -321,7 +321,7 @@
 
 .gpt-viz-before-after figcaption {
   font-size: 0.75rem;
-  color: #5c6b62;
+  color: var(--fl-faint-3);
   margin-bottom: 0.25rem;
 }
 
@@ -341,7 +341,7 @@
 
 .gpt-viz-version-btn {
   border: 1px solid rgba(46, 125, 82, 0.35);
-  background: #fff;
+  background: var(--fl-panel);
   border-radius: 8px;
   padding: 0.3rem 0.55rem;
   font-size: 0.75rem;
@@ -349,12 +349,12 @@
 }
 
 .gpt-viz-version-btn--active {
-  background: var(--org-primary, var(--p2-primary, #2e7d52));
-  color: #fff;
+  background: var(--org-primary, var(--fl-accent));
+  color: var(--fl-panel);
 }
 
 .gpt-viz-erklaerung {
-  background: #fff;
+  background: var(--fl-panel);
   border: 1px solid rgba(46, 125, 82, 0.15);
   border-radius: 12px;
   padding: 0.85rem;
@@ -363,14 +363,14 @@
 .gpt-viz-erklaerung h4 {
   margin: 0 0 0.5rem;
   font-size: 0.95rem;
-  color: var(--org-primary-dk, var(--p2-green-dark, #1a3d2b));
+  color: var(--org-primary-dk, var(--fl-accent-dark));
 }
 
 .gpt-viz-erklaerung ul {
   margin: 0.5rem 0 0;
   padding-left: 1.1rem;
   font-size: 0.82rem;
-  color: #3d5247;
+  color: var(--fl-faint-4);
 }
 
 .gpt-viz-form {
@@ -403,14 +403,14 @@
 }
 
 .gpt-viz-btn--primary {
-  background: var(--org-primary, var(--p2-primary, #2e7d52));
-  color: #fff;
+  background: var(--org-primary, var(--fl-accent));
+  color: var(--fl-panel);
 }
 
 .gpt-viz-btn--outline {
   background: transparent;
   border: 1px solid rgba(46, 125, 82, 0.45);
-  color: var(--org-primary-dk, var(--p2-green-dark, #1a3d2b));
+  color: var(--org-primary-dk, var(--fl-accent-dark));
 }
 
 .gpt-viz-btn:disabled {
@@ -419,15 +419,15 @@
 }
 
 .gpt-viz-error {
-  color: #b42318;
+  color: var(--fl-danger-deep);
   font-size: 0.82rem;
   margin: 0;
 }
 
 .gpt-viz-success {
-  color: var(--org-primary-dk, var(--p2-green-dark, #1a3d2b));
+  color: var(--org-primary-dk, var(--fl-accent-dark));
   font-size: 0.88rem;
-  background: #e8f5ec;
+  background: var(--fl-bg-green-tint-3);
   border-radius: 10px;
   padding: 0.75rem;
 }
@@ -440,7 +440,7 @@
 }
 
 .gpt-projekt-section {
-  background: #fff;
+  background: var(--fl-panel);
   border: 1px solid rgba(46, 125, 82, 0.12);
   border-radius: 12px;
   padding: 0.75rem;
@@ -452,13 +452,13 @@
   font-size: 0.82rem;
   text-transform: uppercase;
   letter-spacing: 0.04em;
-  color: #5c6b62;
+  color: var(--fl-faint-3);
 }
 
 .gpt-projekt-section p {
   margin: 0;
   font-size: 0.88rem;
-  color: var(--org-primary-dk, var(--p2-green-dark, #1a3d2b));
+  color: var(--org-primary-dk, var(--fl-accent-dark));
   line-height: 1.45;
 }
 
@@ -467,7 +467,7 @@
   gap: 0.25rem;
   padding: 0.5rem 0.75rem 0;
   border-bottom: 1px solid rgba(0, 0, 0, 0.06);
-  background: #f5f8f4;
+  background: var(--fl-bg-green-tint-2);
   flex-shrink: 0;
 }
 
@@ -478,24 +478,24 @@
   padding: 0.55rem 0.35rem;
   font-size: 0.78rem;
   font-weight: 600;
-  color: #5c6b62;
+  color: var(--fl-faint-3);
   border-bottom: 2px solid transparent;
   cursor: pointer;
 }
 
 .portal-gpt-tab--active {
-  color: var(--org-primary-dk, var(--p2-green-dark, #1a3d2b));
-  border-bottom-color: var(--org-primary, var(--p2-primary, #2e7d52));
+  color: var(--org-primary-dk, var(--fl-accent-dark));
+  border-bottom-color: var(--org-primary, var(--fl-accent));
 }
 
 .portal-gpt-viz-cta {
   margin: 0.5rem 1rem 0;
   padding: 0.55rem 0.75rem;
   border-radius: 10px;
-  background: #e8f5ec;
+  background: var(--fl-bg-green-tint-3);
   border: 1px solid rgba(46, 125, 82, 0.2);
   font-size: 0.82rem;
-  color: var(--org-primary-dk, var(--p2-green-dark, #1a3d2b));
+  color: var(--org-primary-dk, var(--fl-accent-dark));
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -504,8 +504,8 @@
 
 .portal-gpt-viz-cta button {
   border: none;
-  background: var(--org-primary, var(--p2-primary, #2e7d52));
-  color: #fff;
+  background: var(--org-primary, var(--fl-accent));
+  color: var(--fl-panel);
   border-radius: 999px;
   padding: 0.35rem 0.65rem;
   font-size: 0.75rem;
@@ -528,8 +528,8 @@
 }
 
 .gpt-chat-action-btn {
-  font-size: 0.78rem !important;
-  padding: 0.45rem 0.75rem !important;
+  font-size: 0.78rem;
+  padding: 0.45rem 0.75rem;
 }
 
 .gpt-chat-upload {
@@ -541,7 +541,7 @@
   border-radius: 10px;
   overflow: hidden;
   border: 1px solid rgba(0, 0, 0, 0.08);
-  background: #fff;
+  background: var(--fl-panel);
 }
 
 .gpt-chat-image--compact .gpt-chat-image-img {
@@ -551,7 +551,7 @@
 .gpt-chat-image-label {
   font-size: 0.72rem;
   font-weight: 600;
-  color: #5c6b62;
+  color: var(--fl-faint-3);
   padding: 0.35rem 0.5rem 0;
   margin: 0;
 }
@@ -571,8 +571,8 @@
   padding: 0.3rem 0.55rem;
   border: 1px solid rgba(46, 125, 82, 0.35);
   border-radius: 999px;
-  background: #f5faf7;
-  color: var(--org-primary-dk, var(--p2-green-dark, #1a3d2b));
+  background: var(--fl-bg-green-tint);
+  color: var(--org-primary-dk, var(--fl-accent-dark));
   font-size: 0.72rem;
   font-weight: 600;
   cursor: pointer;
@@ -597,7 +597,7 @@
   border: 1px solid rgba(0, 0, 0, 0.12);
   padding: 0.5rem 0.65rem;
   font-size: 0.85rem;
-  background: #fff;
+  background: var(--fl-panel);
 }
 
 .gpt-chat-brief-bar {
@@ -618,14 +618,14 @@
   background: transparent;
   font-size: 0.8rem;
   font-weight: 600;
-  color: var(--org-primary-dk, var(--p2-green-dark, #1a3d2b));
+  color: var(--org-primary-dk, var(--fl-accent-dark));
   cursor: pointer;
 }
 
 .gpt-chat-brief-body {
   padding: 0 0.65rem 0.65rem;
   font-size: 0.82rem;
-  color: #3d5247;
+  color: var(--fl-faint-4);
 }
 
 .gpt-chat-brief-images {
@@ -663,13 +663,13 @@
   border: none;
   border-radius: 999px;
   background: transparent;
-  color: #5c6b62;
+  color: var(--fl-faint-3);
   cursor: pointer;
 }
 
 .gpt-chat-attach:hover:not(:disabled) {
   background: rgba(46, 125, 82, 0.08);
-  color: var(--org-primary, var(--p2-primary, #2e7d52));
+  color: var(--org-primary, var(--fl-accent));
 }
 
 .gpt-chat-attach:disabled {
@@ -684,8 +684,8 @@
   padding: 0;
   border: none;
   border-radius: 50%;
-  background: var(--org-primary, var(--p2-primary, #2e7d52));
-  color: #fff;
+  background: var(--org-primary, var(--fl-accent));
+  color: var(--fl-panel);
   flex-shrink: 0;
   cursor: pointer;
   display: inline-flex;
@@ -695,7 +695,7 @@
 }
 
 .gpt-chat-voice-mic:hover:not(:disabled) {
-  background: var(--org-primary-dk, var(--p2-primary-dk, #256642));
+  background: var(--org-primary-dk, var(--fl-accent-hover));
 }
 
 .gpt-chat-voice-mic:active:not(:disabled) {
@@ -703,8 +703,8 @@
 }
 
 .gpt-chat-voice-mic:disabled {
-  background: #e5e7eb;
-  color: #9ca3af;
+  background: var(--fl-gray-200);
+  color: var(--fl-gray-400);
   cursor: default;
 }
 
@@ -732,8 +732,8 @@
   flex-shrink: 0;
   border: none;
   border-radius: 50%;
-  background: #b42318;
-  color: #fff;
+  background: var(--fl-danger-deep);
+  color: var(--fl-panel);
   cursor: pointer;
   display: inline-flex;
   align-items: center;
@@ -761,7 +761,7 @@
   max-width: 4px;
   height: 100%;
   border-radius: 999px;
-  background: var(--org-primary, var(--p2-primary, #2e7d52));
+  background: var(--org-primary, var(--fl-accent));
   transform-origin: center;
   opacity: 0.85;
   transition: transform 0.05s linear;
@@ -773,10 +773,10 @@
 
 .gpt-chat-voice-timer {
   flex-shrink: 0;
-  font-size: 12px;
+  font-size: var(--p2-fs-caption);
   font-weight: 600;
   font-variant-numeric: tabular-nums;
-  color: #404a45;
+  color: var(--fl-muted);
   min-width: 5.5rem;
   text-align: right;
 }
@@ -786,22 +786,22 @@
   padding: 0 4px 2px 50px;
   max-height: 4.8em;
   overflow-y: auto;
-  font-size: 14.5px;
+  font-size: var(--p2-fs-title);
   line-height: 1.35;
   font-weight: 500;
-  color: #142019;
+  color: var(--fl-ink);
   word-break: break-word;
   white-space: pre-wrap;
 }
 
 .gpt-chat-voice-transcript--empty {
-  color: #7a857f;
+  color: var(--fl-faint);
   font-weight: 450;
   font-style: italic;
 }
 
 .gpt-chat-voice-bar--processing .gpt-chat-voice-transcript {
-  color: #55615b;
+  color: var(--fl-faint-5);
 }
 
 .gpt-chat-cta-row {
@@ -813,10 +813,10 @@
   border-top: 1px solid rgba(0, 0, 0, 0.06);
 }
 
-.gpt-chat-cta-btn {
+.gpt-chat-cta-action {
   border: 1px solid rgba(46, 125, 82, 0.35);
-  background: #f5faf7;
-  color: var(--org-primary-dk, var(--p2-green-dark, #1a3d2b));
+  background: var(--fl-bg-green-tint);
+  color: var(--org-primary-dk, var(--fl-accent-dark));
   border-radius: 999px;
   padding: 0.32rem 0.7rem;
   font-size: 0.72rem;
@@ -826,12 +826,12 @@
   white-space: nowrap;
 }
 
-.gpt-chat-cta-btn:hover:not(:disabled) {
-  background: #e8f5ee;
+.gpt-chat-cta-action:hover:not(:disabled) {
+  background: var(--fl-bg-green-tint-3);
   border-color: rgba(46, 125, 82, 0.55);
 }
 
-.gpt-chat-cta-btn:disabled {
+.gpt-chat-cta-action:disabled {
   opacity: 0.45;
   cursor: not-allowed;
 }
@@ -842,7 +842,7 @@
   padding: 0;
   font-size: 0.82rem;
   font-weight: 600;
-  color: var(--org-primary, var(--p2-primary, #2e7d52));
+  color: var(--org-primary, var(--fl-accent));
   text-decoration: underline;
   text-underline-offset: 2px;
   cursor: pointer;
@@ -880,7 +880,7 @@
 .gpt-chat-viz-result .gpt-chat-image-img {
   max-height: min(420px, 70vh);
   object-fit: contain;
-  background: #f4f6f5;
+  background: var(--fl-bg-neutral);
 }
 
 /* ── Portal GPT Shell: Chat füllt Fläche, Bottom-Nav darf Composer nicht überdecken ── */
@@ -889,7 +889,7 @@
   flex-direction: column;
   min-height: 0;
   width: 100%;
-  background: #fff;
+  background: var(--fl-panel);
 }
 
 .portal-gpt-shell--embedded {
@@ -916,16 +916,16 @@
   flex-shrink: 0;
   padding: 10px 14px;
   border-bottom: 1px solid rgba(0, 0, 0, 0.06);
-  background: #fff;
+  background: var(--fl-panel);
 }
 
 .portal-gpt-shell-title {
   margin: 0;
   flex: 1;
   min-width: 0;
-  font-size: 15px;
+  font-size: var(--p2-fs-title);
   font-weight: 700;
-  color: #16201b;
+  color: var(--fl-ink-deep);
 }
 
 .portal-gpt-shell-close {
@@ -936,17 +936,17 @@
   border: none;
   border-radius: 999px;
   background: transparent;
-  color: #6a746f;
+  color: var(--fl-faint);
   cursor: pointer;
 }
 
 .portal-gpt-shell-close:hover {
-  background: #f0f2f0;
-  color: #16201b;
+  background: var(--fl-bg-neutral);
+  color: var(--fl-ink-deep);
 }
 
 .portal-gpt-shell-panel {
-  background: #fff;
+  background: var(--fl-panel);
 }
 
 /* ── GPT Studio Chat: feste Shell, nur Nachrichten scrollen ── */
@@ -1046,25 +1046,25 @@
   padding: 24px 22px;
   border-radius: 20px;
   border: 1px solid rgba(255, 255, 255, 0.14);
-  background: #ffffff;
+  background: var(--fl-panel);
   box-shadow: 0 16px 48px rgba(26, 61, 43, 0.22);
   text-align: center;
 }
 
 .gpt-registration-gate-kicker {
   margin: 0 0 10px;
-  font-size: 11px;
+  font-size: var(--p2-fs-caption);
   font-weight: 700;
   letter-spacing: 0.1em;
   text-transform: uppercase;
-  color: var(--org-primary, var(--p2-primary, #2e7d52));
+  color: var(--org-primary, var(--fl-accent));
 }
 
 .gpt-registration-gate-text {
   margin: 0 0 16px;
-  font-size: 15px;
+  font-size: var(--p2-fs-title);
   line-height: 1.5;
-  color: #1c1c1e;
+  color: var(--fl-ink-near);
 }
 
 .gpt-registration-gate-timer {
@@ -1078,22 +1078,22 @@
 .gpt-registration-gate-timer-label {
   display: block;
   margin-bottom: 6px;
-  font-size: 12px;
+  font-size: var(--p2-fs-caption);
   color: rgba(60, 60, 67, 0.72);
 }
 
 .gpt-registration-gate-timer-value {
   display: block;
-  font-size: 20px;
+  font-size: var(--p2-fs-head);
   font-weight: 700;
   letter-spacing: -0.02em;
-  color: var(--org-primary-dk, var(--p2-green-dark, #1a3d2b));
+  color: var(--org-primary-dk, var(--fl-accent-dark));
   font-variant-numeric: tabular-nums;
 }
 
 .gpt-registration-gate-hint {
   margin: 0 0 18px;
-  font-size: 13px;
+  font-size: var(--p2-fs-meta);
   line-height: 1.45;
   color: rgba(60, 60, 67, 0.72);
 }
@@ -1106,9 +1106,9 @@
   min-height: 52px;
   padding: 0 20px;
   border-radius: 999px;
-  background: var(--org-primary, var(--p2-primary, #2e7d52));
-  color: #ffffff;
-  font-size: 15px;
+  background: var(--org-primary, var(--fl-accent));
+  color: var(--fl-panel);
+  font-size: var(--p2-fs-title);
   font-weight: 600;
   text-decoration: none;
   box-shadow: 0 4px 16px rgba(46, 125, 82, 0.28);

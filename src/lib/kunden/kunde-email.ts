@@ -1,3 +1,4 @@
+import { logDbError } from '@/lib/errors/log-db-error'
 import { supabaseAdmin } from "@/lib/supabase";
 
 /** Normalisierte Kunden-E-Mail (einziger Schlüssel für Zuordnung). */
@@ -38,6 +39,7 @@ export async function findKundeIdByEmail(email: string): Promise<string | null> 
     .select("id")
     .ilike("email", norm)
     .maybeSingle();
+  if (error) logDbError('lib/kunden/kunde-email:kunden', error)
 
   if (error) throw error;
   return data?.id ? String(data.id) : null;

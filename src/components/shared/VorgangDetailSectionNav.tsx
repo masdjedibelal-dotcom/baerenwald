@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { PortalButton } from "@/components/portal/PortalButton";
 
 import {
   PORTAL_DETAIL_SECTION_LABELS,
@@ -165,7 +166,8 @@ export function VorgangDetailSectionNav({
           const label =
             item.label ?? PORTAL_DETAIL_SECTION_LABELS[item.id] ?? item.id;
           return (
-            <button
+            <PortalButton
+              variant="ghost"
               key={item.id}
               type="button"
               role={mode === "tabs" ? "tab" : undefined}
@@ -181,7 +183,7 @@ export function VorgangDetailSectionNav({
             >
               {label}
               <PortalCountBadge count={item.badge ?? 0} />
-            </button>
+            </PortalButton>
           );
         })}
       </div>

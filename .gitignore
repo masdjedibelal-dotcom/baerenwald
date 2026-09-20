@@ -20,20 +20,8 @@
 /docs/design-audit/
 *.pdf
 
-# Handoff-/Audit-Markdown außerhalb portal2 (lokal; nicht mit Code committen)
-/docs/*.md
-/docs/GPT_*/
-/docs/PORTAL-*.md
-/docs/PORTAL_*.md
-/docs/CRM_*.md
-/docs/DATENSCHUTZ_*.md
-/docs/ORGANISATION_*.md
-/docs/PARTNER_*.md
-/docs/SUPABASE_*.md
-/docs/BACKEND_*.md
-/docs/KONDITIONEN_*.md
-/docs/WAVE_*.md
-/docs/design-audit/
+# Temp-Notizen unter docs/ (Markdown sonst versionieren — O1)
+/docs/tmp/
 
 # Marketing-Assets oft zu groß für Git-UI — bewusst lokal / CDN
 /public/images/
@@ -61,8 +49,12 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 
-# local env files
+# local env files (inkl. Backups — .env*.local deckt .env.local.prod-backup NICHT)
 .env*.local
+.env.local.*
+*.env.backup
+.env*.prod-backup
+.env*.backup
 
 # vercel
 .vercel

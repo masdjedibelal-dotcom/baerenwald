@@ -1,3 +1,4 @@
+import { logDbError } from '@/lib/errors/log-db-error'
 import { ensureOrgKennung } from "@/lib/org/ensure-org-kennung";
 import { orgMeldeLegalUrlsReady } from "@/lib/org/melde-legal-urls";
 import { normalizeAkutFallIds } from "@/lib/org/sofortmassnahme-faelle";
@@ -107,6 +108,7 @@ export async function loadOrganisationKunde(
       .select(select)
       .eq("id", kundeId)
       .maybeSingle();
+    if (error) logDbError('lib/org/load-organisation-kunde:kunden', error)
 
     if (error) {
       if (cachedKundeSelect === select) cachedKundeSelect = null;

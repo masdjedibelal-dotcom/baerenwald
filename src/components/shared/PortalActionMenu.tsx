@@ -9,6 +9,7 @@ import {
   type ReactNode,
 } from "react";
 import { createPortal } from "react-dom";
+import { PortalButton } from "@/components/portal/PortalButton";
 
 import { PortalModalShell } from "@/components/shared/PortalModalShell";
 import { cn } from "@/lib/utils";
@@ -180,13 +181,14 @@ export function PortalActionMenu({
             onClick={(e) => e.stopPropagation()}
           >
             {stack.length > 0 ? (
-              <button
+              <PortalButton
+                variant="ghost"
                 type="button"
                 className="portal-text-meta flex w-full items-center gap-1 px-3.5 py-2 text-left font-semibold text-accent hover:bg-muted"
                 onClick={() => setStack((s) => s.slice(0, -1))}
               >
                 ‹ Zurück
-              </button>
+              </PortalButton>
             ) : null}
             <PortalActionMenuList
               items={current.items}
@@ -200,12 +202,12 @@ export function PortalActionMenu({
 
   return (
     <div ref={rootRef} className={cn("relative inline-flex", className)}>
-      <button
+      <PortalButton variant="ghost"
         ref={triggerRef}
         type="button"
         className={cn(
           isIconOnly
-            ? "flex h-8 w-8 items-center justify-center rounded-lg border border-border-default bg-white text-base text-text-secondary"
+            ? "flex h-8 w-8 items-center justify-center rounded-card border border-border-default bg-white text-base text-text-secondary"
             : undefined,
           triggerClassName
         )}
@@ -219,7 +221,7 @@ export function PortalActionMenu({
         }}
       >
         {trigger ?? "⋯"}
-      </button>
+      </PortalButton>
 
       {variant === "popover" ? (
         popoverPanel
@@ -231,13 +233,14 @@ export function PortalActionMenu({
           variant="edit"
           headerExtra={
             stack.length > 0 ? (
-              <button
+              <PortalButton
+                variant="ghost"
                 type="button"
-                className="portal-text-meta rounded-lg px-2 py-1 font-semibold text-accent"
+                className="portal-text-meta rounded-button px-2 py-1 font-semibold text-accent"
                 onClick={() => setStack((s) => s.slice(0, -1))}
               >
                 ‹ Zurück
-              </button>
+              </PortalButton>
             ) : null
           }
         >
@@ -265,14 +268,15 @@ export function PortalActionMenuList({
           {item.dividerBefore ? (
             <div className="my-1.5 border-t border-border-default" />
           ) : null}
-          <button
+          <PortalButton
+            variant="danger"
             type="button"
             role="menuitem"
             disabled={item.disabled}
             className={cn(
               "portal-text-body flex w-full items-center justify-between gap-2 text-left font-semibold",
               compact
-                ? "rounded-none px-3.5 py-2.5 text-[14.5px]"
+                ? "rounded-none px-3.5 py-2.5 text-fs-title"
                 : "rounded-[10px] px-3.5 py-3.5",
               item.disabled && "cursor-not-allowed opacity-45",
               item.danger
@@ -288,7 +292,7 @@ export function PortalActionMenuList({
                 ›
               </span>
             ) : null}
-          </button>
+          </PortalButton>
         </div>
       ))}
     </div>

@@ -2,6 +2,8 @@
 
 import { useState } from "react";
 
+import { CTAButton } from "@/components/ui/CTAButton";
+
 type GptChatLeadInlineProps = {
   sessionId: string;
   onSuccess: () => void;
@@ -57,13 +59,13 @@ export function GptChatLeadInline({ sessionId, onSuccess }: GptChatLeadInlinePro
       <input type="text" placeholder="PLZ *" value={plz} onChange={(e) => setPlz(e.target.value)} required maxLength={5} />
       <textarea placeholder="Noch etwas mitteilen? (optional)" value={notizen} onChange={(e) => setNotizen(e.target.value)} rows={2} />
       {error ? <p className="gpt-viz-error">{error}</p> : null}
-      <button
+      <CTAButton
+        bare
+        tone="viz"
         type="submit"
-        className="gpt-viz-btn gpt-viz-btn--primary"
         disabled={loading || (!email.trim() && !telefon.trim())}
-      >
-        {loading ? "Wird gesendet …" : "Projekt an Bärenwald senden"}
-      </button>
+        label={loading ? "Wird gesendet …" : "Projekt an Bärenwald senden"}
+      />
     </form>
   );
 }

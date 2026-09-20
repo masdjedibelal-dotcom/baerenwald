@@ -1,5 +1,6 @@
 "use server";
 
+import { logDbError } from '@/lib/errors/log-db-error'
 import { revalidatePath } from "next/cache";
 
 import { writeAuditEvent } from "@/lib/audit/write-audit-event";
@@ -87,21 +88,23 @@ export async function createPartnerPositionsAnfrage(
     return { ok: false, error: "Bitte kurz begründen (mind. 8 Zeichen)." };
   }
 
-  const { data: own } = await supabaseAdmin
+  const {data: own, error: __dbErr96_1} = await supabaseAdmin
     .from("auftrag_positionen")
     .select("id")
     .eq("auftrag_id", auftragId)
     .eq("handwerker_id", auth.handwerkerId)
     .limit(1);
+  if (__dbErr96_1) logDbError('app/actions/partner-positions-anfrage:auftrag_positionen', __dbErr96_1)
   if (!own?.length) {
     return { ok: false, error: "Kein Zugriff auf diesen Auftrag." };
   }
 
-  const { data: auftrag } = await supabaseAdmin
+  const {data: auftrag, error: __dbErr97_2} = await supabaseAdmin
     .from("auftraege")
     .select("id, status")
     .eq("id", auftragId)
     .maybeSingle();
+  if (__dbErr97_2) logDbError('app/actions/partner-positions-anfrage:auftraege', __dbErr97_2)
   if (!auftrag) return { ok: false, error: "Auftrag nicht gefunden." };
   const st = String(auftrag.status ?? "").toLowerCase();
   if (st === "abgeschlossen" || st === "storniert") {
@@ -132,6 +135,7 @@ export async function createPartnerPositionsAnfrage(
     })
     .select("id")
     .single();
+  if (error) logDbError('app/actions/partner-positions-anfrage:partner_positions_anfragen', error)
 
   if (error) {
     return {

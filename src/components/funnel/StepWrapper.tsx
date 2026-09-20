@@ -72,7 +72,7 @@ export function StepWrapper({
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0 flex-1">
           {stepLabel ? (
-            <p className="mb-1.5 text-[11px] font-semibold uppercase tracking-widest text-text-tertiary">
+            <p className="mb-1.5 text-fs-caption font-semibold uppercase tracking-widest text-text-tertiary">
               {stepLabel}
             </p>
           ) : null}
@@ -94,7 +94,7 @@ export function StepWrapper({
       ) : null}
       {banner ? (
         <div
-          className="funnel-micro-banner mb-5 rounded-xl border border-border-default bg-surface-muted/80 px-3.5 py-2.5 text-[13px] leading-snug text-text-secondary"
+          className="funnel-micro-banner mb-5 rounded-sheet border border-border-default bg-surface-muted/80 px-3.5 py-2.5 text-fs-meta leading-snug text-text-secondary"
           role="status"
         >
           {banner}

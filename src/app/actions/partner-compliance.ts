@@ -1,5 +1,6 @@
 "use server";
 
+import { logDbError } from '@/lib/errors/log-db-error'
 import { revalidatePath } from "next/cache";
 
 import { linkPortalHandwerkerToAuthUser } from "@/lib/partner/link-portal-handwerker";
@@ -36,11 +37,12 @@ export async function deletePartnerComplianceDokument(input: {
   });
   if (!link.ok) return { ok: false, error: link.error };
 
-  const { data: row } = await supabaseAdmin
+  const {data: row, error: __dbErr75_1} = await supabaseAdmin
     .from("partner_dokumente")
     .select("id, handwerker_id, auftrag_id, status, bezeichnung, typ")
     .eq("id", input.dokumentId)
     .maybeSingle();
+  if (__dbErr75_1) logDbError('app/actions/partner-compliance:partner_dokumente', __dbErr75_1)
 
   if (!row) return { ok: false, error: "Dokument nicht gefunden." };
   if (String(row.handwerker_id) !== link.handwerkerId) {
@@ -75,6 +77,7 @@ export async function deletePartnerComplianceDokument(input: {
     })
     .eq("id", input.dokumentId)
     .eq("handwerker_id", link.handwerkerId);
+  if (error) logDbError('app/actions/partner-compliance:partner_dokumente', error)
 
   if (error) return { ok: false, error: error.message };
 
@@ -141,11 +144,12 @@ export async function uploadPartnerComplianceDokument(
   });
   if (!up.ok) return up;
 
-  const { data: typRow } = await supabaseAdmin
+  const {data: typRow, error: __dbErr76_2} = await supabaseAdmin
     .from("compliance_dokument_typen")
     .select("bezeichnung, erneuerung_monate")
     .eq("slug", typ)
     .maybeSingle();
+  if (__dbErr76_2) logDbError('app/actions/partner-compliance:compliance_dokument_typen', __dbErr76_2)
 
   if (!gueltigBis) {
     const monate =
@@ -180,6 +184,7 @@ export async function uploadPartnerComplianceDokument(
     })
     .select("id, bezeichnung")
     .maybeSingle();
+  if (error) logDbError('app/actions/partner-compliance:partner_dokumente', error)
 
   if (error) return { ok: false, error: error.message };
 

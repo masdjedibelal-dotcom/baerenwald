@@ -1,3 +1,4 @@
+import { logDbError } from '@/lib/errors/log-db-error'
 import { isSupabaseConfigured, supabaseAdmin } from "@/lib/supabase";
 
 /** Provisorische Nr., wenn CRM noch keine RV-Nummer geliefert hat (UNIQUE + NOT NULL). */
@@ -21,7 +22,7 @@ export async function persistPortalRahmenvertragAkzeptanz(opts: {
   }
 
   const handwerkerId = opts.handwerkerId.trim();
-  if (!handwerkerId) return { ok: false, error: "Handwerker-ID fehlt." };
+  if (!handwerkerId) return { ok: false, error: "Partner-ID fehlt." };
 
   const akzeptiertAt = opts.akzeptiertAt?.trim() || new Date().toISOString();
   const crmNr = opts.vertragsNr?.trim() || null;
@@ -36,6 +37,7 @@ export async function persistPortalRahmenvertragAkzeptanz(opts: {
     .order("created_at", { ascending: false })
     .limit(1)
     .maybeSingle();
+  if (loadErr) logDbError('lib/partner/persist-portal-rahmenvertrag:handwerker_vertraege', loadErr)
 
   if (loadErr) return { ok: false, error: loadErr.message };
 
@@ -46,7 +48,8 @@ export async function persistPortalRahmenvertragAkzeptanz(opts: {
       if (pdfUrl && !existing.pdf_url) patch.pdf_url = pdfUrl;
       if (Object.keys(patch).length > 0) {
         patch.updated_at = akzeptiertAt;
-        await supabaseAdmin.from("handwerker_vertraege").update(patch).eq("id", existing.id);
+        const { error: __dbErr417_1 } = await supabaseAdmin.from("handwerker_vertraege").update(patch).eq("id", existing.id);
+        if (__dbErr417_1) logDbError('lib/partner/persist-portal-rahmenvertrag:handwerker_vertraege', __dbErr417_1)
       }
       return { ok: true, vertragId: String(existing.id) };
     }
@@ -63,6 +66,7 @@ export async function persistPortalRahmenvertragAkzeptanz(opts: {
       .from("handwerker_vertraege")
       .update(updatePayload)
       .eq("id", existing.id);
+    if (updErr) logDbError('lib/partner/persist-portal-rahmenvertrag:handwerker_vertraege', updErr)
 
     if (updErr) return { ok: false, error: updErr.message };
     return { ok: true, vertragId: String(existing.id) };
@@ -81,6 +85,7 @@ export async function persistPortalRahmenvertragAkzeptanz(opts: {
     })
     .select("id")
     .single();
+  if (insErr) logDbError('lib/partner/persist-portal-rahmenvertrag:handwerker_vertraege', insErr)
 
   if (insErr) return { ok: false, error: insErr.message };
   return { ok: true, vertragId: String(inserted?.id ?? "") };

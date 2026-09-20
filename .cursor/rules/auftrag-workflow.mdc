@@ -1,0 +1,14 @@
+---
+description: Auftrag = Befund, Messung, keine Belal-Entscheidungen
+alwaysApply: true
+---
+
+# Auftrag-Workflow
+
+1. **Befund zuerst**, dann umsetzen.
+2. **Ein Auftrag ≈ ein Commit** — Belal über GitHub Desktop; Agent: **keine Git-Befehle**.
+3. **Staging vor Prod**; keine Prod-Supabase-Writes.
+4. Variante ersetzen → löschen → 0 Treffer → Guard als Fehler.
+5. **Erledigt nur** wenn `node scripts/audit-status.mjs` ✅ meldet.
+6. **Keine Entscheidungen im Namen von Belal** → `docs/OFFENE-FRAGEN.md`.
+7. Nach jedem Block: Build grün + `docs/COMMIT-PLAN.md`.

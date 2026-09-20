@@ -1,7 +1,9 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { PortalButton } from "@/components/portal/PortalButton";
 
+import { PortalInput } from "@/components/shared/PortalFormControls";
 import { cn } from "@/lib/utils";
 import { bewohnerBelegtEinheit } from "@/lib/org/einheit-bewohner-regeln";
 import { orgPortalToast, portalToastError } from "@/lib/shared/portal-toast";
@@ -136,52 +138,54 @@ export function OrganisationObjektEinheitenPanel({
     return (
       <div className="space-y-3">
         <div className="flex items-center justify-between gap-2">
-          <p className="font-[family-name:var(--font-display)] text-[15px] font-bold text-text-primary">
+          <p className="font-[family-name:var(--font-display)] text-fs-title font-bold text-text-primary">
             {n} {n === 1 ? "Einheit" : "Einheiten"}
           </p>
-          <button
+          <PortalButton
+            variant="primary"
             type="button"
-            className="rounded-lg bg-accent px-3.5 py-2 text-[12.5px] font-semibold text-white"
+            className="rounded-button bg-accent px-3.5 py-2 text-fs-meta font-semibold text-white"
             onClick={() => setShowForm((v) => !v)}
           >
             ＋ Einheit
-          </button>
+          </PortalButton>
         </div>
 
         {showForm ? (
           <form
             onSubmit={add}
-            className="grid grid-cols-2 gap-2 rounded-xl border border-border-default bg-white p-3"
+            className="grid grid-cols-2 gap-2 rounded-field border border-border-default bg-white p-3"
           >
-            <input
-              className="portal-input rounded-xl border border-border-default px-3 py-2 text-sm"
+            <PortalInput
+              className="portal-input rounded-field border border-border-default px-3 py-2 text-sm"
               placeholder="Bezeichnung (z. B. WE 1)"
               value={bezeichnung}
               onChange={(e) => setBezeichnung(e.target.value)}
               required
             />
-            <input
+            <PortalInput
               type="number"
               min={0}
               step={0.1}
-              className="portal-input rounded-xl border border-border-default px-3 py-2 text-sm"
+              className="portal-input rounded-field border border-border-default px-3 py-2 text-sm"
               placeholder="m² (optional)"
               value={m2}
               onChange={(e) => setM2(e.target.value)}
             />
-            <button
+            <PortalButton
+              variant="secondary"
               type="submit"
-              className="btn-pill-outline col-span-2 !text-xs"
+              className="col-span-2 !text-xs"
               disabled={busy}
             >
               Speichern
-            </button>
+            </PortalButton>
           </form>
         ) : null}
 
-        <div className="overflow-hidden rounded-xl border border-border-default bg-white">
+        <div className="overflow-hidden rounded-sheet border border-border-default bg-white">
           {items.length === 0 ? (
-            <p className="px-4 py-3 text-[13px] text-text-secondary">
+            <p className="px-4 py-3 text-fs-meta text-text-secondary">
               Noch keine Einheiten.
             </p>
           ) : (
@@ -211,27 +215,28 @@ export function OrganisationObjektEinheitenPanel({
                           ? ` · ${u.wohnflaeche_m2} m²`
                           : ""}
                       </p>
-                      <p className="mt-0.5 text-[12.5px] text-text-secondary">
+                      <p className="mt-0.5 text-fs-meta text-text-secondary">
                         {sub}
                       </p>
                     </div>
                     <span
                       className={cn(
-                        "shrink-0 rounded-full px-2.5 py-1 text-[11px] font-semibold",
+                        "shrink-0 rounded-pill px-2.5 py-1 text-fs-caption font-semibold",
                         badge === "leer"
-                          ? "bg-[#FBF1D6] text-[#8A5A06]"
+                          ? "bg-[var(--p2-status-sand-bg)] text-[var(--p2-sand-text)]"
                           : "bg-accent-light text-accent"
                       )}
                     >
                       {badge}
                     </span>
-                    <button
+                    <PortalButton
+                      variant="danger"
                       type="button"
-                      className="shrink-0 text-xs text-red-600 hover:underline"
+                      className="shrink-0 text-xs text-p2-danger hover:underline"
                       onClick={() => void remove(u.id)}
                     >
-                      Entfernen
-                    </button>
+                      Löschen
+                    </PortalButton>
                   </li>
                 );
               })}
@@ -260,47 +265,49 @@ export function OrganisationObjektEinheitenPanel({
           items.map((u) => (
             <li
               key={u.id}
-              className="flex items-center justify-between gap-2 rounded-xl border border-border-light bg-white px-3.5 py-3 text-sm sm:rounded-lg sm:border-transparent sm:bg-white sm:py-2"
+              className="flex items-center justify-between gap-2 rounded-sheet border border-border-light bg-white px-3.5 py-3 text-sm sm:rounded-lg sm:border-transparent sm:bg-white sm:py-2"
             >
               <span>
                 {u.bezeichnung}
                 {u.wohnflaeche_m2 != null ? ` · ${u.wohnflaeche_m2} m²` : ""}
               </span>
-              <button
+              <PortalButton
+                variant="danger"
                 type="button"
-                className="text-xs font-semibold text-red-600 hover:underline"
+                className="text-xs font-semibold text-p2-danger hover:underline"
                 onClick={() => void remove(u.id)}
               >
-                Entfernen
-              </button>
+                Löschen
+              </PortalButton>
             </li>
           ))
         )}
       </ul>
       <form onSubmit={add} className="grid grid-cols-2 gap-2">
-        <input
-          className="portal-input rounded-xl border border-border-default px-3 py-2 text-sm"
+        <PortalInput
+          className="portal-input rounded-field border border-border-default px-3 py-2 text-sm"
           placeholder="Bezeichnung (z. B. WH 12)"
           value={bezeichnung}
           onChange={(e) => setBezeichnung(e.target.value)}
           required
         />
-        <input
+        <PortalInput
           type="number"
           min={0}
           step={0.1}
-          className="portal-input rounded-xl border border-border-default px-3 py-2 text-sm"
+          className="portal-input rounded-field border border-border-default px-3 py-2 text-sm"
           placeholder="m² (optional)"
           value={m2}
           onChange={(e) => setM2(e.target.value)}
         />
-        <button
+        <PortalButton
+          variant="secondary"
           type="submit"
-          className="btn-pill-outline col-span-2 !text-xs"
+          className="col-span-2 !text-xs"
           disabled={busy}
         >
           ＋ Einheit
-        </button>
+        </PortalButton>
       </form>
     </div>
   );

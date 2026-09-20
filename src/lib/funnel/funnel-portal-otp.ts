@@ -1,8 +1,10 @@
+import { logDbError } from '@/lib/errors/log-db-error'
 import { createHash, randomInt } from "crypto";
 import { Resend } from "resend";
 
 import { SITE_CONFIG } from "@/lib/config";
 import { normalizeKundenEmail } from "@/lib/kunden/kunde-email";
+import { htmlToPlainText } from "@/lib/shared-domain/html-to-plain-text";
 import { isSupabaseConfigured, supabaseAdmin } from "@/lib/supabase";
 
 export const FUNNEL_OTP_TTL_MS = 15 * 60 * 1000;
@@ -84,6 +86,7 @@ export async function storeFunnelOtp(opts: {
     },
     { onConflict: "email" }
   );
+  if (error) logDbError('lib/funnel/funnel-portal-otp:funnel_portal_otp', error)
   if (error) throw new Error(error.message);
 }
 
@@ -106,6 +109,7 @@ export async function verifyFunnelOtp(opts: {
     .select("code_hash, user_id, expires_at, attempts")
     .eq("email", email)
     .maybeSingle();
+  if (error) logDbError('lib/funnel/funnel-portal-otp:funnel_portal_otp', error)
 
   if (error || !row) {
     return {
@@ -115,7 +119,8 @@ export async function verifyFunnelOtp(opts: {
   }
 
   if (new Date(row.expires_at as string).getTime() < Date.now()) {
-    await supabaseAdmin.from("funnel_portal_otp").delete().eq("email", email);
+    const { error: __dbErr253_1 } = await supabaseAdmin.from("funnel_portal_otp").delete().eq("email", email);
+    if (__dbErr253_1) logDbError('lib/funnel/funnel-portal-otp:funnel_portal_otp', __dbErr253_1)
     return {
       ok: false,
       error: "Code abgelaufen. Bitte einen neuen Code anfordern.",
@@ -131,10 +136,11 @@ export async function verifyFunnelOtp(opts: {
   }
 
   if (hashFunnelOtpCode(code) !== row.code_hash) {
-    await supabaseAdmin
+    const { error: __dbErr254_2 } = await supabaseAdmin
       .from("funnel_portal_otp")
       .update({ attempts: attempts + 1 })
       .eq("email", email);
+    if (__dbErr254_2) logDbError('lib/funnel/funnel-portal-otp:funnel_portal_otp', __dbErr254_2)
     return { ok: false, error: "Code ungültig. Bitte erneut versuchen." };
   }
 
@@ -151,7 +157,8 @@ export async function verifyFunnelOtp(opts: {
     return { ok: false, error: confirmErr.message };
   }
 
-  await supabaseAdmin.from("funnel_portal_otp").delete().eq("email", email);
+  const { error: __dbErr255_3 } = await supabaseAdmin.from("funnel_portal_otp").delete().eq("email", email);
+  if (__dbErr255_3) logDbError('lib/funnel/funnel-portal-otp:funnel_portal_otp', __dbErr255_3)
   return { ok: true, userId };
 }
 
@@ -190,17 +197,20 @@ export async function sendFunnelOtpEmail(opts: {
   const resend = new Resend(resendKey);
 
   try {
+    const html = `
+        <p>${greeting},</p>
+        <p>Dein Bestätigungscode für ${escapeHtml(productLabel)}:</p>
+        <p style="font-size:28px;font-weight:700;letter-spacing:6px;color:var(--p2-primary);">${escapeHtml(opts.code)}</p>
+        <p>Der Code ist 15 Minuten gültig.</p>
+        <p style="color:var(--p2-faint);font-size:13px;">${escapeHtml(SITE_CONFIG.companyName)} · ${escapeHtml(SITE_CONFIG.addressLine)}</p>
+      `;
     const { error } = await resend.emails.send({
       from,
       to: opts.email.trim().toLowerCase(),
+      // Auth: Subject unverändert (kein F5-Objekt-Schema)
       subject: `${opts.code} — ${productLabel} Bestätigungscode`,
-      html: `
-        <p>${greeting},</p>
-        <p>Dein Bestätigungscode für ${escapeHtml(productLabel)}:</p>
-        <p style="font-size:28px;font-weight:700;letter-spacing:6px;color:#2E7D52;">${escapeHtml(opts.code)}</p>
-        <p>Der Code ist 15 Minuten gültig.</p>
-        <p style="color:#6b7280;font-size:13px;">${escapeHtml(SITE_CONFIG.companyName)} · ${escapeHtml(SITE_CONFIG.addressLine)}</p>
-      `,
+      html,
+      text: htmlToPlainText(html),
     });
     if (error) {
       console.error("[sendFunnelOtpEmail]", error);
@@ -240,7 +250,8 @@ export async function issueSignupOtp(opts: {
   });
   if (!mail.ok) {
     await supabaseAdmin.auth.admin.deleteUser(opts.userId);
-    await supabaseAdmin.from("funnel_portal_otp").delete().eq("email", email);
+    const { error: __dbErr256_4 } = await supabaseAdmin.from("funnel_portal_otp").delete().eq("email", email);
+    if (__dbErr256_4) logDbError('lib/funnel/funnel-portal-otp:funnel_portal_otp', __dbErr256_4)
     return mail;
   }
   return { ok: true };

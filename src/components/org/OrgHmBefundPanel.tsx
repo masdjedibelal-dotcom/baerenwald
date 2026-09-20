@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
-import { Plus, Trash2 } from "lucide-react";
+import { PortalIcon } from "@/components/portal/PortalIcon";
+import { useEffect, useMemo, useRef, useState } from "react";
 
+import { PortalDate, PortalInput, PortalTextarea } from "@/components/shared/PortalFormControls";
 import {
   addLeadBefundFreipunktAction,
   addLeadBefundVorlagePunktAction,
@@ -19,8 +20,11 @@ import {
   type LeadBefundPunktStatus,
   type LeadBefundRow,
 } from "@/app/actions/lead-befund";
+import { PortalButton } from "@/components/portal/PortalButton";
+import { PortalField } from "@/components/shared/PortalField";
 import { PortalInlineLoading } from "@/components/shared/PortalInlineLoading";
 import { PortalKiAssistField } from "@/components/shared/PortalKiAssistField";
+import { PortalListeFilterChip } from "@/components/shared/PortalListeChrome";
 import { PortalModalShell } from "@/components/shared/PortalModalShell";
 import {
   PortalSheetBack,
@@ -33,6 +37,7 @@ import { FileUploadField } from "@/components/shared/FileUploadField";
 import { usePortalBusy } from "@/components/shared/PortalBusyContext";
 import { PortalActionMenu } from "@/components/shared/PortalActionMenu";
 import { PortalDetailInfoBox } from "@/components/shared/PortalDetailUi";
+import { useFieldErrors } from "@/lib/portal2/form-schema";
 import {
   displayBefundPunktTitel,
   getBefundVorlage,
@@ -88,13 +93,13 @@ function statusTone(status: LeadBefundPunktStatus | null): {
   color: string;
 } {
   if (status === "auffaellig") {
-    return { bg: "var(--p2-danger-soft, #fce3e3)", color: "var(--p2-danger, #a1242a)" };
+    return { bg: "var(--p2-danger-soft)", color: "var(--p2-danger)" };
   }
   if (status === "unauffaellig") {
-    return { bg: "var(--p2-primary-soft, #e7f1e9)", color: "var(--p2-primary, #2e7d52)" };
+    return { bg: "var(--p2-primary-soft)", color: "var(--p2-primary)" };
   }
   if (status === "nicht_pruefbar") {
-    return { bg: "#ffffff", color: "var(--p2-sub, #404a45)" };
+    return { bg: "var(--p2-panel)", color: "var(--p2-sub)" };
   }
   return { bg: "transparent", color: PORTAL_VAR.faint };
 }
@@ -116,34 +121,6 @@ function ergebnisLabel(ergebnis: LeadBefundErgebnis): string {
   return "Fachfirma — Angebot";
 }
 
-function StatusChip({
-  active,
-  label,
-  onClick,
-  disabled,
-}: {
-  active: boolean;
-  label: string;
-  onClick: () => void;
-  disabled?: boolean;
-}) {
-  return (
-    <button
-      type="button"
-      disabled={disabled}
-      onClick={onClick}
-      className="inline-flex items-center rounded-full border px-3 py-1.5 text-[12.5px] font-semibold disabled:opacity-60"
-      style={{
-        borderColor: active ? PORTAL_VAR.primary : PORTAL_VAR.line,
-        background: active ? PORTAL_VAR.primary : "#fff",
-        color: active ? "#fff" : PORTAL_VAR.ink,
-      }}
-    >
-      {label}
-    </button>
-  );
-}
-
 function BefundPunktCard({
   punkt,
   onOpen,
@@ -163,11 +140,12 @@ function BefundPunktCard({
 
   return (
     <article
-      className="rounded-xl border border-border-light bg-white p-3 shadow-sm"
+      className="rounded-sheet border border-border-light bg-white p-3 shadow-sm"
       style={{ borderColor: PORTAL_VAR.line }}
     >
       <div className="flex items-start gap-2">
-        <button
+        <PortalButton
+          variant="ghost"
           type="button"
           onClick={onOpen}
           className="min-w-0 flex-1 text-left"
@@ -185,7 +163,7 @@ function BefundPunktCard({
             </div>
             {st ? (
               <span
-                className="shrink-0 rounded-full px-2.5 py-1 text-[11px] font-semibold"
+                className="shrink-0 rounded-pill px-2.5 py-1 text-fs-caption font-semibold"
                 style={{ background: tone.bg, color: tone.color }}
               >
                 {st}
@@ -201,7 +179,7 @@ function BefundPunktCard({
                 {punkt.foto_refs.slice(0, 4).map((url) => (
                   <span
                     key={url}
-                    className="relative h-8 w-8 overflow-hidden rounded-md border border-white bg-white"
+                    className="relative h-8 w-8 overflow-hidden rounded-field border border-white bg-white"
                   >
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img src={url} alt="" className="h-full w-full object-cover" />
@@ -210,19 +188,20 @@ function BefundPunktCard({
               </div>
             ) : null}
           </div>
-        </button>
+        </PortalButton>
         {deletable && onDelete ? (
-          <button
+          <PortalButton
+            variant="danger"
             type="button"
-            className="shrink-0 rounded-lg p-2 text-text-tertiary transition-colors hover:bg-[var(--p2-hover,#eef1ef)] hover:text-red-700"
+            className="shrink-0 rounded-button p-2 text-text-tertiary transition-colors hover:bg-[var(--p2-hover)] hover:text-p2-danger"
             aria-label={`${titel} entfernen`}
             onClick={(e) => {
               e.stopPropagation();
               onDelete();
             }}
           >
-            <Trash2 className="h-4 w-4" aria-hidden />
-          </button>
+            <PortalIcon n="trash" ctx="default" className="h-4 w-4" aria-hidden />
+          </PortalButton>
         ) : null}
       </div>
     </article>
@@ -247,6 +226,13 @@ export function OrgHmBefundPanel({
   const hvWartet = isHv && hv === "hm_pruefung";
 
   const { runBusy } = usePortalBusy();
+  const addFormRef = useRef<HTMLDivElement>(null);
+  const {
+    fieldErrors: addFieldErrors,
+    applyFieldErrors: applyAddFieldErrors,
+    clearFieldErrors: clearAddFieldErrors,
+    clearField: clearAddField,
+  } = useFieldErrors();
   const [befund, setBefund] = useState<LeadBefundRow | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -276,6 +262,7 @@ export function OrgHmBefundPanel({
     setAddNotiz("");
     setAddFotos([]);
     setAddDirty(false);
+    clearAddFieldErrors();
   }
 
   function openAddForm() {
@@ -412,8 +399,17 @@ export function OrgHmBefundPanel({
     });
   }
 
+  /* FORM_VALIDATION: org-hm-befund-add */
   async function addFrei() {
-    if (!befund || !addTitel.trim()) return;
+    if (!befund) return;
+    if (!addTitel.trim()) {
+      applyAddFieldErrors(
+        { titel: "Bitte einen Titel angeben." },
+        addFormRef.current
+      );
+      return;
+    }
+    clearAddFieldErrors();
     await runBusy(async () => {
       const res = await addLeadBefundFreipunktAction({
         befundId: befund.id,
@@ -566,10 +562,10 @@ export function OrgHmBefundPanel({
   if (hvWartetSichtbar) {
     return (
       <PortalDetailInfoBox variant="warning">
-        <p className="font-semibold text-amber-950">
+        <p className="font-semibold text-warning-text">
           Warte auf Hausmeister-Prüfung
         </p>
-        <p className="mt-1 text-[13px] text-amber-900/90">
+        <p className="mt-1 text-fs-meta text-warning-text/90">
           Der Hausmeister prüft vor Ort. Sobald die Prüfung abgeschlossen ist,
           sehen Sie hier das Ergebnis und die dokumentierten Prüfpunkte.
         </p>
@@ -583,7 +579,7 @@ export function OrgHmBefundPanel({
         <PortalInlineLoading label="Befund wird geladen" />
       ) : null}
       {error ? (
-        <p className="portal-text-meta font-semibold text-red-700" role="alert">
+        <p className="portal-text-meta font-semibold text-p2-danger" role="alert">
           {error}
         </p>
       ) : null}
@@ -597,8 +593,8 @@ export function OrgHmBefundPanel({
                     Durchgeführt von
                   </span>
                   {editable ? (
-                    <input
-                      className="mt-0.5 w-full border-0 bg-transparent p-0 text-[15px] font-semibold outline-none"
+                    <PortalInput
+                      className="mt-0.5 w-full border-0 bg-transparent p-0 text-fs-title font-semibold outline-none"
                       style={{ color: PORTAL_VAR.ink }}
                       value={befund.durchgefuehrt_von}
                       onChange={(e) =>
@@ -616,7 +612,7 @@ export function OrgHmBefundPanel({
                     />
                   ) : (
                     <p
-                      className="mt-0.5 text-[15px] font-semibold"
+                      className="mt-0.5 text-fs-title font-semibold"
                       style={{ color: PORTAL_VAR.ink }}
                     >
                       {befund.durchgefuehrt_von.trim() || "—"}
@@ -628,9 +624,8 @@ export function OrgHmBefundPanel({
                     Datum
                   </span>
                   {editable ? (
-                    <input
-                      type="date"
-                      className="mt-0.5 w-full border-0 bg-transparent p-0 text-[15px] font-semibold outline-none"
+                    <PortalDate
+                      className="mt-0.5 w-full border-0 bg-transparent p-0 text-fs-title font-semibold outline-none"
                       style={{ color: PORTAL_VAR.ink }}
                       value={befund.durchgefuehrt_am.slice(0, 10)}
                       onChange={(e) =>
@@ -648,7 +643,7 @@ export function OrgHmBefundPanel({
                     />
                   ) : (
                     <p
-                      className="mt-0.5 text-[15px] font-semibold"
+                      className="mt-0.5 text-fs-title font-semibold"
                       style={{ color: PORTAL_VAR.ink }}
                     >
                       {fmtDatum(befund.durchgefuehrt_am) ?? "—"}
@@ -660,7 +655,7 @@ export function OrgHmBefundPanel({
 
           {befund.ergebnis ? (
             <p
-              className="text-[17px] font-bold leading-snug sm:text-[18px]"
+              className="text-fs-title font-bold leading-snug sm:text-fs-head"
               style={{ color: PORTAL_VAR.ink }}
             >
               Ergebnis: {ergebnisLabel(befund.ergebnis)}
@@ -669,11 +664,11 @@ export function OrgHmBefundPanel({
 
           {hinweis && editable ? (
             <p
-              className="rounded-lg border px-3 py-2.5 text-[13px] font-semibold"
+              className="rounded-card border px-3 py-2.5 text-fs-meta font-semibold"
               style={{
                 borderColor: PORTAL_VAR.line,
                 color: PORTAL_VAR.ink,
-                background: PORTAL_VAR.panel ?? "#fff",
+                background: PORTAL_VAR.panel ?? "var(--p2-panel)",
               }}
             >
               {hinweis}
@@ -710,18 +705,19 @@ export function OrgHmBefundPanel({
                 variant="popover"
                 title="Prüfpunkt hinzufügen"
                 trigger={
-                  <button
+                  <PortalButton
+                    variant="ghost"
                     type="button"
-                    className="inline-flex items-center gap-2 rounded-xl px-3 py-2.5 text-[14px] font-semibold text-accent transition-opacity hover:opacity-90"
+                    className="inline-flex items-center gap-2 rounded-button px-3 py-2.5 text-fs-body font-semibold text-accent transition-opacity hover:opacity-90"
                     style={{
                       background:
                         "var(--p2-accent-soft, rgba(46,125,82,0.12))",
                     }}
                     aria-label="Weitere hinzufügen"
                   >
-                    <Plus className="h-4 w-4" strokeWidth={2.5} aria-hidden />
+                    <PortalIcon n="plus" ctx="default" className="h-4 w-4" aria-hidden />
                     Weitere hinzufügen
-                  </button>
+                  </PortalButton>
                 }
                 items={addMenuItems}
               />
@@ -730,20 +726,15 @@ export function OrgHmBefundPanel({
 
           {editable && !hideInlineActions ? (
             <div className="portal-action-row pt-1">
-              <button
-                type="button"
-                className="portal-action-btn portal-action-btn--secondary"
+              <PortalButton
+                variant="secondary"
                 onClick={() => void ablehnenAnHv()}
               >
                 Ablehnen
-              </button>
-              <button
-                type="button"
-                className="portal-action-btn portal-action-btn--primary"
-                onClick={openAbschlussSheet}
-              >
+              </PortalButton>
+              <PortalButton variant="primary" onClick={openAbschlussSheet}>
                 Prüfung abschließen
-              </button>
+              </PortalButton>
             </div>
           ) : null}
         </>
@@ -767,9 +758,8 @@ export function OrgHmBefundPanel({
               <p className="portal-text-label text-text-tertiary">Status</p>
               <div className="flex flex-wrap gap-1.5">
                 {STATUS_OPTS.map((o) => (
-                  <StatusChip
+                  <PortalListeFilterChip
                     key={o.id}
-                    label={o.label}
                     active={draftStatus === o.id}
                     disabled={!editable}
                     onClick={() => {
@@ -777,7 +767,9 @@ export function OrgHmBefundPanel({
                       setDraftStatus(o.id);
                       setDraftDirty(true);
                     }}
-                  />
+                  >
+                    {o.label}
+                  </PortalListeFilterChip>
                 ))}
               </div>
             </div>
@@ -800,8 +792,8 @@ export function OrgHmBefundPanel({
                   .filter(Boolean)
                   .join("\n")}
               >
-                <textarea
-                  className="portal-input w-full rounded-xl border border-border-default px-3 py-2.5"
+                <PortalTextarea
+                  className="portal-input w-full rounded-field border border-border-default px-3 py-2.5"
                   rows={4}
                   placeholder="Kurz notieren, was Sie gesehen haben…"
                   value={draftNotiz}
@@ -837,7 +829,7 @@ export function OrgHmBefundPanel({
                     href={url}
                     target="_blank"
                     rel="noreferrer"
-                    className="block h-16 w-16 overflow-hidden rounded-md border"
+                    className="block h-16 w-16 overflow-hidden rounded-field border"
                     style={{ borderColor: PORTAL_VAR.line }}
                     onClick={(e) => e.stopPropagation()}
                   >
@@ -863,37 +855,42 @@ export function OrgHmBefundPanel({
         subtitle="Titel, Zustand, Beschreibung und Fotos"
         dirty={addDirty}
         onConfirm={() => void addFrei()}
-        confirmDisabled={!addTitel.trim()}
         confirmLabel="Speichern"
       >
-        <div className="space-y-4">
-          <label className="block space-y-1.5">
-            <span className="portal-text-label text-text-tertiary">Titel</span>
-            <input
-              className="portal-input w-full rounded-xl border border-border-default px-3 py-2.5"
+        <div ref={addFormRef} className="space-y-4">
+          <PortalField
+            label="Titel"
+            name="titel"
+            required
+            error={addFieldErrors.titel}
+          >
+            <PortalInput
+              className="portal-input w-full rounded-field border border-border-default px-3 py-2.5"
               value={addTitel}
               onChange={(e) => {
                 setAddTitel(e.target.value);
                 setAddDirty(true);
+                clearAddField("titel");
               }}
               placeholder="z. B. Kellerraum zusätzlich geprüft"
               autoFocus
             />
-          </label>
+          </PortalField>
 
           <div className="space-y-2">
             <p className="portal-text-label text-text-tertiary">Zustand</p>
             <div className="flex flex-wrap gap-1.5">
               {STATUS_OPTS.map((o) => (
-                <StatusChip
+                <PortalListeFilterChip
                   key={o.id}
-                  label={o.label}
                   active={addStatus === o.id}
                   onClick={() => {
                     setAddStatus(o.id);
                     setAddDirty(true);
                   }}
-                />
+                >
+                  {o.label}
+                </PortalListeFilterChip>
               ))}
             </div>
           </div>
@@ -915,8 +912,8 @@ export function OrgHmBefundPanel({
               .filter(Boolean)
               .join("\n")}
           >
-            <textarea
-              className="portal-input w-full rounded-xl border border-border-default px-3 py-2.5"
+            <PortalTextarea
+              className="portal-input w-full rounded-field border border-border-default px-3 py-2.5"
               rows={4}
               placeholder="Kurz notieren, was Sie gesehen haben…"
               value={addNotiz}
@@ -944,22 +941,23 @@ export function OrgHmBefundPanel({
               {addFotos.map((f, i) => (
                 <li
                   key={`${f.name}-${i}`}
-                  className="flex items-center justify-between gap-2 rounded-lg border px-3 py-2 text-[13px]"
+                  className="flex items-center justify-between gap-2 rounded-card border px-3 py-2 text-fs-meta"
                   style={{ borderColor: PORTAL_VAR.line }}
                 >
                   <span className="min-w-0 truncate text-text-secondary">
                     {f.name}
                   </span>
-                  <button
+                  <PortalButton
+                    variant="ghost"
                     type="button"
-                    className="shrink-0 text-[12px] font-semibold text-text-tertiary"
+                    className="shrink-0 text-fs-caption font-semibold text-text-tertiary"
                     onClick={() => {
                       setAddFotos((prev) => prev.filter((_, idx) => idx !== i));
                       setAddDirty(true);
                     }}
                   >
-                    Entfernen
-                  </button>
+                    Löschen
+                  </PortalButton>
                 </li>
               ))}
             </ul>
@@ -1035,13 +1033,12 @@ export function OrgHmBefundPanel({
                   : "An Bärenwald übergeben — Angebot wird erstellt?"}
             </p>
             <div className="portal-action-row">
-              <button
-                type="button"
-                className="portal-action-btn portal-action-btn--primary"
+              <PortalButton
+                variant="primary"
                 onClick={() => void confirmAbschluss()}
               >
                 Bestätigen
-              </button>
+              </PortalButton>
             </div>
           </div>
         ) : null}

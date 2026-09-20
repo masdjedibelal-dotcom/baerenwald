@@ -1,3 +1,4 @@
+import { logDbError } from '@/lib/errors/log-db-error'
 import { supabaseAdmin } from "@/lib/supabase";
 
 export type KatalogProdukt = {
@@ -22,22 +23,22 @@ export type KatalogProdukt = {
 };
 
 export async function loadKatalogProdukte(): Promise<KatalogProdukt[]> {
-  const { data: produkte } = await supabaseAdmin
+  const {data: produkte, error: __dbErr257_1} = await supabaseAdmin
     .from("katalog_produkte")
     .select("*")
     .eq("aktiv", true)
     .order("sort_order", { ascending: true });
-
+  if (__dbErr257_1) logDbError('lib/katalog/katalog-produkte:katalog_produkte', __dbErr257_1)
   if (!produkte?.length) return [];
 
   const slugs = produkte.map((p) => p.slug);
-  const { data: preise } = await supabaseAdmin
+  const {data: preise, error: __dbErr258_2} = await supabaseAdmin
     .from("katalog_preise")
     .select("*")
     .in("produkt_slug", slugs)
     .eq("aktiv", true)
     .order("sort_order", { ascending: true });
-
+  if (__dbErr258_2) logDbError('lib/katalog/katalog-produkte:katalog_preise', __dbErr258_2)
   const preiseBySlug = new Map<string, KatalogProdukt["preise"]>();
   for (const pr of preise ?? []) {
     const list = preiseBySlug.get(String(pr.produkt_slug)) ?? [];
@@ -191,17 +192,18 @@ export async function resolveBestellBetragAsync(
 }
 
 export async function loadEinheitFlaeche(einheitId: string): Promise<number | null> {
-  const { data } = await supabaseAdmin
+  const {data, error: __dbErr259_3} = await supabaseAdmin
     .from("objekt_einheiten")
     .select("wohnflaeche_m2")
     .eq("id", einheitId)
     .eq("aktiv", true)
     .maybeSingle();
+  if (__dbErr259_3) logDbError('lib/katalog/katalog-produkte:objekt_einheiten', __dbErr259_3)
   return data?.wohnflaeche_m2 != null ? Number(data.wohnflaeche_m2) : null;
 }
 
 export async function loadObjektFlaeche(objektId: string): Promise<number | null> {
-  const { data } = await supabaseAdmin
+  const {data, error: __dbErr260_4} = await supabaseAdmin
     .from("objekt_einheiten")
     .select("wohnflaeche_m2")
     .eq("kunde_objekt_id", objektId)
@@ -209,5 +211,6 @@ export async function loadObjektFlaeche(objektId: string): Promise<number | null
     .order("sort_order", { ascending: true })
     .limit(1)
     .maybeSingle();
+  if (__dbErr260_4) logDbError('lib/katalog/katalog-produkte:objekt_einheiten', __dbErr260_4)
   return data?.wohnflaeche_m2 != null ? Number(data.wohnflaeche_m2) : null;
 }

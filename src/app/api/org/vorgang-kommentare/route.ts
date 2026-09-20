@@ -1,3 +1,4 @@
+import { logDbError } from '@/lib/errors/log-db-error'
 import { NextResponse } from "next/server";
 
 import { requireOrganisationSession } from "@/lib/org/require-org-session";
@@ -18,11 +19,12 @@ export async function GET(req: Request) {
     return NextResponse.json({ error: "leadId fehlt." }, { status: 400 });
   }
 
-  const { data: lead } = await supabaseAdmin
+  const {data: lead, error: __dbErr224_1} = await supabaseAdmin
     .from("leads")
     .select("id, auftraggeber_kunde_id")
     .eq("id", leadId)
     .maybeSingle();
+  if (__dbErr224_1) logDbError('app/api/org/vorgang-kommentare/route:leads', __dbErr224_1)
 
   if (!lead || lead.auftraggeber_kunde_id !== session.kunde.id) {
     return NextResponse.json({ error: "Nicht gefunden." }, { status: 404 });
@@ -33,6 +35,7 @@ export async function GET(req: Request) {
     .select("id, actor_rolle, actor_name, text, created_at")
     .eq("lead_id", leadId)
     .order("created_at", { ascending: true });
+  if (error) logDbError('app/api/org/vorgang-kommentare/route:vorgang_kommentare', error)
 
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
@@ -54,11 +57,12 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Text zu kurz." }, { status: 400 });
   }
 
-  const { data: lead } = await supabaseAdmin
+  const {data: lead, error: __dbErr225_2} = await supabaseAdmin
     .from("leads")
     .select("id, auftraggeber_kunde_id")
     .eq("id", leadId)
     .maybeSingle();
+  if (__dbErr225_2) logDbError('app/api/org/vorgang-kommentare/route:leads', __dbErr225_2)
 
   if (!lead || lead.auftraggeber_kunde_id !== session.kunde.id) {
     return NextResponse.json({ error: "Nicht gefunden." }, { status: 404 });
@@ -76,6 +80,7 @@ export async function POST(req: Request) {
     })
     .select("id, actor_rolle, actor_name, text, created_at")
     .single();
+  if (error) logDbError('app/api/org/vorgang-kommentare/route:vorgang_kommentare', error)
 
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });

@@ -1,7 +1,8 @@
 "use client";
 
+import { PortalIcon } from "@/components/portal/PortalIcon";
 import { useState } from "react";
-import { ChevronDown } from "lucide-react";
+import { PortalButton } from "@/components/portal/PortalButton";
 
 import {
   bautagebuchAnhangLabel,
@@ -58,7 +59,8 @@ export function BautagebuchAccordionList({
             const open = openId === e.id;
             return (
               <li key={e.id}>
-                <button
+                <PortalButton
+                  variant="ghost"
                   type="button"
                   onClick={() => setOpenId(open ? null : e.id)}
                   className="flex min-h-[52px] w-full items-center gap-3 px-0 py-3.5 text-left transition-colors hover:bg-muted/30"
@@ -73,14 +75,11 @@ export function BautagebuchAccordionList({
                       {e.badges}
                     </span>
                   ) : null}
-                  <ChevronDown
-                    className={cn(
+                  <PortalIcon n="chevron-down" ctx="default" className={cn(
                       "h-5 w-5 shrink-0 text-text-tertiary transition-transform",
                       open && "rotate-180"
-                    )}
-                    aria-hidden
-                  />
-                </button>
+                    )} aria-hidden />
+                </PortalButton>
                 {open ? (
                   <div className="portal-text-body space-y-3 border-t border-border-light bg-white px-0 py-4">
                     {e.badges ? (
@@ -100,7 +99,7 @@ export function BautagebuchAccordionList({
                               href={url}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="portal-text-body inline-flex min-h-[44px] items-center gap-1.5 rounded-lg border border-border-light bg-surface-card px-3 py-2 font-medium text-brand-primary hover:bg-muted/30"
+                              className="portal-text-body inline-flex min-h-[44px] items-center gap-1.5 rounded-card border border-border-light bg-surface-card px-3 py-2 font-medium text-brand-primary hover:bg-muted/30"
                             >
                               {bautagebuchAnhangLabel(url, i)}
                             </a>
@@ -110,7 +109,7 @@ export function BautagebuchAccordionList({
                               href={url}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="block h-20 w-20 overflow-hidden rounded-lg border border-border-light"
+                              className="block h-20 w-20 overflow-hidden rounded-card border border-border-light"
                             >
                               {/* eslint-disable-next-line @next/next/no-img-element */}
                               <img

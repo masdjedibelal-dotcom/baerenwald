@@ -1,8 +1,11 @@
 /**
  * HV-Glocke (+ optional E-Mail): Hausmeister hat Prüfung abgeschlossen.
  */
+import { logDbError } from '@/lib/errors/log-db-error'
 import { createHvNotification } from "@/lib/org/create-hv-notification";
 import { withPortalDetailDeepLink } from "@/lib/portal2/portal-detail-deep-link";
+import { buildSubject } from "@/lib/shared-domain/build-subject";
+import { htmlToPlainText } from "@/lib/shared-domain/html-to-plain-text";
 import { supabaseAdmin } from "@/lib/supabase";
 import { isValidEmail } from "@/lib/validation";
 import { Resend } from "resend";
@@ -14,7 +17,7 @@ export async function notifyHvHausmeisterBefundFertig(input: {
     | "fachfirma_angebot"
     | "fachfirma_akut";
 }): Promise<void> {
-  const { data: lead } = await supabaseAdmin
+  const {data: lead, error: __dbErr315_1} = await supabaseAdmin
     .from("leads")
     .select(
       `
@@ -30,7 +33,7 @@ export async function notifyHvHausmeisterBefundFertig(input: {
     )
     .eq("id", input.leadId)
     .maybeSingle();
-
+  if (__dbErr315_1) logDbError('lib/org/notify-hv-hm-befund:leads', __dbErr315_1)
   if (!lead?.auftraggeber_kunde_id) return;
 
   const kundeId = String(lead.auftraggeber_kunde_id);
@@ -50,10 +53,11 @@ export async function notifyHvHausmeisterBefundFertig(input: {
         ? "Fachfirma (Akut)"
         : "Fachfirma (Angebot)";
 
-  const titel =
+  const ereignis =
     input.ergebnis === "selbst_erledigt"
-      ? `Hausmeister hat erledigt — ${objektTitel}`
-      : `Hausmeister-Prüfung fertig — ${objektTitel}`;
+      ? "Hausmeister erledigt"
+      : "Hausmeister-Prüfung fertig";
+  const titel = buildSubject({ objekt: objektTitel, ereignis });
   const body =
     input.ergebnis === "selbst_erledigt"
       ? `Der Hausmeister hat den Vorgang selbst erledigt. Bitte im Portal prüfen.`
@@ -75,23 +79,26 @@ export async function notifyHvHausmeisterBefundFertig(input: {
     link,
   });
 
-  const { data: org } = await supabaseAdmin
+  const {data: org, error: __dbErr316_2} = await supabaseAdmin
     .from("kunden")
     .select("email, org_anzeigename, name")
     .eq("id", kundeId)
     .maybeSingle();
+  if (__dbErr316_2) logDbError('lib/org/notify-hv-hm-befund:kunden', __dbErr316_2)
   const to = String(org?.email ?? "").trim();
   if (!to || !isValidEmail(to) || !process.env.RESEND_API_KEY) return;
 
   try {
     const resend = new Resend(process.env.RESEND_API_KEY);
+    const html = `<p>${body}</p><p><a href="${link}">Zum Vorgang</a></p>`;
     await resend.emails.send({
       from:
         process.env.RESEND_FROM_EMAIL?.trim() ||
         "Bärenwald <noreply@baerenwald.de>",
       to,
       subject: titel,
-      html: `<p>${body}</p><p><a href="${link}">Zum Vorgang</a></p>`,
+      html,
+      text: htmlToPlainText(html),
     });
   } catch (e) {
     console.error("[notifyHvHausmeisterBefundFertig]", e);
@@ -102,12 +109,12 @@ export async function notifyHvHausmeisterBefundFertig(input: {
 export async function notifyHvHausmeisterBefundZurueck(input: {
   leadId: string;
 }): Promise<void> {
-  const { data: lead } = await supabaseAdmin
+  const {data: lead, error: __dbErr317_3} = await supabaseAdmin
     .from("leads")
     .select("id, auftraggeber_kunde_id, kunde_objekt_id")
     .eq("id", input.leadId)
     .maybeSingle();
-
+  if (__dbErr317_3) logDbError('lib/org/notify-hv-hm-befund:leads', __dbErr317_3)
   if (!lead?.auftraggeber_kunde_id) return;
 
   const kundeId = String(lead.auftraggeber_kunde_id);
@@ -120,7 +127,10 @@ export async function notifyHvHausmeisterBefundZurueck(input: {
     : { data: null };
 
   const objektTitel = String(obj?.titel ?? "").trim() || "Objekt";
-  const titel = `Hausmeister-Prüfung zurück — ${objektTitel}`;
+  const titel = buildSubject({
+    objekt: objektTitel,
+    ereignis: "Hausmeister-Prüfung zurück",
+  });
   const body =
     "Der Hausmeister hat die Prüfung abgelehnt. Der Vorgang liegt wieder bei Ihnen.";
   const link = withPortalDetailDeepLink(
@@ -136,23 +146,26 @@ export async function notifyHvHausmeisterBefundZurueck(input: {
     link,
   });
 
-  const { data: org } = await supabaseAdmin
+  const {data: org, error: __dbErr318_4} = await supabaseAdmin
     .from("kunden")
     .select("email")
     .eq("id", kundeId)
     .maybeSingle();
+  if (__dbErr318_4) logDbError('lib/org/notify-hv-hm-befund:kunden', __dbErr318_4)
   const to = String(org?.email ?? "").trim();
   if (!to || !isValidEmail(to) || !process.env.RESEND_API_KEY) return;
 
   try {
     const resend = new Resend(process.env.RESEND_API_KEY);
+    const html = `<p>${body}</p><p><a href="${link}">Zum Vorgang</a></p>`;
     await resend.emails.send({
       from:
         process.env.RESEND_FROM_EMAIL?.trim() ||
         "Bärenwald <noreply@baerenwald.de>",
       to,
       subject: titel,
-      html: `<p>${body}</p><p><a href="${link}">Zum Vorgang</a></p>`,
+      html,
+      text: htmlToPlainText(html),
     });
   } catch (e) {
     console.error("[notifyHvHausmeisterBefundZurueck]", e);

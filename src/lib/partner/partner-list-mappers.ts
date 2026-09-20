@@ -74,8 +74,8 @@ function ts(v?: string | null): number {
 
 export function partnerAngebotStatusPillClass(statusKey: string): string {
   const s = statusKey.toLowerCase();
-  if (s === "neu") return "bg-orange-100 text-orange-800";
-  if (s === "geaendert" || s === "ergaenzung") return "bg-violet-100 text-violet-800";
+  if (s === "neu") return "bg-warning-bg text-warning-text";
+  if (s === "geaendert" || s === "ergaenzung") return "bg-p2-bg text-p2-ink";
   if (
     s === "in_arbeit" ||
     s === "abnahme" ||
@@ -83,16 +83,16 @@ export function partnerAngebotStatusPillClass(statusKey: string): string {
     s === "auftrag" ||
     s === "beauftragt"
   ) {
-    return "bg-[#E4ECF7] text-[#1F4FA8]";
+    return "bg-[var(--p2-status-blue-bg)] text-[var(--p2-status-blue)]";
   }
-  if (s === "abgeschlossen" || s === "erledigt") return "bg-[#DDEEDF] text-[#1F6A3F]";
+  if (s === "abgeschlossen" || s === "erledigt") return "bg-[var(--p2-status-green-bg)] text-[var(--p2-status-green)]";
   if (s === "abgelehnt" || s === "storniert" || s === "antwort_abgelaufen") {
-    return "bg-red-100 text-red-700";
+    return "bg-p2-danger-soft text-p2-danger";
   }
   return "bg-muted text-text-secondary";
 }
 
-/** Inline-Styles analog PORTAL_STATUS / PortalFlowStatusChip. */
+/** Inline-Styles analog PORTAL_STATUS / PortalStatusPill Flow-Farben. */
 export function partnerStatusChipStyle(statusKey: string): {
   color: string;
   backgroundColor: string;

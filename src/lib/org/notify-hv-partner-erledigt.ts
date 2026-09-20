@@ -1,3 +1,4 @@
+import { logDbError } from '@/lib/errors/log-db-error'
 import { createHvNotification } from "@/lib/org/create-hv-notification";
 import {
   buildMeldeVorgangTitel,
@@ -15,14 +16,14 @@ export async function notifyHvPartnerErledigt(input: {
   /** true = alle Positionen am Auftrag erledigt (Feedback freischalten). */
   vollstaendig?: boolean;
 }): Promise<void> {
-  const { data: lead } = await supabaseAdmin
+  const {data: lead, error: __dbErr326_1} = await supabaseAdmin
     .from("leads")
     .select(
       "auftraggeber_kunde_id, situation, bereiche, funnel_daten, kontakt_nachricht, notizen, anlass, kanal"
     )
     .eq("id", input.leadId)
     .maybeSingle();
-
+  if (__dbErr326_1) logDbError('lib/org/notify-hv-partner-erledigt:leads', __dbErr326_1)
   const kundeId = lead?.auftraggeber_kunde_id
     ? String(lead.auftraggeber_kunde_id)
     : null;

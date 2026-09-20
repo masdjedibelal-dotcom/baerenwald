@@ -1,6 +1,6 @@
 "use client";
 
-import { Toaster } from "sonner";
+import { PortalSonnerToaster } from "@/lib/shared/portal-toast";
 
 /**
  * Einheitliche Portal-Toasts:
@@ -10,7 +10,7 @@ import { Toaster } from "sonner";
  */
 export function PortalToaster() {
   return (
-    <Toaster
+    <PortalSonnerToaster
       position="top-center"
       closeButton
       offset={16}
@@ -25,21 +25,21 @@ export function PortalToaster() {
       toastOptions={{
         classNames: {
           toast:
-            "min-h-[3.25rem] !gap-0 rounded-xl border px-4 py-3.5 shadow-lg [&>[data-icon]]:!hidden",
-          title: "!text-[18px] !leading-snug font-semibold",
-          description: "!text-[15.4px] !leading-snug mt-0.5 opacity-90",
+            "min-h-[3.25rem] !gap-0 rounded-sheet border px-4 py-3.5 shadow-lg [&>[data-icon]]:!hidden",
+          title: "!text-fs-head !leading-snug font-semibold",
+          description: "!text-fs-title !leading-snug mt-0.5 opacity-90",
           content: "!gap-0.5",
           icon: "!hidden !w-0 !m-0 !p-0",
           closeButton:
-            "!left-0 !right-auto !top-0 !z-20 !flex !h-7 !w-7 !translate-x-[-35%] !translate-y-[-35%] !items-center !justify-center !rounded-full !border !border-black/15 !bg-white !text-zinc-800 !opacity-100 !shadow-sm hover:!bg-zinc-100 hover:!text-zinc-950 [&>svg]:!h-3.5 [&>svg]:!w-3.5 [&>svg]:!stroke-[2.5]",
+            "!left-0 !right-auto !top-0 !z-20 !flex !h-7 !w-7 !translate-x-[-35%] !translate-y-[-35%] !items-center !justify-center !rounded-full !border !border-black/15 !bg-white !text-p2-ink !opacity-100 !shadow-sm hover:!bg-p2-bg hover:!text-p2-ink [&>svg]:!h-3.5 [&>svg]:!w-3.5 [&>svg]:!stroke-[2.5]",
           success:
-            "!border-emerald-700/20 !bg-emerald-600 !text-white [&_[data-description]]:!text-emerald-50 [&_[data-close-button]]:!border-black/10 [&_[data-close-button]]:!bg-white [&_[data-close-button]]:!text-zinc-800",
+            "!border-p2-primary/20 !bg-p2-primary !text-white [&_[data-description]]:!text-white [&_[data-close-button]]:!border-black/10 [&_[data-close-button]]:!bg-white [&_[data-close-button]]:!text-p2-ink",
           error:
-            "!border-red-800/20 !bg-red-600 !text-white [&_[data-description]]:!text-red-50 [&_[data-close-button]]:!border-black/10 [&_[data-close-button]]:!bg-white [&_[data-close-button]]:!text-zinc-800",
+            "!border-p2-danger/20 !bg-p2-danger !text-white [&_[data-description]]:!text-white [&_[data-close-button]]:!border-black/10 [&_[data-close-button]]:!bg-white [&_[data-close-button]]:!text-p2-ink",
           warning:
-            "!border-amber-700/25 !bg-amber-500 !text-white [&_[data-description]]:!text-amber-50 [&_[data-close-button]]:!border-black/10 [&_[data-close-button]]:!bg-white [&_[data-close-button]]:!text-zinc-800",
+            "!border-warning-border/25 !bg-warning-bg !text-white [&_[data-description]]:!text-warning-text [&_[data-close-button]]:!border-black/10 [&_[data-close-button]]:!bg-white [&_[data-close-button]]:!text-p2-ink",
           info:
-            "!border-emerald-700/20 !bg-emerald-600 !text-white [&_[data-description]]:!text-emerald-50 [&_[data-close-button]]:!border-black/10 [&_[data-close-button]]:!bg-white [&_[data-close-button]]:!text-zinc-800",
+            "!border-p2-primary/20 !bg-p2-primary !text-white [&_[data-description]]:!text-white [&_[data-close-button]]:!border-black/10 [&_[data-close-button]]:!bg-white [&_[data-close-button]]:!text-p2-ink",
         },
       }}
     />

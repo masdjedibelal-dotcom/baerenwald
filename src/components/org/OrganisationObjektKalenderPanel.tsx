@@ -2,8 +2,10 @@
 
 import { useCallback, useEffect, useState } from "react";
 
-import { portalToastSuccess, portalToastError } from "@/lib/shared/portal-toast";
+import { portalToastSuccess, portalToastSystemError } from "@/lib/shared/portal-toast";
 import { cn } from "@/lib/utils";
+import { PortalButton } from "@/components/portal/PortalButton";
+import { EMPTY, TOAST } from '@/lib/portal-copy'
 
 type CalEvent = {
   event_beginn: string;
@@ -43,9 +45,9 @@ export function OrganisationObjektKalenderPanel({ objektId }: { objektId: string
       const json = (await res.json()) as { error?: string; webcalUrl?: string; icsUrl?: string };
       if (!res.ok) throw new Error(json.error ?? "Fehler");
       setIcsUrl(json.webcalUrl ?? json.icsUrl ?? null);
-      portalToastSuccess("Kalender-Link erstellt — in Outlook abonnieren.");
+      portalToastSuccess(TOAST.kalender_link_erstellt_in_outlook_abonnieren);
     } catch (e) {
-      portalToastError(e instanceof Error ? e.message : "Fehler");
+      portalToastSystemError(e, "org-objekt-kalender");
     }
   }
 
@@ -60,31 +62,31 @@ export function OrganisationObjektKalenderPanel({ objektId }: { objektId: string
       <div className="flex flex-wrap items-center justify-between gap-2">
         <p className="text-sm font-semibold text-text-primary">Kalender</p>
         <div className="flex items-center gap-2">
-          <button type="button" className="btn-pill-outline portal-btn-compact" onClick={() => shiftMonth(-1)}>
+          <PortalButton variant="secondary" action={false} compact type="button"  onClick={() => shiftMonth(-1)}>
             ←
-          </button>
+          </PortalButton>
           <span className="text-sm font-medium">{monat}</span>
-          <button type="button" className="btn-pill-outline portal-btn-compact" onClick={() => shiftMonth(1)}>
+          <PortalButton variant="secondary" action={false} compact type="button"  onClick={() => shiftMonth(1)}>
             →
-          </button>
+          </PortalButton>
         </div>
       </div>
 
-      <button type="button" className="text-xs font-semibold text-accent" onClick={() => void createFeed()}>
+      <PortalButton variant="ghost" type="button" className="text-xs font-semibold text-accent" onClick={() => void createFeed()}>
         In Outlook abonnieren (ICS)
-      </button>
+      </PortalButton>
       {icsUrl ? (
         <p className="text-xs text-text-tertiary break-all">{icsUrl}</p>
       ) : null}
 
       {events.length === 0 ? (
-        <p className="text-sm text-text-secondary">Keine Termine in diesem Monat.</p>
+        <p className="text-sm text-text-secondary">{EMPTY.termineMonat}</p>
       ) : (
         <ul className="space-y-2">
           {events.map((ev, i) => (
             <li
               key={`${ev.event_typ}-${ev.titel}-${i}`}
-              className="flex gap-3 rounded-lg border border-border-light px-3 py-2 text-sm"
+              className="flex gap-3 rounded-card border border-border-light px-3 py-2 text-sm"
             >
               <span className="shrink-0 text-text-tertiary w-20">
                 {new Date(ev.event_beginn).toLocaleDateString("de-DE", {

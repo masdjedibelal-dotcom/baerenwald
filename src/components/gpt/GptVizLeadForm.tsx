@@ -2,6 +2,8 @@
 
 import { useState } from "react";
 
+import { CTAButton } from "@/components/ui/CTAButton";
+
 type GptVizLeadFormProps = {
   sessionId: string;
   onSuccess: () => void;
@@ -95,19 +97,19 @@ export function GptVizLeadForm({ sessionId, onSuccess }: GptVizLeadFormProps) {
         rows={3}
         style={{
           borderRadius: 10,
-          border: "1px solid rgba(0,0,0,0.12)",
+          border: "0.0625rem solid rgba(0,0,0,0.12)",
           padding: "0.6rem 0.75rem",
           fontSize: "0.88rem",
         }}
       />
       {error ? <p className="gpt-viz-error">{error}</p> : null}
-      <button
+      <CTAButton
+        bare
+        tone="viz"
         type="submit"
-        className="gpt-viz-btn gpt-viz-btn--primary"
         disabled={loading || (!email.trim() && !telefon.trim())}
-      >
-        {loading ? "Wird gesendet …" : "Projekt an Bärenwald senden"}
-      </button>
+        label={loading ? "Wird gesendet …" : "Projekt an Bärenwald senden"}
+      />
     </form>
   );
 }

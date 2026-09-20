@@ -1,3 +1,4 @@
+import { logDbError } from '@/lib/errors/log-db-error'
 import { ensurePartnerAngebotHandwerkerForAuftrag } from "@/lib/partner/ensure-partner-angebot-handwerker-for-auftrag";
 import { isPartnerAuftragAnfrageAktionErforderlich } from "@/lib/partner/partner-anfrage-status";
 import {
@@ -389,10 +390,11 @@ async function loadPartnerObjektById(
   const objektById = new Map<string, PartnerKundenObjektRow>();
   if (!objektIds.length) return objektById;
 
-  const { data: objekteRows } = await supabaseAdmin
+  const {data: objekteRows, error: __dbErr380_1} = await supabaseAdmin
     .from("kunden_objekte")
     .select("id, titel, strasse, hausnummer, plz, ort, cover_url, einheiten_hinweis")
     .in("id", objektIds);
+  if (__dbErr380_1) logDbError('lib/partner/get-partner-data:kunden_objekte', __dbErr380_1)
 
   for (const o of objekteRows ?? []) {
     const raw = o as { id: string };
@@ -433,6 +435,7 @@ async function loadInternLvByLead(
     .eq("ist_partner_einholung", true)
     .in("lead_id", unique)
     .order("created_at", { ascending: false });
+  if (error) logDbError('lib/partner/get-partner-data:angebote', error)
   if (error) {
     if (!/ist_partner_einholung|column/i.test(error.message)) {
       console.warn("[partner] intern LV-Vorgabe:", error.message);
@@ -587,6 +590,7 @@ export async function getPartnerDataForHandwerker(
     .select(handwerkerSelectFull)
     .eq("id", id)
     .maybeSingle();
+  if (hwLoadErr) logDbError('lib/partner/get-partner-data:handwerker', hwLoadErr)
 
   if (
     hwLoadErr &&
@@ -693,10 +697,11 @@ export async function getPartnerDataForHandwerker(
     }
   }
 
-  const { data: posAuftraege } = await supabaseAdmin
+  const {data: posAuftraege, error: __dbErr381_2} = await supabaseAdmin
     .from("auftrag_positionen")
     .select("auftrag_id, handwerker_status")
     .eq("handwerker_id", id);
+  if (__dbErr381_2) logDbError('lib/partner/get-partner-data:auftrag_positionen', __dbErr381_2)
 
   const hwStatusByAuftrag = new Map<string, string[]>();
   const posStatusByAuftrag = new Map<string, string[]>();
@@ -811,29 +816,32 @@ export async function getPartnerDataForHandwerker(
       )
       .in("id", auftragIds)
       .order("created_at", { ascending: false });
+    if (aufErr) logDbError('lib/partner/get-partner-data:auftraege', aufErr)
 
     if (aufErr) {
       console.error("[partner] auftraege laden fehlgeschlagen:", aufErr.message);
     }
 
-    const { data: btRows } = await supabaseAdmin
+    const {data: btRows, error: __dbErr382_3} = await supabaseAdmin
       .from("auftrag_bautagebuch_eintraege")
       .select(
         "id, auftrag_id, titel, beschreibung, datum, foto_urls, fuer_kunde_freigegeben, handwerker_id, eintrag_typ"
       )
       .in("auftrag_id", auftragIds)
       .order("datum", { ascending: false });
+    if (__dbErr382_3) logDbError('lib/partner/get-partner-data:auftrag_bautagebuch_eintraege', __dbErr382_3)
 
     const btByAuftrag = new Map<string, PartnerBautagebuchItem[]>();
     const bewertungByAuftragId = new Map<string, PartnerAuftragBewertung>();
 
-    const { data: bewertungen } = await supabaseAdmin
+    const {data: bewertungen, error: __dbErr383_4} = await supabaseAdmin
       .from("handwerker_bewertungen")
       .select(
         "auftrag_id, qualitaet, termintreue, sauberkeit, kommunikation, preis_leistung, updated_at"
       )
       .eq("handwerker_id", id)
       .in("auftrag_id", auftragIds);
+    if (__dbErr383_4) logDbError('lib/partner/get-partner-data:handwerker_bewertungen', __dbErr383_4)
 
     for (const b of bewertungen ?? []) {
       const raw = b as Record<string, unknown>;
@@ -902,10 +910,11 @@ export async function getPartnerDataForHandwerker(
       { freigabe_status: string | null; pdf_url: string | null; abnahme_datum: string | null }
     >();
     if (ownProtokollIds.length) {
-      const { data: protoRows } = await supabaseAdmin
+      const {data: protoRows, error: __dbErr384_5} = await supabaseAdmin
         .from("auftrag_abnahmeprotokolle")
         .select("id, freigabe_status, pdf_url, abnahme_datum")
         .in("id", ownProtokollIds);
+      if (__dbErr384_5) logDbError('lib/partner/get-partner-data:auftrag_abnahmeprotokolle', __dbErr384_5)
       for (const p of protoRows ?? []) {
         const row = p as {
           id: string;
@@ -1207,13 +1216,14 @@ export async function getPartnerDataForHandwerker(
         markAccepted: true,
       });
       if (ensured.ok) {
-        const { data: ahRow } = await supabaseAdmin
+        const {data: ahRow, error: __dbErr385_6} = await supabaseAdmin
           .from("angebot_handwerker")
           .select(
             "id, angebot_id, hw_status, hw_eingereicht_at, hw_rechnung_pdf_url, hw_rechnung_eingereicht_at, hw_angebot_pdf_url, hw_angebot_anhang_urls"
           )
           .eq("id", ensured.anfrageId)
           .maybeSingle();
+        if (__dbErr385_6) logDbError('lib/partner/get-partner-data:angebot_handwerker', __dbErr385_6)
         if (ahRow?.id) {
           const linkedAng =
             ahRow.angebot_id != null ? String(ahRow.angebot_id).trim() : "";
@@ -1406,6 +1416,7 @@ export async function getPartnerDataForHandwerker(
           "id, auftrag_id, slot_code, label, status, datei_url, datei_name, uploaded_by_role, erledigt_am"
         )
         .in("auftrag_id", auftragIdsForFachdoku);
+      if (fachErr) logDbError('lib/partner/get-partner-data:auftrag_fachdoku_slots', fachErr)
       if (!fachErr) {
         const fachMapped = await Promise.all(
           (fachRows ?? []).map(async (row) => {

@@ -1,6 +1,7 @@
 import Link from "next/link";
 
 import { SemanticFaq } from "@/components/common/SemanticFaq";
+import { CTAButton } from "@/components/ui/CTAButton";
 import { WhatsAppFloat } from "@/components/ui/WhatsAppFloat";
 import { SITE_CONFIG } from "@/lib/config";
 import { HANDWERKER_PREISE } from "@/lib/handwerker-config";
@@ -59,12 +60,13 @@ export function HandwerkerSeoPage({ data }: { data: HandwerkerContentItem }) {
             <p className="page-hero-sub">{subline}</p>
 
             <div className="page-hero-btns">
-              <Link href={kontaktHref} className="page-hero-btn-primary">
-                Kontakt aufnehmen →
-              </Link>
-              <Link href={SITE_CONFIG.phoneHref} className="page-hero-btn-secondary">
-                Direkt anrufen
-              </Link>
+              <CTAButton bare tone="hero-page" href={kontaktHref} label="Kontakt aufnehmen →" />
+              <CTAButton
+                bare
+                tone="hero-secondary"
+                href={SITE_CONFIG.phoneHref}
+                label="Direkt anrufen"
+              />
             </div>
 
             <div className="page-hero-trust">
@@ -117,13 +119,14 @@ export function HandwerkerSeoPage({ data }: { data: HandwerkerContentItem }) {
               </p>
             </div>
 
-            <Link
-              href={kontaktHref}
-              className="page-hero-btn-primary"
-              style={{ display: "inline-block", marginTop: "20px" }}
-            >
-              Anfrage für mein Projekt stellen →
-            </Link>
+            <span style={{ display: "inline-block", marginTop: 20 }}>
+              <CTAButton
+                bare
+                tone="hero-page"
+                href={kontaktHref}
+                label="Anfrage für mein Projekt stellen →"
+              />
+            </span>
           </div>
         </section>
 
@@ -166,7 +169,7 @@ export function HandwerkerSeoPage({ data }: { data: HandwerkerContentItem }) {
         <section className="article-section content-section content-section--white fade-up d2">
           <div className="article-section-inner">
             <span className="chapter-label">Häufige Fragen</span>
-            <h2 className="section-h2" style={{ marginBottom: "28px" }}>
+            <h2 className="section-h2" style={{ marginBottom: 28 }}>
               Was Kunden uns fragen
             </h2>
             <div className="article-faq">
@@ -180,13 +183,14 @@ export function HandwerkerSeoPage({ data }: { data: HandwerkerContentItem }) {
           <div className="final-cta-inner">
             <h2 className="final-cta-h2">Bereit für dein Projekt?</h2>
             <p className="final-cta-sub">{data.ctaText}</p>
-            <div className="final-cta-btns">
-              <Link href={kontaktHref} className="final-cta-btn-primary">
-                Kontakt aufnehmen →
-              </Link>
-              <Link href={SITE_CONFIG.phoneHref} className="final-cta-btn-ghost">
-                Direkt anrufen
-              </Link>
+            <div className="final-cta-actions">
+              <CTAButton bare tone="final" href={kontaktHref} label="Kontakt aufnehmen →" />
+              <CTAButton
+                bare
+                tone="final-ghost"
+                href={SITE_CONFIG.phoneHref}
+                label="Direkt anrufen"
+              />
             </div>
             <p className="final-cta-trust">
               Unverbindlich · Festpreisangebot · Meisterbetriebe München

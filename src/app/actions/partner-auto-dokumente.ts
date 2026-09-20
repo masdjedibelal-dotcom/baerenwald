@@ -1,14 +1,15 @@
 "use server";
 
+import { logDbError } from '@/lib/errors/log-db-error'
 import { revalidatePath } from "next/cache";
 
 import {
   formatPartnerAngebotsNr,
   formatPartnerRechnungsNr,
-  generatePartnerDokumentPdf,
   type PartnerDocAbsender,
   type PartnerDocPosition,
-} from "@/lib/partner/generate-partner-dokument-pdf";
+} from "@/lib/partner/partner-dokument-types";
+import { PDF_UI_ERROR, renderPdfViaCrm } from "@/lib/pdf/render-via-crm";
 import { linkPortalHandwerkerToAuthUser } from "@/lib/partner/link-portal-handwerker";
 import {
   buildPartnerAutoDocPositionen,
@@ -113,6 +114,7 @@ async function loadHandwerkerAbsender(handwerkerId: string): Promise<{
     )
     .eq("id", handwerkerId)
     .maybeSingle();
+  if (error) logDbError('app/actions/partner-auto-dokumente:handwerker', error)
 
   if (
     error &&
@@ -216,6 +218,7 @@ async function loadLogoBytes(path: string | null): Promise<Uint8Array | null> {
   const { data, error } = await supabaseAdmin.storage
     .from("handwerker-uploads")
     .download(storagePath);
+  if (error) logDbError('app/actions/partner-auto-dokumente:handwerker-uploads', error)
   if (error || !data) return null;
   return new Uint8Array(await data.arrayBuffer());
 }
@@ -301,6 +304,7 @@ async function loadAnfrageCtx(
     )
     .eq("id", anfrageId)
     .maybeSingle();
+  if (error) logDbError('app/actions/partner-auto-dokumente:angebot_handwerker', error)
 
   if (error || !row) {
     console.warn("[partner] loadAnfrageCtx:", error?.message ?? "no row", anfrageId);
@@ -320,20 +324,22 @@ async function loadAnfrageCtx(
   let auftragId: string | null = null;
 
   if (angebotId) {
-    const { data: ang } = await supabaseAdmin
+    const {data: ang, error: __dbErr63_1} = await supabaseAdmin
       .from("angebote")
       .select("projektbeschreibung, kunde_id, lead_id")
       .eq("id", angebotId)
       .maybeSingle();
+    if (__dbErr63_1) logDbError('app/actions/partner-auto-dokumente:angebote', __dbErr63_1)
     projektbeschreibung = String(ang?.projektbeschreibung ?? "").trim() || null;
 
-    const { data: auf } = await supabaseAdmin
+    const {data: auf, error: __dbErr64_2} = await supabaseAdmin
       .from("auftraege")
       .select("id, titel, kunde_id, lead_id")
       .eq("angebot_id", angebotId)
       .order("created_at", { ascending: false })
       .limit(1)
       .maybeSingle();
+    if (__dbErr64_2) logDbError('app/actions/partner-auto-dokumente:auftraege', __dbErr64_2)
     if (auf?.id) {
       auftragId = String(auf.id);
       auftragTitel = String(auf.titel ?? "").trim() || null;
@@ -343,11 +349,12 @@ async function loadAnfrageCtx(
       ? String(auf?.lead_id ?? ang?.lead_id)
       : "";
     if (leadId) {
-      const { data: lead } = await supabaseAdmin
+      const {data: lead, error: __dbErr65_3} = await supabaseAdmin
         .from("leads")
         .select("bereiche, situation, plz")
         .eq("id", leadId)
         .maybeSingle();
+      if (__dbErr65_3) logDbError('app/actions/partner-auto-dokumente:leads', __dbErr65_3)
       if (Array.isArray(lead?.bereiche)) {
         bereiche = lead.bereiche.map((b) => String(b));
       }
@@ -361,22 +368,24 @@ async function loadAnfrageCtx(
       ? String(auf?.kunde_id ?? ang?.kunde_id)
       : "";
     if (kundeId) {
-      const { data: kunde } = await supabaseAdmin
+      const {data: kunde, error: __dbErr66_4} = await supabaseAdmin
         .from("kunden")
         .select("plz, ort")
         .eq("id", kundeId)
         .maybeSingle();
+      if (__dbErr66_4) logDbError('app/actions/partner-auto-dokumente:kunden', __dbErr66_4)
       const fromKunde = [kunde?.plz, kunde?.ort].filter(Boolean).join(" ").trim();
       if (fromKunde) objektOrt = fromKunde;
     }
   }
 
   if (row.gewerk_id) {
-    const { data: gw } = await supabaseAdmin
+    const {data: gw, error: __dbErr67_5} = await supabaseAdmin
       .from("gewerke")
       .select("name")
       .eq("id", row.gewerk_id)
       .maybeSingle();
+    if (__dbErr67_5) logDbError('app/actions/partner-auto-dokumente:gewerke', __dbErr67_5)
     gewerkName = String(gw?.name ?? "").trim() || null;
   }
 
@@ -415,25 +424,28 @@ async function loadAuftragRechnungCtx(
     .select("id, titel, angebot_id, kunde_id, lead_id, handwerker_bestaetigt_at, status")
     .eq("id", id)
     .maybeSingle();
+  if (error) logDbError('app/actions/partner-auto-dokumente:auftraege', error)
 
   if (error || !auftrag) {
     return { ok: false, error: "Auftrag nicht gefunden." };
   }
 
-  const { data: zuw } = await supabaseAdmin
+  const {data: zuw, error: __dbErr68_6} = await supabaseAdmin
     .from("auftrag_handwerker")
     .select("id")
     .eq("auftrag_id", id)
     .eq("handwerker_id", handwerkerId)
     .limit(1)
     .maybeSingle();
-  const { data: pos } = await supabaseAdmin
+  if (__dbErr68_6) logDbError('app/actions/partner-auto-dokumente:auftrag_handwerker', __dbErr68_6)
+  const {data: pos, error: __dbErr69_7} = await supabaseAdmin
     .from("auftrag_positionen")
     .select("id")
     .eq("auftrag_id", id)
     .eq("handwerker_id", handwerkerId)
     .limit(1)
     .maybeSingle();
+  if (__dbErr69_7) logDbError('app/actions/partner-auto-dokumente:auftrag_positionen', __dbErr69_7)
   if (!zuw?.id && !pos?.id) {
     return { ok: false, error: "Keine Berechtigung für diesen Auftrag." };
   }
@@ -453,11 +465,12 @@ async function loadAuftragRechnungCtx(
 
   let objektOrt = ah.ctx.objektOrt;
   if (!objektOrt && auftrag.kunde_id) {
-    const { data: kunde } = await supabaseAdmin
+    const {data: kunde, error: __dbErr70_8} = await supabaseAdmin
       .from("kunden")
       .select("plz, ort")
       .eq("id", String(auftrag.kunde_id))
       .maybeSingle();
+    if (__dbErr70_8) logDbError('app/actions/partner-auto-dokumente:kunden', __dbErr70_8)
     objektOrt = [kunde?.plz, kunde?.ort].filter(Boolean).join(" ").trim();
   }
 
@@ -636,18 +649,26 @@ export async function submitPartnerAutoAngebot(
     customNr ||
     formatPartnerAngebotsNr(hw.absender.firma, new Date().toISOString());
   const logoBytes = await loadLogoBytes(hw.logoPath);
-  const pdfBytes = await generatePartnerDokumentPdf({
-    docArt: "angebot",
-    absender: hw.absender,
-    empfaenger: getPartnerDocEmpfaenger(),
-    dokumentNr,
-    datum: new Date().toISOString(),
-    betreff: ctx.betreff,
-    objektOrt: ctx.objektOrt,
-    positionen: built.positionen,
-    logoBytes,
-    gueltigTage: 30,
-  });
+  let pdfBytes: Uint8Array;
+  try {
+    pdfBytes = await renderPdfViaCrm("partner-dokument", {
+      docArt: "angebot",
+      absender: hw.absender,
+      empfaenger: getPartnerDocEmpfaenger(),
+      dokumentNr,
+      datum: new Date().toISOString(),
+      betreff: ctx.betreff,
+      objektOrt: ctx.objektOrt,
+      positionen: built.positionen,
+      logoBytes,
+      gueltigTage: 30,
+    });
+  } catch (e) {
+    return {
+      ok: false,
+      error: e instanceof Error ? e.message : PDF_UI_ERROR,
+    };
+  }
 
   const upload = await uploadPartnerGeneratedPdf({
     handwerkerId: auth.handwerkerId,
@@ -671,6 +692,7 @@ export async function submitPartnerAutoAngebot(
     .eq("id", id)
     .eq("handwerker_id", auth.handwerkerId)
     .select("id");
+  if (upErr) logDbError('app/actions/partner-auto-dokumente:angebot_handwerker', upErr)
 
   if (upErr) return { ok: false, error: upErr.message };
   if (!updatedRows?.length) {
@@ -770,20 +792,28 @@ export async function submitPartnerAutoRechnung(input: {
   const dokumentNr = customNr || suggestedNr;
   const logoBytes = await loadLogoBytes(hw.logoPath);
 
-  const pdfBytes = await generatePartnerDokumentPdf({
-    docArt: "rechnung",
-    absender: hw.absender,
-    empfaenger: getPartnerDocEmpfaenger(),
-    dokumentNr,
-    datum: new Date().toISOString(),
-    betreff: ctx.betreff,
-    objektOrt: ctx.objektOrt,
-    leistungsZeitraum: input.leistungsZeitraum?.trim() || undefined,
-    auftragsRef: undefined,
-    positionen: built.positionen,
-    logoBytes,
-    abnahmeHinweis: "Leistungen laut Abschlussdokumentation erbracht.",
-  });
+  let pdfBytes: Uint8Array;
+  try {
+    pdfBytes = await renderPdfViaCrm("partner-dokument", {
+      docArt: "rechnung",
+      absender: hw.absender,
+      empfaenger: getPartnerDocEmpfaenger(),
+      dokumentNr,
+      datum: new Date().toISOString(),
+      betreff: ctx.betreff,
+      objektOrt: ctx.objektOrt,
+      leistungsZeitraum: input.leistungsZeitraum?.trim() || undefined,
+      auftragsRef: undefined,
+      positionen: built.positionen,
+      logoBytes,
+      abnahmeHinweis: "Leistungen laut Abschlussdokumentation erbracht.",
+    });
+  } catch (e) {
+    return {
+      ok: false,
+      error: e instanceof Error ? e.message : PDF_UI_ERROR,
+    };
+  }
 
   const upload = await uploadPartnerGeneratedPdf({
     handwerkerId: auth.handwerkerId,
@@ -820,6 +850,7 @@ export async function submitPartnerAutoRechnung(input: {
     .eq("handwerker_id", auth.handwerkerId)
     .is("hw_rechnung_eingereicht_at", null)
     .select("id");
+  if (upErr) logDbError('app/actions/partner-auto-dokumente:angebot_handwerker', upErr)
 
   if (upErr) return { ok: false, error: upErr.message };
   if (!updatedRows?.length) {
@@ -828,10 +859,11 @@ export async function submitPartnerAutoRechnung(input: {
 
   // Nummerkreis nur weiterschalten, wenn der Vorschlag genutzt wurde
   if (!customNr || customNr === suggestedNr) {
-    await supabaseAdmin
+    const { error: __dbErr72_10 } = await supabaseAdmin
       .from("handwerker")
       .update({ rechnungsnr_seq: nextSeq })
       .eq("id", auth.handwerkerId);
+    if (__dbErr72_10) logDbError('app/actions/partner-auto-dokumente:handwerker', __dbErr72_10)
   }
 
   const rechnungPdfUrl = await resolvePartnerFileUrl(
@@ -902,13 +934,14 @@ export async function retryPendingPartnerAutoAngebote(): Promise<{
     };
   }
 
-  const { data: rows } = await supabaseAdmin
+  const {data: rows, error: __dbErr71_9} = await supabaseAdmin
     .from("angebot_handwerker")
     .select("id, status, hw_angebot_pdf_url")
     .eq("handwerker_id", auth.handwerkerId)
     .in("status", ["akzeptiert", "angenommen"])
     .order("updated_at", { ascending: false })
     .limit(20);
+  if (__dbErr71_9) logDbError('app/actions/partner-auto-dokumente:angebot_handwerker', __dbErr71_9)
 
   let created = 0;
   let skipped = 0;

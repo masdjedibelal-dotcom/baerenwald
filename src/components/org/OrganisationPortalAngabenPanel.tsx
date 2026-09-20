@@ -19,6 +19,7 @@ import {
 } from "@/components/shared/PortalEinstellungenUi";
 import { usePortalUploadBusy } from "@/components/shared/usePortalUploadBusy";
 import { orgPortalToast, portalToastError } from "@/lib/shared/portal-toast";
+import { TOAST } from '@/lib/portal-copy'
 
 type Props = {
   kunde: OrganisationKunde;
@@ -94,7 +95,7 @@ export function OrganisationPortalAngabenPanel({
         });
         const json = (await res.json()) as { error?: string };
         if (!res.ok) {
-          portalToastError("Angaben nicht gespeichert", json.error);
+          portalToastError(TOAST.angaben_nicht_gespeichert, json.error);
           return false;
         }
         setSaved(next);
@@ -128,7 +129,7 @@ export function OrganisationPortalAngabenPanel({
   async function uploadLogo(file: File) {
     if (readOnly || logoBusy) return;
     if (!file.type.startsWith("image/")) {
-      portalToastError("Nur Bilder erlaubt");
+      portalToastError(TOAST.nur_bilder_erlaubt);
       return;
     }
     await runUpload(async () => {
@@ -143,7 +144,7 @@ export function OrganisationPortalAngabenPanel({
       const json = (await res.json()) as { error?: string; url?: string };
       if (!res.ok || !json.url) {
         setLogoPreview(null);
-        portalToastError("Logo nicht gespeichert", json.error);
+        portalToastError(TOAST.logo_nicht_gespeichert, json.error);
         return;
       }
       setLogoPreview(json.url);
@@ -151,7 +152,7 @@ export function OrganisationPortalAngabenPanel({
       onSaved();
     }).catch(() => {
       setLogoPreview(null);
-      portalToastError("Upload fehlgeschlagen");
+      portalToastError(TOAST.upload_fehlgeschlagen);
     });
   }
 

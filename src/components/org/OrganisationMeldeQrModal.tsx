@@ -1,7 +1,8 @@
 "use client";
 
+import { PortalIcon } from "@/components/portal/PortalIcon";
 import { useEffect, useRef, useState } from "react";
-import { Download } from "lucide-react";
+import { PortalButton } from "@/components/portal/PortalButton";
 
 import { PortalModalShell } from "@/components/shared/PortalModalShell";
 import { meldeQrPngPath } from "@/lib/portal2/aushang";
@@ -120,12 +121,12 @@ export function OrganisationMeldeQrModal({
     >
       <div className="flex flex-col items-center gap-4">
         {busy ? (
-          <p className="py-10 text-[13px]" style={{ color: PORTAL_VAR.sub }}>
+          <p className="py-10 text-fs-meta" style={{ color: PORTAL_VAR.sub }}>
             QR-Code wird erzeugt…
           </p>
         ) : null}
         {error ? (
-          <p className="portal-danger py-6 text-center text-[13px]">{error}</p>
+          <p className="portal-danger py-6 text-center text-fs-meta">{error}</p>
         ) : null}
         {blobUrl ? (
           // eslint-disable-next-line @next/next/no-img-element
@@ -134,20 +135,21 @@ export function OrganisationMeldeQrModal({
             alt="QR-Code zum Melde-Link"
             width={260}
             height={260}
-            className="max-w-[min(100%,280px)] rounded-xl border border-border-default bg-white p-3 shadow-sm"
+            className="max-w-[min(100%,280px)] rounded-sheet border border-border-default bg-white p-3 shadow-sm"
           />
         ) : null}
-        <button
+        <PortalButton
+          variant="primary"
           type="button"
           disabled={!blobUrl || busy}
           onClick={downloadPng}
-          className="btn-pill-primary inline-flex w-full max-w-sm items-center justify-center gap-2 !py-2.5 disabled:opacity-50"
+          className="inline-flex w-full max-w-sm items-center justify-center gap-2 !py-2.5 disabled:opacity-50"
         >
-          <Download className="h-4 w-4" strokeWidth={2.25} aria-hidden />
+          <PortalIcon n="download" ctx="default" className="h-4 w-4" aria-hidden />
           Als Bild speichern
-        </button>
+        </PortalButton>
         <p
-          className="text-center text-[12px] leading-relaxed"
+          className="text-center text-fs-caption leading-relaxed"
           style={{ color: PORTAL_VAR.sub }}
         >
           PNG-Datei — zum Ausdrucken oder Teilen geeignet.

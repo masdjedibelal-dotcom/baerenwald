@@ -1,3 +1,4 @@
+import { logDbError } from '@/lib/errors/log-db-error'
 import { NextResponse } from "next/server";
 
 import {
@@ -94,6 +95,7 @@ export async function POST(req: Request) {
       })
       .select("id")
       .single();
+    if (error) logDbError('app/api/org/akten-notizen/route:akten_notizen', error)
     if (error) {
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
@@ -116,6 +118,7 @@ export async function POST(req: Request) {
     })
     .select("id")
     .single();
+  if (error) logDbError('app/api/org/akten-notizen/route:akten_notizen', error)
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
@@ -157,6 +160,7 @@ export async function PATCH(req: Request) {
     .update(patch)
     .eq("id", id)
     .eq("kunde_id", session.kunde.id);
+  if (error) logDbError('app/api/org/akten-notizen/route:akten_notizen', error)
 
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });

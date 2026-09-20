@@ -1,4 +1,5 @@
 "use client";
+import { PALETTE } from "@/lib/tokens/palette";
 
 import { cn } from "@/lib/utils";
 
@@ -22,13 +23,13 @@ export interface ProgressBarProps {
 export function ProgressBar({
   currentStep,
   completedSteps,
-  accentColor = "#1B4332",
+  accentColor = "var(--p2-primary-dk)",
   className,
 }: ProgressBarProps) {
   const barFill = (seg: number) => {
     if (completedSteps.includes(seg)) return accentColor;
-    if (currentStep === seg) return "#888888";
-    return "#e8e8e8";
+    if (currentStep === seg) return PALETTE.h888888;
+    return PALETTE.he8e8e8;
   };
 
   return (
@@ -42,7 +43,7 @@ export function ProgressBar({
         {[1, 2, 3, 4, 5].map((seg) => (
           <div
             key={seg}
-            className="h-[3px] min-w-0 flex-1 rounded-full"
+            className="h-[3px] min-w-0 flex-1 rounded-pill"
             style={{ backgroundColor: barFill(seg) }}
           />
         ))}
@@ -54,7 +55,7 @@ export function ProgressBar({
           return (
             <div
               key={label}
-              className="min-w-0 flex-1 text-center text-[10px] leading-tight text-[#999]"
+              className="min-w-0 flex-1 text-center text-fs-caption leading-tight text-[var(--p2-faint2)]"
             >
               <span
                 className={cn(isActive && "font-medium")}

@@ -11,7 +11,7 @@ export function OrgAnlassBadge({ anlass, className }: Props) {
   return (
     <span
       className={cn(
-        "inline-flex items-center rounded-full bg-muted px-2 py-0.5 text-[11px] font-medium text-text-secondary",
+        "inline-flex items-center rounded-pill bg-muted px-2 py-0.5 text-fs-caption font-medium text-text-secondary",
         className
       )}
     >

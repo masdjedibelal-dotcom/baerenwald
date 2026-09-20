@@ -1,7 +1,9 @@
 "use client";
 
 import { useCallback, useState } from "react";
+import { PortalButton } from "@/components/portal/PortalButton";
 
+import { PortalCheckbox, PortalInput, PortalSelect } from "@/components/shared/PortalFormControls";
 import { HausserviceProduktPicker } from "@/components/products/conversion/HausserviceProduktPicker";
 import {
   computeHausserviceEinzelMonatPreis,
@@ -103,24 +105,26 @@ export function OrganisationServicepaketFlow({
   return (
     <div className="space-y-4">
       <div className="flex gap-2">
-        <button
+        <PortalButton
+          variant="secondary"
           type="button"
           className={`btn-pill-outline flex-1 ${tab === "paket" ? "!bg-muted" : ""}`}
           onClick={() => setTab("paket")}
         >
           Paket
-        </button>
-        <button
+        </PortalButton>
+        <PortalButton
+          variant="secondary"
           type="button"
           className={`btn-pill-outline flex-1 ${tab === "einzeln" ? "!bg-muted" : ""}`}
           onClick={() => setTab("einzeln")}
         >
           Einzeln
-        </button>
+        </PortalButton>
       </div>
 
-      <select
-        className="w-full border rounded-lg px-3 py-2"
+      <PortalSelect
+        className="w-full border rounded-button px-3 py-2"
         value={objektId}
         onChange={(e) => setObjektId(e.target.value)}
       >
@@ -129,19 +133,19 @@ export function OrganisationServicepaketFlow({
             {o.titel}
           </option>
         ))}
-      </select>
+      </PortalSelect>
 
       <div className="grid grid-cols-2 gap-2">
-        <input
+        <PortalInput
           type="number"
-          className="border rounded-lg px-3 py-2"
+          className="border rounded-field px-3 py-2"
           value={wohnflaeche}
           onChange={(e) => setWohnflaeche(Number(e.target.value))}
           placeholder="m² Wohnfläche"
         />
-        <input
+        <PortalInput
           type="number"
-          className="border rounded-lg px-3 py-2"
+          className="border rounded-field px-3 py-2"
           value={gartenQm}
           onChange={(e) => setGartenQm(Number(e.target.value))}
           placeholder="m² Garten"
@@ -160,8 +164,7 @@ export function OrganisationServicepaketFlow({
         <div className="space-y-2">
           {HAUSSERVICE_FEATURE_MATRIX.filter((r) => r.primary).map((row) => (
             <label key={row.id} className="flex items-start gap-2 text-sm">
-              <input
-                type="checkbox"
+              <PortalCheckbox
                 checked={einzel.includes(row.id as EinzelServiceId)}
                 onChange={() => toggleEinzel(row.id as EinzelServiceId)}
               />
@@ -181,20 +184,21 @@ export function OrganisationServicepaketFlow({
         </div>
       )}
 
-      {error ? <p className="text-sm text-red-600">{error}</p> : null}
+      {error ? <p className="text-sm text-p2-danger">{error}</p> : null}
 
       <div className="flex gap-2">
-        <button type="button" className="btn-pill-outline flex-1" onClick={onDone}>
+        <PortalButton variant="secondary" type="button" className="flex-1" onClick={onDone}>
           Abbrechen
-        </button>
-        <button
+        </PortalButton>
+        <PortalButton
+          variant="primary"
           type="button"
-          className="btn-pill-primary flex-1"
+          className="flex-1"
           disabled={busy}
           onClick={submit}
         >
           Anfrage senden
-        </button>
+        </PortalButton>
       </div>
     </div>
   );

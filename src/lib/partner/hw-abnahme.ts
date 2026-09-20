@@ -18,7 +18,7 @@ export const HW_ABNAHME_COPY = {
   rechnungSecondaryCta: "Rechnung hochladen",
   rechnungAbschlussCta: "Auftrag abschließen",
   rechnungBody:
-    "Rechnung aus Firmendaten und Leistungen erstellen. Rechnungsnummer kannst du in der Vorschau anpassen.",
+    "Rechnung aus Firmendaten und Leistungen erstellen. Rechnungsnummer können Sie in der Vorschau anpassen.",
   rechnungDocsHint:
     "Nach dem Abschluss: Rechnung erstellen oder eigenes PDF hochladen.",
   rechnungFirmendatenBusy: "Firmendaten werden geprüft…",

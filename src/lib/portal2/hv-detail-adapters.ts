@@ -58,7 +58,7 @@ export function buildHvOffersFromItem(
       id: item.id,
       name:
         handwerkerName?.trim() ||
-        (fromHandwerker ? "Handwerker-Angebot" : "Empfohlenes Angebot"),
+        (fromHandwerker ? "Partner-Angebot" : "Empfohlenes Angebot"),
       trade: item.anfrageGewerk || item.cardSubtitle || "Fachbetrieb",
       betrag: betrag || 0,
       empfohlen: true,
@@ -97,7 +97,7 @@ export function buildHvVerlaufSeed(input: {
   if (input.freigabeStatus === "freigegeben") {
     entries.unshift({
       t: "Gerade eben",
-      txt: "Freigegeben – Bärenwald fragt Handwerker an",
+      txt: "Freigegeben – Bärenwald fragt Partner an",
       who: "Verwaltung",
     });
   }

@@ -1,3 +1,4 @@
+import { logDbError } from '@/lib/errors/log-db-error'
 import { createPartnerNotification } from "@/lib/partner/create-partner-notification";
 import type { PartnerVorgangItem } from "@/lib/partner/build-partner-vorgaenge";
 import type { PartnerOffenItem } from "@/lib/partner/partner-offen-status";
@@ -82,14 +83,14 @@ export async function ensurePartnerOffenNotifications(opts: {
   );
   if (!targets.length) return;
 
-  const { data: unreadRows } = await supabaseAdmin
+  const {data: unreadRows, error: __dbErr408_1} = await supabaseAdmin
     .from("notifications")
     .select("id, link, typ")
     .eq("handwerker_id", handwerkerId)
     .eq("typ", "neu")
     .order("created_at", { ascending: false })
     .limit(80);
-
+  if (__dbErr408_1) logDbError('lib/partner/notify-partner-offen:notifications', __dbErr408_1)
   const unreadKeys = new Set(
     (unreadRows ?? [])
       .map((row) => partnerNotificationVorgangKey(String(row.link ?? "")))

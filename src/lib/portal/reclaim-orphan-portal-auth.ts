@@ -1,3 +1,4 @@
+import { logDbError } from '@/lib/errors/log-db-error'
 import "server-only";
 
 import { normalizeKundenEmail } from "@/lib/kunden/kunde-email";
@@ -74,7 +75,8 @@ export async function reclaimOrphanPortalAuthUser(
     return "linked";
   }
 
-  await supabaseAdmin.from("funnel_portal_otp").delete().eq("email", email);
+  const { error: __dbErr473_1 } = await supabaseAdmin.from("funnel_portal_otp").delete().eq("email", email);
+  if (__dbErr473_1) logDbError('lib/portal/reclaim-orphan-portal-auth:funnel_portal_otp', __dbErr473_1)
 
   return "deleted";
 }

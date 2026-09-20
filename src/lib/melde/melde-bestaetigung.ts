@@ -1,3 +1,4 @@
+import { logDbError } from '@/lib/errors/log-db-error'
 import { isPortalAuthEmailRegistered } from "@/lib/funnel/funnel-portal-otp";
 import { normalizeKundenEmail } from "@/lib/kunden/kunde-email";
 import { isSupabaseConfigured, supabaseAdmin } from "@/lib/supabase";
@@ -23,6 +24,7 @@ export async function loadMeldeContactByToken(
     .select("id, melder_name, melder_email, melder_telefon, email, name, telefon")
     .eq("melde_tracking_token", t)
     .maybeSingle();
+  if (error) logDbError('lib/melde/melde-bestaetigung:leads', error)
 
   if (error || !data) return null;
 

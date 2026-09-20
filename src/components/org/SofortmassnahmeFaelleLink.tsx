@@ -1,7 +1,8 @@
 "use client";
 
+import { PortalIcon } from "@/components/portal/PortalIcon";
 import { useMemo, useState } from "react";
-import { Plus, X } from "lucide-react";
+import { PortalButton } from "@/components/portal/PortalButton";
 
 import { PortalModalShell } from "@/components/shared/PortalModalShell";
 import {
@@ -52,7 +53,7 @@ export function SofortmassnahmeFaelleEditor({
   return (
     <div className={cn("space-y-2", className)}>
       <p
-        className="text-[13px] leading-[1.55]"
+        className="text-fs-meta leading-[1.55]"
         style={{ color: PORTAL_VAR.sub }}
       >
         {SOFORTMASSNAHME_FAELLE_INTRO}
@@ -60,9 +61,9 @@ export function SofortmassnahmeFaelleEditor({
 
       {selected.length === 0 ? (
         <p
-          className="rounded-lg border border-dashed px-3 py-3 text-[13px]"
+          className="rounded-card border border-dashed px-3 py-3 text-fs-meta"
           style={{
-            borderColor: "var(--p2-border, #d8d8d4)",
+            borderColor: "var(--p2-border)",
             color: PORTAL_VAR.sub,
           }}
         >
@@ -73,21 +74,22 @@ export function SofortmassnahmeFaelleEditor({
           {selected.map((id) => (
             <li
               key={id}
-              className="flex items-start gap-2 rounded-lg border px-3 py-2"
-              style={{ borderColor: "var(--p2-border, #d8d8d4)" }}
+              className="flex items-start gap-2 rounded-card border px-3 py-2"
+              style={{ borderColor: "var(--p2-border)" }}
             >
-              <span className="min-w-0 flex-1 text-[13px] leading-[1.45]">
+              <span className="min-w-0 flex-1 text-fs-meta leading-[1.45]">
                 {akutFallLabel(id)}
               </span>
               {!disabled ? (
-                <button
+                <PortalButton
+                  variant="ghost"
                   type="button"
-                  className="shrink-0 rounded p-0.5 text-text-tertiary hover:text-text-primary"
+                  className="shrink-0 rounded-button p-0.5 text-text-tertiary hover:text-text-primary"
                   aria-label="Fall entfernen"
                   onClick={() => remove(id)}
                 >
-                  <X className="h-4 w-4" />
-                </button>
+                  <PortalIcon n="x" ctx="default" className="h-4 w-4" />
+                </PortalButton>
               ) : null}
             </li>
           ))}
@@ -95,23 +97,24 @@ export function SofortmassnahmeFaelleEditor({
       )}
 
       {!disabled && availableCount > 0 ? (
-        <button
+        <PortalButton
+          variant="primary"
           type="button"
           className={cn(
-            "inline-flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-[13px] font-semibold",
-            "text-[var(--org-primary,var(--p2-primary,#2e7d52))]",
-            "bg-[var(--org-primary-soft,var(--p2-primary-soft,#e7f1e9))]",
-            "hover:bg-[var(--org-primary,var(--p2-primary,#2e7d52))] hover:text-white",
+            "inline-flex items-center gap-1.5 rounded-button px-2.5 py-1.5 text-fs-meta font-semibold",
+            "text-[var(--org-primary,var(--p2-primary))]",
+            "bg-[var(--org-primary-soft,var(--p2-primary-soft))]",
+            "hover:bg-[var(--org-primary,var(--p2-primary))] hover:text-white",
             "transition-colors"
           )}
           onClick={() => setKatalogOpen(true)}
         >
-          <Plus className="h-4 w-4" />
+          <PortalIcon n="plus" ctx="default" className="h-4 w-4" />
           {SOFORTMASSNAHME_FAELLE_POPUP_TITLE}
-        </button>
+        </PortalButton>
       ) : null}
 
-      <p className="text-[12px] leading-[1.45]" style={{ color: PORTAL_VAR.sub }}>
+      <p className="text-fs-caption leading-[1.45]" style={{ color: PORTAL_VAR.sub }}>
         {SOFORTMASSNAHME_FAELLE_FOOTNOTE}
       </p>
 
@@ -133,19 +136,20 @@ export function SofortmassnahmeFaelleEditor({
                 <ul className="mt-1.5 space-y-1">
                   {openFaelle.map((f) => (
                     <li key={f.id}>
-                      <button
+                      <PortalButton
+                        variant="primary"
                         type="button"
                         className={cn(
-                          "flex w-full items-start gap-2 rounded-md px-2 py-1.5 text-left text-[13px]",
-                          "hover:bg-[var(--org-primary-soft,var(--p2-primary-soft,#e7f1e9))]"
+                          "flex w-full items-start gap-2 rounded-field px-2 py-1.5 text-left text-fs-meta",
+                          "hover:bg-[var(--org-primary-soft,var(--p2-primary-soft))]"
                         )}
                         onClick={() => {
                           add(f.id);
                         }}
                       >
-                        <Plus className="mt-0.5 h-4 w-4 shrink-0 opacity-70" />
+                        <PortalIcon n="plus" ctx="default" className="mt-0.5 h-4 w-4 shrink-0 opacity-70" />
                         <span>{f.label}</span>
-                      </button>
+                      </PortalButton>
                     </li>
                   ))}
                 </ul>
@@ -183,7 +187,7 @@ export function SofortmassnahmeFaelleEinstellungenLink({
     <a
       href={SOFORTMASSNAHME_FAELLE_EINSTELLUNGEN_HREF}
       className={cn(
-        "font-semibold text-[var(--org-primary,var(--p2-primary,#2e7d52))] underline-offset-2 hover:underline",
+        "font-semibold text-[var(--org-primary,var(--p2-primary))] underline-offset-2 hover:underline",
         className
       )}
     >

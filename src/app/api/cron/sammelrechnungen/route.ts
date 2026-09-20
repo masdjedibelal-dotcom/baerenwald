@@ -1,3 +1,4 @@
+import { logDbError } from '@/lib/errors/log-db-error'
 import { NextResponse } from "next/server";
 
 import { loadKatalogProdukte } from "@/lib/katalog/katalog-produkte";
@@ -20,13 +21,13 @@ export async function POST(req: Request) {
     .toISOString()
     .slice(0, 10);
 
-  const { data: abos } = await supabaseAdmin
+  const {data: abos, error: __dbErr134_1} = await supabaseAdmin
     .from("objekt_abos")
     .select("id, kunde_id, kunde_objekt_id, produkt_slug, monatspreis_netto, lohnanteil_prozent, end_am, status")
     .in("status", ["aktiv", "gekuendigt"])
     .lte("start_am", monatsEnde)
     .or(`end_am.is.null,end_am.gte.${monatsAnfang}`);
-
+  if (__dbErr134_1) logDbError('app/api/cron/sammelrechnungen/route:objekt_abos', __dbErr134_1)
   if (!abos?.length) {
     return NextResponse.json({ ok: true, periode, rechnungen: 0 });
   }
@@ -44,13 +45,13 @@ export async function POST(req: Request) {
 
   let count = 0;
   for (const [kundeId, kundeAbos] of Array.from(byKunde.entries())) {
-    const { data: existing } = await supabaseAdmin
+    const {data: existing, error: __dbErr135_2} = await supabaseAdmin
       .from("sammelrechnungen")
       .select("id")
       .eq("kunde_id", kundeId)
       .eq("periode", periode)
       .maybeSingle();
-
+    if (__dbErr135_2) logDbError('app/api/cron/sammelrechnungen/route:sammelrechnungen', __dbErr135_2)
     if (existing?.id) continue;
 
     let gesamt = 0;
@@ -84,16 +85,18 @@ export async function POST(req: Request) {
       })
       .select("id")
       .single();
+    if (srErr) logDbError('app/api/cron/sammelrechnungen/route:sammelrechnungen', srErr)
 
     if (srErr || !sr) continue;
 
-    await supabaseAdmin.from("sammelrechnung_positionen").insert(
+    const { error: __dbErr136_3 } = await supabaseAdmin.from("sammelrechnung_positionen").insert(
       positionen.map((p, i) => ({
         ...p,
         sammelrechnung_id: sr.id,
         sort_order: i,
       }))
     );
+    if (__dbErr136_3) logDbError('app/api/cron/sammelrechnungen/route:sammelrechnung_positionen', __dbErr136_3)
     count += 1;
   }
 

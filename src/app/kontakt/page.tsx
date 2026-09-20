@@ -75,12 +75,12 @@ export default function KontaktPage() {
               </p>
 
               <div className="mt-10 flex flex-wrap gap-3" role="group" aria-label="Kontaktaktionen">
-                <a href={SITE_CONFIG.phoneHref} className="btn-pill-primary inline-flex py-2.5 px-5 text-[13px]">
+                <a href={SITE_CONFIG.phoneHref} className="btn-pill-primary inline-flex py-2.5 px-5 text-fs-meta">
                   Jetzt anrufen →
                 </a>
                 <a
                   href={`mailto:${SITE_CONFIG.email}`}
-                  className="inline-flex items-center rounded-full border border-border-default px-5 py-2.5 text-[13px] font-semibold text-text-primary hover:bg-muted"
+                  className="inline-flex items-center rounded-pill border border-border-default px-5 py-2.5 text-fs-meta font-semibold text-text-primary hover:bg-muted"
                 >
                   E-Mail schreiben →
                 </a>

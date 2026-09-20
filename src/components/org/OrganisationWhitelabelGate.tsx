@@ -1,7 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { PortalButton } from "@/components/portal/PortalButton";
 
+import { PortalCheckbox, PortalInput } from "@/components/shared/PortalFormControls";
 import { PortalContentBusy } from "@/components/shared/PortalContentBusy";
 import { PortalModalShell } from "@/components/shared/PortalModalShell";
 import { usePortalBusy } from "@/components/shared/PortalBusyContext";
@@ -101,13 +103,13 @@ export function OrganisationWhitelabelGate({ kunde, canComplete, onComplete }: P
         Mieter-Kommunikation einrichten
       </h2>
       {!hardEnforced && daysLeft > 0 ? (
-        <p className="mt-2 rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-900">
+        <p className="mt-2 rounded-card bg-warning-bg px-3 py-2 text-sm text-warning-text">
           Übergangsfrist: noch {daysLeft} Tag{daysLeft === 1 ? "" : "e"} bis zur
           verpflichtenden Einrichtung für alle Nutzer.
         </p>
       ) : null}
       {hardEnforced && !canComplete ? (
-        <p className="mt-2 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-800" role="alert">
+        <p className="mt-2 rounded-card bg-p2-danger-soft px-3 py-2 text-sm text-p2-danger" role="alert">
           Die Einrichtung ist noch nicht abgeschlossen. Bitte wenden Sie sich an einen
           Administrator Ihrer Organisation — ohne AV und Mieter-Kontakt ist das Portal
           gesperrt.
@@ -125,10 +127,10 @@ export function OrganisationWhitelabelGate({ kunde, canComplete, onComplete }: P
             <label className="portal-text-meta text-text-secondary" htmlFor="wl-tel">
               Telefon für Mieter
             </label>
-            <input
+            <PortalInput
               id="wl-tel"
               type="tel"
-              className="mt-1 w-full rounded-lg border border-border-default px-3 py-2 text-sm"
+              className="mt-1 w-full rounded-card border border-border-default px-3 py-2 text-sm"
               value={tel}
               onChange={(e) => setTel(e.target.value)}
             />
@@ -137,10 +139,10 @@ export function OrganisationWhitelabelGate({ kunde, canComplete, onComplete }: P
             <label className="portal-text-meta text-text-secondary" htmlFor="wl-mail">
               E-Mail für Mieter
             </label>
-            <input
+            <PortalInput
               id="wl-mail"
               type="email"
-              className="mt-1 w-full rounded-lg border border-border-default px-3 py-2 text-sm"
+              className="mt-1 w-full rounded-card border border-border-default px-3 py-2 text-sm"
               value={mail}
               onChange={(e) => setMail(e.target.value)}
             />
@@ -149,25 +151,25 @@ export function OrganisationWhitelabelGate({ kunde, canComplete, onComplete }: P
             <label className="portal-text-meta text-text-secondary" htmlFor="wl-hint">
               Hinweis (optional)
             </label>
-            <input
+            <PortalInput
               id="wl-hint"
               type="text"
               placeholder="z. B. Mo–Fr 8–17 Uhr"
-              className="mt-1 w-full rounded-lg border border-border-default px-3 py-2 text-sm"
+              className="mt-1 w-full rounded-card border border-border-default px-3 py-2 text-sm"
               value={hint}
               onChange={(e) => setHint(e.target.value)}
             />
           </div>
           <label className="flex items-start gap-2 text-sm text-text-secondary">
-            <input
-              type="checkbox"
+            <PortalCheckbox
               checked={avOk}
               onChange={(e) => setAvOk(e.target.checked)}
               className="mt-1"
             />
             <span>
               Ich akzeptiere den{" "}
-              <button
+              <PortalButton
+                variant="ghost"
                 type="button"
                 className="font-medium text-accent underline-offset-2 hover:underline"
                 onClick={(e) => {
@@ -177,7 +179,7 @@ export function OrganisationWhitelabelGate({ kunde, canComplete, onComplete }: P
                 }}
               >
                 Auftragsverarbeitungsvertrag
-              </button>{" "}
+              </PortalButton>{" "}
               (AV) gemäß Art. 28 DSGVO für die Mieter-Kommunikation über die Plattform.
             </span>
           </label>
@@ -185,20 +187,20 @@ export function OrganisationWhitelabelGate({ kunde, canComplete, onComplete }: P
       ) : null}
 
       {error ? (
-        <p className="mt-3 text-sm text-red-600" role="alert">
+        <p className="mt-3 text-sm text-p2-danger" role="alert">
           {error}
         </p>
       ) : null}
 
       {canComplete ? (
-        <button type="submit" className="btn-pill-primary mt-5 w-full" disabled={busy}>
+        <PortalButton variant="primary" type="submit" className="mt-5 w-full" disabled={busy}>
           {busy ? "Speichern…" : "Speichern"}
-        </button>
+        </PortalButton>
       ) : (
         <form action="/portal/auth/signout" method="post" className="mt-5">
-          <button type="submit" className="btn-pill-outline w-full">
+          <PortalButton variant="secondary" type="submit" className="w-full">
             Abmelden
-          </button>
+          </PortalButton>
         </form>
       )}
     </>
@@ -207,7 +209,7 @@ export function OrganisationWhitelabelGate({ kunde, canComplete, onComplete }: P
   return (
     <>
       <div
-        className="fixed inset-0 z-[100] flex items-center justify-center bg-[#16201B]/50 p-4 overscroll-none touch-none"
+        className="fixed inset-0 z-[100] flex items-center justify-center bg-[var(--p2-ink)]/50 p-4 overscroll-none touch-none"
         role="presentation"
         onWheel={(e) => {
           if (e.target === e.currentTarget) e.preventDefault();

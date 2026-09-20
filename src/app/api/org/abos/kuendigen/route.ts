@@ -1,3 +1,4 @@
+import { logDbError } from '@/lib/errors/log-db-error'
 import { NextResponse } from "next/server";
 
 import { writeAuditEvent } from "@/lib/audit/write-audit-event";
@@ -32,12 +33,13 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "aboId fehlt." }, { status: 400 });
   }
 
-  const { data: abo } = await supabaseAdmin
+  const {data: abo, error: __dbErr158_1} = await supabaseAdmin
     .from("objekt_abos")
     .select("id, status, kuendigungsfrist_wochen, produkt_slug")
     .eq("id", aboId)
     .eq("kunde_id", session.kunde.id)
     .maybeSingle();
+  if (__dbErr158_1) logDbError('app/api/org/abos/kuendigen/route:objekt_abos', __dbErr158_1)
 
   if (!abo) {
     return NextResponse.json({ error: "Abo nicht gefunden." }, { status: 404 });
@@ -59,6 +61,7 @@ export async function POST(req: Request) {
       updated_at: nowIso,
     })
     .eq("id", aboId);
+  if (error) logDbError('app/api/org/abos/kuendigen/route:objekt_abos', error)
 
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });

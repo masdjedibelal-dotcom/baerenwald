@@ -1,7 +1,8 @@
 "use client";
 
-import { Pencil } from "lucide-react";
+import { PortalIcon } from "@/components/portal/PortalIcon";
 import { useState } from "react";
+import { PortalButton } from "@/components/portal/PortalButton";
 
 import { PartnerPreisBearbeitenDialog } from "@/components/partner/PartnerPreisBearbeitenDialog";
 import { fmtPartnerEuro } from "@/lib/partner/partner-detail-format";
@@ -158,17 +159,17 @@ export function PartnerLeistungenKonditionenCard({
     if (!hasAnyNetto) return null;
     return (
       <div className="space-y-1 border-t border-[var(--p2-line2)] pt-4 text-right">
-        <div className="text-[12.5px] text-text-secondary">
+        <div className="text-fs-meta text-text-secondary">
           Netto{" "}
           <span className="ml-3 tabular-nums text-text-primary">
             {fmtPartnerEuro(sumNetto)}
           </span>
         </div>
-        <div className="text-[12.5px] text-text-secondary">
+        <div className="text-fs-meta text-text-secondary">
           MwSt. {PARTNER_KONDITION_MWST}%{" "}
           <span className="ml-3 tabular-nums">{fmtPartnerEuro(sumMwst)}</span>
         </div>
-        <div className="pt-1 text-[13.5px] font-bold text-text-primary">
+        <div className="pt-1 text-fs-body font-bold text-text-primary">
           Gesamt{" "}
           <span className="ml-3 tabular-nums">{fmtPartnerEuro(sumBrutto)}</span>
         </div>
@@ -218,8 +219,8 @@ export function PartnerLeistungenKonditionenCard({
                     ? "border-b border-[var(--p2-line2)] py-3 first:pt-0"
                     : cn(
                         "border-b border-border-light px-4 py-3.5",
-                        isEntfernt && "bg-red-50/70",
-                        geaendert && "bg-amber-50/60",
+                        isEntfernt && "bg-p2-danger-soft/70",
+                        geaendert && "bg-warning-bg/60",
                         z.readonly && !isEntfernt && "bg-muted/25"
                       )
                 )}
@@ -235,7 +236,7 @@ export function PartnerLeistungenKonditionenCard({
                       <p
                         className={cn(
                           "font-semibold text-text-primary",
-                          plain && "text-[13.5px]",
+                          plain && "text-fs-body",
                           isEntfernt && "line-through text-text-secondary"
                         )}
                       >
@@ -245,7 +246,7 @@ export function PartnerLeistungenKonditionenCard({
                         <p
                           className={cn(
                             "mt-0.5 text-text-secondary",
-                            plain ? "text-[12px]" : "portal-text-meta"
+                            plain ? "text-fs-caption" : "portal-text-meta"
                           )}
                         >
                           {metaLine}
@@ -257,7 +258,7 @@ export function PartnerLeistungenKonditionenCard({
                         </p>
                       ) : null}
                       {isEntfernt ? (
-                        <p className="portal-text-meta mt-1 text-red-700">
+                        <p className="portal-text-meta mt-1 text-p2-danger">
                           Bärenwald entfernt diese Leistung — bitte bestätigen.
                         </p>
                       ) : null}
@@ -274,7 +275,7 @@ export function PartnerLeistungenKonditionenCard({
                       className={cn(
                         "tabular-nums sm:text-right",
                         plain
-                          ? "text-[13.5px] font-semibold text-text-primary"
+                          ? "text-fs-body font-semibold text-text-primary"
                           : cn(
                               "mt-0.5 text-lg font-bold",
                               preisFolgt
@@ -282,7 +283,7 @@ export function PartnerLeistungenKonditionenCard({
                                 : isEntfernt
                                   ? "text-text-tertiary line-through"
                                   : geaendert
-                                    ? "text-amber-800"
+                                    ? "text-warning-text"
                                     : "text-text-primary"
                             )
                       )}
@@ -306,7 +307,7 @@ export function PartnerLeistungenKonditionenCard({
                       </p>
                     ) : null}
                     {!plain && geaendert && z.zeilenBadge !== "geaendert" ? (
-                      <span className="mt-0.5 block text-xs font-medium text-amber-700 sm:text-right">
+                      <span className="mt-0.5 block text-xs font-medium text-warning-text sm:text-right">
                         Geändert
                       </span>
                     ) : null}
@@ -317,14 +318,15 @@ export function PartnerLeistungenKonditionenCard({
                     ) : null}
 
                     {mode === "edit" && !z.readonly ? (
-                      <button
+                      <PortalButton
+                        variant="primary"
                         type="button"
                         onClick={() => openEdit(z)}
-                        className="portal-touch-target mt-3 inline-flex w-full items-center justify-center gap-2 rounded-xl border border-accent/30 bg-accent-light/20 px-3 py-2.5 text-sm font-semibold text-accent hover:bg-accent-light/40 sm:mt-2 sm:w-auto sm:justify-end"
+                        className="portal-touch-target mt-3 inline-flex w-full items-center justify-center gap-2 rounded-sheet border border-accent/30 bg-accent-light/20 px-3 py-2.5 text-sm font-semibold text-accent hover:bg-accent-light/40 sm:mt-2 sm:w-auto sm:justify-end"
                       >
-                        <Pencil className="h-4 w-4 shrink-0" aria-hidden />
+                        <PortalIcon n="pencil" ctx="default" className="h-4 w-4 shrink-0" aria-hidden />
                         Preis bearbeiten
-                      </button>
+                      </PortalButton>
                     ) : null}
                   </div>
                 </div>
@@ -343,19 +345,19 @@ export function PartnerLeistungenKonditionenCard({
           >
             {plain ? (
               <>
-                <div className="text-[12.5px] text-text-secondary">
+                <div className="text-fs-meta text-text-secondary">
                   Netto{" "}
                   <span className="ml-3 tabular-nums text-text-primary">
                     {fmtPartnerEuro(sumNetto)}
                   </span>
                 </div>
-                <div className="text-[12.5px] text-text-secondary">
+                <div className="text-fs-meta text-text-secondary">
                   MwSt. {PARTNER_KONDITION_MWST}%{" "}
                   <span className="ml-3 tabular-nums">
                     {fmtPartnerEuro(sumMwst)}
                   </span>
                 </div>
-                <div className="pt-1 text-[13.5px] font-bold text-text-primary">
+                <div className="pt-1 text-fs-body font-bold text-text-primary">
                   Gesamt{" "}
                   <span className="ml-3 tabular-nums">
                     {fmtPartnerEuro(sumBrutto)}

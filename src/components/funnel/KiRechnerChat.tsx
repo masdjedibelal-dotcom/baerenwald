@@ -1,4 +1,5 @@
 "use client";
+import { MockIconSvg } from "@/components/shared/mock-icon-svgs";
 
 import Image from "next/image";
 import Link from "next/link";
@@ -65,7 +66,7 @@ Womit sollen wir starten?`;
 
 function SendMessageIcon() {
   return (
-    <svg
+    <MockIconSvg
       className="ki-rechner-chat-send-icon"
       width="18"
       height="18"
@@ -87,7 +88,7 @@ function SendMessageIcon() {
         strokeLinecap="round"
         strokeLinejoin="round"
       />
-    </svg>
+    </MockIconSvg>
   );
 }
 

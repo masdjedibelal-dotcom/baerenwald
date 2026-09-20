@@ -139,7 +139,7 @@ export const MELDE_NOTFALL_OPTIONS = [
     akut: true,
     de: {
       title: "Akut / Notfall",
-      sub: "Direkte Handwerker-Anfrage ohne Freigabe-Wartezeit",
+      sub: "Direkte Partner-Anfrage ohne Freigabe-Wartezeit",
     },
     en: {
       title: "Urgent / Emergency",

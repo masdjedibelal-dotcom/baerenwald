@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 
 import { PageLayout } from "@/components/layout/PageLayout";
+import { CTAButton } from "@/components/ui/CTAButton";
 import handwerkerContent from "@/data/handwerker-content.json";
 import { OG_IMAGE, SITE_CONFIG } from "@/lib/config";
 import type { HandwerkerContentItem } from "@/lib/handwerker-types";
@@ -80,9 +81,7 @@ export default function HandwerkerMuenchenPage() {
             </p>
 
             <div className="page-hero-btns">
-              <Link href="/kontakt" className="page-hero-btn-primary">
-                Kontakt aufnehmen →
-              </Link>
+              <CTAButton bare tone="hero-page" href="/kontakt" label="Kontakt aufnehmen →" />
             </div>
           </div>
         </div>
@@ -120,10 +119,8 @@ export default function HandwerkerMuenchenPage() {
           <div className="final-cta-bg">BW</div>
           <div className="final-cta-inner">
             <h2 className="final-cta-h2">Nicht das Richtige dabei?</h2>
-            <div className="final-cta-btns">
-              <Link href="/kontakt" className="final-cta-btn-primary">
-                Kontakt aufnehmen →
-              </Link>
+            <div className="final-cta-actions">
+              <CTAButton bare tone="final" href="/kontakt" label="Kontakt aufnehmen →" />
             </div>
           </div>
         </div>

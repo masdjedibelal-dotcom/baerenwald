@@ -2,11 +2,13 @@
 
 import { useEffect, useRef } from "react";
 
+import { PortalInput, PortalTextarea } from "@/components/shared/PortalFormControls";
+import { PortalField } from "@/components/shared/PortalField";
 import { PortalModalShell } from "@/components/shared/PortalModalShell";
 import { fmtPartnerEuro } from "@/lib/partner/partner-detail-format";
 import { parseHwNettoInput } from "@/lib/partner/partner-konditionen";
+import { useFieldErrors } from "@/lib/portal2/form-schema";
 import { portalToastSaved } from "@/lib/shared/portal-toast";
-import { cn } from "@/lib/utils";
 
 function formatEuroInput(n: number): string {
   return n.toFixed(2).replace(".", ",");
@@ -36,9 +38,15 @@ export function PartnerPreisBearbeitenDialog({
   onCancel,
 }: Props) {
   const inputRef = useRef<HTMLInputElement>(null);
+  const formRef = useRef<HTMLDivElement>(null);
+  const { fieldErrors, applyFieldErrors, clearFieldErrors, clearField } =
+    useFieldErrors();
 
   useEffect(() => {
-    if (!open) return;
+    if (!open) {
+      clearFieldErrors();
+      return;
+    }
     const t = window.setTimeout(() => {
       const el = inputRef.current;
       if (!el) return;
@@ -46,14 +54,25 @@ export function PartnerPreisBearbeitenDialog({
       el.select();
     }, 50);
     return () => window.clearTimeout(t);
-  }, [open]);
+  }, [open, clearFieldErrors]);
 
   const parsed = parseHwNettoInput(value);
-  const invalid = value.trim().length > 0 && parsed == null;
   const dirty = value.trim().length > 0 || notiz.trim().length > 0;
 
+  /* FORM_VALIDATION: partner-preis-bearbeiten */
   function save() {
-    if (parsed == null) return;
+    if (parsed == null) {
+      applyFieldErrors(
+        {
+          preis: value.trim()
+            ? "Bitte einen gültigen Betrag eingeben."
+            : "Bitte einen Betrag eingeben.",
+        },
+        formRef.current
+      );
+      return;
+    }
+    clearFieldErrors();
     onConfirm();
     portalToastSaved();
   }
@@ -68,66 +87,61 @@ export function PartnerPreisBearbeitenDialog({
       dirty={dirty}
       onConfirm={save}
       confirmLabel="Speichern"
-      confirmDisabled={parsed == null}
     >
-      {vorschlagNetto != null && vorschlagNetto > 0 ? (
-        <p className="portal-text-meta text-text-tertiary">
-          Vorschlag von Bärenwald:{" "}
-          <span className="font-semibold text-text-secondary">
-            {fmtPartnerEuro(vorschlagNetto)}
-          </span>{" "}
-          netto
-        </p>
-      ) : (
-        <p className="portal-text-meta italic text-text-tertiary">
-          Für diese Leistung liegt noch kein Vorschlag vor.
-        </p>
-      )}
-
-      <label className="mt-4 block">
-        <span className="portal-form-label">Dein Angebotspreis netto</span>
-        <div
-          className={cn(
-            "mt-2 flex items-center overflow-hidden rounded-xl border bg-surface-card",
-            invalid
-              ? "border-red-300"
-              : "border-border-default focus-within:border-accent"
-          )}
-        >
-          <input
-            ref={inputRef}
-            type="text"
-            inputMode="decimal"
-            value={value}
-            onChange={(e) => onChange(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter" && parsed != null) save();
-            }}
-            placeholder="0,00"
-            className="min-w-0 flex-1 border-0 bg-transparent px-4 py-4 text-2xl font-semibold tabular-nums text-text-primary outline-none"
-            aria-invalid={invalid}
-          />
-          <span className="shrink-0 border-l border-border-light bg-muted/30 px-4 py-4 text-lg font-semibold text-text-tertiary">
-            €
-          </span>
-        </div>
-        {invalid ? (
-          <p className="mt-1.5 text-sm text-red-600">
-            Bitte einen gültigen Betrag eingeben.
+      <div ref={formRef} className="space-y-4">
+        {vorschlagNetto != null && vorschlagNetto > 0 ? (
+          <p className="portal-text-meta text-text-tertiary">
+            Vorschlag von Bärenwald:{" "}
+            <span className="font-semibold text-text-secondary">
+              {fmtPartnerEuro(vorschlagNetto)}
+            </span>{" "}
+            netto
           </p>
-        ) : null}
-      </label>
+        ) : (
+          <p className="portal-text-meta italic text-text-tertiary">
+            Für diese Leistung liegt noch kein Vorschlag vor.
+          </p>
+        )}
 
-      <label className="mt-4 block">
-        <span className="portal-form-label">Notiz (optional)</span>
-        <textarea
-          value={notiz}
-          onChange={(e) => onNotizChange(e.target.value)}
-          rows={3}
-          placeholder="z. B. Begründung für den angepassten Preis …"
-          className="portal-input mt-2 w-full resize-y rounded-xl border border-border-default bg-surface-card px-3 py-2.5 text-sm"
-        />
-      </label>
+        <PortalField
+          label="Ihr Angebotspreis netto"
+          name="preis"
+          required
+          error={fieldErrors.preis}
+        >
+          <div className="flex items-center overflow-hidden rounded-sheet border border-border-default bg-surface-card focus-within:border-accent">
+            <PortalInput
+              ref={inputRef}
+              type="text"
+              inputMode="decimal"
+              name="preis"
+              value={value}
+              onChange={(e) => {
+                onChange(e.target.value);
+                clearField("preis");
+              }}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") save();
+              }}
+              placeholder="0,00"
+              className="portal-field min-w-0 flex-1 border-0 bg-transparent px-4 py-4 text-2xl font-semibold tabular-nums text-text-primary outline-none"
+            />
+            <span className="shrink-0 border-l border-border-light bg-muted/30 px-4 py-4 text-lg font-semibold text-text-tertiary">
+              €
+            </span>
+          </div>
+        </PortalField>
+
+        <PortalField label="Notiz (optional)" name="notiz">
+          <PortalTextarea
+            value={notiz}
+            onChange={(e) => onNotizChange(e.target.value)}
+            rows={3}
+            placeholder="z. B. Begründung für den angepassten Preis …"
+            className="portal-input w-full resize-y rounded-field border border-border-default bg-surface-card px-3 py-2.5 text-sm"
+          />
+        </PortalField>
+      </div>
     </PortalModalShell>
   );
 }

@@ -61,7 +61,7 @@ export function MeldeFehlerClient({
         <h1 className="mieter-wl-center-title">{heading}</h1>
         <p className="mieter-wl-center-body">{text}</p>
         {contact ? (
-          <p className="mieter-wl-center-body mt-2 text-[13px] text-[#4a5c54]">
+          <p className="mieter-wl-center-body mt-2 text-fs-meta text-[var(--p2-sub)]">
             {contact}
           </p>
         ) : null}

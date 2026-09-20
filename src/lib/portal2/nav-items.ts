@@ -3,13 +3,14 @@
  * Quelle: Baerenwald Portale (5).html
  *
  * App-Section-IDs bleiben portal-spezifisch; `key` ist der Mock-Screen-Key.
+ * N4/N8: einheitliche Labels; `mieter` entfernt (Mieter = kunde_privat).
  */
 
 export type PortalNavRole =
   | "kunde_hv"
   | "kunde_privat"
   | "eigentuemer"
-  | "mieter"
+  | "hausmeister"
   | "handwerker";
 
 /** Mock-Keys aus `navItems()` / `setScreen(k)`. */
@@ -29,12 +30,20 @@ export type PortalNavItemDef = {
   tag?: string;
 };
 
+/** Kanonische Labels je Section-Familie (N4) — Guard prüft Parität. */
+export const PORTAL_NAV_FAMILY_LABELS = {
+  home: "Übersicht",
+  liste: "Vorgänge",
+  objekte: "Objekte",
+  settings: "Einstellungen",
+} as const;
+
 export const PORTAL_NAV_ITEMS: Record<PortalNavRole, readonly PortalNavItemDef[]> =
   {
     kunde_hv: [
-      { key: "home", label: "Dashboard", glyph: "◈" },
-      { key: "liste", label: "Vorgänge", glyph: "▤" },
-      { key: "objekte", label: "Objekte", glyph: "▦" },
+      { key: "home", label: PORTAL_NAV_FAMILY_LABELS.home, glyph: "◈" },
+      { key: "liste", label: PORTAL_NAV_FAMILY_LABELS.liste, glyph: "▤" },
+      { key: "objekte", label: PORTAL_NAV_FAMILY_LABELS.objekte, glyph: "▦" },
       {
         key: "servicepakete",
         label: "Serviceabos",
@@ -47,31 +56,32 @@ export const PORTAL_NAV_ITEMS: Record<PortalNavRole, readonly PortalNavItemDef[]
         glyph: "▣",
         tag: "In Kürze",
       },
-      { key: "settings", label: "Einstellungen", glyph: "⚙" },
+      { key: "settings", label: PORTAL_NAV_FAMILY_LABELS.settings, glyph: "⚙" },
     ],
     kunde_privat: [
-      { key: "home", label: "Übersicht", glyph: "◈" },
-      { key: "liste", label: "Vorgänge", glyph: "▤" },
-      { key: "settings", label: "Einstellungen", glyph: "⚙" },
+      { key: "home", label: PORTAL_NAV_FAMILY_LABELS.home, glyph: "◈" },
+      { key: "liste", label: PORTAL_NAV_FAMILY_LABELS.liste, glyph: "▤" },
+      { key: "settings", label: PORTAL_NAV_FAMILY_LABELS.settings, glyph: "⚙" },
     ],
     eigentuemer: [
-      { key: "home", label: "Dashboard", glyph: "◈" },
-      { key: "liste", label: "Vorgänge", glyph: "▤" },
-      { key: "objekte", label: "Einheiten", glyph: "▦" },
+      { key: "home", label: PORTAL_NAV_FAMILY_LABELS.home, glyph: "◈" },
+      { key: "liste", label: PORTAL_NAV_FAMILY_LABELS.liste, glyph: "▤" },
+      { key: "objekte", label: PORTAL_NAV_FAMILY_LABELS.objekte, glyph: "▦" },
     ],
-    mieter: [
-      { key: "home", label: "Start", glyph: "◈" },
-      { key: "liste", label: "Meine Meldungen", glyph: "▤" },
-      { key: "settings", label: "Konto", glyph: "⚙" },
+    /** N4: gleiche Labels wie Eigentümer. */
+    hausmeister: [
+      { key: "home", label: PORTAL_NAV_FAMILY_LABELS.home, glyph: "◈" },
+      { key: "liste", label: PORTAL_NAV_FAMILY_LABELS.liste, glyph: "▤" },
+      { key: "objekte", label: PORTAL_NAV_FAMILY_LABELS.objekte, glyph: "▦" },
     ],
     /**
-     * Spec-Kurzform „Start · Vorgänge“; Mock `navItems` inkl. Firmendaten.
-     * Firmendaten bleibt (Mock-Wahrheit).
+     * N4: Übersicht · Vorgänge · Einstellungen
+     * (Inhalt Settings = Firmendaten; Label bleibt Einstellungen.)
      */
     handwerker: [
-      { key: "home", label: "Start", glyph: "◈" },
-      { key: "liste", label: "Vorgänge", glyph: "▤" },
-      { key: "settings", label: "Firmendaten", glyph: "⚙" },
+      { key: "home", label: PORTAL_NAV_FAMILY_LABELS.home, glyph: "◈" },
+      { key: "liste", label: PORTAL_NAV_FAMILY_LABELS.liste, glyph: "▤" },
+      { key: "settings", label: PORTAL_NAV_FAMILY_LABELS.settings, glyph: "⚙" },
     ],
   } as const;
 
@@ -101,7 +111,7 @@ export const PORTAL_HV_MEHR_TILES: readonly {
     glyph: "▣",
     tag: "In Kürze",
   },
-  { key: "settings", label: "Einstellungen", glyph: "⚙" },
+  { key: "settings", label: PORTAL_NAV_FAMILY_LABELS.settings, glyph: "⚙" },
 ] as const;
 
 export function getPortalNavItems(role: PortalNavRole): readonly PortalNavItemDef[] {
@@ -127,8 +137,14 @@ export const PORTAL_NAV_SECTION_BY_VARIANT = {
     liste: "vorgaenge",
     settings: "profil",
   },
-  /** D8 Eigentümer — Dashboard · Vorgänge · Objekte */
+  /** Eigentümer — Übersicht · Vorgänge · Objekte */
   eigentuemer: {
+    home: "uebersicht",
+    liste: "vorgaenge",
+    objekte: "objekte",
+  },
+  /** Hausmeister — gleiche Sections wie Eigentümer */
+  hausmeister: {
     home: "uebersicht",
     liste: "vorgaenge",
     objekte: "objekte",
@@ -191,9 +207,21 @@ export function buildPortalHvMobileNav(
   badges?: Partial<Record<PortalNavKey, number>>
 ): PortalShellNavBuilt[] {
   const defs: Record<string, PortalNavItemDef> = {
-    home: { key: "home", label: "Dashboard", glyph: "◈" },
-    liste: { key: "liste", label: "Vorgänge", glyph: "▤" },
-    objekte: { key: "objekte", label: "Objekte", glyph: "▦" },
+    home: {
+      key: "home",
+      label: PORTAL_NAV_FAMILY_LABELS.home,
+      glyph: "◈",
+    },
+    liste: {
+      key: "liste",
+      label: PORTAL_NAV_FAMILY_LABELS.liste,
+      glyph: "▤",
+    },
+    objekte: {
+      key: "objekte",
+      label: PORTAL_NAV_FAMILY_LABELS.objekte,
+      glyph: "▦",
+    },
     mehr: { key: "mehr", label: "Mehr", glyph: "⋯" },
   };
   return PORTAL_HV_MOBILE_NAV_KEYS.flatMap((key) => {

@@ -1,3 +1,4 @@
+import { logDbError } from '@/lib/errors/log-db-error'
 import { NextResponse } from "next/server";
 
 import { requireOrganisationSession } from "@/lib/org/require-org-session";
@@ -47,20 +48,22 @@ export async function GET(req: Request) {
   const objektByAuftrag = new Map<string, { titel: string; kostenstelle: string }>();
 
   if (auftragIds.length) {
-    const { data: auftraege } = await supabaseAdmin
+    const {data: auftraege, error: __dbErr173_1} = await supabaseAdmin
       .from("auftraege")
       .select("id, kunde_objekt_id, kostentraeger")
       .in("id", auftragIds);
+    if (__dbErr173_1) logDbError('app/api/org/export/rechnungen/route:auftraege', __dbErr173_1)
 
     const objektIds = Array.from(
       new Set((auftraege ?? []).map((a) => a.kunde_objekt_id).filter(Boolean))
     );
     const objektMap = new Map<string, { titel: string; kostenstelle_nr: string | null }>();
     if (objektIds.length) {
-      const { data: objekte } = await supabaseAdmin
+      const {data: objekte, error: __dbErr174_2} = await supabaseAdmin
         .from("kunden_objekte")
         .select("id, titel, kostenstelle_nr")
         .in("id", objektIds);
+      if (__dbErr174_2) logDbError('app/api/org/export/rechnungen/route:kunden_objekte', __dbErr174_2)
       for (const o of objekte ?? []) {
         objektMap.set(String(o.id), {
           titel: String(o.titel ?? ""),

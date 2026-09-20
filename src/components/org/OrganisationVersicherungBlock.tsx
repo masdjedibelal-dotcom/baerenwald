@@ -1,13 +1,15 @@
 "use client";
 
+import { PortalIcon } from "@/components/portal/PortalIcon";
 import { useCallback, useEffect, useState } from "react";
-import { FileText } from "lucide-react";
+import { PortalButton } from "@/components/portal/PortalButton";
 
 import { PortalDetailCard } from "@/components/shared/PortalDetailCard";
 import { usePortalBusy } from "@/components/shared/PortalBusyContext";
 import type { VersicherungPdfPhase } from "@/lib/org/versicherung-pdf-readiness";
-import { portalToastError, portalToastSuccess } from "@/lib/shared/portal-toast";
+import { portalToastSystemError, portalToastSuccess } from "@/lib/shared/portal-toast";
 import { cn } from "@/lib/utils";
+import { TOAST } from '@/lib/portal-copy'
 
 type PhaseStatus = { ready: boolean; blockers: string[] };
 
@@ -79,7 +81,7 @@ function PhaseCard({
         <div className="flex flex-wrap items-center gap-2">
           <span
             className={cn(
-              "rounded-full px-2.5 py-1 text-[11px] font-semibold",
+              "rounded-pill px-2.5 py-1 text-fs-caption font-semibold",
               ready
                 ? "bg-accent-light text-accent"
                 : "bg-muted text-text-secondary"
@@ -88,18 +90,19 @@ function PhaseCard({
             {status == null ? "…" : ready ? "Bereit" : "Noch nicht"}
           </span>
           {!ready && blocker ? (
-            <span className="text-[12.5px] text-text-tertiary">{blocker}</span>
+            <span className="text-fs-meta text-text-tertiary">{blocker}</span>
           ) : null}
         </div>
-        <button
+        <PortalButton
+          variant="ghost"
           type="button"
           disabled={busy || !ready}
           onClick={onOpen}
-          className="inline-flex items-center gap-2 rounded-lg border border-border-default px-3 py-2 text-sm font-medium text-accent disabled:cursor-not-allowed disabled:opacity-50"
+          className="inline-flex items-center gap-2 rounded-card border border-border-default px-3 py-2 text-sm font-medium text-accent disabled:cursor-not-allowed disabled:opacity-50"
         >
-          <FileText className="h-4 w-4" />
+          <PortalIcon n="file-text" ctx="default" className="h-4 w-4" />
           PDF öffnen
-        </button>
+        </PortalButton>
       </div>
     </PortalDetailCard>
   );
@@ -120,7 +123,7 @@ export function OrganisationVersicherungBlock({ leadId, onSaved }: Props) {
     );
     const json = (await res.json()) as Readiness & { error?: string };
     if (!res.ok) {
-      portalToastError(json.error ?? "Status nicht geladen");
+      portalToastSystemError(json.error ?? "Status nicht geladen", "org-versicherung-status");
       setReadiness(null);
       return;
     }
@@ -140,12 +143,12 @@ export function OrganisationVersicherungBlock({ leadId, onSaved }: Props) {
     try {
       await runBusy(async () => {
         await openPhasePdf(leadId, "meldung");
-        portalToastSuccess("Schadenmeldung geöffnet.");
+        portalToastSuccess(TOAST.schadenmeldung_geoeffnet);
         await onSaved?.();
         await load();
       }, 320);
     } catch (e) {
-      portalToastError(e instanceof Error ? e.message : "Fehler");
+      portalToastSystemError(e, "org-versicherung-pdf");
     } finally {
       setBusy(false);
     }

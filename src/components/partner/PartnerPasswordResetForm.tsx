@@ -2,7 +2,9 @@
 
 import Link from "next/link";
 import { useState } from "react";
+import { PortalButton } from "@/components/portal/PortalButton";
 
+import { PortalInput } from "@/components/shared/PortalFormControls";
 import { PortalAuthBusy } from "@/components/portal/auth/PortalAuthBusy";
 import { partnerPasswordResetCallbackUrl } from "@/lib/partner/partner-auth-url";
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
@@ -43,7 +45,7 @@ export function PartnerPasswordResetForm() {
     return (
       <div className="space-y-3 text-center portal-text-body text-text-secondary">
         <p>
-          Wenn ein Konto existiert, haben wir dir einen Link zum Zurücksetzen
+          Wenn ein Konto existiert, haben wir Ihnen einen Link zum Zurücksetzen
           geschickt.
         </p>
         <Link href="/partner/login" className="font-semibold text-accent hover:underline">
@@ -56,21 +58,21 @@ export function PartnerPasswordResetForm() {
   return (
     <form onSubmit={onSubmit} className="space-y-4">
       {error ? (
-        <p className="rounded-lg bg-red-50 px-3 py-2 portal-text-body text-red-800">{error}</p>
+        <p className="rounded-card bg-p2-danger-soft px-3 py-2 portal-text-body text-p2-danger">{error}</p>
       ) : null}
       <label className="block space-y-1.5">
         <span className="portal-form-label">E-Mail</span>
-        <input
+        <PortalInput
           type="email"
           required
           value={email}
           onChange={(e) => setEmail(e.target.value)}
-          className="portal-input w-full rounded-xl border border-border-default bg-surface-card px-3 py-3 focus:border-accent"
+          className="portal-input w-full rounded-field border border-border-default bg-surface-card px-3 py-3 focus:border-accent"
         />
       </label>
-      <button type="submit" className="btn-pill-primary w-full !py-2.5">
+      <PortalButton variant="primary" type="submit" className="w-full !py-2.5">
         Link senden
-      </button>
+      </PortalButton>
     </form>
   );
 }

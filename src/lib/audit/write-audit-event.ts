@@ -1,3 +1,4 @@
+import { logDbError } from '@/lib/errors/log-db-error'
 import { supabaseAdmin } from "@/lib/supabase";
 
 export type AuditEventInput = {
@@ -21,6 +22,7 @@ export async function writeAuditEvent(input: AuditEventInput): Promise<void> {
     kunde_id: input.kundeId ?? null,
     payload: input.payload ?? {},
   });
+  if (error) logDbError('lib/audit/write-audit-event:audit_events', error)
 
   if (error) {
     console.error("[audit]", input.aktion, error.message);

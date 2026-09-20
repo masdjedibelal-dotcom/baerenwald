@@ -52,7 +52,7 @@ export function OrgAngebotFreigabeInhalt({
     (typeof angebot.gesamtBrutto === "number" && angebot.gesamtBrutto > 0);
 
   return (
-    <div className="rounded-xl border border-border-default bg-surface-card p-4 space-y-3">
+    <div className="rounded-sheet border border-border-default bg-surface-card p-4 space-y-3">
         <div>
           <p className="text-xs font-medium text-text-tertiary uppercase tracking-wide">
             Angebot von Bärenwald
@@ -87,7 +87,7 @@ export function OrgAngebotFreigabeInhalt({
             gesamtLabel="Gesamtpreis brutto inkl. MwSt."
           />
         ) : (
-          <p className="text-sm text-text-secondary rounded-lg bg-muted/40 p-3">
+          <p className="text-sm text-text-secondary rounded-card bg-muted/40 p-3">
             Die Angebotspositionen werden gerade übermittelt. Bitte Seite neu
             laden oder Bärenwald kontaktieren.
           </p>

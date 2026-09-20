@@ -1,4 +1,5 @@
 "use client";
+import { PALETTE } from "@/lib/tokens/palette";
 
 import Link from "next/link";
 import { useEffect } from "react";
@@ -32,23 +33,23 @@ export default function Error({ error, reset }: Props) {
           fontWeight: 700,
           letterSpacing: "0.12em",
           textTransform: "uppercase",
-          color: "#2e7d52",
-          margin: "0 0 12px",
+          color: "var(--p2-primary)",
+          margin: "0 0 0.75rem",
         }}
       >
         Fehler
       </p>
       <h1
         style={{
-          margin: "0 0 12px",
+          margin: "0 0 0.75rem",
           fontSize: "clamp(1.5rem, 4vw, 2rem)",
           fontWeight: 800,
-          color: "#1a3d2b",
+          color: "var(--p2-primary-dk)",
         }}
       >
         Etwas ist schiefgelaufen
       </h1>
-      <p style={{ margin: "0 0 28px", maxWidth: 420, color: "#524e4a", lineHeight: 1.6 }}>
+      <p style={{ margin: "0 0 1.75rem", maxWidth: 420, color: PALETTE.h524e4a, lineHeight: 1.6 }}>
         Bitte Seite neu laden. Wenn das Problem bleibt, starte den Browser-Tab neu.
       </p>
       <div style={{ display: "flex", flexWrap: "wrap", gap: 12, justifyContent: "center" }}>
@@ -56,11 +57,11 @@ export default function Error({ error, reset }: Props) {
           type="button"
           onClick={() => reset()}
           style={{
-            padding: "12px 22px",
+            padding: "0.75rem 1.375rem",
             borderRadius: 999,
             border: "none",
-            background: "#2e7d52",
-            color: "#fff",
+            background: "var(--p2-primary)",
+            color: "var(--p2-panel)",
             fontWeight: 700,
             cursor: "pointer",
             fontSize: 15,
@@ -71,10 +72,10 @@ export default function Error({ error, reset }: Props) {
         <Link
           href="/"
           style={{
-            padding: "12px 22px",
+            padding: "0.75rem 1.375rem",
             borderRadius: 999,
-            border: "2px solid #2e7d52",
-            color: "#1a3d2b",
+            border: "0.125rem solid var(--p2-primary)",
+            color: "var(--p2-primary-dk)",
             fontWeight: 700,
             textDecoration: "none",
             fontSize: 15,

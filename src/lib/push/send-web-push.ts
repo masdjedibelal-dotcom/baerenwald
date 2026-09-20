@@ -1,3 +1,4 @@
+import { logDbError } from '@/lib/errors/log-db-error'
 import webpush from "web-push";
 
 import {
@@ -39,11 +40,11 @@ export async function sendWebPushToUsers(
     return { sent: 0, skipped: unique.length };
   }
 
-  const { data: prefs } = await supabaseAdmin
+  const {data: prefs, error: __dbErr497_1} = await supabaseAdmin
     .from("push_prefs")
     .select("auth_user_id, push_enabled")
     .in("auth_user_id", unique);
-
+  if (__dbErr497_1) logDbError('lib/push/send-web-push:push_prefs', __dbErr497_1)
   const enabled = new Set(
     (prefs ?? [])
       .filter((p) => p.push_enabled)
@@ -52,11 +53,11 @@ export async function sendWebPushToUsers(
   if (!enabled.size) return { sent: 0, skipped: unique.length };
 
   const enabledIds = Array.from(enabled);
-  const { data: subs } = await supabaseAdmin
+  const {data: subs, error: __dbErr498_2} = await supabaseAdmin
     .from("push_subscriptions")
     .select("id, endpoint, p256dh, auth, auth_user_id")
     .in("auth_user_id", enabledIds);
-
+  if (__dbErr498_2) logDbError('lib/push/send-web-push:push_subscriptions', __dbErr498_2)
   if (!subs?.length) return { sent: 0, skipped: unique.length };
 
   const body = JSON.stringify({
@@ -96,10 +97,11 @@ export async function sendWebPushToUsers(
   );
 
   if (staleIds.length) {
-    await supabaseAdmin
+    const { error: __dbErr499_3 } = await supabaseAdmin
       .from("push_subscriptions")
       .delete()
       .in("id", staleIds);
+    if (__dbErr499_3) logDbError('lib/push/send-web-push:push_subscriptions', __dbErr499_3)
   }
 
   return { sent, skipped: unique.length - enabled.size };

@@ -1,3 +1,4 @@
+import { logDbError } from '@/lib/errors/log-db-error'
 import {
   buildPartnerStammCompliance,
   buildProjektCompliance,
@@ -50,34 +51,36 @@ let gewerkeCache: PartnerGewerkRow[] | null = null;
 
 export async function loadComplianceTypen(): Promise<PartnerComplianceTypRow[]> {
   if (typenCache) return typenCache;
-  const { data } = await supabaseAdmin
+  const {data, error: __dbErr389_1} = await supabaseAdmin
     .from("compliance_dokument_typen")
     .select(
       "slug, bezeichnung, beschreibung, pflicht_fuer_fachbetriebe, pflicht_bauprojekt, mehrfach_erlaubt, kategorie, sort_order, scope, compliance_ebene, nur_bei_bauleistung, gewerk_slugs, erneuerung_monate, aktiv"
     )
     .eq("aktiv", true)
     .order("sort_order", { ascending: true });
-
+  if (__dbErr389_1) logDbError('lib/partner/load-partner-compliance-data:compliance_dokument_typen', __dbErr389_1)
   typenCache = (data ?? []) as PartnerComplianceTypRow[];
   return typenCache;
 }
 
 export async function loadPartnerGewerke(): Promise<PartnerGewerkRow[]> {
   if (gewerkeCache) return gewerkeCache;
-  const { data } = await supabaseAdmin
+  const {data, error: __dbErr390_2} = await supabaseAdmin
     .from("gewerke")
     .select("slug, name, ausfuehrung, ist_bauleistung")
     .order("sort_order", { ascending: true });
+  if (__dbErr390_2) logDbError('lib/partner/load-partner-compliance-data:gewerke', __dbErr390_2)
   gewerkeCache = (data ?? []) as PartnerGewerkRow[];
   return gewerkeCache;
 }
 
 async function loadHandwerkerGewerke(handwerkerId: string): Promise<string[] | null> {
-  const { data } = await supabaseAdmin
+  const {data, error: __dbErr391_3} = await supabaseAdmin
     .from("handwerker")
     .select("gewerke")
     .eq("id", handwerkerId)
     .maybeSingle();
+  if (__dbErr391_3) logDbError('lib/partner/load-partner-compliance-data:handwerker', __dbErr391_3)
   return ((data as { gewerke?: string[] | null } | null)?.gewerke ?? null) as string[] | null;
 }
 
@@ -110,11 +113,12 @@ async function loadProjektGewerkSlugs(
   auftragId: string,
   alleGewerke: PartnerGewerkRow[]
 ): Promise<string[]> {
-  const { data } = await supabaseAdmin
+  const {data, error: __dbErr392_4} = await supabaseAdmin
     .from("auftrag_positionen")
     .select("gewerk_slug, gewerk_name")
     .eq("auftrag_id", auftragId)
     .eq("handwerker_id", handwerkerId);
+  if (__dbErr392_4) logDbError('lib/partner/load-partner-compliance-data:auftrag_positionen', __dbErr392_4)
   return resolveProjektGewerkSlugsFromPositionen(
     (data ?? []) as Array<{ gewerk_slug?: string | null; gewerk_name?: string | null }>,
     alleGewerke
@@ -124,7 +128,7 @@ async function loadProjektGewerkSlugs(
 export async function loadRahmenvertrag(
   handwerkerId: string
 ): Promise<PartnerRahmenvertrag | null> {
-  const { data } = await supabaseAdmin
+  const {data, error: __dbErr393_5} = await supabaseAdmin
     .from("handwerker_vertraege")
     .select("id, vertrags_nr, status, pdf_url, signiert_am, portal_akzeptiert_am")
     .eq("handwerker_id", handwerkerId)
@@ -133,7 +137,7 @@ export async function loadRahmenvertrag(
     .order("created_at", { ascending: false })
     .limit(1)
     .maybeSingle();
-
+  if (__dbErr393_5) logDbError('lib/partner/load-partner-compliance-data:handwerker_vertraege', __dbErr393_5)
   if (!data) return null;
   const pdf_url = (data as { pdf_url?: string | null }).pdf_url ?? null;
   const pdf_signed_url = pdf_url ? await resolvePartnerFileUrl(pdf_url) : null;
@@ -157,7 +161,7 @@ async function loadProjektvertragDb(
   handwerkerId: string,
   auftragId: string
 ): Promise<PartnerProjektvertrag | null> {
-  const { data } = await supabaseAdmin
+  const {data, error: __dbErr394_6} = await supabaseAdmin
     .from("handwerker_vertraege")
     .select(
       "id, vertrags_nr, status, pdf_url, auftrag_titel, gewerk_name, bauvorhaben, leistungsumfang, verguetung_text, signiert_am"
@@ -168,7 +172,7 @@ async function loadProjektvertragDb(
     .order("created_at", { ascending: false })
     .limit(1)
     .maybeSingle();
-
+  if (__dbErr394_6) logDbError('lib/partner/load-partner-compliance-data:handwerker_vertraege', __dbErr394_6)
   return mapProjektvertragRow(data as Record<string, unknown> | null);
 }
 
@@ -176,13 +180,13 @@ async function loadProjektvertragBestaetigtAm(
   handwerkerId: string,
   auftragId: string
 ): Promise<string | null> {
-  const { data } = await supabaseAdmin
+  const {data, error: __dbErr395_7} = await supabaseAdmin
     .from("auftrag_handwerker")
     .select("projektvertrag_bestaetigt_am")
     .eq("handwerker_id", handwerkerId)
     .eq("auftrag_id", auftragId)
     .maybeSingle();
-
+  if (__dbErr395_7) logDbError('lib/partner/load-partner-compliance-data:auftrag_handwerker', __dbErr395_7)
   const raw = (data as { projektvertrag_bestaetigt_am?: string | null } | null)
     ?.projektvertrag_bestaetigt_am;
   return raw ?? null;
@@ -292,12 +296,12 @@ export async function buildVertragKontextForAuftrag(opts: {
     opts.alleGewerke
   );
 
-  const { data: auftragRow } = await supabaseAdmin
+  const {data: auftragRow, error: __dbErr396_8} = await supabaseAdmin
     .from("auftraege")
     .select("ist_bauprojekt")
     .eq("id", opts.auftragId)
     .maybeSingle();
-
+  if (__dbErr396_8) logDbError('lib/partner/load-partner-compliance-data:auftraege', __dbErr396_8)
   const explicitBauprojekt = (auftragRow as { ist_bauprojekt?: boolean | null } | null)
     ?.ist_bauprojekt;
 
@@ -440,16 +444,16 @@ export async function loadHandwerkerComplianceBundle(handwerkerId: string): Prom
       loadHandwerkerGewerke(handwerkerId),
     ]);
 
-    const { data: hwAuftraege } = await supabaseAdmin
+    const {data: hwAuftraege, error: __dbErr397_9} = await supabaseAdmin
       .from("auftrag_handwerker")
       .select("auftrag_id")
       .eq("handwerker_id", handwerkerId);
-
-    const { data: posAuftraege } = await supabaseAdmin
+    if (__dbErr397_9) logDbError('lib/partner/load-partner-compliance-data:auftrag_handwerker', __dbErr397_9)
+    const {data: posAuftraege, error: __dbErr398_10} = await supabaseAdmin
       .from("auftrag_positionen")
       .select("auftrag_id")
       .eq("handwerker_id", handwerkerId);
-
+    if (__dbErr398_10) logDbError('lib/partner/load-partner-compliance-data:auftrag_positionen', __dbErr398_10)
     const hwAuftragIds = Array.from(
       new Set([
         ...(hwAuftraege ?? []).map((r) => String((r as { auftrag_id: string }).auftrag_id)),
@@ -461,33 +465,33 @@ export async function loadHandwerkerComplianceBundle(handwerkerId: string): Prom
     const auftragIds: string[] = [...hwAuftragIds];
 
     if (hwAuftragIds.length) {
-      const { data: auftraegeRows } = await supabaseAdmin
+      const {data: auftraegeRows, error: __dbErr399_11} = await supabaseAdmin
         .from("auftraege")
         .select("id, angebot_id")
         .in("id", hwAuftragIds)
         .not("angebot_id", "is", null);
-
+      if (__dbErr399_11) logDbError('lib/partner/load-partner-compliance-data:auftraege', __dbErr399_11)
       for (const r of auftraegeRows ?? []) {
         const raw = r as { id: string; angebot_id: string };
         auftragIdByAngebotId.set(String(raw.angebot_id), String(raw.id));
       }
     }
 
-    const { data: angebotHwRows } = await supabaseAdmin
+    const {data: angebotHwRows, error: __dbErr400_12} = await supabaseAdmin
       .from("angebot_handwerker")
       .select("angebot_id")
       .eq("handwerker_id", handwerkerId);
-
+    if (__dbErr400_12) logDbError('lib/partner/load-partner-compliance-data:angebot_handwerker', __dbErr400_12)
     const angebotIds = (angebotHwRows ?? []).map((r) =>
       String((r as { angebot_id: string }).angebot_id)
     );
 
     if (angebotIds.length) {
-      const { data: aufByAngebot } = await supabaseAdmin
+      const {data: aufByAngebot, error: __dbErr401_13} = await supabaseAdmin
         .from("auftraege")
         .select("id, angebot_id")
         .in("angebot_id", angebotIds);
-
+      if (__dbErr401_13) logDbError('lib/partner/load-partner-compliance-data:auftraege', __dbErr401_13)
       for (const r of aufByAngebot ?? []) {
         const raw = r as { id: string; angebot_id: string };
         const aid = String(raw.id);

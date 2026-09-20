@@ -78,9 +78,9 @@ export const LEISTUNGEN_DATA: Record<string, LeistungsData> = {
     label: "Neues Bad",
     headline: "Neues Bad in München —\naus einer Hand geplant",
     subline:
-      "Bad modernisieren oder komplett neu. Wir kümmern uns um Planung, Termine und alle Handwerker — Sie haben nur einen Ansprechpartner.",
+      "Bad modernisieren oder komplett neu. Wir kümmern uns um Planung, Termine und alle Partner — Sie haben nur einen Ansprechpartner.",
     beschreibung:
-      "Ein neues Bad braucht mehrere Handwerker — jemand für die Fliesen, jemand für die Leitungen, jemand für den Strom. Das kostet normalerweise viel Nerven beim Koordinieren. Bei uns gibt es nur einen Ansprechpartner. Wir kümmern uns um alles.",
+      "Ein neues Bad braucht mehrere Partner — jemand für die Fliesen, jemand für die Leitungen, jemand für den Strom. Das kostet normalerweise viel Nerven beim Koordinieren. Bei uns gibt es nur einen Ansprechpartner. Wir kümmern uns um alles.",
     wasWirMachen: [
       "Altes Bad komplett ausbauen und entsorgen",
       "Neue Dusche, Badewanne oder WC einbauen",
@@ -805,7 +805,7 @@ export const LEISTUNGEN_DATA: Record<string, LeistungsData> = {
     ratgeberLabel: "Heizung tauschen — was kostet das?",
     relatedRatgeber: {
       slug: "notfall-handwerker-muenchen",
-      label: "Notfall-Handwerker — wer kommt schnell?",
+      label: "Notfall-Partner — wer kommt schnell?",
     },
     rechnerSituation: "kaputt",
     faq: [
@@ -843,7 +843,7 @@ export const LEISTUNGEN_DATA: Record<string, LeistungsData> = {
     ratgeberLabel: "Was kostet eine Badsanierung?",
     relatedRatgeber: {
       slug: "notfall-handwerker-muenchen",
-      label: "Notfall-Handwerker — wer kommt schnell?",
+      label: "Notfall-Partner — wer kommt schnell?",
     },
     rechnerSituation: "kaputt",
     faq: [

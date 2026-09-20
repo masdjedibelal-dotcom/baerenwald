@@ -46,7 +46,7 @@ export function toHandwerkerDisplay(
     name: src.name,
   });
   const firma = src.firma?.trim() || "";
-  const name = firma || person.vollname || (src.name?.trim() ?? "") || "Handwerker";
+  const name = firma || person.vollname || (src.name?.trim() ?? "") || "Partner";
   const trade = formatHandwerkerTrade(src.gewerkNamen, src.gewerke);
   const rating = resolveHandwerkerRating(src);
 

@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 
 import { HvFreigabeInfoBanner } from "@/components/org/HvFreigabeInfoBanner";
+import { PortalButton } from "@/components/portal/PortalButton";
 import { PortalDetailInfoBox } from "@/components/shared/PortalDetailUi";
 import { usePortalBusy } from "@/components/shared/PortalBusyContext";
 import {
@@ -71,7 +72,7 @@ export function OrgMeldungAktionBanner({
           <p className="font-semibold text-text-primary">
             Hausmeister-Prüfung läuft
           </p>
-          <p className="mt-1 text-[13px] text-text-secondary">
+          <p className="mt-1 text-fs-meta text-text-secondary">
             Der Vorgang liegt beim Hausmeister. Fortschritt und Checkliste unter
             Tab „Hausmeister“.
           </p>
@@ -145,40 +146,37 @@ export function OrgMeldungAktionBanner({
   return (
     <div className="mb-4 space-y-3">
       <PortalDetailInfoBox variant="warning">
-        <p className="font-semibold text-amber-950">Freigabe erforderlich</p>
+        <p className="font-semibold text-warning-text">Freigabe erforderlich</p>
         {error ? (
-          <p className="mt-2 text-xs font-semibold text-red-700" role="alert">
+          <p className="mt-2 text-xs font-semibold text-p2-danger" role="alert">
             {error}
           </p>
         ) : null}
       </PortalDetailInfoBox>
       <div className="portal-action-row flex-wrap">
-        <button
-          type="button"
+        <PortalButton
+          variant="secondary"
           disabled={busy}
           onClick={() => void act("ablehnen")}
-          className="portal-action-btn portal-action-btn--secondary"
         >
           {busy ? "Wird geladen…" : "Ablehnen"}
-        </button>
+        </PortalButton>
         {hasHm ? (
-          <button
-            type="button"
+          <PortalButton
+            variant="secondary"
             disabled={busy}
             onClick={() => void act("hm_begutachten")}
-            className="portal-action-btn portal-action-btn--secondary"
           >
             {busy ? "Wird geladen…" : "Selbst begutachten (Hausmeister)"}
-          </button>
+          </PortalButton>
         ) : null}
-        <button
-          type="button"
+        <PortalButton
+          variant="primary"
           disabled={busy}
           onClick={() => void act("direkt_baerenwald")}
-          className="portal-action-btn portal-action-btn--primary"
         >
           {busy ? "Wird geladen…" : "Direkt Bärenwald beauftragen"}
-        </button>
+        </PortalButton>
       </div>
     </div>
   );

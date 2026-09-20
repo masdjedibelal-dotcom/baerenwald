@@ -6,39 +6,39 @@
 
 export const PORTAL_C = {
   /** App-Hintergrund / Content-Fläche */
-  bg: "#F5F6F4",
-  bgContent: "#F5F6F4",
-  panel: "#FFFFFF",
+  bg: "var(--p2-bg)",
+  bgContent: "var(--p2-bg)",
+  panel: "var(--p2-panel)",
   /** Linie neutral (Listenkante, Fortschritt inaktiv) */
-  line: "#DFE4E0",
+  line: "var(--p2-line)",
   /** Trennlinie in Karten */
   line2: "rgba(20,32,25,0.07)",
   /** Text primär */
-  ink: "#142019",
+  ink: "var(--p2-ink)",
   /** Text sekundär */
-  sub: "#55615B",
+  sub: "var(--p2-sub)",
   /** Text tertiär / Meta */
-  faint: "#8A938E",
+  faint: "var(--p2-faint)",
   /** Icon inaktiv */
-  faint2: "#9AA39E",
+  faint2: "var(--p2-faint2)",
   /** Marken-Grün — Primär-Button, Links, aktive Marker */
-  primary: "#2E7D52",
+  primary: "var(--p2-primary)",
   /** Marken-Grün dunkel — Sidebar, Hero, Bottom-Nav */
-  primaryDk: "#1A3D2B",
+  primaryDk: "var(--p2-primary-dk)",
   /** Grün hell (Fläche) */
-  primarySoft: "#EEF4F0",
-  greenDark: "#1A3D2B",
-  green50: "#EEF4F0",
-  hover: "#EEF4F0",
-  selected: "#FFFFFF",
+  primarySoft: "var(--p2-hover)",
+  greenDark: "var(--p2-primary-dk)",
+  green50: "var(--p2-hover)",
+  hover: "var(--p2-hover)",
+  selected: "var(--p2-panel)",
   /** Sand — Sekundär-Akzent (Entscheidung / Badge) */
-  sand: "#E8B04B",
-  sandText: "#8A5A06",
+  sand: "var(--p2-sand)",
+  sandText: "var(--p2-sand-text)",
   /** Skeleton-Fläche */
-  skeleton: "#EEF1EF",
-  danger: "#A1242A",
-  dangerSoft: "#FBECEB",
-  dangerBorder: "#F5C2C0",
+  skeleton: "var(--p2-hover)",
+  danger: "var(--p2-danger)",
+  dangerSoft: "var(--p2-danger-soft)",
+  dangerBorder: "var(--p2-danger-border)",
   /** Karte Ruhe */
   shadow: "0 2px 10px rgba(16,32,24,0.05)",
   shadowHover: "0 8px 24px rgba(16,32,24,0.10)",
@@ -94,8 +94,8 @@ export const PORTAL_VAR = {
   primary: "var(--org-primary, var(--p2-primary))",
   primaryDk: "var(--org-primary-dk, var(--p2-primary-dk))",
   primarySoft: "var(--org-primary-soft, var(--p2-primary-soft))",
-  greenDark: "var(--p2-green-dark)",
-  green50: "var(--p2-green-50)",
+  greenDark: "var(--org-primary-dk, var(--p2-primary-dk))",
+  green50: "var(--org-primary-soft, var(--p2-primary-soft))",
   hover: "var(--p2-hover)",
   selected: "var(--p2-selected)",
   sand: "var(--p2-sand)",

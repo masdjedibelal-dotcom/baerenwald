@@ -1,7 +1,9 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { PortalButton } from "@/components/portal/PortalButton";
 
+import { PortalDate, PortalSelect } from "@/components/shared/PortalFormControls";
 import type {
   ObjektAnlagePortal,
   ObjektHistorieRowPortal,
@@ -61,8 +63,7 @@ export function OrganisationObjektHistoriePanel({
           <span className="portal-text-label mb-1.5 block text-text-secondary">
             Von
           </span>
-          <input
-            type="date"
+          <PortalDate
             className="portal-field"
             value={von}
             onChange={(e) => setVon(e.target.value)}
@@ -72,8 +73,7 @@ export function OrganisationObjektHistoriePanel({
           <span className="portal-text-label mb-1.5 block text-text-secondary">
             Bis
           </span>
-          <input
-            type="date"
+          <PortalDate
             className="portal-field"
             value={bis}
             onChange={(e) => setBis(e.target.value)}
@@ -83,7 +83,7 @@ export function OrganisationObjektHistoriePanel({
           <span className="portal-text-label mb-1.5 block text-text-secondary">
             Anlage
           </span>
-          <select
+          <PortalSelect
             className="portal-field"
             value={anlageId}
             onChange={(e) => setAnlageId(e.target.value)}
@@ -94,7 +94,7 @@ export function OrganisationObjektHistoriePanel({
                 {a.bezeichnung}
               </option>
             ))}
-          </select>
+          </PortalSelect>
         </label>
       </div>
 
@@ -129,20 +129,21 @@ export function OrganisationObjektHistoriePanel({
                 {filtered.map((r) => (
                   <tr
                     key={r.leadId}
-                    className="border-b border-border-light last:border-b-0 hover:bg-[#fafafa]"
+                    className="border-b border-border-light last:border-b-0 hover:bg-[var(--p2-row-hover)]"
                   >
                     <td className="py-3 pr-3 text-text-secondary">
                       {fmtDatum(r.datum)}
                     </td>
                     <td className="px-3 py-3">
                       {onOpenVorgang ? (
-                        <button
+                        <PortalButton
+                          variant="ghost"
                           type="button"
                           onClick={() => onOpenVorgang(r.leadId)}
                           className="portal-text-body text-left font-semibold text-primary hover:underline"
                         >
                           {r.titel}
-                        </button>
+                        </PortalButton>
                       ) : (
                         <span className="portal-text-body font-semibold">
                           {r.titel}
@@ -187,7 +188,8 @@ export function OrganisationObjektHistoriePanel({
 
           <div className="divide-y divide-border-light sm:hidden">
             {filtered.map((r) => (
-              <button
+              <PortalButton
+                variant="ghost"
                 key={r.leadId}
                 type="button"
                 onClick={() => onOpenVorgang?.(r.leadId)}
@@ -208,7 +210,7 @@ export function OrganisationObjektHistoriePanel({
                 <p className="portal-text-meta text-text-tertiary">
                   {r.statusLabel} · {r.kostenLabel}
                 </p>
-              </button>
+              </PortalButton>
             ))}
           </div>
         </div>

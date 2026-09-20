@@ -1,3 +1,4 @@
+import { logDbError } from '@/lib/errors/log-db-error'
 import { NextResponse } from "next/server";
 
 import { writeAuditEvent } from "@/lib/audit/write-audit-event";
@@ -51,6 +52,7 @@ export async function POST(req: Request) {
     .eq("id", session.kunde.id)
     .select("org_logo_url, org_hero_url")
     .single();
+  if (error) logDbError('app/api/org/branding/media/route:kunden', error)
 
   if (error) {
     console.error("[branding-media] db", error.message);

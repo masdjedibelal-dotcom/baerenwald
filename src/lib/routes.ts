@@ -208,11 +208,11 @@ export const RATGEBER: RatgeberRoute[] = [
   },
   {
     slug: "zuverlaessigen-handwerker-finden-muenchen",
-    label: "Zuverlässigen Handwerker finden",
+    label: "Zuverlässigen Partner finden",
   },
   {
     slug: "notfall-handwerker-muenchen",
-    label: "Notfall Handwerker München",
+    label: "Notfall Partner München",
   },
   {
     slug: "renovierung-muenchen-checkliste",

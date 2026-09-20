@@ -4,6 +4,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { flushSync } from "react-dom";
 
+import { PortalSelect } from "@/components/shared/PortalFormControls";
 import { PortalUserNotificationBell } from "@/components/portal/PortalUserNotificationBell";
 import { PortalVorgangDetail } from "@/components/portal/PortalVorgangDetail";
 import { PortalKundePrivatDashboard } from "@/components/portal/PortalKundePrivatDashboard";
@@ -20,6 +21,7 @@ import { PortalListCard } from "@/components/shared/PortalListCard";
 import { PortalEntityDetailLayout } from "@/components/shared/PortalEntityDetailLayout";
 import { PortalDetailKeyValues } from "@/components/shared/PortalDetailUi";
 import { PortalInboxEmpty } from "@/components/shared/PortalEmptyState";
+import { PortalActionMenu } from "@/components/shared/PortalActionMenu";
 import {
   PORTAL_LIST_PAGE_SIZE,
   PortalListPagination,
@@ -33,7 +35,12 @@ import { PortalLegalFooter } from "@/components/shared/PortalLegalFooter";
 import { PortalShell } from "@/components/shared/PortalShell";
 import { PortalHeaderSearch } from "@/components/shared/PortalHeaderSearch";
 import { usePortalRefresh } from "@/components/shared/usePortalRefresh";
-import { PortalEmptyState } from "@/components/shared/PortalStateView";
+import {
+  buildListReturnUrl,
+  parseReturn,
+} from "@/lib/list-return-url";
+import { useListUrlState } from "@/hooks/useListUrlState";
+import { PORTAL_EMPTY_TITLE, portalEmptySubtitle } from "@/lib/portal2/portal-states";
 import { buildKundeVorgaenge } from "@/lib/portal/build-kunde-vorgaenge";
 import { findKundeVorgangByQueryId } from "@/lib/portal/portal-detail-item";
 import { buildKundeVorgangCardRows } from "@/lib/portal/portal-list-mappers";
@@ -75,6 +82,7 @@ import {
   portalListeStatusLabel,
 } from "@/lib/portal2/liste-status";
 import type { PortalFunnelObjekt } from "@/components/funnel/PortalFunnelHost";
+import { PortalButton } from "@/components/portal/PortalButton";
 type SectionId = "uebersicht" | "vorgaenge" | "objekte";
 
 type Props = {
@@ -128,7 +136,15 @@ export function EigentuemerPortalClient({
   const [selectedId, setSelectedId] = useState<string | null>(
     searchParams.get("id")?.trim() || null
   );
-  const [listPage, setListPage] = useState(1);
+  const {
+    seite: listPage,
+    setState: setListUrlState,
+    listHrefWithState,
+  } = useListUrlState({
+    keys: ["filter", "page", "q"],
+    pageParam: "page",
+  });
+  const setListPage = (n: number) => setListUrlState({ page: n });
   const [filterObjektId, setFilterObjektId] = useState("");
   const [filterEinheitId, setFilterEinheitId] = useState("");
   const [createOpen, setCreateOpen] = useState(false);
@@ -219,10 +235,9 @@ export function EigentuemerPortalClient({
       setSection("vorgaenge");
       setSelectedId(nextId);
     });
-    router.replace(
-      `/portal?section=vorgaenge&id=${encodeURIComponent(nextId)}`,
-      { scroll: false }
-    );
+    const listHref = listHrefWithState();
+    const detail = `/portal?section=vorgaenge&id=${encodeURIComponent(nextId)}`;
+    router.replace(buildListReturnUrl(listHref, detail), { scroll: false });
   }
 
   useEffect(() => {
@@ -518,20 +533,25 @@ export function EigentuemerPortalClient({
       createAction={createAction}
       headerSearch={
         <PortalHeaderSearch
-          onSubmit={() => {
-            switchSection("vorgaenge");
+          apiPath="/api/portal/suche"
+          role="eigentuemer"
+          onSelect={(hit) => {
+            const idMatch = hit.href.match(/[?&]id=([^&]+)/);
+            const id = idMatch ? decodeURIComponent(idMatch[1]!) : "";
+            if (id) openVorgangById(id);
+            else router.replace(hit.href, { scroll: false });
           }}
         />
       }
       headerRoleBadge={
         <>
-          <span className="rounded-full bg-muted px-2 py-0.5 portal-text-meta font-semibold text-text-secondary">
+          <span className="rounded-pill bg-muted px-2 py-0.5 portal-text-meta font-semibold text-text-secondary">
             {EIGENTUEMER_DASHBOARD_ROLE}
           </span>
           <form action="/portal/auth/signout" method="post">
-            <button type="submit" className="btn-pill-outline portal-btn-compact">
+            <PortalButton variant="secondary" action={false} compact type="submit" className="btn-pill-outline">
               Abmelden
-            </button>
+            </PortalButton>
           </form>
         </>
       }
@@ -610,9 +630,10 @@ export function EigentuemerPortalClient({
                   setSelectedId(null);
                 });
                 flashPageBusy();
-                router.replace("/portal?section=vorgaenge", {
-                  scroll: false,
-                });
+                router.replace(
+                  parseReturn(searchParams, "/portal?section=vorgaenge"),
+                  { scroll: false }
+                );
               }}
             />
           </div>
@@ -628,7 +649,7 @@ export function EigentuemerPortalClient({
                 <label className="sr-only" htmlFor="eg-filter-objekt">
                   Objekt filtern
                 </label>
-                <select
+                <PortalSelect
                   id="eg-filter-objekt"
                   className="portal-input min-w-[10rem] flex-1"
                   value={filterObjektId}
@@ -644,11 +665,11 @@ export function EigentuemerPortalClient({
                       {o.titel || "Objekt"}
                     </option>
                   ))}
-                </select>
+                </PortalSelect>
                 <label className="sr-only" htmlFor="eg-filter-einheit">
                   Einheit filtern
                 </label>
-                <select
+                <PortalSelect
                   id="eg-filter-einheit"
                   className="portal-input min-w-[10rem] flex-1"
                   value={filterEinheitId}
@@ -664,7 +685,7 @@ export function EigentuemerPortalClient({
                       {!e.createAllowed ? " (SE-Verwaltung)" : ""}
                     </option>
                   ))}
-                </select>
+                </PortalSelect>
               </div>
             )}
 
@@ -682,12 +703,18 @@ export function EigentuemerPortalClient({
             />
 
             {pageRows.length === 0 ? (
-              <PortalEmptyState
-                role="eigentuemer"
+              <PortalInboxEmpty
+                title={PORTAL_EMPTY_TITLE}
+                description={portalEmptySubtitle("eigentuemer")}
                 compact
-                canCreate
-                createLabel={portalCreateLabel("eigentuemer")}
-                onPrimary={() => setCreateOpen(true)}
+                action={
+                  <PortalButton
+                    variant="primary"
+                    onClick={() => setCreateOpen(true)}
+                  >
+                    {`+ ${portalCreateLabel("eigentuemer")}`}
+                  </PortalButton>
+                }
               />
             ) : (
               <div className={portalListStackClass("responsive")}>
@@ -708,6 +735,17 @@ export function EigentuemerPortalClient({
                     meta={row.meta}
                     showChevron
                     onClick={() => openVorgangById(row.id)}
+                    trailingActions={
+                      <PortalActionMenu
+                        title="Aktionen"
+                        items={[
+                          {
+                            label: "Öffnen",
+                            onClick: () => openVorgangById(row.id),
+                          },
+                        ]}
+                      />
+                    }
                   />
                   );
                 })}
@@ -808,7 +846,7 @@ export function EigentuemerPortalClient({
               {einheiten.length === 0 ? (
                 <PortalInboxEmpty
                   title="Keine Einheiten"
-                  description="Noch keine Einheiten zugeordnet. Über „Anfrage erstellen“ kannst du ein eigenes Objekt anlegen."
+                  description="Noch keine Einheiten zugeordnet. Über „Anfrage erstellen“ können Sie ein eigenes Objekt anlegen."
                   compact
                 />
               ) : (

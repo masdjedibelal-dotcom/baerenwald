@@ -1,3 +1,4 @@
+// SYNCED FROM CRM — do not edit
 export type VorgangPhase = 'anfrage' | 'angebot' | 'auftrag' | 'rechnung'
 
 export type VorgangActor = 'freigabe' | 'handwerker' | 'kunde' | 'bw'
@@ -10,6 +11,12 @@ export type VorgangAngebotInput = {
   updated_at?: string | null
   gesendet_am?: string | null
   gesendet_kunde_at?: string | null
+  /** Projekt-/Leistungstitel (Spalte oder Wizard) */
+  leistungsumfang?: string | null
+  notizen?: string | null
+  titel?: string | null
+  ist_wiederkehrend?: boolean | null
+  wiederkehr_turnus?: string | null
 }
 
 export type VorgangAuftragInput = {
@@ -19,6 +26,8 @@ export type VorgangAuftragInput = {
   created_at: string
   updated_at?: string | null
   handwerkerAktionOffen?: boolean
+  ist_wiederkehrend?: boolean | null
+  wiederkehr_turnus?: string | null
 }
 
 export type VorgangRechnungInput = {
@@ -27,6 +36,19 @@ export type VorgangRechnungInput = {
   faellig?: string | null
   created_at: string
   updated_at?: string | null
+  /**
+   * `abschlag` / `schluss` = eigene Listen-Zeile (Titel), Phase gewinnt trotzdem
+   * sobald Status ≠ Entwurf/Storno — Stamm wandert in Rechnungsphase.
+   * `voll` / fehlend = gleiche Phasen-Regel.
+   */
+  rechnung_art?: string | null
+  abschlag_index?: number | null
+  rechnungsnummer?: string | null
+  brutto?: number | null
+  ist_wiederkehrend?: boolean | null
+  wiederkehr_turnus?: string | null
+  /** rechnung | gutschrift — Gutschriften gewinnen nie die Stamm-Phase. */
+  beleg_typ?: string | null
 }
 
 export type VorgangLeadInput = {
@@ -35,13 +57,18 @@ export type VorgangLeadInput = {
   situation?: string | null
   funnel_daten?: unknown
   kanal?: string | null
+  erfassung_von?: string | null
+  anlass?: string | null
   org_freigabe_status?: string | null
   hv_meldung_status?: string | null
+  freigabe_bypass_grund?: string | null
   kontakt_name?: string | null
   plz?: string | null
   bereiche?: string[] | null
   created_at: string
   updated_at?: string | null
+  ist_wiederkehrend?: boolean | null
+  wiederkehr_turnus?: string | null
 }
 
 export type ResolveVorgangInput = {
@@ -57,6 +84,7 @@ export type ResolvedVorgangBadges = {
   wartet_freigabe?: boolean
 }
 
+/** Kanonischer Output von `resolveVorgang()` — einzige Resolver-Output-Shape. */
 export type ResolvedVorgang = {
   phase: VorgangPhase
   unterstatus: string
@@ -70,6 +98,41 @@ export type ResolvedVorgang = {
   entityId: string
   entityType: VorgangPhase
   updatedAt: string
+}
+
+/** Zeile in `/vorgaenge` (Resolver + Listen-Metadaten). */
+export type VorgangListeRow = ResolvedVorgang & {
+  leadId: string
+  kundeId?: string | null
+  kundeName: string | null
+  wertLabel: string | null
+  detailHref: string
+  /** Handwerker an Auftragspositionen dieses Vorgangs (für Detail-`restrictHandwerker`). */
+  handwerkerIds?: string[]
+  /** Bestand: wiederkehrende Leistung (Phase-Entity oder Lead). */
+  ist_wiederkehrend?: boolean
+  wiederkehr_turnus?: string | null
+  /** FAB-/Direktrechnung ohne Anfrage-/Auftrags-Verknüpfung. */
+  standalone?: boolean
+  kontaktTelefon?: string | null
+  kontaktEmail?: string | null
+  /** Ersetzt-Kette (Angebot/Rechnung). */
+  ersetzt_durch?: string | null
+  /** Rechnungskorrektur: Verweis auf Original. */
+  korrektur_von?: string | null
+  korrektur_art?: string | null
+  /** Storno-Gutschrift → Original-RE. */
+  bezug_rechnung_id?: string | null
+  /** ausgehend (Default) | eingehend (Partner-Rechnung). */
+  rechnungRichtung?: 'ausgehend' | 'eingehend'
+  /** rechnung (Default) | gutschrift (Storno-Begleiter). */
+  belegTyp?: 'rechnung' | 'gutschrift' | null
+  /** Nur eingehend: angebot_handwerker.id für Ensure/Deep-Link. */
+  angebotHandwerkerId?: string | null
+  /** Geschäftsvolumen für Listen-Summe (einmal pro Lead/Vorgang). */
+  listenSummeEuro?: number | null
+  /** false = Abschlags-Satellit — nicht separat in der Summe zählen. */
+  listeSummeZaehlen?: boolean
 }
 
 export type PortalRole = 'crm' | 'kunde' | 'hv' | 'handwerker' | 'mieter'

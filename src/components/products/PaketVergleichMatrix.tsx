@@ -1,6 +1,6 @@
 "use client";
 
-import { Check, ChevronDown, HelpCircle, Minus } from "lucide-react";
+import { PortalIcon } from "@/components/portal/PortalIcon";
 import { useEffect, useMemo, useRef, useState } from "react";
 
 import { track } from "@/lib/analytics";
@@ -35,14 +35,14 @@ function Cell({ value }: { value: string }) {
   if (value === "yes") {
     return (
       <span className="conversion-matrix-icon conversion-matrix-icon--yes" aria-label="Enthalten">
-        <Check size={16} strokeWidth={2.5} />
+        <PortalIcon n="check" ctx="default" size={16} />
       </span>
     );
   }
   if (value === "no" || value === "—") {
     return (
       <span className="conversion-matrix-icon conversion-matrix-icon--no" aria-hidden>
-        <Minus size={16} strokeWidth={2} />
+        <PortalIcon n="minus" ctx="default" size={16} />
       </span>
     );
   }
@@ -86,7 +86,7 @@ function MatrixRowCells({
         <span className="conversion-matrix-label-text">{row.label}</span>
         {row.tooltip ? (
           <span className="conversion-matrix-tooltip" title={row.tooltip}>
-            <HelpCircle size={14} aria-label={row.tooltip} />
+            <PortalIcon n="help" ctx="row" size={14} aria-label={row.tooltip} />
           </span>
         ) : null}
       </th>
@@ -214,11 +214,7 @@ export function PaketVergleichMatrix({
                 ? "Weniger anzeigen"
                 : `Alle Leistungen anzeigen (${secondary.length} weitere)`}
             </span>
-            <ChevronDown
-              size={18}
-              className={`conversion-matrix-toggle-icon${expanded ? " conversion-matrix-toggle-icon--open" : ""}`}
-              aria-hidden
-            />
+            <PortalIcon n="chevron-down" ctx="default" size={18} className={`conversion-matrix-toggle-icon${expanded ? " conversion-matrix-toggle-icon--open" : ""}`} aria-hidden />
           </button>
         ) : null}
       </div>

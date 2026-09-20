@@ -1,3 +1,4 @@
+import { logDbError } from '@/lib/errors/log-db-error'
 import { NextResponse } from "next/server";
 
 import { supabaseAdmin } from "@/lib/supabase";
@@ -16,19 +17,20 @@ export async function POST(req: Request) {
   in30.setDate(in30.getDate() + 30);
   const grenze = in30.toISOString().slice(0, 10);
 
-  const { data: faellig } = await supabaseAdmin
+  const {data: faellig, error: __dbErr132_1} = await supabaseAdmin
     .from("gewaehrleistungen")
     .select("id, frist_bis")
     .eq("status", "aktiv")
     .lte("frist_bis", grenze)
     .is("wiedervorlage_am", null);
-
+  if (__dbErr132_1) logDbError('app/api/cron/gewaehrleistung/route:gewaehrleistungen', __dbErr132_1)
   let updated = 0;
   for (const g of faellig ?? []) {
-    await supabaseAdmin
+    const { error: __dbErr133_2 } = await supabaseAdmin
       .from("gewaehrleistungen")
       .update({ wiedervorlage_am: g.frist_bis })
       .eq("id", g.id);
+    if (__dbErr133_2) logDbError('app/api/cron/gewaehrleistung/route:gewaehrleistungen', __dbErr133_2)
     updated += 1;
   }
 

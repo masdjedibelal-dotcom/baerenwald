@@ -1,5 +1,6 @@
+import { logDbError } from '@/lib/errors/log-db-error'
 import { PARTNER_KONDITION_MWST } from "@/lib/partner/partner-konditionen";
-import type { PartnerDocPosition } from "@/lib/partner/generate-partner-dokument-pdf";
+import type { PartnerDocPosition } from "@/lib/partner/partner-dokument-types";
 import { parsePartnerHwKonditionen } from "@/lib/partner/partner-konditionen";
 import { supabaseAdmin } from "@/lib/supabase";
 
@@ -143,13 +144,14 @@ export async function buildPartnerAutoDocPositionen(opts: {
 
   let auftragId = opts.auftragId?.trim() || null;
   if (!auftragId && opts.angebotId) {
-    const { data: auf } = await supabaseAdmin
+    const {data: auf, error: __dbErr413_1} = await supabaseAdmin
       .from("auftraege")
       .select("id")
       .eq("angebot_id", opts.angebotId)
       .order("created_at", { ascending: false })
       .limit(1)
       .maybeSingle();
+    if (__dbErr413_1) logDbError('lib/partner/partner-auto-doc-positionen:auftraege', __dbErr413_1)
     auftragId = auf?.id ? String(auf.id) : null;
   }
 
@@ -174,6 +176,7 @@ export async function buildPartnerAutoDocPositionen(opts: {
       )
       .eq("auftrag_id", auftragId)
       .eq("handwerker_id", opts.handwerkerId);
+    if (posErr) logDbError('lib/partner/partner-auto-doc-positionen:auftrag_positionen', posErr)
     if (posErr) {
       console.warn("[partner] auto-doc positionen:", posErr.message);
     }
@@ -201,10 +204,11 @@ export async function buildPartnerAutoDocPositionen(opts: {
   const eintraegeByPos = new Map<string, EintragRow[]>();
   if (auftragPos.length) {
     const ids = auftragPos.map((p) => p.id);
-    const { data: eintraege } = await supabaseAdmin
+    const {data: eintraege, error: __dbErr414_2} = await supabaseAdmin
       .from("position_eintraege")
       .select("position_id, typ, beschreibung, zeit_minuten, created_at")
       .in("position_id", ids);
+    if (__dbErr414_2) logDbError('lib/partner/partner-auto-doc-positionen:position_eintraege', __dbErr414_2)
     for (const e of (eintraege ?? []) as EintragRow[]) {
       const pid = String(e.position_id ?? "").trim();
       if (!pid) continue;

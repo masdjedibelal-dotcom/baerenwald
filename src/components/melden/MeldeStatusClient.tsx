@@ -1,7 +1,9 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { PortalButton } from "@/components/portal/PortalButton";
 
+import { PortalTextarea } from "@/components/shared/PortalFormControls";
 import { useCookieConsent } from "@/components/consent/CookieConsentContext";
 import { DokumenteTabelle } from "@/components/shared/DokumenteTabelle";
 import { PortalPhotoGallery } from "@/components/shared/PortalPhotoGallery";
@@ -292,7 +294,7 @@ export function MeldeStatusClient({
           <h1 className="mieter-wl-objekt-title" style={{ fontSize: 21 }}>
             {t.title_de}
           </h1>
-          <p className="text-[13px] text-[#4a5c54] mt-1">{metaLine}</p>
+          <p className="text-fs-meta text-[var(--p2-sub)] mt-1">{metaLine}</p>
         </div>
 
         <MieterStgTimeline stufe={stufe} lang={lang} />
@@ -301,7 +303,7 @@ export function MeldeStatusClient({
 
         {fotos.length > 0 ? (
           <details className="rounded-[10px] border border-[var(--p2-line)] bg-white">
-            <summary className="cursor-pointer select-none px-4 py-3 text-[13.5px] font-semibold text-[#16201B]">
+            <summary className="cursor-pointer select-none px-4 py-3 text-fs-body font-semibold text-[var(--p2-ink)]">
               Fotos anzeigen ({fotos.length})
             </summary>
             <div className="border-t border-[var(--p2-line)] px-4 py-3">
@@ -313,10 +315,10 @@ export function MeldeStatusClient({
         {bestaetigt ? (
           <MieterWlCard>
             <div className="p-4">
-              <p className="text-[14.5px] font-bold text-[#16201B]">
+              <p className="text-fs-title font-bold text-[var(--p2-ink)]">
                 {"Ihr Termin"}
               </p>
-              <p className="mt-1 text-sm font-semibold text-[color:var(--org-primary,#2E7D52)]">
+              <p className="mt-1 text-sm font-semibold text-[color:var(--org-primary)]">
                 {fmtSlot(bestaetigt.slot_beginn)}
               </p>
             </div>
@@ -324,10 +326,10 @@ export function MeldeStatusClient({
         ) : vorgeschlagene.length > 0 ? (
           <MieterWlCard>
             <div className="p-4 space-y-3">
-              <p className="text-[14.5px] font-bold text-[#16201B]">
+              <p className="text-fs-title font-bold text-[var(--p2-ink)]">
                 {"Terminvorschlag"}
               </p>
-              <p className="text-[12.5px] text-[#4a5c54] leading-relaxed">
+              <p className="text-fs-meta text-[var(--p2-sub)] leading-relaxed">
                 Der beauftragte Betrieb schlägt folgende Zeiten vor. Bitte wählen
                 Sie einen Termin.
               </p>
@@ -337,26 +339,28 @@ export function MeldeStatusClient({
                     key={s.id}
                     className="flex flex-wrap items-center justify-between gap-2 rounded-[10px] border border-[var(--p2-line)] p-3"
                   >
-                    <span className="text-[13.5px] font-semibold">
+                    <span className="text-fs-body font-semibold">
                       {fmtSlot(s.slot_beginn)}
                     </span>
                     <div className="flex gap-2">
-                      <button
+                      <PortalButton
+                        variant="primary"
                         type="button"
-                        className="mieter-wl-btn mieter-wl-btn--primary !w-auto !py-2 !px-3 !text-[12.5px]"
+                        className="mieter-wl-btn mieter-wl-btn--primary !w-auto !py-2 !px-3 !text-fs-meta"
                         disabled={busy}
                         onClick={() => void confirmSlot(s.id)}
                       >
                         {"Bestätigen"}
-                      </button>
-                      <button
+                      </PortalButton>
+                      <PortalButton
+                        variant="ghost"
                         type="button"
-                        className="text-xs text-[#8a9690] underline"
+                        className="text-xs text-[var(--p2-muted-icon)] underline"
                         disabled={busy}
                         onClick={() => void declineSlot(s.id)}
                       >
                         {"Passt nicht"}
-                      </button>
+                      </PortalButton>
                     </div>
                   </li>
                 ))}
@@ -372,51 +376,53 @@ export function MeldeStatusClient({
         {erledigt && !feedbackDone ? (
           <MieterWlCard>
             <div className="p-4 space-y-3">
-              <p className="text-[14.5px] font-bold text-[#16201B]">
+              <p className="text-fs-title font-bold text-[var(--p2-ink)]">
                 {"Wie war der Service?"}
               </p>
               <form onSubmit={submitFeedback} className="space-y-3">
                 <div className="flex gap-1">
                   {[1, 2, 3, 4, 5].map((n) => (
-                    <button
+                    <PortalButton
+                      variant="ghost"
                       key={n}
                       type="button"
                       className={cn(
                         "text-2xl",
-                        n <= sterne ? "text-amber-500" : "text-[#d0d5d2]"
+                        n <= sterne ? "text-warning-text" : "text-[var(--p2-star-empty)]"
                       )}
                       onClick={() => setSterne(n)}
                       aria-label={`${n} Sterne`}
                     >
                       ★
-                    </button>
+                    </PortalButton>
                   ))}
                 </div>
-                <textarea
+                <PortalTextarea
                   className="input-field w-full min-h-[72px]"
                   placeholder={"Optional: Anmerkung"}
                   value={freitext}
                   onChange={(e) => setFreitext(e.target.value)}
                 />
-                <button
+                <PortalButton
+                  variant="primary"
                   type="submit"
                   className="mieter-wl-btn mieter-wl-btn--primary"
                   disabled={busy || sterne < 1}
                 >
                   {"Feedback senden"}
-                </button>
+                </PortalButton>
               </form>
             </div>
           </MieterWlCard>
         ) : null}
 
         {msg ? (
-          <p className="text-center text-sm text-[#4a5c54]" role="status">
+          <p className="text-center text-sm text-[var(--p2-sub)]" role="status">
             {msg}
           </p>
         ) : null}
 
-        <p className="text-[12.5px] text-[#4a5c54] leading-relaxed">
+        <p className="text-fs-meta text-[var(--p2-sub)] leading-relaxed">
           {t.hello_de}
           {firstName}
           {" – "}

@@ -1,5 +1,6 @@
 "use server";
 
+import { logDbError } from '@/lib/errors/log-db-error'
 import { revalidatePath } from "next/cache";
 
 import { assertOrgLead } from "@/lib/org/assert-org-objekt";
@@ -85,23 +86,25 @@ function mapPunkt(row: Record<string, unknown>): LeadBefundPunktRow {
 async function loadBefundWithPunkte(
   befundId: string
 ): Promise<LeadBefundRow | null> {
-  const { data: befund } = await supabaseAdmin
+  const {data: befund, error: __dbErr5_1} = await supabaseAdmin
     .from("lead_befunde")
     .select(
       "id, lead_id, durchgefuehrt_von, durchgefuehrt_am, ergebnis, melde_kategorie, vorlage_key, objekt_kontakt_id, abgeschlossen_at, created_at, updated_at"
     )
     .eq("id", befundId)
     .maybeSingle();
+  if (__dbErr5_1) logDbError('app/actions/lead-befund:lead_befunde', __dbErr5_1)
 
   if (!befund) return null;
 
-  const { data: punkte } = await supabaseAdmin
+  const {data: punkte, error: __dbErr6_2} = await supabaseAdmin
     .from("lead_befund_punkte")
     .select(
       "id, befund_id, sort_order, titel, quelle, vorlage_key, status, notiz, foto_refs, updated_at"
     )
     .eq("befund_id", befundId)
     .order("sort_order", { ascending: true });
+  if (__dbErr6_2) logDbError('app/actions/lead-befund:lead_befund_punkte', __dbErr6_2)
 
   return {
     id: String(befund.id),
@@ -142,11 +145,12 @@ export async function getLeadBefundAction(input: {
   const lead = await assertLeadForBefundActor(actorRes.actor, leadId);
   if (!lead) return { ok: false, error: "Vorgang nicht gefunden." };
 
-  const { data: existing } = await supabaseAdmin
+  const {data: existing, error: __dbErr7_3} = await supabaseAdmin
     .from("lead_befunde")
     .select("id")
     .eq("lead_id", leadId)
     .maybeSingle();
+  if (__dbErr7_3) logDbError('app/actions/lead-befund:lead_befunde', __dbErr7_3)
 
   if (!existing?.id) return { ok: true, befund: null };
 
@@ -226,6 +230,7 @@ export async function updateLeadBefundKopfAction(input: {
     .from("lead_befunde")
     .update(patch)
     .eq("id", befundId);
+  if (error) logDbError('app/actions/lead-befund:lead_befunde', error)
   if (error) return { ok: false, error: error.message };
 
   const befund = await loadBefundWithPunkte(befundId);
@@ -250,11 +255,12 @@ export async function updateLeadBefundPunktAction(input: {
   const punktId = String(input.punktId ?? "").trim();
   if (!punktId) return { ok: false, error: "Punkt fehlt." };
 
-  const { data: punkt } = await supabaseAdmin
+  const {data: punkt, error: __dbErr8_4} = await supabaseAdmin
     .from("lead_befund_punkte")
     .select("id, befund_id")
     .eq("id", punktId)
     .maybeSingle();
+  if (__dbErr8_4) logDbError('app/actions/lead-befund:lead_befund_punkte', __dbErr8_4)
   if (!punkt?.befund_id) return { ok: false, error: "Punkt nicht gefunden." };
 
   const owned = await assertBefundForActor(
@@ -292,15 +298,17 @@ export async function updateLeadBefundPunktAction(input: {
       "id, befund_id, sort_order, titel, quelle, vorlage_key, status, notiz, foto_refs, updated_at"
     )
     .single();
+  if (error) logDbError('app/actions/lead-befund:lead_befund_punkte', error)
 
   if (error || !updated) {
     return { ok: false, error: error?.message ?? "Speichern fehlgeschlagen." };
   }
 
-  await supabaseAdmin
+  const { error: __dbErr18_14 } = await supabaseAdmin
     .from("lead_befunde")
     .update({ updated_at: new Date().toISOString() })
     .eq("id", owned.befundId);
+  if (__dbErr18_14) logDbError('app/actions/lead-befund:lead_befunde', __dbErr18_14)
 
   revalidatePath("/portal");
   return { ok: true, punkt: mapPunkt(updated as Record<string, unknown>) };
@@ -336,13 +344,14 @@ export async function completeLeadBefundAction(input: {
   const owned = await assertBefundForActor(actorRes.actor, befundId);
   if (!owned) return { ok: false, error: "Befund nicht gefunden." };
 
-  const { data: lead } = await supabaseAdmin
+  const {data: lead, error: __dbErr9_5} = await supabaseAdmin
     .from("leads")
     .select(
       "id, hv_meldung_status, funnel_daten, org_freigabe_status, freigabe_bypass_grund"
     )
     .eq("id", owned.leadId)
     .maybeSingle();
+  if (__dbErr9_5) logDbError('app/actions/lead-befund:leads', __dbErr9_5)
 
   if (!lead) return { ok: false, error: "Vorgang nicht gefunden." };
   const hv = String(lead.hv_meldung_status ?? "").trim().toLowerCase();
@@ -367,6 +376,7 @@ export async function completeLeadBefundAction(input: {
     .from("lead_befunde")
     .update(befundPatch)
     .eq("id", befundId);
+  if (bErr) logDbError('app/actions/lead-befund:lead_befunde', bErr)
   if (bErr) return { ok: false, error: bErr.message };
 
   let hvStatus = "hm_pruefung";
@@ -382,6 +392,7 @@ export async function completeLeadBefundAction(input: {
         updated_at: nowIso,
       })
       .eq("id", owned.leadId);
+    if (error) logDbError('app/actions/lead-befund:leads', error)
     if (error) return { ok: false, error: error.message };
 
     const { notifyCrmOrgPortal } = await import("@/lib/org/notify-crm-org");
@@ -399,6 +410,7 @@ export async function completeLeadBefundAction(input: {
       .from("leads")
       .update({ hv_meldung_status: "angebot_eingefordert" })
       .eq("id", owned.leadId);
+    if (error) logDbError('app/actions/lead-befund:leads', error)
     if (error) return { ok: false, error: error.message };
 
     const { notifyCrmOrgPortal } = await import("@/lib/org/notify-crm-org");
@@ -433,6 +445,7 @@ export async function completeLeadBefundAction(input: {
         situation: "notfall",
       })
       .eq("id", owned.leadId);
+    if (error) logDbError('app/actions/lead-befund:leads', error)
     if (error) return { ok: false, error: error.message };
 
     const { notifyCrmOrgPortal } = await import("@/lib/org/notify-crm-org");
@@ -489,11 +502,12 @@ export async function rejectLeadBefundToHvAction(input: {
   const owned = await assertBefundForActor(actorRes.actor, befundId);
   if (!owned) return { ok: false, error: "Befund nicht gefunden." };
 
-  const { data: lead } = await supabaseAdmin
+  const {data: lead, error: __dbErr10_6} = await supabaseAdmin
     .from("leads")
     .select("id, hv_meldung_status")
     .eq("id", owned.leadId)
     .maybeSingle();
+  if (__dbErr10_6) logDbError('app/actions/lead-befund:leads', __dbErr10_6)
 
   if (!lead) return { ok: false, error: "Vorgang nicht gefunden." };
   const hv = String(lead.hv_meldung_status ?? "").trim().toLowerCase();
@@ -509,9 +523,10 @@ export async function rejectLeadBefundToHvAction(input: {
     .from("leads")
     .update({ hv_meldung_status: "neu" })
     .eq("id", owned.leadId);
+  if (leadErr) logDbError('app/actions/lead-befund:leads', leadErr)
   if (leadErr) return { ok: false, error: leadErr.message };
 
-  await supabaseAdmin
+  const { error: __dbErr19_15 } = await supabaseAdmin
     .from("lead_befunde")
     .update({
       ergebnis: null,
@@ -519,6 +534,7 @@ export async function rejectLeadBefundToHvAction(input: {
       updated_at: nowIso,
     })
     .eq("id", befundId);
+  if (__dbErr19_15) logDbError('app/actions/lead-befund:lead_befunde', __dbErr19_15)
 
   try {
     const { notifyHvHausmeisterBefundZurueck } = await import(
@@ -565,13 +581,14 @@ export async function addLeadBefundFreipunktAction(input: {
   const owned = await assertBefundForActor(actorRes.actor, befundId);
   if (!owned) return { ok: false, error: "Befund nicht gefunden." };
 
-  const { data: maxRow } = await supabaseAdmin
+  const {data: maxRow, error: __dbErr11_7} = await supabaseAdmin
     .from("lead_befund_punkte")
     .select("sort_order")
     .eq("befund_id", befundId)
     .order("sort_order", { ascending: false })
     .limit(1)
     .maybeSingle();
+  if (__dbErr11_7) logDbError('app/actions/lead-befund:lead_befund_punkte', __dbErr11_7)
 
   const nextOrder =
     maxRow?.sort_order != null && Number.isFinite(Number(maxRow.sort_order))
@@ -594,15 +611,17 @@ export async function addLeadBefundFreipunktAction(input: {
       "id, befund_id, sort_order, titel, quelle, vorlage_key, status, notiz, foto_refs, updated_at"
     )
     .single();
+  if (error) logDbError('app/actions/lead-befund:lead_befund_punkte', error)
 
   if (error || !inserted) {
     return { ok: false, error: error?.message ?? "Punkt anlegen fehlgeschlagen." };
   }
 
-  await supabaseAdmin
+  const { error: __dbErr20_16 } = await supabaseAdmin
     .from("lead_befunde")
     .update({ updated_at: new Date().toISOString() })
     .eq("id", befundId);
+  if (__dbErr20_16) logDbError('app/actions/lead-befund:lead_befunde', __dbErr20_16)
 
   revalidatePath("/portal");
   return { ok: true, punkt: mapPunkt(inserted as Record<string, unknown>) };
@@ -626,11 +645,12 @@ export async function addLeadBefundVorlagePunktAction(input: {
   const owned = await assertBefundForActor(actorRes.actor, befundId);
   if (!owned) return { ok: false, error: "Befund nicht gefunden." };
 
-  const { data: head } = await supabaseAdmin
+  const {data: head, error: __dbErr12_8} = await supabaseAdmin
     .from("lead_befunde")
     .select("id, vorlage_key")
     .eq("id", befundId)
     .maybeSingle();
+  if (__dbErr12_8) logDbError('app/actions/lead-befund:lead_befunde', __dbErr12_8)
   if (!head?.id) return { ok: false, error: "Befund nicht gefunden." };
 
   const { findVorlagePunktDef, isBefundVorlageKey } = await import(
@@ -643,23 +663,25 @@ export async function addLeadBefundVorlagePunktAction(input: {
   const def = findVorlagePunktDef(vk, punktKey);
   if (!def) return { ok: false, error: "Prüfpunkt unbekannt." };
 
-  const { data: existing } = await supabaseAdmin
+  const {data: existing, error: __dbErr13_9} = await supabaseAdmin
     .from("lead_befund_punkte")
     .select("id")
     .eq("befund_id", befundId)
     .eq("vorlage_key", punktKey)
     .maybeSingle();
+  if (__dbErr13_9) logDbError('app/actions/lead-befund:lead_befund_punkte', __dbErr13_9)
   if (existing?.id) {
     return { ok: false, error: "Prüfpunkt ist bereits in der Checkliste." };
   }
 
-  const { data: maxRow } = await supabaseAdmin
+  const {data: maxRow, error: __dbErr14_10} = await supabaseAdmin
     .from("lead_befund_punkte")
     .select("sort_order")
     .eq("befund_id", befundId)
     .order("sort_order", { ascending: false })
     .limit(1)
     .maybeSingle();
+  if (__dbErr14_10) logDbError('app/actions/lead-befund:lead_befund_punkte', __dbErr14_10)
 
   const nextOrder =
     maxRow?.sort_order != null && Number.isFinite(Number(maxRow.sort_order))
@@ -681,15 +703,17 @@ export async function addLeadBefundVorlagePunktAction(input: {
       "id, befund_id, sort_order, titel, quelle, vorlage_key, status, notiz, foto_refs, updated_at"
     )
     .single();
+  if (error) logDbError('app/actions/lead-befund:lead_befund_punkte', error)
 
   if (error || !inserted) {
     return { ok: false, error: error?.message ?? "Punkt anlegen fehlgeschlagen." };
   }
 
-  await supabaseAdmin
+  const { error: __dbErr21_17 } = await supabaseAdmin
     .from("lead_befunde")
     .update({ updated_at: new Date().toISOString() })
     .eq("id", befundId);
+  if (__dbErr21_17) logDbError('app/actions/lead-befund:lead_befunde', __dbErr21_17)
 
   revalidatePath("/portal");
   return { ok: true, punkt: mapPunkt(inserted as Record<string, unknown>) };
@@ -707,11 +731,12 @@ export async function deleteLeadBefundPunktAction(input: {
   const punktId = String(input.punktId ?? "").trim();
   if (!punktId) return { ok: false, error: "Prüfpunkt fehlt." };
 
-  const { data: punkt } = await supabaseAdmin
+  const {data: punkt, error: __dbErr15_11} = await supabaseAdmin
     .from("lead_befund_punkte")
     .select("id, befund_id")
     .eq("id", punktId)
     .maybeSingle();
+  if (__dbErr15_11) logDbError('app/actions/lead-befund:lead_befund_punkte', __dbErr15_11)
   if (!punkt?.befund_id) return { ok: false, error: "Prüfpunkt nicht gefunden." };
 
   const owned = await assertBefundForActor(
@@ -720,11 +745,12 @@ export async function deleteLeadBefundPunktAction(input: {
   );
   if (!owned) return { ok: false, error: "Befund nicht gefunden." };
 
-  const { data: lead } = await supabaseAdmin
+  const {data: lead, error: __dbErr16_12} = await supabaseAdmin
     .from("leads")
     .select("hv_meldung_status")
     .eq("id", owned.leadId)
     .maybeSingle();
+  if (__dbErr16_12) logDbError('app/actions/lead-befund:leads', __dbErr16_12)
   const hv = String(lead?.hv_meldung_status ?? "").trim().toLowerCase();
   if (hv !== "hm_pruefung") {
     return {
@@ -737,12 +763,14 @@ export async function deleteLeadBefundPunktAction(input: {
     .from("lead_befund_punkte")
     .delete()
     .eq("id", punktId);
+  if (error) logDbError('app/actions/lead-befund:lead_befund_punkte', error)
   if (error) return { ok: false, error: error.message };
 
-  await supabaseAdmin
+  const { error: __dbErr22_18 } = await supabaseAdmin
     .from("lead_befunde")
     .update({ updated_at: new Date().toISOString() })
     .eq("id", punkt.befund_id);
+  if (__dbErr22_18) logDbError('app/actions/lead-befund:lead_befunde', __dbErr22_18)
 
   revalidatePath("/portal");
   return { ok: true };
@@ -798,11 +826,12 @@ export async function uploadLeadBefundFotoAction(input: {
     return { ok: false, error: "Foto fehlt." };
   }
 
-  const { data: punkt } = await supabaseAdmin
+  const {data: punkt, error: __dbErr17_13} = await supabaseAdmin
     .from("lead_befund_punkte")
     .select("id, befund_id, foto_refs")
     .eq("id", punktId)
     .maybeSingle();
+  if (__dbErr17_13) logDbError('app/actions/lead-befund:lead_befund_punkte', __dbErr17_13)
   if (!punkt?.befund_id) return { ok: false, error: "Punkt nicht gefunden." };
 
   const owned = await assertBefundForActor(
@@ -829,6 +858,7 @@ export async function uploadLeadBefundFotoAction(input: {
       "id, befund_id, sort_order, titel, quelle, vorlage_key, status, notiz, foto_refs, updated_at"
     )
     .single();
+  if (error) logDbError('app/actions/lead-befund:lead_befund_punkte', error)
 
   if (error || !updated) {
     return { ok: false, error: error?.message ?? "Speichern fehlgeschlagen." };

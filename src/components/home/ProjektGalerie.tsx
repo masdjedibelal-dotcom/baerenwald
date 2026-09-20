@@ -1,5 +1,4 @@
 "use client";
-
 import Image from "next/image";
 import {
   useCallback,
@@ -10,6 +9,7 @@ import {
   type ReactNode,
 } from "react";
 
+import { SiteIcon } from "@/components/ui/SiteIcon";
 import { cn } from "@/lib/utils";
 
 /** Zeilen, die mit Aufzählungszeichen beginnen (Daten aus `loesung`). */
@@ -343,15 +343,7 @@ export function ProjektGalerie({
             onClick={() => scrollByDir("left")}
             aria-label="Vorherige Projekte"
           >
-            <svg viewBox="0 0 18 18" fill="none" aria-hidden>
-              <path
-                d="M11 4 6 9l5 5"
-                stroke="currentColor"
-                strokeWidth="1.8"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            </svg>
+            <SiteIcon n="chevron-left" ctx="default" size={18} />
           </button>
 
           <div
@@ -448,15 +440,7 @@ export function ProjektGalerie({
             onClick={() => scrollByDir("right")}
             aria-label="Weitere Projekte"
           >
-            <svg viewBox="0 0 18 18" fill="none" aria-hidden>
-              <path
-                d="M7 4l5 5-5 5"
-                stroke="currentColor"
-                strokeWidth="1.8"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            </svg>
+            <SiteIcon n="chevron-right" ctx="default" size={18} />
           </button>
         </div>
 

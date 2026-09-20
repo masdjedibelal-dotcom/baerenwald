@@ -1,7 +1,9 @@
 "use client";
 
 import { useState } from "react";
+import { PortalButton } from "@/components/portal/PortalButton";
 
+import { PortalTextarea } from "@/components/shared/PortalFormControls";
 import { usePortalBusy } from "@/components/shared/PortalBusyContext";
 import { orgPortalToast } from "@/lib/shared/portal-toast";
 import { cn } from "@/lib/utils";
@@ -78,10 +80,10 @@ export function OrgVorgangFeedbackSection({
   }
 
   return (
-    <div className="rounded-lg border border-border-default bg-surface-card p-4 space-y-3">
+    <div className="rounded-card border border-border-default bg-surface-card p-4 space-y-3">
       {handwerkerErledigt ? (
-        <p className="text-sm font-medium text-emerald-700">
-          Handwerker hat die Leistungen abgeschlossen.
+        <p className="text-sm font-medium text-p2-primary">
+          Partner hat die Leistungen abgeschlossen.
         </p>
       ) : null}
 
@@ -100,9 +102,9 @@ export function OrgVorgangFeedbackSection({
 
       {hvFeedback?.maengel?.length ? (
         <div className="text-sm text-text-secondary space-y-1">
-          <p className="font-medium text-amber-800">Gemeldete Mängel</p>
+          <p className="font-medium text-warning-text">Gemeldete Mängel</p>
           {hvFeedback.maengel.map((m, i) => (
-            <p key={i} className="whitespace-pre-wrap rounded bg-amber-50 p-2 text-xs">
+            <p key={i} className="whitespace-pre-wrap rounded-card bg-warning-bg p-2 text-xs">
               {m.freitext}
             </p>
           ))}
@@ -113,10 +115,11 @@ export function OrgVorgangFeedbackSection({
         <>
           <div className="flex flex-wrap gap-2">
             {!hatBewertung ? (
-              <button
+              <PortalButton
+                variant="primary"
                 type="button"
                 className={cn(
-                  "rounded-full px-3 py-1 text-xs font-medium border",
+                  "rounded-pill px-3 py-1 text-xs font-medium border",
                   mode === "feedback"
                     ? "border-accent bg-accent-light text-accent"
                     : "border-border-default"
@@ -124,24 +127,25 @@ export function OrgVorgangFeedbackSection({
                 onClick={() => setMode("feedback")}
               >
                 Feedback
-              </button>
+              </PortalButton>
             ) : null}
-            <button
+            <PortalButton
+              variant="ghost"
               type="button"
               className={cn(
-                "rounded-full px-3 py-1 text-xs font-medium border",
+                "rounded-pill px-3 py-1 text-xs font-medium border",
                 mode === "maengel"
-                  ? "border-amber-500 bg-amber-50 text-amber-800"
+                  ? "border-warning-border bg-warning-bg text-warning-text"
                   : "border-border-default"
               )}
               onClick={() => setMode("maengel")}
             >
               Mängel melden
-            </button>
+            </PortalButton>
           </div>
 
           {error ? (
-            <p className="text-xs text-red-700" role="alert">
+            <p className="text-xs text-p2-danger" role="alert">
               {error}
             </p>
           ) : null}
@@ -150,23 +154,24 @@ export function OrgVorgangFeedbackSection({
             {mode === "feedback" && !hatBewertung ? (
               <div className="flex gap-1">
                 {[1, 2, 3, 4, 5].map((n) => (
-                  <button
+                  <PortalButton
+                    variant="ghost"
                     key={n}
                     type="button"
                     className={cn(
                       "text-xl",
-                      n <= sterne ? "text-amber-500" : "text-muted"
+                      n <= sterne ? "text-warning-text" : "text-muted"
                     )}
                     onClick={() => setSterne(n)}
                     aria-label={`${n} Sterne`}
                   >
                     ★
-                  </button>
+                  </PortalButton>
                 ))}
               </div>
             ) : null}
 
-            <textarea
+            <PortalTextarea
               className="input-field w-full min-h-[72px] text-sm"
               placeholder={
                 mode === "maengel"
@@ -178,11 +183,12 @@ export function OrgVorgangFeedbackSection({
               required={mode === "maengel"}
             />
 
-            <button
+            <PortalButton
+              variant="secondary"
               type="submit"
               className={cn(
                 "btn-pill-outline text-sm",
-                mode === "maengel" && "border-amber-500 text-amber-800"
+                mode === "maengel" && "border-warning-border text-warning-text"
               )}
               disabled={busy}
             >
@@ -191,7 +197,7 @@ export function OrgVorgangFeedbackSection({
                 : mode === "maengel"
                   ? "Mängel an Bärenwald melden"
                   : "Feedback senden"}
-            </button>
+            </PortalButton>
           </form>
         </>
       ) : null}

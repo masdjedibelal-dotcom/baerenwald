@@ -1,5 +1,6 @@
 "use server";
 
+import { logDbError } from '@/lib/errors/log-db-error'
 import { revalidatePath } from "next/cache";
 
 import type {
@@ -68,6 +69,7 @@ export async function saveMeldeUrsachenCheck(input: {
     .select("id, funnel_daten, auftraggeber_kunde_id")
     .eq("id", leadId)
     .maybeSingle();
+  if (leadErr) logDbError('app/actions/melde-ursachen:leads', leadErr)
 
   if (leadErr || !lead || lead.auftraggeber_kunde_id !== orgId) {
     return { ok: false, error: "Vorgang nicht gefunden." };
@@ -171,6 +173,7 @@ export async function saveMeldeUrsachenCheck(input: {
       },
     })
     .eq("id", leadId);
+  if (error) logDbError('app/actions/melde-ursachen:leads', error)
 
   if (error) return { ok: false, error: error.message };
 

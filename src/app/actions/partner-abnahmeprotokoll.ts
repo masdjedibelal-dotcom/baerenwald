@@ -1,5 +1,6 @@
 "use server";
 
+import { logDbError } from '@/lib/errors/log-db-error'
 import { revalidatePath } from "next/cache";
 
 import {
@@ -117,10 +118,10 @@ function validateNachSignatur(
     return "Bitte die Kunden-Signatur erfassen.";
   }
   if (!input.hwUnterschriftName.trim() || input.hwUnterschriftName.trim().length < 3) {
-    return "Bitte den vollen Namen des Handwerkers ausschreiben.";
+    return "Bitte den vollen Namen des Partners ausschreiben.";
   }
   if (!input.hwSignaturPng?.trim()) {
-    return "Bitte die Handwerker-Signatur zeichnen.";
+    return "Bitte die Partner-Signatur zeichnen.";
   }
   for (const m of input.maengel) {
     if (!m.titel.trim()) return "Jeder Mangel braucht einen Titel.";
@@ -129,12 +130,13 @@ function validateNachSignatur(
 }
 
 async function loadOwnAbnahmeLink(auftragId: string, handwerkerId: string) {
-  const { data } = await supabaseAdmin
+  const {data, error: __dbErr23_1} = await supabaseAdmin
     .from("auftrag_handwerker")
     .select("abnahme_signiert_am, abnahme_protokoll_id")
     .eq("auftrag_id", auftragId)
     .eq("handwerker_id", handwerkerId)
     .maybeSingle();
+  if (__dbErr23_1) logDbError('app/actions/partner-abnahmeprotokoll:auftrag_handwerker', __dbErr23_1)
 
   const signiertAm =
     (data as { abnahme_signiert_am?: string | null } | null)?.abnahme_signiert_am ??
@@ -145,11 +147,12 @@ async function loadOwnAbnahmeLink(auftragId: string, handwerkerId: string) {
 
   let freigabeStatus: string | null = null;
   if (protokollId) {
-    const { data: proto } = await supabaseAdmin
+    const {data: proto, error: __dbErr24_2} = await supabaseAdmin
       .from("auftrag_abnahmeprotokolle")
       .select("freigabe_status")
       .eq("id", protokollId)
       .maybeSingle();
+    if (__dbErr24_2) logDbError('app/actions/partner-abnahmeprotokoll:auftrag_abnahmeprotokolle', __dbErr24_2)
     freigabeStatus =
       (proto as { freigabe_status?: string | null } | null)?.freigabe_status ?? null;
   }
@@ -185,6 +188,7 @@ async function persistLocalTeilabnahme(opts: {
     .insert(row)
     .select("id")
     .maybeSingle();
+  if (error) logDbError('app/actions/partner-abnahmeprotokoll:auftrag_abnahmeprotokolle', error)
 
   if (!error && data?.id) {
     return { ok: true, protokollId: String(data.id) };
@@ -232,11 +236,12 @@ export async function submitPartnerAbnahmeNachSignatur(
   const allowed = await assertPartnerAuftrag(auth.handwerkerId, id);
   if (!allowed) return { ok: false, error: "Kein Zugriff auf diesen Auftrag." };
 
-  const { data: auftrag } = await supabaseAdmin
+  const {data: auftrag, error: __dbErr25_3} = await supabaseAdmin
     .from("auftraege")
     .select("id, titel, status, lead_id")
     .eq("id", id)
     .maybeSingle();
+  if (__dbErr25_3) logDbError('app/actions/partner-abnahmeprotokoll:auftraege', __dbErr25_3)
 
   if (!auftrag) return { ok: false, error: "Auftrag nicht gefunden." };
 
@@ -304,13 +309,14 @@ export async function submitPartnerAbnahmeNachSignatur(
 
   // Shared-DB Spiegel für Portal-Status (Leistungen-/Mängel-Anzahl), auch wenn CRM ok war.
   if (crm.protokoll_id) {
-    const { data: existingProto } = await supabaseAdmin
+    const {data: existingProto, error: __dbErr26_4} = await supabaseAdmin
       .from("auftrag_abnahmeprotokolle")
       .select("id")
       .eq("id", crm.protokoll_id)
       .maybeSingle();
+    if (__dbErr26_4) logDbError('app/actions/partner-abnahmeprotokoll:auftrag_abnahmeprotokolle', __dbErr26_4)
     if (existingProto?.id) {
-      await supabaseAdmin
+      const { error: __dbErr30_8 } = await supabaseAdmin
         .from("auftrag_abnahmeprotokolle")
         .update({
           punkte: crmPayload.punkte,
@@ -321,6 +327,7 @@ export async function submitPartnerAbnahmeNachSignatur(
           updated_at: new Date().toISOString(),
         })
         .eq("id", crm.protokoll_id);
+      if (__dbErr30_8) logDbError('app/actions/partner-abnahmeprotokoll:auftrag_abnahmeprotokolle', __dbErr30_8)
     } else {
       await persistLocalTeilabnahme({
         auftragId: id,
@@ -347,13 +354,14 @@ export async function submitPartnerAbnahmeNachSignatur(
     }
   }
 
-  const { data: ownPos } = await supabaseAdmin
+  const {data: ownPos, error: __dbErr27_5} = await supabaseAdmin
     .from("auftrag_positionen")
     .select(
       "id, leistung_name, handwerker_status, leistung_status, aenderung_typ, handwerker_id"
     )
     .eq("auftrag_id", id)
     .eq("handwerker_id", auth.handwerkerId);
+  if (__dbErr27_5) logDbError('app/actions/partner-abnahmeprotokoll:auftrag_positionen', __dbErr27_5)
 
   const ziel = partnerAbnahmeZielPositionen(
     (ownPos ?? []).map((p) => ({
@@ -370,7 +378,7 @@ export async function submitPartnerAbnahmeNachSignatur(
     }))
   );
   if (ziel.length) {
-    await supabaseAdmin
+    const { error: __dbErr31_9 } = await supabaseAdmin
       .from("auftrag_positionen")
       .update({
         handwerker_status: "erledigt",
@@ -381,6 +389,7 @@ export async function submitPartnerAbnahmeNachSignatur(
         "id",
         ziel.map((p) => p.id)
       );
+    if (__dbErr31_9) logDbError('app/actions/partner-abnahmeprotokoll:auftrag_positionen', __dbErr31_9)
   }
 
   const now = new Date().toISOString();
@@ -388,15 +397,16 @@ export async function submitPartnerAbnahmeNachSignatur(
 
   // Signatur nur pro Handwerker — kein globales auftraege.hw_abschluss_signiert_am,
   // kein vorzeitiges status=abgeschlossen (CRM Freigabe-Kette).
-  const { data: existingLink } = await supabaseAdmin
+  const {data: existingLink, error: __dbErr28_6} = await supabaseAdmin
     .from("auftrag_handwerker")
     .select("auftrag_id")
     .eq("auftrag_id", id)
     .eq("handwerker_id", auth.handwerkerId)
     .maybeSingle();
+  if (__dbErr28_6) logDbError('app/actions/partner-abnahmeprotokoll:auftrag_handwerker', __dbErr28_6)
 
   if (existingLink) {
-    await supabaseAdmin
+    const { error: __dbErr32_10 } = await supabaseAdmin
       .from("auftrag_handwerker")
       .update({
         abnahme_signiert_am: now,
@@ -404,20 +414,23 @@ export async function submitPartnerAbnahmeNachSignatur(
       })
       .eq("auftrag_id", id)
       .eq("handwerker_id", auth.handwerkerId);
+    if (__dbErr32_10) logDbError('app/actions/partner-abnahmeprotokoll:auftrag_handwerker', __dbErr32_10)
   } else {
-    await supabaseAdmin.from("auftrag_handwerker").insert({
+    const { error: __dbErr33_11 } = await supabaseAdmin.from("auftrag_handwerker").insert({
       auftrag_id: id,
       handwerker_id: auth.handwerkerId,
       status: "uebernommen",
       abnahme_signiert_am: now,
       ...(protokollId ? { abnahme_protokoll_id: protokollId } : {}),
     });
+    if (__dbErr33_11) logDbError('app/actions/partner-abnahmeprotokoll:auftrag_handwerker', __dbErr33_11)
   }
 
-  const { data: allPos } = await supabaseAdmin
+  const {data: allPos, error: __dbErr29_7} = await supabaseAdmin
     .from("auftrag_positionen")
     .select("id, handwerker_status, leistung_status, handwerker_id")
     .eq("auftrag_id", id);
+  if (__dbErr29_7) logDbError('app/actions/partner-abnahmeprotokoll:auftrag_positionen', __dbErr29_7)
 
   const vollstaendig = allePositionenPortalErledigt(
     (allPos ?? []) as Array<{

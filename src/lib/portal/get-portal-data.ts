@@ -1,3 +1,4 @@
+import { logDbError } from '@/lib/errors/log-db-error'
 import {
   parseAngebotPositionenMitPreis,
   resolveAngebotGesamtBrutto,
@@ -190,6 +191,7 @@ export async function getPortalDataForKunde(
     )
     .eq("id", id)
     .maybeSingle();
+  if (kundePrimaryErr) logDbError('lib/portal/get-portal-data:kunden', kundePrimaryErr)
 
   let kundeRow = (!kundePrimaryErr ? kundePrimary : null) as {
     id: string;
@@ -206,24 +208,26 @@ export async function getPortalDataForKunde(
   } | null;
 
   if (!kundeRow) {
-    const { data: kundeFallback } = await supabaseAdmin
+    const {data: kundeFallback, error: __dbErr436_1} = await supabaseAdmin
       .from("kunden")
       .select(
         "id, name, email, plz, ort, adresse, auth_user_id, portal_modus, freigabe_schwelle_eur"
       )
       .eq("id", id)
       .maybeSingle();
+    if (__dbErr436_1) logDbError('lib/portal/get-portal-data:kunden', __dbErr436_1)
     kundeRow = kundeFallback as typeof kundeRow;
   }
 
   if (!kundeRow && kundePrimaryErr && /telefon/i.test(kundePrimaryErr.message)) {
-    const { data: ohneTelefon } = await supabaseAdmin
+    const {data: ohneTelefon, error: __dbErr437_2} = await supabaseAdmin
       .from("kunden")
       .select(
         "id, name, email, plz, ort, adresse, auth_user_id, portal_modus, freigabe_schwelle_eur, typ"
       )
       .eq("id", id)
       .maybeSingle();
+    if (__dbErr437_2) logDbError('lib/portal/get-portal-data:kunden', __dbErr437_2)
     kundeRow = ohneTelefon as typeof kundeRow;
   }
 
@@ -472,6 +476,7 @@ export async function getPortalDataForKunde(
       .select(auftragSelect)
       .in("angebot_id", angebotIds)
       .order("created_at", { ascending: false });
+    if (aufAngErr) logDbError('lib/portal/get-portal-data:auftraege', aufAngErr)
     if (aufAngErr) console.warn("[portal] auftraege angebot_id:", aufAngErr.message);
     mergeAuftraege(auftraegeByAngebot as Record<string, unknown>[] | null);
   }
@@ -603,6 +608,7 @@ export async function getPortalDataForKunde(
       .from("handwerker")
       .select("id, firma, name")
       .in("id", handwerkerIds);
+    if (hwErr) logDbError('lib/portal/get-portal-data:handwerker', hwErr)
     if (hwErr) {
       console.warn("[portal] handwerker labels:", hwErr.message);
     } else {
@@ -830,7 +836,7 @@ export async function getPortalDataForKunde(
     }
   }
 
-  // Positions-Doku: Kunde nur CRM; HV (+ Handwerker) optional
+  // Positions-Doku: Kunde nur CRM; HV (+ Partner) optional
   if (!listMode && auftragIds.length > 0) {
     const {
       loadPartnerDokumentationByAuftragIds,
@@ -876,6 +882,7 @@ export async function getPortalDataForKunde(
       .from("user_profiles")
       .select("id, name, telefon")
       .in("id", betreuerIds);
+    if (betreuerErr) logDbError('lib/portal/get-portal-data:user_profiles', betreuerErr)
     if (betreuerErr) {
       console.warn("[portal] betreuer user_profiles:", betreuerErr.message);
     } else {
@@ -1192,10 +1199,11 @@ export async function getPortalDataForKunde(
     { sterne: number; freitext?: string | null }
   > = {};
   if (feedbackLeadIds.length) {
-    const { data: feedbackRows } = await supabaseAdmin
+    const {data: feedbackRows, error: __dbErr438_3} = await supabaseAdmin
       .from("mieter_feedback")
       .select("lead_id, sterne, freitext")
       .in("lead_id", feedbackLeadIds);
+    if (__dbErr438_3) logDbError('lib/portal/get-portal-data:mieter_feedback', __dbErr438_3)
     for (const row of feedbackRows ?? []) {
       const lid = String((row as { lead_id: string }).lead_id);
       mieterFeedbackByLeadId[lid] = {

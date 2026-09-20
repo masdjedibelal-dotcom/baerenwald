@@ -1,6 +1,6 @@
 "use client";
 
-import { ChevronDown } from "lucide-react";
+import { PortalIcon } from "@/components/portal/PortalIcon";
 import { useState } from "react";
 
 type Props = {
@@ -27,11 +27,7 @@ export function PlanLeistungenDetail({ label, items, baseline }: Props) {
             aria-expanded={open}
           >
             <span>{open ? "Weniger anzeigen" : label}</span>
-            <ChevronDown
-              size={18}
-              className={`conversion-plan-detail-icon${open ? " conversion-plan-detail-icon--open" : ""}`}
-              aria-hidden
-            />
+            <PortalIcon n="chevron-down" ctx="default" size={18} className={`conversion-plan-detail-icon${open ? " conversion-plan-detail-icon--open" : ""}`} aria-hidden />
           </button>
           {open ? (
             <ul className="conversion-plan-detail-list">

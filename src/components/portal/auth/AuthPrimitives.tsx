@@ -3,6 +3,7 @@
 import { cn } from "@/lib/utils";
 import type { InputHTMLAttributes, ButtonHTMLAttributes, ReactNode } from "react";
 
+import { PortalInput } from "@/components/shared/PortalFormControls";
 /** Mock `aLabel` */
 export function AuthLabel({ children }: { children: ReactNode }) {
   return (
@@ -18,7 +19,7 @@ export function AuthInput({
   ...props
 }: InputHTMLAttributes<HTMLInputElement>) {
   return (
-    <input
+    <PortalInput
       {...props}
       className={cn(
         "portal-auth-input w-full rounded-[10px] border border-border-default bg-white px-3.5 py-3 text-sm outline-none transition-colors focus:border-accent",
@@ -66,7 +67,7 @@ export function AuthLink({
   className?: string;
 }) {
   const cls = cn(
-    "portal-auth-link cursor-pointer font-semibold text-accent hover:underline",
+    "portal-auth-link inline-flex min-h-[44px] items-center cursor-pointer font-semibold text-accent hover:underline",
     className
   );
   if (href) {

@@ -1,5 +1,6 @@
 "use client";
 
+import { PortalIcon } from "@/components/portal/PortalIcon";
 import {
   useCallback,
   useEffect,
@@ -7,7 +8,7 @@ import {
   useState,
   type PointerEvent as ReactPointerEvent,
 } from "react";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { PortalButton } from "@/components/portal/PortalButton";
 
 import { usePortalBusy } from "@/components/shared/PortalBusyContext";
 import type { PortalDashboardActionSlide } from "@/lib/portal2/dashboard-actions/types";
@@ -102,7 +103,9 @@ export function PortalDashboardActionCarousel({
       if (dashboardButtonOpensDetail(btn)) {
         onOpen(
           slide.openId,
-          buttonId === "ablehnen" ? { focus: "ablehnen" } : undefined
+          buttonId === "ablehnen" || buttonId === "abgelehnt"
+            ? { focus: "ablehnen" }
+            : undefined
         );
         return;
       }
@@ -139,26 +142,28 @@ export function PortalDashboardActionCarousel({
         onPointerCancel={onPointerCancel}
       >
         {count > 1 ? (
-          <button
+          <PortalButton
+            variant="ghost"
             type="button"
             className="portal-dash-action-side-btn portal-dash-action-side-btn--prev"
             onClick={goPrev}
             aria-label="Vorheriger Vorgang"
           >
-            <ChevronLeft className="h-4 w-4" aria-hidden />
-          </button>
+            <PortalIcon n="chevron-left" ctx="default" className="h-4 w-4" aria-hidden />
+          </PortalButton>
         ) : null}
 
         <div className="portal-dash-action-carousel-main">
           <div className="portal-dash-focus-head portal-dash-focus-head--end">
-            <button
+            <PortalButton
+              variant="ghost"
               type="button"
               className="portal-dash-focus-open"
               onClick={() => onOpen(slide.openId)}
             >
               Öffnen
-              <ChevronRight className="h-4 w-4" aria-hidden />
-            </button>
+              <PortalIcon n="chevron-right" ctx="default" className="h-4 w-4" aria-hidden />
+            </PortalButton>
           </div>
 
           <h2 className="portal-dash-focus-title">{slide.title}</h2>
@@ -175,7 +180,8 @@ export function PortalDashboardActionCarousel({
           {slide.buttons.length > 0 ? (
             <div className="portal-dash-focus-actions">
               {slide.buttons.map((btn) => (
-                <button
+                <PortalButton
+                  variant="danger"
                   key={btn.id}
                   type="button"
                   disabled={busyId != null}
@@ -190,7 +196,7 @@ export function PortalDashboardActionCarousel({
                   onClick={() => void handleButton(btn.id)}
                 >
                   {busyId === btn.id ? "Wird geladen…" : btn.label}
-                </button>
+                </PortalButton>
               ))}
             </div>
           ) : null}
@@ -216,14 +222,15 @@ export function PortalDashboardActionCarousel({
         </div>
 
         {count > 1 ? (
-          <button
+          <PortalButton
+            variant="ghost"
             type="button"
             className="portal-dash-action-side-btn portal-dash-action-side-btn--next"
             onClick={goNext}
             aria-label="Nächster Vorgang"
           >
-            <ChevronRight className="h-4 w-4" aria-hidden />
-          </button>
+            <PortalIcon n="chevron-right" ctx="default" className="h-4 w-4" aria-hidden />
+          </PortalButton>
         ) : null}
       </div>
     </article>

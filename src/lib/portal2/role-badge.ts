@@ -1,3 +1,4 @@
+import { PALETTE } from "@/lib/tokens/palette";
 /**
  * Portal 2.0 B5 — Mock `roleBadge(r)`.
  * Quelle: Baerenwald Portale (5).html
@@ -21,11 +22,11 @@ export const PORTAL_ROLE_BADGE: Record<
   PortalRoleBadgeRole,
   PortalRoleBadgeStyle
 > = {
-  mieter: { label: "Mieter", bg: "#E4ECF7", color: "#1F4FA8" },
-  kunde: { label: "Kunde", bg: "#E7F1E9", color: "#2E7D52" },
-  eigentuemer: { label: "Eigentümer", bg: "#EDE7F6", color: "#5B3FA8" },
-  hausmeister: { label: "Hausmeister", bg: "#E8F5E9", color: "#2E7D32" },
-  handwerker: { label: "Handwerker", bg: "#FBF1D6", color: "#8A5A06" },
+  mieter: { label: "Mieter", bg: "var(--p2-status-blue-bg)", color: "var(--p2-status-blue)" },
+  kunde: { label: "Kunde", bg: "var(--p2-primary-soft)", color: "var(--p2-primary)" },
+  eigentuemer: { label: "Eigentümer", bg: PALETTE.hede7f6, color: PALETTE.h5b3fa8 },
+  hausmeister: { label: "Hausmeister", bg: PALETTE.he8f5e9, color: PALETTE.h2e7d32 },
+  handwerker: { label: "Partner", bg: "var(--p2-status-sand-bg)", color: "var(--p2-sand-text)" },
 };
 
 /** Nav-/Auth-Rollen → Badge-Rolle. */

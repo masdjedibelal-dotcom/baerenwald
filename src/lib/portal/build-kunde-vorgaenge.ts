@@ -283,9 +283,12 @@ function resolveVorgangStatusForLead(
       situation: lead.situation,
       funnel_daten: lead.funnel_daten,
       kanal: lead.kanal,
+      erfassung_von: lead.erfassung_von,
+      anlass: lead.anlass,
       kontakt_name: lead.kontakt_name,
       org_freigabe_status: lead.org_freigabe_status,
       hv_meldung_status: lead.hv_meldung_status,
+      freigabe_bypass_grund: lead.freigabe_bypass_grund,
       plz: lead.plz,
       bereiche: lead.bereiche,
       created_at: lead.created_at,
@@ -296,12 +299,16 @@ function resolveVorgangStatusForLead(
           status: angebot.status,
           status_einfach: angebot.status_einfach,
           created_at: angebot.created_at,
+          leistungsumfang: angebot.leistungsumfang,
+          notizen: angebot.notizen,
+          titel: angebot.titel ?? null,
         }
       : null,
     auftrag: auftrag
       ? {
           id: auftrag.id,
           status: auftrag.status,
+          titel: auftrag.titel,
           created_at: auftrag.created_at,
           positionen: auftrag.positionen,
         }

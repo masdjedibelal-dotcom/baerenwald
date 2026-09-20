@@ -2,8 +2,11 @@
 
 import { useState } from "react";
 
+import { PortalTextarea } from "@/components/shared/PortalFormControls";
+import { PortalButton } from "@/components/portal/PortalButton";
 import { PortalModalShell } from "@/components/shared/PortalModalShell";
 import { portalToastError, portalToastSuccess } from "@/lib/shared/portal-toast";
+import { TOAST } from '@/lib/portal-copy'
 
 export function VorgangStornoDialog({
   leadId,
@@ -32,7 +35,7 @@ export function VorgangStornoDialog({
         portalToastError(json.error ?? "Storno fehlgeschlagen");
         return;
       }
-      portalToastSuccess("Vorgang zurückgezogen", json.hinweis ?? "");
+      portalToastSuccess(TOAST.vorgang_zurueckgezogen, json.hinweis ?? "");
       setOpen(false);
       onDone();
     } finally {
@@ -42,13 +45,14 @@ export function VorgangStornoDialog({
 
   return (
     <>
-      <button
+      <PortalButton
+        variant="secondary"
         type="button"
-        className="btn-pill-outline !text-xs"
+        className="!text-xs"
         onClick={() => setOpen(true)}
       >
         Vorgang zurückziehen
-      </button>
+      </PortalButton>
 
       <PortalModalShell
         open={open}
@@ -68,8 +72,8 @@ export function VorgangStornoDialog({
               ? "Die Ausführung hat bereits begonnen. Bärenwald prüft mögliche Abbruchkosten."
               : "Vor Ausführungsbeginn ist der Rückzug in der Regel kostenfrei."}
           </p>
-          <textarea
-            className="portal-input min-h-[88px] w-full rounded-xl border border-border-default px-3 py-2.5 text-sm"
+          <PortalTextarea
+            className="portal-input min-h-[88px] w-full rounded-field border border-border-default px-3 py-2.5 text-sm"
             placeholder="Grund (Pflichtfeld)"
             value={grund}
             onChange={(e) => setGrund(e.target.value)}
@@ -78,21 +82,16 @@ export function VorgangStornoDialog({
             disabled={busy}
           />
           <div className="portal-action-row">
-            <button
-              type="button"
-              className="portal-action-btn portal-action-btn--secondary"
+            <PortalButton
+              variant="secondary"
               onClick={() => setOpen(false)}
               disabled={busy}
             >
               Abbrechen
-            </button>
-            <button
-              type="submit"
-              className="portal-action-btn portal-action-btn--danger"
-              disabled={busy}
-            >
+            </PortalButton>
+            <PortalButton type="submit" variant="danger" disabled={busy}>
               {busy ? "Wird gespeichert…" : "Zurückziehen"}
-            </button>
+            </PortalButton>
           </div>
         </form>
       </PortalModalShell>

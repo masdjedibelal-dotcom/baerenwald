@@ -1,3 +1,4 @@
+import { logDbError } from '@/lib/errors/log-db-error'
 import {
   normalizeKundenEmail,
 } from "@/lib/kunden/kunde-email";
@@ -44,14 +45,16 @@ export async function isKundePortalGesperrt(opts: {
       .select("id, ist_portal_gesperrt, ist_spam")
       .eq("id", kundeId)
       .maybeSingle();
+    if (error) logDbError('lib/kunden/kunde-portal-gesperrt:kunden', error)
     if (error) {
       if (isMissingPortalGesperrtColumn(error)) {
         // Fallback: nur Spam prüfen (ältere DBs)
-        const { data: spamRow } = await supabaseAdmin
+        const {data: spamRow, error: __dbErr261_1} = await supabaseAdmin
           .from("kunden")
           .select("id, ist_spam")
           .eq("id", kundeId)
           .maybeSingle();
+        if (__dbErr261_1) logDbError('lib/kunden/kunde-portal-gesperrt:kunden', __dbErr261_1)
         return Boolean((spamRow as { ist_spam?: boolean } | null)?.ist_spam);
       }
       throw error;
@@ -68,15 +71,17 @@ export async function isKundePortalGesperrt(opts: {
       .or("ist_portal_gesperrt.eq.true,ist_spam.eq.true")
       .limit(1)
       .maybeSingle();
+    if (error) logDbError('lib/kunden/kunde-portal-gesperrt:kunden', error)
     if (error) {
       if (isMissingPortalGesperrtColumn(error)) {
-        const { data: spamRow } = await supabaseAdmin
+        const {data: spamRow, error: __dbErr262_2} = await supabaseAdmin
           .from("kunden")
           .select("id, ist_spam")
           .ilike("email", email)
           .eq("ist_spam", true)
           .limit(1)
           .maybeSingle();
+        if (__dbErr262_2) logDbError('lib/kunden/kunde-portal-gesperrt:kunden', __dbErr262_2)
         return Boolean(spamRow?.id);
       }
       throw error;

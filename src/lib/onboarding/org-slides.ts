@@ -30,11 +30,11 @@ export const ORG_ONBOARDING_SLIDES: OnboardingSlide[] = [
     id: "angebote",
     imageBase: "03-angebote",
     eyebrow: "VERGABE",
-    title: "Angebote und Handwerker steuern",
+    title: "Angebote und Partner steuern",
     body: "Von der Anfrage bis zum Auftrag — Status und Unterlagen bleiben nachvollziehbar.",
     highlights: [
       "Angebotsstand und Dokumente einsehen",
-      "Handwerker-Zuweisung nachverfolgen",
+      "Partner-Zuweisung nachverfolgen",
       "Verlauf für Revision und Nachweise",
     ],
   },

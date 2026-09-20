@@ -1,3 +1,4 @@
+import { logDbError } from '@/lib/errors/log-db-error'
 import { NextResponse } from "next/server";
 
 import { writeAuditEvent } from "@/lib/audit/write-audit-event";
@@ -86,13 +87,13 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Objekt erforderlich." }, { status: 400 });
   }
 
-  const { data: objekt } = await supabaseAdmin
+  const {data: objekt, error: __dbErr198_1} = await supabaseAdmin
     .from("kunden_objekte")
     .select("id, plz, strasse, hausnummer, titel")
     .eq("id", objektId)
     .eq("kunde_id", session.kunde.id)
     .maybeSingle();
-
+  if (__dbErr198_1) logDbError('app/api/org/mieterwechsel-anfrage/route:kunden_objekte', __dbErr198_1)
   if (!objekt) {
     return NextResponse.json({ error: "Objekt nicht gefunden." }, { status: 404 });
   }

@@ -1,14 +1,7 @@
 "use client";
 
-import {
-  ArrowLeftRight,
-  FileSearch,
-  Handshake,
-  Scale,
-  Shield,
-  Store,
-} from "lucide-react";
 
+import { PortalIcon } from "@/components/portal/PortalIcon";
 import { PortalListeTitle } from "@/components/shared/PortalListeChrome";
 import { PORTAL_VAR } from "@/lib/portal2/tokens";
 
@@ -17,19 +10,19 @@ const STEPS = [
     n: "01",
     title: "Bedarf ausschreiben",
     body: "Sie stellen ein Gesuch mit einheitlichen Leistungsdaten ein — einmal beschrieben, für alle Partner im Netzwerk sichtbar.",
-    Icon: FileSearch,
+    icon: "file-search",
   },
   {
     n: "02",
     title: "Partner bieten",
     body: "Qualifizierte Partner aus dem Bärenwald-Netzwerk schreiben sich auf Ihr Gesuch und reichen Angebote ein — My-Hammer-Prinzip, aber im geprüften Netzwerk.",
-    Icon: Handshake,
+    icon: "handshake",
   },
   {
     n: "03",
     title: "Vergleichen & wählen",
     body: "Wir bereiten die Angebote so auf, dass Preis, Leistung und Konditionen nebeneinander vergleichbar sind — Sie entscheiden auf einer klaren Basis.",
-    Icon: ArrowLeftRight,
+    icon: "arrows-exchange",
   },
 ] as const;
 
@@ -38,19 +31,19 @@ const BENEFITS = [
     id: "vergleichbar",
     label: "Echt vergleichbar",
     hint: "Gleiche Struktur, gleiche Kriterien — statt PDF-Chaos aus Einzelanfragen.",
-    Icon: Scale,
+    icon: "scale",
   },
   {
     id: "netzwerk",
     label: "Direkt aus dem Partnernetzwerk",
     hint: "Kein freies Internet-Portal: Angebote von Partnern, die bereits auf der Plattform arbeiten.",
-    Icon: Store,
+    icon: "store",
   },
   {
     id: "plattform",
     label: "Eine Plattform für den Prozess",
     hint: "Ausschreibung, Eingang und Vergleich bleiben im HV-Portal — nachvollziehbar für Verwaltung und Eigentümer.",
-    Icon: Shield,
+    icon: "shield-check",
   },
 ] as const;
 
@@ -64,16 +57,16 @@ export function OrganisationMarktplatzPanel() {
         <div className="flex flex-wrap items-center gap-2.5">
           <PortalListeTitle>Marktplatz</PortalListeTitle>
           <span
-            className="rounded-full px-2.5 py-1 text-[11px] font-extrabold uppercase tracking-wide"
+            className="rounded-pill px-2.5 py-1 text-fs-caption font-extrabold uppercase tracking-wide"
             style={{
               background: "rgba(232,176,75,0.20)",
-              color: "#8A5A06",
+              color: "var(--p2-sand-text)",
             }}
           >
             In Kürze
           </span>
         </div>
-        <p className="max-w-[40rem] text-[15px] leading-[1.55] text-[#55615B]">
+        <p className="max-w-[40rem] text-fs-title leading-[1.55] text-[var(--p2-sub)]">
           Bald holen Sie Vergleichsangebote direkt über unser Partnernetzwerk
           ein. Bärenwald schafft die Voraussetzungen, damit Partner auf Ihre
           Gesuche antworten können — und bereitet die Angebote so auf, dass Sie
@@ -92,22 +85,22 @@ export function OrganisationMarktplatzPanel() {
                 className="grid h-[46px] w-[46px] place-items-center rounded-[15px]"
                 style={{
                   background: PORTAL_VAR.greenDark,
-                  color: "#fff",
+                  color: "var(--p2-panel)",
                 }}
               >
-                <s.Icon className="h-5 w-5" aria-hidden />
+                <PortalIcon n={s.icon} ctx="default" className="h-5 w-5" />
               </span>
-              <span className="text-[13px] font-extrabold tabular-nums text-[#CDD4CE]">
+              <span className="text-fs-meta font-extrabold tabular-nums text-[var(--p2-step-muted)]">
                 {s.n}
               </span>
             </div>
             <h3
-              className="text-[18px] font-extrabold text-text-primary"
+              className="text-fs-head font-extrabold text-text-primary"
               style={{ fontFamily: PORTAL_VAR.head }}
             >
               {s.title}
             </h3>
-            <p className="text-[14.5px] leading-[1.65] text-[#55615B]">
+            <p className="text-fs-title leading-[1.65] text-[var(--p2-sub)]">
               {s.body}
             </p>
           </li>
@@ -115,24 +108,23 @@ export function OrganisationMarktplatzPanel() {
       </ol>
 
       <div className="space-y-3">
-        <p className="text-[11.5px] font-extrabold uppercase tracking-wide text-[#7A857F]">
+        <p className="text-fs-caption font-extrabold uppercase tracking-wide text-[var(--p2-label-muted)]">
           Ihr Vorteil
         </p>
         <ul className="grid gap-3 sm:grid-cols-3">
           {BENEFITS.map((b) => (
             <li
               key={b.id}
-              className="flex items-start gap-3 rounded-[20px] bg-[#EEF4F0] p-[18px]"
+              className="flex items-start gap-3 rounded-[20px] bg-[var(--p2-hover)] p-[18px]"
             >
-              <b.Icon
-                className="mt-0.5 h-[19px] w-[19px] shrink-0 text-[#2E7D52]"
+              <PortalIcon n={b.icon} ctx="default" className="mt-0.5 h-[19px] w-[19px] shrink-0 text-[var(--p2-primary)]"
                 aria-hidden
               />
               <div className="min-w-0">
-                <p className="text-[15px] font-bold text-text-primary">
+                <p className="text-fs-title font-bold text-text-primary">
                   {b.label}
                 </p>
-                <p className="mt-1 text-[13.5px] leading-[1.55] text-[#55615B]">
+                <p className="mt-1 text-fs-body leading-[1.55] text-[var(--p2-sub)]">
                   {b.hint}
                 </p>
               </div>

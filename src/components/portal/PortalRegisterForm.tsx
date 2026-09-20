@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useMemo, useState } from "react";
 
+import { PortalCheckbox, PortalInput } from "@/components/shared/PortalFormControls";
 import { registerMeinBaerenwaldWithOtp } from "@/app/actions/portal-signup-otp";
 import { PortalAuthBusy } from "@/components/portal/auth/PortalAuthBusy";
 import { PortalSignupOtpStep } from "@/components/portal/PortalSignupOtpStep";
@@ -14,6 +15,7 @@ import {
 } from "@/lib/portal/portal-register-kunde-typ";
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
 import { cn } from "@/lib/utils";
+import { PortalButton } from "@/components/portal/PortalButton";
 
 export type PortalRegisterPrefill = {
   name?: string;
@@ -314,21 +316,21 @@ export function PortalRegisterForm({
   }
 
   const fieldClass = locked
-    ? "portal-input w-full rounded-xl border border-border-default bg-white px-3 py-3 text-text-secondary"
-    : "portal-input w-full rounded-xl border border-border-default bg-surface-card px-3 py-3 focus:border-accent";
+    ? "portal-input w-full rounded-field border border-border-default bg-white px-3 py-3 text-text-secondary"
+    : "portal-input w-full rounded-field border border-border-default bg-surface-card px-3 py-3 focus:border-accent";
 
   const canSubmitInvite = !locked || Boolean(email.trim() && displayName);
 
   return (
     <form onSubmit={onSubmit} className="space-y-4">
       {hintText ? (
-        <p className="rounded-lg border border-border-light bg-muted/30 px-3 py-2.5 text-[13px] leading-relaxed text-text-secondary">
+        <p className="rounded-card border border-border-light bg-muted/30 px-3 py-2.5 text-fs-meta leading-relaxed text-text-secondary">
           {hintText}
         </p>
       ) : null}
 
       {error ? (
-        <p className="rounded-lg bg-red-50 px-3 py-2 portal-text-body text-red-800">
+        <p className="rounded-card bg-p2-danger-soft px-3 py-2 portal-text-body text-p2-danger">
           {error}
         </p>
       ) : null}
@@ -340,7 +342,8 @@ export function PortalRegisterForm({
             {PORTAL_REGISTER_KUNDE_TYP_OPTIONS.map((opt) => {
               const active = kundentyp === opt.value;
               return (
-                <button
+                <PortalButton
+                  variant="primary"
                   key={opt.value}
                   type="button"
                   onClick={() => {
@@ -349,7 +352,7 @@ export function PortalRegisterForm({
                     setError(null);
                   }}
                   className={cn(
-                    "rounded-xl border px-3 py-3 text-left transition",
+                    "rounded-sheet border px-3 py-3 text-left transition",
                     active
                       ? "border-accent bg-accent/5 ring-1 ring-accent"
                       : "border-border-default bg-surface-card hover:border-accent/40"
@@ -358,15 +361,15 @@ export function PortalRegisterForm({
                   <span className="block text-sm font-semibold text-text-primary">
                     {opt.label}
                   </span>
-                  <span className="mt-0.5 block text-[12px] leading-snug text-text-secondary">
+                  <span className="mt-0.5 block text-fs-caption leading-snug text-text-secondary">
                     {opt.hint}
                   </span>
-                </button>
+                </PortalButton>
               );
             })}
           </div>
           {kundentypError ? (
-            <p className="portal-text-body text-red-700">
+            <p className="portal-text-body text-p2-danger">
               Bitte wählen Sie Privat, Gewerbe oder Hausverwaltung.
             </p>
           ) : null}
@@ -378,7 +381,7 @@ export function PortalRegisterForm({
           <span className="portal-form-label">
             {kundentyp === "hausverwaltung" ? "Firmenname" : "Firmenname"}
           </span>
-          <input
+          <PortalInput
             type="text"
             autoComplete="organization"
             required
@@ -399,7 +402,7 @@ export function PortalRegisterForm({
           {showVorname ? (
             <label className="block space-y-1.5">
               <span className="portal-form-label">Vorname</span>
-              <input
+              <PortalInput
                 type="text"
                 autoComplete="given-name"
                 required={needsStammAdresse}
@@ -415,7 +418,7 @@ export function PortalRegisterForm({
           {showNachname ? (
             <label className="block space-y-1.5">
               <span className="portal-form-label">Nachname</span>
-              <input
+              <PortalInput
                 type="text"
                 autoComplete="family-name"
                 required={needsStammAdresse}
@@ -436,7 +439,7 @@ export function PortalRegisterForm({
           <div className="grid gap-4 sm:grid-cols-[1fr_7rem]">
             <label className="block space-y-1.5">
               <span className="portal-form-label">Straße</span>
-              <input
+              <PortalInput
                 type="text"
                 autoComplete="address-line1"
                 required
@@ -447,7 +450,7 @@ export function PortalRegisterForm({
             </label>
             <label className="block space-y-1.5">
               <span className="portal-form-label">Nr.</span>
-              <input
+              <PortalInput
                 type="text"
                 autoComplete="address-line2"
                 required
@@ -460,7 +463,7 @@ export function PortalRegisterForm({
           <div className="grid gap-4 sm:grid-cols-[7rem_1fr]">
             <label className="block space-y-1.5">
               <span className="portal-form-label">PLZ</span>
-              <input
+              <PortalInput
                 type="text"
                 inputMode="numeric"
                 autoComplete="postal-code"
@@ -472,7 +475,7 @@ export function PortalRegisterForm({
             </label>
             <label className="block space-y-1.5">
               <span className="portal-form-label">Ort</span>
-              <input
+              <PortalInput
                 type="text"
                 autoComplete="address-level2"
                 required
@@ -487,7 +490,7 @@ export function PortalRegisterForm({
 
       <label className="block space-y-1.5">
         <span className="portal-form-label">E-Mail</span>
-        <input
+        <PortalInput
           type="email"
           autoComplete="email"
           required
@@ -508,7 +511,7 @@ export function PortalRegisterForm({
               <span className="text-text-tertiary">(optional)</span>
             ) : null}
           </span>
-          <input
+          <PortalInput
             type="tel"
             autoComplete="tel"
             value={telefon}
@@ -525,28 +528,27 @@ export function PortalRegisterForm({
         <span className="portal-form-label">
           Passwort <span className="text-text-tertiary">(mind. 8 Zeichen)</span>
         </span>
-        <input
+        <PortalInput
           type="password"
           autoComplete="new-password"
           required
           minLength={8}
           value={password}
           onChange={(e) => setPassword(e.target.value)}
-          className="portal-input w-full rounded-xl border border-border-default bg-surface-card px-3 py-3 focus:border-accent"
+          className="portal-input w-full rounded-field border border-border-default bg-surface-card px-3 py-3 focus:border-accent"
         />
       </label>
 
       {requireLegalConsent ? (
         <>
-          <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-border-light bg-muted/20 p-3">
-            <input
-              type="checkbox"
+          <label className="flex cursor-pointer items-start gap-3 rounded-field border border-border-light bg-muted/20 p-3">
+            <PortalCheckbox
               checked={datenschutz}
               onChange={(e) => {
                 setDatenschutz(e.target.checked);
                 if (e.target.checked) setDatenschutzError(false);
               }}
-              className="mt-0.5 h-4 w-4 shrink-0 accent-[#2E7D52]"
+              className="mt-0.5 h-4 w-4 shrink-0 accent-[var(--p2-primary)]"
             />
             <span className="portal-text-body text-text-primary">
               Ich habe die{" "}
@@ -563,20 +565,19 @@ export function PortalRegisterForm({
             </span>
           </label>
           {datenschutzError ? (
-            <p className="portal-text-body -mt-2 text-red-700">
+            <p className="portal-text-body -mt-2 text-p2-danger">
               Bitte stimmen Sie der Datenschutzerklärung zu.
             </p>
           ) : null}
 
-          <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-border-light bg-muted/20 p-3">
-            <input
-              type="checkbox"
+          <label className="flex cursor-pointer items-start gap-3 rounded-field border border-border-light bg-muted/20 p-3">
+            <PortalCheckbox
               checked={agb}
               onChange={(e) => {
                 setAgb(e.target.checked);
                 if (e.target.checked) setAgbError(false);
               }}
-              className="mt-0.5 h-4 w-4 shrink-0 accent-[#2E7D52]"
+              className="mt-0.5 h-4 w-4 shrink-0 accent-[var(--p2-primary)]"
             />
             <span className="portal-text-body text-text-primary">
               Ich habe die{" "}
@@ -593,7 +594,7 @@ export function PortalRegisterForm({
             </span>
           </label>
           {agbError ? (
-            <p className="portal-text-body -mt-2 text-red-700">
+            <p className="portal-text-body -mt-2 text-p2-danger">
               Bitte akzeptieren Sie die AGB.
             </p>
           ) : null}
@@ -614,13 +615,13 @@ export function PortalRegisterForm({
         </p>
       )}
 
-      <button
+      <PortalButton variant="primary" action={false}
         type="submit"
         disabled={!canSubmitInvite}
-        className="btn-pill-primary portal-btn w-full disabled:opacity-60"
+        className="w-full disabled:opacity-60"
       >
         {submitLabel}
-      </button>
+      </PortalButton>
 
       <p className="border-t border-border-light pt-4 text-center portal-text-body text-text-secondary">
         Bereits registriert?{" "}

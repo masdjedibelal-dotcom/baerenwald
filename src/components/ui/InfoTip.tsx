@@ -1,4 +1,5 @@
 'use client'
+import { SiteIcon } from "@/components/ui/SiteIcon";
 
 import { useId, useRef, useState, type ReactNode } from 'react'
 import { cn } from '@/lib/utils'
@@ -30,7 +31,7 @@ export function InfoTip({
     >
       <button
         type="button"
-        className="inline-flex h-6 w-6 items-center justify-center rounded-full text-[#5B6470] hover:bg-black/5"
+        className="inline-flex h-11 w-11 min-h-[44px] min-w-[44px] items-center justify-center rounded-pill text-[var(--p2-sub)] hover:bg-black/5"
         aria-label={label}
         aria-expanded={open}
         aria-controls={id}
@@ -45,15 +46,7 @@ export function InfoTip({
           }, 0)
         }}
       >
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden>
-          <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="2" />
-          <path
-            d="M12 10v6M12 7.5h.01"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-          />
-        </svg>
+        <SiteIcon n="info-circle" ctx="muted" size={14} />
       </button>
       {open ? (
         <span
@@ -62,7 +55,7 @@ export function InfoTip({
           role="tooltip"
           tabIndex={-1}
           className={cn(
-            'absolute top-[calc(100%+6px)] z-50 rounded-lg border border-[var(--p2-line,#E5E3DF)] bg-white px-3 py-2 text-left text-[13px] leading-snug text-[#16201B] shadow-md',
+            'absolute top-[calc(100%+6px)] z-50 rounded-card border border-[var(--p2-line)] bg-white px-3 py-2 text-left text-fs-meta leading-snug text-[var(--p2-ink)] shadow-md',
             'w-max min-w-[11rem] max-w-[min(18rem,calc(100vw-2rem))] sm:min-w-[13rem] sm:max-w-[20rem]',
             popoverAlign === 'end' ? 'right-0' : 'left-0'
           )}

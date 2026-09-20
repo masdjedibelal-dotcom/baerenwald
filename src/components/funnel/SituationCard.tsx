@@ -24,9 +24,9 @@ export interface SituationCardProps {
 }
 
 const TAG_CLASS: Record<SituationCardTagType, string> = {
-  multi: "bg-blue-50 text-blue-800",
-  abo: "bg-green-50 text-green-800",
-  notfall: "bg-amber-50 text-amber-900",
+  multi: "bg-p2-bg text-p2-ink",
+  abo: "bg-p2-primary-soft text-p2-primary",
+  notfall: "bg-warning-bg text-warning-text",
 };
 
 export function SituationCard({
@@ -60,7 +60,7 @@ export function SituationCard({
 
       <div
         className={cn(
-          "relative z-[1] mb-2 flex size-[38px] items-center justify-center rounded-full bg-muted text-text-primary",
+          "relative z-[1] mb-2 flex size-[38px] items-center justify-center rounded-pill bg-muted text-text-primary",
           selected && "bg-funnel-accent text-white"
         )}
       >
@@ -70,12 +70,12 @@ export function SituationCard({
       </div>
 
       <div className="relative z-[1]">
-        <p className="text-[13px] font-semibold text-text-primary">{option.label}</p>
-        <p className="mt-0.5 text-[11px] text-text-secondary">{option.hint}</p>
+        <p className="text-fs-meta font-semibold text-text-primary">{option.label}</p>
+        <p className="mt-0.5 text-fs-caption text-text-secondary">{option.hint}</p>
         {option.tag ? (
           <span
             className={cn(
-              "mt-1.5 inline-block rounded-lg px-2 py-0.5 text-[10px] font-medium",
+              "mt-1.5 inline-block rounded-card px-2 py-0.5 text-fs-caption font-medium",
               tagClass
             )}
           >

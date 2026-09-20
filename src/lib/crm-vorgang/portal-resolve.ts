@@ -10,8 +10,11 @@ type PortalLeadSlice = {
   situation?: string | null;
   funnel_daten?: unknown;
   kanal?: string | null;
+  erfassung_von?: string | null;
+  anlass?: string | null;
   org_freigabe_status?: string | null;
   hv_meldung_status?: string | null;
+  freigabe_bypass_grund?: string | null;
   kontakt_name?: string | null;
   plz?: string | null;
   bereiche?: string[] | null;
@@ -26,11 +29,16 @@ type PortalAngebotSlice = {
   gesendet_am?: string | null;
   gesendet_kunde_at?: string | null;
   created_at?: string | null;
+  /** Für CRM-Titel (resolveAkteVorgangTitel) */
+  leistungsumfang?: string | null;
+  notizen?: string | null;
+  titel?: string | null;
 };
 
 type PortalAuftragSlice = {
   id: string;
   status?: string | null;
+  titel?: string | null;
   created_at?: string | null;
   positionen?: Array<{
     handwerker_id?: string | null;
@@ -100,8 +108,11 @@ export function buildPortalResolveInput(input: {
       situation: lead.situation,
       funnel_daten: lead.funnel_daten,
       kanal: lead.kanal,
+      erfassung_von: lead.erfassung_von,
+      anlass: lead.anlass,
       org_freigabe_status: lead.org_freigabe_status,
       hv_meldung_status: lead.hv_meldung_status,
+      freigabe_bypass_grund: lead.freigabe_bypass_grund,
       kontakt_name: lead.kontakt_name,
       plz: lead.plz,
       bereiche: lead.bereiche,
@@ -117,6 +128,9 @@ export function buildPortalResolveInput(input: {
             gesendet_am: input.angebot.gesendet_am,
             gesendet_kunde_at: input.angebot.gesendet_kunde_at,
             created_at: input.angebot.created_at ?? created,
+            leistungsumfang: input.angebot.leistungsumfang,
+            notizen: input.angebot.notizen,
+            titel: input.angebot.titel,
           },
         ]
       : [],
@@ -125,6 +139,7 @@ export function buildPortalResolveInput(input: {
           {
             id: input.auftrag.id,
             status: input.auftrag.status ?? "offen",
+            titel: input.auftrag.titel,
             created_at: input.auftrag.created_at ?? created,
             handwerkerAktionOffen: auftragBrauchtHandwerkerAktion(
               input.auftrag.positionen ?? []
@@ -169,10 +184,12 @@ export function resolvePortalKundeVorgangStatus(input: {
   const display = resolveVorgangDisplay(resolved, input.role ?? "kunde");
   const pillKey = PILL_FROM_DISPLAY[display.pillKind] ?? input.legacy.pillKey;
 
-  // Legacy terminal (z. B. hm_erledigt) nicht mit Anfrage-„Neu“ überschreiben
+  // Legacy terminal nur behalten, wenn Resolver keine spätere Phase hat
+  // (sonst z. B. offene Rechnung → Label „Rechnung“, nicht „Abgeschlossen“)
   if (
-    input.legacy.phase === "abgeschlossen" ||
-    input.legacy.phase === "abgelehnt"
+    (input.legacy.phase === "abgeschlossen" ||
+      input.legacy.phase === "abgelehnt") &&
+    resolved.phase === "anfrage"
   ) {
     return {
       ...input.legacy,

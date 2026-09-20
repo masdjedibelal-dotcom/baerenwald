@@ -1,7 +1,8 @@
 "use client";
 
+import { PortalIcon } from "@/components/portal/PortalIcon";
 import { useState } from "react";
-import { ChevronDown } from "lucide-react";
+import { PortalButton } from "@/components/portal/PortalButton";
 
 import type { PartnerTagebuchListenEintrag } from "@/app/actions/partner-position-eintraege";
 import { eintragTypLabel } from "@/lib/partner/position-lebenszyklus";
@@ -37,28 +38,26 @@ export function PartnerLeistungUpdatesAccordion({
 
   return (
     <div className={cn("mt-2.5", className)}>
-      <button
+      <PortalButton
+        variant="ghost"
         type="button"
-        className="flex min-h-[40px] w-full items-center justify-between gap-2 rounded-xl border border-border-light bg-[var(--p2-bg,#f5f6f4)] px-3 py-2 text-left"
+        className="flex min-h-[40px] w-full items-center justify-between gap-2 rounded-sheet border border-border-light bg-[var(--p2-bg)] px-3 py-2 text-left"
         aria-expanded={open}
         onClick={() => setOpen((o) => !o)}
       >
-        <span className="text-[12.5px] font-bold text-text-primary">
+        <span className="text-fs-meta font-bold text-text-primary">
           {eintraege.length === 1
             ? "1 Update"
             : `${eintraege.length} Updates`}
         </span>
-        <ChevronDown
-          className={cn(
+        <PortalIcon n="chevron-down" ctx="default" className={cn(
             "h-4 w-4 shrink-0 text-text-tertiary transition-transform",
             open && "rotate-180"
-          )}
-          aria-hidden
-        />
-      </button>
+          )} aria-hidden />
+      </PortalButton>
 
       {open ? (
-        <ul className="mt-1.5 divide-y divide-border-light overflow-hidden rounded-xl border border-border-light bg-white">
+        <ul className="mt-1.5 divide-y divide-border-light overflow-hidden rounded-sheet border border-border-light bg-white">
           {eintraege.map((e) => {
             const rowOpen = openId === e.id;
             const label = eintragTypLabel(e.typ) || e.titel;
@@ -67,7 +66,8 @@ export function PartnerLeistungUpdatesAccordion({
               (e.fotos.length > 0 ? `${e.fotos.length} Foto(s)` : "Ohne Text");
             return (
               <li key={e.id}>
-                <button
+                <PortalButton
+                  variant="ghost"
                   type="button"
                   className="flex w-full items-start gap-2.5 px-3 py-2.5 text-left"
                   aria-expanded={rowOpen}
@@ -75,15 +75,15 @@ export function PartnerLeistungUpdatesAccordion({
                 >
                   <div className="min-w-0 flex-1">
                     <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
-                      <span className="text-[13px] font-bold text-text-primary">
+                      <span className="text-fs-meta font-bold text-text-primary">
                         {label}
                       </span>
-                      <span className="text-[11.5px] tabular-nums text-text-tertiary">
+                      <span className="text-fs-caption tabular-nums text-text-tertiary">
                         {fmtDatumZeit(e.datum)}
                       </span>
                     </div>
                     {!rowOpen ? (
-                      <p className="mt-0.5 line-clamp-1 text-[12.5px] text-text-secondary">
+                      <p className="mt-0.5 line-clamp-1 text-fs-meta text-text-secondary">
                         {preview}
                       </p>
                     ) : null}
@@ -93,25 +93,22 @@ export function PartnerLeistungUpdatesAccordion({
                     <img
                       src={e.fotos[0]}
                       alt=""
-                      className="h-10 w-10 shrink-0 rounded-lg object-cover"
+                      className="h-10 w-10 shrink-0 rounded-card object-cover"
                     />
                   ) : null}
-                  <ChevronDown
-                    className={cn(
+                  <PortalIcon n="chevron-down" ctx="row" className={cn(
                       "mt-1 h-4 w-4 shrink-0 text-text-tertiary transition-transform",
                       rowOpen && "rotate-180"
-                    )}
-                    aria-hidden
-                  />
-                </button>
+                    )} aria-hidden />
+                </PortalButton>
                 {rowOpen ? (
-                  <div className="space-y-2.5 border-t border-border-light bg-[var(--p2-bg,#f5f6f4)] px-3 py-3">
+                  <div className="space-y-2.5 border-t border-border-light bg-[var(--p2-bg)] px-3 py-3">
                     {e.beschreibung?.trim() ? (
-                      <p className="whitespace-pre-wrap text-[13px] leading-relaxed text-text-primary">
+                      <p className="whitespace-pre-wrap text-fs-meta leading-relaxed text-text-primary">
                         {e.beschreibung.trim()}
                       </p>
                     ) : (
-                      <p className="text-[12.5px] text-text-tertiary">
+                      <p className="text-fs-meta text-text-tertiary">
                         Kein Text
                       </p>
                     )}
@@ -123,7 +120,7 @@ export function PartnerLeistungUpdatesAccordion({
                             href={url}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="relative h-[4.5rem] w-[4.5rem] shrink-0 overflow-hidden rounded-xl border border-border-default bg-white"
+                            className="relative h-[4.5rem] w-[4.5rem] shrink-0 overflow-hidden rounded-sheet border border-border-default bg-white"
                           >
                             {/* eslint-disable-next-line @next/next/no-img-element */}
                             <img

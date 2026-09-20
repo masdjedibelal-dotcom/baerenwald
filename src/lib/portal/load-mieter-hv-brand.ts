@@ -1,3 +1,4 @@
+import { logDbError } from '@/lib/errors/log-db-error'
 import {
   orgBrandFromKunde,
   type OrgBrand,
@@ -52,6 +53,7 @@ async function hvIdFromEinladung(portalKundeId: string): Promise<string | null> 
     .order("eingeloest_am", { ascending: false })
     .limit(1)
     .maybeSingle();
+  if (error) logDbError('lib/portal/load-mieter-hv-brand:portal_einladungen', error)
   if (error) return null;
   const id = String((data as { kunde_id?: string } | null)?.kunde_id ?? "").trim();
   return id || null;
@@ -65,6 +67,7 @@ async function hvIdFromBewohner(email: string): Promise<string | null> {
     .eq("aktiv", true)
     .limit(1)
     .maybeSingle();
+  if (error) logDbError('lib/portal/load-mieter-hv-brand:einheit_bewohner', error)
   if (error) return null;
   const id = String((data as { kunde_id?: string } | null)?.kunde_id ?? "").trim();
   return id || null;
@@ -79,6 +82,7 @@ async function hvIdFromEigentuemerObjekte(
     .select("kunde_objekt_id")
     .eq("kunde_id", portalKundeId)
     .limit(20);
+  if (error) logDbError('lib/portal/load-mieter-hv-brand:eigentuemer_objekte', error)
   if (error || !zuordnung?.length) return null;
   const objektIds = zuordnung
     .map((r) =>
@@ -91,6 +95,7 @@ async function hvIdFromEigentuemerObjekte(
     .select("kunde_id")
     .in("id", objektIds)
     .limit(5);
+  if (objErr) logDbError('lib/portal/load-mieter-hv-brand:kunden_objekte', objErr)
   if (objErr || !objs?.length) return null;
   const counts = new Map<string, number>();
   for (const row of objs) {
@@ -116,6 +121,7 @@ async function loadOrgKunde(hvId: string): Promise<OrgBrandSource | null> {
       .select(select as string)
       .eq("id", hvId)
       .maybeSingle();
+    if (error) logDbError('lib/portal/load-mieter-hv-brand:kunden', error)
     if (error) continue;
     if (data) return data as OrgBrandSource;
   }
@@ -144,6 +150,7 @@ async function hvIdFromHausmeisterPortal(
     .eq("portal_kunde_id", portalKundeId)
     .limit(1)
     .maybeSingle();
+  if (error) logDbError('lib/portal/load-mieter-hv-brand:org_hausmeister', error)
   if (error) return null;
   const id = String(
     (data as { org_kunde_id?: string } | null)?.org_kunde_id ?? ""

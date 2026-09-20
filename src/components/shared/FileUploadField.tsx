@@ -1,7 +1,8 @@
 "use client";
 
+import { PortalIcon } from "@/components/portal/PortalIcon";
 import { useEffect, useRef, useState } from "react";
-import { FileText, Upload } from "lucide-react";
+import { PortalButton } from "@/components/portal/PortalButton";
 
 import { cn } from "@/lib/utils";
 
@@ -79,7 +80,8 @@ export function FileUploadField({
           e.target.value = "";
         }}
       />
-      <button
+      <PortalButton
+        variant="primary"
         type="button"
         disabled={disabled}
         onClick={() => inputRef.current?.click()}
@@ -94,12 +96,12 @@ export function FileUploadField({
           takeFiles(e.dataTransfer.files);
         }}
         className={cn(
-          "mt-2 flex w-full flex-col items-center gap-1 rounded-xl border-2 border-dashed text-center transition-colors",
+          "mt-2 flex w-full flex-col items-center gap-1 rounded-sheet border-2 border-dashed text-center transition-colors",
           compact ? "gap-1 px-3 py-4" : "gap-1.5 px-4 py-7",
           showImagePreview && previewUrl && "py-3",
           dragOver
             ? "border-accent bg-accent-light/40"
-            : "border-border-default bg-white hover:bg-[var(--p2-hover,#eef1ef)]",
+            : "border-border-default bg-white hover:bg-[var(--p2-hover)]",
           disabled && "cursor-not-allowed opacity-60"
         )}
       >
@@ -109,31 +111,25 @@ export function FileUploadField({
             src={previewUrl}
             alt=""
             className={cn(
-              "w-full rounded-lg object-cover",
+              "w-full rounded-card object-cover",
               compact ? "max-h-28" : "max-h-44"
             )}
           />
         ) : displayName && !showImagePreview ? (
-          <FileText
-            className={cn(
+          <PortalIcon n="file-text" ctx="default" className={cn(
               "text-text-secondary",
               compact ? "h-5 w-5" : "h-6 w-6"
-            )}
-            aria-hidden
-          />
+            )} aria-hidden />
         ) : (
-          <Upload
-            className={cn(
+          <PortalIcon n="upload" ctx="default" className={cn(
               "text-text-secondary",
               compact ? "h-5 w-5" : "h-6 w-6"
-            )}
-            aria-hidden
-          />
+            )} aria-hidden />
         )}
         <span
           className={cn(
             "font-semibold text-text-primary",
-            compact ? "text-[12.5px]" : "text-[13.5px]"
+            compact ? "text-fs-meta" : "text-fs-body"
           )}
         >
           {displayName
@@ -151,7 +147,7 @@ export function FileUploadField({
             {hint?.trim() || "PDF, Foto oder Dokument"}
           </span>
         )}
-      </button>
+      </PortalButton>
     </div>
   );
 }

@@ -1,3 +1,4 @@
+import { logDbError } from '@/lib/errors/log-db-error'
 import { supabaseAdmin } from "@/lib/supabase";
 
 export type OrgMitgliedRolle = "admin" | "sachbearbeiter" | "lesen";
@@ -7,22 +8,22 @@ export async function resolveOrgMitgliedRolle(
   authUserId: string,
   kundeId: string
 ): Promise<OrgMitgliedRolle> {
-  const { data: kunde } = await supabaseAdmin
+  const {data: kunde, error: __dbErr351_1} = await supabaseAdmin
     .from("kunden")
     .select("auth_user_id")
     .eq("id", kundeId)
     .maybeSingle();
-
+  if (__dbErr351_1) logDbError('lib/org/org-rbac:kunden', __dbErr351_1)
   if (kunde?.auth_user_id === authUserId) return "admin";
 
-  const { data: mitglied } = await supabaseAdmin
+  const {data: mitglied, error: __dbErr352_2} = await supabaseAdmin
     .from("kunden_mitglieder")
     .select("rolle")
     .eq("kunde_id", kundeId)
     .eq("auth_user_id", authUserId)
     .eq("aktiv", true)
     .maybeSingle();
-
+  if (__dbErr352_2) logDbError('lib/org/org-rbac:kunden_mitglieder', __dbErr352_2)
   const rolle = String(mitglied?.rolle ?? "").trim();
   if (rolle === "admin" || rolle === "sachbearbeiter" || rolle === "lesen") {
     return rolle;

@@ -1,3 +1,5 @@
+import { MockIconSvgSectionDivider } from "@/components/shared/mock-icon-svgs";
+
 export type SectionDividerVariant = "welle" | "baum" | "hugel" | "fels";
 
 const PATHS: Record<SectionDividerVariant, string> = {
@@ -47,23 +49,14 @@ export function SectionDivider({
         marginBottom: -1,
       }}
     >
-      <svg
+      <MockIconSvgSectionDivider
         viewBox={`0 0 1440 ${height}`}
-        xmlns="http://www.w3.org/2000/svg"
-        preserveAspectRatio="none"
-        style={{
-          width: "100%",
-          height: `${height}px`,
-          display: "block",
-          transform: flip ? "scaleY(-1)" : "none",
-        }}
-      >
-        <path
-          d={PATHS[variant]}
-          fill={hellHellWelle ? "#e8e6e0" : to}
-          opacity={hellHellWelle ? 0.5 : 1}
-        />
-      </svg>
+        heightPx={height}
+        flip={flip}
+        pathD={PATHS[variant]}
+        fill={hellHellWelle ? "var(--fl-sand, var(--fl-skeleton))" : to}
+        opacity={hellHellWelle ? 0.5 : 1}
+      />
     </div>
   );
 }

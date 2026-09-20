@@ -1,3 +1,4 @@
+import { logDbError } from '@/lib/errors/log-db-error'
 import { sendHandwerkerNewAnfrageMail } from "@/lib/partner/partner-mail";
 import { partnerLoginForAnfrageUrl } from "@/lib/partner/partner-site-url";
 import { isSupabaseConfigured, supabaseAdmin } from "@/lib/supabase";
@@ -37,6 +38,7 @@ export async function notifyHandwerkerNewAnfrage(anfrageId: string): Promise<{
     )
     .eq("id", id)
     .maybeSingle();
+  if (error) logDbError('lib/partner/notify-partner-anfrage:angebot_handwerker', error)
 
   if (error || !row) {
     return { ok: false, error: error?.message ?? "Anfrage nicht gefunden." };
@@ -50,7 +52,7 @@ export async function notifyHandwerkerNewAnfrage(anfrageId: string): Promise<{
   } | null;
   const to = hw?.email?.trim();
   if (!to) {
-    return { ok: false, error: "Handwerker hat keine E-Mail." };
+    return { ok: false, error: "Partner hat keine E-Mail." };
   }
 
   const gw = one(raw.gewerke) as { name: string } | null;

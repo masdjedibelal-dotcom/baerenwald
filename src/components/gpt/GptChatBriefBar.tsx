@@ -1,7 +1,7 @@
 "use client";
 
+import { SiteIcon } from "@/components/ui/SiteIcon";
 import { useState } from "react";
-import { ChevronDown, ChevronUp } from "lucide-react";
 
 import { GptChatImageCard } from "@/components/gpt/GptChatImageCard";
 import type { GptProjektBrief } from "@/lib/gpt-viz/types";
@@ -27,7 +27,7 @@ export function GptChatBriefBar({ brief }: GptChatBriefBarProps) {
     <div className="gpt-chat-brief-bar">
       <button type="button" className="gpt-chat-brief-toggle" onClick={() => setOpen((v) => !v)}>
         <span>Ihr Projekt-Brief</span>
-        {open ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+        {open ? <SiteIcon n="chevron-up" ctx="default" className="h-4 w-4" /> : <SiteIcon n="chevron-down" ctx="default" className="h-4 w-4" />}
       </button>
       {open ? (
         <div className="gpt-chat-brief-body">

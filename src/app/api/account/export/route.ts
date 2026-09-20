@@ -1,3 +1,4 @@
+import { logDbError } from '@/lib/errors/log-db-error'
 import { NextResponse } from "next/server";
 
 import { requireAccountSession } from "@/lib/account/require-account-session";
@@ -42,15 +43,15 @@ export async function GET(req: Request) {
   const exportedAt = new Date().toISOString();
 
   if (session.kind === "kunde") {
-    const { data: profil } = await supabaseAdmin
+    const {data: profil, error: __dbErr128_1} = await supabaseAdmin
       .from("kunden")
       .select(
         "id, name, email, telefon, plz, ort, adresse, typ, portal_modus, created_at"
       )
       .eq("id", session.entityId)
       .maybeSingle();
-
-    const { data: leads } = await supabaseAdmin
+    if (__dbErr128_1) logDbError('app/api/account/export/route:kunden', __dbErr128_1)
+    const {data: leads, error: __dbErr129_2} = await supabaseAdmin
       .from("leads")
       .select(
         "id, status, vorgang_phase, created_at, situation, plz, ort, strasse, kanal, hv_meldung_status"
@@ -58,7 +59,7 @@ export async function GET(req: Request) {
       .eq("kunde_id", session.entityId)
       .order("created_at", { ascending: false })
       .limit(500);
-
+    if (__dbErr129_2) logDbError('app/api/account/export/route:leads', __dbErr129_2)
     const payload = {
       exportVersion: 1,
       exportedAt,
@@ -82,20 +83,20 @@ export async function GET(req: Request) {
     return NextResponse.json(payload);
   }
 
-  const { data: profil } = await supabaseAdmin
+  const {data: profil, error: __dbErr130_3} = await supabaseAdmin
     .from("handwerker")
     .select(
       "id, name, email, telefon, firma, strasse, ort, ustid, created_at"
     )
     .eq("id", session.entityId)
     .maybeSingle();
-
-  const { data: positionen } = await supabaseAdmin
+  if (__dbErr130_3) logDbError('app/api/account/export/route:handwerker', __dbErr130_3)
+  const {data: positionen, error: __dbErr131_4} = await supabaseAdmin
     .from("auftrag_positionen")
     .select("id, auftrag_id, leistung_name, leistung_status, handwerker_status")
     .eq("handwerker_id", session.entityId)
     .limit(500);
-
+  if (__dbErr131_4) logDbError('app/api/account/export/route:auftrag_positionen', __dbErr131_4)
   const payload = {
     exportVersion: 1,
     exportedAt,

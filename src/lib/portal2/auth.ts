@@ -191,7 +191,7 @@ export const AUTH_CONFIRM = {
 } as const;
 
 /** Impersonation-Delta (nicht im Mock) — Banner-Wortlaut. */
-export const AUTH_ADMIN_VIEW_PREFIX = "Admin-Ansicht: Du siehst das Portal als";
+export const AUTH_ADMIN_VIEW_PREFIX = "Admin-Ansicht: Sie sehen das Portal als";
 export const AUTH_ADMIN_VIEW_END = "Beenden";
 
 export function resolveAuthRoleFromPath(

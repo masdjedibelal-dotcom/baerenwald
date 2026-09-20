@@ -1,6 +1,7 @@
 "use client";
 
 import { useGptProjekt } from "@/components/gpt/gpt-projekt-context";
+import { CTAButton } from "@/components/ui/CTAButton";
 
 type GptProjektBriefProps = {
   onAnfrage?: () => void;
@@ -126,22 +127,22 @@ export function GptProjektBriefPanel({
 
       <div className="gpt-viz-actions">
         {onVisualisieren && !brief.ergebnis_bild_url ? (
-          <button
+          <CTAButton
+            bare
+            tone="viz-outline"
             type="button"
-            className="gpt-viz-btn gpt-viz-btn--outline"
             onClick={onVisualisieren}
-          >
-            Raum visualisieren
-          </button>
+            label="Raum visualisieren"
+          />
         ) : null}
         {onAnfrage && brief.ergebnis_bild_url ? (
-          <button
+          <CTAButton
+            bare
+            tone="viz"
             type="button"
-            className="gpt-viz-btn gpt-viz-btn--primary"
             onClick={onAnfrage}
-          >
-            Anfrage senden
-          </button>
+            label="Anfrage senden"
+          />
         ) : null}
       </div>
     </div>

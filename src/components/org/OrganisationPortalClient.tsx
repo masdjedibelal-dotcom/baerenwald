@@ -16,6 +16,11 @@ import { OrganisationSuche } from "@/components/org/OrganisationSuche";
 import { OrganisationMehrScreen } from "@/components/org/OrganisationMehrScreen";
 import { OrganisationWhitelabelGate } from "@/components/org/OrganisationWhitelabelGate";
 import { OrganisationVorgaengeSection } from "@/components/org/OrganisationVorgaengeSection";
+import { PortalGlobalShortcuts } from "@/components/shared/PortalGlobalShortcuts";
+import {
+  buildListReturnUrl,
+  defaultListHrefForDetail,
+} from "@/lib/list-return-url";
 
 const OrganisationServicepaketePanel = dynamic(
   () =>
@@ -108,6 +113,7 @@ import {
   buildPortalShellNav,
 } from "@/lib/portal2/nav-items";
 import { useEffect, useMemo, useRef, useState } from "react";
+import { PortalButton } from "@/components/portal/PortalButton";
 
 type OrgSection =
   | "uebersicht"
@@ -404,7 +410,7 @@ export function OrganisationPortalClient({
   }
 
   /** Dashboard/Suche: Detail öffnen (Filter „alle“, damit der Vorgang sichtbar bleibt). */
-  function openVorgangDetail(id: string) {
+  function openVorgangDetail(id: string, opts?: { focus?: string }) {
     const trimmed = id.trim();
     if (!trimmed) return;
     beginNavHold();
@@ -413,10 +419,35 @@ export function OrganisationPortalClient({
       setVorgangFilterIntent("alle");
       setSection("vorgaenge");
     });
-    router.replace(
-      `/portal?section=vorgaenge&filter=alle&id=${encodeURIComponent(trimmed)}`,
-      { scroll: false }
-    );
+    const listHref =
+      searchParams.get("section") === "vorgaenge"
+        ? (() => {
+            const p = new URLSearchParams(searchParams.toString());
+            p.delete("id");
+            p.delete("return");
+            p.delete("focus");
+            const qs = p.toString();
+            return qs ? `/portal?${qs}` : "/portal?section=vorgaenge";
+          })()
+        : "/portal?section=vorgaenge&filter=alle";
+    const detailBase = `/portal?section=vorgaenge&filter=alle&id=${encodeURIComponent(trimmed)}${
+      opts?.focus === "ablehnen" ? "&focus=ablehnen" : ""
+    }`;
+    router.replace(buildListReturnUrl(listHref, detailBase), {
+      scroll: false,
+    });
+  }
+
+  function openSearchHit(href: string) {
+    if (href.includes("section=objekte")) {
+      flushSync(() => setSection("objekte"));
+      router.replace(href, { scroll: false });
+      return;
+    }
+    const idMatch = href.match(/[?&]id=([^&]+)/);
+    const id = idMatch ? decodeURIComponent(idMatch[1]!) : "";
+    if (id) openVorgangDetail(id);
+    else router.replace(href, { scroll: false });
   }
 
   function onVorgangDetailReady() {
@@ -624,6 +655,7 @@ export function OrganisationPortalClient({
         headerSearch={
           <OrganisationSuche
             onSelect={(id) => openVorgangDetail(id)}
+            onSelectHit={(hit) => openSearchHit(hit.href)}
           />
         }
         notifications={
@@ -633,12 +665,51 @@ export function OrganisationPortalClient({
         }
         headerRoleBadge={
           <form action="/portal/auth/signout" method="post">
-            <button type="submit" className="btn-pill-outline portal-btn-compact">
+            <PortalButton variant="secondary" action={false} compact type="submit" className="btn-pill-outline">
               Abmelden
-            </button>
+            </PortalButton>
           </form>
         }
       >
+        <PortalGlobalShortcuts
+          apiPath="/api/org/suche"
+          listFallbackHref={defaultListHrefForDetail("/portal")}
+          navHits={[
+            {
+              id: "nav-home",
+              group: "navigation",
+              icon: "layout-dashboard",
+              label: "Übersicht",
+              sub: "Navigation",
+              href: "/portal",
+            },
+            {
+              id: "nav-liste",
+              group: "navigation",
+              icon: "list",
+              label: "Vorgänge",
+              sub: "Navigation",
+              href: "/portal?section=vorgaenge",
+            },
+            {
+              id: "nav-obj",
+              group: "navigation",
+              icon: "building",
+              label: "Objekte",
+              sub: "Navigation",
+              href: "/portal?section=objekte",
+            },
+            {
+              id: "nav-set",
+              group: "navigation",
+              icon: "settings",
+              label: "Einstellungen",
+              sub: "Navigation",
+              href: "/portal?section=profil",
+            },
+          ]}
+        />
+
           {section === "uebersicht" ? (
             <>
               <OrganisationHvDashboard

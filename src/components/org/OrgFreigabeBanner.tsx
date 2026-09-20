@@ -2,7 +2,9 @@
 
 import { useEffect, useState } from "react";
 
+import { PortalDate, PortalInput } from "@/components/shared/PortalFormControls";
 import { HvFreigabeInfoBanner } from "@/components/org/HvFreigabeInfoBanner";
+import { PortalButton } from "@/components/portal/PortalButton";
 import { PortalDetailInfoBox } from "@/components/shared/PortalDetailUi";
 import { usePortalBusy } from "@/components/shared/PortalBusyContext";
 import {
@@ -133,35 +135,34 @@ export function OrgFreigabeBanner({
     return (
       <div className="mb-4 space-y-3">
         <PortalDetailInfoBox variant="warning">
-          <p className="font-semibold text-amber-950">
+          <p className="font-semibold text-warning-text">
             Wartet auf Eigentümerbeschluss
           </p>
-          <p className="mt-1 text-[13px] text-amber-900/90">
+          <p className="mt-1 text-fs-meta text-warning-text/90">
             Der Vorgang ist pausiert, bis ein Beschluss vorliegt. Danach können
             Sie freigeben oder ablehnen.
           </p>
           {error ? (
-            <p className="mt-2 text-xs text-red-700" role="alert">
+            <p className="mt-2 text-xs text-p2-danger" role="alert">
               {error}
             </p>
           ) : null}
           <div className="mt-3 grid gap-3 sm:grid-cols-2">
-            <label className="block text-xs font-medium text-amber-950">
+            <label className="block text-xs font-medium text-warning-text">
               Versammlung am
-              <input
-                type="date"
-                className="mt-1 w-full rounded-lg border border-amber-200 bg-white px-3 py-2 text-sm"
+              <PortalDate
+                className="mt-1 w-full rounded-field border border-warning-border bg-white px-3 py-2 text-sm"
                 value={versammlungAm}
                 disabled={busy}
                 onChange={(e) => setVersammlungAm(e.target.value)}
                 onBlur={() => void saveMeta()}
               />
             </label>
-            <label className="block text-xs font-medium text-amber-950">
+            <label className="block text-xs font-medium text-warning-text">
               Beschlussprotokoll (Link)
-              <input
+              <PortalInput
                 type="url"
-                className="mt-1 w-full rounded-lg border border-amber-200 bg-white px-3 py-2 text-sm"
+                className="mt-1 w-full rounded-field border border-warning-border bg-white px-3 py-2 text-sm"
                 placeholder="https://…"
                 value={protokollUrl}
                 disabled={busy}
@@ -172,22 +173,20 @@ export function OrgFreigabeBanner({
           </div>
         </PortalDetailInfoBox>
         <div className="portal-action-row">
-          <button
-            type="button"
-            className="portal-action-btn portal-action-btn--secondary"
+          <PortalButton
+            variant="secondary"
             disabled={busy}
             onClick={() => void act("abgelehnt")}
           >
             {busy ? "Wird geladen…" : "Ablehnen"}
-          </button>
-          <button
-            type="button"
-            className="portal-action-btn portal-action-btn--primary"
+          </PortalButton>
+          <PortalButton
+            variant="primary"
             disabled={busy}
             onClick={() => void act("freigegeben")}
           >
             {busy ? "Wird geladen…" : "Freigeben"}
-          </button>
+          </PortalButton>
         </div>
       </div>
     );
@@ -196,38 +195,35 @@ export function OrgFreigabeBanner({
   return (
     <div className="mb-4 space-y-3">
       <PortalDetailInfoBox variant="warning">
-        <p className="font-semibold text-amber-950">Angebots-Freigabe</p>
+        <p className="font-semibold text-warning-text">Angebots-Freigabe</p>
         {error ? (
-          <p className="mt-2 text-xs text-red-700" role="alert">
+          <p className="mt-2 text-xs text-p2-danger" role="alert">
             {error}
           </p>
         ) : null}
       </PortalDetailInfoBox>
       <div className="portal-action-row flex-wrap">
-        <button
-          type="button"
-          className="portal-action-btn portal-action-btn--secondary"
+        <PortalButton
+          variant="secondary"
           disabled={busy}
           onClick={() => void act("abgelehnt")}
         >
           {busy ? "Wird geladen…" : "Ablehnen"}
-        </button>
-        <button
-          type="button"
-          className="portal-action-btn portal-action-btn--secondary"
+        </PortalButton>
+        <PortalButton
+          variant="secondary"
           disabled={busy}
           onClick={() => void act("beschluss_ausstehend")}
         >
           {busy ? "Wird geladen…" : "Beschluss erforderlich"}
-        </button>
-        <button
-          type="button"
-          className="portal-action-btn portal-action-btn--primary"
+        </PortalButton>
+        <PortalButton
+          variant="primary"
           disabled={busy}
           onClick={() => void act("freigegeben")}
         >
           {busy ? "Wird geladen…" : "Freigeben"}
-        </button>
+        </PortalButton>
       </div>
     </div>
   );

@@ -4,7 +4,7 @@ export const BAERENWALD_VISION_HEADLINE =
   "Handwerk besser — für Sie und für die, die es umsetzen.";
 
 export const BAERENWALD_VISION_LEAD =
-  "Viele denken, wir vermitteln nur Handwerker und sind dann raus. Tun wir nicht. Wir bleiben Ihr Ansprechpartner — und führen den Ablauf, den wir über Jahre auf der Baustelle ausprobiert und Schritt für Schritt digital nachgezogen haben. Vom ersten Gespräch bis zur Abnahme. Operativ und technisch aus einer Hand.";
+  "Viele denken, wir vermitteln nur Partner und sind dann raus. Tun wir nicht. Wir bleiben Ihr Ansprechpartner — und führen den Ablauf, den wir über Jahre auf der Baustelle ausprobiert und Schritt für Schritt digital nachgezogen haben. Vom ersten Gespräch bis zur Abnahme. Operativ und technisch aus einer Hand.";
 
 export const BAERENWALD_VISION_PILLARS = [
   {

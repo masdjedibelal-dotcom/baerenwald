@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 
+import { PortalSelect } from "@/components/shared/PortalFormControls";
 import { PortalActionMenu } from "@/components/shared/PortalActionMenu";
 import { PortalConfirmDialog } from "@/components/shared/PortalDetailUi";
 import { PortalEntityList } from "@/components/shared/PortalEntityList";
@@ -13,6 +14,7 @@ import {
 import { PortalInboxEmpty } from "@/components/shared/PortalEmptyState";
 import { PortalInlineLoading } from "@/components/shared/PortalInlineLoading";
 import { orgPortalToast, portalToastError } from "@/lib/shared/portal-toast";
+import { TOAST } from '@/lib/portal-copy'
 
 export type ObjektKontaktVorOrt = {
   id: string;
@@ -76,7 +78,7 @@ export function OrganisationObjektKontaktePanel({ objektId }: Props) {
         error?: string;
       };
       if (!res.ok) {
-        portalToastError("Kontakte nicht geladen", json.error);
+        portalToastError(TOAST.kontakte_nicht_geladen, json.error);
         setItems([]);
         return;
       }
@@ -86,7 +88,7 @@ export function OrganisationObjektKontaktePanel({ objektId }: Props) {
         )
       );
     } catch {
-      portalToastError("Kontakte nicht geladen");
+      portalToastError(TOAST.kontakte_nicht_geladen);
       setItems([]);
     } finally {
       setLoading(false);
@@ -127,7 +129,7 @@ export function OrganisationObjektKontaktePanel({ objektId }: Props) {
   async function saveEdit() {
     const n = name.trim();
     if (!n) {
-      portalToastError("Name fehlt");
+      portalToastError(TOAST.name_fehlt);
       return;
     }
     setSaving(true);
@@ -147,7 +149,7 @@ export function OrganisationObjektKontaktePanel({ objektId }: Props) {
         });
         const json = (await res.json()) as { error?: string };
         if (!res.ok) {
-          portalToastError("Kontakt nicht gespeichert", json.error);
+          portalToastError(TOAST.kontakt_nicht_gespeichert, json.error);
           return;
         }
       } else {
@@ -165,7 +167,7 @@ export function OrganisationObjektKontaktePanel({ objektId }: Props) {
         });
         const json = (await res.json()) as { error?: string };
         if (!res.ok) {
-          portalToastError("Kontakt nicht angelegt", json.error);
+          portalToastError(TOAST.kontakt_nicht_angelegt, json.error);
           return;
         }
       }
@@ -173,7 +175,7 @@ export function OrganisationObjektKontaktePanel({ objektId }: Props) {
       orgPortalToast.saved();
       await load();
     } catch {
-      portalToastError("Kontakt nicht gespeichert");
+      portalToastError(TOAST.kontakt_nicht_gespeichert);
     } finally {
       setSaving(false);
     }
@@ -189,14 +191,14 @@ export function OrganisationObjektKontaktePanel({ objektId }: Props) {
       );
       const json = (await res.json()) as { error?: string };
       if (!res.ok) {
-        portalToastError("Kontakt nicht entfernt", json.error);
+        portalToastError(TOAST.kontakt_nicht_entfernt, json.error);
         return;
       }
       setRemoveTarget(null);
       orgPortalToast.saved();
       await load();
     } catch {
-      portalToastError("Kontakt nicht entfernt");
+      portalToastError(TOAST.kontakt_nicht_entfernt);
     } finally {
       setSaving(false);
     }
@@ -213,7 +215,7 @@ export function OrganisationObjektKontaktePanel({ objektId }: Props) {
           id: k.id,
           title: k.name,
           badge: (
-            <span className="rounded-full bg-muted px-2 py-0.5 text-[11px] font-semibold text-text-secondary">
+            <span className="rounded-pill bg-muted px-2 py-0.5 text-fs-caption font-semibold text-text-secondary">
               {rolleTxt}
             </span>
           ),
@@ -221,7 +223,7 @@ export function OrganisationObjektKontaktePanel({ objektId }: Props) {
             <div className="space-y-0.5">
               <p>{kontaktZeile}</p>
               {k.notiz?.trim() ? (
-                <p className="text-[12.5px] text-text-tertiary">
+                <p className="text-fs-meta text-text-tertiary">
                   {k.notiz.trim()}
                 </p>
               ) : null}
@@ -231,7 +233,7 @@ export function OrganisationObjektKontaktePanel({ objektId }: Props) {
             <>
               {k.name}
               {k.notiz?.trim() ? (
-                <span className="mt-0.5 block text-[12px] font-normal text-text-tertiary">
+                <span className="mt-0.5 block text-fs-caption font-normal text-text-tertiary">
                   {k.notiz.trim()}
                 </span>
               ) : null}
@@ -251,7 +253,7 @@ export function OrganisationObjektKontaktePanel({ objektId }: Props) {
                   onClick: () => openBearbeiten(k),
                 },
                 {
-                  label: "Entfernen",
+                  label: "Löschen",
                   danger: true,
                   dividerBefore: true,
                   onClick: () => setRemoveTarget(k),
@@ -294,10 +296,10 @@ export function OrganisationObjektKontaktePanel({ objektId }: Props) {
         saving={saving}
       >
         <label className="flex flex-col gap-1">
-          <span className="text-[13px] font-semibold text-text-primary">
+          <span className="text-fs-meta font-semibold text-text-primary">
             Rolle
           </span>
-          <select
+          <PortalSelect
             className="portal-field w-full"
             value={rolle}
             onChange={(e) => setRolle(e.target.value)}
@@ -307,7 +309,7 @@ export function OrganisationObjektKontaktePanel({ objektId }: Props) {
                 {r.label}
               </option>
             ))}
-          </select>
+          </PortalSelect>
         </label>
         <EinstellungenEdField
           label="Name"
@@ -348,7 +350,7 @@ export function OrganisationObjektKontaktePanel({ objektId }: Props) {
             ? `${removeTarget.name} wird von diesem Objekt entfernt.`
             : ""
         }
-        confirmLabel="Entfernen"
+        confirmLabel="Löschen"
         confirmVariant="danger"
         loading={saving}
         onCancel={() => setRemoveTarget(null)}

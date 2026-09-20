@@ -1,3 +1,4 @@
+import { logDbError } from '@/lib/errors/log-db-error'
 import { isSupabaseConfigured, supabaseAdmin } from "@/lib/supabase";
 
 export type KundenVertriebsKontext = {
@@ -24,6 +25,7 @@ export async function loadKundenVertriebsKontext(
     .select("id, created_at, auth_user_id")
     .eq("id", kundeId)
     .maybeSingle();
+  if (error) logDbError('lib/lead/kunden-vertrieb-status:kunden', error)
 
   if (error || !kunde) return null;
 
@@ -31,6 +33,7 @@ export async function loadKundenVertriebsKontext(
     .from("leads")
     .select("id", { count: "exact", head: true })
     .eq("kunde_id", kundeId);
+  if (countErr) logDbError('lib/lead/kunden-vertrieb-status:leads', countErr)
 
   if (countErr) {
     console.warn("[loadKundenVertriebsKontext] leads count:", countErr.message);

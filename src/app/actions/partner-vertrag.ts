@@ -1,5 +1,6 @@
 "use server";
 
+import { logDbError } from '@/lib/errors/log-db-error'
 import { revalidatePath } from "next/cache";
 
 import { confirmCrmProjektvertrag, acceptCrmRahmenvertragForEmail, acceptCrmRahmenvertragLoggedIn } from "@/lib/partner/partner-crm-api";
@@ -50,14 +51,14 @@ export async function confirmPartnerProjektvertrag(opts: {
     return { ok: false, error: "Keine Berechtigung für diesen Auftrag." };
   }
 
-  const { data: zuweisung } = await supabaseAdmin
+  const {data: zuweisung, error: __dbErr102_1} = await supabaseAdmin
     .from("auftrag_handwerker")
     .select("id, projektvertrag_bestaetigt_am, status")
     .eq("auftrag_id", auftragId)
     .eq("handwerker_id", link.handwerkerId)
     .neq("status", "ersetzt")
     .maybeSingle();
-
+  if (__dbErr102_1) logDbError('app/actions/partner-vertrag:auftrag_handwerker', __dbErr102_1)
   if (zuweisung?.projektvertrag_bestaetigt_am) {
     return { ok: false, error: "Vertrag wurde bereits bestätigt." };
   }
@@ -66,28 +67,30 @@ export async function confirmPartnerProjektvertrag(opts: {
   const now = new Date().toISOString();
 
   if (zuweisung) {
-    await supabaseAdmin
+    const { error: __dbErr104_3 } = await supabaseAdmin
       .from("auftrag_handwerker")
       .update({ projektvertrag_bestaetigt_am: now })
       .eq("id", zuweisung.id);
+    if (__dbErr104_3) logDbError('app/actions/partner-vertrag:auftrag_handwerker', __dbErr104_3)
   } else {
-    await supabaseAdmin.from("auftrag_handwerker").insert({
+    const { error: __dbErr105_4 } = await supabaseAdmin.from("auftrag_handwerker").insert({
       auftrag_id: auftragId,
       handwerker_id: link.handwerkerId,
       status: "akzeptiert",
       projektvertrag_bestaetigt_am: now,
     });
+    if (__dbErr105_4) logDbError('app/actions/partner-vertrag:auftrag_handwerker', __dbErr105_4)
   }
 
   if (crm.ok && crm.pdf_url) {
-    const { data: existing } = await supabaseAdmin
+    const {data: existing, error: __dbErr103_2} = await supabaseAdmin
       .from("handwerker_vertraege")
       .select("id")
       .eq("handwerker_id", link.handwerkerId)
       .eq("auftrag_id", auftragId)
       .eq("typ", "projekt")
       .maybeSingle();
-
+    if (__dbErr103_2) logDbError('app/actions/partner-vertrag:handwerker_vertraege', __dbErr103_2)
     const patch = {
       status: "unterschrieben",
       signiert_am: now,
@@ -97,10 +100,11 @@ export async function confirmPartnerProjektvertrag(opts: {
     };
 
     if (existing?.id) {
-      await supabaseAdmin
+      const { error: __dbErr106_5 } = await supabaseAdmin
         .from("handwerker_vertraege")
         .update(patch)
         .eq("id", existing.id);
+      if (__dbErr106_5) logDbError('app/actions/partner-vertrag:handwerker_vertraege', __dbErr106_5)
     }
   }
 

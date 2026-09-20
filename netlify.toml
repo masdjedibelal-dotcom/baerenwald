@@ -5,3 +5,5 @@
 
 [context.staging.environment]
   NEXT_PUBLIC_SITE_URL = "https://staging--baerenwald.netlify.app"
+  STAGING_PROJECT_REF = "soqownnkxmtfgvsbrgsl"
+  NEXT_PUBLIC_STAGING_PROJECT_REF = "soqownnkxmtfgvsbrgsl"

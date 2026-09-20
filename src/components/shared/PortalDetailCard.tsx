@@ -2,6 +2,7 @@
 
 import type { ReactNode } from "react";
 
+import { PortalButton } from "@/components/portal/PortalButton";
 import { PortalSectionAddButton } from "@/components/shared/PortalEinstellungenUi";
 import {
   portalDetailSectionBorderStyle,
@@ -103,16 +104,14 @@ export function PortalDetailPrimaryButton({
   className?: string;
 }) {
   return (
-    <button
-      type="button"
+    <PortalButton
+      variant="primary"
+      block
       disabled={disabled}
       onClick={onClick}
-      className={cn(
-        "portal-action-btn portal-action-btn--primary portal-action-btn--block",
-        className
-      )}
+      className={className}
     >
       {label}
-    </button>
+    </PortalButton>
   );
 }

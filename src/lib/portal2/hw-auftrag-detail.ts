@@ -1,3 +1,4 @@
+import { PALETTE } from "@/lib/tokens/palette";
 /**
  * Handwerker Auftrag-Detail — Copy & Timeline (Mock screenAuftrag).
  */
@@ -91,7 +92,7 @@ export function hwAuftragStatusStyle(label: string): {
 } {
   const s = label.toLowerCase();
   if (s.includes("erledigt") || s.includes("abgeschlossen")) {
-    return { color: "#4B5563", backgroundColor: "#EAEDEC" };
+    return { color: PALETTE.h4b5563, backgroundColor: "var(--p2-status-done-bg)" };
   }
   if (
     s.includes("aktion") ||
@@ -99,9 +100,9 @@ export function hwAuftragStatusStyle(label: string): {
     s.includes("geändert") ||
     s.includes("freigabe")
   ) {
-    return { color: "#8A5A06", backgroundColor: "#FBF1D6" };
+    return { color: "var(--p2-sand-text)", backgroundColor: "var(--p2-status-sand-bg)" };
   }
-  return { color: "#1F6A3F", backgroundColor: "#DDEEDF" };
+  return { color: "var(--p2-status-green)", backgroundColor: "var(--p2-status-green-bg)" };
 }
 
 export function formatHwTerminRange(

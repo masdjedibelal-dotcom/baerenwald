@@ -1,5 +1,5 @@
 /**
- * Portal 2.0 B3 — canCreate / createLabel.
+ * Portal 2.0 B3 — canCreate / createLabel (ohne Nav-Rolle mieter).
  */
 import {
   portalCanCreate,
@@ -21,22 +21,22 @@ console.log("portal2 B3 create");
 assert("handwerker no create", portalCanCreate("handwerker") === false);
 assert("kunde_hv can create", portalCanCreate("kunde_hv") === true);
 assert("kunde_privat can create", portalCanCreate("kunde_privat") === true);
-assert("mieter can create", portalCanCreate("mieter") === true);
 assert("eigentuemer can create", portalCanCreate("eigentuemer") === true);
+assert("hausmeister can create", portalCanCreate("hausmeister") === true);
 
 assert(
-  "label mieter",
-  portalCreateLabel("mieter") === "Schaden melden"
+  "label kunde_privat",
+  portalCreateLabel("kunde_privat") === "Schaden melden"
 );
 assert(
   "label eigentuemer",
   portalCreateLabel("eigentuemer") === "Anfrage erstellen"
 );
-assert("label kunde_hv", portalCreateLabel("kunde_hv") === "Neuer Vorgang");
 assert(
-  "label kunde_privat",
-  portalCreateLabel("kunde_privat") === "Neuer Vorgang"
+  "label hausmeister",
+  portalCreateLabel("hausmeister") === "Anfrage erstellen"
 );
+assert("label kunde_hv", portalCreateLabel("kunde_hv") === "Neuer Vorgang");
 assert(
   "label handwerker (unused)",
   portalCreateLabel("handwerker") === "Neuer Vorgang"

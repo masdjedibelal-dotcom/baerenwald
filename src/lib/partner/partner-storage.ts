@@ -1,3 +1,4 @@
+import { logDbError } from '@/lib/errors/log-db-error'
 import { randomUUID } from "crypto";
 
 import { isSupabaseConfigured, supabaseAdmin } from "@/lib/supabase";
@@ -42,6 +43,7 @@ export async function resolvePartnerFileUrl(
   const { data, error } = await supabaseAdmin.storage
     .from(PARTNER_UPLOAD_BUCKET)
     .createSignedUrl(path, expiresIn);
+  if (error) logDbError('lib/partner/partner-storage:query', error)
 
   if (error || !data?.signedUrl) return null;
   return data.signedUrl;
@@ -74,6 +76,7 @@ export async function uploadPartnerPdf(opts: {
   const { error } = await supabaseAdmin.storage
     .from(PARTNER_UPLOAD_BUCKET)
     .upload(path, buf, { contentType: mime, upsert: false });
+  if (error) logDbError('lib/partner/partner-storage:query', error)
 
   if (error) return { ok: false, error: error.message };
   return { ok: true, path };
@@ -95,6 +98,7 @@ export async function uploadAbnahmeProtokollPdf(opts: {
   const { error } = await supabaseAdmin.storage
     .from(PARTNER_UPLOAD_BUCKET)
     .upload(path, buf, { contentType: "application/pdf", upsert: false });
+  if (error) logDbError('lib/partner/partner-storage:query', error)
 
   if (error) return { ok: false, error: error.message };
   return { ok: true, path };
@@ -121,6 +125,7 @@ export async function uploadPartnerGeneratedPdf(opts: {
   const { error } = await supabaseAdmin.storage
     .from(PARTNER_UPLOAD_BUCKET)
     .upload(path, buf, { contentType: "application/pdf", upsert: false });
+  if (error) logDbError('lib/partner/partner-storage:query', error)
 
   if (error) return { ok: false, error: error.message };
   return { ok: true, path };
@@ -150,6 +155,7 @@ export async function uploadPartnerLogo(opts: {
   const { error } = await supabaseAdmin.storage
     .from(PARTNER_UPLOAD_BUCKET)
     .upload(path, buf, { contentType: mime, upsert: false });
+  if (error) logDbError('lib/partner/partner-storage:query', error)
 
   if (error) return { ok: false, error: error.message };
   return { ok: true, path };
@@ -189,6 +195,7 @@ export async function uploadPartnerAngebotPdfs(opts: {
     const { error } = await supabaseAdmin.storage
       .from(PARTNER_UPLOAD_BUCKET)
       .upload(path, buf, { contentType: mime, upsert: false });
+    if (error) logDbError('lib/partner/partner-storage:query', error)
     if (error) return { ok: false, error: error.message };
     paths.push(path);
   }
@@ -237,6 +244,7 @@ export async function uploadPartnerBautagebuchAnhaenge(opts: {
     const { error } = await supabaseAdmin.storage
       .from(PARTNER_UPLOAD_BUCKET)
       .upload(path, buf, { contentType: mime, upsert: false });
+    if (error) logDbError('lib/partner/partner-storage:query', error)
 
     if (error) return { ok: false, error: error.message };
     paths.push(path);
@@ -269,6 +277,7 @@ export async function uploadPartnerEintragFoto(opts: {
   const { error } = await supabaseAdmin.storage
     .from(PARTNER_UPLOAD_BUCKET)
     .upload(path, buf, { contentType: mime, upsert: false });
+  if (error) logDbError('lib/partner/partner-storage:query', error)
 
   if (error) return { ok: false, error: error.message };
   return { ok: true, path };
@@ -305,6 +314,7 @@ export async function uploadPartnerComplianceDoc(opts: {
       contentType: isPdf ? "application/pdf" : mime,
       upsert: false,
     });
+  if (error) logDbError('lib/partner/partner-storage:query', error)
 
   if (error) return { ok: false, error: error.message };
   return { ok: true, path };
@@ -344,6 +354,7 @@ export async function uploadPartnerFachdokuDoc(opts: {
       contentType: isPdf ? "application/pdf" : mime,
       upsert: false,
     });
+  if (error) logDbError('lib/partner/partner-storage:query', error)
 
   if (error) return { ok: false, error: error.message };
   return { ok: true, path };

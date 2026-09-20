@@ -1,3 +1,4 @@
+import { logDbError } from '@/lib/errors/log-db-error'
 import { createClient } from "@/lib/supabase/server";
 import { isSupabaseConfigured, supabaseAdmin } from "@/lib/supabase";
 import { loadMieterHvBrand } from "@/lib/portal/load-mieter-hv-brand";
@@ -20,12 +21,12 @@ export async function resolvePortalPwaApplicationName(): Promise<string> {
     } = await supabase.auth.getUser();
     if (!user?.id) return NEUTRAL;
 
-    const { data: kunde } = await supabaseAdmin
+    const {data: kunde, error: __dbErr474_1} = await supabaseAdmin
       .from("kunden")
       .select("id, name, org_anzeigename, typ, portal_modus")
       .eq("auth_user_id", user.id)
       .maybeSingle();
-
+    if (__dbErr474_1) logDbError('lib/portal/resolve-portal-pwa-name:kunden', __dbErr474_1)
     if (!kunde) return NEUTRAL;
 
     const tip = String((kunde as { typ?: string | null }).typ ?? "")

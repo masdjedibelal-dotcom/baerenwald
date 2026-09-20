@@ -79,7 +79,7 @@ export const PORTAL_FLOW_MAPPING: Record<
   angefragt: {
     label: PORTAL_STATUS.angefragt.label,
     realFields: [
-      "Handwerker-Anfrage gestellt (CRM send-handwerker / Partner-Zuweisung)",
+      "Partner-Anfrage gestellt (CRM send-handwerker / Partner-Zuweisung)",
       "angebot_handwerker existiert ODER auftraege.handwerkerAktionOffen",
       "resolveVorgang: phase=angebot + unterstatus=entwurf ODER actor=handwerker",
       "extra.hwAngefragt = true",

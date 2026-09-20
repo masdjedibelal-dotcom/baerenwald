@@ -1,3 +1,4 @@
+import { logDbError } from '@/lib/errors/log-db-error'
 import { buildPushPayloadFromNotif } from "@/lib/push/payload";
 import { resolveOrgAuthUserIds } from "@/lib/push/resolve-recipients";
 import { scheduleWebPushToUsers } from "@/lib/push/send-web-push";
@@ -53,6 +54,7 @@ export async function createHvNotification(
     body,
     link,
   });
+  if (error) logDbError('lib/org/create-hv-notification:hv_notifications', error)
   if (error) return { ok: false, error: error.message };
 
   void resolveOrgAuthUserIds(kundeId)

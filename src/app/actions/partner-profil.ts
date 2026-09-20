@@ -1,5 +1,6 @@
 "use server";
 
+import { logDbError } from '@/lib/errors/log-db-error'
 import { revalidatePath } from "next/cache";
 
 import { linkPortalHandwerkerToAuthUser } from "@/lib/partner/link-portal-handwerker";
@@ -144,6 +145,7 @@ export async function updatePartnerProfil(
     .from("handwerker")
     .update(patchFull)
     .eq("id", link.handwerkerId);
+  if (error) logDbError('app/actions/partner-profil:handwerker', error)
 
   if (error && /kleinunternehmer/i.test(error.message)) {
     const { kleinunternehmer: _k, ...withoutKu } = patchFull;
@@ -212,6 +214,7 @@ export async function uploadPartnerProfilLogo(
     .from("handwerker")
     .update({ logo_url: upload.path })
     .eq("id", link.handwerkerId);
+  if (error) logDbError('app/actions/partner-profil:handwerker', error)
 
   if (error && /logo_url/i.test(error.message)) {
     return {

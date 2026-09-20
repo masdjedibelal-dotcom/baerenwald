@@ -65,7 +65,7 @@ function validateForm(data: LeadData): FieldErrors {
 }
 
 const baseCls =
-  "funnel-input w-full rounded-xl border border-border-default px-3 py-2.5 text-base text-text-primary outline-none transition-colors focus:border-funnel-accent";
+  "funnel-input w-full rounded-field border border-border-default px-3 py-2.5 text-base text-text-primary outline-none transition-colors focus:border-funnel-accent";
 
 function fieldCls(
   key: FieldKey,
@@ -193,7 +193,7 @@ export function LeadForm({
         aria-hidden="true"
         style={{
           position: "absolute",
-          left: "-9999px",
+          left: "-624.938rem",
           opacity: 0,
           height: 0,
           width: 0,
@@ -324,7 +324,7 @@ export function LeadForm({
           (submitStatus !== "error" && hasErrors)
         }
         className={cn(
-          "flex w-full items-center justify-center gap-2 rounded-full bg-funnel-accent px-6 py-3 text-sm font-semibold text-white transition-opacity",
+          "flex w-full items-center justify-center gap-2 rounded-pill bg-funnel-accent px-6 py-3 text-sm font-semibold text-white transition-opacity",
           (submitStatus === "loading") && "opacity-70 cursor-not-allowed",
           (submitStatus !== "error" && hasErrors) && "opacity-40"
         )}

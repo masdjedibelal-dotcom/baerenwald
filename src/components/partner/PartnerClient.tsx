@@ -7,6 +7,7 @@ import { flushSync } from "react-dom";
 import { markPartnerNotificationsReadForVorgang } from "@/app/actions/partner-notifications";
 import { PartnerHwDashboard, partnerDashboardStatusColors } from "@/components/partner/PartnerHwDashboard";
 import { portalHeaderHeroSrc } from "@/lib/portal2/portal-media";
+import { EMPTY } from "@/lib/portal-copy";
 import { emitPortalNotificationsChanged } from "@/lib/portal2/notif-refresh";
 import { PartnerNotificationBell } from "@/components/partner/PartnerNotificationBell";
 import { PartnerOnboardingReminderBanner } from "@/components/partner/PartnerOnboardingReminderBanner";
@@ -39,8 +40,16 @@ const PortalBaerenwaldGpt = dynamic(
 import { PortalLegalFooter } from "@/components/shared/PortalLegalFooter";
 import { PortalShell } from "@/components/shared/PortalShell";
 import { PortalHeaderSearch } from "@/components/shared/PortalHeaderSearch";
+import { PortalGlobalShortcuts } from "@/components/shared/PortalGlobalShortcuts";
+import {
+  buildListReturnUrl,
+  defaultListHrefForDetail,
+  parseReturn,
+} from "@/lib/list-return-url";
+import { useListUrlState } from "@/hooks/useListUrlState";
 import { PortalInboxEmpty } from "@/components/shared/PortalEmptyState";
-import { PortalEmptyState } from "@/components/shared/PortalStateView";
+import { PortalActionMenu } from "@/components/shared/PortalActionMenu";
+import { PORTAL_EMPTY_TITLE, portalEmptySubtitle } from "@/lib/portal2/portal-states";
 import type { PartnerPlanerSection } from "@/lib/partner/build-partner-termine";
 import type {
   PartnerAnfrageItem,
@@ -72,6 +81,7 @@ import type { VorgangFilter } from "@/lib/partner/vorgang-state";
 import { VORGANG_FILTER_ORDER } from "@/lib/partner/vorgang-state";
 import { buildPortalShellNav } from "@/lib/portal2/nav-items";
 import { partnerSectionListPath, partnerVorgangPortalPath } from "@/lib/partner/partner-site-url";
+import { PortalButton } from "@/components/portal/PortalButton";
 
 type PartnerSection =
   | "uebersicht"
@@ -112,26 +122,6 @@ function normalizeSectionFromUrl(raw: string | undefined): PartnerSection | null
 
 function isPartnerListSection(section: PartnerSection): boolean {
   return section === "vorgaenge";
-}
-
-function PartnerVorgangListFilterBar({
-  filter,
-  onFilterChange,
-}: {
-  filter: VorgangFilter;
-  onFilterChange: (filter: VorgangFilter) => void;
-}) {
-  return (
-    <PortalListeFilterBar
-      value={filter}
-      onChange={onFilterChange}
-      sheetTitle="Vorgänge"
-      options={VORGANG_FILTER_ORDER.map((id) => ({
-        id,
-        label: VORGANG_FILTER_LABELS[id],
-      }))}
-    />
-  );
 }
 
 /** Listen-Unterzeile: Straße / PLZ Ort aus Card-Meta (buildPartnerAuftragCardMeta). */
@@ -186,7 +176,15 @@ export function PartnerClient({
   /** Beim Öffnen eines neuen Vorgangs: veraltete URL-id (vorheriger Detail) verwerfen. */
   const pendingDetailIdRef = useRef<string | null>(null);
   const [gptOpen, setGptOpen] = useState(false);
-  const [listPage, setListPage] = useState(1);
+  const {
+    seite: listPage,
+    setState: setListUrlState,
+    listHrefWithState,
+  } = useListUrlState({
+    keys: ["filter", "page", "q"],
+    pageParam: "page",
+  });
+  const setListPage = (n: number) => setListUrlState({ page: n });
   const [pageBusy, setPageBusy] = useState(false);
   const [detailOpening, setDetailOpening] = useState(false);
   const detailOpeningTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -750,7 +748,11 @@ export function PartnerClient({
       opts?.focus === "abnahme"
         ? opts.focus
         : undefined;
-    router.replace(partnerVorgangPortalPath(id, { focus }), { scroll: false });
+    const detail = partnerVorgangPortalPath(id, { focus });
+    router.replace(
+      buildListReturnUrl("/partner?section=vorgaenge", detail),
+      { scroll: false }
+    );
   }
 
   function selectRow(id: string) {
@@ -761,7 +763,10 @@ export function PartnerClient({
       setSection("vorgaenge");
       setSelectedId(id);
     });
-    router.replace(partnerVorgangPortalPath(id), { scroll: false });
+    const detail = partnerVorgangPortalPath(id);
+    router.replace(buildListReturnUrl(listHrefWithState(), detail), {
+      scroll: false,
+    });
   }
 
   function closeDetail() {
@@ -776,11 +781,11 @@ export function PartnerClient({
       setSelectedId(null);
     });
     flashPageBusy();
-    const filterQs =
+    const fallback =
       vorgangListFilter === "alle"
         ? partnerSectionListPath("vorgaenge")
         : `/partner?section=vorgaenge&filter=${vorgangListFilter}`;
-    router.replace(filterQs, { scroll: false });
+    router.replace(parseReturn(searchParams, fallback), { scroll: false });
   }
 
   const sectionListEmpty = sectionCardRows.length === 0;
@@ -789,12 +794,12 @@ export function PartnerClient({
     section === "vorgaenge" && sectionListEmpty && vorgaengeState.length === 0;
   const filterEmptyMessage =
     vorgangFilterEffective === "offen"
-      ? "Keine offenen Vorgänge."
+      ? EMPTY.vorgaengeOffen
       : vorgangFilterEffective === "auftrag"
-        ? "Keine Aufträge in Ausführung."
+        ? EMPTY.auftraegeAusfuehrung
         : vorgangFilterEffective === "erledigt"
-          ? "Keine erledigten Vorgänge."
-          : "Keine Vorgänge.";
+          ? EMPTY.vorgaengeErledigt
+          : EMPTY.vorgaenge;
 
   function renderSectionCard(row: PartnerCardRow) {
     return (
@@ -812,6 +817,17 @@ export function PartnerClient({
         meta={[]}
         selected={false}
         onClick={() => selectRow(row.id)}
+        trailingActions={
+          <PortalActionMenu
+            title="Aktionen"
+            items={[
+              {
+                label: "Öffnen",
+                onClick: () => selectRow(row.id),
+              },
+            ]}
+          />
+        }
       />
     );
   }
@@ -841,17 +857,26 @@ export function PartnerClient({
   const listScreen = (
     <div className="flex min-w-0 flex-col">
       <div className="px-0.5 pb-1">
-        <PortalListeEyebrow>Handwerker</PortalListeEyebrow>
+        <PortalListeEyebrow>Partner</PortalListeEyebrow>
         <PortalListeTitle>Vorgänge</PortalListeTitle>
       </div>
-      <PartnerVorgangListFilterBar
-        filter={vorgangListFilter}
-        onFilterChange={changeVorgangFilter}
+      <PortalListeFilterBar
+        value={vorgangListFilter}
+        onChange={changeVorgangFilter}
+        sheetTitle="Vorgänge"
+        options={VORGANG_FILTER_ORDER.map((id) => ({
+          id,
+          label: VORGANG_FILTER_LABELS[id],
+        }))}
       />
       <div className={portalListStackClass("responsive")}>
         {sectionListEmpty ? (
           showPortalEmptyVorgaenge ? (
-            <PortalEmptyState role="handwerker" compact />
+            <PortalInboxEmpty
+              title={PORTAL_EMPTY_TITLE}
+              description={portalEmptySubtitle("handwerker")}
+              compact
+            />
           ) : (
             <PortalInboxEmpty title={filterEmptyMessage} compact />
           )
@@ -909,8 +934,13 @@ export function PartnerClient({
         footer={partnerFooter}
         headerSearch={
           <PortalHeaderSearch
-            onSubmit={() => {
-              switchSection("vorgaenge");
+            apiPath="/api/partner/suche"
+            role="partner"
+            onSelect={(hit) => {
+              const idMatch = hit.href.match(/[?&]id=([^&]+)/);
+              const id = idMatch ? decodeURIComponent(idMatch[1]!) : "";
+              if (id) selectRow(id);
+              else router.replace(hit.href, { scroll: false });
             }}
           />
         }
@@ -919,15 +949,45 @@ export function PartnerClient({
         }
         headerRoleBadge={
           <form action="/partner/auth/signout" method="post">
-            <button
+            <PortalButton variant="secondary" action={false} compact
               type="submit"
-              className="btn-pill-outline portal-btn-compact"
+              className="btn-pill-outline"
             >
               Abmelden
-            </button>
+            </PortalButton>
           </form>
         }
       >
+        <PortalGlobalShortcuts
+          apiPath="/api/partner/suche"
+          listFallbackHref={defaultListHrefForDetail("/partner")}
+          navHits={[
+            {
+              id: "nav-home",
+              group: "navigation",
+              icon: "layout-dashboard",
+              label: "Übersicht",
+              sub: "Navigation",
+              href: "/partner",
+            },
+            {
+              id: "nav-liste",
+              group: "navigation",
+              icon: "list",
+              label: "Vorgänge",
+              sub: "Navigation",
+              href: "/partner?section=vorgaenge",
+            },
+            {
+              id: "nav-set",
+              group: "navigation",
+              icon: "settings",
+              label: "Einstellungen",
+              sub: "Navigation",
+              href: "/partner?section=profil",
+            },
+          ]}
+        />
         <div className="flex min-h-full flex-1 flex-col gap-5">
           {section !== "uebersicht" && section !== "profil" ? (
             <PartnerOnboardingReminderBanner

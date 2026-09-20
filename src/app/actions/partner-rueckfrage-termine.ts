@@ -1,5 +1,6 @@
 "use server";
 
+import { logDbError } from '@/lib/errors/log-db-error'
 import { revalidatePath } from "next/cache";
 
 import { writeAuditEvent } from "@/lib/audit/write-audit-event";
@@ -53,6 +54,7 @@ export async function createPartnerRueckfrage(
     handwerker_id: auth.handwerkerId,
     text: trimmed,
   });
+  if (error) logDbError('app/actions/partner-rueckfrage-termine:auftrag_rueckfragen', error)
 
   if (error) return { ok: false, error: error.message };
 
@@ -86,11 +88,12 @@ export async function createPartnerTerminSlots(
     return { ok: false, error: "Mindestens ein Termin erforderlich." };
   }
 
-  const { data: auftrag } = await supabaseAdmin
+  const {data: auftrag, error: __dbErr98_1} = await supabaseAdmin
     .from("auftraege")
     .select("lead_id")
     .eq("id", auftragId)
     .maybeSingle();
+  if (__dbErr98_1) logDbError('app/actions/partner-rueckfrage-termine:auftraege', __dbErr98_1)
 
   const rows = valid.map((s) => ({
     auftrag_id: auftragId,
@@ -101,6 +104,7 @@ export async function createPartnerTerminSlots(
   }));
 
   const { error } = await supabaseAdmin.from("auftrag_terminslots").insert(rows);
+  if (error) logDbError('app/actions/partner-rueckfrage-termine:auftrag_terminslots', error)
   if (error) return { ok: false, error: error.message };
 
   revalidatePath("/partner");
@@ -123,7 +127,7 @@ export async function reschedulePartnerTerminSlot(
 
   const now = new Date().toISOString();
 
-  await supabaseAdmin
+  const { error: __dbErr100_3 } = await supabaseAdmin
     .from("auftrag_terminslots")
     .update({
       status: "abgesagt",
@@ -132,12 +136,14 @@ export async function reschedulePartnerTerminSlot(
     })
     .eq("id", alterSlotId)
     .eq("auftrag_id", auftragId);
+  if (__dbErr100_3) logDbError('app/actions/partner-rueckfrage-termine:auftrag_terminslots', __dbErr100_3)
 
-  const { data: auftrag } = await supabaseAdmin
+  const {data: auftrag, error: __dbErr99_2} = await supabaseAdmin
     .from("auftraege")
     .select("lead_id")
     .eq("id", auftragId)
     .maybeSingle();
+  if (__dbErr99_2) logDbError('app/actions/partner-rueckfrage-termine:auftraege', __dbErr99_2)
 
   const { error } = await supabaseAdmin.from("auftrag_terminslots").insert({
     auftrag_id: auftragId,
@@ -146,6 +152,7 @@ export async function reschedulePartnerTerminSlot(
     slot_ende: neuerEnde ?? null,
     status: "vorgeschlagen",
   });
+  if (error) logDbError('app/actions/partner-rueckfrage-termine:auftrag_terminslots', error)
 
   if (error) return { ok: false, error: error.message };
   revalidatePath("/partner");

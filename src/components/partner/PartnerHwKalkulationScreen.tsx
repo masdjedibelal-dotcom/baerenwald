@@ -1,12 +1,14 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { PortalButton } from "@/components/portal/PortalButton";
 
+import { PortalInput, PortalSelect } from "@/components/shared/PortalFormControls";
 import { submitPartnerHwKalkulation } from "@/app/actions/partner-hw-kalkulation";
 import {
   PartnerDetailError,
-  PartnerDetailSection,
 } from "@/components/partner/PartnerDetailUi";
+import { PortalDetailCard } from "@/components/shared/PortalDetailCard";
 import {
   DEFAULT_HW_POSITIONEN,
   HW_MENGE_EINHEITEN,
@@ -22,6 +24,7 @@ import {
 } from "@/lib/portal2/hw-kalkulation";
 import { partnerPortalToast, portalToastError } from "@/lib/shared/portal-toast";
 import { cn } from "@/lib/utils";
+import { TOAST } from '@/lib/portal-copy'
 
 type Props = {
   anfrageId: string;
@@ -80,7 +83,7 @@ export function PartnerHwKalkulationScreen({
       });
       if (!res.ok) {
         setError(res.error);
-        portalToastError("Kalkulation fehlgeschlagen", res.error);
+        portalToastError(TOAST.kalkulation_fehlgeschlagen, res.error);
         return;
       }
       partnerPortalToast.hwAngebotEingereicht();
@@ -101,7 +104,7 @@ export function PartnerHwKalkulationScreen({
   }
 
   return (
-    <PartnerDetailSection title={einholung ? "Leistungsverzeichnis" : "Kalkulation / Angebot"}>
+    <PortalDetailCard title={einholung ? "Leistungsverzeichnis" : "Kalkulation / Angebot"}>
       {einholung ? (
         <p className="portal-text-body text-text-secondary mb-3">
           Positionen aus der Anfrage — bitte Menge und Preis je Zeile ergänzen.
@@ -121,11 +124,12 @@ export function PartnerHwKalkulationScreen({
               ["upload", "PDF-Upload (Standard)"],
             ] as const
           ).map(([key, label]) => (
-            <button
+            <PortalButton
+              variant="ghost"
               key={key}
               type="button"
               className={cn(
-                "flex-1 rounded-lg py-2 text-[13px] font-semibold",
+                "flex-1 rounded-button py-2 text-fs-meta font-semibold",
                 modus === key
                   ? "bg-white text-text-primary shadow-sm"
                   : "text-text-secondary"
@@ -133,13 +137,13 @@ export function PartnerHwKalkulationScreen({
               onClick={() => setModus(key)}
             >
               {label}
-            </button>
+            </PortalButton>
           ))}
         </div>
       )}
 
       {modus === "kalkulieren" || einholung ? (
-        <div className="space-y-0 overflow-hidden rounded-xl border border-border-default bg-white">
+        <div className="space-y-0 overflow-hidden rounded-sheet border border-border-default bg-white">
           {positionen.map((p, i) => {
             const { faktor, einheit } = splitHwMenge(p.menge);
             const vorgabePos = einholung && Boolean(p.pos.trim());
@@ -159,8 +163,8 @@ export function PartnerHwKalkulationScreen({
                       {p.pos}
                     </p>
                   ) : (
-                    <input
-                      className="portal-input min-w-0 flex-1 rounded-lg border border-border-default px-2.5 py-2 text-sm"
+                    <PortalInput
+                      className="portal-input min-w-0 flex-1 rounded-field border border-border-default px-2.5 py-2 text-sm"
                       placeholder="Leistung / Position"
                       value={p.pos}
                       onChange={(e) =>
@@ -168,19 +172,20 @@ export function PartnerHwKalkulationScreen({
                       }
                     />
                   )}
-                  <button
+                  <PortalButton
+                    variant="ghost"
                     type="button"
                     className="shrink-0 px-1 text-lg leading-none text-text-tertiary"
                     title="Position entfernen"
                     onClick={() => setPositionen(hwKalkDel(positionen, i))}
                   >
                     ×
-                  </button>
+                  </PortalButton>
                 </div>
 
                 <div className="hw-kalk-pos__fields">
-                  <input
-                    className="portal-input hw-kalk-pos__field hw-kalk-pos__field--menge rounded-lg border border-border-default px-2 py-2 text-center text-sm"
+                  <PortalInput
+                    className="portal-input hw-kalk-pos__field hw-kalk-pos__field--menge rounded-field border border-border-default px-2 py-2 text-center text-sm"
                     inputMode="decimal"
                     placeholder="1"
                     value={mengeDisplay(i, faktor)}
@@ -212,14 +217,14 @@ export function PartnerHwKalkulationScreen({
                   />
                   {vorgabePos ? (
                     <div
-                      className="portal-input hw-kalk-pos__field hw-kalk-pos__field--einheit flex items-center justify-center rounded-lg border border-border-default bg-surface-muted px-2 py-2 text-center text-sm text-text-secondary"
+                      className="portal-input hw-kalk-pos__field hw-kalk-pos__field--einheit flex items-center justify-center rounded-card border border-border-default bg-surface-muted px-2 py-2 text-center text-sm text-text-secondary"
                       aria-hidden
                     >
                       {einheit}
                     </div>
                   ) : (
-                    <select
-                      className="portal-input hw-kalk-pos__field hw-kalk-pos__field--einheit rounded-lg border border-border-default px-1.5 py-2 text-center text-sm"
+                    <PortalSelect
+                      className="portal-input hw-kalk-pos__field hw-kalk-pos__field--einheit rounded-field border border-border-default px-1.5 py-2 text-center text-sm"
                       value={einheit}
                       onChange={(e) =>
                         setPositionen(
@@ -240,13 +245,13 @@ export function PartnerHwKalkulationScreen({
                           {u}
                         </option>
                       ))}
-                    </select>
+                    </PortalSelect>
                   )}
                   <div className="hw-kalk-pos__field--preis-wrap">
-                    <input
+                    <PortalInput
                       type="text"
                       inputMode="decimal"
-                      className="portal-input hw-kalk-pos__field hw-kalk-pos__field--preis w-full rounded-lg border border-border-default py-2 pl-2 pr-6 text-right text-sm"
+                      className="portal-input hw-kalk-pos__field hw-kalk-pos__field--preis w-full rounded-field border border-border-default py-2 pl-2 pr-6 text-right text-sm"
                       placeholder="0"
                       value={einzelDisplay(i, p.einzel)}
                       onFocus={() =>
@@ -285,7 +290,7 @@ export function PartnerHwKalkulationScreen({
           })}
         </div>
       ) : (
-        <p className="rounded-xl border border-dashed border-border-default p-4 text-sm text-text-secondary">
+        <p className="rounded-sheet border border-dashed border-border-default p-4 text-sm text-text-secondary">
           PDF-Upload nutzt die Standard-Positionen als Angebotsbasis. Für
           detaillierte Kalkulation den Modus „Kalkulieren“ wählen. Angebot-PDF
           können Sie nach Einreichung unter Unterlagen nachreichen.
@@ -293,13 +298,14 @@ export function PartnerHwKalkulationScreen({
       )}
 
       {modus === "kalkulieren" || einholung ? (
-        <button
+        <PortalButton
+          variant="ghost"
           type="button"
-          className="mt-2 text-[13px] font-semibold text-accent"
+          className="mt-2 text-fs-meta font-semibold text-accent"
           onClick={() => setPositionen(hwKalkAdd(positionen))}
         >
           ＋ Position hinzufügen
-        </button>
+        </PortalButton>
       ) : null}
 
       {einholung ? null : (
@@ -307,15 +313,15 @@ export function PartnerHwKalkulationScreen({
           <span className="portal-text-meta text-text-tertiary">
             Voraussichtliche Dauer
           </span>
-          <input
-            className="portal-input mt-1 w-full max-w-xs rounded-lg border border-border-default px-3 py-2 text-sm"
+          <PortalInput
+            className="portal-input mt-1 w-full max-w-xs rounded-field border border-border-default px-3 py-2 text-sm"
             value={dauer}
             onChange={(e) => setDauer(e.target.value)}
           />
         </label>
       )}
 
-      <div className="mt-4 rounded-xl border border-border-light bg-white px-4 py-3 text-sm">
+      <div className="mt-4 rounded-sheet border border-border-light bg-white px-4 py-3 text-sm">
         <div className="flex justify-between">
           <span>Netto</span>
           <span className="font-semibold">{formatHwMoney(sum.net)}</span>
@@ -329,7 +335,7 @@ export function PartnerHwKalkulationScreen({
           <span>{formatHwMoney(sum.brutto)}</span>
         </div>
         {einholung ? null : unterSchwelle ? (
-          <p className="mt-2 text-xs font-semibold text-[#1F6A3F]">
+          <p className="mt-2 text-xs font-semibold text-[var(--p2-status-green)]">
             Unter Freigabeschwelle ({formatHwMoney(schwelleEur)}) — nach
             Einreichung oft ohne HV-Freigabe-Schritt (Bärenwald Auto-Pfad).
           </p>
@@ -344,23 +350,23 @@ export function PartnerHwKalkulationScreen({
       {error ? <PartnerDetailError message={error} /> : null}
 
       <div className="mt-4 flex flex-wrap gap-2">
-        <button
+        <PortalButton
+          variant="primary"
           type="button"
-          className="btn-pill-primary"
           disabled={busy || !canSubmit}
           onClick={() => void onSubmit()}
         >
           {busy ? "Wird eingereicht…" : einholung ? "LV einreichen" : "Angebot einreichen"}
-        </button>
-        <button
+        </PortalButton>
+        <PortalButton
+          variant="secondary"
           type="button"
-          className="btn-pill-outline"
           disabled={busy}
           onClick={onCancel}
         >
           Abbrechen
-        </button>
+        </PortalButton>
       </div>
-    </PartnerDetailSection>
+    </PortalDetailCard>
   );
 }

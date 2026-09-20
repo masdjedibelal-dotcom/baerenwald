@@ -1,3 +1,4 @@
+import { logDbError } from '@/lib/errors/log-db-error'
 import { createClient } from "@/lib/supabase/server";
 import {
   pruefpflichtTypBySchluessel,
@@ -12,19 +13,21 @@ export async function resolveGewerkIdByName(
 ): Promise<string | null> {
   const q = name?.trim();
   if (!q) return null;
-  const { data } = await supabaseAdmin
+  const {data, error: __dbErr362_1} = await supabaseAdmin
     .from("gewerke")
     .select("id, name")
     .ilike("name", q)
     .limit(1)
     .maybeSingle();
+  if (__dbErr362_1) logDbError('lib/org/pruefpflichten-helpers:gewerke', __dbErr362_1)
   if (data?.id) return String(data.id);
-  const { data: partial } = await supabaseAdmin
+  const {data: partial, error: __dbErr363_2} = await supabaseAdmin
     .from("gewerke")
     .select("id, name")
     .ilike("name", `%${q}%`)
     .limit(1)
     .maybeSingle();
+  if (__dbErr363_2) logDbError('lib/org/pruefpflichten-helpers:gewerke', __dbErr363_2)
   return partial?.id ? String(partial.id) : null;
 }
 

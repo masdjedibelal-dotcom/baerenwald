@@ -1,13 +1,26 @@
+import { logDbError } from '@/lib/errors/log-db-error'
 import { NextResponse } from "next/server";
 
-import { generateEigentuemerBerichtPdf } from "@/lib/org/generate-eigentuemer-bericht-pdf";
 import { requireOrganisationSession } from "@/lib/org/require-org-session";
+import { PDF_UI_ERROR, renderPdfViaCrm } from "@/lib/pdf/render-via-crm";
 import { supabaseAdmin } from "@/lib/supabase";
 
 export const runtime = "nodejs";
 
-/** S12: Eigentümer-Jahresbericht als PDF. */
+/** S12: Eigentümer-Jahresbericht als PDF — Auth Portal, Render CRM (O5). */
 export async function GET(req: Request) {
+  try {
+    return await handleEigentuemerBerichtGet(req);
+  } catch (e) {
+    console.error("[eigentuemer-bericht] 500:", e);
+    return NextResponse.json(
+      { error: e instanceof Error ? e.message : PDF_UI_ERROR },
+      { status: 500 }
+    );
+  }
+}
+
+async function handleEigentuemerBerichtGet(req: Request) {
   const session = await requireOrganisationSession();
   if (!session.ok) {
     return NextResponse.json({ error: session.error }, { status: session.status });
@@ -22,23 +35,23 @@ export async function GET(req: Request) {
     return NextResponse.json({ error: "objektId und jahr erforderlich." }, { status: 400 });
   }
 
-  const { data: objekt } = await supabaseAdmin
+  const {data: objekt, error: __dbErr199_1} = await supabaseAdmin
     .from("kunden_objekte")
     .select("id, titel, strasse, hausnummer, plz, ort")
     .eq("id", objektId)
     .eq("kunde_id", session.kunde.id)
     .maybeSingle();
-
+  if (__dbErr199_1) logDbError('app/api/org/objekte/bericht/route:kunden_objekte', __dbErr199_1)
   if (!objekt) {
     return NextResponse.json({ error: "Objekt nicht gefunden." }, { status: 404 });
   }
 
-  const { data: kostenRows } = await supabaseAdmin
+  const {data: kostenRows, error: __dbErr200_2} = await supabaseAdmin
     .from("v_objekt_kosten")
     .select("jahr, brutto_gesamt, kostentraeger, anzahl_rechnungen")
     .eq("kunde_id", session.kunde.id)
     .eq("kunde_objekt_id", objektId);
-
+  if (__dbErr200_2) logDbError('app/api/org/objekte/bericht/route:v_objekt_kosten', __dbErr200_2)
   const jahrRows = (kostenRows ?? []).filter((r) => {
     return new Date(String(r.jahr)).getFullYear() === jahr;
   });
@@ -57,25 +70,25 @@ export async function GET(req: Request) {
   const jahrStart = `${jahr}-01-01`;
   const jahrEnd = `${jahr}-12-31`;
 
-  const { count: anzahlVorgaenge } = await supabaseAdmin
+  const {count: anzahlVorgaenge, error: __dbErr201_3} = await supabaseAdmin
     .from("leads")
     .select("id", { count: "exact", head: true })
     .eq("auftraggeber_kunde_id", session.kunde.id)
     .eq("kunde_objekt_id", objektId)
     .gte("created_at", jahrStart)
     .lte("created_at", `${jahrEnd}T23:59:59`);
-
-  const { count: pruefpflichtenFaellig } = await supabaseAdmin
+  if (__dbErr201_3) logDbError('app/api/org/objekte/bericht/route:leads', __dbErr201_3)
+  const {count: pruefpflichtenFaellig, error: __dbErr202_4} = await supabaseAdmin
     .from("objekt_pruefpflichten")
     .select("id", { count: "exact", head: true })
     .eq("kunde_objekt_id", objektId)
     .eq("status", "aktiv")
     .lte("naechste_faellig", `${jahr}-12-31`);
-
+  if (__dbErr202_4) logDbError('app/api/org/objekte/bericht/route:objekt_pruefpflichten', __dbErr202_4)
   const adresse = [objekt.strasse, objekt.hausnummer].filter(Boolean).join(" ");
   const plzOrt = [objekt.plz, objekt.ort].filter(Boolean).join(" ");
 
-  const bytes = await generateEigentuemerBerichtPdf({
+  const bytes = await renderPdfViaCrm("eigentuemer-bericht", {
     orgName:
       session.kunde.org_anzeigename?.trim() ||
       session.kunde.name?.trim() ||

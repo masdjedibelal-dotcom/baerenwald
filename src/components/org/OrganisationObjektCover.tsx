@@ -1,7 +1,8 @@
 "use client";
 
+import { PortalIcon } from "@/components/portal/PortalIcon";
 import { useEffect, useRef, useState, type DragEvent } from "react";
-import { Pencil } from "lucide-react";
+import { PortalButton } from "@/components/portal/PortalButton";
 
 import {
   isPortalDefaultMediaUrl,
@@ -10,6 +11,7 @@ import {
 import { usePortalUploadBusy } from "@/components/shared/usePortalUploadBusy";
 import { orgPortalToast, portalToastError } from "@/lib/shared/portal-toast";
 import { cn } from "@/lib/utils";
+import { TOAST } from '@/lib/portal-copy'
 
 type Props = {
   objektId: string;
@@ -23,7 +25,7 @@ type Props = {
 };
 
 const COVER_FALLBACK_GRADIENT =
-  "linear-gradient(135deg, #1A3D2B 0%, #2E7D52 60%, #0f766e 100%)";
+  "linear-gradient(135deg, var(--p2-primary-dk) 0%, var(--p2-primary) 60%, var(--p2-status-teal) 100%)";
 
 /**
  * Gebäudefoto — Bearbeiten-Icon oben rechts öffnet den Upload; Drop bleibt möglich.
@@ -55,7 +57,7 @@ export function OrganisationObjektCover({
   const upload = async (file: File) => {
     if (!canUpload || busy) return;
     if (!file.type.startsWith("image/")) {
-      portalToastError("Nur Bilder erlaubt");
+      portalToastError(TOAST.nur_bilder_erlaubt);
       return;
     }
     await runUpload(async () => {
@@ -72,7 +74,7 @@ export function OrganisationObjektCover({
       const json = (await res.json()) as { error?: string; cover_url?: string };
       if (!res.ok || !json.cover_url) {
         setPreview(null);
-        portalToastError("Foto nicht gespeichert", json.error);
+        portalToastError(TOAST.foto_nicht_gespeichert, json.error);
         return;
       }
       setPreview(json.cover_url);
@@ -80,7 +82,7 @@ export function OrganisationObjektCover({
       orgPortalToast.saved();
     }).catch(() => {
       setPreview(null);
-      portalToastError("Upload fehlgeschlagen");
+      portalToastError(TOAST.upload_fehlgeschlagen);
     });
   };
 
@@ -139,7 +141,7 @@ export function OrganisationObjektCover({
           className="pointer-events-none absolute inset-0 flex items-center justify-center bg-black/35"
           aria-hidden
         >
-          <span className="rounded-full bg-black/55 px-2.5 py-1 text-[11.5px] font-semibold text-white">
+          <span className="rounded-pill bg-black/55 px-2.5 py-1 text-fs-caption font-semibold text-white">
             Datei ablegen
           </span>
         </div>
@@ -158,10 +160,11 @@ export function OrganisationObjektCover({
               if (f) void upload(f);
             }}
           />
-          <button
+          <PortalButton
+            variant="ghost"
             type="button"
             className={cn(
-              "absolute right-2 top-2 z-10 inline-flex h-8 w-8 items-center justify-center rounded-full",
+              "absolute right-2 top-2 z-10 inline-flex h-8 w-8 items-center justify-center rounded-pill",
               "border border-white/40 bg-black/55 text-white shadow-sm backdrop-blur-[2px]",
               "transition-colors hover:bg-black/70 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white",
               "disabled:opacity-60"
@@ -174,8 +177,8 @@ export function OrganisationObjektCover({
             title={busy ? "Wird hochgeladen…" : editLabel}
             aria-label={busy ? "Wird hochgeladen…" : editLabel}
           >
-            <Pencil className="h-3.5 w-3.5" aria-hidden />
-          </button>
+            <PortalIcon n="pencil" ctx="default" className="h-3.5 w-3.5" aria-hidden />
+          </PortalButton>
         </>
       ) : null}
     </div>

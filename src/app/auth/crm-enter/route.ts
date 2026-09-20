@@ -1,3 +1,4 @@
+import { logDbError } from '@/lib/errors/log-db-error'
 import { createHmac, timingSafeEqual } from "crypto";
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
@@ -118,6 +119,7 @@ async function consumeJti(jti: string): Promise<boolean> {
     .select("jti, used_at, expires_at")
     .eq("jti", jti)
     .maybeSingle();
+  if (error) logDbError('app/auth/crm-enter/route:crm_impersonation_tokens', error)
   if (error) {
     console.warn("[crm-enter] jti lookup:", error.message);
     return true;
@@ -135,6 +137,7 @@ async function consumeJti(jti: string): Promise<boolean> {
     .update({ used_at: new Date().toISOString() })
     .eq("jti", jti)
     .is("used_at", null);
+  if (upErr) logDbError('app/auth/crm-enter/route:crm_impersonation_tokens', upErr)
   if (upErr) {
     console.warn("[crm-enter] jti consume:", upErr.message);
   }

@@ -18,7 +18,7 @@ export function ExtraQuestion({
   def,
   value,
   onChange,
-  accentColor = "#1B4332",
+  accentColor = "var(--fl-accent-dark)",
   className,
 }: ExtraQuestionProps) {
   const sel = typeof value === "string" ? value : "";

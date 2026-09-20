@@ -8,6 +8,7 @@ import {
   submitBwLead,
 } from "@/components/funnel/LeadStep";
 import { DatenschutzCheckbox } from "@/components/funnel/DatenschutzCheckbox";
+import { CTAButton } from "@/components/ui/CTAButton";
 import { getPlzStatus } from "@/lib/funnel/plz";
 import type { EnrichLeadContext } from "@/lib/lead/enrich-funnel-for-lead";
 import { produktPreis } from "@/lib/products/produkt-preis";
@@ -235,13 +236,14 @@ export function KatalogLeadForm({
 
       {error ? <p className="konverter-lead-error">{error}</p> : null}
 
-      <button
+      <CTAButton
+        bare
+        tone="hero-page"
         type="submit"
-        className="page-hero-btn-primary konverter-lead-submit"
+        className="konverter-lead-submit"
         disabled={loading}
-      >
-        {loading ? "Wird gesendet…" : "Kostenrahmen anfragen →"}
-      </button>
+        label={loading ? "Wird gesendet…" : "Kostenrahmen anfragen →"}
+      />
     </form>
   );
 }

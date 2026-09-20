@@ -9,6 +9,8 @@ import {
 } from "@/lib/partner/compliance-summary";
 import type { PartnerComplianceItem } from "@/lib/partner/partner-compliance";
 
+import { PortalCheckbox } from "@/components/shared/PortalFormControls";
+import { cn } from "@/lib/utils";
 export function PartnerPflichtenCard({
   compliance_stamm,
   compliance_projekt,
@@ -30,6 +32,8 @@ export function PartnerPflichtenCard({
     checked: boolean;
     onChange: (checked: boolean) => void;
     label?: string;
+    /** Kurz hervorheben (Sprung von Annehmen-Button). */
+    highlight?: boolean;
   };
 }) {
   const bauprojekt = isPartnerBauprojektAuftrag({
@@ -61,9 +65,9 @@ export function PartnerPflichtenCard({
   return (
     <>
       <PortalDetailCard title={titel} chrome="responsive">
-        <p className="text-[12.5px] text-text-secondary">
+        <p className="text-fs-meta text-text-secondary">
           {bauprojekt
-            ? "Bauprojekt — bitte vor der Bestätigung durchlesen, was du erfüllen musst."
+            ? "Bauprojekt — bitte vor der Bestätigung durchlesen, was Sie erfüllen müssen."
             : "Bitte Leistungen und Konditionen prüfen und verbindlich bestätigen."}
         </p>
         {showPflichtenListe && punkte.length > 0 ? (
@@ -71,7 +75,7 @@ export function PartnerPflichtenCard({
             {punkte.map((text) => (
               <li
                 key={text}
-                className="flex gap-2 text-[13px] text-text-primary before:shrink-0 before:content-['•']"
+                className="flex gap-2 text-fs-meta text-text-primary before:shrink-0 before:content-['•']"
               >
                 <span>{text}</span>
               </li>
@@ -79,14 +83,19 @@ export function PartnerPflichtenCard({
           </ul>
         ) : null}
         {acknowledgment ? (
-          <label className="mt-4 flex cursor-pointer items-start gap-3 border-t border-border-light pt-4">
-            <input
-              type="checkbox"
+          <label
+            id="partner-pflichten-ack"
+            className={cn(
+              "mt-4 flex cursor-pointer items-start gap-3 border-t border-border-light pt-4 rounded-field transition-[box-shadow,background-color]",
+              acknowledgment.highlight && "partner-pflichten-ack--pulse"
+            )}
+          >
+            <PortalCheckbox
               checked={acknowledgment.checked}
               onChange={(e) => acknowledgment.onChange(e.target.checked)}
               className="mt-1"
             />
-            <span className="text-[13px] text-text-primary">{checkboxLabel}</span>
+            <span className="text-fs-meta text-text-primary">{checkboxLabel}</span>
           </label>
         ) : null}
       </PortalDetailCard>

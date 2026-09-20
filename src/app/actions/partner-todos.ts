@@ -1,5 +1,6 @@
 "use server";
 
+import { logDbError } from '@/lib/errors/log-db-error'
 import { revalidatePath } from "next/cache";
 
 import { linkPortalHandwerkerToAuthUser } from "@/lib/partner/link-portal-handwerker";
@@ -38,7 +39,7 @@ export async function createPartnerTodo(titel: string): Promise<PartnerTodoActio
   if (!clean) return { ok: false, error: "Bitte einen Text eingeben." };
 
   const supabase = await createClient();
-  const { data: maxRow } = await supabase
+  const {data: maxRow, error: __dbErr101_1} = await supabase
     .from("partner_todos")
     .select("sort_order")
     .eq("handwerker_id", auth.handwerkerId)
@@ -46,6 +47,7 @@ export async function createPartnerTodo(titel: string): Promise<PartnerTodoActio
     .order("sort_order", { ascending: false })
     .limit(1)
     .maybeSingle();
+  if (__dbErr101_1) logDbError('app/actions/partner-todos:partner_todos', __dbErr101_1)
 
   const sortOrder = (Number(maxRow?.sort_order ?? 0) || 0) + 1;
 
@@ -54,6 +56,7 @@ export async function createPartnerTodo(titel: string): Promise<PartnerTodoActio
     titel: clean,
     sort_order: sortOrder,
   });
+  if (error) logDbError('app/actions/partner-todos:partner_todos', error)
 
   if (error) return { ok: false, error: error.message };
 
@@ -74,6 +77,7 @@ export async function togglePartnerTodo(
     .update({ erledigt })
     .eq("id", id)
     .eq("handwerker_id", auth.handwerkerId);
+  if (error) logDbError('app/actions/partner-todos:partner_todos', error)
 
   if (error) return { ok: false, error: error.message };
 
@@ -91,6 +95,7 @@ export async function deletePartnerTodo(id: string): Promise<PartnerTodoActionRe
     .delete()
     .eq("id", id)
     .eq("handwerker_id", auth.handwerkerId);
+  if (error) logDbError('app/actions/partner-todos:partner_todos', error)
 
   if (error) return { ok: false, error: error.message };
 

@@ -1,4 +1,9 @@
 /** @type {import('next').NextConfig} */
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+
 const securityHeaders = [
   {
     key: "X-Content-Type-Options",
@@ -19,6 +24,10 @@ const securityHeaders = [
 ];
 
 const nextConfig = {
+  eslint: {
+    // P7-5: ESLint während Build aktiv
+    ignoreDuringBuilds: false,
+  },
   experimental: {
     serverComponentsExternalPackages: ["@napi-rs/canvas", "web-push"],
     /** Kamera-Fotos (bis 6 MB) + PDFs müssen in Server Actions ankommen. Default ist 1 MB. */
@@ -139,6 +148,12 @@ const nextConfig = {
         ],
       };
     }
+    // Explizites @-Alias (tsconfig paths allein waren unzuverlässig)
+    config.resolve = config.resolve ?? {};
+    config.resolve.alias = {
+      ...(config.resolve.alias ?? {}),
+      "@": path.join(__dirname, "src"),
+    };
     return config;
   },
 };

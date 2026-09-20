@@ -1,3 +1,4 @@
+import { buildPartnerSubject } from "@/lib/shared-domain/build-subject";
 import {
   partnerVorgangIdFromNotificationLink,
   resolvePartnerNotificationLink,
@@ -77,21 +78,37 @@ export function partnerNotificationSubject(
   const l = leistungName?.trim();
   switch (typ) {
     case "neu":
-      return `${p} — Neuer Auftrag wartet auf deine Bestätigung`;
+      return buildPartnerSubject({
+        gewerkOrt: p,
+        ereignis: "Neuer Auftrag",
+      });
     case "geaendert":
-      return `${l || "Leistung"} wurde angepasst — bitte bestätigen`;
+      return buildPartnerSubject({
+        gewerkOrt: l || p,
+        ereignis: "Angepasst",
+      });
     case "entfernt":
-      return `${l || "Leistung"} wurde aus ${p} entfernt`;
+      return buildPartnerSubject({
+        gewerkOrt: l || p,
+        ereignis: "Entfernt",
+      });
     case "erinnerung":
       if (l && /rechnung\s+wurde\s+überwiesen/i.test(l)) {
-        return `${p} — Rechnung wurde überwiesen`;
+        return buildPartnerSubject({
+          gewerkOrt: p,
+          ereignis: "Rechnung überwiesen",
+        });
       }
-      return l
-        ? `${p} — ${l}`
-        : `Erinnerung: Offene Bestätigung für ${p}`;
+      return buildPartnerSubject({
+        gewerkOrt: p,
+        ereignis: l || "Erinnerung",
+      });
     case "bautagebuch":
-      return `${p} — Bitte Update geben`;
+      return buildPartnerSubject({
+        gewerkOrt: p,
+        ereignis: "Bautagebuch-Update",
+      });
     default:
-      return p;
+      return buildPartnerSubject({ gewerkOrt: p, ereignis: "Update" });
   }
 }

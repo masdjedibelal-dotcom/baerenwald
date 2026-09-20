@@ -1,3 +1,4 @@
+import { logDbError } from '@/lib/errors/log-db-error'
 import { NextResponse } from "next/server";
 
 import {
@@ -58,6 +59,7 @@ export async function POST(req: Request) {
     .update({ cover_url: coverUrl })
     .eq("id", objektId)
     .eq("kunde_id", session.kunde.id);
+  if (dbErr) logDbError('app/api/org/objekte/cover/route:kunden_objekte', dbErr)
 
   if (dbErr) {
     console.error("[objekt-cover] db", dbErr.message);

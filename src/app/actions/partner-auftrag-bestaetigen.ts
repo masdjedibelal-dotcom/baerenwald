@@ -1,5 +1,6 @@
 "use server";
 
+import { logDbError } from '@/lib/errors/log-db-error'
 import { revalidatePath } from "next/cache";
 
 import { buildPartnerHwKonditionenFromAuftragEingabe, buildPartnerHwKonditionenFromEingabe } from "@/lib/partner/apply-partner-hw-konditionen";
@@ -42,13 +43,14 @@ async function loadAuftragPositionen(
   auftragId: string,
   handwerkerId: string
 ): Promise<PartnerAuftragPosition[]> {
-  const { data: rows } = await supabaseAdmin
+  const {data: rows, error: __dbErr35_1} = await supabaseAdmin
     .from("auftrag_positionen")
     .select(
       "id, gewerk_name, leistung_name, beschreibung, menge, einheit, start_datum, end_datum, preis_partner, lohn_fix, material_fix, handwerker_status, aenderung_typ, preis_alt"
     )
     .eq("auftrag_id", auftragId)
     .eq("handwerker_id", handwerkerId);
+  if (__dbErr35_1) logDbError('app/actions/partner-auftrag-bestaetigen:auftrag_positionen', __dbErr35_1)
 
   return (rows ?? []).map((p) => {
     const raw = p as Record<string, unknown>;
@@ -82,11 +84,12 @@ async function loadAlleHwKonditionenForAngebot(
   angebotId: string,
   handwerkerId: string
 ) {
-  const { data: rows } = await supabaseAdmin
+  const {data: rows, error: __dbErr36_2} = await supabaseAdmin
     .from("angebot_handwerker")
     .select("hw_konditionen")
     .eq("angebot_id", angebotId)
     .eq("handwerker_id", handwerkerId);
+  if (__dbErr36_2) logDbError('app/actions/partner-auftrag-bestaetigen:angebot_handwerker', __dbErr36_2)
 
   return (rows ?? []).map((row) =>
     parsePartnerHwKonditionen((row as { hw_konditionen?: unknown }).hw_konditionen)
@@ -122,11 +125,12 @@ async function builtFromAngebotPositionen(opts: {
   gewerkId: string;
   handwerkerId: string;
 }): Promise<AcceptKonditionenResult> {
-  const { data: angebotRow } = await supabaseAdmin
+  const {data: angebotRow, error: __dbErr37_3} = await supabaseAdmin
     .from("angebote")
     .select("positionen")
     .eq("id", opts.angebotId)
     .maybeSingle();
+  if (__dbErr37_3) logDbError('app/actions/partner-auftrag-bestaetigen:angebote', __dbErr37_3)
 
   const zeilen = buildPartnerKonditionZeilen(
     (angebotRow as { positionen?: unknown } | null)?.positionen,
@@ -232,27 +236,30 @@ async function persistAcceptance(opts: {
     })
     .eq("id", opts.anfrageId)
     .eq("handwerker_id", opts.handwerkerId);
+  if (upErr) logDbError('app/actions/partner-auftrag-bestaetigen:angebot_handwerker', upErr)
 
   if (upErr) return { ok: false, error: upErr.message };
 
   if (opts.auftragId) {
-    await supabaseAdmin
+    const { error: __dbErr48_14 } = await supabaseAdmin
       .from("auftraege")
       .update({ handwerker_bestaetigt_at: now })
       .eq("id", opts.auftragId);
+    if (__dbErr48_14) logDbError('app/actions/partner-auftrag-bestaetigen:auftraege', __dbErr48_14)
 
     for (const posId of opts.openPositionIds) {
       const pos = opts.auftragPositionen?.find((p) => p.id === posId);
       if (pos?.aenderung_typ === "entfernt") {
-        await supabaseAdmin
+        const { error: __dbErr49_15 } = await supabaseAdmin
           .from("auftrag_positionen")
           .delete()
           .eq("id", posId)
           .eq("handwerker_id", opts.handwerkerId);
+        if (__dbErr49_15) logDbError('app/actions/partner-auftrag-bestaetigen:auftrag_positionen', __dbErr49_15)
         continue;
       }
 
-      await supabaseAdmin
+      const { error: __dbErr50_16 } = await supabaseAdmin
         .from("auftrag_positionen")
         .update({
           handwerker_status: "akzeptiert",
@@ -262,21 +269,24 @@ async function persistAcceptance(opts: {
         })
         .eq("id", posId)
         .eq("handwerker_id", opts.handwerkerId);
+      if (__dbErr50_16) logDbError('app/actions/partner-auftrag-bestaetigen:auftrag_positionen', __dbErr50_16)
     }
 
-    const { data: zuweisungen } = await supabaseAdmin
+    const {data: zuweisungen, error: __dbErr38_4} = await supabaseAdmin
       .from("auftrag_handwerker")
       .select("id, status")
       .eq("auftrag_id", opts.auftragId)
       .eq("handwerker_id", opts.handwerkerId);
+    if (__dbErr38_4) logDbError('app/actions/partner-auftrag-bestaetigen:auftrag_handwerker', __dbErr38_4)
 
     for (const z of zuweisungen ?? []) {
       const st = String(z.status ?? "").toLowerCase();
       if (!PENDING_HW.has(st) && st !== "zugewiesen") continue;
-      await supabaseAdmin
+      const { error: __dbErr51_17 } = await supabaseAdmin
         .from("auftrag_handwerker")
         .update({ status: "akzeptiert" })
         .eq("id", z.id);
+      if (__dbErr51_17) logDbError('app/actions/partner-auftrag-bestaetigen:auftrag_handwerker', __dbErr51_17)
     }
 
     if (opts.projektvertragNoetig) {
@@ -352,6 +362,7 @@ export async function confirmPartnerAuftrag(opts: {
     )
     .eq("id", opts.anfrageId.trim())
     .maybeSingle();
+  if (error) logDbError('app/actions/partner-auftrag-bestaetigen:angebot_handwerker', error)
 
   if (error || !row) return { ok: false, error: "Vorgang nicht gefunden." };
   if (String(row.handwerker_id) !== link.handwerkerId) {
@@ -359,11 +370,12 @@ export async function confirmPartnerAuftrag(opts: {
   }
 
   const angebotId = String(row.angebot_id ?? "");
-  const { data: auftrag } = await supabaseAdmin
+  const {data: auftrag, error: __dbErr39_5} = await supabaseAdmin
     .from("auftraege")
     .select("id")
     .eq("angebot_id", angebotId)
     .maybeSingle();
+  if (__dbErr39_5) logDbError('app/actions/partner-auftrag-bestaetigen:auftraege', __dbErr39_5)
   const auftragId = auftrag?.id ? String(auftrag.id) : null;
 
   const auftragPositionen = auftragId
@@ -547,24 +559,26 @@ async function persistDirektauftragZuweisungAntwort(opts: {
   const now = new Date().toISOString();
   const positionen = await loadAuftragPositionen(opts.auftragId, opts.handwerkerId);
 
-  const { data: zuweisungen } = await supabaseAdmin
+  const {data: zuweisungen, error: __dbErr40_6} = await supabaseAdmin
     .from("auftrag_handwerker")
     .select("id, status, gewerk_id")
     .eq("auftrag_id", opts.auftragId)
     .eq("handwerker_id", opts.handwerkerId);
+  if (__dbErr40_6) logDbError('app/actions/partner-auftrag-bestaetigen:auftrag_handwerker', __dbErr40_6)
 
   if (!positionen.length && !zuweisungen?.length) {
     return { ok: false, error: "Keine Zuweisung für diesen Auftrag." };
   }
 
   if (opts.antwort === "akzeptiert") {
-    await supabaseAdmin
+    const { error: __dbErr52_18 } = await supabaseAdmin
       .from("auftraege")
       .update({ handwerker_bestaetigt_at: now })
       .eq("id", opts.auftragId);
+    if (__dbErr52_18) logDbError('app/actions/partner-auftrag-bestaetigen:auftraege', __dbErr52_18)
 
     for (const pos of positionen) {
-      await supabaseAdmin
+      const { error: __dbErr53_19 } = await supabaseAdmin
         .from("auftrag_positionen")
         .update({
           handwerker_status: "akzeptiert",
@@ -574,6 +588,7 @@ async function persistDirektauftragZuweisungAntwort(opts: {
         })
         .eq("id", pos.id)
         .eq("handwerker_id", opts.handwerkerId);
+      if (__dbErr53_19) logDbError('app/actions/partner-auftrag-bestaetigen:auftrag_positionen', __dbErr53_19)
     }
 
     for (const z of zuweisungen ?? []) {
@@ -581,10 +596,11 @@ async function persistDirektauftragZuweisungAntwort(opts: {
       if (!PENDING_HW.has(st) && st !== "zugewiesen" && st !== "bestaetigt") {
         continue;
       }
-      await supabaseAdmin
+      const { error: __dbErr54_20 } = await supabaseAdmin
         .from("auftrag_handwerker")
         .update({ status: "akzeptiert" })
         .eq("id", z.id);
+      if (__dbErr54_20) logDbError('app/actions/partner-auftrag-bestaetigen:auftrag_handwerker', __dbErr54_20)
     }
 
     if (!zuweisungen?.length) {
@@ -592,12 +608,13 @@ async function persistDirektauftragZuweisungAntwort(opts: {
         opts.auftragId,
         opts.handwerkerId
       );
-      await supabaseAdmin.from("auftrag_handwerker").insert({
+      const { error: __dbErr55_21 } = await supabaseAdmin.from("auftrag_handwerker").insert({
         auftrag_id: opts.auftragId,
         handwerker_id: opts.handwerkerId,
         ...(gewerkId ? { gewerk_id: gewerkId } : {}),
         status: "akzeptiert",
       });
+      if (__dbErr55_21) logDbError('app/actions/partner-auftrag-bestaetigen:auftrag_handwerker', __dbErr55_21)
     }
 
     if (opts.projektvertragNoetig) {
@@ -610,18 +627,20 @@ async function persistDirektauftragZuweisungAntwort(opts: {
     }
   } else {
     for (const pos of positionen) {
-      await supabaseAdmin
+      const { error: __dbErr56_22 } = await supabaseAdmin
         .from("auftrag_positionen")
         .update({ handwerker_status: "abgelehnt" })
         .eq("id", pos.id)
         .eq("handwerker_id", opts.handwerkerId);
+      if (__dbErr56_22) logDbError('app/actions/partner-auftrag-bestaetigen:auftrag_positionen', __dbErr56_22)
     }
 
     for (const z of zuweisungen ?? []) {
-      await supabaseAdmin
+      const { error: __dbErr57_23 } = await supabaseAdmin
         .from("auftrag_handwerker")
         .update({ status: "abgelehnt" })
         .eq("id", z.id);
+      if (__dbErr57_23) logDbError('app/actions/partner-auftrag-bestaetigen:auftrag_handwerker', __dbErr57_23)
     }
 
     if (!zuweisungen?.length) {
@@ -629,12 +648,13 @@ async function persistDirektauftragZuweisungAntwort(opts: {
         opts.auftragId,
         opts.handwerkerId
       );
-      await supabaseAdmin.from("auftrag_handwerker").insert({
+      const { error: __dbErr58_24 } = await supabaseAdmin.from("auftrag_handwerker").insert({
         auftrag_id: opts.auftragId,
         handwerker_id: opts.handwerkerId,
         ...(gewerkId ? { gewerk_id: gewerkId } : {}),
         status: "abgelehnt",
       });
+      if (__dbErr58_24) logDbError('app/actions/partner-auftrag-bestaetigen:auftrag_handwerker', __dbErr58_24)
     }
   }
 
@@ -677,7 +697,7 @@ async function resolveGewerkIdForDirektauftrag(
   auftragId: string,
   handwerkerId: string
 ): Promise<string | null> {
-  const { data: zuw } = await supabaseAdmin
+  const {data: zuw, error: __dbErr41_7} = await supabaseAdmin
     .from("auftrag_handwerker")
     .select("gewerk_id")
     .eq("auftrag_id", auftragId)
@@ -685,6 +705,7 @@ async function resolveGewerkIdForDirektauftrag(
     .not("gewerk_id", "is", null)
     .limit(1)
     .maybeSingle();
+  if (__dbErr41_7) logDbError('app/actions/partner-auftrag-bestaetigen:auftrag_handwerker', __dbErr41_7)
   return zuw?.gewerk_id ? String(zuw.gewerk_id) : null;
 }
 
@@ -720,11 +741,12 @@ export async function confirmPartnerAuftragZuweisung(opts: {
   if (!link.ok) return { ok: false, error: link.error };
 
   const auftragId = opts.auftragId.trim();
-  const { data: auftrag } = await supabaseAdmin
+  const {data: auftrag, error: __dbErr42_8} = await supabaseAdmin
     .from("auftraege")
     .select("id, angebot_id")
     .eq("id", auftragId)
     .maybeSingle();
+  if (__dbErr42_8) logDbError('app/actions/partner-auftrag-bestaetigen:auftraege', __dbErr42_8)
   if (!auftrag) return { ok: false, error: "Auftrag nicht gefunden." };
 
   const angebotId = auftrag.angebot_id != null ? String(auftrag.angebot_id) : "";
@@ -802,6 +824,7 @@ export async function declinePartnerAnfrage(opts: {
     )
     .eq("id", opts.anfrageId.trim())
     .maybeSingle();
+  if (error) logDbError('app/actions/partner-auftrag-bestaetigen:angebot_handwerker', error)
 
   if (error || !row) return { ok: false, error: "Vorgang nicht gefunden." };
   if (String(row.handwerker_id) !== link.handwerkerId) {
@@ -809,11 +832,12 @@ export async function declinePartnerAnfrage(opts: {
   }
 
   const angebotId = String(row.angebot_id ?? "");
-  const { data: auftrag } = await supabaseAdmin
+  const {data: auftrag, error: __dbErr43_9} = await supabaseAdmin
     .from("auftraege")
     .select("id")
     .eq("angebot_id", angebotId)
     .maybeSingle();
+  if (__dbErr43_9) logDbError('app/actions/partner-auftrag-bestaetigen:auftraege', __dbErr43_9)
   const auftragId = auftrag?.id ? String(auftrag.id) : null;
   const auftragPositionen = auftragId
     ? await loadAuftragPositionen(auftragId, link.handwerkerId)
@@ -855,6 +879,7 @@ export async function declinePartnerAnfrage(opts: {
     })
     .eq("id", opts.anfrageId.trim())
     .eq("handwerker_id", link.handwerkerId);
+  if (upErr) logDbError('app/actions/partner-auftrag-bestaetigen:angebot_handwerker', upErr)
   if (upErr) return { ok: false, error: upErr.message };
 
   const crm = await submitCrmPartnerAnnahme({
@@ -903,29 +928,32 @@ export async function declinePartnerAuftragZuweisung(opts: {
 
   const auftragId = opts.auftragId.trim();
 
-  const { data: zuweisungen } = await supabaseAdmin
+  const {data: zuweisungen, error: __dbErr44_10} = await supabaseAdmin
     .from("auftrag_handwerker")
     .select("id")
     .eq("auftrag_id", auftragId)
     .eq("handwerker_id", link.handwerkerId)
     .limit(1);
+  if (__dbErr44_10) logDbError('app/actions/partner-auftrag-bestaetigen:auftrag_handwerker', __dbErr44_10)
 
-  const { data: positionen } = await supabaseAdmin
+  const {data: positionen, error: __dbErr45_11} = await supabaseAdmin
     .from("auftrag_positionen")
     .select("id")
     .eq("auftrag_id", auftragId)
     .eq("handwerker_id", link.handwerkerId)
     .limit(1);
+  if (__dbErr45_11) logDbError('app/actions/partner-auftrag-bestaetigen:auftrag_positionen', __dbErr45_11)
 
   if (!zuweisungen?.length && !positionen?.length) {
     return { ok: false, error: "Keine Zuweisung für diesen Auftrag." };
   }
 
-  const { data: auftrag } = await supabaseAdmin
+  const {data: auftrag, error: __dbErr46_12} = await supabaseAdmin
     .from("auftraege")
     .select("angebot_id")
     .eq("id", auftragId)
     .maybeSingle();
+  if (__dbErr46_12) logDbError('app/actions/partner-auftrag-bestaetigen:auftraege', __dbErr46_12)
 
   const angebotId = auftrag?.angebot_id != null ? String(auftrag.angebot_id) : "";
   if (!angebotId) {
@@ -938,12 +966,13 @@ export async function declinePartnerAuftragZuweisung(opts: {
     });
   }
 
-  const { data: ahRows } = await supabaseAdmin
+  const {data: ahRows, error: __dbErr47_13} = await supabaseAdmin
     .from("angebot_handwerker")
     .select("id, status, antwort_at, gesendet_at")
     .eq("angebot_id", angebotId)
     .eq("handwerker_id", link.handwerkerId)
     .order("gesendet_at", { ascending: false });
+  if (__dbErr47_13) logDbError('app/actions/partner-auftrag-bestaetigen:angebot_handwerker', __dbErr47_13)
 
   const offen =
     (ahRows ?? []).find((row) =>

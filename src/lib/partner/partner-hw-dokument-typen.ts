@@ -16,9 +16,9 @@ export type PartnerHwDokumentArt = "unterlage" | "rechnung";
 export const PARTNER_MAX_HW_UNTERLAGEN_GESAMT = 10;
 
 export const PARTNER_HW_DOKUMENT_CRM_LABEL = {
-  unterlage: "Handwerker · Angebot",
-  unterlageNr: (nr: number) => `Handwerker · Unterlage ${nr}`,
-  rechnung: "Handwerker · Rechnung",
+  unterlage: "Partner · Angebot",
+  unterlageNr: (nr: number) => `Partner · Unterlage ${nr}`,
+  rechnung: "Partner · Rechnung",
 } as const;
 
 export function partnerHwDokumentListenName(

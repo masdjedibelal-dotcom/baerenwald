@@ -5,6 +5,10 @@ import {
   type RolePillSemantic,
   type RoleTimelineStep,
 } from "@/lib/crm-vorgang/role-status";
+import {
+  portalStatusPillClass,
+  roleSemanticToPortalTone,
+} from "@/lib/shared/portal-status-pill";
 
 export type TimelineStepView = {
   id: string;
@@ -13,21 +17,9 @@ export type TimelineStepView = {
   active: boolean;
 };
 
+/** @deprecated Prefer `PortalStatusPill`; kept for class-only call sites. */
 export function rolePillClass(semantic: RolePillSemantic): string {
-  switch (semantic) {
-    case "neu":
-      return "tag role-pill role-pill-neu";
-    case "warten":
-      return "tag role-pill role-pill-warten";
-    case "aktiv":
-      return "tag role-pill role-pill-aktiv";
-    case "fertig":
-      return "tag role-pill role-pill-fertig";
-    case "storniert":
-      return "tag role-pill role-pill-storniert";
-    default:
-      return "tag role-pill role-pill-aktiv";
-  }
+  return portalStatusPillClass(roleSemanticToPortalTone(semantic));
 }
 
 export const HV_AUFTRAG_TIMELINE: Array<{ id: RoleTimelineStep; label: string }> = [

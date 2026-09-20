@@ -1,3 +1,4 @@
+import { logDbError } from '@/lib/errors/log-db-error'
 import { supabaseAdmin } from "@/lib/supabase";
 
 export type EnsureObjektBewohnerInput = {
@@ -24,12 +25,13 @@ export async function ensureObjektBewohner(
     return { ok: false, error: "Name und Objekt erforderlich." };
   }
 
-  const { data: objekt } = await supabaseAdmin
+  const {data: objekt, error: __dbErr282_1} = await supabaseAdmin
     .from("kunden_objekte")
     .select("id")
     .eq("id", objektId)
     .eq("kunde_id", input.kundeId)
     .maybeSingle();
+  if (__dbErr282_1) logDbError('lib/org/ensure-objekt-bewohner:kunden_objekte', __dbErr282_1)
   if (!objekt) {
     return { ok: false, error: "Objekt nicht gefunden." };
   }
@@ -37,13 +39,14 @@ export async function ensureObjektBewohner(
   const wohnung = input.wohnung?.trim() || "Allgemein";
   const etage = input.etage?.trim() || null;
 
-  const { data: existing } = await supabaseAdmin
+  const {data: existing, error: __dbErr283_2} = await supabaseAdmin
     .from("objekt_einheiten")
     .select("id")
     .eq("kunde_objekt_id", objektId)
     .eq("aktiv", true)
     .ilike("bezeichnung", wohnung)
     .maybeSingle();
+  if (__dbErr283_2) logDbError('lib/org/ensure-objekt-bewohner:objekt_einheiten', __dbErr283_2)
 
   let einheitId = existing?.id ?? "";
 
@@ -58,6 +61,7 @@ export async function ensureObjektBewohner(
       .insert(insertRow)
       .select("id")
       .single();
+    if (error) logDbError('lib/org/ensure-objekt-bewohner:objekt_einheiten', error)
 
     if (error) {
       if (/etage/i.test(error.message)) {
@@ -85,10 +89,11 @@ export async function ensureObjektBewohner(
       return { ok: false, error: "Wohnung konnte nicht angelegt werden." };
     }
   } else if (etage) {
-    await supabaseAdmin
+    const { error: __dbErr284_3 } = await supabaseAdmin
       .from("objekt_einheiten")
       .update({ etage })
       .eq("id", einheitId);
+    if (__dbErr284_3) logDbError('lib/org/ensure-objekt-bewohner:objekt_einheiten', __dbErr284_3)
   }
 
   const { data: bewohner, error: bewError } = await supabaseAdmin
@@ -102,6 +107,7 @@ export async function ensureObjektBewohner(
     })
     .select("id")
     .single();
+  if (bewError) logDbError('lib/org/ensure-objekt-bewohner:einheit_bewohner', bewError)
 
   if (bewError || !bewohner?.id) {
     return {

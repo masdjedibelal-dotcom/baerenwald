@@ -160,7 +160,7 @@ export const ELEKTRO_FOLLOWUPS: Record<string, FachdetailQuestionDef> = {
 const SANITAER_WASSER_Q1_BODY = {
   title: "Was ist das Problem?",
   education:
-    "Eine Auswahl reicht zuerst. Bei Leitungswasserschäden fragen wir danach nur, ob der Schaden sichtbar ist oder vermutlich verborgen — das Material der Rohre klärt der Handwerker vor Ort.",
+    "Eine Auswahl reicht zuerst. Bei Leitungswasserschäden fragen wir danach nur, ob der Schaden sichtbar ist oder vermutlich verborgen — das Material der Rohre klärt der Partner vor Ort.",
   inputType: "single" as const,
   options: [
     {
@@ -282,7 +282,7 @@ export const HEIZUNG_Q1: FachdetailQuestionDef = {
   id: "heizung_typ",
   title: "Was für eine Heizung haben Sie?",
   education:
-    "Wärmepumpen und ältere Ölheizungen brauchen Spezialisten — das beeinflusst den Preis und die Verfügbarkeit unserer Handwerker.",
+    "Wärmepumpen und ältere Ölheizungen brauchen Spezialisten — das beeinflusst den Preis und die Verfügbarkeit unserer Partner.",
   inputType: "single",
   options: [
     {

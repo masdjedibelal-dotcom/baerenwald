@@ -36,9 +36,9 @@ export function portalListItemClass(
   const selected = opts?.selected;
   if (variant === "row") {
     return cn(
-      "relative w-full bg-transparent text-left transition-colors hover:bg-[var(--p2-hover,#f7f8fa)]",
+      "relative w-full bg-transparent text-left transition-colors hover:bg-[var(--p2-hover)]",
       "px-4 py-3.5",
-      selected && "bg-[var(--p2-selected,#f0f2f0)]"
+      selected && "bg-[var(--p2-selected)]"
     );
   }
   return cn(

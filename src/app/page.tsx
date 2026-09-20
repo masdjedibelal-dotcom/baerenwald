@@ -13,7 +13,7 @@ const title =
   "Bärenwald München — Maler, Elektriker, Bodenleger — alles aus einer Hand";
 
 const description =
-  "Handwerker München — ein Ansprechpartner für alle Gewerke. Preisrahmen online berechnen. Malerarbeiten, Bad, Elektro, Heizung. Unverbindlich.";
+  "Partner München — ein Ansprechpartner für alle Gewerke. Preisrahmen online berechnen. Malerarbeiten, Bad, Elektro, Heizung. Unverbindlich.";
 
 export async function generateMetadata(): Promise<Metadata> {
   return {

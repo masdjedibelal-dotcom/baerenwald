@@ -33,7 +33,7 @@ export function MeldeObjektAuswahl({
         {hinweis ? (
           <p
             role="status"
-            className="mb-4 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-950"
+            className="mb-4 rounded-card border border-warning-border bg-warning-bg px-3 py-2 text-sm text-warning-text"
           >
             {hinweis}
           </p>
@@ -52,7 +52,7 @@ export function MeldeObjektAuswahl({
                   {[o.adr, o.we].filter(Boolean).join(" · ")}
                 </span>
               </span>
-              <span className="text-[#8a9690] text-lg" aria-hidden>
+              <span className="text-[var(--p2-muted-icon)] text-lg" aria-hidden>
                 ›
               </span>
             </Link>

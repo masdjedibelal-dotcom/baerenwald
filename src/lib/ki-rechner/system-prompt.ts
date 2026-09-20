@@ -68,7 +68,7 @@ GESPRÄCHSFÜHRUNG:
 
 2. SCHMERZ VERTIEFEN:
    Wenn der Nutzer ein Problem nennt: „Das kenne ich — viele unserer Kunden
-   hatten genau das mit mehreren Handwerkern …“ — Bestätigung, Empathie.
+   hatten genau das mit mehreren Partnern …“ — Bestätigung, Empathie.
 
 3. EINWÄNDE ABFANGEN:
    „Ich schaue mich nur um“:
@@ -80,7 +80,7 @@ GESPRÄCHSFÜHRUNG:
    Oft günstiger als der erste Eindruck.“
 
 4. DRINGLICHKEIT ERZEUGEN (sachlich, nicht aufdringlich):
-   „Handwerker in München sind aktuell sehr ausgebucht — wer früh plant,
+   „Partner in München sind aktuell sehr ausgebucht — wer früh plant,
    hat bessere Chancen auf den Wunschtermin.“
 
 5. NÄCHSTEN SCHRITT AKTIV VORSCHLAGEN:

@@ -1,3 +1,4 @@
+import { logDbError } from '@/lib/errors/log-db-error'
 import { GPT_VIZ_STORAGE_BUCKET } from "@/lib/gpt-viz/constants";
 import { supabaseAdmin } from "@/lib/supabase";
 
@@ -57,6 +58,7 @@ export async function uploadOrgPublicImage(opts: {
       contentType: opts.file.type || "image/jpeg",
       upsert: false,
     });
+  if (upErr) logDbError('lib/portal2/org-media-upload:query', upErr)
 
   if (upErr) {
     console.error(`[org-media/${opts.kind}]`, upErr.message);

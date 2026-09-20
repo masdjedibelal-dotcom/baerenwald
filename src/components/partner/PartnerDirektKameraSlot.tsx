@@ -1,7 +1,8 @@
 "use client";
 
+import { PortalIcon } from "@/components/portal/PortalIcon";
 import { useRef, useState } from "react";
-import { Check, ImageIcon, Loader2 } from "lucide-react";
+import { PortalButton } from "@/components/portal/PortalButton";
 
 import { normalizePartnerCameraPhoto } from "@/lib/partner/normalize-camera-photo";
 import { useIsPortalMobile } from "@/lib/portal2/use-is-portal-mobile";
@@ -73,18 +74,19 @@ export function PartnerDirektKameraSlot({
 
   return (
     <div className={cn("space-y-1.5", className)}>
-      <p className="text-[12px] font-semibold text-text-secondary">
+      <p className="text-fs-caption font-semibold text-text-secondary">
         {label}
         {required ? (
           <span className="font-medium text-text-tertiary"> · Pflicht</span>
         ) : null}
       </p>
-      <button
+      <PortalButton
+        variant="ghost"
         type="button"
         onClick={() => pickerRef.current?.click()}
         disabled={status === "uploading"}
         className={cn(
-          "flex w-full flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-border-default bg-white text-center hover:bg-[var(--p2-hover,#eef1ef)] disabled:opacity-50",
+          "flex w-full flex-col items-center justify-center gap-2 rounded-sheet border-2 border-dashed border-border-default bg-white text-center hover:bg-[var(--p2-hover)] disabled:opacity-50",
           compact ? "px-2 py-4" : "px-4 py-6"
         )}
       >
@@ -94,32 +96,29 @@ export function PartnerDirektKameraSlot({
             src={preview}
             alt="Aufnahme"
             className={cn(
-              "rounded-lg object-contain",
+              "rounded-card object-contain",
               compact ? "max-h-24" : "max-h-40"
             )}
           />
         ) : (
-          <ImageIcon
-            className={cn(compact ? "h-6 w-6" : "h-8 w-8", "text-text-secondary")}
-            aria-hidden
-          />
+          <PortalIcon n="photo" ctx="default" className={cn(compact ? "h-6 w-6" : "h-8 w-8", "text-text-secondary")} aria-hidden />
         )}
         {status === "uploading" ? (
-          <span className="inline-flex items-center gap-1.5 text-[12px] text-text-secondary">
-            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+          <span className="inline-flex items-center gap-1.5 text-fs-caption text-text-secondary">
+            <PortalIcon n="loader" ctx="default" className="h-3.5 w-3.5 animate-spin" />
             wird vorbereitet…
           </span>
         ) : status === "done" ? (
-          <span className="inline-flex items-center gap-1.5 text-[12px] font-medium text-text-primary">
-            <Check className="h-3.5 w-3.5" />
+          <span className="inline-flex items-center gap-1.5 text-fs-caption font-medium text-text-primary">
+            <PortalIcon n="check" ctx="default" className="h-3.5 w-3.5" />
             Erfasst
           </span>
         ) : (
-          <span className="text-[12px] font-semibold text-text-primary">
+          <span className="text-fs-caption font-semibold text-text-primary">
             {isMobile ? "Foto aufnehmen oder wählen" : "Foto hochladen"}
           </span>
         )}
-      </button>
+      </PortalButton>
       <input
         ref={fileRef}
         type="file"

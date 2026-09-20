@@ -15,6 +15,7 @@ import { PartnerPositionLebenszyklusList } from "@/components/partner/PartnerPos
 import { PartnerComplianceCheckliste } from "@/components/partner/PartnerComplianceCheckliste";
 import { PartnerFachdokuSlots } from "@/components/partner/PartnerFachdokuSlots";
 import { PartnerHausmeisterVorbefundCard } from "@/components/partner/PartnerHausmeisterVorbefundCard";
+import { PortalButton } from "@/components/portal/PortalButton";
 import { PortalDetailCard } from "@/components/shared/PortalDetailCard";
 import { PortalEntityDetailLayout } from "@/components/shared/PortalEntityDetailLayout";
 import type { PortalDetailTab } from "@/components/shared/PortalDetailTabs";
@@ -23,6 +24,7 @@ import {
   PortalDetailInfoBox,
   PortalDetailLayout,
   PortalDetailSection,
+  PortalDetailStickyActions,
   PortalDetailSuccessBox,
   PortalConfirmDialog,
 } from "@/components/shared/PortalDetailUi";
@@ -74,6 +76,7 @@ import { partnerPortalToast, portalToastError, portalToastSuccess } from "@/lib/
 import { DokumenteTabelle, type DokumentZeile } from "@/components/shared/DokumenteTabelle";
 import { FileUploadField } from "@/components/shared/FileUploadField";
 import { useEffect, useMemo, useState } from "react";
+import { TOAST } from '@/lib/portal-copy'
 
 export function PartnerAuftragDetail({
   item,
@@ -208,7 +211,7 @@ export function PartnerAuftragDetail({
       }
       setAbschlussDone(true);
       setAbschlussOpen(false);
-      portalToastSuccess("Auftrag als erledigt gemeldet.");
+      portalToastSuccess(TOAST.auftrag_als_erledigt_gemeldet);
       setActiveTab("abnahme");
       await refresh();
     } finally {
@@ -233,7 +236,7 @@ export function PartnerAuftragDetail({
       } else if (id.startsWith("hw-unterlage-")) {
         const index = Number(id.replace("hw-unterlage-", ""));
         if (!Number.isFinite(index)) {
-          portalToastError("Unterlage nicht gefunden.");
+          portalToastError(TOAST.unterlage_nicht_gefunden);
           return;
         }
         const res = await deletePartnerHwAuftragDokument({
@@ -246,7 +249,7 @@ export function PartnerAuftragDetail({
           return;
         }
       } else {
-        portalToastError("Dieses Dokument kann hier nicht gelöscht werden.");
+        portalToastError(TOAST.dieses_dokument_kann_hier_nicht_geloescht_werden);
         return;
       }
       partnerPortalToast.complianceGeloescht(deleteDoc.name);
@@ -269,7 +272,7 @@ export function PartnerAuftragDetail({
           art: "rechnung",
         });
         if (!res.ok) {
-          portalToastError("Rechnung nicht möglich", res.error);
+          portalToastError(TOAST.rechnung_nicht_moeglich, res.error);
           return;
         }
         const firmMissing = res.preview.missingFields
@@ -403,88 +406,89 @@ export function PartnerAuftragDetail({
     { id: "abnahme", label: "Abschluss" },
   ];
 
-  const rechnungInline = kannRechnungHochladen ? (
-    <div className="space-y-2 pt-1">
-      <button
-        type="button"
-        onClick={() => {
-          if (!firmendatenOkRechnung) {
-            setFirmendatenMissing(firmGate?.missingRechnung ?? []);
-            setFirmendatenFehlenOpen(true);
-            return;
-          }
-          void onRechnungErstellen();
-        }}
-        disabled={rechnungPrimaryDisabled}
-        className="portal-action-btn portal-action-btn--primary portal-action-btn--block"
-      >
-        {rechnungGateBusy
-          ? HW_ABNAHME_COPY.rechnungFirmendatenBusy
-          : HW_ABNAHME_COPY.rechnungCta}
-      </button>
-      <button
-        type="button"
-        onClick={() => {
-          setActiveTab("dokumente");
-          window.setTimeout(() => {
-            document
-              .getElementById("partner-rechnung-eigenes-pdf")
-              ?.scrollIntoView({ behavior: "smooth", block: "nearest" });
-          }, 80);
-        }}
-        className="portal-action-btn portal-action-btn--secondary portal-action-btn--block"
-      >
-        {HW_ABNAHME_COPY.rechnungSecondaryCta}
-      </button>
-      {rechnungDisabledHint ? (
-        <p className="portal-text-label normal-case tracking-normal text-center text-text-secondary">
-          {rechnungDisabledHint}
-        </p>
-      ) : null}
-      {!firmendatenOkRechnung ? (
-        <button
-          type="button"
-          className="portal-text-label w-full normal-case tracking-normal text-center font-semibold text-[var(--p2-primary,#1a6b4a)]"
-          onClick={() => {
-            setFirmendatenMissing(firmGate?.missingRechnung ?? []);
-            setFirmendatenFehlenOpen(true);
-          }}
-        >
-          Firmendaten ergänzen
-        </button>
-      ) : null}
-    </div>
-  ) : null;
-
-  const abschlussInline =
-    zeigtAbschluss && !kannRechnungHochladen ? (
-      <div className="space-y-2 pt-1">
-        <button
-          type="button"
-          onClick={() => setAbschlussOpen(true)}
-          disabled={!kannAbschluss}
-          className="portal-action-btn portal-action-btn--primary portal-action-btn--block"
-          data-testid="hw-auftrag-abschliessen"
-        >
-          {HW_AUFTRAG_COPY.ausfuehrenCta}
-        </button>
-        {!kannAbschluss ? (
-          <p className="portal-text-label normal-case tracking-normal text-center text-text-secondary">
-            {HW_AUFTRAG_COPY.ausfuehrenDisabledHint}
-          </p>
-        ) : null}
-      </div>
-    ) : null;
-
   const handleBack = onBack ?? (() => router.back());
 
-  const stickyFooter =
-    rechnungInline || abschlussInline ? (
-      <>
-        {rechnungInline}
-        {abschlussInline}
-      </>
-    ) : undefined;
+  const stickyFooter = (() => {
+    if (kannRechnungHochladen && zeigtAbschluss) {
+      return (
+        <PortalDetailStickyActions
+          primaryLabel={
+            rechnungGateBusy
+              ? HW_ABNAHME_COPY.rechnungFirmendatenBusy
+              : HW_ABNAHME_COPY.rechnungCta
+          }
+          onPrimary={() => {
+            if (!firmendatenOkRechnung) {
+              setFirmendatenMissing(firmGate?.missingRechnung ?? []);
+              setFirmendatenFehlenOpen(true);
+              return;
+            }
+            void onRechnungErstellen();
+          }}
+          primaryDisabled={rechnungPrimaryDisabled}
+          secondaryLabel={HW_AUFTRAG_COPY.ausfuehrenCta}
+          onSecondary={() => setAbschlussOpen(true)}
+          secondaryDisabled={!kannAbschluss}
+          disabledHint={
+            rechnungDisabledHint ??
+            (!kannAbschluss ? HW_AUFTRAG_COPY.ausfuehrenDisabledHint : null)
+          }
+        />
+      );
+    }
+    if (kannRechnungHochladen) {
+      return (
+        <PortalDetailStickyActions
+          primaryLabel={
+            rechnungGateBusy
+              ? HW_ABNAHME_COPY.rechnungFirmendatenBusy
+              : HW_ABNAHME_COPY.rechnungCta
+          }
+          onPrimary={() => {
+            if (!firmendatenOkRechnung) {
+              setFirmendatenMissing(firmGate?.missingRechnung ?? []);
+              setFirmendatenFehlenOpen(true);
+              return;
+            }
+            void onRechnungErstellen();
+          }}
+          primaryDisabled={rechnungPrimaryDisabled}
+          secondaryLabel={
+            !firmendatenOkRechnung
+              ? "Firmendaten ergänzen"
+              : HW_ABNAHME_COPY.rechnungSecondaryCta
+          }
+          onSecondary={() => {
+            if (!firmendatenOkRechnung) {
+              setFirmendatenMissing(firmGate?.missingRechnung ?? []);
+              setFirmendatenFehlenOpen(true);
+              return;
+            }
+            setActiveTab("dokumente");
+            window.setTimeout(() => {
+              document
+                .getElementById("partner-rechnung-eigenes-pdf")
+                ?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+            }, 80);
+          }}
+          disabledHint={rechnungDisabledHint}
+        />
+      );
+    }
+    if (zeigtAbschluss) {
+      return (
+        <PortalDetailStickyActions
+          primaryLabel={HW_AUFTRAG_COPY.ausfuehrenCta}
+          onPrimary={() => setAbschlussOpen(true)}
+          primaryDisabled={!kannAbschluss}
+          disabledHint={
+            !kannAbschluss ? HW_AUFTRAG_COPY.ausfuehrenDisabledHint : null
+          }
+        />
+      );
+    }
+    return undefined;
+  })();
 
   return (
     <PortalDetailLayout footer={stickyFooter}>
@@ -612,7 +616,7 @@ export function PartnerAuftragDetail({
               {zeigtDokumenteUpload ? (
                 <div className="mt-4 space-y-4">
                   {kannRechnungHochladen ? (
-                    <p className="border-t border-border-light pt-4 text-[12.5px] text-text-secondary">
+                    <p className="border-t border-border-light pt-4 text-fs-meta text-text-secondary">
                       {HW_ABNAHME_COPY.rechnungDocsHint}
                     </p>
                   ) : null}
@@ -645,13 +649,13 @@ export function PartnerAuftragDetail({
                       {rechnungError ? (
                         <PortalDetailError message={rechnungError} />
                       ) : null}
-                      <button
+                      <PortalButton variant="secondary" action={false}
                         type="submit"
                         disabled={uploadBusy || !rechnungPdf}
-                        className="btn-pill-outline portal-btn"
+                        className="btn-pill-outline"
                       >
                         {uploadBusy ? "Wird gesendet…" : "Rechnung absenden"}
-                      </button>
+                      </PortalButton>
                     </form>
                   ) : null}
                 </div>
@@ -695,7 +699,7 @@ export function PartnerAuftragDetail({
             ) : (
               <p className="portal-text-body text-text-secondary">
                 Melde den Auftrag als erledigt, sobald alle Leistungen dokumentiert
-                sind. Danach kannst du die Rechnung einreichen.
+                sind. Danach können Sie die Rechnung einreichen.
               </p>
             )}
           </div>
@@ -705,7 +709,7 @@ export function PartnerAuftragDetail({
       <PortalConfirmDialog
         open={abschlussOpen}
         title="Auftrag erledigt melden?"
-        description="Alle deine Leistungen sind dokumentiert. Danach kannst du die Rechnung erstellen. Eine Abnahme macht die Verwaltung im CRM."
+        description="Alle Ihre Leistungen sind dokumentiert. Danach können Sie die Rechnung erstellen. Eine Abnahme macht die Verwaltung im CRM."
         confirmLabel={abschlussBusy ? "Wird gemeldet…" : "Erledigt melden"}
         loading={abschlussBusy}
         onConfirm={() => void confirmAuftragErledigt()}

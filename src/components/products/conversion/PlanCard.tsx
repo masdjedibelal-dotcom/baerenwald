@@ -1,6 +1,6 @@
 "use client";
 
-import { Check } from "lucide-react";
+import { PortalIcon } from "@/components/portal/PortalIcon";
 import { useMemo } from "react";
 
 import {
@@ -178,7 +178,7 @@ export function PlanCard({
         <ul className="conversion-plan-features" aria-label="Highlights">
           {bullets.map((text) => (
             <li key={text}>
-              <Check size={14} strokeWidth={2.5} aria-hidden />
+              <PortalIcon n="check" ctx="default" size={14} aria-hidden />
               <span>{text}</span>
             </li>
           ))}

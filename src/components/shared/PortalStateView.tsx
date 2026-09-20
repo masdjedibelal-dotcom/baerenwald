@@ -2,8 +2,9 @@
 
 import Link from "next/link";
 import type { ReactNode } from "react";
+import { PortalButton } from "@/components/portal/PortalButton";
 
-import { MockIcon } from "@/components/shared/MockIcon";
+import { PortalIcon } from "@/components/portal/PortalIcon";
 import {
   PORTAL_OVERVIEW_HREF,
   PORTAL_SUPPORT_HREF,
@@ -58,9 +59,14 @@ function StateButton({
   }
 
   return (
-    <button type="button" className={className} onClick={action.onClick}>
+    <PortalButton
+      variant={ghost ? "secondary" : "primary"}
+      type="button"
+      className={className}
+      onClick={action.onClick}
+    >
       {action.label}
-    </button>
+    </PortalButton>
   );
 }
 
@@ -162,11 +168,11 @@ export function PortalStateView({
       role="status"
     >
       <div
-        className="mb-5 grid h-[72px] w-[72px] place-items-center rounded-[20px] text-[32px]"
+        className="mb-5 grid h-[72px] w-[72px] place-items-center rounded-[20px] text-fs-head"
         style={{ background: copy.iconBg, color: copy.iconFg }}
         aria-hidden
       >
-        <MockIcon glyph={copy.glyph} ctx="default" size={32} style={{ color: "inherit" }} />
+        <PortalIcon glyph={copy.glyph} ctx="default" size={32} style={{ color: "inherit" }} />
       </div>
       <h2 className="portal-text-title mb-[9px]">{copy.title}</h2>
       <p className="portal-text-meta mb-[22px] max-w-[360px] leading-relaxed text-p2-sub">

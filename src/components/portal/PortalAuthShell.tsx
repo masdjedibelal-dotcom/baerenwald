@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 
 import { PortalAuthFrame } from "@/components/portal/auth/PortalAuthFrame";
-import { PortalRoleBadge } from "@/components/shared/PortalRoleBadge";
+import { PortalRoleBadge } from "@/components/shared/PortalStatusPill";
 import {
   AUTH_INVITE,
   authBrandName,
@@ -65,10 +65,10 @@ export function PortalAuthShell({
     >
       {inviteRole ? (
         <div className="mb-4 flex flex-wrap items-center gap-2">
-          <span className="text-[12.5px] font-semibold text-text-tertiary">
+          <span className="text-fs-meta font-semibold text-text-tertiary">
             {AUTH_INVITE.eyebrow}
           </span>
-          <span className="text-[13px] font-bold text-text-primary">
+          <span className="text-fs-meta font-bold text-text-primary">
             {brandName}
           </span>
           <PortalRoleBadge role={inviteRole} />

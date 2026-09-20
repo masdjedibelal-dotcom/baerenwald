@@ -161,7 +161,7 @@ function KompaktComplianceRow({
         open={confirmDelete}
         title="Dokument entfernen?"
         description={`„${item.bezeichnung}“ wirklich entfernen?`}
-        confirmLabel="Entfernen"
+        confirmLabel="Löschen"
         confirmVariant="danger"
         loading={loading}
         onConfirm={() => void onDelete()}
@@ -237,14 +237,14 @@ export function PartnerComplianceCheckliste({
 }) {
   if (!items.length) {
     return (
-      <section className="overflow-hidden rounded-xl border border-border-light bg-surface-card p-3">
+      <section className="overflow-hidden rounded-sheet border border-border-light bg-surface-card p-3">
         <PortalInboxEmpty title={emptyText} compact />
       </section>
     );
   }
 
   return (
-    <section className="overflow-hidden rounded-xl border border-border-light bg-surface-card">
+    <section className="overflow-hidden rounded-sheet border border-border-light bg-surface-card">
       <div className="border-b border-border-light px-4 py-3">
         <h4 className="portal-text-section text-text-primary">{title}</h4>
         <p className="portal-text-meta mt-0.5 text-text-secondary">

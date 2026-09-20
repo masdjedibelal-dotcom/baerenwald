@@ -1,7 +1,7 @@
 "use client";
 
-import { Check, ChevronRight } from "lucide-react";
 
+import { PortalIcon } from "@/components/portal/PortalIcon";
 import { cn } from "@/lib/utils";
 
 const STEPS = [
@@ -31,17 +31,17 @@ export function PartnerRegisterStepNav({ current }: { current: StepId }) {
               >
                 <span
                   className={cn(
-                    "flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs font-semibold transition-colors",
+                    "flex h-7 w-7 shrink-0 items-center justify-center rounded-pill text-xs font-semibold transition-colors",
                     done && "bg-accent text-white",
                     active && !done && "bg-accent text-white ring-2 ring-accent/25",
                     !done && !active && "border border-border-default bg-white text-text-tertiary"
                   )}
                 >
-                  {done ? <Check className="h-3.5 w-3.5" strokeWidth={3} /> : s.id}
+                  {done ? <PortalIcon n="check" ctx="default" className="h-3.5 w-3.5" /> : s.id}
                 </span>
                 <span
                   className={cn(
-                    "max-w-[4.5rem] truncate text-center text-[10px] font-medium leading-tight sm:max-w-none sm:text-[11px]",
+                    "max-w-[4.5rem] truncate text-center text-fs-caption font-medium leading-tight sm:max-w-none sm:text-fs-caption",
                     active ? "text-accent" : done ? "text-text-secondary" : "text-text-tertiary"
                   )}
                 >
@@ -49,10 +49,7 @@ export function PartnerRegisterStepNav({ current }: { current: StepId }) {
                 </span>
               </div>
               {index < STEPS.length - 1 ? (
-                <ChevronRight
-                  className="mb-4 h-3.5 w-3.5 shrink-0 text-border-default sm:h-4 sm:w-4"
-                  aria-hidden
-                />
+                <PortalIcon n="chevron-right" ctx="default" className="mb-4 h-3.5 w-3.5 shrink-0 text-border-default sm:h-4 sm:w-4" aria-hidden />
               ) : null}
             </li>
           );

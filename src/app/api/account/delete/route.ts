@@ -1,3 +1,4 @@
+import { logDbError } from '@/lib/errors/log-db-error'
 import { NextResponse } from "next/server";
 
 import {
@@ -83,12 +84,12 @@ export async function POST(req: Request) {
   }
 
   if (session.kind === "kunde") {
-    const { data: kunde } = await supabaseAdmin
+    const {data: kunde, error: __dbErr127_1} = await supabaseAdmin
       .from("kunden")
       .select("id, portal_modus, typ")
       .eq("id", session.entityId)
       .maybeSingle();
-
+    if (__dbErr127_1) logDbError('app/api/account/delete/route:kunden', __dbErr127_1)
     const modus = String(kunde?.portal_modus ?? "").toLowerCase();
     if (modus === "organisation" || modus === "hv") {
       return NextResponse.json(
@@ -123,6 +124,7 @@ export async function POST(req: Request) {
         adresse: null,
       })
       .eq("id", session.entityId);
+    if (anonErr) logDbError('app/api/account/delete/route:kunden', anonErr)
 
     if (anonErr) {
       return NextResponse.json({ error: anonErr.message }, { status: 500 });
@@ -149,6 +151,7 @@ export async function POST(req: Request) {
         ist_portal_gesperrt: true,
       })
       .eq("id", session.entityId);
+    if (anonErr) logDbError('app/api/account/delete/route:handwerker', anonErr)
 
     if (anonErr) {
       return NextResponse.json({ error: anonErr.message }, { status: 500 });

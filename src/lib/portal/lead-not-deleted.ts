@@ -3,6 +3,7 @@
  * CRM setzt `leads.geloescht_am` oder löscht den Lead (Kinder können als Geister bleiben).
  */
 
+import { logDbError } from '@/lib/errors/log-db-error'
 import { supabaseAdmin } from "@/lib/supabase";
 
 const UUID_RE =
@@ -39,6 +40,7 @@ export async function filterActiveLeadIds(
     .select("id")
     .in("id", ids)
     .is("geloescht_am", null);
+  if (error) logDbError('lib/portal/lead-not-deleted:leads', error)
 
   if (error && /geloescht_am/i.test(error.message)) {
     const fallback = await supabaseAdmin.from("leads").select("id").in("id", ids);
@@ -57,6 +59,7 @@ export async function isLeadSoftDeleted(leadId: string): Promise<boolean> {
     .select("id, geloescht_am")
     .eq("id", id)
     .maybeSingle();
+  if (error) logDbError('lib/portal/lead-not-deleted:leads', error)
   if (error && /geloescht_am/i.test(error.message)) {
     const fb = await supabaseAdmin.from("leads").select("id").eq("id", id).maybeSingle();
     return !fb.data?.id;
@@ -109,10 +112,11 @@ export async function filterActiveVorgangEntityIds(
 
   const angebotToLead = new Map<string, string>();
   if (angebotIds.length) {
-    const { data: angs } = await supabaseAdmin
+    const {data: angs, error: __dbErr441_1} = await supabaseAdmin
       .from("angebote")
       .select("id, lead_id")
       .in("id", angebotIds);
+    if (__dbErr441_1) logDbError('lib/portal/lead-not-deleted:angebote', __dbErr441_1)
     for (const a of angs ?? []) {
       const lid = String((a as { lead_id?: string | null }).lead_id ?? "").trim();
       if (!lid) continue;

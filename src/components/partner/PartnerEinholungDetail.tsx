@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 
+import { PortalSelect, PortalTextarea } from "@/components/shared/PortalFormControls";
 import { declinePartnerAnfrage } from "@/app/actions/partner-auftrag-bestaetigen";
 import { submitPartnerEinholungAngebotPdf } from "@/app/actions/partner-angebote";
 import { usePortalBusy } from "@/components/shared/PortalBusyContext";
@@ -51,6 +52,7 @@ import {
 import { partnerPortalToast, portalToastError } from "@/lib/shared/portal-toast";
 import { usePortalUploadBusy } from "@/components/shared/usePortalUploadBusy";
 import { joinHwMenge, type HwKalkPosition } from "@/lib/portal2/hw-kalkulation";
+import { TOAST } from '@/lib/portal-copy'
 
 export function PartnerEinholungDetail({
   item,
@@ -198,7 +200,7 @@ export function PartnerEinholungDetail({
       const res = await submitPartnerEinholungAngebotPdf(fd);
       if (!res.ok) {
         setError(res.error);
-        portalToastError("Upload fehlgeschlagen", res.error);
+        portalToastError(TOAST.upload_fehlgeschlagen, res.error);
         return;
       }
       partnerPortalToast.hwAngebotEingereicht();
@@ -376,24 +378,24 @@ export function PartnerEinholungDetail({
             <div className="space-y-3 border-t border-border-light pt-4">
               <label className="block space-y-1">
                 <span className="portal-form-label">Ablehnungsgrund</span>
-                <select
+                <PortalSelect
                   value={grund}
                   onChange={(e) => setGrund(e.target.value)}
-                  className="portal-input w-full rounded-xl border border-border-default bg-surface-card px-3 py-3"
+                  className="portal-input w-full rounded-field border border-border-default bg-surface-card px-3 py-3"
                 >
                   {HANDWERKER_ABLEHNUNG_GRUND_VALUES.map((v) => (
                     <option key={v} value={v}>
                       {HANDWERKER_ABLEHNUNG_GRUND_LABELS[v]}
                     </option>
                   ))}
-                </select>
+                </PortalSelect>
               </label>
-              <textarea
+              <PortalTextarea
                 value={notiz}
                 onChange={(e) => setNotiz(e.target.value)}
                 placeholder="Optionale Notiz"
                 rows={3}
-                className="portal-input w-full rounded-xl border border-border-default bg-surface-card px-3 py-3"
+                className="portal-input w-full rounded-field border border-border-default bg-surface-card px-3 py-3"
               />
             </div>
           ) : null}

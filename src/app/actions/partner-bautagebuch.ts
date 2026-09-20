@@ -1,5 +1,6 @@
 "use server";
 
+import { logDbError } from '@/lib/errors/log-db-error'
 import { revalidatePath } from "next/cache";
 
 import { linkPortalHandwerkerToAuthUser } from "@/lib/partner/link-portal-handwerker";
@@ -105,11 +106,12 @@ export async function createPartnerBautagebuchEintrag(
     fotoPaths = up.paths;
   }
 
-  const { data: auftragRow } = await supabaseAdmin
+  const {data: auftragRow, error: __dbErr73_1} = await supabaseAdmin
     .from("auftraege")
     .select("lead_id, titel")
     .eq("id", auftragId)
     .maybeSingle();
+  if (__dbErr73_1) logDbError('app/actions/partner-bautagebuch:auftraege', __dbErr73_1)
 
   const leadId =
     auftragRow?.lead_id != null ? String(auftragRow.lead_id).trim() : "";
@@ -127,6 +129,7 @@ export async function createPartnerBautagebuchEintrag(
     })
     .select("id")
     .single();
+  if (error) logDbError('app/actions/partner-bautagebuch:auftrag_bautagebuch_eintraege', error)
 
   if (error) return { ok: false, error: error.message };
 
@@ -228,6 +231,7 @@ export async function updatePartnerBautagebuchEintrag(
     .eq("id", eintragId)
     .eq("auftrag_id", auftragId)
     .maybeSingle();
+  if (loadErr) logDbError('app/actions/partner-bautagebuch:auftrag_bautagebuch_eintraege', loadErr)
 
   if (loadErr || !existing) {
     return { ok: false, error: "Eintrag nicht gefunden." };
@@ -275,6 +279,7 @@ export async function updatePartnerBautagebuchEintrag(
     })
     .eq("id", eintragId)
     .eq("handwerker_id", auth.handwerkerId);
+  if (error) logDbError('app/actions/partner-bautagebuch:auftrag_bautagebuch_eintraege', error)
 
   if (error) return { ok: false, error: error.message };
 
@@ -289,12 +294,13 @@ export async function deletePartnerBautagebuchEintrag(opts: {
   const auth = await partnerAuth();
   if (!auth.ok) return auth;
 
-  const { data: existing } = await supabaseAdmin
+  const {data: existing, error: __dbErr74_2} = await supabaseAdmin
     .from("auftrag_bautagebuch_eintraege")
     .select("id, handwerker_id, fuer_kunde_freigegeben")
     .eq("id", opts.eintragId)
     .eq("auftrag_id", opts.auftragId)
     .maybeSingle();
+  if (__dbErr74_2) logDbError('app/actions/partner-bautagebuch:auftrag_bautagebuch_eintraege', __dbErr74_2)
 
   if (!existing) {
     return { ok: false, error: "Eintrag nicht gefunden." };
@@ -316,6 +322,7 @@ export async function deletePartnerBautagebuchEintrag(opts: {
     .delete()
     .eq("id", opts.eintragId)
     .eq("handwerker_id", auth.handwerkerId);
+  if (error) logDbError('app/actions/partner-bautagebuch:auftrag_bautagebuch_eintraege', error)
 
   if (error) return { ok: false, error: error.message };
 

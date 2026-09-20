@@ -1,3 +1,4 @@
+import { PALETTE } from "@/lib/tokens/palette";
 import QRCode from "qrcode";
 
 import { SITE_CONFIG } from "@/lib/config";
@@ -60,7 +61,7 @@ export async function generateMeldeQrPng(
     // Quiet Zone ≥ 4 Module — wichtig für Handy-Kameras
     margin: 4,
     errorCorrectionLevel: "H",
-    color: { dark: "#000000", light: "#FFFFFF" },
+    color: { dark: PALETTE.h000000, light: "var(--p2-panel)" },
   });
   return new Uint8Array(buf);
 }

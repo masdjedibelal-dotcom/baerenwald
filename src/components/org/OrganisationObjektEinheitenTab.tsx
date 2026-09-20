@@ -1,7 +1,9 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { PortalButton } from "@/components/portal/PortalButton";
 
+import { PortalInput, PortalSelect } from "@/components/shared/PortalFormControls";
 import { OrganisationObjektMieterMenu } from "@/components/org/OrganisationObjektMieterMenu";
 import { PortalConfirmDialog } from "@/components/shared/PortalDetailUi";
 import {
@@ -13,6 +15,7 @@ import {
   PortalActionMenu,
   type PortalActionMenuItem,
 } from "@/components/shared/PortalActionMenu";
+import { PortalField } from "@/components/shared/PortalField";
 import { PortalModalShell } from "@/components/shared/PortalModalShell";
 import {
   EinstellungenEdField,
@@ -33,6 +36,7 @@ import {
 } from "@/lib/portal2/objekte";
 import { buildPortalEinladungMailto } from "@/lib/portal2/portal-einladungen";
 import type { PortalEinladungHvBlock } from "@/lib/portal2/portal-einladungen";
+import { useFieldErrors } from "@/lib/portal2/form-schema";
 import { cn } from "@/lib/utils";
 import {
   orgPortalToast,
@@ -40,6 +44,7 @@ import {
 } from "@/lib/shared/portal-toast";
 import { usePortalBusy } from "@/components/shared/PortalBusyContext";
 import { PortalInlineLoading } from "@/components/shared/PortalInlineLoading";
+import { EMPTY, TOAST } from '@/lib/portal-copy'
 
 type Einheit = {
   id: string;
@@ -134,6 +139,10 @@ export function OrganisationObjektEinheitenTab({
 
   const [busyId, setBusyId] = useState<string | null>(null);
   const { runBusy } = usePortalBusy();
+  const detailFormRef = useRef<HTMLDivElement>(null);
+  const createFormRef = useRef<HTMLDivElement>(null);
+  const { fieldErrors, applyFieldErrors, clearFieldErrors, clearField } =
+    useFieldErrors();
   const [inviteMailtoReady, setInviteMailtoReady] =
     useState<PortalInviteMailtoReady | null>(null);
   const [confirm, setConfirm] = useState<
@@ -217,9 +226,18 @@ export function OrganisationObjektEinheitenTab({
           : null) !== (detailEinheit.wohnflaeche_m2 ?? null))
   );
 
+  /* FORM_VALIDATION: org-einheit-create */
   async function saveEinheitCreate() {
     const label = bezeichnung.trim();
-    if (!label || einheitForm?.mode !== "create") return;
+    if (einheitForm?.mode !== "create") return;
+    if (!label) {
+      applyFieldErrors(
+        { bezeichnung: "Bitte Bezeichnung angeben." },
+        createFormRef.current
+      );
+      return;
+    }
+    clearFieldErrors();
     setEinheitBusy(true);
     try {
       await runBusy(async () => {
@@ -237,7 +255,7 @@ export function OrganisationObjektEinheitenTab({
         });
         const json = (await res.json()) as { error?: string };
         if (!res.ok) {
-          portalToastError("Einheit nicht angelegt", json.error);
+          portalToastError(TOAST.einheit_nicht_angelegt, json.error);
           return;
         }
         setEinheitForm(null);
@@ -250,9 +268,19 @@ export function OrganisationObjektEinheitenTab({
     }
   }
 
+  /* FORM_VALIDATION: org-einheit-detail */
   async function saveDetailEinheit() {
     const label = bezeichnung.trim();
-    if (!label || !detailEinheit) return;
+    if (!detailEinheit) return;
+    if (!label) {
+      applyFieldErrors(
+        { bezeichnung: "Bitte Bezeichnung angeben." },
+        detailFormRef.current
+      );
+      return;
+    }
+    if (!detailDirty) return;
+    clearFieldErrors();
     setEinheitBusy(true);
     try {
       await runBusy(async () => {
@@ -270,7 +298,7 @@ export function OrganisationObjektEinheitenTab({
         });
         const json = (await res.json()) as { error?: string };
         if (!res.ok) {
-          portalToastError("Einheit nicht gespeichert", json.error);
+          portalToastError(TOAST.einheit_nicht_gespeichert, json.error);
           return;
         }
         orgPortalToast.objektAktualisiert();
@@ -378,7 +406,7 @@ export function OrganisationObjektEinheitenTab({
           });
           const json = (await res.json()) as { error?: string };
           if (!res.ok) {
-            portalToastError("Zuordnung fehlgeschlagen", json.error);
+            portalToastError(TOAST.zuordnung_fehlgeschlagen, json.error);
             return;
           }
           setPersonForm(null);
@@ -464,7 +492,7 @@ export function OrganisationObjektEinheitenTab({
         );
         const json = (await res.json()) as { error?: string };
         if (!res.ok) {
-          portalToastError("Einheit nicht entfernt", json.error);
+          portalToastError(TOAST.einheit_nicht_entfernt, json.error);
           return;
         }
         if (detailId === id) setDetailId(null);
@@ -488,7 +516,7 @@ export function OrganisationObjektEinheitenTab({
         );
         const json = (await res.json()) as { error?: string };
         if (!res.ok) {
-          portalToastError("Entfernen fehlgeschlagen", json.error);
+          portalToastError(TOAST.entfernen_fehlgeschlagen, json.error);
           return;
         }
         orgPortalToast.objektAktualisiert();
@@ -515,7 +543,7 @@ export function OrganisationObjektEinheitenTab({
         });
         const json = (await res.json()) as { url?: string; error?: string };
         if (!res.ok || !json.url) {
-          portalToastError("Einladung fehlgeschlagen", json.error);
+          portalToastError(TOAST.einladung_fehlgeschlagen, json.error);
           return;
         }
         const rolle =
@@ -600,14 +628,14 @@ export function OrganisationObjektEinheitenTab({
           addLabel={`${title} hinzufügen`}
         />
         {mieterGesperrt ? (
-          <p className="text-[12.5px] leading-snug text-text-secondary">
+          <p className="text-fs-meta leading-snug text-text-secondary">
             Eigentümer selbstbewohnt — kein zusätzlicher Mieter.
           </p>
         ) : null}
         {people.length === 0 ? (
-          <p className="text-[13px] text-text-secondary">Noch keine {title}.</p>
+          <p className="text-fs-meta text-text-secondary">Noch keine {title}.</p>
         ) : (
-          <ul className="divide-y divide-border-light rounded-xl border border-border-light bg-white">
+          <ul className="divide-y divide-border-light rounded-sheet border border-border-light bg-white">
             {people.map((b) => {
               const mail = b.email?.trim() || "";
               const tel = b.telefon?.trim() || "";
@@ -637,23 +665,24 @@ export function OrganisationObjektEinheitenTab({
                   key={b.id}
                   className="flex items-center gap-2.5 px-3 py-2.5"
                 >
-                  <button
+                  <PortalButton
+                    variant="ghost"
                     type="button"
                     className="flex min-w-0 flex-1 items-center gap-2.5 text-left"
                     onClick={() => openPersonEdit(b)}
                   >
-                    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-muted text-xs font-bold text-text-primary">
+                    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-pill bg-muted text-xs font-bold text-text-primary">
                       {initial}
                     </span>
                     <div className="min-w-0 flex-1">
-                      <p className="truncate text-[14px] font-semibold text-text-primary">
+                      <p className="truncate text-fs-body font-semibold text-text-primary">
                         {b.name}
                       </p>
-                      <p className="truncate text-[12.5px] text-text-secondary">
-                        {metaBits.join(" · ") || "Keine Kontaktdaten"}
+                      <p className="truncate text-fs-meta text-text-secondary">
+                        {metaBits.join(" · ") || EMPTY.kontaktdaten}
                       </p>
                     </div>
-                  </button>
+                  </PortalButton>
                   <OrganisationObjektMieterMenu
                     hasEmail={Boolean(mail)}
                     onEinladen={() =>
@@ -732,9 +761,9 @@ export function OrganisationObjektEinheitenTab({
             const statusBadge = (
               <span
                 className={cn(
-                  "shrink-0 rounded-full px-2.5 py-1 text-[11px] font-semibold",
+                  "shrink-0 rounded-pill px-2.5 py-1 text-fs-caption font-semibold",
                   badge === "leer"
-                    ? "bg-[#FBF1D6] text-[#8A5A06]"
+                    ? "bg-[var(--p2-status-sand-bg)] text-[var(--p2-sand-text)]"
                     : "bg-accent-light text-accent"
                 )}
               >
@@ -746,11 +775,11 @@ export function OrganisationObjektEinheitenTab({
               title: u.bezeichnung,
               badge: statusBadge,
               meta: (
-                <p className="truncate">{meta || "Keine Personen"}</p>
+                <p className="truncate">{meta || EMPTY.personen}</p>
               ),
               cells: [
                 u.bezeichnung,
-                meta || "Keine Personen",
+                meta || EMPTY.personen,
                 statusBadge,
               ],
               onClick: () => setDetailId(u.id),
@@ -781,17 +810,27 @@ export function OrganisationObjektEinheitenTab({
         busy={einheitBusy}
         onConfirm={() => void saveDetailEinheit()}
         confirmLabel={einheitBusy ? "Speichern…" : "Speichern"}
-        confirmDisabled={!bezeichnung.trim() || !detailDirty || einheitBusy}
+        confirmDisabled={einheitBusy}
       >
         {detailEinheit ? (
-          <div className="space-y-5">
+          <div ref={detailFormRef} className="space-y-5">
             <div className="space-y-3">
-              <EinstellungenEdField
+              <PortalField
                 label="Bezeichnung"
-                value={bezeichnung}
-                onChange={setBezeichnung}
-                placeholder="z. B. WE 12"
-              />
+                name="bezeichnung"
+                required
+                error={fieldErrors.bezeichnung}
+              >
+                <PortalInput
+                  className="portal-field w-full"
+                  value={bezeichnung}
+                  onChange={(e) => {
+                    setBezeichnung(e.target.value);
+                    clearField("bezeichnung");
+                  }}
+                  placeholder="z. B. WE 12"
+                />
+              </PortalField>
               <EinstellungenEdField
                 label="Etage (optional)"
                 value={etage}
@@ -841,7 +880,6 @@ export function OrganisationObjektEinheitenTab({
           onClose={closePersonForm}
           onSave={() => void savePerson()}
           saving={personBusy}
-          saveDisabled={!canSubmitPerson}
           saveLabel={
             personEditing
               ? "Speichern"
@@ -852,7 +890,7 @@ export function OrganisationObjektEinheitenTab({
         >
           {!personEditing && personForm?.rolle === "eigentuemer" ? (
             <>
-              <p className="rounded-[10px] bg-muted px-3.5 py-2.5 text-[12.5px] leading-relaxed text-text-secondary">
+              <p className="rounded-[10px] bg-muted px-3.5 py-2.5 text-fs-meta leading-relaxed text-text-secondary">
                 Bestehenden Eigentümer einer weiteren Einheit zuordnen oder
                 neu anlegen.
               </p>
@@ -861,7 +899,7 @@ export function OrganisationObjektEinheitenTab({
                   <span className="portal-text-label mb-1.5 block text-text-secondary">
                     Eigentümer
                   </span>
-                  <select
+                  <PortalSelect
                     className="portal-field w-full"
                     value={
                       eigentuemerMode === "new"
@@ -907,7 +945,7 @@ export function OrganisationObjektEinheitenTab({
                       </option>
                     ))}
                     <option value="__new__">＋ Neu anlegen</option>
-                  </select>
+                  </PortalSelect>
                 </label>
               ) : null}
             </>
@@ -945,7 +983,7 @@ export function OrganisationObjektEinheitenTab({
               />
             </>
           ) : (
-            <div className="rounded-[10px] border border-border-light bg-white px-3.5 py-3 text-[13px] text-text-secondary">
+            <div className="rounded-[10px] border border-border-light bg-white px-3.5 py-3 text-fs-meta text-text-secondary">
               {(() => {
                 const sel = orgEigentuemer.find(
                   (x) => x.sourceBewohnerId === existingEigentuemerId
@@ -960,7 +998,7 @@ export function OrganisationObjektEinheitenTab({
                       <p className="mt-0.5">{sel.email}</p>
                     ) : null}
                     {sel.objektLabels.length ? (
-                      <p className="mt-1 text-[12px]">
+                      <p className="mt-1 text-fs-caption">
                         Bereits: {sel.objektLabels.join(" · ")}
                       </p>
                     ) : null}
@@ -1003,27 +1041,38 @@ export function OrganisationObjektEinheitenTab({
         onClose={closeEinheitForm}
         onSave={() => void saveEinheitCreate()}
         saving={einheitBusy}
-        saveDisabled={!bezeichnung.trim()}
         saveLabel="Anlegen"
       >
-        <EinstellungenEdField
-          label="Bezeichnung"
-          value={bezeichnung}
-          onChange={setBezeichnung}
-          placeholder="z. B. WE 12"
-        />
-        <EinstellungenEdField
-          label="Etage (optional)"
-          value={etage}
-          onChange={setEtage}
-          placeholder="z. B. 3. OG"
-        />
-        <EinstellungenEdField
-          label="Wohnfläche m² (optional)"
-          value={m2}
-          onChange={setM2}
-          placeholder="z. B. 68"
-        />
+        <div ref={createFormRef} className="portal-sheet-form-group">
+          <PortalField
+            label="Bezeichnung"
+            name="bezeichnung"
+            required
+            error={fieldErrors.bezeichnung}
+          >
+            <PortalInput
+              className="portal-field w-full"
+              value={bezeichnung}
+              onChange={(e) => {
+                setBezeichnung(e.target.value);
+                clearField("bezeichnung");
+              }}
+              placeholder="z. B. WE 12"
+            />
+          </PortalField>
+          <EinstellungenEdField
+            label="Etage (optional)"
+            value={etage}
+            onChange={setEtage}
+            placeholder="z. B. 3. OG"
+          />
+          <EinstellungenEdField
+            label="Wohnfläche m² (optional)"
+            value={m2}
+            onChange={setM2}
+            placeholder="z. B. 68"
+          />
+        </div>
       </EinstellungenEditModal>
 
       <PortalConfirmDialog
@@ -1040,7 +1089,7 @@ export function OrganisationObjektEinheitenTab({
               ? `„${confirm.label}“ wirklich entfernen? Vorgänge bleiben erhalten.`
               : ""
         }
-        confirmLabel="Entfernen"
+        confirmLabel="Löschen"
         confirmVariant="danger"
         loading={busyId != null}
         onConfirm={() => {

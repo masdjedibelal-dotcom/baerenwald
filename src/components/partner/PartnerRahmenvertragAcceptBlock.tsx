@@ -1,7 +1,9 @@
 "use client";
 
 import { useState } from "react";
+import { PortalButton } from "@/components/portal/PortalButton";
 
+import { PortalCheckbox } from "@/components/shared/PortalFormControls";
 import { PARTNER_RAHMENVERTRAG_REGISTER_TEXT } from "@/lib/partner/partner-rahmenvertrag-text";
 import { PortalDocOpenButton } from "@/components/shared/PortalDocOpenButton";
 import { PortalModalShell } from "@/components/shared/PortalModalShell";
@@ -62,34 +64,34 @@ export function PartnerRahmenvertragAcceptBlock({
       <div className="space-y-3">
         <div>
           <p className="portal-form-label">{title}</p>
-          <button
+          <PortalButton
+            variant="ghost"
             type="button"
             onClick={() => setTextOpen(true)}
             className="mt-1 portal-text-body font-medium text-accent underline-offset-2 hover:underline"
           >
             Partnerschafts-Rahmenvertrag anzeigen
-          </button>
+          </PortalButton>
         </div>
 
         {showCheckbox ? (
           <label
             className={cn(
-              "flex cursor-pointer items-start gap-3 rounded-xl border border-border-light bg-muted/20 p-3",
+              "flex cursor-pointer items-start gap-3 rounded-sheet border border-border-light bg-muted/20 p-3",
               disabled && "pointer-events-none opacity-60"
             )}
           >
-            <input
-              type="checkbox"
+            <PortalCheckbox
               checked={akzeptiert}
               onChange={(e) => onAkzeptiertChange(e.target.checked)}
               disabled={disabled}
-              className="mt-0.5 h-4 w-4 shrink-0 accent-[#2E7D52]"
+              className="mt-0.5 h-4 w-4 shrink-0 accent-[var(--p2-primary)]"
             />
             <span className="portal-text-body text-text-primary">{checkboxLabel}</span>
           </label>
         ) : null}
 
-        {error ? <p className="portal-text-body text-red-700">{error}</p> : null}
+        {error ? <p className="portal-text-body text-p2-danger">{error}</p> : null}
 
         <PortalModalShell
           open={textOpen}
@@ -106,7 +108,7 @@ export function PartnerRahmenvertragAcceptBlock({
                 href={pdfUrl}
                 name="Partnerschafts-Rahmenvertrag"
                 kind="pdf"
-                className="btn-pill-outline portal-btn inline-flex"
+                className="inline-flex"
               >
                 PDF öffnen (inkl. Anlagen)
               </PortalDocOpenButton>
@@ -128,7 +130,7 @@ export function PartnerRahmenvertragAcceptBlock({
       </div>
 
       <div
-        className="max-h-[220px] overflow-y-auto rounded-xl border border-border-default bg-surface-card px-3 py-3 sm:max-h-[280px]"
+        className="max-h-[220px] overflow-y-auto rounded-sheet border border-border-default bg-surface-card px-3 py-3 sm:max-h-[280px]"
         tabIndex={0}
         aria-label={ariaLabel}
       >
@@ -140,7 +142,7 @@ export function PartnerRahmenvertragAcceptBlock({
           href={pdfUrl}
           name="Partnerschafts-Rahmenvertrag"
           kind="pdf"
-          className="btn-pill-outline portal-btn inline-flex"
+          className="inline-flex"
         >
           PDF öffnen (inkl. Anlagen)
         </PortalDocOpenButton>
@@ -149,22 +151,21 @@ export function PartnerRahmenvertragAcceptBlock({
       {showCheckbox ? (
         <label
           className={cn(
-            "flex cursor-pointer items-start gap-3 rounded-xl border border-border-light bg-muted/20 p-3",
+            "flex cursor-pointer items-start gap-3 rounded-sheet border border-border-light bg-muted/20 p-3",
             disabled && "pointer-events-none opacity-60"
           )}
         >
-          <input
-            type="checkbox"
+          <PortalCheckbox
             checked={akzeptiert}
             onChange={(e) => onAkzeptiertChange(e.target.checked)}
             disabled={disabled}
-            className="mt-0.5 h-4 w-4 shrink-0 accent-[#2E7D52]"
+            className="mt-0.5 h-4 w-4 shrink-0 accent-[var(--p2-primary)]"
           />
           <span className="portal-text-body text-text-primary">{checkboxLabel}</span>
         </label>
       ) : null}
 
-      {error ? <p className="portal-text-body text-red-700">{error}</p> : null}
+      {error ? <p className="portal-text-body text-p2-danger">{error}</p> : null}
     </div>
   );
 }

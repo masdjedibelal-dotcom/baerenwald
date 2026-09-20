@@ -80,7 +80,7 @@ export function PortalDocInlinePreview({ url, title, className }: Props) {
   return (
     <div
       className={cn(
-        "max-h-[min(72vh,820px)] overflow-auto rounded-xl border bg-[#eceeed]",
+        "max-h-[min(72vh,820px)] overflow-auto rounded-sheet border bg-[var(--p2-doc-bg)]",
         className
       )}
       style={{ borderColor: PORTAL_VAR.line }}

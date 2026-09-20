@@ -1,3 +1,4 @@
+import { logDbError } from '@/lib/errors/log-db-error'
 import { notifyHvPartnerBautagebuch } from "@/lib/org/notify-hv-bautagebuch";
 import { notifyHvMieterEvent } from "@/lib/org/notify-hv-mieter-event";
 import { MIETER_EMAIL_ENABLED } from "@/lib/melde/mieter-mail-policy";
@@ -12,24 +13,26 @@ export async function notifyVorOrtStart(input: {
   handwerkerId: string;
   leistungName?: string | null;
 }): Promise<void> {
-  const { data: auftrag } = await supabaseAdmin
+  const {data: auftrag, error: __dbErr410_1} = await supabaseAdmin
     .from("auftraege")
     .select("id, titel, lead_id")
     .eq("id", input.auftragId)
     .maybeSingle();
+  if (__dbErr410_1) logDbError('lib/partner/notify-vor-ort-start:auftraege', __dbErr410_1)
   if (!auftrag?.lead_id) return;
 
-  const { data: hw } = await supabaseAdmin
+  const {data: hw, error: __dbErr411_2} = await supabaseAdmin
     .from("handwerker")
     .select("name")
     .eq("id", input.handwerkerId)
     .maybeSingle();
-  const handwerkerName = String(hw?.name ?? "Handwerker").trim() || "Handwerker";
+  if (__dbErr411_2) logDbError('lib/partner/notify-vor-ort-start:handwerker', __dbErr411_2)
+  const handwerkerName = String(hw?.name ?? "Partner").trim() || "Partner";
   const auftragTitel = String(auftrag.titel ?? "Auftrag").trim() || "Auftrag";
   const leistung = input.leistungName?.trim() || "Leistung";
 
   // Mieter-STG: eigener Schritt „Handwerker vor Ort“
-  await supabaseAdmin
+  const { error: __dbErr412_3 } = await supabaseAdmin
     .from("leads")
     .update({
       vorgang_phase: "beauftragt",
@@ -37,7 +40,7 @@ export async function notifyVorOrtStart(input: {
       updated_at: new Date().toISOString(),
     })
     .eq("id", auftrag.lead_id);
-
+  if (__dbErr412_3) logDbError('lib/partner/notify-vor-ort-start:leads', __dbErr412_3)
   await notifyHvPartnerBautagebuch({
     auftragId: input.auftragId,
     handwerkerName,
@@ -49,7 +52,7 @@ export async function notifyVorOrtStart(input: {
     await notifyHvMieterEvent({
       leadId: String(auftrag.lead_id),
       typ: "vor_ort",
-      titel: "Handwerker vor Ort",
+      titel: "Partner vor Ort",
       body: `${handwerkerName} hat die Ankunft zu „${auftragTitel}“ bestätigt. Der Mieter sieht den Schritt auf dem Status-Link — bitte bei Bedarf weitergeben.`,
     });
   }

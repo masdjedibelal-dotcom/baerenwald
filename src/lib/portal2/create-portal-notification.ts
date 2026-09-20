@@ -1,3 +1,4 @@
+import { logDbError } from '@/lib/errors/log-db-error'
 import { supabaseAdmin } from "@/lib/supabase";
 import {
   formatPortalNotifTemplate,
@@ -61,6 +62,7 @@ export async function createPortalNotification(
     })
     .select("id")
     .single();
+  if (error) logDbError('lib/portal2/create-portal-notification:portal_notifications', error)
 
   if (error) return { ok: false, error: error.message };
 

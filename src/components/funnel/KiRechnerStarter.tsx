@@ -1,6 +1,6 @@
 "use client";
 
-import { BwIcon } from "@/components/ui/BwIcon";
+import { PortalIcon } from "@/components/portal/PortalIcon";
 import {
   LANDING_ICON_HERO_KI,
   LANDING_ICON_HERO_PREIS,
@@ -40,7 +40,7 @@ export function KiRechnerStarter({ selected, onSelect }: KiRechnerStarterProps) 
         onClick={() => onSelect("funnel")}
       >
         <span className="ki-rechner-starter-card-icon" aria-hidden>
-          <BwIcon name={LANDING_ICON_HERO_PREIS} size={32} />
+          <PortalIcon asset={LANDING_ICON_HERO_PREIS} size={32} />
         </span>
         <span className="ki-rechner-starter-card-title">Preisrahmen ermitteln</span>
         <span className="ki-rechner-starter-card-hint">
@@ -65,7 +65,7 @@ export function KiRechnerStarter({ selected, onSelect }: KiRechnerStarterProps) 
           BärenwaldGPT
         </span>
         <span className="ki-rechner-starter-card-icon ki-rechner-starter-card-icon--ki" aria-hidden>
-          <BwIcon name={LANDING_ICON_HERO_KI} size={32} />
+          <PortalIcon asset={LANDING_ICON_HERO_KI} size={32} />
         </span>
         <span className="ki-rechner-starter-card-title">Frag einfach los</span>
         <span className="ki-rechner-starter-card-hint">

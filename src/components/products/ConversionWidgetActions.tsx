@@ -1,8 +1,8 @@
 "use client";
 
-import Link from "next/link";
 import { useMemo } from "react";
 
+import { CTAButton } from "@/components/ui/CTAButton";
 import {
   formatProduktPreisRange,
   produktPreis,
@@ -23,12 +23,8 @@ export function ConversionWidgetActions({
 }: Props) {
   return (
     <div className="conversion-actions conversion-actions--bar">
-      <button type="button" className="conversion-btn-primary" onClick={onCheckout}>
-        {ctaPrimary}
-      </button>
-      <Link href={rechnerHref} className="conversion-btn-secondary">
-        {ctaSecondary}
-      </Link>
+      <CTAButton bare tone="conversion" type="button" onClick={onCheckout} label={ctaPrimary} />
+      <CTAButton bare tone="conversion-secondary" href={rechnerHref} label={ctaSecondary} />
     </div>
   );
 }
@@ -51,9 +47,7 @@ export function ConversionWidgetStickyBar({
     <div className="conversion-sticky-bar">
       <div className="conversion-sticky-inner">
         <span className="conversion-sticky-price">{preisLabel}</span>
-        <button type="button" className="conversion-sticky-cta" onClick={onCheckout}>
-          {label}
-        </button>
+        <CTAButton bare tone="conversion-sticky" type="button" onClick={onCheckout} label={label} />
       </div>
     </div>
   );

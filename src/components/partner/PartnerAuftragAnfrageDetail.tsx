@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 
+import { PortalSelect, PortalTextarea } from "@/components/shared/PortalFormControls";
 import {
   confirmPartnerAuftragZuweisung,
   declinePartnerAuftragZuweisung,
@@ -16,8 +17,8 @@ import {
   PartnerConfirmDialog,
   PartnerDetailError,
   PartnerDetailLayout,
-  PartnerDetailStickyActions,
 } from "@/components/partner/PartnerDetailUi";
+import { PortalDetailStickyActions } from "@/components/shared/PortalDetailUi";
 import { PortalDetailCard } from "@/components/shared/PortalDetailCard";
 import { PortalEntityDetailLayout } from "@/components/shared/PortalEntityDetailLayout";
 import {
@@ -47,6 +48,7 @@ import {
   partnerDetailOrtMetaLine,
   resolvePartnerAuftragKonditionZeilen,
 } from "@/lib/partner/partner-portal-display";
+import { TOAST } from '@/lib/portal-copy'
 
 export function PartnerAuftragAnfrageDetail({
   item,
@@ -67,6 +69,7 @@ export function PartnerAuftragAnfrageDetail({
   const [confirmReject, setConfirmReject] = useState(false);
   const [projektvertragBereit, setProjektvertragBereit] = useState(false);
   const [pflichtenGelesen, setPflichtenGelesen] = useState(false);
+  const [pflichtenHighlight, setPflichtenHighlight] = useState(false);
   const [grund, setGrund] = useState<string>(HANDWERKER_ABLEHNUNG_GRUND_VALUES[0]);
   const [notiz, setNotiz] = useState("");
   const [firmendatenFehlenOpen, setFirmendatenFehlenOpen] = useState(false);
@@ -108,7 +111,7 @@ export function PartnerAuftragAnfrageDetail({
         setConfirmAccept(false);
         if (!res.ok) {
           setError(res.error);
-          portalToastError("Annahme fehlgeschlagen", res.error);
+          portalToastError(TOAST.annahme_fehlgeschlagen, res.error);
           return;
         }
         partnerPortalToast.auftragAngenommen();
@@ -126,15 +129,14 @@ export function PartnerAuftragAnfrageDetail({
             return;
           }
           if (auto.status === "firmendaten_missing") {
-            portalToastError(
-              "Firmendaten unvollständig",
+            portalToastError(TOAST.firmendaten_unvollstaendig,
               auto.missing.join(", ") ||
                 "Bitte unter Firmendaten ergänzen — sonst kein Auto-Angebot."
             );
             return;
           }
           if (auto.status === "skipped" && auto.error) {
-            portalToastError("Angebot nicht automatisch erstellt", auto.error);
+            portalToastError(TOAST.angebot_nicht_automatisch_erstellt, auto.error);
           }
         });
       }
@@ -144,7 +146,7 @@ export function PartnerAuftragAnfrageDetail({
           ? e.message
           : "Annahme fehlgeschlagen. Bitte erneut versuchen.";
       setError(msg);
-      portalToastError("Annahme fehlgeschlagen", msg);
+      portalToastError(TOAST.annahme_fehlgeschlagen, msg);
     } finally {
       setLoading(false);
     }
@@ -189,28 +191,35 @@ export function PartnerAuftragAnfrageDetail({
   const kannBestaetigen =
     pflichtenGelesen && (!brauchtProjektvertrag || projektvertragBereit);
 
-  const acceptDisabledHint = !kannBestaetigen
-    ? !pflichtenGelesen
-      ? "Bitte die Pflichten bestätigen."
-      : brauchtProjektvertrag && !projektvertragBereit
-        ? "Bitte den Projektvertrag bestätigen."
-        : null
-    : null;
+  const acceptDisabledHint = null;
+
+  function focusPflichtenAck() {
+    const el = document.getElementById("partner-pflichten-ack");
+    el?.scrollIntoView({ behavior: "smooth", block: "center" });
+    setPflichtenHighlight(true);
+    window.setTimeout(() => setPflichtenHighlight(false), 2200);
+  }
 
   const actionFooter =
     bearbeitbar && !showReject ? (
-      <PartnerDetailStickyActions
+      <PortalDetailStickyActions
         primaryLabel="Annehmen"
-        onPrimary={() => setConfirmAccept(true)}
+        onPrimary={() => {
+          if (!kannBestaetigen) {
+            focusPflichtenAck();
+            return;
+          }
+          setConfirmAccept(true);
+        }}
         primaryLoading={loading}
-        primaryDisabled={!kannBestaetigen}
+        primaryDisabled={loading}
         disabledHint={acceptDisabledHint}
         secondaryLabel="Ablehnen"
         onSecondary={() => setShowReject(true)}
         secondaryDisabled={loading}
       />
     ) : bearbeitbar && showReject ? (
-      <PartnerDetailStickyActions
+      <PortalDetailStickyActions
         primaryLabel="Ablehnung senden"
         onPrimary={() => setConfirmReject(true)}
         primaryLoading={loading}
@@ -274,24 +283,24 @@ export function PartnerAuftragAnfrageDetail({
         <div className="space-y-3 border-t border-border-light pt-4">
           <label className="block space-y-1">
             <span className="portal-form-label">Ablehnungsgrund</span>
-            <select
+            <PortalSelect
               value={grund}
               onChange={(e) => setGrund(e.target.value)}
-              className="portal-input w-full rounded-xl border border-border-default bg-surface-card px-3 py-3"
+              className="portal-input w-full rounded-field border border-border-default bg-surface-card px-3 py-3"
             >
               {HANDWERKER_ABLEHNUNG_GRUND_VALUES.map((v) => (
                 <option key={v} value={v}>
                   {HANDWERKER_ABLEHNUNG_GRUND_LABELS[v]}
                 </option>
               ))}
-            </select>
+            </PortalSelect>
           </label>
-          <textarea
+          <PortalTextarea
             value={notiz}
             onChange={(e) => setNotiz(e.target.value)}
             placeholder="Optionale Notiz"
             rows={3}
-            className="portal-input w-full rounded-xl border border-border-default bg-surface-card px-3 py-3"
+            className="portal-input w-full rounded-field border border-border-default bg-surface-card px-3 py-3"
           />
         </div>
       ) : null}
@@ -309,6 +318,7 @@ export function PartnerAuftragAnfrageDetail({
           acknowledgment={{
             checked: pflichtenGelesen,
             onChange: setPflichtenGelesen,
+            highlight: pflichtenHighlight,
           }}
         />
       ) : null}
@@ -318,8 +328,8 @@ export function PartnerAuftragAnfrageDetail({
         title="Annehmen?"
         description={
           brauchtProjektvertrag
-            ? "Du nimmst Leistungen und Projektvertrag verbindlich an."
-            : "Du nimmst Leistungen und Konditionen verbindlich an."
+            ? "Sie nehmen Leistungen und Projektvertrag verbindlich an."
+            : "Sie nehmen Leistungen und Konditionen verbindlich an."
         }
         confirmLabel="Annehmen"
         loading={loading}

@@ -1,3 +1,4 @@
+import { logDbError } from '@/lib/errors/log-db-error'
 import { NextResponse } from "next/server";
 
 import { assertOrgObjekt } from "@/lib/org/assert-org-objekt";
@@ -24,6 +25,7 @@ export async function GET(req: Request) {
     .eq("kunde_objekt_id", objektId)
     .eq("status", "aktiv")
     .order("ablauf_datum", { ascending: true, nullsFirst: false });
+  if (error) logDbError('app/api/org/objekte/dokumente/route:objekt_dokumente', error)
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   return NextResponse.json({ dokumente: data ?? [] });

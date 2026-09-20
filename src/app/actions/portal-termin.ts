@@ -1,5 +1,6 @@
 "use server";
 
+import { logDbError } from '@/lib/errors/log-db-error'
 import { revalidatePath } from "next/cache";
 
 import { linkPortalKundeToAuthUser } from "@/lib/portal/link-portal-kunde";
@@ -48,11 +49,12 @@ export async function confirmPortalTerminSlot(
   const auth = await assertKundeAuftrag(id);
   if (!auth.ok) return auth;
 
-  const { data: slot } = await supabaseAdmin
+  const {data: slot, error: __dbErr124_1} = await supabaseAdmin
     .from("auftrag_terminslots")
     .select("id, auftrag_id, status")
     .eq("id", sid)
     .maybeSingle();
+  if (__dbErr124_1) logDbError('app/actions/portal-termin:auftrag_terminslots', __dbErr124_1)
 
   if (!slot || String(slot.auftrag_id) !== id) {
     return { ok: false, error: "Termin nicht gefunden." };
@@ -60,7 +62,7 @@ export async function confirmPortalTerminSlot(
 
   const now = new Date().toISOString();
 
-  await supabaseAdmin
+  const { error: __dbErr126_3 } = await supabaseAdmin
     .from("auftrag_terminslots")
     .update({
       status: "abgesagt",
@@ -69,11 +71,13 @@ export async function confirmPortalTerminSlot(
     })
     .eq("auftrag_id", id)
     .eq("status", "bestaetigt");
+  if (__dbErr126_3) logDbError('app/actions/portal-termin:auftrag_terminslots', __dbErr126_3)
 
   const { error } = await supabaseAdmin
     .from("auftrag_terminslots")
     .update({ status: "bestaetigt", bestaetigt_am: now })
     .eq("id", sid);
+  if (error) logDbError('app/actions/portal-termin:auftrag_terminslots', error)
 
   if (error) {
     console.error("[confirmPortalTerminSlot]", error.message);
@@ -96,11 +100,12 @@ export async function declinePortalTerminSlot(
   const auth = await assertKundeAuftrag(id);
   if (!auth.ok) return auth;
 
-  const { data: slot } = await supabaseAdmin
+  const {data: slot, error: __dbErr125_2} = await supabaseAdmin
     .from("auftrag_terminslots")
     .select("id, auftrag_id")
     .eq("id", sid)
     .maybeSingle();
+  if (__dbErr125_2) logDbError('app/actions/portal-termin:auftrag_terminslots', __dbErr125_2)
 
   if (!slot || String(slot.auftrag_id) !== id) {
     return { ok: false, error: "Termin nicht gefunden." };
@@ -112,6 +117,7 @@ export async function declinePortalTerminSlot(
     .from("auftrag_terminslots")
     .update({ status: "abgesagt", abgesagt_am: now, absage_grund: grund })
     .eq("id", sid);
+  if (error) logDbError('app/actions/portal-termin:auftrag_terminslots', error)
 
   if (error) {
     console.error("[declinePortalTerminSlot]", error.message);

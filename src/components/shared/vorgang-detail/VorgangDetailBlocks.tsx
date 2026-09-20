@@ -133,7 +133,7 @@ function PartnerUnifiedDetails({
         </div>
         {B.fotos && B.fotos.length > 0 ? (
           <div className="mt-3">
-            <p className="mb-2 text-[12px] font-semibold uppercase tracking-wide text-text-secondary">
+            <p className="mb-2 text-fs-caption font-semibold uppercase tracking-wide text-text-secondary">
               Fotos
             </p>
             <PortalPhotoGallery urls={B.fotos} />
@@ -284,7 +284,7 @@ export function VorgangDetailBlocks({
           B.fotos &&
           B.fotos.length > 0 ? (
             <div className="mt-3">
-              <p className="mb-2 text-[12px] font-semibold uppercase tracking-wide text-text-secondary">
+              <p className="mb-2 text-fs-caption font-semibold uppercase tracking-wide text-text-secondary">
                 Fotos
               </p>
               <PortalPhotoGallery urls={B.fotos} />
@@ -292,7 +292,7 @@ export function VorgangDetailBlocks({
           ) : null}
           {vm.detailsLeistungen && vm.leistungen.length > 0 ? (
             <div className="mt-3 border-t border-border-light pt-3">
-              <p className="mb-2 text-[12px] font-semibold uppercase tracking-wide text-text-secondary">
+              <p className="mb-2 text-fs-caption font-semibold uppercase tracking-wide text-text-secondary">
                 {vm.detailsLeistungen.title}
               </p>
               <VorgangLeistungenListe
@@ -342,7 +342,7 @@ export function VorgangDetailBlocks({
           </div>
           {sight.leistungen !== "hidden" && sight.leistungen === "vk" ? (
             <div className="mt-3">
-              <p className="mb-2 text-[12px] font-semibold uppercase tracking-wide text-text-secondary">
+              <p className="mb-2 text-fs-caption font-semibold uppercase tracking-wide text-text-secondary">
                 Leistungen
               </p>
               <VorgangLeistungenListe
@@ -371,7 +371,7 @@ export function VorgangDetailBlocks({
               <MetaRow label="Termin" value={C.terminLabel} />
             ) : null}
             {C.handwerkerName && !plainExec ? (
-              <MetaRow label="Handwerker" value={C.handwerkerName} />
+              <MetaRow label="Partner" value={C.handwerkerName} />
             ) : null}
             {(siteOnly || sight.ausfuehrung === "full") &&
             (C.kontaktVorOrtName || C.kontaktVorOrtTel) ? (
@@ -385,7 +385,7 @@ export function VorgangDetailBlocks({
           </div>
           {sight.leistungen === "ek" ? (
             <div className="mt-3">
-              <p className="mb-2 text-[12px] font-semibold uppercase tracking-wide text-text-secondary">
+              <p className="mb-2 text-fs-caption font-semibold uppercase tracking-wide text-text-secondary">
                 Ihre Leistungen
               </p>
               <VorgangLeistungenListe

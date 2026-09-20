@@ -1,0 +1,32 @@
+# Legacy Portal: direkte Status-Updates außerhalb write-* (P2-5).
+# Nur schrumpfen.
+src/app/actions/lead-befund.ts
+src/app/actions/partner-abnahmeprotokoll.ts
+src/app/actions/partner-angebote.ts
+src/app/actions/partner-auftrag-bestaetigen.ts
+src/app/actions/partner-auftrag-erledigt.ts
+src/app/actions/partner-compliance.ts
+src/app/actions/partner-fachdoku.ts
+src/app/actions/partner-hw-kalkulation.ts
+src/app/actions/partner-position-eintraege.ts
+src/app/actions/partner-rueckfrage-termine.ts
+src/app/actions/partner-vertrag.ts
+src/app/actions/portal-angebot.ts
+src/app/actions/portal-termin.ts
+src/app/api/account/delete/route.ts
+src/app/api/melden/terminslots/route.ts
+src/app/api/meldung/ergaenzen/route.ts
+src/app/api/org/abos/kuendigen/route.ts
+src/app/api/org/einheit-bewohner/route.ts
+src/app/api/org/hv-notifications/route.ts
+src/app/api/org/meldung-aktion/route.ts
+src/app/api/org/objekte/einheiten/route.ts
+src/app/api/org/objekte/kontakte/route.ts
+src/app/api/org/vorgang-storno/route.ts
+src/app/api/org/wiedervorlagen/route.ts
+src/app/api/portal/notifications/route.ts
+src/lib/lead/persist-lead.ts
+src/lib/org/finalize-org-self-created-lead.ts
+src/lib/org/persist-meldung-lead.ts
+src/lib/partner/ensure-partner-angebot-handwerker-for-auftrag.ts
+src/lib/portal2/portal-einladungen-server.ts

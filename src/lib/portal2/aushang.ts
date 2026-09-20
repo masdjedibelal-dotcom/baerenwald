@@ -73,9 +73,8 @@ export const AUSHANG_PHOTO_HINT =
 export const AUSHANG_TAGLINE = "IHR ZUHAUSE IN GUTEN HÄNDEN";
 export const AUSHANG_FOOTER_NO_PHONE = "LIEBER TELEFONISCH?";
 export const AUSHANG_FOOTER_CONTACT = "Wir sind erreichbar unter";
-/** Hinweis: Aushang im Namen der HV, Abwicklung über Partner. */
-export const AUSHANG_FOOTER_PARTNER =
-  "Ihre Meldung läuft über unseren Partner Bärenwald.";
+/** Hinweis White-Label: klein im Fuß, nie an Mieter-Mails. */
+export const AUSHANG_FOOTER_PARTNER = "Ein Service von Bärenwald";
 /** @deprecated — Aushang zeigt klickbare Impressum-/Datenschutz-URLs der HV. */
 export const AUSHANG_FOOTER_DATENSCHUTZ =
   "Datenschutz & Impressum: nach dem Scan im Formular";

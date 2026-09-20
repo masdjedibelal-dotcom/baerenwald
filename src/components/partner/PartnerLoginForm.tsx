@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useState } from "react";
 
+import { PortalInput } from "@/components/shared/PortalFormControls";
 import { assertPartnerEmailAllowed } from "@/app/actions/assert-partner-email-allowed";
 import { PortalAuthBusy } from "@/components/portal/auth/PortalAuthBusy";
 import { PortalSignupOtpStep } from "@/components/portal/PortalSignupOtpStep";
@@ -11,6 +12,7 @@ import { StagingAuthHint } from "@/components/portal/auth/StagingAuthHint";
 import { PartnerAuthFlowHint } from "@/components/partner/PartnerAuthFlowHint";
 import { PARTNER_AUTH_COPY } from "@/lib/partner/partner-auth-copy";
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
+import { PortalButton } from "@/components/portal/PortalButton";
 
 export function PartnerLoginForm() {
   const router = useRouter();
@@ -68,7 +70,7 @@ export function PartnerLoginForm() {
     return (
       <PortalAuthBusy
         title="Anmeldung läuft…"
-        body="Einen Moment — wir melden dich an und öffnen das Partner-Portal."
+        body="Einen Moment — wir melden Sie an und öffnen das Partner-Portal."
       />
     );
   }
@@ -111,24 +113,24 @@ export function PartnerLoginForm() {
       <StagingAuthHint variant="partner" />
       <PartnerAuthFlowHint variant="login" />
       {otpConfirmed ? (
-        <p className="rounded-lg bg-accent-light/60 px-3 py-3 portal-text-body text-accent">
-          E-Mail bestätigt. Du kannst dich jetzt anmelden.
+        <p className="rounded-card bg-accent-light/60 px-3 py-3 portal-text-body text-accent">
+          E-Mail bestätigt. Sie können sich jetzt anmelden.
         </p>
       ) : null}
       {hint === "password-updated" ? (
-        <p className="rounded-lg bg-accent-light/60 px-3 py-3 portal-text-body text-accent">
-          Dein Passwort wurde gespeichert. Du kannst dich jetzt anmelden.
+        <p className="rounded-card bg-accent-light/60 px-3 py-3 portal-text-body text-accent">
+          Ihr Passwort wurde gespeichert. Sie können sich jetzt anmelden.
         </p>
       ) : null}
       {hint === "crm_enter_invalid" ? (
-        <p className="rounded-lg bg-red-50 px-3 py-3 portal-text-body text-red-800">
+        <p className="rounded-card bg-p2-danger-soft px-3 py-3 portal-text-body text-p2-danger">
           Der CRM-Portal-Link ist ungültig oder abgelaufen. Bitte im CRM erneut
           „Login“ klicken. Lokal muss PARTNER_INTERNAL_API_SECRET in CRM und
           Portal identisch sein.
         </p>
       ) : null}
       {hint === "crm_enter_failed" ? (
-        <p className="rounded-lg bg-red-50 px-3 py-3 portal-text-body text-red-800">
+        <p className="rounded-card bg-p2-danger-soft px-3 py-3 portal-text-body text-p2-danger">
           Automatische Anmeldung aus dem CRM ist fehlgeschlagen
           {searchParams.get("msg")
             ? `: ${decodeURIComponent(searchParams.get("msg") || "")}`
@@ -137,23 +139,23 @@ export function PartnerLoginForm() {
         </p>
       ) : null}
       {hint === "session_mismatch" ? (
-        <p className="rounded-lg bg-amber-50 px-3 py-3 portal-text-body text-amber-900">
+        <p className="rounded-card bg-warning-bg px-3 py-3 portal-text-body text-warning-text">
           Die Sitzung passt nicht zu einem Partner-Konto. Bitte mit der im CRM
           hinterlegten Betriebs-E-Mail anmelden.
         </p>
       ) : null}
       {authError ? (
-        <p className="rounded-lg bg-red-50 px-3 py-2 portal-text-body text-red-800">
+        <p className="rounded-card bg-p2-danger-soft px-3 py-2 portal-text-body text-p2-danger">
           Anmeldung fehlgeschlagen. Bitte versuche es erneut.
         </p>
       ) : null}
       {error ? (
-        <p className="rounded-lg bg-red-50 px-3 py-2 portal-text-body text-red-800">{error}</p>
+        <p className="rounded-card bg-p2-danger-soft px-3 py-2 portal-text-body text-p2-danger">{error}</p>
       ) : null}
 
       <label className="block space-y-1.5">
         <span className="portal-form-label">E-Mail</span>
-        <input
+        <PortalInput
           type="email"
           autoComplete="email"
           required
@@ -165,7 +167,7 @@ export function PartnerLoginForm() {
 
       <label className="block space-y-1.5">
         <span className="portal-form-label">Passwort</span>
-        <input
+        <PortalInput
           type="password"
           autoComplete="current-password"
           required
@@ -176,9 +178,9 @@ export function PartnerLoginForm() {
         />
       </label>
 
-      <button type="submit" className="btn-pill-primary portal-btn w-full">
+      <PortalButton variant="primary" action={false} type="submit" className="btn-pill-primary w-full">
         Anmelden
-      </button>
+      </PortalButton>
 
       <p className="portal-text-meta text-center text-text-tertiary">
         <Link
@@ -198,7 +200,7 @@ export function PartnerLoginForm() {
           Jetzt registrieren
         </Link>
         <span className="block mt-1 portal-text-meta text-text-tertiary">
-          Nur möglich, nachdem Bärenwald deinen Betrieb angelegt hat.
+          Nur möglich, nachdem Bärenwald Ihren Betrieb angelegt hat.
         </span>
       </p>
     </form>

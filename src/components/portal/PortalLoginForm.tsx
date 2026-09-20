@@ -182,29 +182,29 @@ export function PortalLoginForm({
     <form onSubmit={(e) => void onSubmit(e)} className="space-y-0">
       <StagingAuthHint variant="kunde" />
       {otpConfirmed ? (
-        <p className="mb-4 rounded-lg bg-accent-light/60 px-3 py-3 text-sm text-accent">
+        <p className="mb-4 rounded-card bg-accent-light/60 px-3 py-3 text-sm text-accent">
           E-Mail bestätigt. Sie können sich jetzt anmelden.
         </p>
       ) : null}
       {hint === "signed_out" ? (
-        <p className="mb-4 rounded-lg bg-accent-light/60 px-3 py-3 text-sm text-accent">
+        <p className="mb-4 rounded-card bg-accent-light/60 px-3 py-3 text-sm text-accent">
           Sie sind abgemeldet.
         </p>
       ) : null}
       {hint === "password-updated" ? (
-        <p className="mb-4 rounded-lg bg-accent-light/60 px-3 py-3 text-sm text-accent">
+        <p className="mb-4 rounded-card bg-accent-light/60 px-3 py-3 text-sm text-accent">
           Ihr Passwort wurde gespeichert. Sie können sich jetzt anmelden.
         </p>
       ) : null}
       {hint === "crm_enter_invalid" ? (
-        <p className="mb-4 rounded-lg bg-red-50 px-3 py-3 text-sm text-red-800">
+        <p className="mb-4 rounded-card bg-p2-danger-soft px-3 py-3 text-sm text-p2-danger">
           Der CRM-Portal-Link ist ungültig oder abgelaufen. Bitte im CRM erneut
           „Login“ / „Portal öffnen“ klicken. Prüfen Sie lokal, dass
           PARTNER_INTERNAL_API_SECRET in CRM und Portal identisch gesetzt ist.
         </p>
       ) : null}
       {hint === "crm_enter_failed" ? (
-        <p className="mb-4 rounded-lg bg-red-50 px-3 py-3 text-sm text-red-800">
+        <p className="mb-4 rounded-card bg-p2-danger-soft px-3 py-3 text-sm text-p2-danger">
           Automatische Anmeldung aus dem CRM ist fehlgeschlagen
           {searchParams.get("msg")
             ? `: ${decodeURIComponent(searchParams.get("msg") || "")}`
@@ -213,18 +213,18 @@ export function PortalLoginForm({
         </p>
       ) : null}
       {hint === "session_mismatch" ? (
-        <p className="mb-4 rounded-lg bg-amber-50 px-3 py-3 text-sm text-amber-900">
+        <p className="mb-4 rounded-card bg-warning-bg px-3 py-3 text-sm text-warning-text">
           Die Sitzung passt nicht zu einem Kundenkonto. Bitte mit der im CRM
           hinterlegten E-Mail anmelden.
         </p>
       ) : null}
       {authError ? (
-        <p className="mb-4 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-800">
+        <p className="mb-4 rounded-card bg-p2-danger-soft px-3 py-2 text-sm text-p2-danger">
           Anmeldung fehlgeschlagen. Bitte versuchen Sie es erneut.
         </p>
       ) : null}
       {error ? (
-        <p className="mb-4 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-800">
+        <p className="mb-4 rounded-card bg-p2-danger-soft px-3 py-2 text-sm text-p2-danger">
           {error}
         </p>
       ) : null}
@@ -260,9 +260,9 @@ export function PortalLoginForm({
         {AUTH_LOGIN.submit}
       </AuthBtn>
 
-      <p className="mt-[22px] text-center text-[13px] text-text-secondary">
+      <p className="mt-[22px] text-center text-fs-meta text-text-secondary">
         {AUTH_LOGIN.neu}{" "}
-        <Link href={registerHref} className="font-semibold text-accent hover:underline">
+        <Link href={registerHref} className="inline-flex min-h-[44px] items-center font-semibold text-accent hover:underline">
           {AUTH_LOGIN.zugang}
         </Link>
       </p>

@@ -1,3 +1,4 @@
+import { logDbError } from '@/lib/errors/log-db-error'
 import { createHash } from "crypto";
 
 import { persistLead } from "@/lib/lead/persist-lead";
@@ -172,12 +173,14 @@ export async function persistMeldungLead(input: PersistMeldungLeadInput) {
       .select("notfall_direkt, akut_fall_ids")
       .eq("id", input.auftraggeber_kunde_id)
       .maybeSingle();
+    if (orgErr) logDbError('lib/org/persist-meldung-lead:kunden', orgErr)
     if (orgErr) {
-      const { data: orgLegacy } = await supabaseAdmin
+      const {data: orgLegacy, error: __dbErr353_1} = await supabaseAdmin
         .from("kunden")
         .select("notfall_direkt")
         .eq("id", input.auftraggeber_kunde_id)
         .maybeSingle();
+      if (__dbErr353_1) logDbError('lib/org/persist-meldung-lead:kunden', __dbErr353_1)
       notfallDirektAktiv = orgLegacy?.notfall_direkt !== false;
       akutFallIds = [];
     } else {
@@ -187,11 +190,12 @@ export async function persistMeldungLead(input: PersistMeldungLeadInput) {
       );
     }
     if (input.kunde_objekt_id) {
-      const { data: obj } = await supabaseAdmin
+      const {data: obj, error: __dbErr354_2} = await supabaseAdmin
         .from("kunden_objekte")
         .select("notfall_direkt")
         .eq("id", input.kunde_objekt_id)
         .maybeSingle();
+      if (__dbErr354_2) logDbError('lib/org/persist-meldung-lead:kunden_objekte', __dbErr354_2)
       if (obj?.notfall_direkt != null) {
         notfallDirektAktiv = Boolean(obj.notfall_direkt);
       }
@@ -286,11 +290,12 @@ export async function persistMeldungLead(input: PersistMeldungLeadInput) {
   if (input.kunde_objekt_id?.trim()) {
     try {
       const oid = input.kunde_objekt_id.trim();
-      const { data: obj } = await supabaseAdmin
+      const {data: obj, error: __dbErr355_3} = await supabaseAdmin
         .from("kunden_objekte")
         .select("id, strasse, hausnummer, plz, ort")
         .eq("id", oid)
         .maybeSingle();
+      if (__dbErr355_3) logDbError('lib/org/persist-meldung-lead:kunden_objekte', __dbErr355_3)
       if (obj) {
         const patchObj: Record<string, string> = {};
         if (!String(obj.strasse ?? "").trim() && input.strasse?.trim()) {
@@ -309,10 +314,11 @@ export async function persistMeldungLead(input: PersistMeldungLeadInput) {
           patchObj.ort = input.ort.trim();
         }
         if (Object.keys(patchObj).length) {
-          await supabaseAdmin
+          const { error: __dbErr360_8 } = await supabaseAdmin
             .from("kunden_objekte")
             .update(patchObj)
             .eq("id", oid);
+          if (__dbErr360_8) logDbError('lib/org/persist-meldung-lead:kunden_objekte', __dbErr360_8)
         }
       }
     } catch (e) {
@@ -332,7 +338,7 @@ export async function persistMeldungLead(input: PersistMeldungLeadInput) {
   let duplikatHinweis = false;
   if (input.einheit?.trim() && input.kunde_objekt_id) {
     const since = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
-    const { data: dup } = await supabaseAdmin
+    const {data: dup, error: __dbErr356_4} = await supabaseAdmin
       .from("leads")
       .select("id")
       .eq("kunde_objekt_id", input.kunde_objekt_id)
@@ -340,6 +346,7 @@ export async function persistMeldungLead(input: PersistMeldungLeadInput) {
       .gte("created_at", since)
       .limit(1)
       .maybeSingle();
+    if (__dbErr356_4) logDbError('lib/org/persist-meldung-lead:leads', __dbErr356_4)
     duplikatHinweis = Boolean(dup?.id);
   }
 
@@ -357,16 +364,17 @@ export async function persistMeldungLead(input: PersistMeldungLeadInput) {
     patch.kostentraeger_vorgeschlagen = true;
   }
 
-  await supabaseAdmin.from("leads").update(patch).eq("id", result.id);
-
+  const { error: __dbErr361_9 } = await supabaseAdmin.from("leads").update(patch).eq("id", result.id);
+  if (__dbErr361_9) logDbError('lib/org/persist-meldung-lead:leads', __dbErr361_9)
   // Auto an Hausmeister (Freigabe-Toggle), wenn nicht Akut-Bypass
   if (!bypassAktiv && input.kunde_objekt_id?.trim()) {
     try {
-      const { data: orgHm } = await supabaseAdmin
+      const {data: orgHm, error: __dbErr357_5} = await supabaseAdmin
         .from("kunden")
         .select("hm_auto_zuweisen")
         .eq("id", input.auftraggeber_kunde_id)
         .maybeSingle();
+      if (__dbErr357_5) logDbError('lib/org/persist-meldung-lead:kunden', __dbErr357_5)
       if (orgHm?.hm_auto_zuweisen === true) {
         const {
           assertHausmeisterDelegierbar,
@@ -436,20 +444,22 @@ export async function persistMeldungLead(input: PersistMeldungLeadInput) {
       const emailNorm = (input.email ?? "").trim().toLowerCase();
       let already = false;
       if (emailNorm) {
-        const { data: units } = await supabaseAdmin
+        const {data: units, error: __dbErr358_6} = await supabaseAdmin
           .from("objekt_einheiten")
           .select("id")
           .eq("kunde_objekt_id", input.kunde_objekt_id)
           .eq("aktiv", true);
+        if (__dbErr358_6) logDbError('lib/org/persist-meldung-lead:objekt_einheiten', __dbErr358_6)
         const unitIds = (units ?? []).map((u) => u.id as string);
         if (unitIds.length) {
-          const { data: existing } = await supabaseAdmin
+          const {data: existing, error: __dbErr359_7} = await supabaseAdmin
             .from("einheit_bewohner")
             .select("id, email")
             .eq("kunde_id", input.auftraggeber_kunde_id)
             .in("objekt_einheit_id", unitIds)
             .eq("aktiv", true)
             .is("anonymisiert_am", null);
+          if (__dbErr359_7) logDbError('lib/org/persist-meldung-lead:einheit_bewohner', __dbErr359_7)
           already = (existing ?? []).some(
             (b) => (b.email ?? "").trim().toLowerCase() === emailNorm
           );

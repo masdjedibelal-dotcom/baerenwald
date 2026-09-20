@@ -1,5 +1,10 @@
+import { MAIL_COLORS } from "@/lib/tokens/mail-colors";
 import { SITE_CONFIG } from "@/lib/config";
-import { MAIL_LOGO_URL_GREEN } from "@/lib/email/mail-logo-inline";
+import {
+  buildStandardMailHtml,
+  mailPrimaryButtonHtml,
+  mailTeamGrussHtml,
+} from "@/lib/email/mail-shell";
 import {
   buildBreakdownRows,
   buildGroessenRows,
@@ -16,6 +21,7 @@ import {
   labelZugaenglichkeit,
   normalizeFunnelDaten,
 } from "@/lib/lead-funnel-daten";
+import { buildSubject } from "@/lib/shared-domain/build-subject";
 
 function esc(s: string): string {
   return s
@@ -25,30 +31,15 @@ function esc(s: string): string {
     .replace(/"/g, "&quot;");
 }
 
-function escAttr(s: string): string {
-  return esc(s).replace(/'/g, "&#39;");
-}
-
 function cellHtml(value: string): string {
   return esc(value).replace(/\n/g, "<br/>");
 }
 
-/** Anzeige im Footer (ohne Bindestriche) — Link bleibt SITE_CONFIG.url */
-const FOOTER_DOMAIN_LABEL = "baerenwaldmuenchen.de";
-
 /** Betreff für Kunden-Mail „Preis per E-Mail“ (Resend subject, nicht HTML). */
-export const SAVE_PRICE_CUSTOMER_EMAIL_SUBJECT =
-  "Ihre Preisindikation — Bärenwald München";
-
-function phoneDisplayMunichLandline(): string {
-  const p = SITE_CONFIG.phone.replace(/\s/g, "");
-  if (p.length === 11 && p.startsWith("0")) {
-    return `${p.slice(0, 3)} ${p.slice(3, 7)} ${p.slice(7)}`;
-  }
-  return SITE_CONFIG.phone;
-}
-
-const LOGO_MARK_URL = MAIL_LOGO_URL_GREEN;
+export const SAVE_PRICE_CUSTOMER_EMAIL_SUBJECT = buildSubject({
+  ereignis: "Preisindikation",
+  objektFallback: "Rechner",
+});
 
 /**
  * Vorhaben für Kunden-Mails (z. B. „Bad erneuern“).
@@ -99,7 +90,7 @@ export type KundeBestaetigungMailData = {
 
 /**
  * Bestätigungsmail an Kund:innen (Lead / Website).
- * Allianz-artig: weiß, minimal, Logo oben links, kein Dark Mode.
+ * Standard-Hülle: Logo + Footer; Body ohne dunklen Header.
  */
 export function buildKundeBestaetigung(
   data: KundeBestaetigungMailData
@@ -112,202 +103,44 @@ export function buildKundeBestaetigung(
   const halloName = esc(vorname || nameRaw);
   const plzLine = data.plz?.trim();
   const plzSuffix = plzLine ? ` · ${esc(plzLine)}` : "";
-  const siteUrl = escAttr(SITE_CONFIG.url);
-  const siteLabel = esc(FOOTER_DOMAIN_LABEL);
-  const phoneTxt = esc(phoneDisplayMunichLandline());
 
   const kastenHtml = vorhaben
     ? `
-<tr>
-  <td style="padding:0 0 28px 0;">
-    <table width="100%"
-      cellpadding="0" cellspacing="0"
-      style="border:1px solid #E5E7EB;
-      border-radius:8px;">
-    <tr>
-      <td style="padding:20px 24px;">
-        <p style="margin:0 0 6px;
-          font-size:12px;
-          font-weight:700;
-          text-transform:uppercase;
-          letter-spacing:1px;
-          color:#9CA3AF;">
-          Ihre Anfrage${plzSuffix}
-        </p>
-        <p style="margin:0 0 4px;
-          font-size:18px;
-          font-weight:800;
-          color:#111827;">
-          ${esc(vorhaben)}
-        </p>
-        ${
-          data.preis?.trim()
-            ? `<p style="margin:4px 0 0;
-          font-size:15px;
-          font-weight:600;
-          color:#2E7D52;">
-          ${esc(data.preis.trim())}
-        </p>`
-            : ""
-        }
-      </td>
-    </tr>
-    </table>
-  </td>
-</tr>`
+    <div style="margin:0 0 28px;border:1px solid ${MAIL_COLORS.gray200};border-radius:8px;padding:20px 24px;">
+      <p style="margin:0 0 6px;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:${MAIL_COLORS.gray400};">
+        Ihre Anfrage${plzSuffix}
+      </p>
+      <p style="margin:0 0 4px;font-size:18px;font-weight:800;color:${MAIL_COLORS.c2};">
+        ${esc(vorhaben)}
+      </p>
+      ${
+        data.preis?.trim()
+          ? `<p style="margin:4px 0 0;font-size:15px;font-weight:600;color:${MAIL_COLORS.primary};">${esc(data.preis.trim())}</p>`
+          : ""
+      }
+    </div>`
     : "";
 
-  return `<!DOCTYPE html>
-<html lang="de"
-  xmlns="http://www.w3.org/1999/xhtml">
-<head>
-<meta charset="UTF-8"/>
-<meta name="viewport"
-  content="width=device-width,
-  initial-scale=1.0"/>
-<meta name="color-scheme"
-  content="light"/>
-<meta name="supported-color-schemes"
-  content="light"/>
-</head>
-<body style="margin:0;padding:0;
-  background:#ffffff;
-  font-family:Arial,Helvetica,
-  sans-serif;
-  -webkit-text-size-adjust:100%;
-  color-scheme:light;">
-
-<table width="100%"
-  cellpadding="0" cellspacing="0"
-  style="background:#ffffff;">
-<tr><td align="center"
-  style="padding:32px 16px;">
-
-<table width="100%"
-  style="max-width:560px;
-  background:#ffffff;"
-  cellpadding="0" cellspacing="0">
-
-<tr>
-  <td style="padding:0 0 24px 0;">
-    <table cellpadding="0"
-      cellspacing="0">
-    <tr>
-      <td style="padding-right:10px;
-        vertical-align:middle;">
-        <img
-          src="${escAttr(LOGO_MARK_URL)}"
-          height="32"
-          width="32"
-          alt=""
-          style="display:block;
-          border:0;
-          height:32px;
-          width:32px;"/>
-      </td>
-      <td style="vertical-align:middle;">
-        <span style="font-size:16px;
-          font-weight:700;
-          color:#1A3D2B;
-          letter-spacing:-0.3px;">
-          Bärenwald
-        </span>
-      </td>
-    </tr>
-    </table>
-  </td>
-</tr>
-
-<tr>
-  <td style="padding:0 0 32px 0;">
-    <hr style="border:none;
-      border-top:1px solid #E5E7EB;
-      margin:0;"/>
-  </td>
-</tr>
-
-<tr>
-  <td style="padding:0 0 12px 0;">
-    <h1 style="margin:0;
-      font-size:24px;
-      font-weight:800;
-      color:#111827;
-      line-height:1.3;">
-      Danke für Ihre Anfrage.
-    </h1>
-  </td>
-</tr>
-
-<tr>
-  <td style="padding:0 0 28px 0;">
-    <p style="margin:0;
-      font-size:15px;
-      color:#6B7280;
-      line-height:1.7;">
-      Guten Tag ${halloName},<br/><br/>
-      Ihre Anfrage ist bei uns
-      eingegangen. Wir schauen sie
-      uns an und melden uns
-      ${SITE_CONFIG.responseSlaWithin}
-      für einen
-      Vor-Ort-Termin.
-    </p>
-  </td>
-</tr>
-
-${kastenHtml}
-
-<tr>
-  <td style="padding:0 0 40px 0;">
-    <p style="margin:0;
-      font-size:15px;
-      color:#374151;
-      line-height:1.7;">
-      Bis bald.<br/><br/>
-      Mit freundlichen Grüßen<br/>
-      <strong>Ihr Bärenwald Team</strong>
-    </p>
-  </td>
-</tr>
-
-<tr>
-  <td style="padding:0 0 20px 0;">
-    <hr style="border:none;
-      border-top:1px solid #E5E7EB;
-      margin:0;"/>
-  </td>
-</tr>
-
-<tr>
-  <td>
-    <p style="margin:0;
-      font-size:12px;
-      color:#9CA3AF;
-      line-height:1.6;">
-      Bärenwald München ·
-      <a href="${siteUrl}"
-        style="color:#9CA3AF;
-        text-decoration:none;">
-        ${siteLabel}
-      </a>
-      · ${phoneTxt}
-    </p>
-    <p style="margin:8px 0 0;
-      font-size:11px;
-      color:#D1D5DB;">
-      Sie erhalten diese Mail, weil
-      Sie eine Anfrage über unsere
-      Webseite gestellt haben.
-    </p>
-  </td>
-</tr>
-
-</table>
-</td></tr>
-</table>
-
-</body>
-</html>`;
+  return buildStandardMailHtml({
+    preheader: "Danke für Ihre Anfrage.",
+    bodyHtml: `
+      <h1 style="margin:0 0 12px;font-size:24px;font-weight:800;color:${MAIL_COLORS.c2};line-height:1.3;">
+        Danke für Ihre Anfrage.
+      </h1>
+      <p style="margin:0 0 28px;font-size:15px;color:${MAIL_COLORS.muted};line-height:1.7;">
+        Guten Tag ${halloName},<br/><br/>
+        Ihre Anfrage ist bei uns eingegangen. Wir schauen sie uns an und melden uns
+        ${SITE_CONFIG.responseSlaWithin} für einen Vor-Ort-Termin.
+      </p>
+      ${kastenHtml}
+      <p style="margin:0;font-size:15px;color:${MAIL_COLORS.gray700};line-height:1.7;">
+        Bis bald.<br/><br/>
+        ${mailTeamGrussHtml("sie")}
+      </p>
+    `,
+    disclaimer:
+      "Sie erhalten diese Mail, weil Sie eine Anfrage über unsere Webseite gestellt haben.",
+  });
 }
 
 export type InternLeadMailData = {
@@ -333,7 +166,7 @@ export { buildInternNotificationSubject };
 
 function sectionHeader(title: string): string {
   return `<tr>
-  <td colspan="2" style="padding:12px 16px 4px;font-size:10px;font-weight:600;color:#9CA3AF;text-transform:uppercase;letter-spacing:0.1em;background:white;border-top:1px solid #F3F4F6;">
+  <td colspan="2" style="padding:12px 16px 4px;font-size:10px;font-weight:600;color:${MAIL_COLORS.gray400};text-transform:uppercase;letter-spacing:0.1em;background:white;border-top:1px solid ${MAIL_COLORS.c19};">
     ${esc(title)}
   </td>
 </tr>`;
@@ -341,10 +174,10 @@ function sectionHeader(title: string): string {
 
 function dataRow(label: string, value: string): string {
   return `<tr>
-  <td style="padding:8px 16px;font-size:13px;color:#6B7280;width:120px;vertical-align:top;white-space:nowrap;">
+  <td style="padding:8px 16px;font-size:13px;color:${MAIL_COLORS.muted};width:120px;vertical-align:top;white-space:nowrap;">
     ${esc(label)}
   </td>
-  <td style="padding:8px 16px;font-size:13px;color:#111;font-weight:500;vertical-align:top;">
+  <td style="padding:8px 16px;font-size:13px;color:${MAIL_COLORS.c1};font-weight:500;vertical-align:top;">
     ${cellHtml(value)}
   </td>
 </tr>`;
@@ -360,7 +193,7 @@ function priceBox(min: number, max: number): string {
   if (!text) return "";
   return `<tr>
   <td colspan="2" style="padding:8px 16px 12px;">
-    <div style="background:#EAF3DE;border-radius:6px;padding:10px 14px;font-size:14px;font-weight:600;color:#1A3D2B;">
+    <div style="background:${MAIL_COLORS.c16};border-radius:6px;padding:10px 14px;font-size:14px;font-weight:600;color:${MAIL_COLORS.primaryDk};">
       💶 Preisrahmen: ${esc(text)}
     </div>
   </td>
@@ -370,10 +203,10 @@ function priceBox(min: number, max: number): string {
 function freitextBox(text: string): string {
   return `<tr>
   <td colspan="2" style="padding:4px 0 12px;">
-    <p style="margin:0 16px 6px;font-size:10px;font-weight:600;color:#9CA3AF;text-transform:uppercase;letter-spacing:0.1em;">
+    <p style="margin:0 16px 6px;font-size:10px;font-weight:600;color:${MAIL_COLORS.gray400};text-transform:uppercase;letter-spacing:0.1em;">
       Nachricht vom Kunden
     </p>
-    <div style="background:#F9FAFB;border-radius:6px;padding:12px 14px;font-size:13px;color:#374151;line-height:1.6;border-left:3px solid #E5E7EB;margin:0 16px;">
+    <div style="background:${MAIL_COLORS.c22};border-radius:6px;padding:12px 14px;font-size:13px;color:${MAIL_COLORS.gray700};line-height:1.6;border-left:3px solid ${MAIL_COLORS.gray200};margin:0 16px;">
       ${cellHtml(text)}
     </div>
   </td>
@@ -381,7 +214,7 @@ function freitextBox(text: string): string {
 }
 
 /**
- * Interne Lead-Benachrichtigung — strukturierte Sektionen + CRM-Link.
+ * Interne Lead-Benachrichtigung — strukturierte Sektionen + optional ein CRM-CTA.
  */
 export function buildInternNotification(data: InternLeadMailData): string {
   const norm = normalizeFunnelDaten(data.funnel_daten, data.bereiche);
@@ -477,61 +310,29 @@ export function buildInternNotification(data: InternLeadMailData): string {
     optionalRow("Lead-ID", data.leadId),
   ].join("");
 
-  const buttonBlock =
+  const cta =
     data.dashboardUrl && data.dashboardUrl.trim().length > 0
-      ? `
-    <table cellpadding="0" cellspacing="0" style="margin:16px 16px 0;">
-    <tr>
-      <td style="background:#2E7D52;border-radius:6px;">
-        <a href="${escAttr(data.dashboardUrl.trim())}" style="display:inline-block;padding:12px 24px;color:#ffffff;font-size:14px;font-weight:700;text-decoration:none;">
-          Im CRM öffnen →
-        </a>
-      </td>
-    </tr>
-    </table>`
+      ? mailPrimaryButtonHtml("Im CRM öffnen →", data.dashboardUrl.trim())
       : "";
 
-  return `<!DOCTYPE html>
-<html lang="de">
-<head>
-<meta charset="UTF-8"/>
-<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
-</head>
-<body style="margin:0;padding:0;font-family:Arial,Helvetica,sans-serif;background:#f7f6f3;">
-
-<table width="100%" cellpadding="0" cellspacing="0" style="background:#f7f6f3;">
-<tr><td align="center" style="padding:24px 16px;">
-
-<table width="100%" style="max-width:560px;background:#ffffff;border-radius:8px;overflow:hidden;" cellpadding="0" cellspacing="0">
-
-<tr>
-  <td style="background:#1A3D2B;padding:16px 24px;">
-    <p style="margin:0;color:#ffffff;font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:1px;">
-      Bärenwald — Neue Anfrage
-    </p>
-  </td>
-</tr>
-
-<tr>
-  <td style="padding:8px 0 0;">
-    <table width="100%" cellpadding="0" cellspacing="0" style="font-size:14px;color:#1E1E1E;">
-      ${kontaktRows}
-      ${projektRows}
-      ${leistungenHtml}
-      ${preisHtml}
-      ${freitextHtml}
-      ${quelleRows}
-    </table>
-    ${buttonBlock}
-  </td>
-</tr>
-
-</table>
-</td></tr>
-</table>
-
-</body>
-</html>`;
+  return buildStandardMailHtml({
+    preheader: "Bärenwald — Neue Anfrage",
+    bodyHtml: `
+      <p style="margin:0 0 16px;font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:${MAIL_COLORS.c2};">
+        Bärenwald — Neue Anfrage
+      </p>
+      <table width="100%" cellpadding="0" cellspacing="0" style="font-size:14px;color:${MAIL_COLORS.c4};">
+        ${kontaktRows}
+        ${projektRows}
+        ${leistungenHtml}
+        ${preisHtml}
+        ${freitextHtml}
+        ${quelleRows}
+      </table>
+      ${cta}
+    `,
+    footerNote: "Bärenwald München · Interne Benachrichtigung",
+  });
 }
 
 export type SavePriceCustomerMailInput = {
@@ -556,197 +357,40 @@ export function buildSavePriceCustomerHtml(
       : null;
   const plzLine = data.plz?.trim();
   const plzSuffix = plzLine ? ` · ${esc(plzLine)}` : "";
-  const siteUrl = escAttr(SITE_CONFIG.url);
-  const siteLabel = esc(FOOTER_DOMAIN_LABEL);
-  const phoneTxt = esc(phoneDisplayMunichLandline());
 
   const kastenHtml = preis
     ? `
-<tr>
-  <td style="padding:0 0 28px 0;">
-    <table width="100%"
-      cellpadding="0" cellspacing="0"
-      style="border:1px solid #E5E7EB;
-      border-radius:8px;">
-    <tr>
-      <td style="padding:20px 24px;">
-        <p style="margin:0 0 6px;
-          font-size:12px;
-          font-weight:700;
-          text-transform:uppercase;
-          letter-spacing:1px;
-          color:#9CA3AF;">
-          ${esc(vorhaben)}${plzSuffix}
-        </p>
-        <p style="margin:0;
-          font-size:22px;
-          font-weight:800;
-          color:#2E7D52;">
-          ${esc(preis)}
-        </p>
-      </td>
-    </tr>
-    </table>
-  </td>
-</tr>`
+    <div style="margin:0 0 28px;border:1px solid ${MAIL_COLORS.gray200};border-radius:8px;padding:20px 24px;">
+      <p style="margin:0 0 6px;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:${MAIL_COLORS.gray400};">
+        ${esc(vorhaben)}${plzSuffix}
+      </p>
+      <p style="margin:0;font-size:22px;font-weight:800;color:${MAIL_COLORS.primary};">
+        ${esc(preis)}
+      </p>
+    </div>`
     : "";
 
-  return `<!DOCTYPE html>
-<html lang="de"
-  xmlns="http://www.w3.org/1999/xhtml">
-<head>
-<meta charset="UTF-8"/>
-<meta name="viewport"
-  content="width=device-width,
-  initial-scale=1.0"/>
-<meta name="color-scheme"
-  content="light"/>
-<meta name="supported-color-schemes"
-  content="light"/>
-</head>
-<body style="margin:0;padding:0;
-  background:#ffffff;
-  font-family:Arial,Helvetica,
-  sans-serif;
-  -webkit-text-size-adjust:100%;
-  color-scheme:light;">
-
-<table width="100%"
-  cellpadding="0" cellspacing="0"
-  style="background:#ffffff;">
-<tr><td align="center"
-  style="padding:32px 16px;">
-
-<table width="100%"
-  style="max-width:560px;
-  background:#ffffff;"
-  cellpadding="0" cellspacing="0">
-
-<tr>
-  <td style="padding:0 0 24px 0;">
-    <table cellpadding="0"
-      cellspacing="0">
-    <tr>
-      <td style="padding-right:10px;
-        vertical-align:middle;">
-        <img
-          src="${escAttr(LOGO_MARK_URL)}"
-          height="32"
-          width="32"
-          alt=""
-          style="display:block;
-          border:0;
-          height:32px;
-          width:32px;"/>
-      </td>
-      <td style="vertical-align:middle;">
-        <span style="font-size:16px;
-          font-weight:700;
-          color:#1A3D2B;
-          letter-spacing:-0.3px;">
-          Bärenwald
-        </span>
-      </td>
-    </tr>
-    </table>
-  </td>
-</tr>
-
-<tr>
-  <td style="padding:0 0 32px 0;">
-    <hr style="border:none;
-      border-top:1px solid #E5E7EB;
-      margin:0;"/>
-  </td>
-</tr>
-
-<tr>
-  <td style="padding:0 0 12px 0;">
-    <h1 style="margin:0;
-      font-size:24px;
-      font-weight:800;
-      color:#111827;
-      line-height:1.3;">
-      Ihre erste Einschätzung.
-    </h1>
-  </td>
-</tr>
-
-<tr>
-  <td style="padding:0 0 28px 0;">
-    <p style="margin:0;
-      font-size:15px;
-      color:#6B7280;
-      line-height:1.7;">
-      Auf Basis unserer Erfahrung
-      aus Münchner Projekten haben
-      wir eine erste Preisindikation
-      für Sie zusammengestellt.
-    </p>
-  </td>
-</tr>
-
-${kastenHtml}
-
-<tr>
-  <td style="padding:0 0 32px 0;">
-    <p style="margin:0;
-      font-size:15px;
-      color:#6B7280;
-      line-height:1.7;">
-      Das ist eine unverbindliche
-      Einschätzung — kein Angebot.
-      Nach einem kurzen Vor-Ort-Termin
-      nennen wir Ihnen einen
-      konkreten Preis.
-    </p>
-  </td>
-</tr>
-
-<tr>
-  <td style="padding:0 0 40px 0;">
-    <p style="margin:0;
-      font-size:15px;
-      color:#374151;
-      line-height:1.7;">
-      Wir melden uns bald.<br/><br/>
-      Mit freundlichen Grüßen<br/>
-      <strong>Ihr Bärenwald Team</strong>
-    </p>
-  </td>
-</tr>
-
-<tr>
-  <td style="padding:0 0 20px 0;">
-    <hr style="border:none;
-      border-top:1px solid #E5E7EB;
-      margin:0;"/>
-  </td>
-</tr>
-
-<tr>
-  <td>
-    <p style="margin:0;
-      font-size:12px;
-      color:#9CA3AF;
-      line-height:1.6;">
-      Bärenwald München ·
-      <a href="${siteUrl}"
-        style="color:#9CA3AF;
-        text-decoration:none;">
-        ${siteLabel}
-      </a>
-      · ${phoneTxt}
-    </p>
-  </td>
-</tr>
-
-</table>
-</td></tr>
-</table>
-
-</body>
-</html>`;
+  return buildStandardMailHtml({
+    preheader: "Ihre erste Einschätzung.",
+    bodyHtml: `
+      <h1 style="margin:0 0 12px;font-size:24px;font-weight:800;color:${MAIL_COLORS.c2};line-height:1.3;">
+        Ihre erste Einschätzung.
+      </h1>
+      <p style="margin:0 0 28px;font-size:15px;color:${MAIL_COLORS.muted};line-height:1.7;">
+        Auf Basis unserer Erfahrung aus Münchner Projekten haben wir eine erste
+        Preisindikation für Sie zusammengestellt.
+      </p>
+      ${kastenHtml}
+      <p style="margin:0 0 32px;font-size:15px;color:${MAIL_COLORS.muted};line-height:1.7;">
+        Das ist eine unverbindliche Einschätzung — kein Angebot. Nach einem kurzen
+        Vor-Ort-Termin nennen wir Ihnen einen konkreten Preis.
+      </p>
+      <p style="margin:0;font-size:15px;color:${MAIL_COLORS.gray700};line-height:1.7;">
+        Wir melden uns bald.<br/><br/>
+        ${mailTeamGrussHtml("sie")}
+      </p>
+    `,
+  });
 }
 
 export type SavePriceInternalMailInput = {
@@ -763,19 +407,19 @@ export function buildSavePriceInternalHtml(
 ): string {
   const preis = `${input.priceMin.toLocaleString("de-DE")} – ${input.priceMax.toLocaleString("de-DE")} €`;
   const vorhaben = formatVorhaben(input.situation, input.bereiche);
-  return `<!DOCTYPE html>
-<html lang="de"><head><meta charset="UTF-8"/></head>
-<body style="margin:0;padding:16px;font-family:Arial,Helvetica,sans-serif;background:#f7f6f3;">
-<table width="100%" style="max-width:520px;margin:0 auto;background:#fff;border-radius:8px;padding:20px;">
-<tr><td>
-  <p style="margin:0 0 12px;font-size:13px;font-weight:700;color:#1A3D2B;text-transform:uppercase;">Rechner · Preis per E-Mail</p>
-  <table style="width:100%;font-size:14px;">
-    <tr><td style="padding:6px 0;color:#6B7280;width:38%;">E-Mail</td><td style="padding:6px 0;">${esc(input.email)}</td></tr>
-    <tr><td style="padding:6px 0;color:#6B7280;">Vorhaben</td><td style="padding:6px 0;">${esc(vorhaben)}</td></tr>
-    <tr><td style="padding:6px 0;color:#6B7280;">PLZ</td><td style="padding:6px 0;">${esc(input.plz)}</td></tr>
-    <tr><td style="padding:6px 0;color:#6B7280;">Preisindikation</td><td style="padding:6px 0;font-weight:700;color:#2E7D52;">${esc(preis)}</td></tr>
-  </table>
-</td></tr>
-</table>
-</body></html>`;
+  return buildStandardMailHtml({
+    preheader: "Rechner · Preis per E-Mail",
+    bodyHtml: `
+      <p style="margin:0 0 12px;font-size:13px;font-weight:700;color:${MAIL_COLORS.c2};text-transform:uppercase;">
+        Rechner · Preis per E-Mail
+      </p>
+      <table style="width:100%;font-size:14px;" cellpadding="0" cellspacing="0">
+        <tr><td style="padding:6px 0;color:${MAIL_COLORS.muted};width:38%;">E-Mail</td><td style="padding:6px 0;">${esc(input.email)}</td></tr>
+        <tr><td style="padding:6px 0;color:${MAIL_COLORS.muted};">Vorhaben</td><td style="padding:6px 0;">${esc(vorhaben)}</td></tr>
+        <tr><td style="padding:6px 0;color:${MAIL_COLORS.muted};">PLZ</td><td style="padding:6px 0;">${esc(input.plz)}</td></tr>
+        <tr><td style="padding:6px 0;color:${MAIL_COLORS.muted};">Preisindikation</td><td style="padding:6px 0;font-weight:700;color:${MAIL_COLORS.primary};">${esc(preis)}</td></tr>
+      </table>
+    `,
+    footerNote: "Bärenwald München · Interne Benachrichtigung",
+  });
 }

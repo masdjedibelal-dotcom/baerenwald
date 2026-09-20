@@ -1,3 +1,4 @@
+import { logDbError } from '@/lib/errors/log-db-error'
 import { NextResponse } from "next/server";
 
 import {
@@ -102,12 +103,13 @@ export async function POST(req: Request) {
   }
 
   if (objektId) {
-    const { data: obj } = await supabaseAdmin
+    const {data: obj, error: __dbErr178_1} = await supabaseAdmin
       .from("kunden_objekte")
       .select("id, titel")
       .eq("id", objektId)
       .eq("kunde_id", session.kunde.id)
       .maybeSingle();
+    if (__dbErr178_1) logDbError('app/api/org/hausmeister/route:kunden_objekte', __dbErr178_1)
     if (!obj?.id) {
       return NextResponse.json({ error: "Objekt nicht gefunden." }, { status: 404 });
     }

@@ -1,3 +1,4 @@
+import { PORTAL_STATUS_COLORS } from "@/lib/tokens/portal-status-colors";
 /**
  * Portal 2.0 Status-Modell — Mock `STATUS` + `FLOW`
  * Quelle: Baerenwald Portale (5).html
@@ -32,56 +33,56 @@ export const PORTAL_STATUS: Record<PortalMockStatusId, PortalMockStatusMeta> = {
     id: "gemeldet",
     label: "Neu",
     /** Offen/Eingang — Orange, damit nicht wie Angebot/Auftrag (Blau) wirkt. */
-    color: "#C2410C",
-    bg: "#FFF7ED",
+    color: PORTAL_STATUS_COLORS.gemeldet.color,
+    bg: PORTAL_STATUS_COLORS.gemeldet.bg,
   },
   freigegeben: {
     id: "freigegeben",
     label: "Freigegeben",
-    color: "#1F4FA8",
-    bg: "#E4ECF7",
+    color: PORTAL_STATUS_COLORS.freigegeben.color,
+    bg: PORTAL_STATUS_COLORS.freigegeben.bg,
   },
   angefragt: {
     id: "angefragt",
     label: "Angebot",
-    color: "#8A5A06",
-    bg: "#FBF1D6",
+    color: PORTAL_STATUS_COLORS.angefragt.color,
+    bg: PORTAL_STATUS_COLORS.angefragt.bg,
   },
   angebot: {
     id: "angebot",
     label: "Angebot",
-    color: "#8A5A06",
-    bg: "#FBF1D6",
+    color: PORTAL_STATUS_COLORS.angebot.color,
+    bg: PORTAL_STATUS_COLORS.angebot.bg,
   },
   auftrag: {
     id: "auftrag",
     label: "Auftrag",
-    color: "#1F4FA8",
-    bg: "#E4ECF7",
+    color: PORTAL_STATUS_COLORS.auftrag.color,
+    bg: PORTAL_STATUS_COLORS.auftrag.bg,
   },
   abschluss: {
     id: "abschluss",
     label: "Erledigt",
-    color: "#1F6A3F",
-    bg: "#DDEEDF",
+    color: PORTAL_STATUS_COLORS.abschluss.color,
+    bg: PORTAL_STATUS_COLORS.abschluss.bg,
   },
   rechnung: {
     id: "rechnung",
     label: "Rechnung",
-    color: "#8A5A06",
-    bg: "#FBF1D6",
+    color: PORTAL_STATUS_COLORS.rechnung.color,
+    bg: PORTAL_STATUS_COLORS.rechnung.bg,
   },
   bezahlt: {
     id: "bezahlt",
     label: "Abgeschlossen",
-    color: "#6B7269",
-    bg: "#EAEDEC",
+    color: PORTAL_STATUS_COLORS.bezahlt.color,
+    bg: PORTAL_STATUS_COLORS.bezahlt.bg,
   },
   abgelehnt: {
     id: "abgelehnt",
     label: "Abgelehnt",
-    color: "#B91C1C",
-    bg: "#FEE2E2",
+    color: PORTAL_STATUS_COLORS.abgelehnt.color,
+    bg: PORTAL_STATUS_COLORS.abgelehnt.bg,
   },
 };
 
@@ -266,9 +267,9 @@ export const MIETER_STG = [
   },
   {
     id: "vor_ort",
-    title_de: "Handwerker vor Ort",
+    title_de: "Partner vor Ort",
     title_en: "Craftsperson on site",
-    subtitle_de: "Der Handwerker ist vor Ort und arbeitet am Schaden.",
+    subtitle_de: "Der Partner ist vor Ort und arbeitet am Schaden.",
     subtitle_en: "The craftsperson is on site and working on the issue.",
   },
   {

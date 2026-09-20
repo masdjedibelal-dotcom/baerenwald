@@ -6,7 +6,7 @@ import { publicSiteOrigin } from "@/lib/staging";
 const accentFromEnv =
   typeof process !== "undefined" && process.env.NEXT_PUBLIC_ACCENT_COLOR
     ? process.env.NEXT_PUBLIC_ACCENT_COLOR
-    : "#2E7D52";
+    : "var(--p2-primary)";
 
 const siteUrl = publicSiteOrigin();
 
@@ -16,7 +16,7 @@ export const SITE_CONFIG = {
   accentColor: accentFromEnv,
   /** Kanonische Site-URL für Schema & Open Graph */
   url: siteUrl,
-  /** Social Preview — grüner Hintergrund (#2E7D52), weißes Logo-Mark */
+  /** Social Preview — grüner Hintergrund (var(--p2-primary)), weißes Logo-Mark */
   ogImagePath: "/og-image.png",
   ogImageVersion: "20260602",
   /** Öffentliche Erreichbarkeit (UI, Header, Funnel, CTAs) — Festnetz */
@@ -45,7 +45,7 @@ export const SITE_CONFIG = {
     "innerhalb von 24–48 Stunden (Mo–Sa; an Sonntagen am folgenden Werktag)",
 } as const;
 
-const ogImageAlt = "Bärenwald München — Handwerker aus einer Hand";
+const ogImageAlt = "Bärenwald München — Partner aus einer Hand";
 
 /** Open Graph / Twitter — einheitlich für alle Seiten */
 export const OG_IMAGE = {

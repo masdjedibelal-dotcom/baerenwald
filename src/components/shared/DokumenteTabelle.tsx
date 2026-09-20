@@ -14,6 +14,7 @@ import {
   triggerPortalDocDownload,
 } from "@/lib/portal2/doc-viewer";
 import { cn } from "@/lib/utils";
+import { PortalButton } from "@/components/portal/PortalButton";
 
 export type DokumentZeile = {
   id: string;
@@ -58,7 +59,7 @@ function UploadFooter({ upload }: { upload: DokumenteTabelleUpload }) {
   if (!(upload.selectedLabel || upload.error || upload.onSubmit)) return null;
   return (
     <div
-      className="space-y-2 rounded-xl border border-border-default bg-white px-3.5 py-3"
+      className="space-y-2 rounded-sheet border border-border-default bg-white px-3.5 py-3"
       onClick={(e) => e.stopPropagation()}
       onKeyDown={(e) => e.stopPropagation()}
     >
@@ -68,21 +69,21 @@ function UploadFooter({ upload }: { upload: DokumenteTabelleUpload }) {
         </p>
       ) : null}
       {upload.error ? (
-        <p className="portal-text-body text-red-700" role="alert">
+        <p className="portal-text-body text-p2-danger" role="alert">
           {upload.error}
         </p>
       ) : null}
       {upload.selectedLabel && upload.onSubmit ? (
-        <button
-          type="button"
+        <PortalButton variant="secondary"
+          action={false}
           disabled={upload.disabled || upload.submitting}
           onClick={() => upload.onSubmit?.()}
-          className="btn-pill-outline portal-btn"
+          className="btn-pill-outline"
         >
           {upload.submitting
             ? "Wird hochgeladen…"
             : upload.submitLabel ?? "Hochladen"}
-        </button>
+        </PortalButton>
       ) : null}
     </div>
   );
@@ -183,7 +184,7 @@ export function DokumenteTabelle({
 
       {dokumente.length === 0 ? (
         uploadZone ?? (
-          <p className="portal-text-body rounded-xl border border-dashed border-border-light bg-white px-4 py-5 text-center text-text-secondary">
+          <p className="portal-text-body rounded-sheet border border-dashed border-border-light bg-white px-4 py-5 text-center text-text-secondary">
             {emptyText}
           </p>
         )

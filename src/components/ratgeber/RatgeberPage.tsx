@@ -2,6 +2,7 @@ import Link from "next/link";
 
 import { SemanticFaq } from "@/components/common/SemanticFaq";
 import { StadtteilLinksSection } from "@/components/handwerker/StadtteilLinksSection";
+import { CTAButton } from "@/components/ui/CTAButton";
 import { SITE_CONFIG } from "@/lib/config";
 import {
   getStadtteilLinks,
@@ -135,25 +136,19 @@ export function RatgeberPage({ data }: RatgeberPageProps) {
             style={{
               display: "flex",
               flexWrap: "wrap",
-              gap: "12px",
+              gap: 12,
               paddingTop: 0,
             }}
           >
             {data.finalCtaPhoneFirst ? (
-              <Link href={telHref} className="page-hero-btn-primary">
-                {phoneLabel}
-              </Link>
+              <CTAButton bare tone="hero-page" href={telHref} label={phoneLabel} />
             ) : null}
-            <Link
+            <CTAButton
+              bare
+              tone={data.finalCtaPhoneFirst ? "hero-secondary" : "hero-page"}
               href={kontaktHref}
-              className={
-                data.finalCtaPhoneFirst
-                  ? "page-hero-btn-secondary"
-                  : "page-hero-btn-primary"
-              }
-            >
-              {rechnerCtaLabel}
-            </Link>
+              label={rechnerCtaLabel}
+            />
           </div>
         </div>
       ) : null}
@@ -259,10 +254,10 @@ export function RatgeberPage({ data }: RatgeberPageProps) {
                         <div>{m.name}</div>
                         <div
                           style={{
-                            fontSize: "12px",
+                            fontSize: 12,
                             fontWeight: 400,
                             color: "var(--fl-text-3)",
-                            marginTop: "2px",
+                            marginTop: 2,
                           }}
                         >
                           {m.beschreibung}
@@ -305,13 +300,13 @@ export function RatgeberPage({ data }: RatgeberPageProps) {
                   Vor-Ort-Termin nennen wir einen festen Preis.
                 </p>
               </div>
-              <Link
+              <CTAButton
+                bare
+                tone="hero-page"
                 href={kontaktHref}
-                className="page-hero-btn-primary"
-                style={{ display: "inline-block", marginTop: "20px" }}
-              >
-                {rechnerCtaLabel}
-              </Link>
+                label={rechnerCtaLabel}
+                className="mt-5 inline-block"
+              />
             </div>
           </section>
           <div className="article-divider" aria-hidden />
@@ -322,7 +317,7 @@ export function RatgeberPage({ data }: RatgeberPageProps) {
         <>
           <section
             className="article-section--sm content-section content-section--muted fade-up d2"
-            style={{ padding: "48px 2rem" }}
+            style={{ padding: "3rem 2rem" }}
           >
             <div className="article-section-inner">
               <span className="chapter-label">Zeitaufwand</span>
@@ -362,19 +357,19 @@ export function RatgeberPage({ data }: RatgeberPageProps) {
             <div>
               <div
                 style={{
-                  fontSize: "13px",
+                  fontSize: 13,
                   fontWeight: 700,
                   color: "var(--fl-accent-dark)",
-                  marginBottom: "6px",
+                  marginBottom: 6,
                 }}
               >
                 Was wir koordinieren
               </div>
               <p
                 style={{
-                  fontSize: "15px",
+                  fontSize: 15,
                   color: "var(--fl-text-2)",
-                  margin: "0 0 12px",
+                  margin: "0 0 0.75rem",
                   lineHeight: 1.65,
                 }}
               >
@@ -384,14 +379,14 @@ export function RatgeberPage({ data }: RatgeberPageProps) {
                 style={{
                   display: "flex",
                   flexDirection: "column",
-                  gap: "4px",
+                  gap: 4,
                 }}
               >
                 {data.koordinationUsps.map((u) => (
                   <span
                     key={u}
                     style={{
-                      fontSize: "13px",
+                      fontSize: 13,
                       color: "var(--fl-accent)",
                       fontWeight: 600,
                     }}
@@ -415,7 +410,7 @@ export function RatgeberPage({ data }: RatgeberPageProps) {
       >
         <div className="article-section-inner">
           <span className="chapter-label">Häufige Fragen</span>
-          <h2 className="section-h2" style={{ marginBottom: "28px" }}>
+          <h2 className="section-h2" style={{ marginBottom: 28 }}>
             {sectionH2(data, "faq")}
           </h2>
 
@@ -455,7 +450,7 @@ export function RatgeberPage({ data }: RatgeberPageProps) {
                   return (
                     <p key={m}>
                       {icon ? (
-                        <span style={{ marginRight: "8px" }} aria-hidden>
+                        <span style={{ marginRight: 8 }} aria-hidden>
                           {icon}
                         </span>
                       ) : null}
@@ -480,8 +475,8 @@ export function RatgeberPage({ data }: RatgeberPageProps) {
                 style={{
                   display: "flex",
                   flexDirection: "column",
-                  gap: "10px",
-                  marginTop: "16px",
+                  gap: 10,
+                  marginTop: 16,
                 }}
               >
                 {data.relatedLinks.map((link) => (
@@ -507,24 +502,16 @@ export function RatgeberPage({ data }: RatgeberPageProps) {
           <p className="final-cta-sub">
             Melde dich direkt bei uns — wir besprechen die beste Lösung.
           </p>
-          <div className="final-cta-btns">
+          <div className="final-cta-actions">
             {data.finalCtaPhoneFirst ? (
               <>
-                <Link href={telHref} className="final-cta-btn-primary">
-                  {phoneLabel}
-                </Link>
-                <Link href={kontaktHref} className="final-cta-btn-ghost">
-                  {rechnerCtaLabel}
-                </Link>
+                <CTAButton bare tone="final" href={telHref} label={phoneLabel} />
+                <CTAButton bare tone="final-ghost" href={kontaktHref} label={rechnerCtaLabel} />
               </>
             ) : (
               <>
-                <Link href={kontaktHref} className="final-cta-btn-primary">
-                  {rechnerCtaLabel}
-                </Link>
-                <Link href={telHref} className="final-cta-btn-ghost">
-                  Direkt anrufen
-                </Link>
+                <CTAButton bare tone="final" href={kontaktHref} label={rechnerCtaLabel} />
+                <CTAButton bare tone="final-ghost" href={telHref} label="Direkt anrufen" />
               </>
             )}
           </div>

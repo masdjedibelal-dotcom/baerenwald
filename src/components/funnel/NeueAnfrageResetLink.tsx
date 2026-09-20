@@ -1,9 +1,10 @@
 "use client";
+import { MockIconSvg } from "@/components/shared/mock-icon-svgs";
 
 /** Kompaktes Aktualisieren-Symbol (z. B. „Neue Anfrage“ / Footer „Weiter“ auf Ergebnis). */
 export function RefreshIcon18({ className }: { className?: string }) {
   return (
-    <svg
+    <MockIconSvg
       className={className}
       width="18"
       height="18"
@@ -19,7 +20,7 @@ export function RefreshIcon18({ className }: { className?: string }) {
         strokeLinecap="round"
         strokeLinejoin="round"
       />
-    </svg>
+    </MockIconSvg>
   );
 }
 

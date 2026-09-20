@@ -1,3 +1,4 @@
+import { logDbError } from '@/lib/errors/log-db-error'
 import {
   createAnthropicClient,
   getClaudeApiKey,
@@ -108,6 +109,7 @@ export async function generateLeadVertriebsAnalyse(
     .from("leads")
     .update(patch)
     .eq("id", opts.leadId);
+  if (leadErr) logDbError('lib/lead/generate-ki-zusammenfassung:leads', leadErr)
 
   if (leadErr) {
     console.error("[generateLeadVertriebsAnalyse] leads update:", leadErr);
@@ -122,6 +124,7 @@ export async function generateLeadVertriebsAnalyse(
         lead_erstellt: true,
       })
       .eq("session_id", opts.sessionId);
+    if (logErr) logDbError('lib/lead/generate-ki-zusammenfassung:ki_anfragen_log', logErr)
 
     if (logErr) {
       console.error("[generateLeadVertriebsAnalyse] ki_anfragen_log:", logErr);

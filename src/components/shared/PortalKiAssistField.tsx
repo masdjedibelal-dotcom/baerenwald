@@ -1,5 +1,6 @@
 "use client";
 
+import { PortalIcon } from "@/components/portal/PortalIcon";
 import {
   useCallback,
   useEffect,
@@ -8,8 +9,8 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import { Loader2, Sparkles } from "lucide-react";
 
+import { PortalTextarea } from "@/components/shared/PortalFormControls";
 import { GptChatVoiceRecorder } from "@/components/gpt/GptChatVoiceRecorder";
 import { renderChatMarkdown } from "@/components/gpt/gpt-chat-markdown";
 import "@/components/gpt/gpt-viz.css";
@@ -22,6 +23,7 @@ import {
   type PortalKiAssistScope,
 } from "@/lib/portal/ki-assist";
 import { cn } from "@/lib/utils";
+import { PortalButton } from "@/components/portal/PortalButton";
 
 type ChatMsg = PortalKiAssistMessage & { id: string };
 
@@ -49,22 +51,7 @@ function newId() {
 
 function SendMessageIcon() {
   return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden>
-      <path
-        d="m22 2-7 20-4-9-9-4 20-7Z"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-      <path
-        d="M22 2 11 13"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
+    <PortalIcon n="send" ctx="default" size={18} />
   );
 }
 
@@ -207,25 +194,26 @@ export function PortalKiAssistField({
     <div className={cn("space-y-1.5", className)} data-ki-assist-field={fieldId}>
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div className="flex min-w-0 items-center gap-1.5">
-          <span className="text-[14px] font-bold text-text-primary">
+          <span className="text-fs-body font-bold text-text-primary">
             {label}
             {required ? (
-              <span className="text-red-600" aria-hidden>
+              <span className="text-p2-danger" aria-hidden>
                 {" "}
                 *
               </span>
             ) : null}
           </span>
-          <button
+          <PortalButton
+            variant="primary"
             type="button"
             disabled={disabled}
             onClick={openChat}
             title="KI-Assistent öffnen"
             aria-label="KI-Assistent öffnen"
-            className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-border-default bg-white text-[var(--org-primary,var(--p2-primary,#2e7d52))] transition-colors hover:bg-[var(--org-primary-soft,var(--p2-primary-soft,#e7f1e9))] disabled:opacity-50"
+            className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-pill border border-border-default bg-white text-[var(--org-primary,var(--p2-primary))] transition-colors hover:bg-[var(--org-primary-soft,var(--p2-primary-soft))] disabled:opacity-50"
           >
-            <Sparkles className="h-3.5 w-3.5" aria-hidden />
-          </button>
+            <PortalIcon n="sparkles" ctx="default" className="h-3.5 w-3.5" aria-hidden />
+          </PortalButton>
         </div>
         {labelExtra}
       </div>
@@ -270,7 +258,8 @@ export function PortalKiAssistField({
               <div className="portal-ki-gpt-empty">
                 <div className="portal-ki-gpt-chips">
                   {cfg.quickPrompts.map((q) => (
-                    <button
+                    <PortalButton
+                      variant="ghost"
                       key={q.label}
                       type="button"
                       disabled={pending}
@@ -278,7 +267,7 @@ export function PortalKiAssistField({
                       className="portal-ki-gpt-chip"
                     >
                       {q.label}
-                    </button>
+                    </PortalButton>
                   ))}
                 </div>
               </div>
@@ -289,7 +278,7 @@ export function PortalKiAssistField({
                 className="portal-ki-gpt-bubble portal-ki-gpt-bubble--assistant portal-ki-gpt-typing"
                 role="status"
               >
-                <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden />
+                <PortalIcon n="loader" ctx="default" className="h-3.5 w-3.5 animate-spin" aria-hidden />
                 Schreibt …
               </div>
             ) : null}
@@ -300,14 +289,14 @@ export function PortalKiAssistField({
             <div className="portal-ki-gpt-draft">
               <p className="portal-ki-gpt-draft-label">Vorschlag zum Übernehmen</p>
               <div className="portal-ki-gpt-draft-text">{renderChatMarkdown(draftText)}</div>
-              <button
-                type="button"
+              <PortalButton variant="secondary"
+                action={false}
                 disabled={pending}
                 onClick={() => applyDraft(draftText)}
-                className="btn-pill-filled portal-btn w-full sm:w-auto"
+                className="btn-pill-filled w-full sm:w-auto"
               >
                 Übernehmen
-              </button>
+              </PortalButton>
             </div>
           ) : null}
 
@@ -325,7 +314,7 @@ export function PortalKiAssistField({
               )}
             >
               {!voiceActive ? (
-                <textarea
+                <PortalTextarea
                   ref={inputRef}
                   rows={1}
                   enterKeyHint="send"
@@ -366,7 +355,8 @@ export function PortalKiAssistField({
               </div>
 
               {!voiceActive ? (
-                <button
+                <PortalButton
+                  variant="ghost"
                   type="button"
                   disabled={pending || !input.trim()}
                   onClick={() => void send()}
@@ -374,7 +364,7 @@ export function PortalKiAssistField({
                   aria-label="Senden"
                 >
                   <SendMessageIcon />
-                </button>
+                </PortalButton>
               ) : null}
             </div>
           </div>

@@ -1,6 +1,6 @@
 "use client";
 
-import { Loader2, Mic, Square } from "lucide-react";
+import { SiteIcon } from "@/components/ui/SiteIcon";
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import { cn } from "@/lib/utils";
@@ -311,9 +311,9 @@ export function GptChatVoiceRecorder({
             aria-label="Aufnahme beenden"
           >
             {phase === "processing" ? (
-              <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
+              <SiteIcon n="loader" ctx="default" className="h-4 w-4 animate-spin" aria-hidden />
             ) : (
-              <Square className="h-3.5 w-3.5 fill-current" aria-hidden />
+              <SiteIcon n="square" ctx="default" className="h-3.5 w-3.5 fill-current" aria-hidden />
             )}
           </button>
           <div className="gpt-chat-voice-wave" aria-hidden>
@@ -357,7 +357,7 @@ export function GptChatVoiceRecorder({
       aria-label="Sprachnotiz aufnehmen"
       title="Sprachnotiz (max. 60 Sekunden)"
     >
-      <Mic className="h-5 w-5" aria-hidden />
+      <SiteIcon n="microphone" ctx="default" className="h-5 w-5" aria-hidden />
     </button>
   );
 }

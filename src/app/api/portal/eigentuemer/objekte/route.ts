@@ -1,3 +1,4 @@
+import { logDbError } from '@/lib/errors/log-db-error'
 import { NextResponse } from "next/server";
 
 import { requireEigentuemerSession } from "@/lib/portal/require-eigentuemer-session";
@@ -58,6 +59,7 @@ export async function POST(req: Request) {
     })
     .select("id, titel, strasse, hausnummer, plz, ort")
     .single();
+  if (objErr) logDbError('app/api/portal/eigentuemer/objekte/route:kunden_objekte', objErr)
 
   if (objErr || !objekt) {
     return NextResponse.json(
@@ -84,11 +86,12 @@ export async function POST(req: Request) {
       })
       .select("id")
       .single();
+    if (ehErr) logDbError('app/api/portal/eigentuemer/objekte/route:objekt_einheiten', ehErr)
     if (!ehErr && eh) einheitId = String(eh.id);
   }
 
   if (einheitId) {
-    await supabaseAdmin.from("einheit_bewohner").insert({
+    const { error: __dbErr235_1 } = await supabaseAdmin.from("einheit_bewohner").insert({
       objekt_einheit_id: einheitId,
       name: session.name?.trim() || "Eigentümer",
       email: session.email,
@@ -98,6 +101,7 @@ export async function POST(req: Request) {
       sondereigentum_verwaltung: false,
       aktiv: true,
     });
+    if (__dbErr235_1) logDbError('app/api/portal/eigentuemer/objekte/route:einheit_bewohner', __dbErr235_1)
   }
 
   return NextResponse.json({

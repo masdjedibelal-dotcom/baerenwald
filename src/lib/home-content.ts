@@ -7,11 +7,11 @@ export type HomeFaqItem = FaqAccordionItem;
 export const HOME_FAQ_ITEMS: HomeFaqItem[] = [
   {
     q: "Was ist der Unterschied zu MyHammer oder Blauarbeit?",
-    a: "Bei Vergleichsportalen stellen Sie eine Anfrage und verschiedene Handwerker schicken Angebote. Sie vergleichen, entscheiden und koordinieren selbst wer wann kommt. Bei Bärenwald gibt es keinen Wettbewerb zwischen Handwerkern. Wir koordinieren alles intern — ein Ansprechpartner, eine Rechnung, kein Abstimmen. Mehr dazu: /ratgeber/generalunternehmer-vs-einzelhandwerker-muenchen",
+    a: "Bei Vergleichsportalen stellen Sie eine Anfrage und verschiedene Partner schicken Angebote. Sie vergleichen, entscheiden und koordinieren selbst wer wann kommt. Bei Bärenwald gibt es keinen Wettbewerb zwischen Partnern. Wir koordinieren alles intern — ein Ansprechpartner, eine Rechnung, kein Abstimmen. Mehr dazu: /ratgeber/generalunternehmer-vs-einzelhandwerker-muenchen",
   },
   {
     q: "Was bedeutet 'ein Ansprechpartner' konkret für mich?",
-    a: "Wenn Sie Ihr Bad renovieren brauchen Sie Fliesenleger, Sanitär und oft auch Elektro. Normalerweise rufen Sie jeden Betrieb einzeln an und stimmen Termine selbst ab. Bei Bärenwald rufen Sie einmal an. Wir wissen welcher Handwerker wann kommen muss und stimmen alles intern ab. Sie bekommen Updates wenn etwas fertig ist — und am Ende eine Rechnung.",
+    a: "Wenn Sie Ihr Bad renovieren brauchen Sie Fliesenleger, Sanitär und oft auch Elektro. Normalerweise rufen Sie jeden Betrieb einzeln an und stimmen Termine selbst ab. Bei Bärenwald rufen Sie einmal an. Wir wissen welcher Partner wann kommen muss und stimmen alles intern ab. Sie bekommen Updates wenn etwas fertig ist — und am Ende eine Rechnung.",
   },
   {
     q: "Wer führt die Arbeiten durch — Bärenwald selbst oder Subunternehmer?",
@@ -43,7 +43,7 @@ export const HOME_FAQ_ITEMS: HomeFaqItem[] = [
   },
   {
     q: "Was passiert bei Mängeln oder wenn ich nicht zufrieden bin?",
-    a: "Bärenwald bleibt Ihr Ansprechpartner — vor, während und nach dem Projekt. Bei Fragen, Mängeln oder Nachbesserungen melden Sie sich direkt bei uns. Wir koordinieren alles mit den ausführenden Betrieben — Sie müssen nicht selbst mit einzelnen Handwerkern verhandeln. Nach Abschluss gibt es ein digitales Abnahmeprotokoll und gesetzliche Gewährleistung.",
+    a: "Bärenwald bleibt Ihr Ansprechpartner — vor, während und nach dem Projekt. Bei Fragen, Mängeln oder Nachbesserungen melden Sie sich direkt bei uns. Wir koordinieren alles mit den ausführenden Betrieben — Sie müssen nicht selbst mit einzelnen Partnern verhandeln. Nach Abschluss gibt es ein digitales Abnahmeprotokoll und gesetzliche Gewährleistung.",
   },
   {
     q: "Wie schnell kann es losgehen?",

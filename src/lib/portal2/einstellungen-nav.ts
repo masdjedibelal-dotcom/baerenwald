@@ -93,5 +93,5 @@ export const EINSTELLUNGEN_PAGE_EYEBROW: Record<
   hv: "Verwaltung",
   privat: "Privatkunde",
   mieter: "Mieter",
-  handwerker: "Handwerker",
+  handwerker: "Partner",
 };

@@ -1,5 +1,6 @@
 "use server";
 
+import { logDbError } from '@/lib/errors/log-db-error'
 import { revalidatePath } from "next/cache";
 
 import { writeAuditEvent } from "@/lib/audit/write-audit-event";
@@ -49,15 +50,17 @@ async function loadOwnPosition(handwerkerId: string, positionId: string) {
     )
     .eq("id", positionId)
     .maybeSingle();
+  if (error) logDbError('app/actions/partner-position-eintraege:auftrag_positionen', error)
 
   if (error) {
     // Spalten ggf. noch nicht migriert
     if (/verguetung|typ|gestartet_am|anerkennung/i.test(error.message)) {
-      const { data: fallback } = await supabaseAdmin
+      const {data: fallback, error: __dbErr82_1} = await supabaseAdmin
         .from("auftrag_positionen")
         .select("id, auftrag_id, handwerker_id, leistung_status, leistung_name")
         .eq("id", positionId)
         .maybeSingle();
+      if (__dbErr82_1) logDbError('app/actions/partner-position-eintraege:auftrag_positionen', __dbErr82_1)
       if (!fallback || String(fallback.handwerker_id) !== handwerkerId) {
         return null;
       }
@@ -93,11 +96,12 @@ async function loadOwnPosition(handwerkerId: string, positionId: string) {
 }
 
 async function assertAuftragNochOffen(auftragId: string): Promise<boolean> {
-  const { data } = await supabaseAdmin
+  const {data, error: __dbErr83_2} = await supabaseAdmin
     .from("auftraege")
     .select("status")
     .eq("id", auftragId)
     .maybeSingle();
+  if (__dbErr83_2) logDbError('app/actions/partner-position-eintraege:auftraege', __dbErr83_2)
   const st = String(data?.status ?? "").toLowerCase();
   return !["abgeschlossen", "storniert", "abgebrochen"].includes(st);
 }
@@ -134,6 +138,7 @@ async function insertEintrag(opts: {
     })
     .select("id")
     .single();
+  if (error) logDbError('app/actions/partner-position-eintraege:position_eintraege', error)
 
   if (error) {
     return {
@@ -179,6 +184,7 @@ async function linkPartnerEintragLeistungen(
     unique.map((position_id) => ({ eintrag_id: eintragId, position_id })),
     { onConflict: "eintrag_id,position_id", ignoreDuplicates: true }
   );
+  if (error) logDbError('app/actions/partner-position-eintraege:position_eintrag_leistungen', error)
   if (error) {
     if (/position_eintrag_leistungen|does not exist/i.test(error.message)) {
       return {
@@ -239,6 +245,7 @@ async function attachFoto(opts: {
     aufnahmeart: opts.nachgereicht ? "nachgereicht" : "direkt",
     nachreich_grund: opts.nachgereicht ? opts.nachreichGrund : null,
   });
+  if (error) logDbError('app/actions/partner-position-eintraege:eintrag_fotos', error)
 
   if (error) return { ok: false, error: error.message };
   return { ok: true };
@@ -589,7 +596,7 @@ export async function completePartnerPosition(
   // LV aus offen: stillschweigend als gestartet markieren
   if (!isRegie && status === "offen") {
     const nowSoft = new Date().toISOString();
-    await supabaseAdmin
+    const { error: __dbErr92_11 } = await supabaseAdmin
       .from("auftrag_positionen")
       .update({
         leistung_status: "in_arbeit",
@@ -597,17 +604,19 @@ export async function completePartnerPosition(
         handwerker_status: "bestaetigt",
       })
       .eq("id", positionId);
+    if (__dbErr92_11) logDbError('app/actions/partner-position-eintraege:auftrag_positionen', __dbErr92_11)
   }
 
   const isAufwand = String(pos.verguetung ?? "").toLowerCase() === "aufwand";
   let zeitMinuten: number | null = zeitMinutenFromStdMin(std, min);
   if (isAufwand) {
     if (zeitMinuten == null) {
-      const { data: rows } = await supabaseAdmin
+      const {data: rows, error: __dbErr84_3} = await supabaseAdmin
         .from("position_eintraege")
         .select("zeit_minuten")
         .eq("position_id", positionId)
         .eq("typ", "fortschritt");
+      if (__dbErr84_3) logDbError('app/actions/partner-position-eintraege:position_eintraege', __dbErr84_3)
       zeitMinuten =
         (rows ?? []).reduce(
           (sum, r) => sum + (Number(r.zeit_minuten) || 0),
@@ -664,7 +673,7 @@ export async function completePartnerPosition(
     isRegie && zeitMinuten != null && zeitMinuten > 0
       ? { menge: Math.round((zeitMinuten / 60) * 100) / 100, einheit: "Std" }
       : {};
-  await supabaseAdmin
+  const { error: __dbErr93_12 } = await supabaseAdmin
     .from("auftrag_positionen")
     .update({
       leistung_status: "erledigt",
@@ -672,6 +681,7 @@ export async function completePartnerPosition(
       ...mengeUpdate,
     })
     .eq("id", positionId);
+  if (__dbErr93_12) logDbError('app/actions/partner-position-eintraege:auftrag_positionen', __dbErr93_12)
 
   await writeAuditEvent({
     entityType: "auftrag",
@@ -713,12 +723,13 @@ export async function createPartnerWeitereArbeit(
     return { ok: false, error: "Titel fehlt (mind. 4 Zeichen)." };
   }
 
-  const { data: own } = await supabaseAdmin
+  const {data: own, error: __dbErr85_4} = await supabaseAdmin
     .from("auftrag_positionen")
     .select("id")
     .eq("auftrag_id", auftragId)
     .eq("handwerker_id", auth.handwerkerId)
     .limit(1);
+  if (__dbErr85_4) logDbError('app/actions/partner-position-eintraege:auftrag_positionen', __dbErr85_4)
   if (!own?.length) {
     return { ok: false, error: "Kein Zugriff auf diesen Auftrag." };
   }
@@ -755,13 +766,14 @@ export async function createPartnerWeitereArbeit(
     "Nachtrag / Regie — wartet auf Freigabe durch Bärenwald.",
   ].filter(Boolean);
 
-  const { data: maxSort } = await supabaseAdmin
+  const {data: maxSort, error: __dbErr86_5} = await supabaseAdmin
     .from("auftrag_positionen")
     .select("sort_order")
     .eq("auftrag_id", auftragId)
     .order("sort_order", { ascending: false })
     .limit(1)
     .maybeSingle();
+  if (__dbErr86_5) logDbError('app/actions/partner-position-eintraege:auftrag_positionen', __dbErr86_5)
 
   const { data: inserted, error } = await supabaseAdmin
     .from("auftrag_positionen")
@@ -785,6 +797,7 @@ export async function createPartnerWeitereArbeit(
     })
     .select("id")
     .single();
+  if (error) logDbError('app/actions/partner-position-eintraege:auftrag_positionen', error)
 
   if (error) {
     return {
@@ -920,6 +933,7 @@ export async function createPartnerTagebuchEintrag(
       .eq("auftrag_id", auftragId)
       .eq("handwerker_id", auth.handwerkerId)
       .in("id", uniquePos);
+    if (error) logDbError('app/actions/partner-position-eintraege:auftrag_positionen', error)
     if (error) return { ok: false, error: error.message };
     if ((rows ?? []).length !== uniquePos.length) {
       return {
@@ -990,7 +1004,7 @@ export async function createPartnerTagebuchEintrag(
 
   if (uniqueErledigt.length > 0) {
     const now = new Date().toISOString();
-    await supabaseAdmin
+    const { error: __dbErr94_13 } = await supabaseAdmin
       .from("auftrag_positionen")
       .update({
         leistung_status: "erledigt",
@@ -999,6 +1013,7 @@ export async function createPartnerTagebuchEintrag(
       })
       .in("id", uniqueErledigt)
       .eq("handwerker_id", auth.handwerkerId);
+    if (__dbErr94_13) logDbError('app/actions/partner-position-eintraege:auftrag_positionen', __dbErr94_13)
   }
 
   void syncPartnerPositionEintragToKundeTimeline({
@@ -1082,6 +1097,7 @@ export async function markPartnerPositionenErledigt(
     .eq("auftrag_id", auftragId)
     .eq("handwerker_id", auth.handwerkerId)
     .in("id", unique);
+  if (error) logDbError('app/actions/partner-position-eintraege:auftrag_positionen', error)
   if (error) return { ok: false, error: error.message };
   if ((rows ?? []).length !== unique.length) {
     return { ok: false, error: "Leistungen ungültig." };
@@ -1110,7 +1126,7 @@ export async function markPartnerPositionenErledigt(
       const positionId = String(r.id);
       const st = String(r.leistung_status ?? "offen");
       if (st === "offen") {
-        await supabaseAdmin
+        const { error: __dbErr95_14 } = await supabaseAdmin
           .from("auftrag_positionen")
           .update({
             leistung_status: "in_arbeit",
@@ -1118,6 +1134,7 @@ export async function markPartnerPositionenErledigt(
             handwerker_status: "bestaetigt",
           })
           .eq("id", positionId);
+        if (__dbErr95_14) logDbError('app/actions/partner-position-eintraege:auftrag_positionen', __dbErr95_14)
       }
 
       const eintrag = await insertEintrag({
@@ -1177,6 +1194,7 @@ export async function markPartnerPositionenErledigt(
     })
     .in("id", unique)
     .eq("handwerker_id", auth.handwerkerId);
+  if (upErr) logDbError('app/actions/partner-position-eintraege:auftrag_positionen', upErr)
   if (upErr) return { ok: false, error: upErr.message };
 
   await writeAuditEvent({
@@ -1222,10 +1240,11 @@ export async function listPartnerAuftragTagebuchEintraege(
   if (!aid) return [];
   if (!(await assertPartnerAuftragAccess(auth.handwerkerId, aid))) return [];
 
-  const { data: posRows } = await supabaseAdmin
+  const {data: posRows, error: __dbErr87_6} = await supabaseAdmin
     .from("auftrag_positionen")
     .select("id, leistung_name")
     .eq("auftrag_id", aid);
+  if (__dbErr87_6) logDbError('app/actions/partner-position-eintraege:auftrag_positionen', __dbErr87_6)
   const posMeta = new Map<string, string>();
   for (const p of posRows ?? []) {
     posMeta.set(
@@ -1258,10 +1277,11 @@ export async function listPartnerAuftragTagebuchEintraege(
   const eintragIds = (rows ?? []).map((r) => String(r.id));
   const junctionByEintrag = new Map<string, string[]>();
   if (eintragIds.length > 0) {
-    const { data: junction } = await supabaseAdmin
+    const {data: junction, error: __dbErr88_7} = await supabaseAdmin
       .from("position_eintrag_leistungen")
       .select("eintrag_id, position_id")
       .in("eintrag_id", eintragIds);
+    if (__dbErr88_7) logDbError('app/actions/partner-position-eintraege:position_eintrag_leistungen', __dbErr88_7)
     for (const j of junction ?? []) {
       const eid = String(j.eintrag_id);
       const list = junctionByEintrag.get(eid) ?? [];
@@ -1272,10 +1292,11 @@ export async function listPartnerAuftragTagebuchEintraege(
 
   const fotosByEintrag = new Map<string, string[]>();
   if (eintragIds.length > 0) {
-    const { data: fotos } = await supabaseAdmin
+    const {data: fotos, error: __dbErr89_8} = await supabaseAdmin
       .from("eintrag_fotos")
       .select("eintrag_id, storage_path")
       .in("eintrag_id", eintragIds);
+    if (__dbErr89_8) logDbError('app/actions/partner-position-eintraege:eintrag_fotos', __dbErr89_8)
     for (const f of fotos ?? []) {
       const eid = String(f.eintrag_id);
       const path = String(f.storage_path ?? "").trim();
@@ -1334,7 +1355,7 @@ export async function listPartnerAuftragTagebuchEintraege(
     const quelleLabel = erfasst.includes("crm")
       ? "CRM"
       : erfasst.includes("partner") || erfasst.includes("eigenbetrieb")
-        ? "Handwerker"
+        ? "Partner"
         : "Eintrag";
 
     out.push({
@@ -1353,13 +1374,14 @@ export async function listPartnerAuftragTagebuchEintraege(
   }
 
   // Legacy-Tabelle (ältere Einträge / CRM-Alt)
-  const { data: legacy } = await supabaseAdmin
+  const {data: legacy, error: __dbErr90_9} = await supabaseAdmin
     .from("auftrag_bautagebuch_eintraege")
     .select(
       "id, titel, beschreibung, datum, foto_urls, handwerker_id, eintrag_typ"
     )
     .eq("auftrag_id", aid)
     .order("datum", { ascending: false });
+  if (__dbErr90_9) logDbError('app/actions/partner-position-eintraege:auftrag_bautagebuch_eintraege', __dbErr90_9)
 
   for (const r of legacy ?? []) {
     if (String(r.eintrag_typ ?? "") === "befund") continue;
@@ -1384,9 +1406,9 @@ export async function listPartnerAuftragTagebuchEintraege(
       fotos,
       quelleLabel:
         String(r.handwerker_id ?? "") === auth.handwerkerId
-          ? "Handwerker"
+          ? "Partner"
           : r.handwerker_id
-            ? "Handwerker"
+            ? "Partner"
             : "CRM",
       leistungNames: [],
       leistungIds: [],
@@ -1402,11 +1424,12 @@ async function assertPartnerAuftragAccess(
   auftragId: string
 ): Promise<boolean> {
   if (await assertPartnerAktiveZuweisung(handwerkerId, auftragId)) return true;
-  const { data: pos } = await supabaseAdmin
+  const {data: pos, error: __dbErr91_10} = await supabaseAdmin
     .from("auftrag_positionen")
     .select("id")
     .eq("auftrag_id", auftragId)
     .eq("handwerker_id", handwerkerId)
     .limit(1);
+  if (__dbErr91_10) logDbError('app/actions/partner-position-eintraege:auftrag_positionen', __dbErr91_10)
   return Boolean(pos?.length);
 }

@@ -1,3 +1,4 @@
+import { logDbError } from '@/lib/errors/log-db-error'
 import {
   findKundeIdByEmail,
   isKundenEmailUniqueViolation,
@@ -87,6 +88,7 @@ async function findKundenByLoginEmail(
     .from("kunden")
     .select("id, auth_user_id, email, created_at, portal_modus, typ")
     .ilike("email", email);
+  if (error) logDbError('lib/portal/link-portal-kunde:kunden', error)
 
   if (error) throw new Error(error.message);
   return (data ?? []) as KundeCandidate[];
@@ -130,11 +132,12 @@ async function detachAuthFromKunde(
   kundeId: string,
   userId: string
 ): Promise<void> {
-  await supabaseAdmin
+  const { error: __dbErr451_10 } = await supabaseAdmin
     .from("kunden")
     .update({ auth_user_id: null })
     .eq("id", kundeId)
     .eq("auth_user_id", userId);
+  if (__dbErr451_10) logDbError('lib/portal/link-portal-kunde:kunden', __dbErr451_10)
 }
 
 type HvPortalRolleMatch = {
@@ -149,12 +152,13 @@ type HvPortalRolleMatch = {
 async function resolveHvPortalRolleByEmail(
   email: string
 ): Promise<HvPortalRolleMatch | null> {
-  const { data: hm } = await supabaseAdmin
+  const {data: hm, error: __dbErr442_1} = await supabaseAdmin
     .from("org_hausmeister")
     .select("id, name, email")
     .ilike("email", email)
     .limit(1)
     .maybeSingle();
+  if (__dbErr442_1) logDbError('lib/portal/link-portal-kunde:org_hausmeister', __dbErr442_1)
 
   if (hm?.id) {
     return {
@@ -165,13 +169,14 @@ async function resolveHvPortalRolleByEmail(
     };
   }
 
-  const { data: bewohner } = await supabaseAdmin
+  const {data: bewohner, error: __dbErr443_2} = await supabaseAdmin
     .from("einheit_bewohner")
     .select("id, name, telefon, rolle")
     .ilike("email", email)
     .eq("aktiv", true)
     .is("anonymisiert_am", null)
     .limit(20);
+  if (__dbErr443_2) logDbError('lib/portal/link-portal-kunde:einheit_bewohner', __dbErr443_2)
 
   const rows = bewohner ?? [];
   if (!rows.length) return null;
@@ -193,7 +198,7 @@ async function linkHvPortalRolleToKunde(
   role: HvPortalRolleMatch
 ): Promise<void> {
   if (role.portalModus === "hausmeister" && role.hausmeisterId) {
-    await supabaseAdmin
+    const { error: __dbErr452_11 } = await supabaseAdmin
       .from("org_hausmeister")
       .update({
         portal_kunde_id: portalKundeId,
@@ -201,13 +206,15 @@ async function linkHvPortalRolleToKunde(
         updated_at: new Date().toISOString(),
       })
       .eq("id", role.hausmeisterId);
+    if (__dbErr452_11) logDbError('lib/portal/link-portal-kunde:org_hausmeister', __dbErr452_11)
     return;
   }
   if (role.bewohnerIds?.length) {
-    await supabaseAdmin
+    const { error: __dbErr453_12 } = await supabaseAdmin
       .from("einheit_bewohner")
       .update({ portal_kunde_id: portalKundeId })
       .in("id", role.bewohnerIds);
+    if (__dbErr453_12) logDbError('lib/portal/link-portal-kunde:einheit_bewohner', __dbErr453_12)
   }
 }
 
@@ -285,22 +292,24 @@ export async function linkPortalKundeToAuthUser(opts: {
     console.error("[linkPortalKunde] Portal-Sperre-Check fehlgeschlagen:", e);
   }
 
-  const { data: mitglied } = await supabaseAdmin
+  const {data: mitglied, error: __dbErr444_3} = await supabaseAdmin
     .from("kunden_mitglieder")
     .select("kunde_id")
     .eq("auth_user_id", opts.userId)
     .eq("aktiv", true)
     .maybeSingle();
+  if (__dbErr444_3) logDbError('lib/portal/link-portal-kunde:kunden_mitglieder', __dbErr444_3)
 
   if (mitglied?.kunde_id) {
     return { ok: true, kundeId: String(mitglied.kunde_id) };
   }
 
-  const { data: linkedByAuth } = await supabaseAdmin
+  const {data: linkedByAuth, error: __dbErr445_4} = await supabaseAdmin
     .from("kunden")
     .select("id, auth_user_id, email, portal_modus, typ")
     .eq("auth_user_id", opts.userId)
     .maybeSingle();
+  if (__dbErr445_4) logDbError('lib/portal/link-portal-kunde:kunden', __dbErr445_4)
 
   // Bereits verknüpft + gleiche Login-E-Mail → ggf. Org vor HM-Stub bevorzugen.
   if (linkedByAuth?.id) {
@@ -316,6 +325,7 @@ export async function linkPortalKundeToAuthUser(opts: {
             .from("kunden")
             .update({ auth_user_id: opts.userId, email })
             .eq("id", orgForEmail.id);
+          if (upOrg) logDbError('lib/portal/link-portal-kunde:kunden', upOrg)
           if (!upOrg) {
             return { ok: true, kundeId: String(orgForEmail.id) };
           }
@@ -347,11 +357,12 @@ export async function linkPortalKundeToAuthUser(opts: {
     }
 
     const hvRole = await resolveHvPortalRolleByEmail(email);
-    const { data: before } = await supabaseAdmin
+    const {data: before, error: __dbErr446_5} = await supabaseAdmin
       .from("kunden")
       .select("portal_modus")
       .eq("id", canonical.id)
       .maybeSingle();
+    if (__dbErr446_5) logDbError('lib/portal/link-portal-kunde:kunden', __dbErr446_5)
     const keepOrgModus =
       (before?.portal_modus ?? "") === "organisation" &&
       (await import("@/lib/auth/baerenwald-primary-staff")).isBaerenwaldPrimaryStaffEmail(
@@ -367,6 +378,7 @@ export async function linkPortalKundeToAuthUser(opts: {
         ...(hvRole && !keepOrgModus ? { portal_modus: hvRole.portalModus } : {}),
       })
       .eq("id", canonical.id);
+    if (upErr) logDbError('lib/portal/link-portal-kunde:kunden', upErr)
 
     if (upErr) return fail(upErr);
     if (hvRole?.portalModus === "hausmeister" && hvRole.hausmeisterId) {
@@ -374,11 +386,12 @@ export async function linkPortalKundeToAuthUser(opts: {
         const { ensureHausmeisterPortalActivation } = await import(
           "@/lib/org/ensure-hausmeister-portal"
         );
-        const { data: hmRow } = await supabaseAdmin
+        const {data: hmRow, error: __dbErr447_6} = await supabaseAdmin
           .from("org_hausmeister")
           .select("org_kunde_id")
           .eq("id", hvRole.hausmeisterId)
           .maybeSingle();
+        if (__dbErr447_6) logDbError('lib/portal/link-portal-kunde:org_hausmeister', __dbErr447_6)
         if (hmRow?.org_kunde_id) {
           await ensureHausmeisterPortalActivation({
             orgHausmeisterId: hvRole.hausmeisterId,
@@ -434,16 +447,18 @@ export async function linkPortalKundeToAuthUser(opts: {
     })
     .select("id")
     .single();
+  if (insErr) logDbError('lib/portal/link-portal-kunde:kunden', insErr)
 
   if (insErr) {
     if (isKundenRowUniqueViolation(insErr)) {
       const existingId = await findKundeIdByEmail(email);
       if (existingId) {
-        const { data: existing } = await supabaseAdmin
+        const {data: existing, error: __dbErr448_7} = await supabaseAdmin
           .from("kunden")
           .select("auth_user_id")
           .eq("id", existingId)
           .maybeSingle();
+        if (__dbErr448_7) logDbError('lib/portal/link-portal-kunde:kunden', __dbErr448_7)
         const foreignAuth = existing?.auth_user_id as string | null | undefined;
         if (foreignAuth && foreignAuth !== opts.userId) {
           return {
@@ -464,6 +479,7 @@ export async function linkPortalKundeToAuthUser(opts: {
             ...(hvRole ? { portal_modus: hvRole.portalModus } : {}),
           })
           .eq("id", existingId);
+        if (upErr) logDbError('lib/portal/link-portal-kunde:kunden', upErr)
         if (upErr) return fail(upErr);
         if (hvRole) {
           await linkHvPortalRolleToKunde(existingId, hvRole);
@@ -499,18 +515,20 @@ export async function resolveLinkedPortalKundeId(
   const uid = userId?.trim();
   if (!uid) return null;
 
-  const { data: mitglied } = await supabaseAdmin
+  const {data: mitglied, error: __dbErr449_8} = await supabaseAdmin
     .from("kunden_mitglieder")
     .select("kunde_id")
     .eq("auth_user_id", uid)
     .eq("aktiv", true)
     .maybeSingle();
+  if (__dbErr449_8) logDbError('lib/portal/link-portal-kunde:kunden_mitglieder', __dbErr449_8)
   if (mitglied?.kunde_id) return String(mitglied.kunde_id);
 
-  const { data: linked } = await supabaseAdmin
+  const {data: linked, error: __dbErr450_9} = await supabaseAdmin
     .from("kunden")
     .select("id")
     .eq("auth_user_id", uid)
     .maybeSingle();
+  if (__dbErr450_9) logDbError('lib/portal/link-portal-kunde:kunden', __dbErr450_9)
   return linked?.id ? String(linked.id) : null;
 }

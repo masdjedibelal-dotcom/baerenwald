@@ -1,3 +1,4 @@
+import { logDbError } from '@/lib/errors/log-db-error'
 import { NextResponse } from "next/server";
 
 import { writeAuditEvent } from "@/lib/audit/write-audit-event";
@@ -66,6 +67,7 @@ export async function PATCH(req: Request) {
       "mieter_kontakt_telefon, mieter_kontakt_email, mieter_kontakt_hinweis, av_akzeptiert_am, av_version, av_akzeptiert_von, av_text_snapshot"
     )
     .single();
+  if (error) logDbError('app/api/org/whitelabel/route:kunden', error)
 
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });

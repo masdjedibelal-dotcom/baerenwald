@@ -1,3 +1,4 @@
+import { logDbError } from '@/lib/errors/log-db-error'
 import { NextResponse } from "next/server";
 
 import { requireOrganisationSession } from "@/lib/org/require-org-session";
@@ -23,6 +24,7 @@ export async function GET() {
     .select(selectCols)
     .eq("kunde_id", session.kunde.id)
     .order("titel", { ascending: true });
+  if (error) logDbError('app/api/org/objekte/route:kunden_objekte', error)
 
   if (
     error &&
@@ -37,6 +39,7 @@ export async function GET() {
       .select(fallbackCols)
       .eq("kunde_id", session.kunde.id)
       .order("titel", { ascending: true });
+    if (reloadErr) logDbError('app/api/org/objekte/route:kunden_objekte', reloadErr)
     if (reloadErr) {
       return NextResponse.json({ error: reloadErr.message }, { status: 500 });
     }
@@ -57,6 +60,7 @@ export async function GET() {
     .select(selectCols)
     .eq("kunde_id", session.kunde.id)
     .order("titel", { ascending: true });
+  if (reloadErr) logDbError('app/api/org/objekte/route:kunden_objekte', reloadErr)
 
   if (reloadErr && /cover_url/i.test(reloadErr.message)) {
     return NextResponse.json({ objekte: rows });
@@ -96,6 +100,7 @@ async function countAktiveVorgaengeAmObjekt(objektId: string): Promise<number> {
     .from("leads")
     .select("id, status, vorgang_phase, hv_meldung_status")
     .eq("kunde_objekt_id", objektId);
+  if (error) logDbError('app/api/org/objekte/route:leads', error)
 
   if (error || !data) return 0;
 
@@ -173,6 +178,7 @@ export async function POST(req: Request) {
     .insert(insertRow)
     .select("id, titel, melde_slug")
     .single();
+  if (error) logDbError('app/api/org/objekte/route:kunden_objekte', error)
 
   if (error && /typ/i.test(error.message) && "typ" in insertRow) {
     const { typ: _t, ...withoutTyp } = insertRow;
@@ -209,12 +215,13 @@ export async function PATCH(req: Request) {
     return NextResponse.json({ error: "ID fehlt." }, { status: 400 });
   }
 
-  const { data: existing } = await supabaseAdmin
+  const {data: existing, error: __dbErr215_1} = await supabaseAdmin
     .from("kunden_objekte")
     .select("id, titel, strasse, hausnummer, plz, ort, melde_slug, melde_aktiv")
     .eq("id", id)
     .eq("kunde_id", session.kunde.id)
     .maybeSingle();
+  if (__dbErr215_1) logDbError('app/api/org/objekte/route:kunden_objekte', __dbErr215_1)
 
   if (!existing) {
     return NextResponse.json({ error: "Objekt nicht gefunden." }, { status: 404 });
@@ -285,6 +292,7 @@ export async function PATCH(req: Request) {
     .eq("kunde_id", session.kunde.id)
     .select("id, titel, melde_slug, melde_aktiv")
     .maybeSingle();
+  if (error) logDbError('app/api/org/objekte/route:kunden_objekte', error)
 
   if (error && /typ/i.test(error.message) && "typ" in patch) {
     const { typ: _t, ...withoutTyp } = patch;
@@ -356,12 +364,13 @@ export async function DELETE(req: Request) {
     return NextResponse.json({ error: "ID fehlt." }, { status: 400 });
   }
 
-  const { data: existing } = await supabaseAdmin
+  const {data: existing, error: __dbErr216_2} = await supabaseAdmin
     .from("kunden_objekte")
     .select("id, titel")
     .eq("id", id)
     .eq("kunde_id", session.kunde.id)
     .maybeSingle();
+  if (__dbErr216_2) logDbError('app/api/org/objekte/route:kunden_objekte', __dbErr216_2)
 
   if (!existing) {
     return NextResponse.json({ error: "Objekt nicht gefunden." }, { status: 404 });
@@ -391,6 +400,7 @@ export async function DELETE(req: Request) {
     .delete()
     .eq("id", id)
     .eq("kunde_id", session.kunde.id);
+  if (error) logDbError('app/api/org/objekte/route:kunden_objekte', error)
 
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });

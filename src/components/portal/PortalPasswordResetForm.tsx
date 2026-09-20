@@ -66,7 +66,7 @@ export function PortalPasswordResetForm() {
   return (
     <form onSubmit={(e) => void onSubmit(e)}>
       {error ? (
-        <p className="mb-4 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-800">
+        <p className="mb-4 rounded-card bg-p2-danger-soft px-3 py-2 text-sm text-p2-danger">
           {error}
         </p>
       ) : null}
@@ -82,7 +82,7 @@ export function PortalPasswordResetForm() {
       </div>
       <div className="mt-2 h-2" />
       <AuthBtn type="submit">{AUTH_FORGOT.submit}</AuthBtn>
-      <p className="mt-5 text-center text-[13px] text-text-secondary">
+      <p className="mt-5 text-center text-fs-meta text-text-secondary">
         <AuthLink href="/portal/login">{AUTH_FORGOT.back}</AuthLink>
       </p>
     </form>

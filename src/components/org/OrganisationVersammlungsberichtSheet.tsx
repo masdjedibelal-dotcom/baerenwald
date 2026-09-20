@@ -1,10 +1,15 @@
 "use client";
 
-import { useMemo, useState, useTransition } from "react";
+import { useMemo, useRef, useState, useTransition } from "react";
+import { PortalButton } from "@/components/portal/PortalButton";
 
+import { PortalCheckbox, PortalDate } from "@/components/shared/PortalFormControls";
+import { PortalField } from "@/components/shared/PortalField";
 import { PortalModalShell } from "@/components/shared/PortalModalShell";
+import { useFieldErrors } from "@/lib/portal2/form-schema";
 import { portalToastError } from "@/lib/shared/portal-toast";
 import { cn } from "@/lib/utils";
+import { TOAST } from "@/lib/portal-copy";
 
 type ZeitraumPreset = "laufendes_jahr" | "letztes_jahr" | "12_monate" | "custom";
 
@@ -37,6 +42,9 @@ export function OrganisationVersammlungsberichtSheet({
   onClose: () => void;
   objektId: string;
 }) {
+  const formRef = useRef<HTMLDivElement>(null);
+  const { fieldErrors, applyFieldErrors, clearField, clearFieldErrors } =
+    useFieldErrors();
   const [preset, setPreset] = useState<ZeitraumPreset>("letztes_jahr");
   const [von, setVon] = useState(() => presetRange("letztes_jahr").von);
   const [bis, setBis] = useState(() => presetRange("letztes_jahr").bis);
@@ -50,13 +58,23 @@ export function OrganisationVersammlungsberichtSheet({
 
   function applyPreset(p: ZeitraumPreset) {
     setPreset(p);
+    clearFieldErrors();
     if (p === "custom") return;
     const r = presetRange(p);
     setVon(r.von);
     setBis(r.bis);
   }
 
+  /* FORM_VALIDATION: org-versammlungsbericht */
   function exportPdf() {
+    const errors: Record<string, string> = {};
+    if (!von.trim()) errors.von = "Bitte Startdatum angeben.";
+    if (!bis.trim()) errors.bis = "Bitte Enddatum angeben.";
+    if (Object.keys(errors).length) {
+      applyFieldErrors(errors, formRef.current);
+      return;
+    }
+    clearFieldErrors();
     const params = new URLSearchParams({
       objektId: objektId.trim(),
       von: von.trim(),
@@ -72,7 +90,7 @@ export function OrganisationVersammlungsberichtSheet({
           const j = (await res.json().catch(() => null)) as {
             error?: string;
           } | null;
-          portalToastError("PDF fehlgeschlagen", j?.error);
+          portalToastError(TOAST.pdf_fehlgeschlagen, j?.error);
           return;
         }
         const blob = await res.blob();
@@ -81,7 +99,7 @@ export function OrganisationVersammlungsberichtSheet({
         setTimeout(() => URL.revokeObjectURL(url), 60_000);
         onClose();
       } catch {
-        portalToastError("Export fehlgeschlagen");
+        portalToastError(TOAST.export_fehlgeschlagen);
       }
     });
   }
@@ -93,9 +111,9 @@ export function OrganisationVersammlungsberichtSheet({
       title="Versammlungsbericht"
       confirmLabel={pending ? "Wird erstellt …" : "PDF erstellen"}
       onConfirm={exportPdf}
-      confirmDisabled={pending || !von.trim() || !bis.trim()}
+      confirmDisabled={pending}
     >
-      <div className="space-y-5">
+      <div ref={formRef} className="space-y-5">
         <div>
           <p className="portal-text-label mb-2 text-text-secondary">Zeitraum</p>
           <div className="portal-sheet-chips mb-3">
@@ -107,7 +125,8 @@ export function OrganisationVersammlungsberichtSheet({
                 ["custom", "Individuell"],
               ] as const
             ).map(([id, label]) => (
-              <button
+              <PortalButton
+                variant="ghost"
                 key={id}
                 type="button"
                 onClick={() => applyPreset(id)}
@@ -117,38 +136,32 @@ export function OrganisationVersammlungsberichtSheet({
                 )}
               >
                 {label}
-              </button>
+              </PortalButton>
             ))}
           </div>
           <div className="grid gap-3 sm:grid-cols-2">
-            <label className="block">
-              <span className="portal-text-label mb-1.5 block text-text-secondary">
-                Von
-              </span>
-              <input
-                type="date"
+            <PortalField label="Von" name="von" required error={fieldErrors.von}>
+              <PortalDate
                 className="portal-field w-full"
                 value={von}
                 onChange={(e) => {
                   setPreset("custom");
                   setVon(e.target.value);
+                  clearField("von");
                 }}
               />
-            </label>
-            <label className="block">
-              <span className="portal-text-label mb-1.5 block text-text-secondary">
-                Bis
-              </span>
-              <input
-                type="date"
+            </PortalField>
+            <PortalField label="Bis" name="bis" required error={fieldErrors.bis}>
+              <PortalDate
                 className="portal-field w-full"
                 value={bis}
                 onChange={(e) => {
                   setPreset("custom");
                   setBis(e.target.value);
+                  clearField("bis");
                 }}
               />
-            </label>
+            </PortalField>
           </div>
           <p className="portal-text-meta mt-2 text-text-tertiary">
             Vorschau: {previewLabel}
@@ -158,8 +171,7 @@ export function OrganisationVersammlungsberichtSheet({
         <div>
           <p className="portal-text-label mb-2 text-text-secondary">Inhalt</p>
           <label className="flex items-start gap-3">
-            <input
-              type="checkbox"
+            <PortalCheckbox
               className="mt-0.5"
               checked={einzelpreise}
               onChange={(e) => setEinzelpreise(e.target.checked)}

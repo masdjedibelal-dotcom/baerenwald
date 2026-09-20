@@ -153,9 +153,12 @@ function resolveHvAngebotFreigabeSlide(input: {
       id: a.id,
       label: a.label,
       variant: a.variant === "danger" ? "danger" : "primary",
-      mode: "inline" as const,
+      mode: (a.id === "abgelehnt" ? "open" : "inline") as "open" | "inline",
     })),
-    payload: { leadId: lead.id },
+    payload: {
+      leadId: lead.id,
+      ...(angebot?.id ? { angebotId: String(angebot.id) } : {}),
+    },
   };
 }
 

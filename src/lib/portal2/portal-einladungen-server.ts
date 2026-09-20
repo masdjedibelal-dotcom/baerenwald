@@ -3,6 +3,7 @@
  * Tabelle: Migration STOP — bis Apply schlagen Writes fehl.
  */
 
+import { logDbError } from '@/lib/errors/log-db-error'
 import {
   buildPortalEinladungUrl,
   createPortalEinladungToken,
@@ -62,6 +63,7 @@ export async function createPortalEinladung(
     })
     .select("*")
     .single();
+  if (error) logDbError('lib/portal2/portal-einladungen-server:portal_einladungen', error)
 
   if (error) {
     const msg = error.message ?? "Einladung fehlgeschlagen";
@@ -112,6 +114,7 @@ export async function resolvePortalEinladungByToken(
     .select("*")
     .eq("token", t)
     .maybeSingle();
+  if (error) logDbError('lib/portal2/portal-einladungen-server:portal_einladungen', error)
 
   if (error) {
     const missing = /portal_einladungen|does not exist|relation/i.test(
@@ -130,39 +133,43 @@ export async function resolvePortalEinladungByToken(
   const row = data as PortalEinladungRow;
   const status = resolvePortalEinladungStatus(row);
   if (status === "abgelaufen" && row.status === "offen") {
-    await supabaseAdmin
+    const { error: __dbErr484_10 } = await supabaseAdmin
       .from("portal_einladungen")
       .update({ status: "abgelaufen" })
       .eq("id", row.id);
+    if (__dbErr484_10) logDbError('lib/portal2/portal-einladungen-server:portal_einladungen', __dbErr484_10)
   }
 
-  const { data: org } = await supabaseAdmin
+  const {data: org, error: __dbErr475_1} = await supabaseAdmin
     .from("kunden")
     .select(
       "id, name, org_kennung, org_anzeigename, org_sub, org_logo_url, org_logo_kuerzel, org_primary_color, org_primary_color_dk, org_primary_color_soft, mieter_kontakt_telefon, mieter_kontakt_email, org_telefon"
     )
     .eq("id", row.kunde_id)
     .maybeSingle();
+  if (__dbErr475_1) logDbError('lib/portal2/portal-einladungen-server:kunden', __dbErr475_1)
 
   if (!org) return { ok: false, error: "Organisation nicht gefunden.", status: 404 };
 
   let objektTitel = "Objekt";
   if (row.objekt_id) {
-    const { data: obj } = await supabaseAdmin
+    const {data: obj, error: __dbErr476_2} = await supabaseAdmin
       .from("kunden_objekte")
       .select("titel")
       .eq("id", row.objekt_id)
       .maybeSingle();
+    if (__dbErr476_2) logDbError('lib/portal2/portal-einladungen-server:kunden_objekte', __dbErr476_2)
     if (obj?.titel) objektTitel = String(obj.titel);
   }
 
   let einheitLabel = row.einheit_ref?.trim() || null;
   if (row.einheit_id && !einheitLabel) {
-    const { data: u } = await supabaseAdmin
+    const {data: u, error: __dbErr477_3} = await supabaseAdmin
       .from("objekt_einheiten")
       .select("bezeichnung")
       .eq("id", row.einheit_id)
       .maybeSingle();
+    if (__dbErr477_3) logDbError('lib/portal2/portal-einladungen-server:objekt_einheiten', __dbErr477_3)
     einheitLabel = u?.bezeichnung?.trim() || null;
   }
 
@@ -175,21 +182,23 @@ export async function resolvePortalEinladungByToken(
   const orgHmId = String(row.org_hausmeister_id ?? "").trim();
   if (orgHmId) {
     rolle = "hausmeister";
-    const { data: hm } = await supabaseAdmin
+    const {data: hm, error: __dbErr478_4} = await supabaseAdmin
       .from("org_hausmeister")
       .select("name, email")
       .eq("id", orgHmId)
       .maybeSingle();
+    if (__dbErr478_4) logDbError('lib/portal2/portal-einladungen-server:org_hausmeister', __dbErr478_4)
     if (hm) {
       prefill.name = String(hm.name ?? "").trim() || null;
       prefill.email = String(hm.email ?? "").trim().toLowerCase() || null;
     }
   } else if (row.bewohner_id) {
-    const { data: bew } = await supabaseAdmin
+    const {data: bew, error: __dbErr479_5} = await supabaseAdmin
       .from("einheit_bewohner")
       .select("name, email, telefon, rolle")
       .eq("id", row.bewohner_id)
       .maybeSingle();
+    if (__dbErr479_5) logDbError('lib/portal2/portal-einladungen-server:einheit_bewohner', __dbErr479_5)
     if (bew) {
       if (String(bew.rolle ?? "") === "eigentuemer") {
         rolle = "eigentuemer";
@@ -279,11 +288,12 @@ export async function redeemPortalEinladung(opts: {
   if (orgHmId) {
     inviteRolle = "hausmeister";
   } else if (row.bewohner_id) {
-    const { data: bew } = await supabaseAdmin
+    const {data: bew, error: __dbErr480_6} = await supabaseAdmin
       .from("einheit_bewohner")
       .select("rolle")
       .eq("id", row.bewohner_id)
       .maybeSingle();
+    if (__dbErr480_6) logDbError('lib/portal2/portal-einladungen-server:einheit_bewohner', __dbErr480_6)
     if (String(bew?.rolle ?? "") === "eigentuemer") {
       inviteRolle = "eigentuemer";
     }
@@ -295,7 +305,7 @@ export async function redeemPortalEinladung(opts: {
     const { isBaerenwaldPrimaryStaffEmail, ensureHausmeisterPortalActivation } =
       await import("@/lib/org/ensure-hausmeister-portal");
     if (isBaerenwaldPrimaryStaffEmail(email)) {
-      await supabaseAdmin
+      const { error: __dbErr485_11 } = await supabaseAdmin
         .from("org_hausmeister")
         .update({
           portal_zugang: true,
@@ -305,6 +315,7 @@ export async function redeemPortalEinladung(opts: {
         })
         .eq("id", orgHmId)
         .eq("org_kunde_id", row.kunde_id);
+      if (__dbErr485_11) logDbError('lib/portal2/portal-einladungen-server:org_hausmeister', __dbErr485_11)
       const act = await ensureHausmeisterPortalActivation({
         orgHausmeisterId: orgHmId,
         orgKundeId: String(row.kunde_id),
@@ -313,13 +324,14 @@ export async function redeemPortalEinladung(opts: {
         return { ok: false, error: act.error, status: 500 };
       }
       if (row.objekt_id) {
-        await supabaseAdmin.from("hausmeister_objekte").upsert(
+        const { error: __dbErr486_12 } = await supabaseAdmin.from("hausmeister_objekte").upsert(
           {
             org_hausmeister_id: orgHmId,
             kunde_objekt_id: row.objekt_id,
           },
           { onConflict: "kunde_objekt_id" }
         );
+        if (__dbErr486_12) logDbError('lib/portal2/portal-einladungen-server:hausmeister_objekte', __dbErr486_12)
       }
       const { error: updErr } = await supabaseAdmin
         .from("portal_einladungen")
@@ -330,6 +342,7 @@ export async function redeemPortalEinladung(opts: {
         })
         .eq("id", row.id)
         .eq("status", "offen");
+      if (updErr) logDbError('lib/portal2/portal-einladungen-server:portal_einladungen', updErr)
       if (updErr) {
         return { ok: false, error: updErr.message, status: 500 };
       }
@@ -349,11 +362,12 @@ export async function redeemPortalEinladung(opts: {
   // Bestehenden Kundenstamm zur E-Mail nutzen oder anlegen (kein Org-Stamm).
   let portalKundeId: string | null = null;
   {
-    const { data: existing } = await supabaseAdmin
+    const {data: existing, error: __dbErr481_7} = await supabaseAdmin
       .from("kunden")
       .select("id, portal_modus, auth_user_id")
       .ilike("email", email)
       .limit(5);
+    if (__dbErr481_7) logDbError('lib/portal2/portal-einladungen-server:kunden', __dbErr481_7)
 
     const candidates = (existing ?? []).filter((k) => {
       const m = (k.portal_modus ?? "") as string;
@@ -374,14 +388,15 @@ export async function redeemPortalEinladung(opts: {
 
     if (pick) {
       portalKundeId = String(pick.id);
-      const { data: authOccupied } = await supabaseAdmin
+      const {data: authOccupied, error: __dbErr482_8} = await supabaseAdmin
         .from("kunden")
         .select("id")
         .eq("auth_user_id", opts.authUserId)
         .maybeSingle();
+      if (__dbErr482_8) logDbError('lib/portal2/portal-einladungen-server:kunden', __dbErr482_8)
       const canTakeAuth =
         !authOccupied?.id || String(authOccupied.id) === portalKundeId;
-      await supabaseAdmin
+      const { error: __dbErr487_13 } = await supabaseAdmin
         .from("kunden")
         .update({
           ...(canTakeAuth ? { auth_user_id: opts.authUserId } : {}),
@@ -390,6 +405,7 @@ export async function redeemPortalEinladung(opts: {
           portal_modus: portalModus,
         })
         .eq("id", portalKundeId);
+      if (__dbErr487_13) logDbError('lib/portal2/portal-einladungen-server:kunden', __dbErr487_13)
     } else {
       const { data: created, error: createErr } = await supabaseAdmin
         .from("kunden")
@@ -402,6 +418,7 @@ export async function redeemPortalEinladung(opts: {
         })
         .select("id")
         .single();
+      if (createErr) logDbError('lib/portal2/portal-einladungen-server:kunden', createErr)
       if (createErr || !created) {
         return {
           ok: false,
@@ -414,7 +431,7 @@ export async function redeemPortalEinladung(opts: {
   }
 
   if (inviteRolle === "hausmeister" && orgHmId && portalKundeId) {
-    await supabaseAdmin
+    const { error: __dbErr488_14 } = await supabaseAdmin
       .from("org_hausmeister")
       .update({
         portal_kunde_id: portalKundeId,
@@ -425,21 +442,23 @@ export async function redeemPortalEinladung(opts: {
       })
       .eq("id", orgHmId)
       .eq("org_kunde_id", row.kunde_id);
+    if (__dbErr488_14) logDbError('lib/portal2/portal-einladungen-server:org_hausmeister', __dbErr488_14)
     if (row.objekt_id) {
-      await supabaseAdmin.from("hausmeister_objekte").upsert(
+      const { error: __dbErr489_15 } = await supabaseAdmin.from("hausmeister_objekte").upsert(
         {
           org_hausmeister_id: orgHmId,
           kunde_objekt_id: row.objekt_id,
         },
         { onConflict: "kunde_objekt_id" }
       );
+      if (__dbErr489_15) logDbError('lib/portal2/portal-einladungen-server:hausmeister_objekte', __dbErr489_15)
     }
   }
 
   // Bewohner zuordnen / anlegen
   if (inviteRolle !== "hausmeister" && row.einheit_id) {
     if (row.bewohner_id) {
-      await supabaseAdmin
+      const { error: __dbErr490_16 } = await supabaseAdmin
         .from("einheit_bewohner")
         .update({
           email,
@@ -450,8 +469,9 @@ export async function redeemPortalEinladung(opts: {
         })
         .eq("id", row.bewohner_id)
         .eq("kunde_id", row.kunde_id);
+      if (__dbErr490_16) logDbError('lib/portal2/portal-einladungen-server:einheit_bewohner', __dbErr490_16)
     } else {
-      const { data: existingB } = await supabaseAdmin
+      const {data: existingB, error: __dbErr483_9} = await supabaseAdmin
         .from("einheit_bewohner")
         .select("id")
         .eq("objekt_einheit_id", row.einheit_id)
@@ -459,9 +479,10 @@ export async function redeemPortalEinladung(opts: {
         .eq("aktiv", true)
         .ilike("email", email)
         .maybeSingle();
+      if (__dbErr483_9) logDbError('lib/portal2/portal-einladungen-server:einheit_bewohner', __dbErr483_9)
 
       if (!existingB) {
-        await supabaseAdmin.from("einheit_bewohner").insert({
+        const { error: __dbErr491_17 } = await supabaseAdmin.from("einheit_bewohner").insert({
           kunde_id: row.kunde_id,
           objekt_einheit_id: row.einheit_id,
           name,
@@ -471,17 +492,19 @@ export async function redeemPortalEinladung(opts: {
           rolle: inviteRolle,
           portal_kunde_id: portalKundeId,
         });
+        if (__dbErr491_17) logDbError('lib/portal2/portal-einladungen-server:einheit_bewohner', __dbErr491_17)
       } else {
-        await supabaseAdmin
+        const { error: __dbErr492_18 } = await supabaseAdmin
           .from("einheit_bewohner")
           .update({ portal_kunde_id: portalKundeId })
           .eq("id", existingB.id);
+        if (__dbErr492_18) logDbError('lib/portal2/portal-einladungen-server:einheit_bewohner', __dbErr492_18)
       }
     }
 
     // Gleiche Person (E-Mail) auf anderen Einheiten → gleiches Portal-Konto
     if (inviteRolle === "eigentuemer" && portalKundeId && email) {
-      await supabaseAdmin
+      const { error: __dbErr493_19 } = await supabaseAdmin
         .from("einheit_bewohner")
         .update({ portal_kunde_id: portalKundeId })
         .eq("kunde_id", row.kunde_id)
@@ -489,6 +512,7 @@ export async function redeemPortalEinladung(opts: {
         .eq("aktiv", true)
         .ilike("email", email)
         .is("anonymisiert_am", null);
+      if (__dbErr493_19) logDbError('lib/portal2/portal-einladungen-server:einheit_bewohner', __dbErr493_19)
     }
   }
 
@@ -518,6 +542,7 @@ export async function redeemPortalEinladung(opts: {
     })
     .eq("id", row.id)
     .eq("status", "offen");
+  if (updErr) logDbError('lib/portal2/portal-einladungen-server:portal_einladungen', updErr)
 
   if (updErr) {
     return { ok: false, error: updErr.message, status: 500 };
@@ -545,6 +570,7 @@ export async function tryRedeemOpenHausmeisterInvitesForAuthUser(opts: {
     .select("id")
     .ilike("email", email)
     .eq("portal_zugang", true);
+  if (hmErr) logDbError('lib/portal2/portal-einladungen-server:org_hausmeister', hmErr)
 
   if (hmErr || !hmRows?.length) return { redeemed: false };
 
@@ -557,6 +583,7 @@ export async function tryRedeemOpenHausmeisterInvitesForAuthUser(opts: {
     .eq("status", "offen")
     .in("org_hausmeister_id", hmIds)
     .order("created_at", { ascending: false });
+  if (invErr) logDbError('lib/portal2/portal-einladungen-server:portal_einladungen', invErr)
 
   if (invErr || !invites?.length) return { redeemed: false };
 
@@ -598,6 +625,7 @@ export async function tryRedeemOpenBewohnerInvitesForAuthUser(opts: {
     .eq("aktiv", true)
     .is("anonymisiert_am", null)
     .limit(40);
+  if (bewErr) logDbError('lib/portal2/portal-einladungen-server:einheit_bewohner', bewErr)
 
   if (bewErr || !bewohner?.length) return { redeemed: false };
 
@@ -610,6 +638,7 @@ export async function tryRedeemOpenBewohnerInvitesForAuthUser(opts: {
     .eq("status", "offen")
     .in("bewohner_id", bewIds)
     .order("created_at", { ascending: false });
+  if (invErr) logDbError('lib/portal2/portal-einladungen-server:portal_einladungen', invErr)
 
   if (invErr || !invites?.length) return { redeemed: false };
 

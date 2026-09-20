@@ -1,8 +1,8 @@
 "use client";
 
+import { SiteIcon } from "@/components/ui/SiteIcon";
 import Image from "next/image";
 import Link from "next/link";
-import { ImagePlus } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import { GptChatBriefBar } from "@/components/gpt/GptChatBriefBar";
@@ -100,10 +100,7 @@ function isActiveVizFlow(phase: GptVizPhase, flowActive: boolean): boolean {
 
 function SendMessageIcon() {
   return (
-    <svg className="ki-rechner-chat-send-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden>
-      <path d="m22 2-7 20-4-9-9-4 20-7Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-      <path d="M22 2 11 13" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
+    <SiteIcon n="send" ctx="default" size={18} className="ki-rechner-chat-send-icon" />
   );
 }
 
@@ -740,7 +737,9 @@ export function GptStudioChat({
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ session_id: sid, wunsch_text: effectiveWunsch }),
-      }).catch(() => {});
+      }).catch((e) => {
+        console.error("[GptStudioChat:prepare-render]", e);
+      });
 
       await executeRender(effectiveWunsch);
     },
@@ -1307,7 +1306,7 @@ export function GptStudioChat({
                   }
                   onClick={() => fileInputRef.current?.click()}
                 >
-                  <ImagePlus className="h-5 w-5" aria-hidden />
+                  <SiteIcon n="photo-plus" ctx="default" className="h-5 w-5" aria-hidden />
                 </button>
               ) : null}
               <textarea

@@ -16,7 +16,10 @@ import { DokumenteTabelle } from "@/components/shared/DokumenteTabelle";
 import { PortalDetailCard } from "@/components/shared/PortalDetailCard";
 import { PortalDocOpenButton } from "@/components/shared/PortalDocOpenButton";
 import { PortalDetailTabs } from "@/components/shared/PortalDetailTabs";
-import { PortalModalShell } from "@/components/shared/PortalModalShell";
+import {
+  PortalAngebotAblehnenModal,
+  type PortalAngebotAblehnenPayload,
+} from "@/components/shared/PortalAngebotAblehnenModal";
 import {
   PortalAnsprechpartnerCard,
   PortalConfirmDialog,
@@ -46,6 +49,7 @@ import {
 } from "@/lib/portal2/portal-detail-deep-link";
 import type { PortalFlowTimelineVariant, PortalMockStatusId } from "@/lib/portal2/status";
 import { portalMieterStatusLabel } from "@/lib/portal2/status";
+import { EMPTY, COPY_ERROR } from '@/lib/portal-copy'
 
 function extractProjektbeschreibung(item: KundePortalDetailItem): string {
   const fromMelde = item.meldeBeschreibung?.trim();
@@ -160,7 +164,6 @@ export function PortalVorgangDetail({
   const deepLinkAppliedRef = useRef(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [rejectOpen, setRejectOpen] = useState(false);
-  const [rejectGrund, setRejectGrund] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [accepted, setAccepted] = useState(false);
@@ -237,6 +240,15 @@ export function PortalVorgangDetail({
       /* ignore */
     }
   }, [sectionTabs, searchParams, item.id, item.leadId]);
+
+  const isAngebotAccept = Boolean(item.isAngebotDetail && item.needsAction);
+  const isAuftragAccept = Boolean(item.isAuftragDetail && item.needsAction);
+
+  useEffect(() => {
+    if (searchParams.get("focus")?.trim() !== "ablehnen") return;
+    if (!isAngebotAccept || accepted || rejected) return;
+    setRejectOpen(true);
+  }, [searchParams, isAngebotAccept, accepted, rejected]);
 
   if (showHvAbnahme) {
     const beschreibung = extractProjektbeschreibung(item);
@@ -358,9 +370,6 @@ export function PortalVorgangDetail({
     undefined;
   const statusPill = portalDetailStatusPillClass(item.statusPillKey ?? item.status ?? "offen");
 
-  const isAngebotAccept = Boolean(item.isAngebotDetail && item.needsAction);
-  const isAuftragAccept = Boolean(item.isAuftragDetail && item.needsAction);
-
   async function handleAccept() {
     setLoading(true);
     setError(null);
@@ -370,7 +379,7 @@ export function PortalVorgangDetail({
           ? await acceptKundeAngebot(item.id)
           : isAuftragAccept
             ? await acceptKundeAuftragAenderungen(item.id)
-            : { ok: false as const, error: "Keine Annahme möglich." };
+            : { ok: false as const, error: COPY_ERROR.keineAnnahme };
         setConfirmOpen(false);
         if (!res.ok) {
           setError(res.error);
@@ -390,19 +399,21 @@ export function PortalVorgangDetail({
     }
   }
 
-  async function handleReject() {
+  async function handleReject(payload: PortalAngebotAblehnenPayload) {
     if (!isAngebotAccept) return;
     setLoading(true);
     setError(null);
     try {
       await runBusy(async () => {
-        const res = await rejectKundeAngebot(item.id, rejectGrund);
+        const res = await rejectKundeAngebot(item.id, {
+          grund: payload.grund,
+          notiz: payload.notiz,
+        });
         if (!res.ok) {
           setError(res.error);
           return;
         }
         setRejectOpen(false);
-        setRejectGrund("");
         kundePortalToast.angebotAbgelehnt();
         setRejected(true);
         onAccepted?.();
@@ -549,9 +560,9 @@ export function PortalVorgangDetail({
                             href={d.href!}
                             name={d.name}
                             kind="pdf"
-                            className="block w-full overflow-hidden rounded-xl border border-[var(--portal-primary,#2E7D52)]/30 bg-[var(--portal-primary,#2E7D52)]/5 text-left"
+                            className="block w-full overflow-hidden rounded-sheet border border-[var(--portal-primary)]/30 bg-[var(--portal-primary)]/5 text-left"
                           >
-                            <p className="px-3 py-4 text-center portal-text-meta font-semibold text-[var(--portal-primary,#2E7D52)]">
+                            <p className="px-3 py-4 text-center portal-text-meta font-semibold text-[var(--portal-primary)]">
                               {d.name} — PDF öffnen
                             </p>
                           </PortalDocOpenButton>
@@ -563,7 +574,7 @@ export function PortalVorgangDetail({
                     heading=""
                     emptyText={
                       abnahmeDocs.length > 0
-                        ? "Keine weiteren Dokumente."
+                        ? EMPTY.dokumenteWeitere
                         : "Noch keine Dokumente."
                     }
                     dokumente={otherDocs.map((d) => ({
@@ -612,52 +623,15 @@ export function PortalVorgangDetail({
         onCancel={() => setConfirmOpen(false)}
       />
 
-      <PortalModalShell
+      <PortalAngebotAblehnenModal
         open={rejectOpen}
-        title="Angebot ablehnen?"
+        loading={loading}
         onClose={() => {
           if (loading) return;
           setRejectOpen(false);
         }}
-        variant="edit"
-        dirty={rejectGrund.trim().length > 0}
-        closeOnBackdrop={!loading}
-        busy={loading}
-        onConfirm={() => void handleReject()}
-        confirmDisabled={loading}
-        confirmLabel="Ablehnen"
-      >
-        <label className="flex flex-col gap-1.5">
-          <span className="portal-form-label">Grund (optional)</span>
-          <textarea
-            value={rejectGrund}
-            onChange={(e) => setRejectGrund(e.target.value)}
-            rows={3}
-            maxLength={500}
-            placeholder="z. B. Preis, Umfang, Zeitpunkt …"
-            className="portal-input w-full rounded-xl border border-border-default px-3 py-2.5"
-            disabled={loading}
-          />
-        </label>
-        <div className="portal-modal-discard-actions portal-action-row mt-5">
-          <button
-            type="button"
-            disabled={loading}
-            onClick={() => setRejectOpen(false)}
-            className="portal-action-btn portal-action-btn--secondary"
-          >
-            Weiter bearbeiten
-          </button>
-          <button
-            type="button"
-            disabled={loading}
-            onClick={() => void handleReject()}
-            className="portal-action-btn portal-action-btn--danger"
-          >
-            {loading ? "Bitte warten…" : "Ablehnen"}
-          </button>
-        </div>
-      </PortalModalShell>
+        onConfirm={(payload) => void handleReject(payload)}
+      />
     </>
   );
 }

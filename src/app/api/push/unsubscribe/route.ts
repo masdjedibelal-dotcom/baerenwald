@@ -1,3 +1,4 @@
+import { logDbError } from '@/lib/errors/log-db-error'
 import { NextResponse } from "next/server";
 
 import { createClient } from "@/lib/supabase/server";
@@ -25,16 +26,18 @@ export async function POST(req: Request) {
   }
 
   if (endpoint) {
-    await supabaseAdmin
+    const { error: __dbErr242_1 } = await supabaseAdmin
       .from("push_subscriptions")
       .delete()
       .eq("auth_user_id", user.id)
       .eq("endpoint", endpoint);
+    if (__dbErr242_1) logDbError('app/api/push/unsubscribe/route:push_subscriptions', __dbErr242_1)
   } else {
-    await supabaseAdmin
+    const { error: __dbErr243_2 } = await supabaseAdmin
       .from("push_subscriptions")
       .delete()
       .eq("auth_user_id", user.id);
+    if (__dbErr243_2) logDbError('app/api/push/unsubscribe/route:push_subscriptions', __dbErr243_2)
   }
 
   return NextResponse.json({ ok: true });

@@ -1,4 +1,6 @@
 "use client";
+import { PALETTE } from "@/lib/tokens/palette";
+import { PortalButton } from "@/components/portal/PortalButton";
 
 import { useEffect, useRef, useState } from "react";
 
@@ -28,7 +30,7 @@ export function SignatureCanvas({ onChange, className, large = true }: Props) {
     if (!ctx) return;
     ctx.lineWidth = 2.2;
     ctx.lineCap = "round";
-    ctx.strokeStyle = "#1c211e";
+    ctx.strokeStyle = PALETTE.h1c211e;
 
     function pos(e: MouseEvent | TouchEvent) {
       const r = cv!.getBoundingClientRect();
@@ -95,12 +97,12 @@ export function SignatureCanvas({ onChange, className, large = true }: Props) {
 
   return (
     <div className={cn("space-y-1.5", className)}>
-      <div className="relative rounded-xl border border-dashed border-border-default bg-white">
+      <div className="relative rounded-sheet border border-dashed border-border-default bg-white">
         <canvas
           ref={canvasRef}
           width={640}
           height={height}
-          className="block w-full touch-none rounded-xl"
+          className="block w-full touch-none rounded-sheet"
           style={{ minHeight: height }}
           aria-label="Unterschriftsfeld — mit Maus oder Finger zeichnen"
         />
@@ -111,13 +113,14 @@ export function SignatureCanvas({ onChange, className, large = true }: Props) {
         ) : null}
       </div>
       <div className="flex flex-wrap items-center gap-3">
-        <button
+        <PortalButton
+          variant="ghost"
           type="button"
           onClick={clear}
           className="text-xs text-text-tertiary underline"
         >
           Unterschrift löschen
-        </button>
+        </PortalButton>
       </div>
     </div>
   );

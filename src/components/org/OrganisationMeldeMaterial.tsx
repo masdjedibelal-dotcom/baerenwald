@@ -1,7 +1,8 @@
 "use client";
 
+import { PortalIcon } from "@/components/portal/PortalIcon";
 import { useState } from "react";
-import { Check, Copy } from "lucide-react";
+import { PortalButton } from "@/components/portal/PortalButton";
 
 import { OrganisationMeldeQrModal } from "@/components/org/OrganisationMeldeQrModal";
 import {
@@ -46,13 +47,13 @@ export function OrganisationMeldeMaterial({ kunde }: Props) {
   return (
     <EinstellungenSectionCard title="Schadensmeldung für Mieter">
       {!legalReady ? (
-        <p className="text-[13px] leading-[1.55]" style={{ color: PORTAL_VAR.sub }}>
+        <p className="text-fs-meta leading-[1.55]" style={{ color: PORTAL_VAR.sub }}>
           {ORG_MELDE_LEGAL_REQUIRED_HINT}
         </p>
       ) : (
         <>
           <div className="flex flex-col gap-1">
-            <span className="text-[11.5px] font-bold tracking-wide text-text-tertiary">
+            <span className="text-fs-caption font-bold tracking-wide text-text-tertiary">
               Melde-Link
             </span>
             <div
@@ -61,14 +62,15 @@ export function OrganisationMeldeMaterial({ kunde }: Props) {
                 actionsEnabled ? "bg-white" : "bg-white opacity-55"
               )}
             >
-              <p className="min-w-0 flex-1 break-all text-[13.5px] font-semibold text-text-primary">
+              <p className="min-w-0 flex-1 break-all text-fs-body font-semibold text-text-primary">
                 {meldeUrl || "Wird vorbereitet…"}
               </p>
-              <button
+              <PortalButton
+                variant="ghost"
                 type="button"
                 disabled={!actionsEnabled}
                 className={cn(
-                  "grid h-8 w-8 shrink-0 place-items-center rounded-lg text-text-secondary transition-colors",
+                  "grid h-8 w-8 shrink-0 place-items-center rounded-card text-text-secondary transition-colors",
                   actionsEnabled && "hover:bg-white hover:text-accent",
                   copied && "text-accent",
                   !actionsEnabled && "cursor-not-allowed opacity-50"
@@ -78,31 +80,33 @@ export function OrganisationMeldeMaterial({ kunde }: Props) {
                 title={copied ? "Kopiert" : "Link kopieren"}
               >
                 {copied ? (
-                  <Check className="h-4 w-4" strokeWidth={2.25} />
+                  <PortalIcon n="check" ctx="default" className="h-4 w-4" />
                 ) : (
-                  <Copy className="h-4 w-4" strokeWidth={2.25} />
+                  <PortalIcon n="copy" ctx="default" className="h-4 w-4" />
                 )}
-              </button>
+              </PortalButton>
             </div>
           </div>
 
           <div className="flex flex-wrap gap-2">
-            <button
+            <PortalButton
+              variant="primary"
               type="button"
               disabled={!actionsEnabled}
-              className="btn-pill-primary !py-2 disabled:cursor-not-allowed disabled:opacity-45"
+              className="!py-2 disabled:cursor-not-allowed disabled:opacity-45"
               onClick={() => openMeldeAushangPdf()}
             >
               Aushang PDF
-            </button>
-            <button
+            </PortalButton>
+            <PortalButton
+              variant="secondary"
               type="button"
               disabled={!actionsEnabled}
-              className="btn-pill-outline !py-2 disabled:cursor-not-allowed disabled:opacity-45"
+              className="!py-2 disabled:cursor-not-allowed disabled:opacity-45"
               onClick={() => setQrOpen(true)}
             >
               QR-Code
-            </button>
+            </PortalButton>
           </div>
         </>
       )}

@@ -1,3 +1,4 @@
+import { logDbError } from '@/lib/errors/log-db-error'
 import { NextResponse } from "next/server";
 
 import { loadPortalAuftraegeByLeadIds } from "@/lib/portal/load-auftraege-by-lead-ids";
@@ -22,14 +23,14 @@ export async function GET(req: Request) {
     return NextResponse.json({ error: "token fehlt." }, { status: 400 });
   }
 
-  const { data: lead } = await supabaseAdmin
+  const {data: lead, error: __dbErr148_1} = await supabaseAdmin
     .from("leads")
     .select(
       "id, hv_meldung_status, vorgang_phase, org_freigabe_status, freigabe_bypass_grund, mieter_vor_ort_at, geloescht_am, status"
     )
     .eq("melde_tracking_token", token)
     .maybeSingle();
-
+  if (__dbErr148_1) logDbError('app/api/melden/status/route:leads', __dbErr148_1)
   if (!lead || (lead as { geloescht_am?: string | null }).geloescht_am) {
     return NextResponse.json({ error: "Nicht gefunden." }, { status: 404 });
   }
@@ -53,11 +54,12 @@ export async function GET(req: Request) {
     href: string;
   }> = [];
   if (erledigt && auftragId) {
-    const { data: protokolle } = await supabaseAdmin
+    const {data: protokolle, error: __dbErr149_2} = await supabaseAdmin
       .from("auftrag_abnahmeprotokolle")
       .select("id, abnahme_datum, pdf_url, created_at")
       .eq("auftrag_id", auftragId)
       .order("created_at", { ascending: false });
+    if (__dbErr149_2) logDbError('app/api/melden/status/route:auftrag_abnahmeprotokolle', __dbErr149_2)
     for (const p of protokolle ?? []) {
       const href = String((p as { pdf_url?: string }).pdf_url ?? "").trim();
       if (!href) continue;

@@ -1,3 +1,4 @@
+import { logDbError } from '@/lib/errors/log-db-error'
 import { writeAuditEvent } from "@/lib/audit/write-audit-event";
 import { notifyMieterStatusChange } from "@/lib/melde/mieter-status-mail";
 import { notifyPortalAngebotGesendet } from "@/lib/portal/notify-portal-angebot-gesendet";
@@ -28,11 +29,12 @@ async function isOrganisationKundeLead(
 ): Promise<boolean> {
   const kundeId = lead.kunde_id?.trim();
   if (!kundeId) return false;
-  const { data: kunde } = await supabaseAdmin
+  const {data: kunde, error: __dbErr500_1} = await supabaseAdmin
     .from("kunden")
     .select("portal_modus")
     .eq("id", kundeId)
     .maybeSingle();
+  if (__dbErr500_1) logDbError('lib/vorgang/sync-lead-from-crm:kunden', __dbErr500_1)
   return kunde?.portal_modus === "organisation";
 }
 
@@ -96,6 +98,7 @@ export async function syncLeadFromCrm(
     )
     .eq("id", leadId)
     .maybeSingle();
+  if (error) logDbError('lib/vorgang/sync-lead-from-crm:leads', error)
 
   if (error) return { ok: false, error: error.message };
   if (!lead?.id) return { ok: false, error: "Lead nicht gefunden" };
@@ -136,6 +139,7 @@ export async function syncLeadFromCrm(
     .from("leads")
     .update(patch)
     .eq("id", leadId);
+  if (upErr) logDbError('lib/vorgang/sync-lead-from-crm:leads', upErr)
 
   if (upErr) return { ok: false, error: upErr.message };
 

@@ -1,3 +1,4 @@
+import { logDbError } from '@/lib/errors/log-db-error'
 import { NextResponse } from "next/server";
 
 import { createClient } from "@/lib/supabase/server";
@@ -16,16 +17,18 @@ export async function GET() {
     return NextResponse.json({ error: "Nicht angemeldet." }, { status: 401 });
   }
 
-  const { data: prefs } = await supabaseAdmin
+  const {data: prefs, error: __dbErr238_1} = await supabaseAdmin
     .from("push_prefs")
     .select("push_enabled")
     .eq("auth_user_id", user.id)
     .maybeSingle();
+  if (__dbErr238_1) logDbError('app/api/push/prefs/route:push_prefs', __dbErr238_1)
 
-  const { count } = await supabaseAdmin
+  const {count, error: __dbErr239_2} = await supabaseAdmin
     .from("push_subscriptions")
     .select("id", { count: "exact", head: true })
     .eq("auth_user_id", user.id);
+  if (__dbErr239_2) logDbError('app/api/push/prefs/route:push_subscriptions', __dbErr239_2)
 
   return NextResponse.json({
     push_enabled: Boolean(prefs?.push_enabled),
@@ -59,16 +62,18 @@ export async function PATCH(req: Request) {
     },
     { onConflict: "auth_user_id" }
   );
+  if (error) logDbError('app/api/push/prefs/route:push_prefs', error)
 
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
   if (!body.push_enabled) {
-    await supabaseAdmin
+    const { error: __dbErr240_3 } = await supabaseAdmin
       .from("push_subscriptions")
       .delete()
       .eq("auth_user_id", user.id);
+    if (__dbErr240_3) logDbError('app/api/push/prefs/route:push_subscriptions', __dbErr240_3)
   }
 
   return NextResponse.json({ ok: true, push_enabled: body.push_enabled });

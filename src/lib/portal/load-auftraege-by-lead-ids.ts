@@ -1,3 +1,4 @@
+import { logDbError } from '@/lib/errors/log-db-error'
 import type { PortalAuftragKontext } from "@/lib/portal/vorgang-erledigt";
 import { handwerkerFirmenLabel } from "@/lib/portal2/handwerker-display";
 import { supabaseAdmin } from "@/lib/supabase";
@@ -27,14 +28,14 @@ export async function loadPortalAuftraegeByLeadIds(
     return { auftraege: [], kontextByLeadId: {}, auftragIdByLeadId: {} };
   }
 
-  const { data: rows } = await supabaseAdmin
+  const {data: rows, error: __dbErr454_1} = await supabaseAdmin
     .from("auftraege")
     .select(
       "id, lead_id, titel, status, fortschritt, start_datum, end_datum, created_at, handwerker_bestaetigt_at"
     )
     .in("lead_id", ids)
     .order("created_at", { ascending: false });
-
+  if (__dbErr454_1) logDbError('lib/portal/load-auftraege-by-lead-ids:auftraege', __dbErr454_1)
   const latestByLead = new Map<string, PortalAuftragByLeadSnapshot>();
   for (const row of rows ?? []) {
     const leadId = String((row as { lead_id: string }).lead_id);
@@ -58,13 +59,13 @@ export async function loadPortalAuftraegeByLeadIds(
 
   const auftragIds = Array.from(latestByLead.values()).map((a) => a.id);
   if (auftragIds.length) {
-    const { data: positionen } = await supabaseAdmin
+    const {data: positionen, error: __dbErr455_2} = await supabaseAdmin
       .from("auftrag_positionen")
       .select(
         "auftrag_id, handwerker_id, handwerker_status, leistung_status, aenderung_typ"
       )
       .in("auftrag_id", auftragIds);
-
+    if (__dbErr455_2) logDbError('lib/portal/load-auftraege-by-lead-ids:auftrag_positionen', __dbErr455_2)
     const posByAuftrag = new Map<string, PortalAuftragByLeadSnapshot["positionen"]>();
     for (const p of positionen ?? []) {
       const aid = String((p as { auftrag_id: string }).auftrag_id);
@@ -96,10 +97,11 @@ export async function loadPortalAuftraegeByLeadIds(
     );
     const handwerkerLabelById = new Map<string, string>();
     if (handwerkerIds.length > 0) {
-      const { data: hwRows } = await supabaseAdmin
+      const {data: hwRows, error: __dbErr456_3} = await supabaseAdmin
         .from("handwerker")
         .select("id, firma, name")
         .in("id", handwerkerIds);
+      if (__dbErr456_3) logDbError('lib/portal/load-auftraege-by-lead-ids:handwerker', __dbErr456_3)
       for (const row of hwRows ?? []) {
         const id = String((row as { id: string }).id);
         const label = handwerkerFirmenLabel({

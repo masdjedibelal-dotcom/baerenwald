@@ -3,7 +3,9 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { PortalButton } from "@/components/portal/PortalButton";
 
+import { PortalInput } from "@/components/shared/PortalFormControls";
 import { PortalAuthBusy } from "@/components/portal/auth/PortalAuthBusy";
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
 
@@ -60,34 +62,34 @@ export function PortalSetPasswordForm({
   return (
     <form onSubmit={onSubmit} className="space-y-4">
       {error ? (
-        <p className="rounded-lg bg-red-50 px-3 py-2 portal-text-body text-red-800">{error}</p>
+        <p className="rounded-card bg-p2-danger-soft px-3 py-2 portal-text-body text-p2-danger">{error}</p>
       ) : null}
       <label className="block space-y-1.5">
         <span className="portal-form-label">Neues Passwort</span>
-        <input
+        <PortalInput
           type="password"
           autoComplete="new-password"
           required
           minLength={8}
           value={password}
           onChange={(e) => setPassword(e.target.value)}
-          className="portal-input w-full rounded-xl border border-border-default bg-surface-card px-3 py-3"
+          className="portal-input w-full rounded-field border border-border-default bg-surface-card px-3 py-3"
         />
       </label>
       <label className="block space-y-1.5">
         <span className="portal-form-label">Passwort wiederholen</span>
-        <input
+        <PortalInput
           type="password"
           autoComplete="new-password"
           required
           value={password2}
           onChange={(e) => setPassword2(e.target.value)}
-          className="portal-input w-full rounded-xl border border-border-default bg-surface-card px-3 py-3"
+          className="portal-input w-full rounded-field border border-border-default bg-surface-card px-3 py-3"
         />
       </label>
-      <button type="submit" className="btn-pill-primary w-full !py-2.5">
+      <PortalButton variant="primary" type="submit" className="w-full !py-2.5">
         Passwort speichern
-      </button>
+      </PortalButton>
       <p className="portal-text-body text-center text-text-secondary">
         <Link href={forgotHref} className="text-accent hover:underline">
           Link erneut anfordern

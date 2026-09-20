@@ -3,7 +3,7 @@
 import { motion, useInView } from "framer-motion";
 import { useRef } from "react";
 
-import { BwIcon } from "@/components/ui/BwIcon";
+import { SiteIcon } from "@/components/ui/SiteIcon";
 import { WARUM_EINSATZ_BLOCKS } from "@/lib/warum-blocks";
 
 function WarumCard({
@@ -25,7 +25,7 @@ function WarumCard({
       transition={{ duration: 0.45, delay }}
     >
       <span className="warum-card-icon" aria-hidden>
-        <BwIcon name={block.icon} size={32} />
+        <SiteIcon asset={block.icon} size={32} />
       </span>
       <h3>{block.titel}</h3>
       <p>{block.text}</p>

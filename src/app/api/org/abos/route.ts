@@ -1,3 +1,4 @@
+import { logDbError } from '@/lib/errors/log-db-error'
 import { NextResponse } from "next/server";
 
 import { requireOrganisationSession } from "@/lib/org/require-org-session";
@@ -18,6 +19,7 @@ export async function GET() {
     .eq("kunde_id", session.kunde.id)
     .in("status", ["aktiv", "gekuendigt"])
     .order("created_at", { ascending: false });
+  if (error) logDbError('app/api/org/abos/route:objekt_abos', error)
 
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });

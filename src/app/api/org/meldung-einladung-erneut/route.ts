@@ -1,3 +1,4 @@
+import { logDbError } from '@/lib/errors/log-db-error'
 import { NextResponse } from "next/server";
 
 import { buildEinladungUrl } from "@/lib/org/melde-url";
@@ -22,7 +23,7 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Lead fehlt." }, { status: 400 });
   }
 
-  const { data: lead } = await supabaseAdmin
+  const {data: lead, error: __dbErr196_1} = await supabaseAdmin
     .from("leads")
     .select(
       "id, einladung_token, einladung_status, melder_name, kunde_objekt_id, auftraggeber_kunde_id"
@@ -30,7 +31,7 @@ export async function POST(req: Request) {
     .eq("id", leadId)
     .eq("auftraggeber_kunde_id", session.kunde.id)
     .maybeSingle();
-
+  if (__dbErr196_1) logDbError('app/api/org/meldung-einladung-erneut/route:leads', __dbErr196_1)
   if (!lead?.id) {
     return NextResponse.json({ error: "Meldung nicht gefunden." }, { status: 404 });
   }

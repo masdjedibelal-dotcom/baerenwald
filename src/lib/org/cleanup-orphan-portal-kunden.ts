@@ -1,3 +1,4 @@
+import { logDbError } from '@/lib/errors/log-db-error'
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 /**
@@ -14,11 +15,12 @@ export async function cleanupOrphanHvPortalKunden(
   const deleted: string[] = [];
 
   for (const kid of ids) {
-    const { data: kunde } = await db
+    const {data: kunde, error: __dbErr271_1} = await db
       .from("kunden")
       .select("id, portal_modus, typ")
       .eq("id", kid)
       .maybeSingle();
+    if (__dbErr271_1) logDbError('lib/org/cleanup-orphan-portal-kunden:kunden', __dbErr271_1)
     if (!kunde) continue;
 
     const modus = String(kunde.portal_modus ?? "").toLowerCase();
@@ -58,6 +60,7 @@ export async function cleanupOrphanHvPortalKunden(
     if ((leads ?? 0) > 0 || (auftraege ?? 0) > 0 || (rechnungen ?? 0) > 0) continue;
 
     const { error } = await db.from("kunden").delete().eq("id", kid);
+    if (error) logDbError('lib/org/cleanup-orphan-portal-kunden:kunden', error)
     if (!error) deleted.push(kid);
   }
 
@@ -68,18 +71,20 @@ export async function collectPortalKundeIdsForObjekt(
   db: SupabaseClient,
   objektId: string
 ): Promise<string[]> {
-  const { data: einheiten } = await db
+  const {data: einheiten, error: __dbErr272_2} = await db
     .from("objekt_einheiten")
     .select("id")
     .eq("kunde_objekt_id", objektId);
+  if (__dbErr272_2) logDbError('lib/org/cleanup-orphan-portal-kunden:objekt_einheiten', __dbErr272_2)
   const einheitIds = (einheiten ?? []).map((e) => e.id as string).filter(Boolean);
   if (!einheitIds.length) return [];
 
-  const { data: bewohner } = await db
+  const {data: bewohner, error: __dbErr273_3} = await db
     .from("einheit_bewohner")
     .select("portal_kunde_id")
     .in("objekt_einheit_id", einheitIds)
     .not("portal_kunde_id", "is", null);
+  if (__dbErr273_3) logDbError('lib/org/cleanup-orphan-portal-kunden:einheit_bewohner', __dbErr273_3)
 
   return [
     ...new Set(

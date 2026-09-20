@@ -2,7 +2,9 @@
 
 import { useCallback, useEffect, useState } from "react";
 
-import { portalToastError } from "@/lib/shared/portal-toast";
+import { PortalDate, PortalInput, PortalTextarea } from "@/components/shared/PortalFormControls";
+import { portalToastSystemError } from "@/lib/shared/portal-toast";
+import { PortalButton } from "@/components/portal/PortalButton";
 
 type Notiz = {
   id: string;
@@ -47,7 +49,7 @@ export function OrganisationObjektNotizenPanel({ objektId }: { objektId: string 
       setWiedervorlage("");
       await load();
     } catch (err) {
-      portalToastError(err instanceof Error ? err.message : "Fehler");
+      portalToastSystemError(err, "org-akten-notizen");
     } finally {
       setBusy(false);
     }
@@ -67,25 +69,26 @@ export function OrganisationObjektNotizenPanel({ objektId }: { objektId: string 
       <p className="text-sm font-semibold text-text-primary">Notizen &amp; Wiedervorlagen</p>
       <ul className="space-y-2">
         {items.map((n) => (
-          <li key={n.id} className="rounded-lg border border-border-light p-3 text-sm">
+          <li key={n.id} className="rounded-card border border-border-light p-3 text-sm">
             <p>{n.text}</p>
             {n.wiedervorlage_am && !n.erledigt_am ? (
-              <p className="mt-1 text-xs text-amber-800">
+              <p className="mt-1 text-xs text-warning-text">
                 Wiedervorlage: {n.wiedervorlage_am}
-                <button
+                <PortalButton
+                  variant="ghost"
                   type="button"
                   className="ml-2 underline"
                   onClick={() => void erledigen(n.id)}
                 >
                   Erledigt
-                </button>
+                </PortalButton>
               </p>
             ) : null}
           </li>
         ))}
       </ul>
       <form onSubmit={add} className="space-y-2 border-t border-border-light pt-4">
-        <textarea
+        <PortalTextarea
           className="input-field w-full min-h-[72px]"
           placeholder="Notiz…"
           value={text}
@@ -94,16 +97,15 @@ export function OrganisationObjektNotizenPanel({ objektId }: { objektId: string 
         />
         <label className="block text-xs text-text-secondary">
           Wiedervorlage (optional)
-          <input
-            type="date"
+          <PortalDate
             className="input-field mt-1 w-full"
             value={wiedervorlage}
             onChange={(e) => setWiedervorlage(e.target.value)}
           />
         </label>
-        <button type="submit" className="btn-pill-outline portal-btn-compact" disabled={busy}>
+        <PortalButton variant="secondary" action={false} compact type="submit"  disabled={busy}>
           Speichern
-        </button>
+        </PortalButton>
       </form>
     </div>
   );
@@ -141,48 +143,47 @@ export function OrganisationVorgangNotizenPanel({ leadId }: { leadId: string }) 
 
   if (items.length === 0 && !text) {
     return (
-      <form onSubmit={add} className="space-y-2 rounded-lg border border-dashed border-border-light p-3">
+      <form onSubmit={add} className="space-y-2 rounded-card border border-dashed border-border-light p-3">
         <p className="text-xs font-medium text-text-secondary">Vorgangs-Notiz</p>
-        <textarea
+        <PortalTextarea
           className="input-field w-full min-h-[56px] text-sm"
           placeholder="Interne Notiz…"
           value={text}
           onChange={(e) => setText(e.target.value)}
         />
-        <input
-          type="date"
+        <PortalDate
           className="input-field w-full text-sm"
           value={wiedervorlage}
           onChange={(e) => setWiedervorlage(e.target.value)}
         />
-        <button type="submit" className="text-xs font-semibold text-accent" disabled={!text.trim()}>
+        <PortalButton variant="ghost" type="submit" className="text-xs font-semibold text-accent" disabled={!text.trim()}>
           Notiz speichern
-        </button>
+        </PortalButton>
       </form>
     );
   }
 
   return (
-    <div className="space-y-2 rounded-lg bg-muted/30 p-3">
+    <div className="space-y-2 rounded-button bg-muted/30 p-3">
       <p className="text-xs font-medium text-text-secondary">Vorgangs-Notizen</p>
       {items.map((n) => (
         <p key={n.id} className="text-sm">
           {n.text}
           {n.wiedervorlage_am ? (
-            <span className="text-xs text-amber-800"> · WV {n.wiedervorlage_am}</span>
+            <span className="text-xs text-warning-text"> · WV {n.wiedervorlage_am}</span>
           ) : null}
         </p>
       ))}
       <form onSubmit={add} className="flex gap-2 pt-1">
-        <input
+        <PortalInput
           className="input-field flex-1 text-sm"
           placeholder="Neue Notiz…"
           value={text}
           onChange={(e) => setText(e.target.value)}
         />
-        <button type="submit" className="btn-pill-outline portal-btn-compact !text-xs">
+        <PortalButton variant="secondary" action={false} compact type="submit" className="!text-xs">
           +
-        </button>
+        </PortalButton>
       </form>
     </div>
   );

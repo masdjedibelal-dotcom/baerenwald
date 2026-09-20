@@ -1,3 +1,4 @@
+import { logDbError } from '@/lib/errors/log-db-error'
 import { NextResponse } from "next/server";
 
 import { supabaseAdmin } from "@/lib/supabase";
@@ -10,11 +11,12 @@ type Body = {
 };
 
 async function leadFromToken(token: string) {
-  const { data: lead } = await supabaseAdmin
+  const {data: lead, error: __dbErr150_1} = await supabaseAdmin
     .from("leads")
     .select("id")
     .eq("melde_tracking_token", token)
     .maybeSingle();
+  if (__dbErr150_1) logDbError('app/api/melden/terminslots/route:leads', __dbErr150_1)
   return lead;
 }
 
@@ -30,24 +32,26 @@ export async function GET(req: Request) {
     return NextResponse.json({ error: "Nicht gefunden." }, { status: 404 });
   }
 
-  const { data: auftrag } = await supabaseAdmin
+  const {data: auftrag, error: __dbErr151_2} = await supabaseAdmin
     .from("auftraege")
     .select("id")
     .eq("lead_id", lead.id)
     .order("created_at", { ascending: false })
     .limit(1)
     .maybeSingle();
+  if (__dbErr151_2) logDbError('app/api/melden/terminslots/route:auftraege', __dbErr151_2)
 
   if (!auftrag) {
     return NextResponse.json({ slots: [], bestaetigt: null });
   }
 
-  const { data: slots } = await supabaseAdmin
+  const {data: slots, error: __dbErr152_3} = await supabaseAdmin
     .from("auftrag_terminslots")
     .select("id, slot_beginn, slot_ende, status, bestaetigt_am")
     .eq("auftrag_id", auftrag.id)
     .in("status", ["vorgeschlagen", "bestaetigt"])
     .order("slot_beginn", { ascending: true });
+  if (__dbErr152_3) logDbError('app/api/melden/terminslots/route:auftrag_terminslots', __dbErr152_3)
 
   const bestaetigt =
     slots?.find((s) => s.status === "bestaetigt") ??
@@ -78,22 +82,24 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Nicht gefunden." }, { status: 404 });
   }
 
-  const { data: slot } = await supabaseAdmin
+  const {data: slot, error: __dbErr153_4} = await supabaseAdmin
     .from("auftrag_terminslots")
     .select("id, auftrag_id, status")
     .eq("id", slotId)
     .maybeSingle();
+  if (__dbErr153_4) logDbError('app/api/melden/terminslots/route:auftrag_terminslots', __dbErr153_4)
 
   if (!slot) {
     return NextResponse.json({ error: "Termin nicht gefunden." }, { status: 404 });
   }
 
-  const { data: auftrag } = await supabaseAdmin
+  const {data: auftrag, error: __dbErr154_5} = await supabaseAdmin
     .from("auftraege")
     .select("id")
     .eq("id", slot.auftrag_id)
     .eq("lead_id", lead.id)
     .maybeSingle();
+  if (__dbErr154_5) logDbError('app/api/melden/terminslots/route:auftraege', __dbErr154_5)
 
   if (!auftrag) {
     return NextResponse.json({ error: "Kein Zugriff." }, { status: 403 });
@@ -102,16 +108,18 @@ export async function POST(req: Request) {
   const now = new Date().toISOString();
 
   if (action === "bestaetigen") {
-    await supabaseAdmin
+    const { error: __dbErr155_6 } = await supabaseAdmin
       .from("auftrag_terminslots")
       .update({ status: "abgesagt", abgesagt_am: now, absage_grund: "durch anderen Slot ersetzt" })
       .eq("auftrag_id", slot.auftrag_id)
       .eq("status", "bestaetigt");
+    if (__dbErr155_6) logDbError('app/api/melden/terminslots/route:auftrag_terminslots', __dbErr155_6)
 
     const { error } = await supabaseAdmin
       .from("auftrag_terminslots")
       .update({ status: "bestaetigt", bestaetigt_am: now })
       .eq("id", slotId);
+    if (error) logDbError('app/api/melden/terminslots/route:auftrag_terminslots', error)
 
     if (error) {
       return NextResponse.json({ error: error.message }, { status: 500 });
@@ -124,6 +132,7 @@ export async function POST(req: Request) {
     .from("auftrag_terminslots")
     .update({ status: "abgesagt", abgesagt_am: now, absage_grund: grund })
     .eq("id", slotId);
+  if (error) logDbError('app/api/melden/terminslots/route:auftrag_terminslots', error)
 
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });

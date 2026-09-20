@@ -17,8 +17,10 @@ import {
 } from "@/components/shared/PortalBusyContext";
 import { PortalContentBusy } from "@/components/shared/PortalContentBusy";
 import { PortalListCard } from "@/components/shared/PortalListCard";
+import { PortalActionMenu } from "@/components/shared/PortalActionMenu";
 import { OrganisationObjektCover } from "@/components/org/OrganisationObjektCover";
 import { PortalEntityDetailLayout } from "@/components/shared/PortalEntityDetailLayout";
+import { PortalInboxEmpty } from "@/components/shared/PortalEmptyState";
 import {
   PORTAL_LIST_PAGE_SIZE,
   PortalListPagination,
@@ -29,10 +31,16 @@ import {
 } from "@/components/shared/PortalListeChrome";
 import { PortalListeFilterBar } from "@/components/shared/PortalListeFilterBar";
 import { PortalLegalFooter } from "@/components/shared/PortalLegalFooter";
-import { PortalRoleBadge } from "@/components/shared/PortalRoleBadge";
+import { PortalRoleBadge } from "@/components/shared/PortalStatusPill";
 import { PortalShell } from "@/components/shared/PortalShell";
 import { PortalHeaderSearch } from "@/components/shared/PortalHeaderSearch";
 import { usePortalRefresh } from "@/components/shared/usePortalRefresh";
+import {
+  buildListReturnUrl,
+  parseReturn,
+} from "@/lib/list-return-url";
+import { useListUrlState } from "@/hooks/useListUrlState";
+import { PORTAL_EMPTY_TITLE, portalEmptySubtitle } from "@/lib/portal2/portal-states";
 import { buildKundeVorgaenge } from "@/lib/portal/build-kunde-vorgaenge";
 import { findKundeVorgangByQueryId } from "@/lib/portal/portal-detail-item";
 import { buildKundeVorgangCardRows } from "@/lib/portal/portal-list-mappers";
@@ -60,7 +68,6 @@ import {
 } from "@/lib/portal2/kunde-dashboard";
 import {
   HAUSMEISTER_DASHBOARD_ROLE,
-  HAUSMEISTER_LISTE_EMPTY,
   HAUSMEISTER_LISTE_TITLE,
   HAUSMEISTER_OBJEKTE_EMPTY,
   HAUSMEISTER_OBJEKTE_TITLE,
@@ -78,6 +85,7 @@ import {
   formatObjektStrasse,
   resolveObjektTyp,
 } from "@/lib/portal2/objekte";
+import { PortalButton } from "@/components/portal/PortalButton";
 
 type SectionId = "uebersicht" | "vorgaenge" | "objekte";
 
@@ -120,7 +128,15 @@ export function HausmeisterPortalClient({
   const [selectedId, setSelectedId] = useState<string | null>(
     searchParams.get("id")?.trim() || null
   );
-  const [listPage, setListPage] = useState(1);
+  const {
+    seite: listPage,
+    setState: setListUrlState,
+    listHrefWithState,
+  } = useListUrlState({
+    keys: ["filter", "page", "q"],
+    pageParam: "page",
+  });
+  const setListPage = (n: number) => setListUrlState({ page: n });
   const [objektDetailId, setObjektDetailId] = useState<string | null>(null);
   const [pageBusy, setPageBusy] = useState(false);
   const [detailOpening, setDetailOpening] = useState(() =>
@@ -326,10 +342,10 @@ export function HausmeisterPortalClient({
       setSection("vorgaenge");
       setSelectedId(nextId);
     });
-    router.replace(
-      `/portal?section=vorgaenge&id=${encodeURIComponent(nextId)}`,
-      { scroll: false }
-    );
+    const detail = `/portal?section=vorgaenge&id=${encodeURIComponent(nextId)}`;
+    router.replace(buildListReturnUrl(listHrefWithState(), detail), {
+      scroll: false,
+    });
   }
 
   useEffect(() => {
@@ -448,9 +464,18 @@ export function HausmeisterPortalClient({
               : undefined
         }
         onNavChange={(id) => switchSection(id as SectionId)}
-        nav={buildPortalShellNav("eigentuemer", "eigentuemer")}
+        nav={buildPortalShellNav("hausmeister", "hausmeister")}
         headerSearch={
-          <PortalHeaderSearch onSubmit={() => switchSection("vorgaenge")} />
+          <PortalHeaderSearch
+            apiPath="/api/portal/suche"
+            role="hausmeister"
+            onSelect={(hit) => {
+              const idMatch = hit.href.match(/[?&]id=([^&]+)/);
+              const id = idMatch ? decodeURIComponent(idMatch[1]!) : "";
+              if (id) openVorgangById(id);
+              else router.replace(hit.href, { scroll: false });
+            }}
+          />
         }
         notifications={
           <PortalUserNotificationBell
@@ -474,12 +499,12 @@ export function HausmeisterPortalClient({
           <>
             <PortalRoleBadge role="hausmeister" />
             <form action="/portal/auth/signout" method="post">
-              <button
+              <PortalButton variant="secondary" action={false} compact
                 type="submit"
-                className="btn-pill-outline portal-btn-compact"
+                className="btn-pill-outline"
               >
                 Abmelden
-              </button>
+              </PortalButton>
             </form>
           </>
         }
@@ -539,7 +564,10 @@ export function HausmeisterPortalClient({
                   setDetailOpening(false);
                   flushSync(() => setSelectedId(null));
                   flashPageBusy();
-                  router.replace("/portal?section=vorgaenge", { scroll: false });
+                  router.replace(
+                    parseReturn(searchParams, "/portal?section=vorgaenge"),
+                    { scroll: false }
+                  );
                 }}
               />
             </div>
@@ -562,11 +590,11 @@ export function HausmeisterPortalClient({
                 }))}
               />
               {pageRows.length === 0 ? (
-                <div className="rounded-2xl border border-border-light bg-white px-4 py-8 text-center">
-                  <p className="portal-text-body text-text-secondary">
-                    {HAUSMEISTER_LISTE_EMPTY}
-                  </p>
-                </div>
+                <PortalInboxEmpty
+                  title={PORTAL_EMPTY_TITLE}
+                  description={portalEmptySubtitle("hausmeister")}
+                  compact
+                />
               ) : (
                 <div className={portalListStackClass("responsive")}>
                   {pageRows.map((row) => {
@@ -586,6 +614,17 @@ export function HausmeisterPortalClient({
                       meta={row.meta}
                       showChevron
                       onClick={() => openVorgangById(row.id)}
+                      trailingActions={
+                        <PortalActionMenu
+                          title="Aktionen"
+                          items={[
+                            {
+                              label: "Öffnen",
+                              onClick: () => openVorgangById(row.id),
+                            },
+                          ]}
+                        />
+                      }
                     />
                     );
                   })}
@@ -682,7 +721,7 @@ export function HausmeisterPortalClient({
                           },
                         ]}
                         statusLabel="Objekt"
-                        statusPillClass="bg-[var(--p2-primary-soft,#e7f1e9)] text-text-tertiary"
+                        statusPillClass="bg-[var(--p2-primary-soft)] text-text-tertiary"
                         showChevron
                         onClick={() => {
                           flashPageBusy();

@@ -1,3 +1,4 @@
+import { logDbError } from '@/lib/errors/log-db-error'
 import {
   buildMeldeVorgangTitel,
   formatMeldeNotifTitel,
@@ -14,7 +15,7 @@ async function hasRecentHvAngebotNotif(opts: {
   leadId: string;
 }): Promise<boolean> {
   const since = new Date(Date.now() - 15 * 60 * 1000).toISOString();
-  const { data } = await supabaseAdmin
+  const {data, error: __dbErr458_1} = await supabaseAdmin
     .from("hv_notifications")
     .select("id")
     .eq("kunde_id", opts.kundeId)
@@ -22,6 +23,7 @@ async function hasRecentHvAngebotNotif(opts: {
     .ilike("link", `%${opts.leadId}%`)
     .gte("created_at", since)
     .limit(1);
+  if (__dbErr458_1) logDbError('lib/portal/notify-portal-angebot-gesendet:hv_notifications', __dbErr458_1)
   return (data ?? []).length > 0;
 }
 
@@ -29,7 +31,7 @@ async function hasUnreadPortalAngebotNotif(opts: {
   empfaengerUserId: string;
   leadId: string;
 }): Promise<boolean> {
-  const { data } = await supabaseAdmin
+  const {data, error: __dbErr459_2} = await supabaseAdmin
     .from("portal_notifications")
     .select("id")
     .eq("empfaenger_user_id", opts.empfaengerUserId)
@@ -37,6 +39,7 @@ async function hasUnreadPortalAngebotNotif(opts: {
     .eq("typ", "angebot")
     .eq("gelesen", false)
     .limit(1);
+  if (__dbErr459_2) logDbError('lib/portal/notify-portal-angebot-gesendet:portal_notifications', __dbErr459_2)
   return (data ?? []).length > 0;
 }
 
@@ -51,17 +54,17 @@ export async function notifyPortalAngebotGesendet(
   const trimmed = leadId.trim();
   if (!trimmed) return;
 
-  const { data: lead } = await supabaseAdmin
+  const {data: lead, error: __dbErr460_3} = await supabaseAdmin
     .from("leads")
     .select(
       "id, kunde_id, auftraggeber_kunde_id, kunde_objekt_id, situation, bereiche, kontakt_name, melder_name, kontakt_nachricht, notizen, funnel_daten, anlass, kanal, preis_max, budget_ca, freigabe_bypass_grund"
     )
     .eq("id", trimmed)
     .maybeSingle();
-
+  if (__dbErr460_3) logDbError('lib/portal/notify-portal-angebot-gesendet:leads', __dbErr460_3)
   if (!lead?.id) return;
 
-  const { data: angebot } = await supabaseAdmin
+  const {data: angebot, error: __dbErr461_4} = await supabaseAdmin
     .from("angebote")
     .select(
       "id, angebotsnr, leistungsumfang, status_einfach, status, gesendet_am, gesendet_kunde_at, pdf_url, gesamt_fix, gesamt_max, notizen"
@@ -71,7 +74,7 @@ export async function notifyPortalAngebotGesendet(
     .order("created_at", { ascending: false })
     .limit(1)
     .maybeSingle();
-
+  if (__dbErr461_4) logDbError('lib/portal/notify-portal-angebot-gesendet:angebote', __dbErr461_4)
   /** Nach CRM-Event „Angebot gesendet“ — inkl. PDF auch wenn Status noch nachzieht. */
   const gesendetAm = angebot?.gesendet_am
     ? String(angebot.gesendet_am).trim()
@@ -194,12 +197,12 @@ export async function notifyPortalAngebotGesendet(
 
   const portalKundeId = String(lead.kunde_id ?? "").trim();
   if (portalKundeId) {
-    const { data: kunde } = await supabaseAdmin
+    const {data: kunde, error: __dbErr462_5} = await supabaseAdmin
       .from("kunden")
       .select("auth_user_id, portal_modus")
       .eq("id", portalKundeId)
       .maybeSingle();
-
+    if (__dbErr462_5) logDbError('lib/portal/notify-portal-angebot-gesendet:kunden', __dbErr462_5)
     const authUserId = String(kunde?.auth_user_id ?? "").trim();
     const modus = String(kunde?.portal_modus ?? "").trim().toLowerCase();
 

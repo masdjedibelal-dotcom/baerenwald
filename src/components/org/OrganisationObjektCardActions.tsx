@@ -6,6 +6,7 @@ import {
 } from "@/components/shared/PortalActionMenu";
 import { ORG_MELDE_LEGAL_REQUIRED_HINT } from "@/lib/org/melde-legal-urls";
 import { cn } from "@/lib/utils";
+import { PortalButton } from "@/components/portal/PortalButton";
 
 type Props = {
   canAushang?: boolean;
@@ -71,7 +72,8 @@ export function OrganisationObjektCardActions({
       onClick={(e) => e.stopPropagation()}
     >
       {showAushangChrome && onAushangPdf ? (
-        <button
+        <PortalButton
+          variant="primary"
           type="button"
           disabled={blocked}
           title={
@@ -80,7 +82,7 @@ export function OrganisationObjektCardActions({
               : "Aushang-PDF im Browser öffnen"
           }
           className={cn(
-            "rounded-full border px-2.5 py-1 text-[11.5px] font-semibold",
+            "rounded-pill border px-2.5 py-1 text-fs-caption font-semibold",
             blocked
               ? "cursor-not-allowed border-border-default bg-muted text-text-tertiary opacity-60"
               : "border-accent bg-accent-light text-accent"
@@ -91,7 +93,7 @@ export function OrganisationObjektCardActions({
           }}
         >
           ▦ Aushang PDF
-        </button>
+        </PortalButton>
       ) : null}
 
       <PortalActionMenu title="Aktionen" items={items} variant="popover" />

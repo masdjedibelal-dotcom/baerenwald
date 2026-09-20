@@ -1,6 +1,7 @@
 "use client";
 
 import type { ReactNode } from "react";
+import { PortalButton } from "@/components/portal/PortalButton";
 
 import { cn } from "@/lib/utils";
 
@@ -59,7 +60,8 @@ export function PortalSheetOption({
   disabled?: boolean;
 }) {
   return (
-    <button
+    <PortalButton
+      variant="ghost"
       type="button"
       className="portal-sheet-option portal-sheet-option--simple"
       disabled={disabled}
@@ -74,7 +76,7 @@ export function PortalSheetOption({
       <span className="portal-sheet-option-chevron" aria-hidden>
         ›
       </span>
-    </button>
+    </PortalButton>
   );
 }
 
@@ -86,9 +88,9 @@ export function PortalSheetBack({
   children?: ReactNode;
 }) {
   return (
-    <button type="button" className="portal-sheet-back" onClick={onClick}>
+    <PortalButton variant="ghost" type="button" className="portal-sheet-back" onClick={onClick}>
       ← {children}
-    </button>
+    </PortalButton>
   );
 }
 

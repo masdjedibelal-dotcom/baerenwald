@@ -16,6 +16,7 @@ import {
 } from "@/lib/org/melde-legal-urls";
 import type { OrganisationKunde } from "@/lib/org/types";
 import { orgPortalToast, portalToastError } from "@/lib/shared/portal-toast";
+import { TOAST } from '@/lib/portal-copy'
 
 type Props = {
   kunde: OrganisationKunde;
@@ -99,7 +100,7 @@ export function OrganisationMieterLegalLinksPanel({
       });
       const json = (await res.json()) as { error?: string };
       if (!res.ok) {
-        portalToastError("Links nicht gespeichert", json.error);
+        portalToastError(TOAST.links_nicht_gespeichert, json.error);
         return;
       }
       orgPortalToast.saved();
@@ -126,7 +127,7 @@ export function OrganisationMieterLegalLinksPanel({
       </EinstellungenPfList>
 
       {!legalReady ? (
-        <p className="text-[12.5px] leading-relaxed text-text-secondary">
+        <p className="text-fs-meta leading-relaxed text-text-secondary">
           {ORG_MELDE_LEGAL_REQUIRED_HINT}
         </p>
       ) : null}
@@ -159,7 +160,7 @@ export function OrganisationMieterLegalLinksPanel({
             }}
           />
           {error ? (
-            <p className="text-[12.5px] font-medium text-red-700">{error}</p>
+            <p className="text-fs-meta font-medium text-p2-danger">{error}</p>
           ) : null}
         </EinstellungenEditModal>
       ) : null}

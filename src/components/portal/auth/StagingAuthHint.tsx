@@ -22,7 +22,7 @@ export function StagingAuthHint({
   const email =
     variant === "partner" ? STAGING_PARTNER_EMAIL : STAGING_KUNDE_EMAIL;
   return (
-    <p className="mb-4 rounded-lg bg-amber-50 px-3 py-3 text-sm text-amber-950">
+    <p className="mb-4 rounded-card bg-warning-bg px-3 py-3 text-sm text-warning-text">
       Staging — {email} / {STAGING_PORTAL_PASSWORD}
     </p>
   );

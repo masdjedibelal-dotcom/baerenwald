@@ -1,12 +1,22 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useRef, useState } from "react";
+import { z } from "zod";
 
-import { EinstellungenEdField, EinstellungenSectionCard } from "@/components/shared/PortalEinstellungenUi";
+import { PortalInput } from "@/components/shared/PortalFormControls";
+import { PortalButton } from "@/components/portal/PortalButton";
+import { PortalField } from "@/components/shared/PortalField";
+import { EinstellungenSectionCard } from "@/components/shared/PortalEinstellungenUi";
 import { PortalModalShell } from "@/components/shared/PortalModalShell";
+import { TOAST } from "@/lib/portal-copy";
+import { parseForm, useFieldErrors } from "@/lib/portal2/form-schema";
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
-import { portalToastError, portalToastSuccess } from "@/lib/shared/portal-toast";
+import {
+  portalToastError,
+  portalToastSuccess,
+  portalToastSystemError,
+} from "@/lib/shared/portal-toast";
 
 type Props = {
   /** Nach Löschung: Portal oder Partner Sign-out Ziel */
@@ -24,6 +34,11 @@ type Props = {
   /** Logout-Button in der Card (Default an). */
   showSignOut?: boolean;
 };
+
+const pwSchema = z.object({
+  current: z.string().min(1, "Bitte aktuelles Passwort eingeben."),
+  new: z.string().min(8, TOAST.neues_passwort_mindestens_8_zeichen),
+});
 
 function resolveSignOutAction(signOutHref: string, override?: string): string {
   if (override) return override;
@@ -45,6 +60,9 @@ export function PortalKontoSicherheitPanel({
 }: Props) {
   const router = useRouter();
   const logoutAction = resolveSignOutAction(signOutHref, signOutAction);
+  const pwFormRef = useRef<HTMLDivElement>(null);
+  const { fieldErrors, applyFieldErrors, clearFieldErrors, clearField } =
+    useFieldErrors();
 
   const [pwOpen, setPwOpen] = useState(false);
   const [pwCurrent, setPwCurrent] = useState("");
@@ -56,12 +74,14 @@ export function PortalKontoSicherheitPanel({
   const [deleteBusy, setDeleteBusy] = useState(false);
   const [forceOpen, setForceOpen] = useState(false);
   const [openHint, setOpenHint] = useState<string | null>(null);
+  const [deleteFieldError, setDeleteFieldError] = useState<string | undefined>();
 
   function closePasswordModal() {
     if (pwBusy) return;
     setPwOpen(false);
     setPwCurrent("");
     setPwNew("");
+    clearFieldErrors();
   }
 
   function closeDeleteModal() {
@@ -70,13 +90,17 @@ export function PortalKontoSicherheitPanel({
     setDeletePw("");
     setForceOpen(false);
     setOpenHint(null);
+    setDeleteFieldError(undefined);
   }
 
+  /* FORM_VALIDATION: portal-konto-sicherheit-passwort */
   async function changePassword() {
-    if (pwNew.length < 8) {
-      portalToastError("Neues Passwort mindestens 8 Zeichen.");
+    const parsed = parseForm(pwSchema, { current: pwCurrent, new: pwNew });
+    if (!parsed.ok) {
+      applyFieldErrors(parsed.fieldErrors, pwFormRef.current);
       return;
     }
+    clearFieldErrors();
     setPwBusy(true);
     try {
       const supabase = getSupabaseBrowserClient();
@@ -84,32 +108,42 @@ export function PortalKontoSicherheitPanel({
         data: { user },
       } = await supabase.auth.getUser();
       if (!user?.email) {
-        portalToastError("Nicht angemeldet.");
+        portalToastError(TOAST.nicht_angemeldet);
         return;
       }
       const { error: reauth } = await supabase.auth.signInWithPassword({
         email: user.email,
-        password: pwCurrent,
+        password: parsed.data.current,
       });
       if (reauth) {
-        portalToastError("Aktuelles Passwort falsch.");
+        applyFieldErrors(
+          { current: TOAST.aktuelles_passwort_falsch },
+          pwFormRef.current
+        );
         return;
       }
-      const { error } = await supabase.auth.updateUser({ password: pwNew });
+      const { error } = await supabase.auth.updateUser({
+        password: parsed.data.new,
+      });
       if (error) {
-        portalToastError(error.message);
+        portalToastSystemError(error, "portal-konto-passwort");
         return;
       }
       setPwCurrent("");
       setPwNew("");
       setPwOpen(false);
-      portalToastSuccess("Passwort geändert.");
+      portalToastSuccess(TOAST.passwort_geaendert);
     } finally {
       setPwBusy(false);
     }
   }
 
   async function deleteAccount() {
+    if (deletePw.length < 6) {
+      setDeleteFieldError("Bitte Passwort zur Bestätigung eingeben.");
+      return;
+    }
+    setDeleteFieldError(undefined);
     setDeleteBusy(true);
     setOpenHint(null);
     try {
@@ -129,10 +163,13 @@ export function PortalKontoSicherheitPanel({
         return;
       }
       if (!res.ok) {
-        portalToastError(json.error || "Löschung fehlgeschlagen.");
+        portalToastSystemError(
+          json.error || "Löschung fehlgeschlagen.",
+          "portal-konto-loeschen"
+        );
         return;
       }
-      portalToastSuccess("Konto gelöscht.");
+      portalToastSuccess(TOAST.konto_geloescht);
       router.replace(signOutHref);
     } finally {
       setDeleteBusy(false);
@@ -140,13 +177,14 @@ export function PortalKontoSicherheitPanel({
   }
 
   const deleteControl = allowDelete ? (
-    <button
+    <PortalButton
+      variant="danger"
       type="button"
       className="portal-konto-action portal-konto-action--danger"
       onClick={() => setDeleteOpen(true)}
     >
       Konto löschen
-    </button>
+    </PortalButton>
   ) : deleteMailto ? (
     <a
       href={`mailto:${deleteMailto}?subject=${encodeURIComponent("Konto löschen")}`}
@@ -164,18 +202,19 @@ export function PortalKontoSicherheitPanel({
     <>
       <EinstellungenSectionCard title="Konto & Sicherheit">
         <div className="flex flex-col gap-1">
-          <button
+          <PortalButton
+            variant="ghost"
             type="button"
             className="portal-konto-action"
             onClick={() => setPwOpen(true)}
           >
             Passwort ändern
-          </button>
+          </PortalButton>
           {showSignOut ? (
             <form action={logoutAction} method="post">
-              <button type="submit" className="portal-konto-action">
+              <PortalButton variant="ghost" type="submit" className="portal-konto-action">
                 Logout
-              </button>
+              </PortalButton>
             </form>
           ) : null}
           {deleteControl}
@@ -193,23 +232,43 @@ export function PortalKontoSicherheitPanel({
         dirty={Boolean(pwCurrent || pwNew)}
         onConfirm={() => void changePassword()}
         confirmLabel={pwBusy ? "Speichern…" : "Passwort speichern"}
-        confirmDisabled={pwBusy || !pwCurrent || pwNew.length < 8}
+        confirmDisabled={pwBusy}
       >
-        <div className="portal-sheet-form-group">
-          <EinstellungenEdField
+        <div ref={pwFormRef} className="portal-sheet-form-group">
+          <PortalField
             label="Aktuelles Passwort"
-            value={pwCurrent}
-            onChange={setPwCurrent}
-            type="password"
-            autoComplete="current-password"
-          />
-          <EinstellungenEdField
+            name="current"
+            required
+            error={fieldErrors.current}
+          >
+            <PortalInput
+              className="portal-field w-full"
+              type="password"
+              autoComplete="current-password"
+              value={pwCurrent}
+              onChange={(e) => {
+                setPwCurrent(e.target.value);
+                clearField("current");
+              }}
+            />
+          </PortalField>
+          <PortalField
             label="Neues Passwort"
-            value={pwNew}
-            onChange={setPwNew}
-            type="password"
-            autoComplete="new-password"
-          />
+            name="new"
+            required
+            error={fieldErrors.new}
+          >
+            <PortalInput
+              className="portal-field w-full"
+              type="password"
+              autoComplete="new-password"
+              value={pwNew}
+              onChange={(e) => {
+                setPwNew(e.target.value);
+                clearField("new");
+              }}
+            />
+          </PortalField>
         </div>
       </PortalModalShell>
 
@@ -222,14 +281,14 @@ export function PortalKontoSicherheitPanel({
         closeOnBackdrop={!deleteBusy}
         busy={deleteBusy}
         footer={
-          <button
-            type="button"
-            className="portal-action-btn portal-action-btn--danger portal-action-btn--block"
-            disabled={deleteBusy || deletePw.length < 6}
+          <PortalButton
+            variant="danger"
+            block
+            disabled={deleteBusy}
             onClick={() => void deleteAccount()}
           >
             {deleteBusy ? "Löschen…" : "Endgültig löschen"}
-          </button>
+          </PortalButton>
         }
       >
         <div className="flex flex-col gap-3">
@@ -238,18 +297,28 @@ export function PortalKontoSicherheitPanel({
             aus gesetzlichen Gründen erhalten bleiben.
           </p>
           {openHint ? (
-            <p className="portal-text-meta rounded-[9px] border border-amber-200 bg-amber-50 px-3 py-2 leading-relaxed text-amber-950">
+            <p className="portal-text-meta rounded-[9px] border border-warning-border bg-warning-bg px-3 py-2 leading-relaxed text-warning-text">
               {openHint} Tippen Sie erneut auf „Endgültig löschen“, um trotzdem
               fortzufahren.
             </p>
           ) : null}
-          <EinstellungenEdField
+          <PortalField
             label="Passwort zur Bestätigung"
-            value={deletePw}
-            onChange={setDeletePw}
-            type="password"
-            autoComplete="current-password"
-          />
+            name="deletePw"
+            required
+            error={deleteFieldError}
+          >
+            <PortalInput
+              className="portal-field w-full"
+              type="password"
+              autoComplete="current-password"
+              value={deletePw}
+              onChange={(e) => {
+                setDeletePw(e.target.value);
+                setDeleteFieldError(undefined);
+              }}
+            />
+          </PortalField>
         </div>
       </PortalModalShell>
     </>

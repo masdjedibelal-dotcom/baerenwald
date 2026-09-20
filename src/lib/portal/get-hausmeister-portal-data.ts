@@ -1,6 +1,7 @@
 /**
  * Hausmeister-Portal-Daten — Scope über hausmeister_objekte.
  */
+import { logDbError } from '@/lib/errors/log-db-error'
 import { getPortalDataForKunde } from "@/lib/portal/get-portal-data";
 import {
   loadMieterHvBrand,
@@ -49,11 +50,12 @@ export async function getHausmeisterPortalData(kundeId: string): Promise<{
   const id = kundeId.trim();
   if (!id) return null;
 
-  const { data: kundeRow } = await supabaseAdmin
+  const {data: kundeRow, error: __dbErr432_1} = await supabaseAdmin
     .from("kunden")
     .select("id, name, email, portal_modus, auth_user_id")
     .eq("id", id)
     .maybeSingle();
+  if (__dbErr432_1) logDbError('lib/portal/get-hausmeister-portal-data:kunden', __dbErr432_1)
   if (!kundeRow || String(kundeRow.portal_modus) !== "hausmeister") {
     return null;
   }
@@ -62,24 +64,26 @@ export async function getHausmeisterPortalData(kundeId: string): Promise<{
 
   let orgKundeId: string | null = null;
   {
-    const { data: hm } = await supabaseAdmin
+    const {data: hm, error: __dbErr433_2} = await supabaseAdmin
       .from("org_hausmeister")
       .select("org_kunde_id")
       .eq("portal_kunde_id", id)
       .limit(1)
       .maybeSingle();
+    if (__dbErr433_2) logDbError('lib/portal/get-hausmeister-portal-data:org_hausmeister', __dbErr433_2)
     orgKundeId = hm?.org_kunde_id ? String(hm.org_kunde_id) : null;
   }
 
   let objekte: HausmeisterPortalObjekt[] = [];
   if (objektIds.length) {
-    const { data: objRows } = await supabaseAdmin
+    const {data: objRows, error: __dbErr434_3} = await supabaseAdmin
       .from("kunden_objekte")
       .select(
         "id, kunde_id, titel, strasse, hausnummer, plz, ort, einheiten_hinweis, notizen_intern, freigabe_schwelle_eur, created_at, cover_url"
       )
       .in("id", objektIds)
       .order("titel", { ascending: true });
+    if (__dbErr434_3) logDbError('lib/portal/get-hausmeister-portal-data:kunden_objekte', __dbErr434_3)
     objekte = (objRows ?? []) as HausmeisterPortalObjekt[];
   }
 
@@ -116,7 +120,7 @@ export async function getHausmeisterPortalData(kundeId: string): Promise<{
     ])
   );
 
-  const { data: leadRows } = await supabaseAdmin
+  const {data: leadRows, error: __dbErr435_4} = await supabaseAdmin
     .from("leads")
     .select(
       "id, situation, bereiche, status, vorgang_phase, created_at, plz, strasse, hausnummer, zeitraum, kontakt_name, kontakt_nachricht, notizen, preis_min, preis_max, budget_ca, funnel_daten, kunde_objekt_id, anlass, kanal, erfassung_von, auftraggeber_kunde_id, hv_meldung_status, org_freigabe_status, freigabe_bypass_grund, melde_tracking_token, melder_name, melder_einheit, melder_telefon, melder_email"
@@ -124,7 +128,7 @@ export async function getHausmeisterPortalData(kundeId: string): Promise<{
     .in("kunde_objekt_id", objektIds)
     .is("geloescht_am", null)
     .order("created_at", { ascending: false });
-
+  if (__dbErr435_4) logDbError('lib/portal/get-hausmeister-portal-data:leads', __dbErr435_4)
   /** Nur Vorgänge, die beim HM liegen oder lagen — kein CRM-Junk ohne Prüfung. */
   const hmRelevant = (l: { hv_meldung_status?: string | null }) => {
     const s = String(l.hv_meldung_status ?? "")

@@ -1,3 +1,4 @@
+import { logDbError } from '@/lib/errors/log-db-error'
 import { buildOrgHvMieterEventHtml } from "@/lib/email/meldung-mail-templates";
 import { sendBrandedMail } from "@/lib/email/send-branded-mail";
 import { createHvNotification } from "@/lib/org/create-hv-notification";
@@ -7,6 +8,7 @@ import {
   MELDE_NOTIF_COPY,
 } from "@/lib/org/melde-vorgang-titel";
 import { withPortalDetailDeepLink } from "@/lib/portal2/portal-detail-deep-link";
+import { buildSubject } from "@/lib/shared-domain/build-subject";
 import { supabaseAdmin } from "@/lib/supabase";
 import { isValidEmail } from "@/lib/validation";
 import { Resend } from "resend";
@@ -18,7 +20,7 @@ import { Resend } from "resend";
 export async function notifyHvNeueMeldung(input: {
   leadId: string;
 }): Promise<void> {
-  const { data: lead } = await supabaseAdmin
+  const {data: lead, error: __dbErr322_1} = await supabaseAdmin
     .from("leads")
     .select(
       `
@@ -38,7 +40,7 @@ export async function notifyHvNeueMeldung(input: {
     )
     .eq("id", input.leadId)
     .maybeSingle();
-
+  if (__dbErr322_1) logDbError('lib/org/notify-hv-neue-meldung:leads', __dbErr322_1)
   if (!lead?.auftraggeber_kunde_id) return;
 
   // Eigene HV-Anlage → keine Glocken-Meldung an sich selbst
@@ -83,7 +85,7 @@ export async function notifyHvNeueMeldung(input: {
 
   // Kein Doppel-Eintrag innerhalb kurzer Zeit (Retry / Duplicate-Warning)
   const since = new Date(Date.now() - 15 * 60 * 1000).toISOString();
-  const { data: existing } = await supabaseAdmin
+  const {data: existing, error: __dbErr323_2} = await supabaseAdmin
     .from("hv_notifications")
     .select("id")
     .eq("kunde_id", kundeId)
@@ -92,6 +94,7 @@ export async function notifyHvNeueMeldung(input: {
     .gte("created_at", since)
     .limit(1)
     .maybeSingle();
+  if (__dbErr323_2) logDbError('lib/org/notify-hv-neue-meldung:hv_notifications', __dbErr323_2)
   if (existing?.id) return;
 
   await createHvNotification({
@@ -105,22 +108,23 @@ export async function notifyHvNeueMeldung(input: {
   const resendKey = process.env.RESEND_API_KEY;
   if (!resendKey) return;
 
-  const { data: orgKunde } = await supabaseAdmin
+  const {data: orgKunde, error: __dbErr324_3} = await supabaseAdmin
     .from("kunden")
     .select("email, name, org_anzeigename")
     .eq("id", kundeId)
     .maybeSingle();
-
+  if (__dbErr324_3) logDbError('lib/org/notify-hv-neue-meldung:kunden', __dbErr324_3)
   const orgEmail = String(orgKunde?.email ?? "").trim();
   if (!orgEmail || !isValidEmail(orgEmail)) return;
 
   let objektTitel = "Objekt";
   if (lead.kunde_objekt_id) {
-    const { data: obj } = await supabaseAdmin
+    const {data: obj, error: __dbErr325_4} = await supabaseAdmin
       .from("kunden_objekte")
       .select("titel")
       .eq("id", lead.kunde_objekt_id)
       .maybeSingle();
+    if (__dbErr325_4) logDbError('lib/org/notify-hv-neue-meldung:kunden_objekte', __dbErr325_4)
     objektTitel = String(obj?.titel ?? "Objekt");
   }
 
@@ -131,7 +135,10 @@ export async function notifyHvNeueMeldung(input: {
         process.env.RESEND_FROM_SYSTEM ??
         "System <system@baerenwaldmuenchen.de>",
       to: orgEmail,
-      subject: titel,
+      subject: buildSubject({
+        objekt: objektTitel,
+        ereignis: "Neue Meldung",
+      }),
       html: buildOrgHvMieterEventHtml({
         objektTitel,
         melderName: melder || undefined,

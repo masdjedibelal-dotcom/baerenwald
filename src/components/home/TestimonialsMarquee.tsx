@@ -1,4 +1,5 @@
 "use client";
+import { PALETTE } from "@/lib/tokens/palette";
 
 import { useState } from "react";
 
@@ -23,11 +24,11 @@ const AVATAR_COLORS: Record<
   MarqueeTestimonialColor,
   { bg: string; color: string }
 > = {
-  amber: { bg: "#FAEEDA", color: "#854F0B" },
-  gray: { bg: "#F1EFE8", color: "#444441" },
-  green: { bg: "#EAF3DE", color: "#3B6D11" },
-  teal: { bg: "#E1F5EE", color: "#0F6E56" },
-  blue: { bg: "#E6F1FB", color: "#185FA5" },
+  amber: { bg: PALETTE.hfaeeda, color: PALETTE.h854f0b },
+  gray: { bg: PALETTE.hf1efe8, color: PALETTE.h444441 },
+  green: { bg: "var(--fl-status-green-bg)", color: PALETTE.h3b6d11 },
+  teal: { bg: PALETTE.he1f5ee, color: PALETTE.h0f6e56 },
+  blue: { bg: PALETTE.he6f1fb, color: "var(--fl-status-blue)" },
 };
 
 export function TestimonialsMarquee({

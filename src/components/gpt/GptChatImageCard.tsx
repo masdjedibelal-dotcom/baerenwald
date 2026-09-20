@@ -1,7 +1,7 @@
 "use client";
 
-import { Download } from "lucide-react";
 
+import { SiteIcon } from "@/components/ui/SiteIcon";
 import { downloadChatImage } from "@/lib/gpt-viz/download-image";
 
 import type { GptChatImageRef } from "./gpt-chat-types";
@@ -24,7 +24,7 @@ export function GptChatImageCard({ image, compact, hideDownload }: GptChatImageC
           className="gpt-chat-download-btn"
           onClick={() => void downloadChatImage(image.url, image.downloadName)}
         >
-          <Download className="h-3.5 w-3.5" aria-hidden />
+          <SiteIcon n="download" ctx="default" className="h-3.5 w-3.5" aria-hidden />
           Herunterladen
         </button>
       ) : null}

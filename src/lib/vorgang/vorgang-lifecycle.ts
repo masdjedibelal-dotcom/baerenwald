@@ -1,3 +1,4 @@
+import { logDbError } from '@/lib/errors/log-db-error'
 import { writeAuditEvent } from "@/lib/audit/write-audit-event";
 import { notifyMieterStatusChange } from "@/lib/melde/mieter-status-mail";
 import type { VorgangPhase } from "@/lib/vorgang/vorgang-phase";
@@ -22,8 +23,8 @@ export async function transitionLeadVorgangPhase(
     updated_at: new Date().toISOString(),
   };
 
-  await supabaseAdmin.from("leads").update(patch).eq("id", leadId);
-
+  const { error: __dbErr501_1 } = await supabaseAdmin.from("leads").update(patch).eq("id", leadId);
+  if (__dbErr501_1) logDbError('lib/vorgang/vorgang-lifecycle:leads', __dbErr501_1)
   if (audit) {
     await writeAuditEvent({
       entityType: "lead",

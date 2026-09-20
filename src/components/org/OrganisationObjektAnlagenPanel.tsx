@@ -81,7 +81,7 @@ export function OrganisationObjektAnlagenPanel({
               <>
                 {dash(a.bezeichnung)}
                 {garantie ? (
-                  <span className="mt-0.5 block text-[12px] font-normal text-text-tertiary">
+                  <span className="mt-0.5 block text-fs-caption font-normal text-text-tertiary">
                     {garantie}
                   </span>
                 ) : null}

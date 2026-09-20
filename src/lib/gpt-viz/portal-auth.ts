@@ -1,3 +1,4 @@
+import { logDbError } from '@/lib/errors/log-db-error'
 import { createClient } from "@/lib/supabase/server";
 import { supabaseAdmin } from "@/lib/supabase";
 
@@ -15,6 +16,7 @@ export async function getGptVizPortalKundeId(): Promise<string | null> {
       .select("id")
       .eq("auth_user_id", user.id)
       .maybeSingle();
+    if (error) logDbError('lib/gpt-viz/portal-auth:kunden', error)
 
     if (error || !data?.id) return null;
     return String(data.id);

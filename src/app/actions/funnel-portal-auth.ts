@@ -1,5 +1,6 @@
 "use server";
 
+import { logDbError } from '@/lib/errors/log-db-error'
 import { assertPortalEmailAllowed } from "@/app/actions/assert-portal-email-allowed";
 import {
   generateFunnelOtpCode,
@@ -193,12 +194,12 @@ export async function resendFunnelPortalCode(
   const email = normalizeKundenEmail(emailRaw);
   if (!email) return { ok: false, error: "Ungültige E-Mail." };
 
-  const { data: row } = await supabaseAdmin
+  const {data: row, error: __dbErr1_1} = await supabaseAdmin
     .from("funnel_portal_otp")
     .select("user_id")
     .eq("email", email)
     .maybeSingle();
-
+  if (__dbErr1_1) logDbError('app/actions/funnel-portal-auth:funnel_portal_otp', __dbErr1_1)
   let userId = row?.user_id ? String(row.user_id) : "";
   if (!userId) {
     const { data: list } = await supabaseAdmin.auth.admin.listUsers({
@@ -286,7 +287,8 @@ export async function verifyFunnelPortalCode(opts: {
   if (adresse) patch.adresse = adresse;
   if (telefon) patch.telefon = telefon;
   if (Object.keys(patch).length) {
-    await supabaseAdmin.from("kunden").update(patch).eq("id", link.kundeId);
+    const { error: __dbErr4_4 } = await supabaseAdmin.from("kunden").update(patch).eq("id", link.kundeId);
+    if (__dbErr4_4) logDbError('app/actions/funnel-portal-auth:kunden', __dbErr4_4)
   }
 
   return {
@@ -342,13 +344,13 @@ export async function getFunnelSessionContactPrefill(): Promise<
       return { ok: false, error: link.error };
     }
 
-    const { data: kunde } = await supabaseAdmin
+    const {data: kunde, error: __dbErr2_2} = await supabaseAdmin
       .from("kunden")
       .select("id, name, email, plz, ort, adresse, telefon")
       .eq("id", link.kundeId)
       .maybeSingle();
-
-    const { data: leads } = await supabaseAdmin
+    if (__dbErr2_2) logDbError('app/actions/funnel-portal-auth:kunden', __dbErr2_2)
+    const {data: leads, error: __dbErr3_3} = await supabaseAdmin
       .from("leads")
       .select(
         "kontakt_name, kontakt_email, kontakt_telefon, strasse, hausnummer, plz, funnel_daten, objekt:kunden_objekte(strasse, plz, ort, stadt)"
@@ -356,7 +358,7 @@ export async function getFunnelSessionContactPrefill(): Promise<
       .eq("kunde_id", link.kundeId)
       .order("created_at", { ascending: false })
       .limit(3);
-
+    if (__dbErr3_3) logDbError('app/actions/funnel-portal-auth:leads', __dbErr3_3)
     const prefill = buildPortalContactPrefill({
       kunde: {
         name: kunde?.name,

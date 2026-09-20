@@ -1,3 +1,4 @@
+import { logDbError } from '@/lib/errors/log-db-error'
 import { NextResponse } from "next/server";
 
 import { persistLead } from "@/lib/lead/persist-lead";
@@ -28,30 +29,30 @@ async function assertEigentuemerMayCreate(opts: {
   objektId: string;
   einheitId?: string;
 }): Promise<{ ok: true } | { ok: false; error: string }> {
-  const { data: objekt } = await supabaseAdmin
+  const {data: objekt, error: __dbErr229_1} = await supabaseAdmin
     .from("kunden_objekte")
     .select("id, kunde_id")
     .eq("id", opts.objektId)
     .maybeSingle();
-
+  if (__dbErr229_1) logDbError('app/api/portal/eigentuemer/anfrage/route:kunden_objekte', __dbErr229_1)
   if (!objekt) return { ok: false, error: "Objekt nicht gefunden." };
 
   const objektEigen = String(objekt.kunde_id) === opts.kundeId;
   if (objektEigen) return { ok: true };
 
-  const { data: link } = await supabaseAdmin
+  const {data: link, error: __dbErr230_2} = await supabaseAdmin
     .from("eigentuemer_objekte")
     .select("id")
     .eq("kunde_id", opts.kundeId)
     .eq("kunde_objekt_id", opts.objektId)
     .maybeSingle();
-
+  if (__dbErr230_2) logDbError('app/api/portal/eigentuemer/anfrage/route:eigentuemer_objekte', __dbErr230_2)
   if (!link) {
     return { ok: false, error: "Kein Zugriff auf dieses Objekt." };
   }
 
   if (opts.einheitId) {
-    const { data: bew } = await supabaseAdmin
+    const {data: bew, error: __dbErr231_3} = await supabaseAdmin
       .from("einheit_bewohner")
       .select("sondereigentum_verwaltung")
       .eq("portal_kunde_id", opts.kundeId)
@@ -59,6 +60,7 @@ async function assertEigentuemerMayCreate(opts: {
       .eq("rolle", "eigentuemer")
       .eq("aktiv", true)
       .maybeSingle();
+    if (__dbErr231_3) logDbError('app/api/portal/eigentuemer/anfrage/route:einheit_bewohner', __dbErr231_3)
     if (
       !eigentuemerEinheitCreateAllowed({
         sondereigentumVerwaltung: bew?.sondereigentum_verwaltung,
@@ -75,22 +77,23 @@ async function assertEigentuemerMayCreate(opts: {
   }
 
   /** Ohne konkrete Einheit: Create ok, wenn mind. eine Einheit ohne SE-Verwaltung. */
-  const { data: ehs } = await supabaseAdmin
+  const {data: ehs, error: __dbErr232_4} = await supabaseAdmin
     .from("objekt_einheiten")
     .select("id")
     .eq("kunde_objekt_id", opts.objektId)
     .eq("aktiv", true);
+  if (__dbErr232_4) logDbError('app/api/portal/eigentuemer/anfrage/route:objekt_einheiten', __dbErr232_4)
   const ehIds = (ehs ?? []).map((e) => String(e.id));
   if (!ehIds.length) return { ok: true };
 
-  const { data: bews } = await supabaseAdmin
+  const {data: bews, error: __dbErr233_5} = await supabaseAdmin
     .from("einheit_bewohner")
     .select("objekt_einheit_id, sondereigentum_verwaltung")
     .eq("portal_kunde_id", opts.kundeId)
     .eq("rolle", "eigentuemer")
     .eq("aktiv", true)
     .in("objekt_einheit_id", ehIds);
-
+  if (__dbErr233_5) logDbError('app/api/portal/eigentuemer/anfrage/route:einheit_bewohner', __dbErr233_5)
   const rows = bews ?? [];
   if (!rows.length) return { ok: true };
   const anyOpen = rows.some((b) => !Boolean(b.sondereigentum_verwaltung));
@@ -133,12 +136,12 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: gate.error }, { status: 403 });
   }
 
-  const { data: objekt } = await supabaseAdmin
+  const {data: objekt, error: __dbErr234_6} = await supabaseAdmin
     .from("kunden_objekte")
     .select("id, plz, strasse, hausnummer, titel, ort")
     .eq("id", objektId)
     .maybeSingle();
-
+  if (__dbErr234_6) logDbError('app/api/portal/eigentuemer/anfrage/route:kunden_objekte', __dbErr234_6)
   if (!objekt) {
     return NextResponse.json({ error: "Objekt nicht gefunden." }, { status: 404 });
   }

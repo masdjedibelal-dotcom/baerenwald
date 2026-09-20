@@ -1,3 +1,4 @@
+import { logDbError } from '@/lib/errors/log-db-error'
 import { NextResponse } from "next/server";
 
 import { notifyHandwerkerNewAnfrage } from "@/lib/partner/notify-partner-anfrage";
@@ -13,7 +14,7 @@ function authorize(request: Request): boolean {
 }
 
 /**
- * POST — vom CRM nach Versand/Zuweisung einer Handwerker-Anfrage aufrufen.
+ * POST — vom CRM nach Versand/Zuweisung einer Partner-Anfrage aufrufen.
  * Body: { "anfrageId": "<angebot_handwerker.id>" }
  *
  * @deprecated Bitte `/api/internal/partner-notify` nutzen — Route bleibt für Legacy-CRM.
@@ -36,12 +37,12 @@ export async function POST(request: Request) {
     return NextResponse.json(result, { status: 422 });
   }
 
-  const { data: row } = await supabaseAdmin
+  const {data: row, error: __dbErr141_1} = await supabaseAdmin
     .from("angebot_handwerker")
     .select("handwerker_id, angebote(notizen, leads(plz))")
     .eq("id", anfrageId)
     .maybeSingle();
-
+  if (__dbErr141_1) logDbError('app/api/internal/partner-notify-anfrage/route:angebot_handwerker', __dbErr141_1)
   if (row?.handwerker_id) {
     await createPartnerNotification({
       handwerkerId: String(row.handwerker_id),

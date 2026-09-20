@@ -1,3 +1,4 @@
+import { logDbError } from '@/lib/errors/log-db-error'
 import { NextResponse } from "next/server";
 
 import { requireOrganisationSession } from "@/lib/org/require-org-session";
@@ -57,6 +58,7 @@ export async function GET() {
     .eq("kunde_id", session.kunde.id)
     .order("created_at", { ascending: false })
     .limit(120);
+  if (error) logDbError('app/api/org/hv-notifications/route:hv_notifications', error)
 
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
@@ -73,16 +75,18 @@ export async function GET() {
       .select("id")
       .in("id", leadIds)
       .is("geloescht_am", null);
+    if (leadSelErr) logDbError('app/api/org/hv-notifications/route:leads', leadSelErr)
     if (leadSelErr && /geloescht_am/i.test(leadSelErr.message)) {
       const fb = await supabaseAdmin.from("leads").select("id").in("id", leadIds);
       leads = fb.data;
     }
     for (const l of leads ?? []) valid.add(String(l.id).toLowerCase());
 
-    const { data: angebote } = await supabaseAdmin
+    const {data: angebote, error: __dbErr179_1} = await supabaseAdmin
       .from("angebote")
       .select("lead_id, gesendet_am, gesendet_kunde_at, status_einfach, status, pdf_url")
       .in("lead_id", leadIds);
+    if (__dbErr179_1) logDbError('app/api/org/hv-notifications/route:angebote', __dbErr179_1)
     for (const a of angebote ?? []) {
       const lid = String(a.lead_id ?? "").toLowerCase();
       if (lid && angebotWirklichGesendet(a)) {
@@ -149,21 +153,23 @@ export async function POST(req: Request) {
   const now = new Date().toISOString();
 
   if (body.all) {
-    await supabaseAdmin
+    const { error: __dbErr181_3 } = await supabaseAdmin
       .from("hv_notifications")
       .update({ gelesen_am: now })
       .eq("kunde_id", session.kunde.id)
       .is("gelesen_am", null);
+    if (__dbErr181_3) logDbError('app/api/org/hv-notifications/route:hv_notifications', __dbErr181_3)
     return NextResponse.json({ ok: true });
   }
 
   const vorgangId = body.vorgangId?.trim().replace(/^auftrag:/, "");
   if (vorgangId) {
-    const { data: unread } = await supabaseAdmin
+    const {data: unread, error: __dbErr180_2} = await supabaseAdmin
       .from("hv_notifications")
       .select("id, link")
       .eq("kunde_id", session.kunde.id)
       .is("gelesen_am", null);
+    if (__dbErr180_2) logDbError('app/api/org/hv-notifications/route:hv_notifications', __dbErr180_2)
 
     const ids = (unread ?? [])
       .filter((r) => {
@@ -176,11 +182,12 @@ export async function POST(req: Request) {
 
     if (!ids.length) return NextResponse.json({ ok: true });
 
-    await supabaseAdmin
+    const { error: __dbErr182_4 } = await supabaseAdmin
       .from("hv_notifications")
       .update({ gelesen_am: now })
       .eq("kunde_id", session.kunde.id)
       .in("id", ids);
+    if (__dbErr182_4) logDbError('app/api/org/hv-notifications/route:hv_notifications', __dbErr182_4)
 
     return NextResponse.json({ ok: true });
   }
@@ -190,11 +197,12 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "ids fehlen." }, { status: 400 });
   }
 
-  await supabaseAdmin
+  const { error: __dbErr183_5 } = await supabaseAdmin
     .from("hv_notifications")
     .update({ gelesen_am: now })
     .eq("kunde_id", session.kunde.id)
     .in("id", ids);
+  if (__dbErr183_5) logDbError('app/api/org/hv-notifications/route:hv_notifications', __dbErr183_5)
 
   return NextResponse.json({ ok: true });
 }

@@ -1,3 +1,4 @@
+import { logDbError } from '@/lib/errors/log-db-error'
 import { GPT_VIZ_LIMITS } from "@/lib/gpt-viz/constants";
 import { portalRegisterForGptUrl } from "@/lib/portal/portal-site-url";
 import { supabaseAdmin } from "@/lib/supabase";
@@ -53,6 +54,7 @@ export async function countPortalRendersThisMonth(kundeId: string): Promise<numb
     .select("render_count")
     .eq("kunde_id", kundeId)
     .gte("created_at", startOfMonth.toISOString());
+  if (error) logDbError('lib/gpt-viz/limits:gpt_raum_sessions', error)
 
   if (error) return 0;
   return (data ?? []).reduce((sum, row) => sum + Number(row.render_count ?? 0), 0);
@@ -67,6 +69,7 @@ export async function countVisitorSessionsRecent(visitorToken: string): Promise<
     .select("id", { count: "exact", head: true })
     .eq("visitor_token", visitorToken)
     .gte("created_at", since.toISOString());
+  if (error) logDbError('lib/gpt-viz/limits:gpt_raum_sessions', error)
 
   if (error) return 0;
   return count ?? 0;
@@ -86,6 +89,7 @@ export async function getVisitorSessionRetryAfter(
     .gte("created_at", since.toISOString())
     .order("created_at", { ascending: true })
     .limit(1);
+  if (error) logDbError('lib/gpt-viz/limits:gpt_raum_sessions', error)
 
   if (error || !data?.[0]?.created_at) return null;
 

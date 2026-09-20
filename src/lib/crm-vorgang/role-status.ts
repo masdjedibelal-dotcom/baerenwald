@@ -117,10 +117,11 @@ function actionHint(resolved: ResolvedVorgang, role: PortalRole): string | null 
   if (role === "handwerker" && resolved.actor === "handwerker") return "Aktion nötig";
   if (role === "hv" && resolved.actor === "freigabe") return "Freigabe ausstehend";
   if (role === "kunde" && resolved.actor === "kunde") return "Angebot liegt vor";
+  if (role === "hv" && resolved.actor === "kunde") return "Angebot liegt vor";
   if (role === "hv" || role === "crm") {
     if (resolved.actor === "freigabe") return "Freigabe ausstehend";
-    if (resolved.actor === "handwerker") return "Handwerker";
-    if (resolved.actor === "kunde") return "Kunde";
+    if (resolved.actor === "handwerker") return "Partner";
+    if (resolved.actor === "kunde") return "Angebot liegt vor";
     if (resolved.actor === "bw") return "Bärenwald";
   }
   return null;

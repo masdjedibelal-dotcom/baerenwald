@@ -1,9 +1,9 @@
 "use client";
 
+import { PortalIcon } from "@/components/portal/PortalIcon";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { flushSync } from "react-dom";
-import { Filter, X } from "lucide-react";
 import { PORTAL_VAR } from "@/lib/portal2/tokens";
 import {
   paintPortalBusyNow,
@@ -11,7 +11,9 @@ import {
   usePortalBusy,
 } from "@/components/shared/PortalBusyContext";
 import { PortalContentBusy } from "@/components/shared/PortalContentBusy";
+import { PortalButton } from "@/components/portal/PortalButton";
 
+import { PortalSelect } from "@/components/shared/PortalFormControls";
 import { OrgFreigabeBanner } from "@/components/org/OrgFreigabeBanner";
 import { OrgMeldungAktionBanner } from "@/components/org/OrgMeldungAktionBanner";
 import { HvFreigabeInfoBanner } from "@/components/org/HvFreigabeInfoBanner";
@@ -272,14 +274,15 @@ function MeldungDetail({
     <>
       {showClose && onClose ? (
         <div className="mb-2 flex justify-start lg:hidden">
-          <button
+          <PortalButton
+            variant="ghost"
             type="button"
-            className="grid h-8 w-8 place-items-center rounded-lg hover:bg-muted"
+            className="grid h-8 w-8 place-items-center rounded-button hover:bg-muted"
             aria-label="Schließen"
             onClick={onClose}
           >
-            <X className="h-5 w-5" />
-          </button>
+            <PortalIcon n="x" ctx="default" className="h-5 w-5" />
+          </PortalButton>
         </div>
       ) : null}
 
@@ -327,10 +330,11 @@ function MeldungDetail({
       <VorgangDetailBlocks vm={detailVm} />
 
       {lead.einladung_status === "offen" ? (
-        <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm">
+        <div className="rounded-card border border-warning-border bg-warning-bg p-3 text-sm">
           <p>Wartet auf Ergänzung durch Melder.</p>
           {lead.melder_email ? (
-            <button
+            <PortalButton
+              variant="secondary"
               type="button"
               className={cn(
                 "btn-pill-outline mt-2 text-xs",
@@ -340,7 +344,7 @@ function MeldungDetail({
               onClick={resendEinladung}
             >
               Einladung erneut senden
-            </button>
+            </PortalButton>
           ) : null}
           {resendMsg ? (
             <p className="text-xs mt-2 text-text-secondary">{resendMsg}</p>
@@ -386,7 +390,7 @@ function MeldungDetail({
             auftragId && lead.kostentraeger === "versicherung" ? (
               <a
                 href={`/api/org/bautagebuch-versicherung?auftragId=${encodeURIComponent(auftragId)}`}
-                className="btn-pill-outline portal-btn-compact"
+                className="portal-btn-compact"
                 target="_blank"
                 rel="noopener noreferrer"
               >
@@ -622,17 +626,18 @@ export function OrganisationEingangPanel({
   if (selected) {
     return (
       <div className="-mx-4 -mt-2 min-w-0 space-y-3 lg:-mx-6">
-        <button
+        <PortalButton
+          variant="ghost"
           type="button"
           onClick={closeDetail}
-          className="rounded-full border border-[var(--p2-line,rgba(0,0,0,0.08))] px-3 py-1.5 text-[12.5px] font-semibold"
+          className="rounded-pill border border-[var(--p2-line,rgba(0,0,0,0.08))] px-3 py-1.5 text-fs-meta font-semibold"
           style={{
-            background: "#fff",
+            background: "var(--p2-panel)",
             color: PORTAL_VAR.sub,
           }}
         >
           ‹ Zurück
-        </button>
+        </PortalButton>
         <MeldungDetail
           lead={selected}
           kunde={kunde}
@@ -662,13 +667,13 @@ export function OrganisationEingangPanel({
             </p>
           </div>
 
-          <div className="flex flex-wrap items-center gap-2 rounded-xl border border-border-default bg-surface-card p-3">
+          <div className="flex flex-wrap items-center gap-2 rounded-sheet border border-border-default bg-surface-card p-3">
             <span className="portal-text-label inline-flex items-center gap-1 normal-case tracking-normal text-text-tertiary">
-              <Filter className="h-3.5 w-3.5" />
+              <PortalIcon n="filter" ctx="default" className="h-3.5 w-3.5" />
               Filter
             </span>
-            <select
-              className="portal-text-meta rounded-lg border border-border-default px-2 py-1.5"
+            <PortalSelect
+              className="portal-text-meta rounded-field border border-border-default px-2 py-1.5"
               value={objektFilter}
               onChange={(e) => setObjektFilter(e.target.value)}
             >
@@ -678,9 +683,9 @@ export function OrganisationEingangPanel({
                   {o.titel}
                 </option>
               ))}
-            </select>
-            <select
-              className="portal-text-meta rounded-lg border border-border-default px-2 py-1.5"
+            </PortalSelect>
+            <PortalSelect
+              className="portal-text-meta rounded-field border border-border-default px-2 py-1.5"
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value as StatusFilter)}
             >
@@ -688,7 +693,7 @@ export function OrganisationEingangPanel({
               <option value="neu">Neu</option>
               <option value="wartet_melder">Wartet auf Melder</option>
               <option value="in_bearbeitung">In Bearbeitung</option>
-            </select>
+            </PortalSelect>
           </div>
         </>
       ) : null}

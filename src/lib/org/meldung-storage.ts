@@ -1,3 +1,4 @@
+import { logDbError } from '@/lib/errors/log-db-error'
 import { GPT_VIZ_STORAGE_BUCKET } from "@/lib/gpt-viz/constants";
 import { supabaseAdmin } from "@/lib/supabase";
 
@@ -54,6 +55,7 @@ export async function uploadMeldungMedia(
       contentType: file.type,
       upsert: false,
     });
+  if (error) logDbError('lib/org/meldung-storage:query', error)
 
   if (error) {
     console.error("[uploadMeldungMedia]", error.message);

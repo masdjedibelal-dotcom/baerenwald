@@ -31,7 +31,7 @@ function buildSystemPrompt(opts: {
   auftragTitel: string;
 }): string {
   return [
-    "Du bist Korrektur-Assistent für Handwerker-Dokumentation (Bärenwald).",
+    "Du bist Korrektur-Assistent für Partner-Dokumentation (Bärenwald).",
     `Kontext: ${opts.scope}, Leistung: ${opts.leistungName}, Auftrag: ${opts.auftragTitel}.`,
     "Formuliere klar, sachlich, deutsch, kurz. Keine erfundenen Fakten.",
     "Nur korrigierter Text, ohne Einleitung.",

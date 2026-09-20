@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, type CSSProperties } from "react";
+import { PortalButton } from "@/components/portal/PortalButton";
 
 import { usePortalBusy } from "@/components/shared/PortalBusyContext";
 import { isHvDirektauftragInfoOnly } from "@/lib/org/org-direktauftrag";
@@ -30,7 +31,7 @@ function btnStyle(variant: "primary" | "ghost" | "danger"): CSSProperties {
   if (variant === "ghost") {
     return {
       border: `1px solid ${PORTAL_VAR.line}`,
-      background: "#fff",
+      background: "var(--p2-panel)",
       color: PORTAL_VAR.sub,
     };
   }
@@ -44,7 +45,7 @@ function btnStyle(variant: "primary" | "ghost" | "danger"): CSSProperties {
   return {
     border: "none",
     background: PORTAL_VAR.primary,
-    color: "#fff",
+    color: "var(--p2-panel)",
   };
 }
 
@@ -122,47 +123,50 @@ export function HvMeldungListActions({
   return (
     <div className="space-y-1.5">
       <div className="flex flex-wrap gap-2">
-        <button
+        <PortalButton
+          variant="ghost"
           type="button"
           disabled={busy}
           onClick={(e) => {
             e.stopPropagation();
             void act("ablehnen");
           }}
-          className="rounded-lg px-3.5 py-2 text-[12.5px] font-semibold disabled:opacity-60"
+          className="rounded-card px-3.5 py-2 text-fs-meta font-semibold disabled:opacity-60"
           style={btnStyle("danger")}
         >
           {label("ablehnen", "Ablehnen")}
-        </button>
+        </PortalButton>
         {hasHm ? (
-          <button
+          <PortalButton
+            variant="ghost"
             type="button"
             disabled={busy}
             onClick={(e) => {
               e.stopPropagation();
               void act("hm_begutachten");
             }}
-            className="rounded-lg px-3.5 py-2 text-[12.5px] font-semibold disabled:opacity-60"
+            className="rounded-card px-3.5 py-2 text-fs-meta font-semibold disabled:opacity-60"
             style={btnStyle("ghost")}
           >
             {label("hm_begutachten", "Hausmeister")}
-          </button>
+          </PortalButton>
         ) : null}
-        <button
+        <PortalButton
+          variant="ghost"
           type="button"
           disabled={busy}
           onClick={(e) => {
             e.stopPropagation();
             void act("direkt_baerenwald");
           }}
-          className="rounded-lg px-3.5 py-2 text-[12.5px] font-semibold disabled:opacity-60"
+          className="rounded-card px-3.5 py-2 text-fs-meta font-semibold disabled:opacity-60"
           style={btnStyle("primary")}
         >
           {label("direkt_baerenwald", "Direkt Bärenwald")}
-        </button>
+        </PortalButton>
       </div>
       {error ? (
-        <p className="text-xs font-semibold text-red-700">{error}</p>
+        <p className="text-xs font-semibold text-p2-danger">{error}</p>
       ) : null}
     </div>
   );

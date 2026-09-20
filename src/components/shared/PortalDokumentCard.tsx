@@ -31,12 +31,12 @@ export function PortalDokumentCard({
   return (
     <article
       className={cn(
-        "flex items-start gap-3 rounded-xl border border-border-default bg-white px-3.5 py-3.5 shadow-[0_1px_0_rgba(0,0,0,0.03)]",
+        "flex items-start gap-3 rounded-sheet border border-border-default bg-white px-3.5 py-3.5 shadow-[0_1px_0_rgba(0,0,0,0.03)]",
         className
       )}
     >
       <div className="min-w-0 flex-1">
-        <h3 className="text-[14px] font-semibold leading-snug text-text-primary">
+        <h3 className="text-fs-body font-semibold leading-snug text-text-primary">
           {title}
         </h3>
         {description?.trim() ? (
@@ -49,7 +49,7 @@ export function PortalDokumentCard({
         ) : null}
         {children}
         {error ? (
-          <p className="portal-text-meta mt-2 text-red-700" role="alert">
+          <p className="portal-text-meta mt-2 text-p2-danger" role="alert">
             {error}
           </p>
         ) : null}

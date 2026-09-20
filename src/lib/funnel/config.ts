@@ -619,7 +619,7 @@ export const SITUATIONEN_CONFIG: Record<
             hint: "Alles zusammen — ein Ansprechpartner",
             icon: "18-hausmeister",
             infoText:
-              "Ein Ansprechpartner für alles. Wir kümmern uns um alle Handwerker und sind Ihr fester Ansprechpartner.",
+              "Ein Ansprechpartner für alles. Wir kümmern uns um alle Partner und sind Ihr fester Ansprechpartner.",
             triggerGewerke: ["gartenpflege", "winterdienst", "reinigung"],
           },
         ],

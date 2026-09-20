@@ -38,7 +38,7 @@ Rechtsgrundlage für Datenübermittlung; Information der Mieter (Art. 13/14); er
 9. Subprozessoren
 Siehe Subprozessoren-Register (Supabase, Vercel, Resend u. a.). Änderungen werden mit Widerspruchsfrist mitgeteilt.
 
-10. Handwerker
+10. Partner
 Handwerksbetriebe werden als eigene Verantwortliche oder Empfänger im Rahmen der Auftragsausführung behandelt; Einordnung gemäß Hauptvertrag.
 
 Mit der Checkbox-Akzeptanz im Org-Portal bestätigt die Verwaltung diesen AVV in der genannten Version.`,

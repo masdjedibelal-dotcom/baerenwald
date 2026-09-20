@@ -1,3 +1,4 @@
+import { logDbError } from '@/lib/errors/log-db-error'
 import { Suspense } from "react";
 import { redirect } from "next/navigation";
 
@@ -124,11 +125,12 @@ export default async function PortalDashboardPage({
     tryRedeemOpenBewohnerInvitesForAuthUser,
   } = await import("@/lib/portal2/portal-einladungen-server");
 
-  const { data: linkKundeRow } = await supabaseAdmin
+  const {data: linkKundeRow, error: __dbErr247_1} = await supabaseAdmin
     .from("kunden")
     .select("id, portal_modus, typ")
     .eq("id", link.kundeId)
     .maybeSingle();
+  if (__dbErr247_1) logDbError('app/portal/page:kunden', __dbErr247_1)
   const linkIsOrg =
     String(linkKundeRow?.portal_modus ?? "").toLowerCase() === "organisation" ||
     ["hausverwaltung", "hv"].includes(
@@ -169,12 +171,13 @@ export default async function PortalDashboardPage({
 
   // Team-Mail: bei ?view=hausmeister (CRM-Login) HM-Stub auflösen / aktivieren
   if (forceHausmeisterView && isBaerenwaldPrimaryStaffEmail(user.email)) {
-    const { data: hmRows } = await supabaseAdmin
+    const {data: hmRows, error: __dbErr248_2} = await supabaseAdmin
       .from("org_hausmeister")
       .select("id, org_kunde_id, portal_kunde_id, portal_zugang")
       .ilike("email", user.email.trim().toLowerCase())
       .eq("portal_zugang", true)
       .limit(5);
+    if (__dbErr248_2) logDbError('app/portal/page:org_hausmeister', __dbErr248_2)
     for (const row of hmRows ?? []) {
       const hmId = String(row.id ?? "");
       const orgId = String(row.org_kunde_id ?? "");
@@ -196,7 +199,7 @@ export default async function PortalDashboardPage({
 
   // Ohne view=hausmeister: wenn zur E-Mail ein Org-Konto existiert, immer dorthin
   if (!forceHausmeisterView) {
-    const { data: orgKunde } = await supabaseAdmin
+    const {data: orgKunde, error: __dbErr249_3} = await supabaseAdmin
       .from("kunden")
       .select("id")
       .ilike("email", user.email.trim().toLowerCase())
@@ -204,28 +207,30 @@ export default async function PortalDashboardPage({
       .order("created_at", { ascending: true })
       .limit(1)
       .maybeSingle();
+    if (__dbErr249_3) logDbError('app/portal/page:kunden', __dbErr249_3)
     if (orgKunde?.id) {
       portalKundeId = String(orgKunde.id);
     }
   }
 
-  const { data: kundeMeta } = await supabaseAdmin
+  const {data: kundeMeta, error: __dbErr250_4} = await supabaseAdmin
     .from("kunden")
     .select("portal_modus, typ")
     .eq("id", portalKundeId)
     .maybeSingle();
-
+  if (__dbErr250_4) logDbError('app/portal/page:kunden', __dbErr250_4)
   let portalModus =
     (kundeMeta as { portal_modus?: string } | null)?.portal_modus ?? "privat";
   let kundeTypField =
     (kundeMeta as { typ?: string | null } | null)?.typ ?? null;
 
   if (!kundeMeta) {
-    const { data: fallback } = await supabaseAdmin
+    const {data: fallback, error: __dbErr251_5} = await supabaseAdmin
       .from("kunden")
       .select("portal_modus")
       .eq("id", portalKundeId)
       .maybeSingle();
+    if (__dbErr251_5) logDbError('app/portal/page:kunden', __dbErr251_5)
     portalModus = (fallback?.portal_modus as string | undefined) ?? "privat";
     kundeTypField = null;
   }
@@ -251,7 +256,6 @@ export default async function PortalDashboardPage({
         fallback={
           <PortalContentBusy
             variant="page"
-            title="Portal wird geladen…"
             body="Einen Moment — wir bereiten Ihre Übersicht vor."
           />
         }
@@ -293,7 +297,6 @@ export default async function PortalDashboardPage({
         fallback={
           <PortalContentBusy
             variant="page"
-            title="Portal wird geladen…"
             body="Einen Moment — wir bereiten Ihre Übersicht vor."
           />
         }
@@ -353,7 +356,6 @@ export default async function PortalDashboardPage({
         fallback={
           <PortalContentBusy
             variant="page"
-            title="Portal wird geladen…"
             body="Einen Moment — wir bereiten Ihre Übersicht vor."
           />
         }
@@ -406,7 +408,6 @@ export default async function PortalDashboardPage({
       fallback={
         <PortalContentBusy
           variant="page"
-          title="Portal wird geladen…"
           body="Einen Moment — wir bereiten Ihre Übersicht vor."
         />
       }

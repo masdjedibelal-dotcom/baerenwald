@@ -3,6 +3,7 @@ import Link from "next/link";
 import { SemanticFaq } from "@/components/common/SemanticFaq";
 import { LeistungsKonverterSection } from "@/components/leistungen/LeistungsKonverterSection";
 import { StadtteilLinksSection } from "@/components/handwerker/StadtteilLinksSection";
+import { CTAButton } from "@/components/ui/CTAButton";
 import { SITE_CONFIG } from "@/lib/config";
 import {
   getStadtteilLinks,
@@ -67,22 +68,16 @@ export function LeistungsPage({ slug, data }: LeistungsPageProps) {
           <p className="page-hero-sub">{data.subline}</p>
 
           <div className="mt-5 max-w-2xl text-left">
-            <p className="mb-1 text-xs text-gray-500">Kurze Antwort</p>
-            <p className="border-l-4 border-green-700 pl-4 text-sm text-gray-700">
+            <p className="mb-1 text-xs text-p2-faint">Kurze Antwort</p>
+            <p className="border-l-4 border-p2-primary pl-4 text-sm text-p2-sub">
               {seo.kurzeAntwort}
             </p>
           </div>
 
           <div className="page-hero-btns">
-            <a href="#konverter" className="page-hero-btn-primary">
-              Anfrage starten ↓
-            </a>
-            <Link href={kontaktHref} className="page-hero-btn-secondary">
-              Kontakt aufnehmen
-            </Link>
-            <Link href={telHref} className="page-hero-btn-secondary">
-              Direkt anrufen
-            </Link>
+            <CTAButton bare tone="hero-page" href="#konverter" label="Anfrage starten ↓" />
+            <CTAButton bare tone="hero-secondary" href={kontaktHref} label="Kontakt aufnehmen" />
+            <CTAButton bare tone="hero-secondary" href={telHref} label="Direkt anrufen" />
           </div>
 
           <div className="page-hero-trust">
@@ -138,13 +133,13 @@ export function LeistungsPage({ slug, data }: LeistungsPageProps) {
             <p>{data.preisHinweis}</p>
           </div>
 
-          <Link
+          <CTAButton
+            bare
+            tone="hero-page"
             href={kontaktHref}
-            className="page-hero-btn-primary"
-            style={{ display: "inline-block", marginTop: "20px" }}
-          >
-            Anfrage für mein Projekt stellen →
-          </Link>
+            label="Anfrage für mein Projekt stellen →"
+            className="mt-5 inline-block"
+          />
         </div>
       </section>
 
@@ -180,7 +175,7 @@ export function LeistungsPage({ slug, data }: LeistungsPageProps) {
       >
         <div className="article-section-inner">
           <span className="chapter-label">Häufige Fragen</span>
-          <h2 className="section-h2" style={{ marginBottom: "28px" }}>
+          <h2 className="section-h2" style={{ marginBottom: 28 }}>
             {seo.faqH2}
           </h2>
 
@@ -194,24 +189,24 @@ export function LeistungsPage({ slug, data }: LeistungsPageProps) {
 
       <section
         className="article-section--sm content-section content-section--white fade-up d1"
-        style={{ padding: "36px 2rem" }}
+        style={{ padding: "2.25rem 2rem" }}
       >
         <div className="article-section-inner">
           <div className="koordination-box">
             <div>
               <div
                 style={{
-                  fontSize: "13px",
+                  fontSize: 13,
                   fontWeight: 700,
                   color: "var(--fl-accent-dark)",
-                  marginBottom: "4px",
+                  marginBottom: 4,
                 }}
               >
                 Noch nicht sicher?
               </div>
               <p
                 style={{
-                  fontSize: "14px",
+                  fontSize: 14,
                   color: "var(--fl-text-2)",
                   margin: 0,
                   lineHeight: 1.6,
@@ -221,7 +216,7 @@ export function LeistungsPage({ slug, data }: LeistungsPageProps) {
                 solltest — Kosten, Ablauf und Zeitaufwand.
               </p>
             </div>
-            <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
               <Link href={ratgeberHref(data.ratgeberSlug)} className="koordination-box-link">
                 {data.ratgeberLabel} →
               </Link>
@@ -250,13 +245,9 @@ export function LeistungsPage({ slug, data }: LeistungsPageProps) {
           <p className="final-cta-sub">
             Lass uns dein Projekt gemeinsam einordnen — schnell und direkt.
           </p>
-          <div className="final-cta-btns">
-            <Link href={kontaktHref} className="final-cta-btn-primary">
-              Kontakt aufnehmen →
-            </Link>
-            <Link href={telHref} className="final-cta-btn-ghost">
-              Direkt anrufen
-            </Link>
+          <div className="final-cta-actions">
+            <CTAButton bare tone="final" href={kontaktHref} label="Kontakt aufnehmen →" />
+            <CTAButton bare tone="final-ghost" href={telHref} label="Direkt anrufen" />
           </div>
           <p className="final-cta-trust">
             Unverbindlich · Festpreisangebot · Meisterbetriebe München

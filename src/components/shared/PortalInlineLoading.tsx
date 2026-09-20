@@ -1,6 +1,6 @@
 "use client";
 
-import { cn } from "@/lib/utils";
+import { PortalContentBusy } from "@/components/shared/PortalContentBusy";
 
 type Props = {
   /** Nur für Screenreader — sichtbar kein Text. */
@@ -8,20 +8,12 @@ type Props = {
   className?: string;
 };
 
-/** Kleiner Spinner für nachgeladene Sektionen (kein Vollbild-Overlay). */
+/** Kleiner Spinner für nachgeladene Sektionen — Alias auf PortalContentBusy. */
 export function PortalInlineLoading({
   label = "Wird geladen",
   className,
 }: Props) {
   return (
-    <div
-      className={cn("portal-inline-loading", className)}
-      role="status"
-      aria-live="polite"
-      aria-busy="true"
-    >
-      <span className="portal-inline-loading-spinner" aria-hidden />
-      <span className="sr-only">{label}</span>
-    </div>
+    <PortalContentBusy variant="section" label={label} className={className} />
   );
 }

@@ -1,3 +1,4 @@
+import { logDbError } from '@/lib/errors/log-db-error'
 import { NextResponse } from "next/server";
 
 import { writeAuditEvent } from "@/lib/audit/write-audit-event";
@@ -64,12 +65,13 @@ export async function POST(req: Request) {
   let hausnummer: string | null = null;
 
   if (objektId) {
-    const { data: objekt } = await supabaseAdmin
+    const {data: objekt, error: __dbErr218_1} = await supabaseAdmin
       .from("kunden_objekte")
       .select("id, plz, strasse, hausnummer")
       .eq("id", objektId)
       .eq("kunde_id", org.id)
       .maybeSingle();
+    if (__dbErr218_1) logDbError('app/api/org/servicepaket-anfrage/route:kunden_objekte', __dbErr218_1)
     if (!objekt) {
       return NextResponse.json({ error: "Objekt nicht gefunden." }, { status: 404 });
     }
@@ -77,13 +79,14 @@ export async function POST(req: Request) {
     strasse = objekt.strasse;
     hausnummer = objekt.hausnummer;
   } else {
-    const { data: first } = await supabaseAdmin
+    const {data: first, error: __dbErr219_2} = await supabaseAdmin
       .from("kunden_objekte")
       .select("id, plz, strasse, hausnummer")
       .eq("kunde_id", org.id)
       .order("titel", { ascending: true })
       .limit(1)
       .maybeSingle();
+    if (__dbErr219_2) logDbError('app/api/org/servicepaket-anfrage/route:kunden_objekte', __dbErr219_2)
     if (first) {
       objektId = first.id;
       plz = String(first.plz ?? "");

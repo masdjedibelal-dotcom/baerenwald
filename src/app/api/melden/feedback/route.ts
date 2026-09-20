@@ -1,3 +1,4 @@
+import { logDbError } from '@/lib/errors/log-db-error'
 import { NextResponse } from "next/server";
 
 import { vorgangFeedbackBereit } from "@/lib/portal/vorgang-feedback-eligibility";
@@ -31,23 +32,25 @@ export async function POST(req: Request) {
     );
   }
 
-  const { data: lead } = await supabaseAdmin
+  const {data: lead, error: __dbErr146_1} = await supabaseAdmin
     .from("leads")
     .select("id, vorgang_phase, hv_meldung_status")
     .eq("melde_tracking_token", token)
     .maybeSingle();
+  if (__dbErr146_1) logDbError('app/api/melden/feedback/route:leads', __dbErr146_1)
 
   if (!lead) {
     return NextResponse.json({ error: "Nicht gefunden." }, { status: 404 });
   }
 
-  const { data: auftrag } = await supabaseAdmin
+  const {data: auftrag, error: __dbErr147_2} = await supabaseAdmin
     .from("auftraege")
     .select("id, status, fortschritt")
     .eq("lead_id", lead.id)
     .order("created_at", { ascending: false })
     .limit(1)
     .maybeSingle();
+  if (__dbErr147_2) logDbError('app/api/melden/feedback/route:auftraege', __dbErr147_2)
 
   const { data: positionen } = auftrag
     ? await supabaseAdmin
@@ -80,6 +83,7 @@ export async function POST(req: Request) {
     },
     { onConflict: "lead_id" }
   );
+  if (error) logDbError('app/api/melden/feedback/route:mieter_feedback', error)
 
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });

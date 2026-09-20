@@ -1,3 +1,4 @@
+import { logDbError } from '@/lib/errors/log-db-error'
 import { NextResponse } from "next/server";
 
 import { assertOrgEinheit } from "@/lib/org/assert-org-objekt";
@@ -18,22 +19,24 @@ export async function GET(req: Request) {
     return NextResponse.json({ error: "objektId fehlt." }, { status: 400 });
   }
 
-  const { data: objekt } = await supabaseAdmin
+  const {data: objekt, error: __dbErr208_1} = await supabaseAdmin
     .from("kunden_objekte")
     .select("id, einheiten_hinweis")
     .eq("id", objektId)
     .eq("kunde_id", session.kunde.id)
     .maybeSingle();
+  if (__dbErr208_1) logDbError('app/api/org/objekte/einheiten/route:kunden_objekte', __dbErr208_1)
 
   if (!objekt) {
     return NextResponse.json({ error: "Objekt nicht gefunden." }, { status: 404 });
   }
 
-  const { count: activeCount } = await supabaseAdmin
+  const {count: activeCount, error: __dbErr209_2} = await supabaseAdmin
     .from("objekt_einheiten")
     .select("id", { count: "exact", head: true })
     .eq("kunde_objekt_id", objektId)
     .eq("aktiv", true);
+  if (__dbErr209_2) logDbError('app/api/org/objekte/einheiten/route:objekt_einheiten', __dbErr209_2)
 
   if ((activeCount ?? 0) === 0) {
     await ensureDefaultObjektEinheitenFromHinweis(
@@ -48,6 +51,7 @@ export async function GET(req: Request) {
     .eq("kunde_objekt_id", objektId)
     .eq("aktiv", true)
     .order("sort_order", { ascending: true });
+  if (error) logDbError('app/api/org/objekte/einheiten/route:objekt_einheiten', error)
 
   if (error) {
     // Fallback falls Etage-Migration noch nicht live ist
@@ -90,12 +94,13 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Objekt und Bezeichnung erforderlich." }, { status: 400 });
   }
 
-  const { data: objekt } = await supabaseAdmin
+  const {data: objekt, error: __dbErr210_3} = await supabaseAdmin
     .from("kunden_objekte")
     .select("id")
     .eq("id", objektId)
     .eq("kunde_id", session.kunde.id)
     .maybeSingle();
+  if (__dbErr210_3) logDbError('app/api/org/objekte/einheiten/route:kunden_objekte', __dbErr210_3)
 
   if (!objekt) {
     return NextResponse.json({ error: "Objekt nicht gefunden." }, { status: 404 });
@@ -107,6 +112,7 @@ export async function POST(req: Request) {
     etage: body.etage?.trim() || null,
     wohnflaeche_m2: body.wohnflaeche_m2 ?? null,
   });
+  if (error) logDbError('app/api/org/objekte/einheiten/route:objekt_einheiten', error)
 
   if (error) {
     if (/etage/i.test(error.message)) {
@@ -160,6 +166,7 @@ export async function PATCH(req: Request) {
     .from("objekt_einheiten")
     .update(patch)
     .eq("id", id);
+  if (error) logDbError('app/api/org/objekte/einheiten/route:objekt_einheiten', error)
 
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
@@ -183,6 +190,7 @@ export async function DELETE(req: Request) {
     .from("objekt_einheiten")
     .update({ aktiv: false })
     .eq("id", id);
+  if (error) logDbError('app/api/org/objekte/einheiten/route:objekt_einheiten', error)
 
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });

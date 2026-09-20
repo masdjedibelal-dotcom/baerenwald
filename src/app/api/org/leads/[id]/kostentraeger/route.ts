@@ -1,3 +1,4 @@
+import { logDbError } from '@/lib/errors/log-db-error'
 import { NextResponse } from "next/server";
 
 import { writeAuditEvent } from "@/lib/audit/write-audit-event";
@@ -44,11 +45,12 @@ export async function PATCH(
     );
   }
 
-  const { data: lead } = await supabaseAdmin
+  const {data: lead, error: __dbErr187_1} = await supabaseAdmin
     .from("leads")
     .select("id, auftraggeber_kunde_id, kostentraeger, kunde_objekt_id, funnel_daten")
     .eq("id", id)
     .maybeSingle();
+  if (__dbErr187_1) logDbError('app/api/org/leads/[id]/kostentraeger/route:leads', __dbErr187_1)
 
   if (!lead || lead.auftraggeber_kunde_id !== session.kunde.id) {
     return NextResponse.json({ error: "Vorgang nicht gefunden." }, { status: 404 });
@@ -75,11 +77,12 @@ export async function PATCH(
       patch.versicherungs_nr = body.versicherungs_nr.trim();
       patch.versicherungs_nr_geaendert_am = now;
     } else if (lead.kunde_objekt_id) {
-      const { data: obj } = await supabaseAdmin
+      const {data: obj, error: __dbErr188_2} = await supabaseAdmin
         .from("kunden_objekte")
         .select("versicherungs_nr")
         .eq("id", lead.kunde_objekt_id)
         .maybeSingle();
+      if (__dbErr188_2) logDbError('app/api/org/leads/[id]/kostentraeger/route:kunden_objekte', __dbErr188_2)
       if (obj?.versicherungs_nr?.trim()) {
         patch.versicherungs_nr = obj.versicherungs_nr.trim();
       }
@@ -94,6 +97,7 @@ export async function PATCH(
   }
 
   const { error } = await supabaseAdmin.from("leads").update(patch).eq("id", id);
+  if (error) logDbError('app/api/org/leads/[id]/kostentraeger/route:leads', error)
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
@@ -103,7 +107,8 @@ export async function PATCH(
   if (kt === "versicherung" && body.versicherungs_nr?.trim()) {
     auftragPatch.versicherungs_nr = body.versicherungs_nr.trim();
   }
-  await supabaseAdmin.from("auftraege").update(auftragPatch).eq("lead_id", id);
+  const { error: __dbErr189_3 } = await supabaseAdmin.from("auftraege").update(auftragPatch).eq("lead_id", id);
+  if (__dbErr189_3) logDbError('app/api/org/leads/[id]/kostentraeger/route:auftraege', __dbErr189_3)
 
   await writeAuditEvent({
     entityType: "lead",

@@ -2,7 +2,7 @@
 
 .gpt-guided-root {
   --gd-bg: rgba(255, 255, 255, 0.72);
-  --gd-bg-solid: #ffffff;
+  --gd-bg-solid: var(--fl-panel);
   --gd-bg-elevated: rgba(255, 255, 255, 0.94);
   --gd-border: rgba(0, 0, 0, 0.06);
   --gd-border-strong: rgba(0, 0, 0, 0.1);
@@ -12,9 +12,9 @@
   --gd-radius-md: 18px;
   --gd-radius-lg: 22px;
   --gd-radius-pill: 999px;
-  --gd-accent: var(--org-primary, var(--p2-primary, #2e7d52));
+  --gd-accent: var(--org-primary, var(--fl-accent));
   --gd-accent-soft: rgba(46, 125, 82, 0.1);
-  --gd-text: #1c1c1e;
+  --gd-text: var(--fl-ink-near, var(--fl-ink));
   --gd-text-secondary: rgba(60, 60, 67, 0.72);
   --gd-text-tertiary: rgba(60, 60, 67, 0.48);
   --gd-font: var(--fl-font-sans, -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", sans-serif);
@@ -38,7 +38,7 @@
 
 .ki-rechner-chat-bubble--assistant:has(.gpt-guided-blocks) .ki-rechner-chat-para,
 .ki-rechner-chat-bubble--assistant:has(.gpt-guided-blocks) p {
-  font-size: 15px;
+  font-size: var(--p2-fs-title);
   line-height: 1.47;
   letter-spacing: -0.01em;
   color: var(--gd-text);
@@ -160,7 +160,7 @@
 }
 
 .gpt-guided-journey-title {
-  font-size: 15px;
+  font-size: var(--p2-fs-title);
   font-weight: 600;
   letter-spacing: -0.02em;
   color: var(--gd-text);
@@ -168,7 +168,7 @@
 }
 
 .gpt-guided-journey-hint {
-  font-size: 12px;
+  font-size: var(--p2-fs-caption);
   line-height: 1.4;
   letter-spacing: -0.01em;
   color: var(--gd-text-secondary);
@@ -197,7 +197,7 @@
 
 .gpt-guided-decision-q {
   margin: 0 0 12px;
-  font-size: 13px;
+  font-size: var(--p2-fs-meta);
   font-weight: 600;
   letter-spacing: -0.01em;
   color: var(--gd-text-secondary);
@@ -213,11 +213,11 @@
 
 .gpt-guided-situation-card {
   width: 100%;
-  border-radius: var(--gd-radius-md) !important;
-  border: 1px solid var(--gd-border) !important;
-  background: var(--gd-bg-solid) !important;
+  border-radius: var(--gd-radius-md);
+  border: 1px solid var(--gd-border);
+  background: var(--gd-bg-solid);
   box-shadow: var(--gd-shadow-sm);
-  padding: 16px !important;
+  padding: 16px;
   transition: transform 0.2s var(--gd-spring), box-shadow 0.2s var(--gd-ease);
   -webkit-tap-highlight-color: transparent;
 }
@@ -228,7 +228,7 @@
 
 @media (hover: hover) {
   .gpt-guided-situation-card:hover {
-    border-color: rgba(46, 125, 82, 0.2) !important;
+    border-color: rgba(46, 125, 82, 0.2);
     box-shadow: var(--gd-shadow-md);
   }
 }
@@ -242,15 +242,15 @@
 }
 
 .gpt-guided-situation-card p.text-\[13px\] {
-  font-size: 15px !important;
-  font-weight: 600 !important;
+  font-size: var(--p2-fs-title);
+  font-weight: 600;
   letter-spacing: -0.02em;
 }
 
 .gpt-guided-situation-card p.text-\[11px\] {
-  font-size: 12px !important;
-  line-height: 1.45 !important;
-  color: var(--gd-text-secondary) !important;
+  font-size: var(--p2-fs-caption);
+  line-height: 1.45;
+  color: var(--gd-text-secondary);
 }
 
 .gpt-guided-tile-grid {
@@ -269,11 +269,11 @@
 .gpt-guided-tile.funnel-tile {
   width: 100%;
   min-height: 88px;
-  border-radius: var(--gd-radius-md) !important;
-  border: 1px solid var(--gd-border) !important;
-  background: var(--gd-bg-solid) !important;
+  border-radius: var(--gd-radius-md);
+  border: 1px solid var(--gd-border);
+  background: var(--gd-bg-solid);
   box-shadow: var(--gd-shadow-sm);
-  padding: 14px 14px 12px !important;
+  padding: 14px 14px 12px;
   transition: transform 0.2s var(--gd-spring), box-shadow 0.2s var(--gd-ease);
   -webkit-tap-highlight-color: transparent;
 }
@@ -284,9 +284,9 @@
 
 @media (hover: hover) {
   .gpt-guided-tile.funnel-tile:hover:not(.selected) {
-    border-color: rgba(46, 125, 82, 0.2) !important;
+    border-color: rgba(46, 125, 82, 0.2);
     box-shadow: var(--gd-shadow-md);
-    background: var(--gd-bg-solid) !important;
+    background: var(--gd-bg-solid);
   }
 }
 
@@ -303,7 +303,7 @@
 }
 
 .gpt-guided-plz-label {
-  font-size: 12px;
+  font-size: var(--p2-fs-caption);
   font-weight: 600;
   letter-spacing: 0.02em;
   text-transform: uppercase;
@@ -330,7 +330,7 @@
   padding: 0 16px;
   border-radius: var(--gd-radius-sm);
   border: 1px solid var(--gd-border-strong);
-  font-size: 17px;
+  font-size: var(--p2-fs-title);
   font-weight: 500;
   letter-spacing: 0.08em;
   font-variant-numeric: tabular-nums;
@@ -374,7 +374,7 @@
   padding: 0 20px;
   border-radius: var(--gd-radius-pill);
   font-family: var(--gd-font);
-  font-size: 15px;
+  font-size: var(--p2-fs-title);
   font-weight: 600;
   letter-spacing: -0.02em;
   cursor: pointer;
@@ -388,7 +388,7 @@
 .gpt-guided-primary-btn {
   border: none;
   background: var(--gd-accent);
-  color: #fff;
+  color: var(--fl-panel);
   box-shadow: 0 2px 10px rgba(46, 125, 82, 0.28);
 }
 
@@ -399,7 +399,7 @@
 
 @media (hover: hover) {
   .gpt-guided-primary-btn:hover:not(:disabled) {
-    background: #267347;
+    background: var(--fl-accent-hover);
   }
 }
 
@@ -438,7 +438,7 @@
   border: 1px solid rgba(46, 125, 82, 0.14);
   background:
     radial-gradient(ellipse 90% 60% at 100% 0%, rgba(46, 125, 82, 0.08) 0%, transparent 55%),
-    linear-gradient(168deg, #fafcfa 0%, #ffffff 48%, #f6faf7 100%);
+    linear-gradient(168deg, var(--fl-bg-green-tint-4) 0%, var(--fl-panel) 48%, var(--fl-bg-green-tint-5) 100%);
   box-shadow: var(--gd-shadow-md);
   overflow: hidden;
 }
@@ -450,12 +450,12 @@
   left: 0;
   right: 0;
   height: 3px;
-  background: linear-gradient(90deg, #1a3d2b 0%, #2e7d52 50%, #5a9e6f 100%);
+  background: linear-gradient(90deg, var(--fl-accent-dark) 0%, var(--fl-accent) 50%, var(--fl-accent-bright) 100%);
 }
 
 .gpt-guided-price-kicker {
   margin: 4px 0 0;
-  font-size: 11px;
+  font-size: var(--p2-fs-caption);
   font-weight: 600;
   letter-spacing: 0.06em;
   text-transform: uppercase;
@@ -474,7 +474,7 @@
 
 .gpt-guided-price-sub {
   margin: 10px 0 0;
-  font-size: 13px;
+  font-size: var(--p2-fs-meta);
   line-height: 1.45;
   letter-spacing: -0.01em;
   color: var(--gd-text-secondary);
@@ -484,7 +484,7 @@
   margin-top: 16px;
   padding-top: 14px;
   border-top: 1px solid var(--gd-border);
-  font-size: 13px;
+  font-size: var(--p2-fs-meta);
   color: var(--gd-text-secondary);
 }
 
@@ -505,7 +505,7 @@
 
 .gpt-guided-price-details summary::after {
   content: "›";
-  font-size: 18px;
+  font-size: var(--p2-fs-head);
   font-weight: 400;
   color: var(--gd-text-tertiary);
   transform: rotate(90deg);
@@ -529,7 +529,7 @@
   gap: 12px;
   padding: 10px 0;
   border-bottom: 1px solid var(--gd-border);
-  font-size: 13px;
+  font-size: var(--p2-fs-meta);
   letter-spacing: -0.01em;
 }
 
@@ -569,7 +569,7 @@
   min-height: 36px;
   padding: 8px 14px;
   border-radius: var(--gd-radius-pill);
-  font-size: 13px;
+  font-size: var(--p2-fs-meta);
   font-weight: 500;
   letter-spacing: -0.01em;
   background: rgba(0, 0, 0, 0.04);
@@ -599,7 +599,7 @@
   .gpt-guided-summary-chip {
     min-height: 44px;
     padding: 10px 16px;
-    font-size: 14px;
+    font-size: var(--p2-fs-body);
   }
 
   .gpt-chat-journey-bar {
@@ -624,7 +624,7 @@
   .gpt-guided-plz-input {
     width: 100%;
     min-height: 52px;
-    font-size: 17px;
+    font-size: var(--p2-fs-title);
     letter-spacing: 0.12em;
   }
 
@@ -666,11 +666,11 @@
 }
 
 .gpt-guided-journey-grid--compact .gpt-guided-journey-title {
-  font-size: 14px;
+  font-size: var(--p2-fs-body);
 }
 
 .gpt-guided-journey-grid--compact .gpt-guided-journey-hint {
-  font-size: 11px;
+  font-size: var(--p2-fs-caption);
   -webkit-line-clamp: 1;
 }
 
@@ -681,7 +681,7 @@
 
 .gpt-guided-decision-hint {
   margin: 0 0 12px;
-  font-size: 12px;
+  font-size: var(--p2-fs-caption);
   line-height: 1.45;
   color: var(--gd-text-secondary);
   letter-spacing: -0.01em;
@@ -707,7 +707,7 @@
     justify-content: flex-start;
     min-height: 48px;
     padding: 0 16px;
-    font-size: 15px;
+    font-size: var(--p2-fs-title);
     white-space: normal;
   }
 
@@ -727,7 +727,7 @@
   border: 1px solid var(--gd-border-strong);
   background: var(--gd-bg-solid);
   font-family: var(--gd-font);
-  font-size: 14px;
+  font-size: var(--p2-fs-body);
   font-weight: 600;
   letter-spacing: -0.02em;
   color: var(--gd-text);
@@ -758,7 +758,7 @@
 }
 
 .gpt-guided-chip-emoji {
-  font-size: 14px;
+  font-size: var(--p2-fs-body);
   line-height: 1;
 }
 
@@ -776,13 +776,13 @@
 }
 
 .gpt-guided-tile--compact.funnel-tile {
-  min-height: 76px !important;
-  padding: 12px 12px 10px !important;
+  min-height: 76px;
+  padding: 12px 12px 10px;
 }
 
 .gpt-guided-tile--compact.funnel-tile .font-semibold,
 .gpt-guided-tile--compact.funnel-tile [class*="font-semibold"] {
-  font-size: 13px !important;
+  font-size: var(--p2-fs-meta);
 }
 
 /* ── Viz-Rückfragen (transparent, kein weißer Karten-Stack) ── */
@@ -825,14 +825,14 @@
 }
 
 .gpt-guided-viz-option-label {
-  font-size: 14px;
+  font-size: var(--p2-fs-body);
   font-weight: 600;
-  color: var(--org-primary-dk, var(--p2-green-dark, #1a3d2b));
+  color: var(--org-primary-dk, var(--fl-accent-dark));
 }
 
 .gpt-guided-viz-option-hint {
-  font-size: 12px;
-  color: #5c6f64;
+  font-size: var(--p2-fs-caption);
+  color: var(--fl-faint-5);
   line-height: 1.35;
 }
 
@@ -867,7 +867,7 @@
 }
 
 .gpt-guided-lead-field span {
-  font-size: 11px;
+  font-size: var(--p2-fs-caption);
   font-weight: 600;
   letter-spacing: 0.04em;
   text-transform: uppercase;
@@ -890,7 +890,7 @@
   border-radius: var(--gd-radius-sm);
   border: 1px solid var(--gd-border-strong);
   font-family: var(--gd-font);
-  font-size: 16px;
+  font-size: var(--p2-fs-title);
   letter-spacing: -0.01em;
   background: var(--gd-bg-solid);
   color: var(--gd-text);
@@ -930,9 +930,9 @@
 
 .gpt-guided-lead-error {
   margin: 0;
-  font-size: 12px;
+  font-size: var(--p2-fs-caption);
   font-weight: 500;
-  color: #9c2b2b;
+  color: var(--fl-danger-deep);
 }
 
 /* Chat-Shell · Mobile Polish */
@@ -952,7 +952,7 @@
   border-radius: 22px;
   border: 1px solid rgba(0, 0, 0, 0.08);
   background: rgba(255, 255, 255, 0.95);
-  font-size: 16px;
+  font-size: var(--p2-fs-title);
   line-height: 1.35;
   padding: 8px 12px;
   letter-spacing: -0.01em;
@@ -1002,9 +1002,9 @@
 
 .gpt-guided-viz-limit-text {
   margin: 0;
-  font-size: 14px;
+  font-size: var(--p2-fs-body);
   line-height: 1.45;
-  color: #1a2420;
+  color: var(--fl-ink-dark);
 }
 
 .gpt-guided-viz-limit-actions {

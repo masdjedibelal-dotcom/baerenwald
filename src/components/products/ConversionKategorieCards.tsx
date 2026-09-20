@@ -1,7 +1,7 @@
 "use client";
 
-import { Bath, Trees, Wrench } from "lucide-react";
 
+import { PortalIcon } from "@/components/portal/PortalIcon";
 import {
   formatProduktAbPreis,
   produktFamilieAbPreis,
@@ -12,11 +12,11 @@ const KATEGORIEN: {
   id: ProduktFamilie;
   label: string;
   subtitle: string;
-  icon: typeof Bath;
+  icon: "bath" | "wrench" | "trees";
 }[] = [
-  { id: "bad", label: "Bad", subtitle: "Komplettsanierung", icon: Bath },
-  { id: "fix", label: "Fix", subtitle: "Schnelle Reparatur", icon: Wrench },
-  { id: "garten", label: "Garten", subtitle: "Pflege pro Besuch", icon: Trees },
+  { id: "bad", label: "Bad", subtitle: "Komplettsanierung", icon: "bath" },
+  { id: "fix", label: "Fix", subtitle: "Schnelle Reparatur", icon: "wrench" },
+  { id: "garten", label: "Garten", subtitle: "Pflege pro Besuch", icon: "trees" },
 ];
 
 type Props = {
@@ -28,8 +28,7 @@ export function ConversionKategorieCards({ selected, onSelect }: Props) {
   return (
     <div className="conversion-kategorie-grid" role="tablist" aria-label="Projekt wählen">
       {KATEGORIEN.map((kat) => {
-        const Icon = kat.icon;
-        const ab = produktFamilieAbPreis(kat.id);
+                const ab = produktFamilieAbPreis(kat.id);
         const preisLabel = ab != null ? formatProduktAbPreis(ab) : "Preis auf Anfrage";
         const active = selected === kat.id;
 
@@ -43,7 +42,7 @@ export function ConversionKategorieCards({ selected, onSelect }: Props) {
             onClick={() => onSelect(kat.id)}
           >
             <span className="conversion-kategorie-icon" aria-hidden>
-              <Icon size={22} strokeWidth={2} />
+              <PortalIcon n={kat.icon} ctx="default" size={22} />
             </span>
             <span className="conversion-kategorie-label">{kat.label}</span>
             <span className="conversion-kategorie-sub">{kat.subtitle}</span>

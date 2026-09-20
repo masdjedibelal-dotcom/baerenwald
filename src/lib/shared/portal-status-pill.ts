@@ -1,3 +1,4 @@
+import type { RolePillSemantic } from "@/lib/crm-vorgang/role-status";
 import { cn } from "@/lib/utils";
 
 /** Einheitliche Pill-Basis (`.tag`) für alle Portale. */
@@ -12,16 +13,35 @@ export type PortalStatusTone =
   | "danger"
   | "warn";
 
+/** Design P0-2: eine Farbfamilie für Portal- + Role-Pills (`.role-pill-*`). */
 const TONE_CLASS: Record<PortalStatusTone, string> = {
-  neutral: "bg-muted text-text-secondary",
-  neu: "bg-orange-100 text-orange-800",
-  warten: "bg-amber-100 text-amber-900",
-  aktiv: "bg-blue-100 text-blue-800",
-  fertig: "bg-emerald-100 text-emerald-700",
-  danger: "bg-red-100 text-red-700",
-  warn: "bg-amber-100 text-amber-800",
+  neutral: "role-pill role-pill-fertig",
+  neu: "role-pill role-pill-neu",
+  warten: "role-pill role-pill-warten",
+  aktiv: "role-pill role-pill-aktiv",
+  fertig: "role-pill role-pill-fertig",
+  danger: "role-pill role-pill-storniert",
+  warn: "role-pill role-pill-warten",
 };
 
 export function portalStatusPillClass(tone: PortalStatusTone): string {
   return cn(PORTAL_STATUS_PILL_BASE, TONE_CLASS[tone]);
+}
+
+/** Resolver-Semantik → Portal-Tone (für `PortalStatusPill`). */
+export function roleSemanticToPortalTone(
+  semantic: RolePillSemantic
+): PortalStatusTone {
+  switch (semantic) {
+    case "neu":
+      return "neu";
+    case "warten":
+      return "warten";
+    case "aktiv":
+      return "aktiv";
+    case "fertig":
+      return "fertig";
+    case "storniert":
+      return "danger";
+  }
 }

@@ -3,11 +3,12 @@
 import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 
+import { PortalCheckbox, PortalDate, PortalInput } from "@/components/shared/PortalFormControls";
 import { submitPartnerAbnahmeprotokoll } from "@/app/actions/partner-abnahmeprotokoll";
 import {
   PartnerDetailError,
-  PartnerDetailSection,
 } from "@/components/partner/PartnerDetailUi";
+import { PortalDetailCard } from "@/components/shared/PortalDetailCard";
 import { PartnerKiKorrekturField } from "@/components/partner/PartnerKiKorrekturField";
 import { SignatureCanvas } from "@/components/shared/SignatureCanvas";
 import {
@@ -15,6 +16,7 @@ import {
   type HwAbschlussCheckId,
 } from "@/lib/portal2/hw-kalkulation";
 import { partnerPortalToast } from "@/lib/shared/portal-toast";
+import { PortalButton } from "@/components/portal/PortalButton";
 
 type Props = {
   auftragId: string;
@@ -65,7 +67,7 @@ export function PartnerAbnahmeprotokollForm({
       return;
     }
     if (!hwHasSig || !hwSig) {
-      setError("Bitte die Handwerker-Signatur zeichnen.");
+      setError("Bitte die Partner-Signatur zeichnen.");
       return;
     }
     setLoading(true);
@@ -96,14 +98,14 @@ export function PartnerAbnahmeprotokollForm({
   }
 
   return (
-    <PartnerDetailSection title="Abschlussdokumentation">
+    <PortalDetailCard title="Abschlussdokumentation">
       <p className="portal-text-body text-text-secondary mb-4">
         Checkliste, Bericht und Canvas-Signatur vor Ort. Die Gegenzeichnung der
         Verwaltung bleibt im Kunden-/HV-Portal.
       </p>
 
       {leistungen.length > 0 ? (
-        <div className="mb-4 rounded-xl border border-border-light bg-muted/20 p-3">
+        <div className="mb-4 rounded-sheet border border-border-light bg-muted/20 p-3">
           <p className="portal-text-meta font-semibold text-text-tertiary mb-1">
             Leistungen in diesem Abschluss
           </p>
@@ -116,17 +118,16 @@ export function PartnerAbnahmeprotokollForm({
       ) : null}
 
       <form onSubmit={onSubmit} className="space-y-4">
-        <div className="space-y-2 rounded-xl border border-border-light p-4">
+        <div className="space-y-2 rounded-sheet border border-border-light p-4">
           <p className="portal-text-meta font-semibold text-text-tertiary">
             Abschluss-Checkliste
           </p>
           {HW_ABSCHLUSS_CHECKS.map((c) => (
             <label
               key={c.id}
-              className="flex cursor-pointer gap-3 rounded-lg px-1 py-1.5 hover:bg-muted/30"
+              className="flex cursor-pointer gap-3 rounded-field px-1 py-1.5 hover:bg-muted/30"
             >
-              <input
-                type="checkbox"
+              <PortalCheckbox
                 className="mt-1"
                 checked={checks[c.id]}
                 onChange={(e) =>
@@ -175,7 +176,7 @@ export function PartnerAbnahmeprotokollForm({
             <span className="portal-text-meta font-medium text-text-secondary">
               Ort *
             </span>
-            <input
+            <PortalInput
               required
               type="text"
               value={ort}
@@ -188,9 +189,8 @@ export function PartnerAbnahmeprotokollForm({
             <span className="portal-text-meta font-medium text-text-secondary">
               Datum *
             </span>
-            <input
+            <PortalDate
               required
-              type="date"
               value={abnahmeDatum}
               onChange={(e) => setAbnahmeDatum(e.target.value)}
               className="portal-input w-full"
@@ -198,15 +198,15 @@ export function PartnerAbnahmeprotokollForm({
           </label>
         </div>
 
-        <div className="rounded-xl border border-border-light p-4 space-y-4">
+        <div className="rounded-sheet border border-border-light p-4 space-y-4">
           <p className="portal-text-meta font-semibold text-text-tertiary">
             Digitale Signatur (Canvas)
           </p>
           <label className="block space-y-1.5">
             <span className="portal-text-meta font-medium text-text-secondary">
-              Handwerker vor Ort *
+              Partner vor Ort *
             </span>
-            <input
+            <PortalInput
               required
               type="text"
               value={hwName}
@@ -226,7 +226,7 @@ export function PartnerAbnahmeprotokollForm({
             <span className="portal-text-meta font-medium text-text-secondary">
               Kunde vor Ort *
             </span>
-            <input
+            <PortalInput
               required
               type="text"
               value={kundeName}
@@ -250,23 +250,23 @@ export function PartnerAbnahmeprotokollForm({
         {error ? <PartnerDetailError message={error} /> : null}
 
         <div className="flex flex-wrap gap-2 pt-1">
-          <button
+          <PortalButton variant="primary" action={false}
             type="submit"
             disabled={loading || !allChecks || !hwHasSig}
-            className="btn-pill-primary portal-btn"
+            className="btn-pill-primary"
           >
             {loading ? "Wird gespeichert…" : "Abschluss signieren"}
-          </button>
-          <button
+          </PortalButton>
+          <PortalButton variant="secondary" action={false}
             type="button"
             disabled={loading}
             onClick={onCancel}
-            className="btn-pill-outline portal-btn"
+            className="btn-pill-outline"
           >
             Abbrechen
-          </button>
+          </PortalButton>
         </div>
       </form>
-    </PartnerDetailSection>
+    </PortalDetailCard>
   );
 }

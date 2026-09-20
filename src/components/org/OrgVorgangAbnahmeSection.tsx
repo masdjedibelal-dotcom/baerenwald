@@ -2,11 +2,14 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { PortalButton } from "@/components/portal/PortalButton";
 
+import { PortalInput, PortalTextarea } from "@/components/shared/PortalFormControls";
 import { submitOrgHvAbnahme, type HvAbnahmeArt } from "@/app/actions/org-hv-abnahme";
 import { SignatureCanvas } from "@/components/shared/SignatureCanvas";
-import { VorgangTimeline } from "@/components/shared/VorgangTimeline";
-import { RoleStatusPill } from "@/components/shared/RoleStatusPill";
+import { PortalFlowTimeline } from "@/components/shared/PortalFlowTimeline";
+import { PortalStatusPill } from "@/components/shared/PortalStatusPill";
+import { roleSemanticToPortalTone } from "@/lib/shared/portal-status-pill";
 import { orgPortalToast } from "@/lib/shared/portal-toast";
 import { cn } from "@/lib/utils";
 
@@ -35,13 +38,6 @@ type Props = {
   onSubmitted?: () => void;
 };
 
-const TIMELINE = [
-  { id: "beauftragt", label: "Beauftragt", done: true, active: false },
-  { id: "ausfuehrung", label: "Ausführung", done: true, active: false },
-  { id: "abnahme", label: "Abnahme", done: false, active: true },
-  { id: "erledigt", label: "Erledigt", done: false, active: false },
-];
-
 /** HV-Portal: digitale Abnahme & Signatur (Design Phase D). */
 export function OrgVorgangAbnahmeSection({
   leadId,
@@ -68,7 +64,7 @@ export function OrgVorgangAbnahmeSection({
       <div className="portal-surface space-y-3 p-4">
         <div className="flex flex-wrap items-center gap-2">
           <h2 className="font-semibold">Abnahme</h2>
-          <RoleStatusPill
+          <PortalStatusPill
             label={
               existing.art === "zurueckgewiesen"
                 ? "In Klärung"
@@ -76,7 +72,9 @@ export function OrgVorgangAbnahmeSection({
                   ? "Abgenommen (Anmerkung)"
                   : "Abgenommen"
             }
-            semantic={existing.art === "zurueckgewiesen" ? "warten" : "fertig"}
+            tone={roleSemanticToPortalTone(
+              existing.art === "zurueckgewiesen" ? "warten" : "fertig"
+            )}
           />
         </div>
         <p className="text-sm text-text-secondary">
@@ -84,7 +82,7 @@ export function OrgVorgangAbnahmeSection({
           {new Intl.DateTimeFormat("de-DE").format(new Date(existing.signiert_am))}.
         </p>
         {existing.anmerkung ? (
-          <p className="rounded-lg bg-muted/30 p-3 text-sm whitespace-pre-wrap">
+          <p className="rounded-card bg-muted/30 p-3 text-sm whitespace-pre-wrap">
             {existing.anmerkung}
           </p>
         ) : null}
@@ -127,11 +125,11 @@ export function OrgVorgangAbnahmeSection({
 
   return (
     <div className="space-y-4">
-      <div className="rounded-xl bg-[#faf0d8] p-4 text-sm font-semibold text-[#4c3d0c]">
+      <div className="rounded-sheet bg-[var(--p2-warn-banner-bg)] p-4 text-sm font-semibold text-[var(--p2-warn-banner-text)]">
         Abnahme erforderlich
       </div>
 
-      <VorgangTimeline steps={TIMELINE} />
+      <PortalFlowTimeline flowStatus="abschluss" variant="hv" />
 
       {doku ? (
         <div className="portal-surface space-y-3 p-4">
@@ -161,7 +159,7 @@ export function OrgVorgangAbnahmeSection({
           <ul className="space-y-2">
             {doku.leistungen.map((l) => (
               <li key={l.name} className="flex items-start gap-2 text-sm">
-                <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-accent text-xs text-white">
+                <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-pill bg-accent text-xs text-white">
                   ✓
                 </span>
                 <span>
@@ -174,7 +172,7 @@ export function OrgVorgangAbnahmeSection({
             ))}
           </ul>
           {doku.bemerkung ? (
-            <p className="rounded-lg border border-border-light bg-white p-3 text-sm">
+            <p className="rounded-card border border-border-light bg-white p-3 text-sm">
               <b>Bemerkung des Betriebs:</b> {doku.bemerkung}
             </p>
           ) : null}
@@ -185,7 +183,7 @@ export function OrgVorgangAbnahmeSection({
         <h2 className="font-semibold">Abnahme</h2>
 
         <label className="flex cursor-pointer gap-3">
-          <input
+          <PortalInput
             type="radio"
             name="abnahme-art"
             checked={art === "ohne_vorbehalt"}
@@ -201,7 +199,7 @@ export function OrgVorgangAbnahmeSection({
         </label>
 
         <label className="flex cursor-pointer gap-3">
-          <input
+          <PortalInput
             type="radio"
             name="abnahme-art"
             checked={art === "mit_anmerkung"}
@@ -217,8 +215,8 @@ export function OrgVorgangAbnahmeSection({
         </label>
 
         {art === "mit_anmerkung" ? (
-          <textarea
-            className="portal-input w-full min-h-[72px] rounded-xl border border-border-default p-3"
+          <PortalTextarea
+            className="portal-input w-full min-h-[72px] rounded-field border border-border-default p-3"
             placeholder="z. B. Fuge farblich leicht abweichend — im Rahmen akzeptiert."
             value={anmerkung}
             onChange={(e) => setAnmerkung(e.target.value)}
@@ -229,9 +227,9 @@ export function OrgVorgangAbnahmeSection({
           <>
             <label className="block space-y-1.5">
               <span className="text-xs font-semibold text-text-tertiary">Name</span>
-              <input
+              <PortalInput
                 type="text"
-                className="portal-input w-full rounded-xl border border-border-default p-3"
+                className="portal-input w-full rounded-field border border-border-default p-3"
                 value={signiertName}
                 onChange={(e) => setSigniertName(e.target.value)}
                 placeholder="Vor- und Nachname"
@@ -250,50 +248,52 @@ export function OrgVorgangAbnahmeSection({
         ) : null}
 
         {error ? (
-          <p className="text-sm text-red-700" role="alert">
+          <p className="text-sm text-p2-danger" role="alert">
             {error}
           </p>
         ) : null}
 
         <div className="flex flex-wrap gap-2">
-          <button
+          <PortalButton
+            variant="primary"
             type="button"
-            className="btn-pill-primary"
             disabled={!canSign || busy}
             onClick={() => void submit(art!)}
           >
             {busy ? "Wird gespeichert…" : "Abnahme signieren"}
-          </button>
-          <button
+          </PortalButton>
+          <PortalButton
+            variant="ghost"
             type="button"
             className="text-sm font-semibold text-text-tertiary underline"
             onClick={() => setRejectOpen((v) => !v)}
           >
             Zurückweisen…
-          </button>
+          </PortalButton>
         </div>
 
         {rejectOpen ? (
-          <div className="space-y-3 rounded-xl border border-border-light bg-white p-4">
+          <div className="space-y-3 rounded-sheet border border-border-light bg-white p-4">
             <label className="block space-y-1.5">
               <span className="text-xs font-semibold text-text-tertiary">
                 Begründung der Zurückweisung
               </span>
-              <textarea
-                className="portal-input w-full min-h-[72px] rounded-xl border border-border-default p-3"
+              <PortalTextarea
+                className="portal-input w-full min-h-[72px] rounded-field border border-border-default p-3"
                 value={anmerkung}
                 onChange={(e) => setAnmerkung(e.target.value)}
                 placeholder="Was ist nicht in Ordnung? Bärenwald klärt das mit dem Betrieb."
               />
             </label>
-            <button
+            <PortalButton
+              variant="primary"
               type="button"
-              className={cn("btn-pill-primary", "bg-[#8a6d1a] hover:bg-[#7a6018]")}
+              className={cn("btn-pill-primary", "bg-[var(--p2-warn-btn)] hover:bg-[var(--p2-warn-btn-hover)]")}
               disabled={busy || !anmerkung.trim()}
               onClick={() => void submit("zurueckgewiesen")}
             >
               An Bärenwald zurückgeben
-            </button>
+            </PortalButton>
           </div>
         ) : null}
       </div>

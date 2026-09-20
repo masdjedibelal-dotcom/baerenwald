@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 
+import { CTAButton } from "@/components/ui/CTAButton";
 import type { GptLeadDraft } from "@/lib/gpt-viz/lead-collect";
 import {
   handleGuidedInputBlur,
@@ -172,9 +173,13 @@ export function ChatLeadForm({
 
       {error ? <p className="gpt-guided-lead-error" role="alert">{error}</p> : null}
 
-      <button type="submit" className="gpt-guided-primary-btn" disabled={disabled}>
-        Anfrage absenden
-      </button>
+      <CTAButton
+        bare
+        tone="guided"
+        type="submit"
+        disabled={disabled}
+        label="Anfrage absenden"
+      />
     </form>
   );
 }

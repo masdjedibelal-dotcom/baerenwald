@@ -7,6 +7,7 @@ import { ConversionCheckoutModal } from "@/components/products/ConversionCheckou
 import { ConversionWidget } from "@/components/products/ConversionWidget";
 import { KatalogLeadForm } from "@/components/products/KatalogLeadForm";
 import { ProduktPickerCore } from "@/components/products/ProduktPickerCore";
+import { CTAButton } from "@/components/ui/CTAButton";
 import { getConversionMode } from "@/lib/leistungen/conversion-config";
 import { getKonverterCopy } from "@/lib/leistungen/converter-copy";
 import {
@@ -113,9 +114,13 @@ export function LeistungsKonverterSection({
         h2={copy.h2}
         sub={copy.sub}
         footer={
-          <Link href={kontaktHref} className="conversion-btn-primary conversion-btn-primary--inline">
-            Kontakt aufnehmen →
-          </Link>
+          <CTAButton
+            bare
+            tone="conversion"
+            href={kontaktHref}
+            label="Kontakt aufnehmen →"
+            className="conversion-btn-main--inline"
+          />
         }
       />
     );
@@ -132,15 +137,23 @@ export function LeistungsKonverterSection({
           notfall
           footer={
             produktSlugs.length === 0 ? (
-              <a href={telHref} className="conversion-btn-primary conversion-btn-primary--inline conversion-btn-notfall">
-                Jetzt anrufen →
-              </a>
+              <CTAButton
+                bare
+                tone="conversion"
+                href={telHref}
+                label="Jetzt anrufen →"
+                className="conversion-btn-main--inline conversion-btn-notfall"
+              />
             ) : undefined
           }
         >
-          <a href={telHref} className="conversion-btn-primary conversion-btn-primary--inline conversion-btn-notfall">
-            Jetzt anrufen →
-          </a>
+          <CTAButton
+            bare
+            tone="conversion"
+            href={telHref}
+            label="Jetzt anrufen →"
+            className="conversion-btn-main--inline conversion-btn-notfall"
+          />
           {produktSlugs.length > 0 ? (
             <>
               <p className="conversion-or">oder online anfragen</p>
@@ -170,9 +183,13 @@ export function LeistungsKonverterSection({
         h2={copy.h2}
         sub={copy.sub}
         footer={
-          <Link href={kontaktHref} className="conversion-btn-primary conversion-btn-primary--inline">
-            {copy.ctaPrimary}
-          </Link>
+          <CTAButton
+            bare
+            tone="conversion"
+            href={kontaktHref}
+            label={copy.ctaPrimary}
+            className="conversion-btn-main--inline"
+          />
         }
       />
     );

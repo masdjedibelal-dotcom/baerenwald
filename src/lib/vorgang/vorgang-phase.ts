@@ -25,7 +25,7 @@ const MIETER_LABELS: Record<MieterStatusStufe, string> = {
   eingegangen: "Eingegangen",
   in_bearbeitung: "In Bearbeitung",
   beauftragt: "Beauftragt",
-  vor_ort: "Handwerker vor Ort",
+  vor_ort: "Partner vor Ort",
   erledigt: "Erledigt",
 };
 

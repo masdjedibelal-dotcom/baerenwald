@@ -1,3 +1,4 @@
+import { logDbError } from '@/lib/errors/log-db-error'
 import {
   FACHDOKU_SLOT_DEFS,
   fachdokuCodesFromGewerke,
@@ -16,12 +17,13 @@ export async function ensureAuftragFachdokuSlots(
 ): Promise<FachdokuSlotRow[]> {
   const codes = fachdokuCodesFromGewerke(gewerkNames);
   if (!codes.length) {
-    const { data } = await admin
+    const {data, error: __dbErr374_1} = await admin
       .from("auftrag_fachdoku_slots")
       .select(
         "id, auftrag_id, slot_code, label, status, datei_url, datei_name, uploaded_by_role, uploaded_by_handwerker_id, erledigt_am"
       )
       .eq("auftrag_id", auftragId);
+    if (__dbErr374_1) logDbError('lib/partner/ensure-fachdoku-slots:auftrag_fachdoku_slots', __dbErr374_1)
     return (data ?? []) as FachdokuSlotRow[];
   }
 
@@ -32,19 +34,19 @@ export async function ensureAuftragFachdokuSlots(
     status: "offen" as const,
   }));
 
-  await admin.from("auftrag_fachdoku_slots").upsert(rows, {
+  const { error: __dbErr376_3 } = await admin.from("auftrag_fachdoku_slots").upsert(rows, {
     onConflict: "auftrag_id,slot_code",
     ignoreDuplicates: true,
   });
-
-  const { data } = await admin
+  if (__dbErr376_3) logDbError('lib/partner/ensure-fachdoku-slots:auftrag_fachdoku_slots', __dbErr376_3)
+  const {data, error: __dbErr375_2} = await admin
     .from("auftrag_fachdoku_slots")
     .select(
       "id, auftrag_id, slot_code, label, status, datei_url, datei_name, uploaded_by_role, uploaded_by_handwerker_id, erledigt_am"
     )
     .eq("auftrag_id", auftragId)
     .order("slot_code");
-
+  if (__dbErr375_2) logDbError('lib/partner/ensure-fachdoku-slots:auftrag_fachdoku_slots', __dbErr375_2)
   return (data ?? []) as FachdokuSlotRow[];
 }
 

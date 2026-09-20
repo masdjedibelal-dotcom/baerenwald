@@ -1,5 +1,6 @@
 "use server";
 
+import { logDbError } from '@/lib/errors/log-db-error'
 import { revalidatePath } from "next/cache";
 
 import { linkPortalHandwerkerToAuthUser } from "@/lib/partner/link-portal-handwerker";
@@ -43,6 +44,7 @@ export async function fetchPartnerNotifications(): Promise<{
     .eq("handwerker_id", link.handwerkerId)
     .order("created_at", { ascending: false })
     .limit(120);
+  if (error) logDbError('app/actions/partner-notifications:notifications', error)
 
   if (error) return { ok: false, items: [], unread: 0, error: error.message };
 
@@ -92,6 +94,7 @@ export async function markPartnerNotificationRead(
     .eq("id", id.trim())
     .eq("handwerker_id", link.handwerkerId)
     .maybeSingle();
+  if (fetchErr) logDbError('app/actions/partner-notifications:notifications', fetchErr)
 
   if (fetchErr || !row) {
     return { ok: false, error: fetchErr?.message ?? "Benachrichtigung nicht gefunden." };
@@ -99,11 +102,12 @@ export async function markPartnerNotificationRead(
 
   const vorgangKey = partnerNotificationVorgangKey(row.link as string | null);
 
-  const { data: unreadRows } = await supabaseAdmin
+  const {data: unreadRows, error: __dbErr80_1} = await supabaseAdmin
     .from("notifications")
     .select("id, link")
     .eq("handwerker_id", link.handwerkerId)
     .eq("gelesen", false);
+  if (__dbErr80_1) logDbError('app/actions/partner-notifications:notifications', __dbErr80_1)
 
   const idsToMark = vorgangKey
     ? (unreadRows ?? [])
@@ -121,6 +125,7 @@ export async function markPartnerNotificationRead(
     .update({ gelesen: true })
     .in("id", idsToMark)
     .eq("handwerker_id", link.handwerkerId);
+  if (error) logDbError('app/actions/partner-notifications:notifications', error)
 
   if (error) return { ok: false, error: error.message };
   revalidatePath("/partner");
@@ -153,11 +158,12 @@ export async function markPartnerNotificationsReadForVorgang(
   });
   if (!link.ok) return { ok: false, error: link.error };
 
-  const { data: unreadRows } = await supabaseAdmin
+  const {data: unreadRows, error: __dbErr81_2} = await supabaseAdmin
     .from("notifications")
     .select("id, link")
     .eq("handwerker_id", link.handwerkerId)
     .eq("gelesen", false);
+  if (__dbErr81_2) logDbError('app/actions/partner-notifications:notifications', __dbErr81_2)
 
   const idsToMark = (unreadRows ?? [])
     .filter((r) => {
@@ -175,6 +181,7 @@ export async function markPartnerNotificationsReadForVorgang(
     .update({ gelesen: true })
     .in("id", idsToMark)
     .eq("handwerker_id", link.handwerkerId);
+  if (error) logDbError('app/actions/partner-notifications:notifications', error)
 
   if (error) return { ok: false, error: error.message };
   revalidatePath("/partner");
@@ -206,6 +213,7 @@ export async function markAllPartnerNotificationsRead(): Promise<{
     .update({ gelesen: true })
     .eq("handwerker_id", link.handwerkerId)
     .eq("gelesen", false);
+  if (error) logDbError('app/actions/partner-notifications:notifications', error)
 
   if (error) return { ok: false, error: error.message };
   revalidatePath("/partner");

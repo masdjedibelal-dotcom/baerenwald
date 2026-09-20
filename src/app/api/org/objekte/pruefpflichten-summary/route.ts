@@ -1,3 +1,4 @@
+import { logDbError } from '@/lib/errors/log-db-error'
 import { NextResponse } from "next/server";
 
 import { resolvePruefpflichtBadge } from "@/lib/org/pruefpflichten-catalog";
@@ -17,6 +18,7 @@ export async function GET() {
     .from("kunden_objekte")
     .select("id")
     .eq("kunde_id", session.kunde.id);
+  if (objErr) logDbError('app/api/org/objekte/pruefpflichten-summary/route:kunden_objekte', objErr)
 
   if (objErr) {
     return NextResponse.json({ error: objErr.message }, { status: 500 });
@@ -32,6 +34,7 @@ export async function GET() {
     .select("kunde_objekt_id, naechste_faellig")
     .in("kunde_objekt_id", ids)
     .eq("status", "aktiv");
+  if (error) logDbError('app/api/org/objekte/pruefpflichten-summary/route:objekt_pruefpflichten', error)
 
   if (error) {
     if (/objekt_pruefpflichten|does not exist/i.test(error.message)) {

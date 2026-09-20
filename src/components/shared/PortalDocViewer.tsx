@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useId, useState, type MouseEvent } from "react";
+import { PortalButton } from "@/components/portal/PortalButton";
 
 import { PortalDocPdfCanvas } from "@/components/shared/PortalDocPdfCanvas";
 import {
@@ -139,14 +140,15 @@ export function PortalDocViewer({ doc, onClose }: PortalDocViewerProps) {
         className="portal-doc-viewer-bar"
         onClick={(e) => e.stopPropagation()}
       >
-        <button
+        <PortalButton
+          variant="ghost"
           type="button"
           className="portal-doc-viewer-close"
           aria-label="Schließen"
           onClick={onClose}
         >
           ×
-        </button>
+        </PortalButton>
         <div
           className={cn(
             "portal-doc-viewer-badge",
@@ -167,7 +169,8 @@ export function PortalDocViewer({ doc, onClose }: PortalDocViewerProps) {
             {kind === "pdf" ? " · Vorschau" : null}
           </div>
         </div>
-        <button
+        <PortalButton
+          variant="ghost"
           type="button"
           className="portal-doc-viewer-download"
           onClick={onDownload}
@@ -176,7 +179,7 @@ export function PortalDocViewer({ doc, onClose }: PortalDocViewerProps) {
           title="Herunterladen"
         >
           {busyDownload ? "…" : "↓"}
-        </button>
+        </PortalButton>
       </div>
 
       <div className="portal-doc-viewer-body" onClick={onClose}>
@@ -199,25 +202,27 @@ export function PortalDocViewer({ doc, onClose }: PortalDocViewerProps) {
             <div className="portal-doc-viewer-fallback">
               <p className="portal-doc-viewer-fallback-title">{title}</p>
               <p className="portal-doc-viewer-fallback-text">
-                Vorschau nicht verfügbar. Du kannst die Datei speichern oder
+                Vorschau nicht verfügbar. Sie können die Datei speichern oder
                 schließen.
               </p>
               <div className="portal-doc-viewer-fallback-actions">
-                <button
+                <PortalButton
+                  variant="ghost"
                   type="button"
                   className="portal-doc-viewer-fallback-btn"
                   onClick={onDownload}
                   disabled={busyDownload}
                 >
                   {busyDownload ? "…" : "↓ Speichern"}
-                </button>
-                <button
+                </PortalButton>
+                <PortalButton
+                  variant="ghost"
                   type="button"
                   className="portal-doc-viewer-fallback-btn portal-doc-viewer-fallback-btn--ghost"
                   onClick={onClose}
                 >
-                  Schließen
-                </button>
+                  Abbrechen
+                </PortalButton>
               </div>
             </div>
           ) : kind === "image" ? (
@@ -242,21 +247,23 @@ export function PortalDocViewer({ doc, onClose }: PortalDocViewerProps) {
                 Für diesen Dateityp gibt es keine Inline-Vorschau.
               </p>
               <div className="portal-doc-viewer-fallback-actions">
-                <button
+                <PortalButton
+                  variant="ghost"
                   type="button"
                   className="portal-doc-viewer-fallback-btn"
                   onClick={onDownload}
                   disabled={busyDownload}
                 >
                   ↓ Speichern
-                </button>
-                <button
+                </PortalButton>
+                <PortalButton
+                  variant="ghost"
                   type="button"
                   className="portal-doc-viewer-fallback-btn portal-doc-viewer-fallback-btn--ghost"
                   onClick={onClose}
                 >
-                  Schließen
-                </button>
+                  Abbrechen
+                </PortalButton>
               </div>
             </div>
           )}

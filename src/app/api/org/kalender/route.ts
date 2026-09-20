@@ -1,3 +1,4 @@
+import { logDbError } from '@/lib/errors/log-db-error'
 import { createHash, randomBytes } from "crypto";
 
 import { NextResponse } from "next/server";
@@ -69,6 +70,7 @@ export async function POST() {
     },
     { onConflict: "kunde_id,auth_user_id" }
   );
+  if (error) logDbError('app/api/org/kalender/route:hv_calendar_feeds', error)
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 

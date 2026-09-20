@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 
+import { PortalCheckbox } from "@/components/shared/PortalFormControls";
 import { updatePartnerProfil, uploadPartnerProfilLogo } from "@/app/actions/partner-profil";
 import { retryPendingPartnerAutoAngebote } from "@/app/actions/partner-auto-dokumente";
 import { PartnerDetailInfoBox } from "@/components/partner/PartnerDetailUi";
@@ -28,6 +29,7 @@ import type {
 import { resolveHandwerkerAnschrift } from "@/lib/partner/handwerker-anschrift";
 import { HW_FIRMEN_SECTIONS } from "@/lib/portal2/einstellungen-ui";
 import { partnerPortalToast, portalToastError } from "@/lib/shared/portal-toast";
+import { TOAST } from '@/lib/portal-copy'
 
 type Draft = {
   firma: string;
@@ -142,7 +144,7 @@ export function PartnerFirmendatenScreen({
       fd.set("kleinunternehmer", next.kleinunternehmer ? "1" : "0");
       const res = await updatePartnerProfil(fd);
       if (!res.ok) {
-        portalToastError("Daten nicht gespeichert", res.error);
+        portalToastError(TOAST.daten_nicht_gespeichert, res.error);
         return false;
       }
       setSaved(next);
@@ -152,7 +154,7 @@ export function PartnerFirmendatenScreen({
         if (retry.created > 0) {
           partnerPortalToast.unterlagenHochgeladen();
         } else if (retry.errors[0]) {
-          portalToastError("Angebot nachziehen fehlgeschlagen", retry.errors[0]);
+          portalToastError(TOAST.angebot_nachziehen_fehlgeschlagen, retry.errors[0]);
         }
       } catch {
         /* ignore */
@@ -171,7 +173,7 @@ export function PartnerFirmendatenScreen({
   async function onLogoChange(file: File | null) {
     if (!file) return;
     if (!file.type.startsWith("image/")) {
-      portalToastError("Nur Bilder erlaubt");
+      portalToastError(TOAST.nur_bilder_erlaubt);
       return;
     }
     const localPreview = URL.createObjectURL(file);
@@ -182,7 +184,7 @@ export function PartnerFirmendatenScreen({
       const res = await uploadPartnerProfilLogo(fd);
       if (!res.ok) {
         setLogoPreview(null);
-        portalToastError("Logo nicht gespeichert", res.error);
+        portalToastError(TOAST.logo_nicht_gespeichert, res.error);
         return;
       }
       partnerPortalToast.stammdatenGespeichert();
@@ -211,7 +213,7 @@ export function PartnerFirmendatenScreen({
                   <PartnerDetailInfoBox>
                     Weitere Unterlagen zum Bauauftrag (z. B.
                     Freistellungsbescheinigung, Personalliste) erscheinen, sobald
-                    Bärenwald dein Angebot übernommen hat — unter „Vorgänge“.
+                    Bärenwald Ihr Angebot übernommen hat — unter „Vorgänge“.
                   </PartnerDetailInfoBox>
                 ) : null}
               </div>
@@ -412,9 +414,8 @@ export function PartnerFirmendatenScreen({
             value={edit.hrb}
             onChange={(v) => setEdit({ ...edit, hrb: v })}
           />
-          <label className="flex cursor-pointer items-start gap-2.5 rounded-xl border border-border-default px-3 py-2.5">
-            <input
-              type="checkbox"
+          <label className="flex cursor-pointer items-start gap-2.5 rounded-field border border-border-default px-3 py-2.5">
+            <PortalCheckbox
               className="mt-0.5"
               checked={edit.kleinunternehmer}
               onChange={(e) =>

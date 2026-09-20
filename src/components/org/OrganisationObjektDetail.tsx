@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 
+import { PortalCheckbox, PortalSelect } from "@/components/shared/PortalFormControls";
 import { OrganisationObjektFinanzPanel } from "@/components/org/OrganisationObjektFinanzPanel";
 import { OrganisationObjektPruefpflichtenPanel } from "@/components/org/OrganisationObjektPruefpflichtenPanel";
 import { OrganisationObjektAnlagenPanel } from "@/components/org/OrganisationObjektAnlagenPanel";
@@ -10,7 +11,11 @@ import { OrganisationObjektEinheitenTab } from "@/components/org/OrganisationObj
 import { OrganisationObjektHistoriePanel } from "@/components/org/OrganisationObjektHistoriePanel";
 import { OrganisationObjektHausmeisterMenu } from "@/components/org/OrganisationObjektHausmeisterMenu";
 import { OrganisationObjektKontaktePanel } from "@/components/org/OrganisationObjektKontaktePanel";
-import { PortalConfirmDialog } from "@/components/shared/PortalDetailUi";
+import {
+  PortalConfirmDialog,
+  PortalDetailLayout,
+  PortalDetailStickyActions,
+} from "@/components/shared/PortalDetailUi";
 import {
   PortalInviteMailtoSheet,
   type PortalInviteMailtoReady,
@@ -24,9 +29,11 @@ import {
   EinstellungenEdField,
   EinstellungenEditModal,
   EinstellungenEuroSlider,
+  EinstellungenInstantToggle,
   EinstellungenPfList,
   EinstellungenPfRow,
   EinstellungenSectionCard,
+  EinstellungenSheetCard,
   EinstellungenToggle,
 } from "@/components/shared/PortalEinstellungenUi";
 import {
@@ -72,6 +79,7 @@ import {
   plattformStatusPillClass,
   resolvePlattformStatus,
 } from "@/lib/vorgang/plattform-status";
+import { TOAST } from '@/lib/portal-copy'
 
 type Props = {
   objekt: OrganisationObjekt;
@@ -135,8 +143,6 @@ export function OrganisationObjektDetail({
   );
   const [freigabeEditOpen, setFreigabeEditOpen] = useState(false);
   const [editSchwelle, setEditSchwelle] = useState(schwelle);
-  const [editSchwelleAktiv, setEditSchwelleAktiv] = useState(schwelleAktiv);
-  const [editAkut, setEditAkut] = useState(akutDirekt);
   const [freigabeSaving, setFreigabeSaving] = useState(false);
 
   const meta = useMemo(
@@ -374,12 +380,11 @@ export function OrganisationObjektDetail({
   async function saveHmEdit() {
     const name = editHmName.trim();
     if (!name && hmMode === "new") {
-      portalToastError("Name fehlt");
+      portalToastError(TOAST.name_fehlt);
       return;
     }
     if (editHmPortal && !editHmEmail.trim()) {
-      portalToastError(
-        "E-Mail fehlt",
+      portalToastError(TOAST.e_mail_fehlt,
         "Für Portal-Zugang bitte eine E-Mail angeben."
       );
       return;
@@ -418,7 +423,7 @@ export function OrganisationObjektDetail({
           inviteUrl?: string | null;
         };
         if (!res.ok) {
-          portalToastError("Hausmeister nicht gespeichert", json.error);
+          portalToastError(TOAST.hausmeister_nicht_gespeichert, json.error);
           return;
         }
         setHmEditOpen(false);
@@ -445,7 +450,7 @@ export function OrganisationObjektDetail({
       if (willInvite) await runBusy(run, 500);
       else await run();
     } catch {
-      portalToastError("Hausmeister nicht gespeichert");
+      portalToastError(TOAST.hausmeister_nicht_gespeichert);
     } finally {
       setHmSaving(false);
     }
@@ -454,8 +459,7 @@ export function OrganisationObjektDetail({
   async function inviteHausmeister() {
     if (!hmAmObjekt?.id) return;
     if (!hmAmObjekt.email?.trim()) {
-      portalToastError(
-        "Portal-Link nicht möglich",
+      portalToastError(TOAST.portal_link_nicht_moeglich,
         "Bitte zuerst eine E-Mail beim Hausmeister hinterlegen."
       );
       return;
@@ -477,7 +481,7 @@ export function OrganisationObjektDetail({
         inviteUrl?: string | null;
       };
       if (!res.ok) {
-        portalToastError("Einladung fehlgeschlagen", json.error);
+        portalToastError(TOAST.einladung_fehlgeschlagen, json.error);
         return;
       }
       if (json.inviteMailto) {
@@ -512,7 +516,7 @@ export function OrganisationObjektDetail({
         );
         const json = (await res.json()) as { error?: string };
         if (!res.ok) {
-          portalToastError("Hausmeister nicht entfernt", json.error);
+          portalToastError(TOAST.hausmeister_nicht_entfernt, json.error);
           return;
         }
         setHmAmObjekt(null);
@@ -552,7 +556,7 @@ export function OrganisationObjektDetail({
       });
       const json = (await res.json()) as { error?: string };
       if (!res.ok) {
-        portalToastError("Versicherung nicht gespeichert", json.error);
+        portalToastError(TOAST.versicherung_nicht_gespeichert, json.error);
         return;
       }
       setVersicherer(editVersicherer.trim());
@@ -562,7 +566,7 @@ export function OrganisationObjektDetail({
       orgPortalToast.objektAktualisiert();
       onRefresh();
     } catch {
-      portalToastError("Versicherung nicht gespeichert");
+      portalToastError(TOAST.versicherung_nicht_gespeichert);
     } finally {
       setVersSaving(false);
     }
@@ -570,8 +574,6 @@ export function OrganisationObjektDetail({
 
   function openFreigabeEdit() {
     setEditSchwelle(schwelle);
-    setEditSchwelleAktiv(schwelleAktiv);
-    setEditAkut(akutDirekt);
     setFreigabeEditOpen(true);
   }
 
@@ -580,41 +582,49 @@ export function OrganisationObjektDetail({
     setFreigabeEditOpen(false);
   }
 
-  function onToggleUnterSchwelle(next: boolean) {
-    setEditSchwelleAktiv(next);
-    if (next && editSchwelle <= 0) {
-      setEditSchwelle(500);
+  async function patchObjektFreigabe(body: Record<string, unknown>) {
+    const res = await fetch("/api/org/objekte", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id: objekt.id, ...body }),
+    });
+    const json = (await res.json()) as { error?: string };
+    if (!res.ok) {
+      portalToastError(TOAST.freigabe_regeln_nicht_gespeichert, json.error);
+      throw new Error(json.error || "save");
     }
+    orgPortalToast.objektAktualisiert();
+    onRefresh();
+  }
+
+  async function saveToggleAkutObjekt(next: boolean) {
+    await patchObjektFreigabe({ notfall_direkt: next });
+    setAkutDirekt(next);
+  }
+
+  async function saveToggleSchwelleObjekt(next: boolean) {
+    const eur = next
+      ? snapEinstellungenSchwelle(Math.max(schwelle, 500))
+      : null;
+    await patchObjektFreigabe({ freigabe_schwelle_eur: eur });
+    setSchwelleAktiv(next);
+    if (next && schwelle <= 0) setSchwelle(500);
   }
 
   async function saveFreigabeEdit() {
     setFreigabeSaving(true);
     try {
-      const nextSchwelle = editSchwelleAktiv
+      const nextSchwelle = schwelleAktiv
         ? snapEinstellungenSchwelle(Math.max(editSchwelle, 500))
         : null;
-      const res = await fetch("/api/org/objekte", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          id: objekt.id,
-          freigabe_schwelle_eur: nextSchwelle,
-          notfall_direkt: editAkut,
-        }),
+      await patchObjektFreigabe({
+        freigabe_schwelle_eur: nextSchwelle,
+        notfall_direkt: akutDirekt,
       });
-      const json = (await res.json()) as { error?: string };
-      if (!res.ok) {
-        portalToastError("Freigabe-Regeln nicht gespeichert", json.error);
-        return;
-      }
-      setSchwelleAktiv(editSchwelleAktiv);
-      if (editSchwelleAktiv && nextSchwelle != null) setSchwelle(nextSchwelle);
-      setAkutDirekt(editAkut);
+      if (schwelleAktiv && nextSchwelle != null) setSchwelle(nextSchwelle);
       setFreigabeEditOpen(false);
-      orgPortalToast.objektAktualisiert();
-      onRefresh();
     } catch {
-      portalToastError("Freigabe-Regeln nicht gespeichert");
+      /* toast */
     } finally {
       setFreigabeSaving(false);
     }
@@ -715,7 +725,7 @@ export function OrganisationObjektDetail({
               <span className="portal-text-label mb-1.5 block text-text-secondary">
                 Hausmeister
               </span>
-              <select
+              <PortalSelect
                 className="portal-field w-full"
                 value={hmMode === "new" ? "__new__" : editHmId}
                 onChange={(e) => {
@@ -745,7 +755,7 @@ export function OrganisationObjektDetail({
                   </option>
                 ))}
                 <option value="__new__">＋ Neu anlegen</option>
-              </select>
+              </PortalSelect>
             </label>
             <EinstellungenEdField
               label="Name"
@@ -763,13 +773,12 @@ export function OrganisationObjektDetail({
               autoComplete="email"
             />
             <label className="flex items-start gap-3 rounded-[10px] border border-border-light bg-white p-3">
-              <input
-                type="checkbox"
+              <PortalCheckbox
                 className="mt-0.5"
                 checked={editHmPortal}
                 onChange={(e) => setEditHmPortal(e.target.checked)}
               />
-              <span className="text-[13px] text-text-secondary">
+              <span className="text-fs-meta text-text-secondary">
                 {hmMode === "new"
                   ? "Portal einladen — Konto ist erst nach Registrierung über den Link aktiv"
                   : "Portal-Zugang — Einladung über das Menü (⋯) möglich"}
@@ -784,7 +793,7 @@ export function OrganisationObjektDetail({
                 ? `${hmAmObjekt.name} wird von diesem Objekt entfernt. Die Person bleibt für andere Objekte erhalten.`
                 : "Hausmeister von diesem Objekt entfernen?"
             }
-            confirmLabel="Entfernen"
+            confirmLabel="Löschen"
             confirmVariant="danger"
             loading={hmSaving}
             onCancel={() => setHmConfirmRemove(false)}
@@ -928,37 +937,14 @@ export function OrganisationObjektDetail({
       <EinstellungenSectionCard
         title={EINSTELLUNGEN_SCHWELLE_TITLE}
         onEdit={openFreigabeEdit}
+        editLabel="Betrag bearbeiten"
       >
-        <EinstellungenPfList>
-          <EinstellungenPfRow
-            label={<SofortmassnahmeAkutTitle />}
-            value={akutDirekt ? "Ja" : "Nein"}
-          />
-          <EinstellungenPfRow
-            label={EINSTELLUNGEN_UNTER_SCHWELLE_TITLE}
-            value={schwelleAktiv ? "Ja" : "Nein"}
-          />
-          {schwelleAktiv ? (
-            <EinstellungenPfRow
-              label={EINSTELLUNGEN_SCHWELLE_BETRAG_TITLE}
-              value={formatEinstellungenSchwelle(schwelle)}
-            />
-          ) : null}
-        </EinstellungenPfList>
-
-        <EinstellungenEditModal
-          open={freigabeEditOpen}
-          title={EINSTELLUNGEN_SCHWELLE_TITLE}
-          onClose={closeFreigabeEdit}
-          onSave={() => void saveFreigabeEdit()}
-          saving={freigabeSaving}
-        >
-          <EinstellungenToggle
-            checked={editAkut}
-            onChange={setEditAkut}
+        <div className="mb-3 space-y-2.5">
+          <EinstellungenInstantToggle
+            checked={akutDirekt}
             title={<SofortmassnahmeAkutTitle />}
             description={
-              editAkut ? (
+              akutDirekt ? (
                 <>
                   Aktiv: Ausgewählte Fälle ohne Freigabe (nur Info).{" "}
                   <SofortmassnahmeFaelleEinstellungenLink />
@@ -967,18 +953,50 @@ export function OrganisationObjektDetail({
                 "Aus: Auch Sofortmaßnahmen an diesem Objekt brauchen Freigabe."
               )
             }
+            confirmTitle={
+              akutDirekt
+                ? "Sofortmaßnahme-Direkt deaktivieren?"
+                : "Sofortmaßnahme-Direkt aktivieren?"
+            }
+            confirmDescription="Die Einstellung wird sofort für dieses Objekt gespeichert."
+            onSave={saveToggleAkutObjekt}
           />
-          <EinstellungenToggle
-            checked={editSchwelleAktiv}
-            onChange={onToggleUnterSchwelle}
+          <EinstellungenInstantToggle
+            checked={schwelleAktiv}
             title={EINSTELLUNGEN_UNTER_SCHWELLE_TITLE}
             description={
-              editSchwelleAktiv
+              schwelleAktiv
                 ? EINSTELLUNGEN_UNTER_SCHWELLE_INTRO
                 : "Aus: Jedes Angebot braucht Ihre Freigabe, unabhängig vom Betrag."
             }
-          >
-            {editSchwelleAktiv ? (
+            confirmTitle={
+              schwelleAktiv
+                ? "Unter-Schwelle deaktivieren?"
+                : "Unter-Schwelle aktivieren?"
+            }
+            confirmDescription="Die Einstellung wird sofort für dieses Objekt gespeichert."
+            onSave={saveToggleSchwelleObjekt}
+          />
+        </div>
+        {schwelleAktiv ? (
+          <EinstellungenPfList>
+            <EinstellungenPfRow
+              label={EINSTELLUNGEN_SCHWELLE_BETRAG_TITLE}
+              value={formatEinstellungenSchwelle(schwelle)}
+            />
+          </EinstellungenPfList>
+        ) : null}
+
+        <EinstellungenEditModal
+          open={freigabeEditOpen}
+          title={EINSTELLUNGEN_SCHWELLE_BETRAG_TITLE}
+          onClose={closeFreigabeEdit}
+          onSave={() => void saveFreigabeEdit()}
+          saving={freigabeSaving}
+          dirty={schwelleAktiv && editSchwelle !== schwelle}
+        >
+          {schwelleAktiv ? (
+            <EinstellungenSheetCard title={EINSTELLUNGEN_SCHWELLE_BETRAG_TITLE}>
               <EinstellungenEuroSlider
                 value={editSchwelle}
                 min={Math.max(EINSTELLUNGEN_SCHWELLE_SLIDER_MIN, 500)}
@@ -989,8 +1007,13 @@ export function OrganisationObjektDetail({
                   setEditSchwelle(snapEinstellungenSchwelle(Math.max(v, 500)))
                 }
               />
-            ) : null}
-          </EinstellungenToggle>
+            </EinstellungenSheetCard>
+          ) : (
+            <p className="portal-text-meta text-text-secondary">
+              Aktivieren Sie zuerst „Unter Schwelle“, dann können Sie den Betrag
+              festlegen.
+            </p>
+          )}
         </EinstellungenEditModal>
       </EinstellungenSectionCard>
     );
@@ -1013,20 +1036,29 @@ export function OrganisationObjektDetail({
         payload={inviteMailtoReady}
         onClose={() => setInviteMailtoReady(null)}
       />
-      <PortalEntityDetailLayout
-        coverUrl={objekt.cover_url}
-        onBack={onBack}
-        backLabel="← Objekte"
-        onEdit={onEdit}
-        title={objekt.titel}
-        metaLine={adresseLine || undefined}
-        tabs={detailTabs}
-        activeTab={tab}
-        onTabChange={(id) => setTab(id as ObjDetailTabId)}
-        tabsNavLabel="Objekt-Abschnitte"
+      <PortalDetailLayout
+        footer={
+          <PortalDetailStickyActions
+            primaryLabel="Bearbeiten"
+            onPrimary={onEdit}
+          />
+        }
       >
-        {body}
-      </PortalEntityDetailLayout>
+        <PortalEntityDetailLayout
+          coverUrl={objekt.cover_url}
+          onBack={onBack}
+          backLabel="← Objekte"
+          onEdit={onEdit}
+          title={objekt.titel}
+          metaLine={adresseLine || undefined}
+          tabs={detailTabs}
+          activeTab={tab}
+          onTabChange={(id) => setTab(id as ObjDetailTabId)}
+          tabsNavLabel="Objekt-Abschnitte"
+        >
+          {body}
+        </PortalEntityDetailLayout>
+      </PortalDetailLayout>
     </>
   );
 }

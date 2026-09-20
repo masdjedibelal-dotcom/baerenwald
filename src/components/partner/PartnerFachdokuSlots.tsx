@@ -1,8 +1,10 @@
 "use client";
 
+import { PortalIcon } from "@/components/portal/PortalIcon";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Eye, Upload } from "lucide-react";
+import { PortalButton } from "@/components/portal/PortalButton";
 
+import { PortalInput } from "@/components/shared/PortalFormControls";
 import {
   loadPartnerFachdokuSlots,
   uploadPartnerFachdokuSlot,
@@ -15,6 +17,7 @@ import { fachdokuOffenCount } from "@/lib/partner/fachdoku-slots";
 import { portalToastError, portalToastSuccess } from "@/lib/shared/portal-toast";
 import { PORTAL_VAR } from "@/lib/portal2/tokens";
 import { cn } from "@/lib/utils";
+import { TOAST } from '@/lib/portal-copy'
 
 type Props = {
   auftragId: string;
@@ -71,10 +74,10 @@ export function PartnerFachdokuSlots({
         fd.set("file", file);
         const res = await uploadPartnerFachdokuSlot(fd);
         if (!res.ok) {
-          portalToastError("Upload fehlgeschlagen", res.error);
+          portalToastError(TOAST.upload_fehlgeschlagen, res.error);
           return;
         }
-        portalToastSuccess("Fachnachweis hochgeladen", "Der Slot ist erledigt.");
+        portalToastSuccess(TOAST.fachnachweis_hochgeladen, "Der Slot ist erledigt.");
         apply(res.slots);
       });
     } finally {
@@ -103,7 +106,7 @@ export function PartnerFachdokuSlots({
           <p className="font-semibold">
             Noch {offen} Fachnachweis{offen === 1 ? "" : "e"} offen
           </p>
-          <p className="mt-0.5 text-[12.5px]">
+          <p className="mt-0.5 text-fs-meta">
             Abschluss ist trotzdem möglich — Fachnachweise bitte nachreichen.
           </p>
         </PortalDetailInfoBox>
@@ -114,7 +117,7 @@ export function PartnerFachdokuSlots({
   return (
     <section className={cn(className)}>
       <div className="border-b border-border-light pb-3">
-        <h3 className="portal-text-title text-[15px]">Fachnachweise</h3>
+        <h3 className="portal-text-title text-fs-title">Fachnachweise</h3>
       </div>
 
       {/* Mobil: flache Zeilen */}
@@ -126,7 +129,7 @@ export function PartnerFachdokuSlots({
             <li key={s.id} className="py-3.5">
               <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0 flex-1">
-                    <p className="text-[14px] font-semibold text-text-primary">
+                    <p className="text-fs-body font-semibold text-text-primary">
                       {s.label}
                     </p>
                     <p className="portal-text-meta mt-1">
@@ -146,13 +149,13 @@ export function PartnerFachdokuSlots({
                       href={href}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="portal-touch-target inline-grid place-items-center rounded-lg border border-border-light text-text-secondary"
+                      className="portal-touch-target inline-grid place-items-center rounded-card border border-border-light text-text-secondary"
                       aria-label="Ansehen"
                     >
-                      <Eye className="h-4 w-4" />
+                      <PortalIcon n="eye" ctx="default" className="h-4 w-4" />
                     </a>
                   ) : null}
-                  <input
+                  <PortalInput
                     ref={(el) => {
                       inputRefs.current[s.id] = el;
                     }}
@@ -165,15 +168,16 @@ export function PartnerFachdokuSlots({
                       if (f) void onUpload(s.id, f);
                     }}
                   />
-                  <button
+                  <PortalButton
+                    variant="ghost"
                     type="button"
                     disabled={busyId === s.id}
                     onClick={() => inputRefs.current[s.id]?.click()}
-                    className="inline-flex h-9 items-center gap-1 rounded-full border border-border-light px-3 text-[12px] font-semibold text-text-secondary disabled:opacity-50"
+                    className="inline-flex h-9 items-center gap-1 rounded-pill border border-border-light px-3 text-fs-caption font-semibold text-text-secondary disabled:opacity-50"
                   >
-                    <Upload className="h-3.5 w-3.5" aria-hidden />
+                    <PortalIcon n="upload" ctx="default" className="h-3.5 w-3.5" aria-hidden />
                     {busyId === s.id ? "…" : done ? "Ersetzen" : "Upload"}
-                  </button>
+                  </PortalButton>
                 </div>
             </li>
           );
@@ -191,7 +195,7 @@ export function PartnerFachdokuSlots({
               className="flex items-center gap-2 border-b border-border-light px-0 py-2.5 last:border-b-0"
             >
               <div className="min-w-0 flex-1">
-                <p className="text-[13.5px] font-semibold text-text-primary">
+                <p className="text-fs-body font-semibold text-text-primary">
                   {s.label}
                 </p>
                 <p className="portal-text-meta mt-0.5">
@@ -209,15 +213,15 @@ export function PartnerFachdokuSlots({
                   href={href}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex h-8 w-8 items-center justify-center rounded-full border"
+                  className="inline-flex h-8 w-8 items-center justify-center rounded-pill border"
                   style={{ borderColor: PORTAL_VAR.line, color: PORTAL_VAR.sub }}
                   title="Ansehen"
                   aria-label="Ansehen"
                 >
-                  <Eye className="h-3.5 w-3.5" aria-hidden />
+                  <PortalIcon n="eye" ctx="default" className="h-3.5 w-3.5" aria-hidden />
                 </a>
               ) : null}
-              <input
+              <PortalInput
                 ref={(el) => {
                   inputRefs.current[`${s.id}-desk`] = el;
                 }}
@@ -230,20 +234,21 @@ export function PartnerFachdokuSlots({
                   if (f) void onUpload(s.id, f);
                 }}
               />
-              <button
+              <PortalButton
+                variant="ghost"
                 type="button"
                 disabled={busyId === s.id}
                 onClick={() => inputRefs.current[`${s.id}-desk`]?.click()}
-                className="inline-flex h-8 items-center gap-1 rounded-full border px-2.5 text-[12px] font-semibold disabled:opacity-50"
+                className="inline-flex h-8 items-center gap-1 rounded-pill border px-2.5 text-fs-caption font-semibold disabled:opacity-50"
                 style={{
                   borderColor: PORTAL_VAR.line,
                   color: PORTAL_VAR.sub,
-                  background: "#fff",
+                  background: "var(--p2-panel)",
                 }}
               >
-                <Upload className="h-3.5 w-3.5" aria-hidden />
+                <PortalIcon n="upload" ctx="default" className="h-3.5 w-3.5" aria-hidden />
                 {busyId === s.id ? "…" : done ? "Ersetzen" : "Upload"}
-              </button>
+              </PortalButton>
             </li>
           );
         })}

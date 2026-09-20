@@ -13,6 +13,7 @@ import {
 } from "@/lib/partner/compliance-summary";
 import { partnerPortalToast } from "@/lib/shared/portal-toast";
 import type { PartnerComplianceItem } from "@/lib/partner/partner-compliance";
+import { PortalButton } from "@/components/portal/PortalButton";
 
 export function PartnerRahmenvertragCard({
   rahmenvertrag,
@@ -61,14 +62,14 @@ export function PartnerRahmenvertragCard({
           onAkzeptiertChange={setAkzeptiert}
           error={error}
         />
-        <button
-          type="button"
+        <PortalButton variant="secondary"
+          action={false}
           disabled={loading || !akzeptiert}
           onClick={() => void onSpeichern()}
-          className="btn-pill-primary portal-btn disabled:opacity-60"
+          className="btn-pill-primary disabled:opacity-60"
         >
           {loading ? "Wird gespeichert…" : "Annahme speichern"}
-        </button>
+        </PortalButton>
       </div>
     ) : null;
 

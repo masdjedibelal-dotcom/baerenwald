@@ -1,14 +1,8 @@
 "use client";
 
+import { SiteIcon } from "@/components/ui/SiteIcon";
 import Image from "next/image";
 import Link from "next/link";
-import {
-  Calculator,
-  ChevronRight,
-  MessageCircle,
-  Send,
-  Sparkles,
-} from "lucide-react";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 
 import {
@@ -19,6 +13,7 @@ import {
 
 import { SituationCard } from "@/components/funnel/SituationCard";
 import { SelectionTile } from "@/components/funnel/SelectionTile";
+import { CTAButton } from "@/components/ui/CTAButton";
 import type { GptChatBlock, GuidedDecisionOption } from "@/lib/guided-chat/types";
 import type { GptLeadDraft } from "@/lib/gpt-viz/lead-collect";
 import { cn } from "@/lib/utils";
@@ -31,25 +26,25 @@ const JOURNEY_ENTRY = [
     id: "journey_beraten",
     label: "Beraten lassen",
     hint: "Ablauf, Gewerke und Ideen.",
-    icon: MessageCircle,
+    icon: "message",
   },
   {
     id: "journey_viz",
     label: "Raum visualisieren",
     hint: "Foto hochladen, Wunschraum sehen.",
-    icon: Sparkles,
+    icon: "sparkles",
   },
   {
     id: "journey_preis",
     label: "Preis berechnen",
     hint: "Unverbindlicher Rahmen.",
-    icon: Calculator,
+    icon: "calculator",
   },
   {
     id: "journey_anfrage",
     label: "Anfrage senden",
     hint: "Direkt an Bärenwald.",
-    icon: Send,
+    icon: "send",
   },
 ] as const;
 
@@ -97,7 +92,6 @@ function GuidedBlock({
       return (
         <div className="gpt-guided-journey-grid gpt-guided-journey-grid--compact">
           {JOURNEY_ENTRY.map((opt) => {
-            const Icon = opt.icon;
             return (
               <button
                 key={opt.id}
@@ -107,14 +101,14 @@ function GuidedBlock({
                 onClick={() => onAction(opt.id)}
               >
                 <span className="gpt-guided-journey-icon-wrap" aria-hidden>
-                  <Icon />
+                  <SiteIcon n={opt.icon} ctx="default" />
                 </span>
                 <span className="gpt-guided-journey-body">
                   <span className="gpt-guided-journey-title">{opt.label}</span>
                   <span className="gpt-guided-journey-hint">{opt.hint}</span>
                 </span>
                 <span className="gpt-guided-journey-chevron" aria-hidden>
-                  <ChevronRight />
+                  <SiteIcon n="chevron-right" ctx="default" />
                 </span>
               </button>
             );
@@ -163,19 +157,24 @@ function GuidedBlock({
       );
 
     case "primary_cta":
-      return (
+      return block.variant === "outline" ? (
         <button
           type="button"
           disabled={disabled}
-          className={
-            block.variant === "outline"
-              ? "gpt-guided-outline-btn"
-              : "gpt-guided-primary-btn"
-          }
+          className="gpt-guided-outline-btn"
           onClick={() => onAction(block.actionId)}
         >
           {block.label}
         </button>
+      ) : (
+        <CTAButton
+          bare
+          tone="guided"
+          type="button"
+          disabled={disabled}
+          label={block.label}
+          onClick={() => onAction(block.actionId)}
+        />
       );
 
     case "viz_limit":
@@ -190,14 +189,14 @@ function GuidedBlock({
           </p>
           <div className="gpt-guided-viz-limit-actions">
             {block.reason === "needs_lead" ? (
-              <button
+              <CTAButton
+                bare
+                tone="guided"
                 type="button"
                 disabled={disabled}
-                className="gpt-guided-primary-btn"
                 onClick={() => onAction("lead_start")}
-              >
-                Projekt senden — 2× anpassen
-              </button>
+                label="Projekt senden — 2× anpassen"
+              />
             ) : null}
             {block.reason !== "portal_monthly" ? (
               <Link
@@ -467,14 +466,15 @@ function PlzBlock({
             }
           }}
         />
-        <button
+        <CTAButton
+          bare
+          tone="guided"
           type="button"
-          className="gpt-guided-primary-btn gpt-guided-plz-btn"
+          className="gpt-guided-plz-btn"
           disabled={disabled || plz.length !== 5}
           onClick={() => onAction(`guided:plz:${plz}`)}
-        >
-          Weiter
-        </button>
+          label="Weiter"
+        />
       </div>
     </div>
   );

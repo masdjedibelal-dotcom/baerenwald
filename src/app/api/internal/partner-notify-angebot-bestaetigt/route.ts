@@ -1,3 +1,4 @@
+import { logDbError } from '@/lib/errors/log-db-error'
 import { NextResponse } from "next/server";
 
 import { notifyHandwerkerAngebotBestaetigt } from "@/lib/partner/notify-partner-angebot-bestaetigt";
@@ -39,11 +40,12 @@ export async function POST(request: Request) {
   }
 
   if (Boolean(body.bitteBestaetigen) && anfrageId) {
-    const { data: row } = await supabaseAdmin
+    const {data: row, error: __dbErr143_1} = await supabaseAdmin
       .from("angebot_handwerker")
       .select("handwerker_id, angebote(notizen)")
       .eq("id", anfrageId)
       .maybeSingle();
+    if (__dbErr143_1) logDbError('app/api/internal/partner-notify-angebot-bestaetigt/route:angebot_handwerker', __dbErr143_1)
     if (row?.handwerker_id) {
       await createPartnerNotification({
         handwerkerId: String(row.handwerker_id),

@@ -2,6 +2,7 @@
 
 import { useSearchParams } from "next/navigation";
 import { useEffect, useState, type ReactNode } from "react";
+import { PortalButton } from "@/components/portal/PortalButton";
 
 import {
   EINSTELLUNGEN_PAGE_EYEBROW,
@@ -104,21 +105,22 @@ export function PortalEinstellungenShell({
               {nav.map((item) => {
                 const on = tab === item.id;
                 return (
-                  <button
+                  <PortalButton
+                    variant="ghost"
                     key={item.id}
                     type="button"
                     role="tab"
                     aria-selected={on}
                     onClick={() => selectTab(item.id)}
-                    className="portal-text-meta shrink-0 rounded-full px-3.5 py-2 font-semibold"
+                    className="portal-text-meta shrink-0 rounded-pill px-3.5 py-2 font-semibold min-h-11 min-w-11 box-border"
                     style={{
-                      border: `1px solid ${on ? "transparent" : PORTAL_VAR.line}`,
-                      background: on ? PORTAL_VAR.greenDark : "#fff",
-                      color: on ? "#fff" : PORTAL_VAR.sub,
+                      border: `0.0625rem solid ${on ? "transparent" : PORTAL_VAR.line}`,
+                      background: on ? PORTAL_VAR.greenDark : "var(--p2-panel)",
+                      color: on ? "var(--p2-panel)" : PORTAL_VAR.sub,
                     }}
                   >
                     {item.label}
-                  </button>
+                  </PortalButton>
                 );
               })}
             </div>
@@ -132,7 +134,8 @@ export function PortalEinstellungenShell({
                   const on = tab === item.id;
                   return (
                     <li key={item.id}>
-                      <button
+                      <PortalButton
+                        variant="ghost"
                         type="button"
                         onClick={() => selectTab(item.id)}
                         aria-current={on ? "page" : undefined}
@@ -143,12 +146,12 @@ export function PortalEinstellungenShell({
                             : "bg-transparent font-semibold hover:bg-white/70"
                         )}
                         style={{
-                          color: on ? PORTAL_VAR.greenDark : "#55615B",
+                          color: on ? PORTAL_VAR.greenDark : "var(--p2-sub)",
                           fontWeight: on ? 800 : 600,
                         }}
                       >
                         {item.label}
-                      </button>
+                      </PortalButton>
                     </li>
                   );
                 })}

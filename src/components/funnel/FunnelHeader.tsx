@@ -1,4 +1,5 @@
 "use client";
+import { MockIconSvg } from "@/components/shared/mock-icon-svgs";
 
 import Image from "next/image";
 import Link from "next/link";
@@ -18,7 +19,7 @@ export interface FunnelHeaderProps {
 
 function PhoneIcon({ className }: { className?: string }) {
   return (
-    <svg
+    <MockIconSvg
       className={className}
       width="16"
       height="16"
@@ -33,7 +34,7 @@ function PhoneIcon({ className }: { className?: string }) {
         strokeLinecap="round"
         strokeLinejoin="round"
       />
-    </svg>
+    </MockIconSvg>
   );
 }
 
@@ -83,7 +84,7 @@ export function FunnelHeader({
           <button
             type="button"
             onClick={() => setExitOpen(true)}
-            className="rounded-full border border-border-default px-3 py-1.5 text-xs font-medium text-text-secondary transition hover:border-text-tertiary hover:text-text-primary sm:px-4 sm:text-sm"
+            className="rounded-pill border border-border-default px-3 py-1.5 text-xs font-medium text-text-secondary transition hover:border-text-tertiary hover:text-text-primary sm:px-4 sm:text-sm"
           >
             Abbrechen
           </button>
@@ -112,7 +113,7 @@ export function FunnelHeader({
               type="button"
               onClick={() => onFunnelReset()}
               className={cn(
-                "flex size-10 shrink-0 items-center justify-center rounded-full border border-border-default",
+                "flex size-10 shrink-0 items-center justify-center rounded-pill border border-border-default",
                 "text-text-tertiary transition hover:border-text-tertiary hover:text-text-primary"
               )}
               aria-label="Neu starten — Preisrechner von vorn"
@@ -124,7 +125,7 @@ export function FunnelHeader({
             <Link
               href="/"
               className={cn(
-                "flex size-10 shrink-0 items-center justify-center rounded-full border border-border-default",
+                "flex size-10 shrink-0 items-center justify-center rounded-pill border border-border-default",
                 "text-text-tertiary transition hover:border-text-tertiary hover:text-text-primary"
               )}
               aria-label="Zur Startseite"
@@ -138,20 +139,20 @@ export function FunnelHeader({
             target="_blank"
             rel="noopener noreferrer"
             className={cn(
-              "flex size-10 shrink-0 items-center justify-center rounded-full border border-border-default",
+              "flex size-10 shrink-0 items-center justify-center rounded-pill border border-border-default",
               "text-text-tertiary transition hover:border-text-tertiary hover:text-text-primary"
             )}
             aria-label="WhatsApp schreiben"
             title="WhatsApp"
           >
-            <svg
+            <MockIconSvg
               className="size-[18px] shrink-0"
               viewBox="0 0 24 24"
               fill="currentColor"
               aria-hidden
             >
               <path d={WHATSAPP_ICON_PATH} />
-            </svg>
+            </MockIconSvg>
           </a>
           <a
             href={SITE_CONFIG.phoneHref}
@@ -176,7 +177,7 @@ export function FunnelHeader({
             aria-modal="true"
             aria-labelledby={dialogTitleId}
             aria-describedby={dialogDescId}
-            className="w-full max-w-sm rounded-2xl border border-border-default bg-surface-card p-5 shadow-lg"
+            className="w-full max-w-sm rounded-sheet border border-border-default bg-surface-card p-5 shadow-lg"
             onClick={(e) => e.stopPropagation()}
           >
             <h2
@@ -197,7 +198,7 @@ export function FunnelHeader({
                 <button
                   type="button"
                   onClick={handleRestartInFunnel}
-                  className="rounded-full border border-border-default px-4 py-2.5 text-sm font-medium text-text-primary transition hover:bg-secondary"
+                  className="rounded-pill border border-border-default px-4 py-2.5 text-sm font-medium text-text-primary transition hover:bg-secondary"
                 >
                   Abbrechen
                 </button>
@@ -205,7 +206,7 @@ export function FunnelHeader({
                 <button
                   type="button"
                   onClick={closeExit}
-                  className="rounded-full border border-border-default px-4 py-2.5 text-sm font-medium text-text-primary transition hover:bg-secondary"
+                  className="rounded-pill border border-border-default px-4 py-2.5 text-sm font-medium text-text-primary transition hover:bg-secondary"
                 >
                   Nein, weiter
                 </button>
@@ -213,7 +214,7 @@ export function FunnelHeader({
               <button
                 type="button"
                 onClick={confirmExit}
-                className="rounded-full bg-funnel-accent px-4 py-2.5 text-sm font-medium text-white transition hover:opacity-90"
+                className="rounded-pill bg-funnel-accent px-4 py-2.5 text-sm font-medium text-white transition hover:opacity-90"
               >
                 Zur Startseite
               </button>

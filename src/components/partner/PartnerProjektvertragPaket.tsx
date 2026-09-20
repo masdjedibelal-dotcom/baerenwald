@@ -3,21 +3,24 @@
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
+import { PortalCheckbox } from "@/components/shared/PortalFormControls";
 import { confirmPartnerProjektvertrag } from "@/app/actions/partner-vertrag";
 import {
   PartnerConfirmDialog,
   PartnerDetailError,
   PartnerDetailInfoBox,
   PartnerDetailKeyValues,
-  PartnerDetailSection,
   PartnerDetailSuccessBox,
 } from "@/components/partner/PartnerDetailUi";
+import { PortalDetailCard } from "@/components/shared/PortalDetailCard";
+import { PortalButton } from "@/components/portal/PortalButton";
 import { PortalDocOpenButton } from "@/components/shared/PortalDocOpenButton";
 import {
   type PartnerProjektvertrag,
 } from "@/lib/partner/partner-compliance";
 import { partnerPortalToast } from "@/lib/shared/portal-toast";
 import { fmtPartnerDate } from "@/lib/partner/partner-detail-format";
+import { cn } from "@/lib/utils";
 
 export function PartnerProjektvertragPaket({
   auftragId,
@@ -26,6 +29,7 @@ export function PartnerProjektvertragPaket({
   projektvertrag_bestaetigt_am,
   embedded = false,
   onEmbeddedReadyChange,
+  highlight = false,
 }: {
   auftragId: string;
   gewerkName?: string;
@@ -34,6 +38,8 @@ export function PartnerProjektvertragPaket({
   /** Ohne eigenen Bestätigen-Button — Parent steuert Annahme (z. B. Tab Offen). */
   embedded?: boolean;
   onEmbeddedReadyChange?: (ready: boolean) => void;
+  /** Parent: Annehmen geklickt ohne Pflicht-Checkbox → Markierung. */
+  highlight?: boolean;
 }) {
   const router = useRouter();
   const [gelesen, setGelesen] = useState(false);
@@ -78,7 +84,7 @@ export function PartnerProjektvertragPaket({
         <p className="font-semibold">Auftrag verbindlich bestätigt</p>
         <p className="text-sm">
           Projektvertrag bestätigt am {fmtPartnerDate(projektvertrag_bestaetigt_am)}. Der Auftrag
-          erscheint unter „Aufträge“ — dort kannst du fehlende Unterlagen zum Bauauftrag
+          erscheint unter „Aufträge“ — dort können Sie fehlende Unterlagen zum Bauauftrag
           hochladen.
         </p>
         {vertrag?.pdf_signed_url || vertrag?.pdf_url ? (
@@ -86,7 +92,7 @@ export function PartnerProjektvertragPaket({
             href={vertrag.pdf_signed_url ?? vertrag.pdf_url ?? "#"}
             name="Projektvertrag"
             kind="pdf"
-            className="mt-2 inline-block font-medium text-emerald-800 underline-offset-2 hover:underline"
+            className="mt-2 inline-block font-medium text-p2-primary underline-offset-2 hover:underline"
           >
             Projektvertrag öffnen
           </PortalDocOpenButton>
@@ -97,12 +103,12 @@ export function PartnerProjektvertragPaket({
 
   if (!vertrag) {
     return (
-      <PartnerDetailSection title="Projektvertrag (Leistungsvertrag)">
+      <PortalDetailCard title="Projektvertrag (Leistungsvertrag)" id="partner-pflichten-ack">
         <PartnerDetailInfoBox>
-          Bärenwald bereitet deinen Projektvertrag für diesen Auftrag vor. Er erscheint hier,
+          Bärenwald bereitet Ihren Projektvertrag für diesen Auftrag vor. Er erscheint hier,
           sobald er bei Bärenwald freigegeben ist — ein Vertrag pro Auftrag, unabhängig vom Gewerk.
         </PartnerDetailInfoBox>
-      </PartnerDetailSection>
+      </PortalDetailCard>
     );
   }
 
@@ -120,29 +126,34 @@ export function PartnerProjektvertragPaket({
       <PartnerDetailInfoBox>
         Bitte lies den Projekt-Nachunternehmervertrag und bestätige den Auftrag verbindlich. Erst
         danach wird das Projekt unter „Aufträge“ freigeschaltet. Unterlagen zum Bauauftrag sind
-        optional — du kannst sie dort jederzeit hochladen, auch wenn du sie hier noch nicht
+        optional — Sie können sie dort jederzeit hochladen, auch wenn Sie sie hier noch nicht
         einreichst.
       </PartnerDetailInfoBox>
 
-      <PartnerDetailSection title="Projektvertrag (Leistungsvertrag)">
+      <PortalDetailCard title="Projektvertrag (Leistungsvertrag)">
         <PartnerDetailKeyValues rows={vertragRows} />
         {vertrag.pdf_signed_url || vertrag.pdf_url ? (
           <PortalDocOpenButton
             href={vertrag.pdf_signed_url ?? vertrag.pdf_url ?? "#"}
             name="Projektvertrag"
             kind="pdf"
-            className="btn-pill-outline portal-btn mt-3 inline-flex"
+            className="btn-pill-outline mt-3 inline-flex"
           >
             Vertrag als PDF öffnen
           </PortalDocOpenButton>
         ) : null}
-      </PartnerDetailSection>
+      </PortalDetailCard>
 
       {!bestaetigt ? (
-        <div className="space-y-3 rounded-xl border border-border-light bg-muted/20 p-4">
-          <label className="flex cursor-pointer items-start gap-3">
-            <input
-              type="checkbox"
+        <div className="space-y-3 rounded-sheet border border-border-light bg-muted/20 p-4">
+          <label
+            id={!gelesen ? "partner-pflichten-ack" : undefined}
+            className={cn(
+              "flex cursor-pointer items-start gap-3 rounded-field transition-[box-shadow,background-color]",
+              highlight && !gelesen && "partner-pflichten-ack--pulse"
+            )}
+          >
+            <PortalCheckbox
               checked={gelesen}
               onChange={(e) => setGelesen(e.target.checked)}
               className="mt-1"
@@ -152,9 +163,14 @@ export function PartnerProjektvertragPaket({
               {vertrag.pdf_signed_url || vertrag.pdf_url ? " und heruntergeladen" : ""}.
             </span>
           </label>
-          <label className="flex cursor-pointer items-start gap-3">
-            <input
-              type="checkbox"
+          <label
+            id={gelesen && !verbindlich ? "partner-pflichten-ack" : undefined}
+            className={cn(
+              "flex cursor-pointer items-start gap-3 rounded-field transition-[box-shadow,background-color]",
+              highlight && gelesen && !verbindlich && "partner-pflichten-ack--pulse"
+            )}
+          >
+            <PortalCheckbox
               checked={verbindlich}
               onChange={(e) => setVerbindlich(e.target.checked)}
               className="mt-1"
@@ -174,21 +190,21 @@ export function PartnerProjektvertragPaket({
       ) : null}
 
       {!embedded && kannBestaetigen ? (
-        <button
-          type="button"
+        <PortalButton variant="secondary"
+          action={false}
           disabled={loading}
           onClick={() => setConfirmOpen(true)}
-          className="btn-pill-primary portal-btn w-full sm:w-auto"
+          className="btn-pill-primary w-full sm:w-auto"
         >
           {loading ? "Wird gesendet…" : "Auftrag verbindlich bestätigen"}
-        </button>
+        </PortalButton>
       ) : null}
 
       {!embedded ? (
         <PartnerConfirmDialog
           open={confirmOpen}
           title="Auftrag verbindlich bestätigen?"
-          description="Du schließt den Projekt-Nachunternehmervertrag ab. Bärenwald wird informiert. Der Auftrag wird danach unter „Aufträge“ freigeschaltet."
+          description="Sie schließen den Projekt-Nachunternehmervertrag ab. Bärenwald wird informiert. Der Auftrag wird danach unter „Aufträge“ freigeschaltet."
           confirmLabel="Ja, verbindlich bestätigen"
           loading={loading}
           onConfirm={onConfirm}

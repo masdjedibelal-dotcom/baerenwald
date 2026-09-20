@@ -163,7 +163,7 @@ export type KundePortalDetailItem = {
   meldePreisIndikation?: string | null;
   /** C4 — HV Meta „Wartet auf HW · …“ */
   wartetAufHwLabel?: string | null;
-  /** Ausführung: zugewiesene Handwerker-Firma (nicht Betreuer/Ansprechpartner). */
+  /** Ausführung: zugewiesene Partner-Firma (nicht Betreuer/Ansprechpartner). */
   handwerkerName?: string | null;
 };
 

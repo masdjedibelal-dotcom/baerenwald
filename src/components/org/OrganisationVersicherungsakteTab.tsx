@@ -2,11 +2,14 @@
 
 import { useEffect, useState } from "react";
 
+import { PortalInput } from "@/components/shared/PortalFormControls";
 import { OrganisationVersicherungBlock } from "@/components/org/OrganisationVersicherungBlock";
+import { PortalButton } from "@/components/portal/PortalButton";
 import { PortalContentBusy } from "@/components/shared/PortalContentBusy";
 import { PortalDetailCard } from "@/components/shared/PortalDetailCard";
 import { usePortalBusy } from "@/components/shared/PortalBusyContext";
-import { portalToastError, portalToastSuccess } from "@/lib/shared/portal-toast";
+import { portalToastSystemError, portalToastSuccess } from "@/lib/shared/portal-toast";
+import { TOAST } from '@/lib/portal-copy'
 
 type Props = {
   leadId: string;
@@ -73,7 +76,7 @@ export function OrganisationVersicherungsakteTab({
         };
         if (!res.ok) throw new Error(data.error ?? "Speichern fehlgeschlagen");
         if (data.schadenakteWarning) {
-          portalToastSuccess("Gespeichert. " + data.schadenakteWarning);
+          portalToastSuccess(`${TOAST.gespeichertKurz} ${data.schadenakteWarning}`);
         } else {
           portalToastSuccess(
             ja ? "Versicherungsabrechnung aktiv." : "Gespeichert."
@@ -83,7 +86,7 @@ export function OrganisationVersicherungsakteTab({
       }, ja ? 700 : 320);
     } catch (e) {
       setKtLocal(prev);
-      portalToastError(e instanceof Error ? e.message : "Fehler");
+      portalToastSystemError(e, "org-versicherungsakte-kt");
     } finally {
       setBusy(false);
       setGeneratingAkte(false);
@@ -109,14 +112,14 @@ export function OrganisationVersicherungsakteTab({
         };
         if (!res.ok) throw new Error(data.error ?? "Speichern fehlgeschlagen");
         if (data.schadenakteWarning) {
-          portalToastSuccess("Gespeichert. " + data.schadenakteWarning);
+          portalToastSuccess(`${TOAST.gespeichertKurz} ${data.schadenakteWarning}`);
         } else {
-          portalToastSuccess("Versicherungsnummer gespeichert.");
+          portalToastSuccess(TOAST.versicherungsnummer_gespeichert);
         }
         await onSaved?.();
       }, 320);
     } catch (e) {
-      portalToastError(e instanceof Error ? e.message : "Fehler");
+      portalToastSystemError(e, "org-versicherungsakte-nr");
     } finally {
       setBusy(false);
     }
@@ -126,30 +129,24 @@ export function OrganisationVersicherungsakteTab({
     <div className="space-y-3.5">
       <PortalDetailCard title="Abrechnung über Versicherung">
         <div className="flex flex-wrap gap-2">
-          <button
-            type="button"
+          <PortalButton variant="secondary"
+            action={false}
+            compact
             disabled={busy}
             onClick={() => void setAbrechnung(true)}
-            className={
-              versicherung
-                ? "btn-pill-primary portal-btn-compact"
-                : "btn-pill-outline portal-btn-compact"
-            }
+            className={versicherung ? "btn-pill-primary" : "btn-pill-outline"}
           >
             Ja
-          </button>
-          <button
-            type="button"
+          </PortalButton>
+          <PortalButton variant="secondary"
+            action={false}
+            compact
             disabled={busy}
             onClick={() => void setAbrechnung(false)}
-            className={
-              !versicherung
-                ? "btn-pill-primary portal-btn-compact"
-                : "btn-pill-outline portal-btn-compact"
-            }
+            className={!versicherung ? "btn-pill-primary" : "btn-pill-outline"}
           >
             Nein
-          </button>
+          </PortalButton>
         </div>
       </PortalDetailCard>
 
@@ -157,12 +154,12 @@ export function OrganisationVersicherungsakteTab({
         <PortalContentBusy
           title="Schadenakte wird erstellt…"
           body="Meldeangaben werden in die Schadenmeldung übernommen. Einen Moment bitte."
-          className="min-h-[28vh] rounded-xl border border-border-default bg-white py-10"
+          className="min-h-[28vh] rounded-sheet border border-border-default bg-white py-10"
         />
       ) : versicherung ? (
         <>
           <PortalDetailCard title="Versicherungsnummer">
-            <input
+            <PortalInput
               type="text"
               value={versNr}
               onChange={(e) => setVersNr(e.target.value)}

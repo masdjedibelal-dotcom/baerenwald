@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 
+import { PortalSelect, PortalTextarea } from "@/components/shared/PortalFormControls";
 import {
   confirmPartnerAuftrag,
   confirmPartnerAuftragZuweisung,
@@ -64,6 +65,7 @@ import {
   partnerDetailOrtMetaLine,
   resolvePartnerKonditionZeilen,
 } from "@/lib/partner/partner-portal-display";
+import { TOAST } from '@/lib/portal-copy'
 
 export function PartnerOffenDetail({
   item,
@@ -86,6 +88,7 @@ export function PartnerOffenDetail({
     Boolean(item.projektvertrag_bestaetigt_am)
   );
   const [pflichtenGelesen, setPflichtenGelesen] = useState(false);
+  const [pflichtenHighlight, setPflichtenHighlight] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [confirmOpen, setConfirmOpen] = useState(false);
@@ -259,7 +262,7 @@ export function PartnerOffenDetail({
         setConfirmOpen(false);
         if (!res.ok) {
           setError(res.error);
-          portalToastError("Annahme fehlgeschlagen", res.error);
+          portalToastError(TOAST.annahme_fehlgeschlagen, res.error);
           return;
         }
         if (isNachreichung) {
@@ -290,7 +293,7 @@ export function PartnerOffenDetail({
             return;
           }
           if (auto.status === "skipped" && auto.error) {
-            portalToastError("Angebot nicht automatisch erstellt", auto.error);
+            portalToastError(TOAST.angebot_nicht_automatisch_erstellt, auto.error);
           }
         });
       }
@@ -300,7 +303,7 @@ export function PartnerOffenDetail({
           ? e.message
           : "Annahme fehlgeschlagen. Bitte erneut versuchen.";
       setError(msg);
-      portalToastError("Annahme fehlgeschlagen", msg);
+      portalToastError(TOAST.annahme_fehlgeschlagen, msg);
     } finally {
       setLoading(false);
     }
@@ -342,21 +345,28 @@ export function PartnerOffenDetail({
       ? pflichtenGelesen && projektvertragBereit
       : pflichtenGelesen;
 
-  const acceptDisabledHint = !kannBestaetigen
-    ? !pflichtenGelesen
-      ? "Bitte die Pflichten bestätigen."
-      : brauchtProjektvertrag && !projektvertragBereit
-        ? "Bitte den Projektvertrag bestätigen."
-        : null
-    : null;
+  const acceptDisabledHint = null;
+
+  function focusPflichtenAck() {
+    const el = document.getElementById("partner-pflichten-ack");
+    el?.scrollIntoView({ behavior: "smooth", block: "center" });
+    setPflichtenHighlight(true);
+    window.setTimeout(() => setPflichtenHighlight(false), 2200);
+  }
 
   const actionFooter =
     showKalkulation ? null : !showReject ? (
       <PortalDetailStickyActions
         primaryLabel={primaryLabel}
-        onPrimary={() => setConfirmOpen(true)}
+        onPrimary={() => {
+          if (!kannBestaetigen) {
+            focusPflichtenAck();
+            return;
+          }
+          setConfirmOpen(true);
+        }}
         primaryLoading={loading}
-        primaryDisabled={!kannBestaetigen}
+        primaryDisabled={loading}
         disabledHint={acceptDisabledHint}
         secondaryLabel="Ablehnen"
         onSecondary={() => setShowReject(true)}
@@ -447,7 +457,7 @@ export function PartnerOffenDetail({
         <PortalDetailInfoBox>
           Bärenwald hat Leistungen an diesem Auftrag angepasst. Die Details konnten
           gerade nicht geladen werden — bitte Seite neu laden. Bei anhaltendem
-          Problem melde dich bei Bärenwald.
+          Problem melden Sie sich bei Bärenwald.
         </PortalDetailInfoBox>
       ) : null}
 
@@ -474,6 +484,7 @@ export function PartnerOffenDetail({
           vertrag={item.projektvertrag ?? null}
           projektvertrag_bestaetigt_am={item.projektvertrag_bestaetigt_am}
           embedded
+          highlight={pflichtenHighlight}
           onEmbeddedReadyChange={setProjektvertragBereit}
         />
       ) : null}
@@ -488,24 +499,24 @@ export function PartnerOffenDetail({
         <div className="space-y-3 border-t border-border-light pt-4">
           <label className="block space-y-1">
             <span className="portal-form-label">Ablehnungsgrund</span>
-            <select
+            <PortalSelect
               value={grund}
               onChange={(e) => setGrund(e.target.value)}
-              className="portal-input w-full rounded-xl border border-border-default bg-surface-card px-3 py-3"
+              className="portal-input w-full rounded-field border border-border-default bg-surface-card px-3 py-3"
             >
               {HANDWERKER_ABLEHNUNG_GRUND_VALUES.map((v) => (
                 <option key={v} value={v}>
                   {HANDWERKER_ABLEHNUNG_GRUND_LABELS[v]}
                 </option>
               ))}
-            </select>
+            </PortalSelect>
           </label>
-          <textarea
+          <PortalTextarea
             value={notiz}
             onChange={(e) => setNotiz(e.target.value)}
             placeholder="Optionale Notiz"
             rows={3}
-            className="portal-input w-full rounded-xl border border-border-default bg-surface-card px-3 py-3"
+            className="portal-input w-full rounded-field border border-border-default bg-surface-card px-3 py-3"
           />
         </div>
       ) : null}
@@ -523,6 +534,7 @@ export function PartnerOffenDetail({
           acknowledgment={{
             checked: pflichtenGelesen,
             onChange: setPflichtenGelesen,
+            highlight: pflichtenHighlight,
           }}
         />
       ) : null}
@@ -532,12 +544,12 @@ export function PartnerOffenDetail({
         title={primaryLabel}
         description={
           isNachreichung
-            ? "Mit der Bestätigung nimmst du die geänderten Leistungen verbindlich an (stille Aktualisierung — kein neuer Projektvertrag)."
+            ? "Mit der Bestätigung nehmen Sie die geänderten Leistungen verbindlich an (stille Aktualisierung — kein neuer Projektvertrag)."
             : brauchtProjektvertrag
-              ? "Mit der Bestätigung nimmst du den Auftrag inkl. Projektvertrag verbindlich an."
+              ? "Mit der Bestätigung nehmen Sie den Auftrag inkl. Projektvertrag verbindlich an."
               : hatAuftrag
-                ? "Mit der Bestätigung nimmst du Leistungen und Konditionen verbindlich an."
-                : "Mit der Bestätigung nimmst du die Zuweisung verbindlich an."
+                ? "Mit der Bestätigung nehmen Sie Leistungen und Konditionen verbindlich an."
+                : "Mit der Bestätigung nehmen Sie die Zuweisung verbindlich an."
         }
         confirmLabel={primaryLabel}
         onConfirm={onConfirm}

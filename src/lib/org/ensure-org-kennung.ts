@@ -1,3 +1,4 @@
+import { logDbError } from '@/lib/errors/log-db-error'
 import {
   isValidMeldeSlug,
   suggestOrgKennungFromName,
@@ -8,13 +9,14 @@ async function isOrgKennungTaken(
   slug: string,
   excludeKundeId: string
 ): Promise<boolean> {
-  const { data } = await supabaseAdmin
+  const {data, error: __dbErr285_1} = await supabaseAdmin
     .from("kunden")
     .select("id")
     .ilike("org_kennung", slug)
     .neq("id", excludeKundeId)
     .limit(1)
     .maybeSingle();
+  if (__dbErr285_1) logDbError('lib/org/ensure-org-kennung:kunden', __dbErr285_1)
   return Boolean(data?.id);
 }
 
@@ -46,11 +48,12 @@ export async function ensureOrgKennung(input: {
   org_anzeigename?: string | null;
   name?: string | null;
 }): Promise<string | null> {
-  const { data: current } = await supabaseAdmin
+  const {data: current, error: __dbErr286_2} = await supabaseAdmin
     .from("kunden")
     .select("org_kennung, org_anzeigename, name")
     .eq("id", input.id)
     .maybeSingle();
+  if (__dbErr286_2) logDbError('lib/org/ensure-org-kennung:kunden', __dbErr286_2)
 
   const existing =
     current?.org_kennung?.trim().toLowerCase() ||
@@ -71,14 +74,16 @@ export async function ensureOrgKennung(input: {
       .from("kunden")
       .update({ org_kennung: slug })
       .eq("id", input.id);
+    if (error) logDbError('lib/org/ensure-org-kennung:kunden', error)
 
     if (!error) return slug;
 
-    const { data: again } = await supabaseAdmin
+    const {data: again, error: __dbErr287_3} = await supabaseAdmin
       .from("kunden")
       .select("org_kennung")
       .eq("id", input.id)
       .maybeSingle();
+    if (__dbErr287_3) logDbError('lib/org/ensure-org-kennung:kunden', __dbErr287_3)
     const recovered = again?.org_kennung?.trim().toLowerCase() ?? "";
     if (recovered && isValidMeldeSlug(recovered)) return recovered;
   }

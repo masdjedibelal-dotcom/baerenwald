@@ -1,3 +1,4 @@
+import { logDbError } from '@/lib/errors/log-db-error'
 import { NextResponse } from "next/server";
 
 import { writeAuditEvent } from "@/lib/audit/write-audit-event";
@@ -33,11 +34,12 @@ export async function POST(req: Request) {
     );
   }
 
-  const { data: lead } = await supabaseAdmin
+  const {data: lead, error: __dbErr228_1} = await supabaseAdmin
     .from("leads")
     .select("id, auftraggeber_kunde_id, hv_meldung_status, vorgang_phase")
     .eq("id", leadId)
     .maybeSingle();
+  if (__dbErr228_1) logDbError('app/api/org/vorgang-storno/route:leads', __dbErr228_1)
 
   if (!lead || lead.auftraggeber_kunde_id !== session.kunde.id) {
     return NextResponse.json({ error: "Nicht gefunden." }, { status: 404 });
@@ -60,6 +62,7 @@ export async function POST(req: Request) {
       org_freigabe_status: "abgelehnt",
     })
     .eq("id", leadId);
+  if (error) logDbError('app/api/org/vorgang-storno/route:leads', error)
 
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });

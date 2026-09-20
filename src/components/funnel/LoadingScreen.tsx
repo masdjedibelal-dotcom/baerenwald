@@ -1,7 +1,7 @@
 "use client";
 
+import { PortalIcon } from "@/components/portal/PortalIcon";
 import { useEffect, useState } from "react";
-import { Loader2 } from "lucide-react";
 
 import type { Situation as BwSituation } from "@/lib/funnel/types";
 import { cn } from "@/lib/utils";
@@ -55,12 +55,7 @@ export function LoadingScreen({
         <div className="loading-screen-icon-wrap" aria-hidden>
           <div className="loading-screen-ring" />
           <div className="loading-screen-icon-inner">
-            <Loader2
-              className="loading-screen-spinner"
-              strokeWidth={2}
-              size={28}
-              aria-hidden
-            />
+            <PortalIcon n="loader" ctx="default" size={28} className="loading-screen-spinner" aria-hidden />
           </div>
         </div>
 

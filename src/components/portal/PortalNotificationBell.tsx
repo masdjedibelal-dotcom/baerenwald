@@ -2,9 +2,11 @@
 
 import Link from "next/link";
 import { useCallback, useId, useMemo, useRef, useState } from "react";
-import { MockIcon } from "@/components/shared/MockIcon";
+import { PortalButton } from "@/components/portal/PortalButton";
+import { PortalIcon } from "@/components/portal/PortalIcon";
 import { PortalCountBadge } from "@/components/shared/PortalNavCountBadge";
 import { PortalModalShell } from "@/components/shared/PortalModalShell";
+import { EMPTY } from "@/lib/portal-copy";
 import { PORTAL_VAR } from "@/lib/portal2/tokens";
 import {
   formatPortalNotifTime,
@@ -34,7 +36,7 @@ function NotifList({
   loading,
   onItemActivate,
   onItem,
-  emptyLabel = "Keine Updates.",
+  emptyLabel = EMPTY.updates,
 }: {
   items: PortalNotifItem[];
   loading: boolean;
@@ -110,7 +112,7 @@ function NotifList({
             </span>
             {n.unread ? (
               <span
-                className="mt-1.5 h-[8px] w-[8px] shrink-0 rounded-full"
+                className="mt-1.5 h-[8px] w-[8px] shrink-0 rounded-pill"
                 style={{ background: PORTAL_VAR.primary }}
                 aria-label="Ungelesen"
               />
@@ -121,9 +123,9 @@ function NotifList({
         return (
           <li key={n.id}>
             {onItemActivate ? (
-              <button type="button" style={rowStyle} onClick={() => onItem(n)}>
+              <PortalButton variant="ghost" type="button" style={rowStyle} onClick={() => onItem(n)}>
                 {inner}
-              </button>
+              </PortalButton>
             ) : n.link ? (
               <Link href={n.link} style={rowStyle} onClick={() => onItem(n)}>
                 {inner}
@@ -211,12 +213,13 @@ export function PortalNotificationBell({
             { id: "erledigt" as const, label: "Gelesen" },
           ] as const
         ).map((f) => (
-          <button
+          <PortalButton
+            variant="ghost"
             key={f.id}
             type="button"
             onClick={() => setFilter(f.id)}
             className={cn(
-              "portal-text-meta rounded-full px-3 py-1.5 font-semibold",
+              "portal-text-meta rounded-pill px-3 py-1.5 font-semibold",
               filter === f.id ? "text-white" : "border"
             )}
             style={
@@ -225,12 +228,12 @@ export function PortalNotificationBell({
                 : {
                     borderColor: "var(--p2-line)",
                     color: "var(--p2-sub)",
-                    background: "#fff",
+                    background: "var(--p2-panel)",
                   }
             }
           >
             {f.label}
-          </button>
+          </PortalButton>
         ))}
       </div>
     ) : null;
@@ -238,7 +241,7 @@ export function PortalNotificationBell({
   const footer = (
     <div
       className="px-4 py-[11px] text-center"
-      style={{ borderTop: "1px solid var(--p2-line)" }}
+      style={{ borderTop: "0.0625rem solid var(--p2-line)" }}
     >
       {allHref ? (
         <Link
@@ -250,14 +253,15 @@ export function PortalNotificationBell({
           Alle Vorgänge
         </Link>
       ) : (
-        <button
+        <PortalButton
+          variant="ghost"
           type="button"
           onClick={() => setOpenSafe(false)}
           className="portal-text-meta font-semibold"
           style={{ color: "var(--org-primary, var(--p2-primary))" }}
         >
-          Schließen
-        </button>
+          Abbrechen
+        </PortalButton>
       )}
     </div>
   );
@@ -268,7 +272,8 @@ export function PortalNotificationBell({
       className="portal-bell relative z-20 shrink-0 overflow-visible"
       data-portal-bell=""
     >
-      <button
+      <PortalButton
+        variant="ghost"
         type="button"
         className="portal-bell-trigger relative grid place-items-center overflow-visible transition-colors"
         aria-label={
@@ -280,8 +285,8 @@ export function PortalNotificationBell({
         aria-controls={panelId}
         onClick={() => setOpenSafe(!open)}
       >
-        <MockIcon ctx="sidebar" n="bell" size={18} className="portal-bell-icon" />
-      </button>
+        <PortalIcon ctx="sidebar" n="bell" size={18} className="portal-bell-icon" />
+      </PortalButton>
       {/* Außerhalb des Buttons — sonst clippt overflow/border-radius die Ecke. */}
       <PortalCountBadge count={unreadCount} variant="corner" />
 
@@ -296,7 +301,8 @@ export function PortalNotificationBell({
           <div id={panelId} className="flex min-h-0 flex-col">
             {unreadCount > 0 ? (
               <div className="mb-2 flex justify-end">
-                <button
+                <PortalButton
+                  variant="ghost"
                   type="button"
                   disabled={marking}
                   onClick={(e) => {
@@ -307,7 +313,7 @@ export function PortalNotificationBell({
                   style={{ color: "var(--org-primary, var(--p2-primary))" }}
                 >
                   Alle gelesen
-                </button>
+                </PortalButton>
               </div>
             ) : null}
             {filterBar}
@@ -320,9 +326,9 @@ export function PortalNotificationBell({
                 emptyLabel={
                   showReadFilter
                     ? filter === "offen"
-                      ? "Keine ungelesenen Updates."
+                      ? EMPTY.updatesUngelesen
                       : "Noch keine gelesenen Updates."
-                    : "Keine Updates."
+                    : EMPTY.updates
                 }
               />
             </div>

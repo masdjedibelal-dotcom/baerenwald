@@ -1,4 +1,5 @@
 "use client";
+import { MockIconSvg } from "@/components/shared/mock-icon-svgs";
 
 import { useMemo, useState } from "react";
 
@@ -18,12 +19,12 @@ export function LeadAvailabilityHint({
   return (
     <div
       className={cn(
-        "rounded-lg px-3.5 py-3 text-[13px] leading-snug",
+        "rounded-card px-3.5 py-3 text-fs-meta leading-snug",
         className
       )}
       style={{
-        backgroundColor: "var(--fl-accent-light, var(--accent-light, #EAF3DE))",
-        color: "var(--fl-accent-dark, var(--accent-dark, #1a3d2b))",
+        backgroundColor: "var(--fl-accent-light, var(--accent-light))",
+        color: "var(--fl-accent-dark, var(--accent-dark))",
       }}
       role="note"
     >
@@ -47,16 +48,16 @@ function gewerkLabel(key: string): string {
 
 function gewerkSquareClass(g: string): string {
   const x = g.toLowerCase();
-  if (x.includes("maler")) return "bg-[#F0F4FF] text-[#185FA5]";
+  if (x.includes("maler")) return "bg-[var(--fl-chip-maler-bg)] text-[var(--fl-status-blue)]";
   if (x.includes("boden") || x.includes("fliesen") || x.includes("garten"))
-    return "bg-[#EAF3DE] text-[#3B6D11]";
+    return "bg-[var(--fl-status-green-bg)] text-[var(--fl-chip-green-text)]";
   if (x.includes("sanitaer") || x.includes("bad"))
-    return "bg-[#E6F1FB] text-[#0C447C]";
-  if (x.includes("elektro")) return "bg-[#FDF3DC] text-[#854F0B]";
+    return "bg-[var(--fl-chip-blue-bg)] text-[var(--fl-chip-blue-text)]";
+  if (x.includes("elektro")) return "bg-[var(--fl-chip-elektro-bg)] text-[var(--fl-chip-elektro-text)]";
   if (x.includes("shk") || x.includes("heizung"))
-    return "bg-[#FDECEA] text-[#9C2B2B]";
-  if (x.includes("reinigung")) return "bg-[#F1EFE8] text-[#5F5E5A]";
-  return "bg-[#F0F4FF] text-[#185FA5]";
+    return "bg-[var(--fl-chip-danger-bg)] text-[var(--fl-chip-danger-text)]";
+  if (x.includes("reinigung")) return "bg-[var(--fl-chip-neutral-bg)] text-[var(--fl-chip-neutral-text)]";
+  return "bg-[var(--fl-chip-maler-bg)] text-[var(--fl-status-blue)]";
 }
 
 function seasonMonths(frequenz: string): number {
@@ -84,11 +85,11 @@ function BreakdownRow({ row }: { row: PriceLineItem }) {
       <div className="flex min-w-0 gap-2">
         <div
           className={cn(
-            "flex size-[26px] shrink-0 items-center justify-center rounded-md",
+            "flex size-[26px] shrink-0 items-center justify-center rounded-field",
             gewerkSquareClass(row.gewerk)
           )}
         >
-          <svg className="size-3.5" viewBox="0 0 24 24" fill="none">
+          <MockIconSvg className="size-3.5" viewBox="0 0 24 24" fill="none">
             <path
               d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"
               stroke="currentColor"
@@ -96,14 +97,14 @@ function BreakdownRow({ row }: { row: PriceLineItem }) {
               strokeLinecap="round"
               strokeLinejoin="round"
             />
-          </svg>
+          </MockIconSvg>
         </div>
         <div className="min-w-0">
-          <p className="text-[13px] font-medium text-text-primary">{row.gewerk}</p>
-          <p className="text-[11px] text-text-secondary">{row.beschreibung}</p>
+          <p className="text-fs-meta font-medium text-text-primary">{row.gewerk}</p>
+          <p className="text-fs-caption text-text-secondary">{row.beschreibung}</p>
         </div>
       </div>
-      <p className="shrink-0 text-[13px] font-medium tabular-nums text-text-primary">
+      <p className="shrink-0 text-fs-meta font-medium tabular-nums text-text-primary">
         {formatCurrencyEUR(row.min)} – {formatCurrencyEUR(row.max)}
       </p>
     </div>
@@ -164,7 +165,7 @@ export function ResultScreen({
     const tel = companyPhone.replace(/\s/g, "");
     return (
       <div className={cn("space-y-6", className)}>
-        <div className="relative overflow-hidden rounded-[18px] bg-[#C0392B] p-5 text-center text-white">
+        <div className="relative overflow-hidden rounded-[18px] bg-[var(--fl-danger)] p-5 text-center text-white">
           {situation ? (
             <div
               className="pointer-events-none absolute right-3 top-1/2 w-24 -translate-y-1/2 text-white opacity-[0.07]"
@@ -173,7 +174,7 @@ export function ResultScreen({
               <SituationIconPath situation={situation} />
             </div>
           ) : null}
-          <p className="text-[11px] font-medium uppercase tracking-widest text-white/70">
+          <p className="text-fs-caption font-medium uppercase tracking-widest text-white/70">
             Notfall
           </p>
           <p className="mt-3 text-lg font-semibold">Wir sind jetzt erreichbar</p>
@@ -185,7 +186,7 @@ export function ResultScreen({
           </a>
           <a
             href={`tel:${tel}`}
-            className="mt-5 inline-flex w-full max-w-xs justify-center rounded-full bg-surface-card px-6 py-3 text-sm font-semibold text-[#C0392B]"
+            className="mt-5 inline-flex w-full max-w-xs justify-center rounded-pill bg-surface-card px-6 py-3 text-sm font-semibold text-[var(--fl-danger)]"
           >
             Jetzt anrufen
           </a>
@@ -207,7 +208,7 @@ export function ResultScreen({
           </p>
           <button
             type="button"
-            className="mt-6 w-full rounded-full bg-funnel-accent py-3 text-sm font-semibold text-white"
+            className="mt-6 w-full rounded-pill bg-funnel-accent py-3 text-sm font-semibold text-white"
           >
             Beratungsgespräch vereinbaren
           </button>
@@ -234,27 +235,27 @@ export function ResultScreen({
             <SituationIconPath situation={situation} />
           </div>
         ) : null}
-        <p className="text-[11px] font-medium uppercase tracking-widest text-[#777]">
+        <p className="text-fs-caption font-medium uppercase tracking-widest text-[var(--fl-text-777)]">
           Ihr Preisrahmen
         </p>
         <div className="mt-2 flex flex-wrap items-baseline gap-1">
-          <span className="text-[38px] font-extrabold leading-none tracking-tight text-white">
+          <span className="text-fs-head font-extrabold leading-none tracking-tight text-white">
             {formatCurrencyEUR(state.priceMin)}
           </span>
-          <span className="text-lg text-[#555]">–</span>
-          <span className="text-[38px] font-extrabold leading-none tracking-tight text-white">
+          <span className="text-lg text-[var(--fl-text-555)]">–</span>
+          <span className="text-fs-head font-extrabold leading-none tracking-tight text-white">
             {formatCurrencyEUR(state.priceMax)}
           </span>
-          <span className="text-sm text-[#777]">€</span>
+          <span className="text-sm text-[var(--fl-text-777)]">€</span>
         </div>
-        <p className="mt-1.5 text-[11px] leading-relaxed text-[#666]">
+        <p className="mt-1.5 text-fs-caption leading-relaxed text-[var(--fl-text-666)]">
           {noteParts.join(" · ")}
         </p>
         <div className="mt-3 flex flex-wrap gap-1.5">
           {state.gewerke.map((g) => (
             <span
               key={g}
-              className="rounded-full bg-surface-card/10 px-2.5 py-0.5 text-[10px] text-[#aaa]"
+              className="rounded-pill bg-surface-card/10 px-2.5 py-0.5 text-fs-caption text-[var(--fl-faint2)]"
             >
               {gewerkLabel(g)}
             </span>
@@ -262,18 +263,18 @@ export function ResultScreen({
         </div>
 
         {showUsp ? (
-          <div className="mt-3 flex items-start gap-3 rounded-xl border border-white/[0.08] bg-white/10 p-3">
-            <div className="flex size-[30px] shrink-0 items-center justify-center rounded-lg bg-white/[0.07] text-white">
-              <svg className="size-4" viewBox="0 0 24 24" fill="none">
+          <div className="mt-3 flex items-start gap-3 rounded-sheet border border-white/[0.08] bg-white/10 p-3">
+            <div className="flex size-[30px] shrink-0 items-center justify-center rounded-card bg-white/[0.07] text-white">
+              <MockIconSvg className="size-4" viewBox="0 0 24 24" fill="none">
                 <path
                   d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2M9 11a4 4 0 100-8 4 4 0 000 8zM23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"
                   stroke="currentColor"
                   strokeWidth="1.5"
                   strokeLinecap="round"
                 />
-              </svg>
+              </MockIconSvg>
             </div>
-            <p className="text-[11px] leading-relaxed text-[#aaa]">
+            <p className="text-fs-caption leading-relaxed text-[var(--fl-faint2)]">
               <strong className="font-medium text-white">
                 Ein Ansprechpartner, alle Handwerksleistungen
               </strong>
@@ -285,8 +286,8 @@ export function ResultScreen({
             </p>
           </div>
         ) : state.situation === "b2b" && state.b2bPrio ? (
-          <div className="mt-3 flex items-start gap-3 rounded-xl border border-white/[0.08] bg-white/10 p-3">
-            <p className="text-[11px] leading-relaxed text-[#aaa]">
+          <div className="mt-3 flex items-start gap-3 rounded-sheet border border-white/[0.08] bg-white/10 p-3">
+            <p className="text-fs-caption leading-relaxed text-[var(--fl-faint2)]">
               <strong className="font-medium text-white">Eure Priorität: </strong>
               {B2bPrioLabel(state.b2bPrio)}
             </p>
@@ -295,19 +296,19 @@ export function ResultScreen({
       </div>
 
       {!state.entscheider ? (
-        <div className="rounded-xl border border-[#DCE6FF] bg-[#F6F8FE] p-3 text-[12px] leading-relaxed text-[#315AA8]">
+        <div className="rounded-sheet border border-[var(--fl-status-blue-bg)] bg-[var(--fl-status-blue-bg)] p-3 text-fs-caption leading-relaxed text-[var(--fl-status-blue)]">
           Ergebnis per Mail schicken zum Weiterleiten — Sie können trotzdem
           direkt anfragen, wenn Sie möchten.
         </div>
       ) : null}
 
-      <div className="mt-2.5 overflow-hidden rounded-xl border border-border-default bg-surface-card">
+      <div className="mt-2.5 overflow-hidden rounded-sheet border border-border-default bg-surface-card">
         {state.priceBreakdown.map((row, i) => (
           <BreakdownRow key={`${row.gewerk}-${i}`} row={row} />
         ))}
         <div className="flex items-center justify-between bg-muted px-3.5 py-2.5 font-semibold">
-          <span className="text-[13px] text-text-primary">Gesamt</span>
-          <span className="text-[15px] tabular-nums text-text-primary">
+          <span className="text-fs-meta text-text-primary">Gesamt</span>
+          <span className="text-fs-title tabular-nums text-text-primary">
             {formatCurrencyEUR(state.priceMin)} –{" "}
             {formatCurrencyEUR(state.priceMax)}
           </span>
@@ -323,7 +324,7 @@ export function ResultScreen({
             type="button"
             onClick={() => setBudgetChoice("ja")}
             className={cn(
-              "rounded-full border border-border-default bg-surface-card px-4 py-2 text-sm font-medium text-text-secondary transition-colors",
+              "rounded-pill border border-border-default bg-surface-card px-4 py-2 text-sm font-medium text-text-secondary transition-colors",
               budgetChoice === "ja"
                 ? "funnel-tile-selected text-text-primary"
                 : "funnel-tile-hover"
@@ -335,7 +336,7 @@ export function ResultScreen({
             type="button"
             onClick={() => setBudgetChoice("hoch")}
             className={cn(
-              "rounded-full border border-border-default bg-surface-card px-4 py-2 text-sm font-medium text-text-secondary transition-colors",
+              "rounded-pill border border-border-default bg-surface-card px-4 py-2 text-sm font-medium text-text-secondary transition-colors",
               budgetChoice === "hoch"
                 ? "funnel-tile-selected text-text-primary"
                 : "funnel-tile-hover"
@@ -345,7 +346,7 @@ export function ResultScreen({
           </button>
         </div>
         {budgetChoice === "hoch" ? (
-          <p className="mt-3 rounded-xl border border-border-default bg-muted p-3 text-sm leading-relaxed text-text-secondary">
+          <p className="mt-3 rounded-sheet border border-border-default bg-muted p-3 text-sm leading-relaxed text-text-secondary">
             Kein Problem — beim Termin besprechen wir Optionen, die in Ihr
             Budget passen.
           </p>
@@ -353,7 +354,7 @@ export function ResultScreen({
       </div>
 
       {story ? (
-        <div className="mt-3 rounded-xl border border-[#DCE6FF] bg-[#F6F8FE] p-3 text-[12px] leading-relaxed text-[#315AA8]">
+        <div className="mt-3 rounded-sheet border border-[var(--fl-status-blue-bg)] bg-[var(--fl-status-blue-bg)] p-3 text-fs-caption leading-relaxed text-[var(--fl-status-blue)]">
           {story}
         </div>
       ) : null}

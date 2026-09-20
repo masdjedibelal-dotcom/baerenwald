@@ -38,7 +38,7 @@ type Props = {
   kpis: Record<PrivatDashboardKpiId, number>;
   recent: PrivatDashboardRecentItem[];
   onOpenAll: () => void;
-  onOpenItem: (id: string) => void;
+  onOpenItem: (id: string, opts?: { focus?: string }) => void;
   onKpiClick?: (id: PrivatDashboardKpiId) => void;
   heroImageUrl?: string | null;
   profileName?: string | null;

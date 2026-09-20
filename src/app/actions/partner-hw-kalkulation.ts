@@ -1,5 +1,6 @@
 "use server";
 
+import { logDbError } from '@/lib/errors/log-db-error'
 import { revalidatePath } from "next/cache";
 
 import { linkPortalHandwerkerToAuthUser } from "@/lib/partner/link-portal-handwerker";
@@ -94,12 +95,12 @@ export async function submitPartnerHwKalkulation(input: {
     return { ok: false, error: "Kein verknüpftes Angebot." };
   }
 
-  const { data: angebot } = await supabaseAdmin
+  const {data: angebot, error: __dbErr79_1} = await supabaseAdmin
     .from("angebote")
     .select("id, lead_id, kunde_id, kunde_objekt_id, angebotsnr")
     .eq("id", angebotId)
     .maybeSingle();
-
+  if (__dbErr79_1) logDbError('app/actions/partner-hw-kalkulation:angebote', __dbErr79_1)
   if (!angebot) return { ok: false, error: "Angebot nicht gefunden." };
 
   const now = new Date().toISOString();
@@ -138,6 +139,7 @@ export async function submitPartnerHwKalkulation(input: {
       .from("angebote")
       .update(patch)
       .eq("id", angebotId);
+    if (updAng) logDbError('app/actions/partner-hw-kalkulation:angebote', updAng)
 
     if (updAng) {
       if (/herkunft/i.test(updAng.message)) {
@@ -146,6 +148,7 @@ export async function submitPartnerHwKalkulation(input: {
           .from("angebote")
           .update(withoutHerkunft)
           .eq("id", angebotId);
+        if (retry) logDbError('app/actions/partner-hw-kalkulation:angebote', retry)
         if (retry) return { ok: false, error: retry.message };
       } else {
         return { ok: false, error: updAng.message };
@@ -183,6 +186,7 @@ export async function submitPartnerHwKalkulation(input: {
     })
     .eq("id", anfrageId)
     .eq("handwerker_id", link.handwerkerId);
+  if (updAh) logDbError('app/actions/partner-hw-kalkulation:angebot_handwerker', updAh)
 
   if (updAh) return { ok: false, error: updAh.message };
 
@@ -209,6 +213,7 @@ export async function submitPartnerHwKalkulation(input: {
         updated_at: now,
       })
       .eq("id", angebotId);
+    if (updIntern) logDbError('app/actions/partner-hw-kalkulation:angebote', updIntern)
     if (updIntern) {
       console.warn("[submitPartnerHwKalkulation] intern angebot:", updIntern.message);
     }

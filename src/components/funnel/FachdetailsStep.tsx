@@ -122,7 +122,7 @@ export function FachdetailsStep({
       tilesCard
     >
       {showOmitHint ? (
-        <p className="mb-3 rounded-lg border border-border-default bg-surface-muted px-3 py-2 text-sm text-text-secondary">
+        <p className="mb-3 rounded-card border border-border-default bg-surface-muted px-3 py-2 text-sm text-text-secondary">
           Sie haben viele Bereiche gewählt — wir gehen die wichtigsten Schritte
           nacheinander durch.
         </p>
@@ -170,7 +170,7 @@ export function FachdetailsStep({
           </span>
           <textarea
             className={cn(
-              "min-h-[88px] w-full rounded-xl border border-border-default bg-surface-card px-3 py-2 text-sm text-text-primary",
+              "min-h-[88px] w-full rounded-field border border-border-default bg-surface-card px-3 py-2 text-sm text-text-primary",
               "placeholder:text-text-tertiary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-funnel-accent"
             )}
             maxLength={150}

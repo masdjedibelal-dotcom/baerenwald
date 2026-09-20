@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 
+import { PortalInput } from "@/components/shared/PortalFormControls";
 import {
   confirmPortalSignupCode,
   resendPortalSignupCode,
@@ -9,6 +10,7 @@ import {
 import { PortalAuthBusy } from "@/components/portal/auth/PortalAuthBusy";
 import type { PortalOtpBrand } from "@/lib/funnel/funnel-portal-otp";
 import { cn } from "@/lib/utils";
+import { PortalButton } from "@/components/portal/PortalButton";
 
 type Props = {
   email: string;
@@ -16,7 +18,7 @@ type Props = {
   /** Nach erfolgreicher Code-Prüfung (E-Mail bestätigt + Verknüpfung). */
   onVerified: () => void | Promise<void>;
   className?: string;
-  /** Partner-Ton: „dein“ statt „Ihr“ */
+  /** Portal-Ton: immer Sie (COPY-REGELN) */
   informal?: boolean;
 };
 
@@ -79,7 +81,7 @@ export function PortalSignupOtpStep({
         title="Code wird geprüft…"
         body={
           informal
-            ? "Einen Moment — wir bestätigen dein Konto."
+            ? "Einen Moment — wir bestätigen Ihr Konto."
             : "Einen Moment — wir bestätigen Ihr Konto."
         }
       />
@@ -97,19 +99,19 @@ export function PortalSignupOtpStep({
       </div>
 
       {error ? (
-        <p className="rounded-lg bg-red-50 px-3 py-2 portal-text-body text-red-800">
+        <p className="rounded-card bg-p2-danger-soft px-3 py-2 portal-text-body text-p2-danger">
           {error}
         </p>
       ) : null}
       {resent ? (
-        <p className="portal-text-body text-emerald-800 text-center">
+        <p className="portal-text-body text-p2-primary text-center">
           Neuer Code wurde gesendet.
         </p>
       ) : null}
 
       <label className="block space-y-1.5">
         <span className="portal-form-label">Bestätigungscode</span>
-        <input
+        <PortalInput
           type="text"
           inputMode="numeric"
           autoComplete="one-time-code"
@@ -119,26 +121,27 @@ export function PortalSignupOtpStep({
           onChange={(e) =>
             setCode(e.target.value.replace(/\D/g, "").slice(0, 4))
           }
-          className="portal-input w-full rounded-xl border border-border-default bg-surface-card px-3 py-3 text-center text-lg font-semibold tracking-[0.35em] focus:border-accent"
+          className="portal-input w-full rounded-field border border-border-default bg-surface-card px-3 py-3 text-center text-lg font-semibold tracking-[0.35em] focus:border-accent"
           placeholder="••••"
         />
       </label>
 
-      <button
+      <PortalButton variant="primary" action={false}
         type="submit"
         disabled={code.length !== 4}
-        className="btn-pill-primary portal-btn w-full disabled:opacity-60"
+        className="w-full disabled:opacity-60"
       >
         Code bestätigen
-      </button>
+      </PortalButton>
 
-      <button
+      <PortalButton
+        variant="ghost"
         type="button"
         onClick={() => void onResend()}
         className="w-full text-center portal-text-body font-medium text-accent underline-offset-2 hover:underline"
       >
         Code erneut senden
-      </button>
+      </PortalButton>
     </form>
   );
 }

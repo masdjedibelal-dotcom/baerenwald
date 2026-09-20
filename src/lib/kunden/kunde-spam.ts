@@ -1,3 +1,4 @@
+import { logDbError } from '@/lib/errors/log-db-error'
 import {
   normalizeKundenEmail,
 } from "@/lib/kunden/kunde-email";
@@ -39,6 +40,7 @@ export async function isKundeAlsSpamGesperrt(opts: {
       .select("id, ist_spam")
       .eq("id", kundeId)
       .maybeSingle();
+    if (error) logDbError('lib/kunden/kunde-spam:kunden', error)
     if (error) {
       if (isMissingIstSpamColumn(error)) return false;
       throw error;
@@ -54,6 +56,7 @@ export async function isKundeAlsSpamGesperrt(opts: {
       .eq("ist_spam", true)
       .limit(1)
       .maybeSingle();
+    if (error) logDbError('lib/kunden/kunde-spam:kunden', error)
     if (error) {
       if (isMissingIstSpamColumn(error)) return false;
       throw error;
@@ -69,6 +72,7 @@ export async function isKundeAlsSpamGesperrt(opts: {
       .eq("ist_spam", true)
       .limit(1)
       .maybeSingle();
+    if (error) logDbError('lib/kunden/kunde-spam:kunden', error)
     if (error) {
       if (isMissingIstSpamColumn(error)) return false;
       throw error;

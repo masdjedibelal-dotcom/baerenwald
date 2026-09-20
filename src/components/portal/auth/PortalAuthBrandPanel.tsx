@@ -36,8 +36,8 @@ export function PortalAuthBrandPanel({
   const name = authBrandName(role, orgName);
   const copy = authBrandCopy(role);
   const bg = wl
-    ? primaryDk?.trim() || "var(--org-primary-dk, #1a3d2b)"
-    : "#1a3d2b";
+    ? primaryDk?.trim() || "var(--org-primary-dk)"
+    : "var(--p2-primary-dk)";
   const wlMark = (
     logoKuerzel?.trim() ||
     name.trim().charAt(0) ||

@@ -34,6 +34,7 @@ export function resolvePartnerHandwerkerCrmDisplay(
       auftrag: {
         id: vorgang.auftrag.id,
         status: vorgang.auftrag.status,
+        titel: vorgang.auftrag.titel,
         positionen: vorgang.auftrag.positionen.map((p) => ({
           handwerker_id: p.handwerker_id,
           handwerker_status: p.handwerker_status,

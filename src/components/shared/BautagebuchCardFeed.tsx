@@ -1,7 +1,8 @@
 "use client";
 
+import { PortalIcon } from "@/components/portal/PortalIcon";
 import { useEffect, useState } from "react";
-import { ChevronDown, X } from "lucide-react";
+import { PortalButton } from "@/components/portal/PortalButton";
 
 import {
   bautagebuchAnhangLabel,
@@ -113,7 +114,7 @@ export function BautagebuchCardFeed({
         </div>
       )}
       {sorted.length === 0 ? (
-        <p className="portal-text-body rounded-xl border border-dashed border-border-light bg-muted/20 px-3 py-5 text-center text-text-secondary">
+        <p className="portal-text-body rounded-sheet border border-dashed border-border-light bg-muted/20 px-3 py-5 text-center text-text-secondary">
           {emptyText}
         </p>
       ) : (
@@ -129,8 +130,9 @@ export function BautagebuchCardFeed({
             );
             return (
               <li key={e.id}>
-                <div className="overflow-hidden rounded-xl border border-border-light bg-white shadow-[0_1px_2px_rgba(22,32,27,0.04)]">
-                  <button
+                <div className="overflow-hidden rounded-sheet border border-border-light bg-white shadow-[0_1px_2px_rgba(22,32,27,0.04)]">
+                  <PortalButton
+                    variant="ghost"
                     type="button"
                     onClick={() => setOpenId(open ? null : e.id)}
                     className="flex w-full flex-col gap-1 px-3.5 py-3 text-left transition-colors hover:bg-muted/15"
@@ -143,13 +145,10 @@ export function BautagebuchCardFeed({
                           {fmtDatum(e.datum)}
                         </p>
                       </div>
-                      <ChevronDown
-                        className={cn(
+                      <PortalIcon n="chevron-down" ctx="default" className={cn(
                           "mt-0.5 h-4 w-4 shrink-0 text-text-tertiary transition-transform",
                           open && "rotate-180"
-                        )}
-                        aria-hidden
-                      />
+                        )} aria-hidden />
                     </div>
                     {desc ? (
                       open ? null : (
@@ -158,7 +157,7 @@ export function BautagebuchCardFeed({
                         </p>
                       )
                     ) : null}
-                  </button>
+                  </PortalButton>
 
                   {open ? (
                     <div className="space-y-3 border-t border-border-light px-3.5 pb-3.5 pt-3">
@@ -174,10 +173,11 @@ export function BautagebuchCardFeed({
                       {imageFotos.length > 0 || pdfFotos.length > 0 ? (
                         <div className="flex flex-wrap gap-2">
                           {imageFotos.map((url, i) => (
-                            <button
+                            <PortalButton
+                              variant="ghost"
                               key={`${e.id}-foto-${i}`}
                               type="button"
-                              className="block h-[4.5rem] w-[4.5rem] overflow-hidden rounded-xl border border-border-light bg-muted/20 sm:h-24 sm:w-24"
+                              className="block h-[4.5rem] w-[4.5rem] overflow-hidden rounded-sheet border border-border-light bg-muted/20 sm:h-24 sm:w-24"
                               onClick={() => openLightbox(imageFotos, i)}
                               aria-label={`${bautagebuchAnhangLabel(url, i)} vergrößern`}
                             >
@@ -187,7 +187,7 @@ export function BautagebuchCardFeed({
                                 alt={bautagebuchAnhangLabel(url, i)}
                                 className="h-full w-full object-cover"
                               />
-                            </button>
+                            </PortalButton>
                           ))}
                           {pdfFotos.map((url, i) => (
                             <a
@@ -195,7 +195,7 @@ export function BautagebuchCardFeed({
                               href={url}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="portal-text-body inline-flex min-h-[44px] items-center gap-1.5 rounded-lg border border-border-light bg-surface-card px-3 py-2 font-medium text-brand-primary hover:bg-muted/30"
+                              className="portal-text-body inline-flex min-h-[44px] items-center gap-1.5 rounded-card border border-border-light bg-surface-card px-3 py-2 font-medium text-brand-primary hover:bg-muted/30"
                             >
                               {bautagebuchAnhangLabel(url, i)}
                             </a>
@@ -219,23 +219,24 @@ export function BautagebuchCardFeed({
           aria-label="Foto-Ansicht"
           onClick={() => setLightbox(null)}
         >
-          <button
+          <PortalButton
+            variant="ghost"
             type="button"
-            className="absolute right-4 top-4 rounded-full bg-white/15 p-2 text-white"
+            className="absolute right-4 top-4 rounded-pill bg-white/15 p-2 text-white"
             aria-label="Schließen"
             onClick={() => setLightbox(null)}
           >
-            <X className="h-5 w-5" aria-hidden />
-          </button>
+            <PortalIcon n="x" ctx="default" className="h-5 w-5" aria-hidden />
+          </PortalButton>
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src={lightbox.urls[lightbox.index]}
             alt=""
-            className="max-h-[90vh] max-w-[min(96vw,1100px)] rounded-lg object-contain"
+            className="max-h-[90vh] max-w-[min(96vw,1100px)] rounded-card object-contain"
             onClick={(ev) => ev.stopPropagation()}
           />
           {lightbox.urls.length > 1 ? (
-            <p className="absolute bottom-5 left-1/2 -translate-x-1/2 rounded-full bg-black/55 px-3 py-1 text-[13px] font-semibold text-white">
+            <p className="absolute bottom-5 left-1/2 -translate-x-1/2 rounded-pill bg-black/55 px-3 py-1 text-fs-meta font-semibold text-white">
               {lightbox.index + 1} / {lightbox.urls.length}
             </p>
           ) : null}

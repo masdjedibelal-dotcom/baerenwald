@@ -1,10 +1,13 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { PortalButton } from "@/components/portal/PortalButton";
 
+import { PortalDate, PortalInput, PortalSelect, PortalTextarea } from "@/components/shared/PortalFormControls";
 import { PortalActionMenu } from "@/components/shared/PortalActionMenu";
 import { PortalDetailCard } from "@/components/shared/PortalDetailCard";
 import { PortalEntityList } from "@/components/shared/PortalEntityList";
+import { PortalField } from "@/components/shared/PortalField";
 import { PortalInboxEmpty } from "@/components/shared/PortalEmptyState";
 import { PortalInlineLoading } from "@/components/shared/PortalInlineLoading";
 import { PortalModalShell } from "@/components/shared/PortalModalShell";
@@ -16,8 +19,10 @@ import {
   resolvePruefpflichtBadge,
   type PruefpflichtBadgeStatus,
 } from "@/lib/org/pruefpflichten-catalog";
+import { useFieldErrors } from "@/lib/portal2/form-schema";
 import { portalToastError, portalToastSaved } from "@/lib/shared/portal-toast";
 import { cn } from "@/lib/utils";
+import { TOAST } from '@/lib/portal-copy'
 
 type Pruefpflicht = {
   id: string;
@@ -32,9 +37,9 @@ type Pruefpflicht = {
 };
 
 const BADGE_CLASS: Record<PruefpflichtBadgeStatus, string> = {
-  ueberfaellig: "bg-red-100 text-red-800",
-  bald_faellig: "bg-amber-100 text-amber-900",
-  ok: "bg-emerald-50 text-emerald-800",
+  ueberfaellig: "bg-p2-danger-soft text-p2-danger",
+  bald_faellig: "bg-warning-bg text-warning-text",
+  ok: "bg-p2-primary-soft text-p2-primary",
   kein_datum: "bg-muted text-text-secondary",
 };
 
@@ -53,6 +58,9 @@ function fmtDatum(iso: string | null | undefined): string {
 }
 
 export function OrganisationObjektPruefpflichtenPanel({ objektId }: { objektId: string }) {
+  const formRef = useRef<HTMLDivElement>(null);
+  const { fieldErrors, applyFieldErrors, clearFieldErrors, clearField } =
+    useFieldErrors();
   const [items, setItems] = useState<Pruefpflicht[]>([]);
   const [sheetOpen, setSheetOpen] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
@@ -105,6 +113,7 @@ export function OrganisationObjektPruefpflichtenPanel({ objektId }: { objektId: 
     setLetzte("");
     setIntervall(String(pruefpflichtTypBySchluessel("legionellen")?.intervallMonate ?? ""));
     setNotiz("");
+    clearFieldErrors();
     setSheetOpen(true);
   }
 
@@ -116,16 +125,22 @@ export function OrganisationObjektPruefpflichtenPanel({ objektId }: { objektId: 
     setLetzte(p.letzte_pruefung?.slice(0, 10) ?? "");
     setIntervall(p.intervall_monate != null ? String(p.intervall_monate) : "");
     setNotiz(p.notiz ?? "");
+    clearFieldErrors();
     setSheetOpen(true);
   }
 
+  /* FORM_VALIDATION: org-pruefpflichten */
   async function save() {
     const def = pruefpflichtTypBySchluessel(typSchluessel);
     if (!def) return;
     if (typSchluessel === "sonstiges" && !sonstigesLabel.trim()) {
-      portalToastError("Bitte Bezeichnung für Sonstiges angeben.");
+      applyFieldErrors(
+        { sonstiges: TOAST.bitte_bezeichnung_fuer_sonstiges_angeben },
+        formRef.current
+      );
       return;
     }
+    clearFieldErrors();
     setBusy(true);
     try {
       const body = {
@@ -209,7 +224,7 @@ export function OrganisationObjektPruefpflichtenPanel({ objektId }: { objektId: 
               const statusBadge = (
                 <span
                   className={cn(
-                    "rounded-full px-2 py-0.5 text-[11px] font-semibold",
+                    "rounded-pill px-2 py-0.5 text-fs-caption font-semibold",
                     BADGE_CLASS[badge]
                   )}
                 >
@@ -261,16 +276,18 @@ export function OrganisationObjektPruefpflichtenPanel({ objektId }: { objektId: 
         dirty
         busy={busy}
       >
-        <div className="space-y-3">
-          <label className="block text-[13px]">
+        {/* FORM_VALIDATION: org-pruefpflichten */}
+        <div ref={formRef} className="space-y-3">
+          <label className="block text-fs-meta">
             <span className="portal-text-label mb-1 block">Typ</span>
-            <select
+            <PortalSelect
               className="portal-field w-full"
               value={typSchluessel}
               disabled={Boolean(editId)}
               onChange={(e) => {
                 const v = e.target.value;
                 setTypSchluessel(v);
+                clearField("sonstiges");
                 const t = pruefpflichtTypBySchluessel(v);
                 if (t?.intervallMonate) setIntervall(String(t.intervallMonate));
               }}
@@ -280,47 +297,58 @@ export function OrganisationObjektPruefpflichtenPanel({ objektId }: { objektId: 
                   {t.label}
                 </option>
               ))}
-            </select>
+            </PortalSelect>
           </label>
           {typSchluessel === "sonstiges" ? (
-            <input
-              className="portal-field w-full"
-              placeholder="Bezeichnung"
-              value={sonstigesLabel}
-              onChange={(e) => setSonstigesLabel(e.target.value)}
-            />
+            <PortalField
+              label="Bezeichnung"
+              name="sonstiges"
+              required
+              error={fieldErrors.sonstiges}
+            >
+              <PortalInput
+                className="portal-field w-full"
+                placeholder="Bezeichnung"
+                value={sonstigesLabel}
+                onChange={(e) => {
+                  setSonstigesLabel(e.target.value);
+                  clearField("sonstiges");
+                }}
+              />
+            </PortalField>
           ) : null}
-          <label className="block text-[13px]">
+          <label className="block text-fs-meta">
             <span className="portal-text-label mb-1 block">Nächste Fälligkeit</span>
-            <input type="date" className="portal-field w-full" value={naechste} onChange={(e) => setNaechste(e.target.value)} />
+            <PortalDate className="portal-field w-full" value={naechste} onChange={(e) => setNaechste(e.target.value)} />
           </label>
           {vorschlagNaechste ? (
-            <button
+            <PortalButton
+              variant="ghost"
               type="button"
               className="text-xs font-semibold text-accent"
               onClick={() => setNaechste(vorschlagNaechste)}
             >
               Vorschlag übernehmen: {fmtDatum(vorschlagNaechste)}
-            </button>
+            </PortalButton>
           ) : null}
-          <label className="block text-[13px]">
+          <label className="block text-fs-meta">
             <span className="portal-text-label mb-1 block">Letzte Prüfung</span>
-            <input type="date" className="portal-field w-full" value={letzte} onChange={(e) => setLetzte(e.target.value)} />
+            <PortalDate className="portal-field w-full" value={letzte} onChange={(e) => setLetzte(e.target.value)} />
           </label>
-          <label className="block text-[13px]">
+          <label className="block text-fs-meta">
             <span className="portal-text-label mb-1 block">Intervall (Monate)</span>
-            <select className="portal-field w-full" value={intervall} onChange={(e) => setIntervall(e.target.value)}>
+            <PortalSelect className="portal-field w-full" value={intervall} onChange={(e) => setIntervall(e.target.value)}>
               <option value="">Keins</option>
               {[6, 12, 24, 36, 48].map((m) => (
                 <option key={m} value={m}>
                   {m} Monate
                 </option>
               ))}
-            </select>
+            </PortalSelect>
           </label>
-          <label className="block text-[13px]">
+          <label className="block text-fs-meta">
             <span className="portal-text-label mb-1 block">Notiz</span>
-            <textarea className="portal-field w-full min-h-[72px]" value={notiz} onChange={(e) => setNotiz(e.target.value)} maxLength={500} />
+            <PortalTextarea className="portal-field w-full min-h-[72px]" value={notiz} onChange={(e) => setNotiz(e.target.value)} maxLength={500} />
           </label>
         </div>
       </PortalModalShell>

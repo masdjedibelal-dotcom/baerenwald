@@ -1,19 +1,20 @@
 "use client";
 
-import type { LucideIcon } from "lucide-react";
 import { useEffect, useRef, type ReactNode } from "react";
+import { PortalButton } from "@/components/portal/PortalButton";
 
 import { usePortalBusy } from "@/components/shared/PortalBusyContext";
 import { PortalContentBusy } from "@/components/shared/PortalContentBusy";
 import { PortalDocViewerProvider } from "@/components/shared/PortalDocViewerContext";
 import { PortalHeader, type PortalHeaderUser } from "@/components/shared/PortalHeader";
 import { PortalLegalFooter } from "@/components/shared/PortalLegalFooter";
-import { MockIcon } from "@/components/shared/MockIcon";
+import { PortalIcon } from "@/components/portal/PortalIcon";
 import { PortalNavIcon } from "@/components/shared/PortalNavIcon";
 import { PortalCountBadge } from "@/components/shared/PortalNavCountBadge";
 import { PortalOfflineGate } from "@/components/shared/PortalOfflineGate";
 import { PortalTopbar } from "@/components/shared/PortalTopbar";
 import { applyBrandStyle } from "@/lib/portal2/apply-brand";
+import type { MockIconName } from "@/lib/portal2/mock-icons";
 import type { PortalNavKey } from "@/lib/portal2/nav-items";
 import { cn } from "@/lib/utils";
 
@@ -22,8 +23,8 @@ export type PortalShellNavItem = {
   label: string;
   /** Mock `navItems` Key → PortalNavIcon (bevorzugt). */
   navKey?: PortalNavKey | string;
-  /** Fallback Lucide, wenn kein navKey. */
-  icon?: LucideIcon;
+  /** Fallback PortalIcon-Name, wenn kein navKey. */
+  icon?: MockIconName;
   badge?: number;
   /** z. B. „In Kürze“ — Inline-Badge hinter dem Label */
   tag?: string;
@@ -141,8 +142,14 @@ function NavGlyph({
     );
   }
   if (item.icon) {
-    const Icon = item.icon;
-    return <Icon className="shrink-0" style={{ width: size, height: size }} aria-hidden />;
+    return (
+      <PortalIcon
+        n={item.icon}
+        ctx="sidebar"
+        size={size}
+        className="shrink-0"
+      />
+    );
   }
   return null;
 }
@@ -277,7 +284,8 @@ export function PortalShell({
       (item.id === "mehr" &&
         ["leistungen", "marktplatz", "profil"].includes(activeNavId));
     return (
-      <button
+      <PortalButton
+        variant="ghost"
         key={item.id}
         type="button"
         onClick={() => onNavChange(item.id)}
@@ -298,14 +306,15 @@ export function PortalShell({
             />
           ) : null}
         </span>
-      </button>
+      </PortalButton>
     );
   }
 
   function renderMobileCreate() {
     if (!createAction || !createLabel) return null;
     return (
-      <button
+      <PortalButton
+        variant="ghost"
         type="button"
         className="portal-shell-mobile-create"
         onClick={createAction.onClick}
@@ -313,9 +322,9 @@ export function PortalShell({
         title={createLabel}
       >
         <span className="portal-shell-mobile-create-btn">
-          <MockIcon n="plus" ctx="sidebar" size={20} />
+          <PortalIcon n="plus" ctx="sidebar" size={20} />
         </span>
-      </button>
+      </PortalButton>
     );
   }
 
@@ -352,21 +361,23 @@ export function PortalShell({
                 </div>
 
                 {createAction && createLabel ? (
-                  <button
+                  <PortalButton
+                    variant="ghost"
                     type="button"
                     className="portal-shell-create"
                     onClick={createAction.onClick}
                   >
-                    <MockIcon n="plus" ctx="sidebar" size={17} className="portal-shell-create-icon" />
+                    <PortalIcon n="plus" ctx="sidebar" size={17} className="portal-shell-create-icon" />
                     <span>{createLabel}</span>
-                  </button>
+                  </PortalButton>
                 ) : null}
 
                 <nav className="portal-shell-nav flex-1" aria-label="Hauptnavigation">
                   {nav.map((item) => {
                     const active = activeNavId === item.id;
                     return (
-                      <button
+                      <PortalButton
+                        variant="ghost"
                         key={item.id}
                         type="button"
                         onClick={() => onNavChange(item.id)}
@@ -398,7 +409,7 @@ export function PortalShell({
                             className="portal-shell-nav-badge"
                           />
                         ) : null}
-                      </button>
+                      </PortalButton>
                     );
                   })}
                 </nav>
@@ -451,7 +462,7 @@ export function PortalShell({
                     </div>
                     {showContentBusy ? (
                       <div
-                        className="absolute inset-0 z-[80] bg-[var(--surface-page,#fff)]"
+                        className="absolute inset-0 z-[80] bg-[var(--surface-page)]"
                         role="presentation"
                       >
                         <div className="sticky top-[max(1rem,18vh)] flex justify-center px-3 py-6">

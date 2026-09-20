@@ -19,6 +19,15 @@
   padding: 1rem 1rem calc(1rem + env(safe-area-inset-bottom, 0px));
 }
 
+/* Eingeloggt: Banner über Bottom-Nav, unter Sticky-Aktionsleisten (z-index 55) */
+@media (max-width: 1023px) {
+  body:has(.portal-shell) .cookie-consent-banner:not(.cookie-consent-banner--settings) {
+    bottom: var(--portal-mobile-nav-h, calc(5.5rem + env(safe-area-inset-bottom, 0px)));
+    z-index: 45;
+    padding-bottom: 1rem;
+  }
+}
+
 .cookie-consent-inner {
   margin: 0 auto;
   display: flex;
@@ -178,6 +187,12 @@
   font: inherit;
   cursor: pointer;
   text-decoration: none;
+  min-height: 44px;
+  min-width: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
 }
 
 .cookie-settings-link:hover {
