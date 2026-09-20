@@ -17,7 +17,6 @@ import {
 } from "@/components/shared/PortalBusyContext";
 import { PortalContentBusy } from "@/components/shared/PortalContentBusy";
 import { PortalListCard } from "@/components/shared/PortalListCard";
-import { PortalActionMenu } from "@/components/shared/PortalActionMenu";
 import { OrganisationObjektCover } from "@/components/org/OrganisationObjektCover";
 import { PortalEntityDetailLayout } from "@/components/shared/PortalEntityDetailLayout";
 import { PortalInboxEmpty } from "@/components/shared/PortalEmptyState";
@@ -614,17 +613,6 @@ export function HausmeisterPortalClient({
                       meta={row.meta}
                       showChevron
                       onClick={() => openVorgangById(row.id)}
-                      trailingActions={
-                        <PortalActionMenu
-                          title="Aktionen"
-                          items={[
-                            {
-                              label: "Öffnen",
-                              onClick: () => openVorgangById(row.id),
-                            },
-                          ]}
-                        />
-                      }
                     />
                     );
                   })}

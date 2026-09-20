@@ -4,6 +4,71 @@ Belal committed über GitHub Desktop auf **staging**.
 
 ---
 
+## HV Portal: Vorgang hängt auf „wird geladen…“ — 2026-09-20
+
+**Commit-Text:** `fix: HV-Portal Vorgang-Detail nicht mehr endlos laden`
+
+### Dateien
+- `src/components/portal/PortalClient.tsx` — Fetch-Generation + Settled-Guard; Cleanup gibt Busy frei; Timeout 20s; Fehler-UI statt Endlos-Busy; Parent `onDetailReady` auch wenn forceDetailId schon selected
+- `src/components/org/OrganisationPortalClient.tsx` — Safety-Timeout 25s für `pendingDetailId` / Nav-Hold
+- `docs/COMMIT-PLAN.md` — dieser Abschnitt
+
+**Ursache:** Abgebrochener Detail-Fetch ließ `hold()` + `pendingDetailId` stehen; URL-/Layout-Sync setzte `detailLoading` erneut ohne neuen Fetch.
+
+---
+
+## Vorgänge-Listenkarten App-like — 2026-09-20
+
+**Commit-Text:** `fix: Vorgangs-Karten flach wie Zuletzt (kein Doppel-Rand, kein ⋯)`
+
+### Dateien
+- `src/components/shared/PortalListCard.tsx` — flache Karte; kein Ghost-Innenrahmen; ⋯ nur bei echten Aktionen
+- `src/components/portal/PortalClient.tsx` — redundantes Details-⋯ entfernt
+- `src/components/portal/EigentuemerPortalClient.tsx` — dito
+- `src/components/portal/HausmeisterPortalClient.tsx` — dito
+- `src/components/partner/PartnerClient.tsx` — dito
+- `src/app/globals.css` — `.portal-list-card-main` ohne Border; Padding wie Zuletzt
+- `docs/COMMIT-PLAN.md` — dieser Abschnitt
+
+**Ursache:** Innerer `PortalButton` ghost (= Rand) + ⋯-Menü nur mit „Öffnen/Details“.
+
+---
+
+## Zuletzt-Cards größer (App-Listenmaß) — 2026-09-20
+
+**Commit-Text:** `fix: Dashboard „Zuletzt“-Karten wieder Listengröße (nicht portal-btn-Höhe)`
+
+### Dateien
+- `src/app/globals.css` — recent-item height:auto/min 72px; Titel 17px; Meta 14px; Override gegen `.portal-btn`
+- `src/components/shared/PortalScreenDashboard.tsx` — `action={false}` (kein ghost-Action-Chrome)
+- `docs/COMMIT-PLAN.md` — dieser Abschnitt
+
+**Ursache:** `PortalButton` → `.portal-btn { height: 46px }` hat die Zwei-Zeilen-Karten gequetscht.
+
+---
+
+## KI-Chat Composer weiß + Feld-Parität — 2026-09-20
+
+**Commit-Text:** `fix: KI-Assist-Composer weiß; Chat-Feld wie globales Design`
+
+### Dateien
+- `src/components/shared/portal-ki-gpt-chat.css` — Funnel-Shell weiß; Composer weiß; Textarea ohne portal-field-88px; Senden grün/soft
+- `src/components/shared/PortalKiAssistField.tsx` — Send-Button `action={false}` (kein ghost-Grau)
+- `docs/COMMIT-PLAN.md` — dieser Abschnitt
+
+**Ursache:** Funnel-Panel `#f5f6f4` + `textarea.portal-field` (min-height 88, eigener Rand) + ghost-Send.
+
+---
+
+## KI-Hilfe Label am Sparkles-Icon — 2026-09-20
+
+**Commit-Text:** `UX: KI-Assist-Button mit Label „KI-Hilfe“`
+
+### Dateien
+- `src/components/shared/PortalKiAssistField.tsx` — Sparkles-Icon + Text „KI-Hilfe“ (Funnel Beschreibung, Partner, Org, …)
+
+---
+
 ## O1 / O2 / O5 — Freigaben 2026-09-20
 
 **Commit-Text:** `O1/O2/O5: docs versionieren, @-Alias README, renderPdfViaCrm`

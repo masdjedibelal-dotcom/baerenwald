@@ -76,7 +76,6 @@ import {
 } from "@/lib/list-return-url";
 import { useListUrlState } from "@/hooks/useListUrlState";
 import { PortalInboxEmpty } from "@/components/shared/PortalEmptyState";
-import { PortalActionMenu } from "@/components/shared/PortalActionMenu";
 import { PORTAL_EMPTY_TITLE, portalEmptySubtitle } from "@/lib/portal2/portal-states";
 import { PortalListCard } from "@/components/shared/PortalListCard";
 import {
@@ -428,6 +427,10 @@ export function PortalClient({
   const ignoreUrlDetailRef = useRef(false);
   /** Beim Öffnen: veraltete URL-id vom vorherigen Detail verwerfen. */
   const pendingDetailIdRef = useRef<string | null>(null);
+  /** Generation: abgebrochene Fetches dürfen Busy nicht „vergessen“. */
+  const detailFetchGenRef = useRef(0);
+  /** Nach Abschluss für diese ID kein erneutes Endlos-Loading (URL-/Layout-Sync). */
+  const detailFetchSettledIdRef = useRef<string | null>(null);
 
   function beginDetailBusy() {
     if (!detailHoldRef.current) {
@@ -441,14 +444,14 @@ export function PortalClient({
     });
   }
 
-  function endDetailBusy() {
+  function endDetailBusy(opts?: { notifyReady?: boolean }) {
     setDetailLoading(false);
     setPageBusy(false);
     if (detailHoldRef.current) {
       detailHoldRef.current = false;
       release();
     }
-    onDetailReady?.();
+    if (opts?.notifyReady !== false) onDetailReady?.();
   }
 
   function flashNavBusy(ms = PORTAL_BUSY_MIN_MS) {
@@ -688,6 +691,7 @@ export function PortalClient({
   useLayoutEffect(() => {
     if (!selectedId) {
       setDetailLoading(false);
+      detailFetchSettledIdRef.current = null;
       return;
     }
     if (
@@ -696,11 +700,26 @@ export function PortalClient({
     ) {
       return;
     }
+    // Fetch für diese ID schon durch — nicht wieder in Endlos-Busy.
+    if (detailFetchSettledIdRef.current === selectedId) return;
     setDetailLoading(true);
   }, [selectedId, detailItem]);
 
+  /**
+   * Parent setzt forceDetailId + beginNavHold. Wenn selectedId schon passt
+   * (Init-State / Re-Open), läuft kein neuer Fetch — Busy trotzdem freigeben.
+   */
+  useEffect(() => {
+    const forced = forceDetailId?.trim() || null;
+    if (!forced || !onDetailReady) return;
+    if (selectedId !== forced) return;
+    if (detailLoading) return;
+    onDetailReady();
+  }, [forceDetailId, selectedId, detailLoading, onDetailReady]);
+
   useEffect(() => {
     if (!selectedId) {
+      detailFetchSettledIdRef.current = null;
       setDetailItem(null);
       setDetailLoading(false);
       setPageBusy(false);
@@ -708,19 +727,35 @@ export function PortalClient({
         detailHoldRef.current = false;
         release();
       }
+      onDetailReady?.();
       return;
     }
-    let cancelled = false;
+    const fetchId = selectedId;
+    const gen = ++detailFetchGenRef.current;
+    detailFetchSettledIdRef.current = null;
+    let settled = false;
+    let finishTimer: number | null = null;
+    const finish = () => {
+      if (settled) return;
+      settled = true;
+      if (gen !== detailFetchGenRef.current) return;
+      detailFetchSettledIdRef.current = fetchId;
+      endDetailBusy();
+    };
     beginDetailBusy();
     const started = Date.now();
     const q = hvPortalMode ? "?hv=1" : "";
-    void fetch(`/api/portal/vorgaenge/${encodeURIComponent(selectedId)}${q}`)
+    const ac = new AbortController();
+    const timeoutId = window.setTimeout(() => ac.abort(), 20_000);
+    void fetch(`/api/portal/vorgaenge/${encodeURIComponent(fetchId)}${q}`, {
+      signal: ac.signal,
+    })
       .then(async (res) => {
         if (!res.ok) return null;
         return (await res.json()) as { item?: KundePortalDetailItem };
       })
       .then((json) => {
-        if (cancelled) return;
+        if (gen !== detailFetchGenRef.current) return;
         if (json?.item) {
           setDetailItem(json.item);
           const t = json.item.title?.trim();
@@ -736,16 +771,26 @@ export function PortalClient({
         }
       })
       .catch(() => {
-        /* Liste bleibt Fallback */
+        /* Liste / Fehler-UI als Fallback */
       })
       .finally(() => {
+        window.clearTimeout(timeoutId);
         const wait = Math.max(0, PORTAL_BUSY_MIN_MS - (Date.now() - started));
-        window.setTimeout(() => {
-          if (!cancelled) endDetailBusy();
-        }, wait);
+        finishTimer = window.setTimeout(finish, wait);
       });
     return () => {
-      cancelled = true;
+      ac.abort();
+      window.clearTimeout(timeoutId);
+      if (finishTimer != null) window.clearTimeout(finishTimer);
+      // Hold freigeben, aber Parent-pending nicht clearen (ID-Wechsel A→B).
+      if (gen === detailFetchGenRef.current) {
+        detailFetchGenRef.current += 1;
+        detailFetchSettledIdRef.current = fetchId;
+        if (!settled) {
+          settled = true;
+          endDetailBusy({ notifyReady: false });
+        }
+      }
     };
     // begin/endDetailBusy stabil über Refs
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -839,6 +884,8 @@ export function PortalClient({
           pendingDetailIdRef.current = null;
         }
         if (
+          detailFetchSettledIdRef.current !== matched.id &&
+          detailFetchSettledIdRef.current !== rawId &&
           !(
             detailItem &&
             (detailItem.id === matched.id || detailItem.leadId === matched.id)
@@ -859,7 +906,9 @@ export function PortalClient({
       if (pending && pending === rawId) {
         pendingDetailIdRef.current = null;
       }
-      setDetailLoading(true);
+      if (detailFetchSettledIdRef.current !== rawId) {
+        setDetailLoading(true);
+      }
       setSelectedId(rawId);
     };
 
@@ -1090,17 +1139,6 @@ export function PortalClient({
         showLeftAccent={false}
         showChevron
         attentionBadge={btUnread > 0 ? btUnread : null}
-        trailingActions={
-          <PortalActionMenu
-            title="Aktionen"
-            items={[
-              {
-                label: "Details",
-                onClick: () => openVorgang(row),
-              },
-            ]}
-          />
-        }
       />
     );
   }
@@ -1244,10 +1282,17 @@ export function PortalClient({
       />
     </div>
   ) : selectedId ? (
-    <PortalContentBusy
-      title="Vorgang wird geladen…"
-      body="Einen Moment — wir öffnen die Details."
-    />
+    <div className="flex min-h-[40vh] flex-col items-start justify-center gap-3 px-1 py-8">
+      <p className="text-fs-title font-semibold text-[var(--p2-ink)]">
+        Vorgang konnte nicht geladen werden
+      </p>
+      <p className="text-fs-body text-[var(--p2-muted)]">
+        Bitte zurück zur Liste und erneut öffnen.
+      </p>
+      <button type="button" className="btn primary" onClick={closeDetail}>
+        Zurück zur Liste
+      </button>
+    </div>
   ) : null;
 
   /** Mock: Liste und Detail sind getrennte Screens — kein Split-Pane. */

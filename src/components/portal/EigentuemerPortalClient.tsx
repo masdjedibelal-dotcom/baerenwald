@@ -21,7 +21,6 @@ import { PortalListCard } from "@/components/shared/PortalListCard";
 import { PortalEntityDetailLayout } from "@/components/shared/PortalEntityDetailLayout";
 import { PortalDetailKeyValues } from "@/components/shared/PortalDetailUi";
 import { PortalInboxEmpty } from "@/components/shared/PortalEmptyState";
-import { PortalActionMenu } from "@/components/shared/PortalActionMenu";
 import {
   PORTAL_LIST_PAGE_SIZE,
   PortalListPagination,
@@ -735,17 +734,6 @@ export function EigentuemerPortalClient({
                     meta={row.meta}
                     showChevron
                     onClick={() => openVorgangById(row.id)}
-                    trailingActions={
-                      <PortalActionMenu
-                        title="Aktionen"
-                        items={[
-                          {
-                            label: "Öffnen",
-                            onClick: () => openVorgangById(row.id),
-                          },
-                        ]}
-                      />
-                    }
                   />
                   );
                 })}

@@ -182,6 +182,7 @@ export function PortalScreenDashboard({
               recent.map((v) => (
                 <PortalButton
                   variant="ghost"
+                  action={false}
                   key={v.id}
                   type="button"
                   onClick={() => onOpenItem(v.id)}

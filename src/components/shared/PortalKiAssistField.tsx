@@ -208,11 +208,12 @@ export function PortalKiAssistField({
             type="button"
             disabled={disabled}
             onClick={openChat}
-            title="KI-Assistent öffnen"
-            aria-label="KI-Assistent öffnen"
-            className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-pill border border-border-default bg-white text-[var(--org-primary,var(--p2-primary))] transition-colors hover:bg-[var(--org-primary-soft,var(--p2-primary-soft))] disabled:opacity-50"
+            title="KI-Hilfe öffnen"
+            aria-label="KI-Hilfe öffnen"
+            className="inline-flex h-7 shrink-0 items-center gap-1 rounded-pill border border-border-default bg-white px-2 text-[length:var(--fs-meta)] font-semibold text-[var(--org-primary,var(--p2-primary))] transition-colors hover:bg-[var(--org-primary-soft,var(--p2-primary-soft))] disabled:opacity-50"
           >
-            <PortalIcon n="sparkles" ctx="default" className="h-3.5 w-3.5" aria-hidden />
+            <PortalIcon n="sparkles" ctx="default" className="h-3.5 w-3.5 shrink-0" aria-hidden />
+            <span>KI-Hilfe</span>
           </PortalButton>
         </div>
         {labelExtra}
@@ -357,6 +358,7 @@ export function PortalKiAssistField({
               {!voiceActive ? (
                 <PortalButton
                   variant="ghost"
+                  action={false}
                   type="button"
                   disabled={pending || !input.trim()}
                   onClick={() => void send()}

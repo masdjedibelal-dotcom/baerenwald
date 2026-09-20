@@ -1,4 +1,4 @@
-"use client";
+'use client';
 
 import { PortalIcon } from "@/components/portal/PortalIcon";
 import type { ReactNode } from "react";
@@ -48,7 +48,7 @@ export type PortalListCardProps = {
   footer?: ReactNode;
   /**
    * Footer-Aktionen mit stopPropagation (z. B. Aushang ⋯).
-   * Wird unter dem Content gerendert; `footer` bleibt parallel nutzbar.
+   * Nur setzen, wenn echte Zusatzaktionen nötig sind — nicht nur „Öffnen“.
    */
   trailingActions?: ReactNode;
   /** Cover oben (card/responsive) bzw. links bei row. */
@@ -58,7 +58,7 @@ export type PortalListCardProps = {
   /** Mock-Liste: Chevron rechts */
   showChevron?: boolean;
   /**
-   * `responsive` = weiße Karte (Default, wie CRM Mobil).
+   * `responsive` = weiße Karte (Default, wie CRM Mobil / Dashboard „Zuletzt“).
    * `card` = identisch · `row` = flache Zeile in Panel.
    */
   variant?: PortalListVariant;
@@ -88,35 +88,17 @@ function StatusWord({
   if (!statusLabel.trim()) return null;
   return (
     <span
-      className={cn(
-        "portal-status-word",
-        !statusPillStyle && statusPillClass
-      )}
-      style={
-        statusPillStyle
-          ? { color: statusPillStyle.color }
-          : undefined
-      }
+      className={cn("portal-status-word", !statusPillStyle && statusPillClass)}
+      style={statusPillStyle ? { color: statusPillStyle.color } : undefined}
     >
       {statusLabel}
     </span>
   );
 }
 
-function TrailingActionsSlot({ children }: { children: ReactNode }) {
-  return (
-    <div
-      className="mt-2"
-      onClick={(e) => e.stopPropagation()}
-      onKeyDown={(e) => e.stopPropagation()}
-    >
-      {children}
-    </div>
-  );
-}
-
 /**
- * Vorgangs-Listenzeile — C1: weiße Karte auf Page-BG (`card` / `responsive`).
+ * Vorgangs-Listenzeile — flache weiße App-Karte (Parität Dashboard „Zuletzt“).
+ * Kein verschachtelter Ghost-Button (sonst Doppel-Rand), kein Pflicht-⋯.
  */
 export function PortalListCard({
   selected,
@@ -141,12 +123,17 @@ export function PortalListCard({
   onCheckedChange,
   attentionBadge,
 }: PortalListCardProps) {
+  void _idLabel;
   const showAttention = Boolean(attentionBadge && attentionBadge > 0);
+  const metaLine =
+    meta.length > 0 ? meta.map((m) => m.text).join(" · ") : null;
+  const subLine = subtitle?.trim() || metaLine;
 
   if (variant === "row") {
     return (
       <PortalButton
         variant="ghost"
+        action={false}
         type="button"
         onClick={onClick}
         className={cn(
@@ -172,51 +159,38 @@ export function PortalListCard({
         <div className="min-w-0 flex-1">
           <div className="flex items-start justify-between gap-2">
             <div className="min-w-0 flex-1">
-              {/* Deep Green: Vorgangsnummer (idLabel) entfällt in Listen */}
               <StatusWord
                 statusLabel={statusLabel}
                 statusPillClass={statusPillClass}
                 statusPillStyle={statusPillStyle}
               />
               <p className="portal-text-card-title mt-1 line-clamp-2">{title}</p>
-              {subtitle ? (
+              {subLine ? (
                 <p className="portal-text-meta mt-1 line-clamp-2 text-text-secondary">
-                  {subtitle}
+                  {subLine}
                 </p>
               ) : null}
             </div>
             <div className="flex shrink-0 items-center gap-1.5 self-center pt-3.5">
               {showChevron ? (
-                <PortalIcon n="chevron-right" ctx="muted" className="h-5 w-5 text-[var(--p2-faint2)]" aria-hidden />
+                <PortalIcon
+                  n="chevron-right"
+                  ctx="muted"
+                  className="h-5 w-5 text-[var(--p2-faint2)]"
+                  aria-hidden
+                />
               ) : null}
             </div>
           </div>
-
-          {meta.length > 0 ? (
-            <ul className="mt-2 space-y-1">
-              {meta.map((m, i) => {
-                return (
-                  <li
-                    key={`${m.text}-${i}`}
-                    className="portal-text-meta flex items-center gap-2 text-text-secondary"
-                  >
-                    {m.icon ? (
-                      <PortalIcon
-                        n={m.icon}
-                        ctx="muted"
-                        className="h-4 w-4 shrink-0 text-text-tertiary"
-                      />
-                    ) : null}
-                    <span className="truncate">{m.text}</span>
-                  </li>
-                );
-              })}
-            </ul>
-          ) : null}
-
           {footer ? <div className="mt-2">{footer}</div> : null}
           {trailingActions ? (
-            <TrailingActionsSlot>{trailingActions}</TrailingActionsSlot>
+            <div
+              className="mt-2"
+              onClick={(e) => e.stopPropagation()}
+              onKeyDown={(e) => e.stopPropagation()}
+            >
+              {trailingActions}
+            </div>
           ) : null}
           {hint ? (
             <p className="portal-text-meta mt-2 text-text-tertiary">{hint}</p>
@@ -226,8 +200,7 @@ export function PortalListCard({
     );
   }
 
-  // card | responsive
-  const isCardShell = variant === "card" || variant === "responsive";
+  // card | responsive — eine flache App-Karte wie „Zuletzt“
   const hasMedia = Boolean(media);
   const responsiveMedia = variant === "responsive" && hasMedia;
 
@@ -236,15 +209,18 @@ export function PortalListCard({
       className={cn(
         "relative",
         portalListItemClass(variant, { selected }),
+        "portal-list-card--flat",
+        !hasMedia && "portal-list-card--padded",
         hasMedia && variant === "card" && "flex-col !gap-0 overflow-hidden !p-0",
         responsiveMedia &&
           "flex-col !gap-0 overflow-hidden !p-0 lg:flex-row lg:items-stretch lg:!gap-3 lg:!p-0 lg:pl-0"
       )}
-      style={isCardShell ? portalListItemBorderStyle(variant) : undefined}
+      style={portalListItemBorderStyle(variant)}
     >
       {showAttention ? (
         <PortalCountBadge count={attentionBadge!} variant="corner" className="z-10" />
       ) : null}
+
       {hasMedia ? (
         <div
           className={cn(
@@ -263,10 +239,10 @@ export function PortalListCard({
 
       <div
         className={cn(
-          "flex w-full items-stretch gap-3.5",
-          hasMedia && variant === "card" && "px-4 py-[15px]",
+          "flex w-full min-w-0 items-stretch gap-3",
+          hasMedia && variant === "card" && "px-4 py-4",
           responsiveMedia &&
-            "px-4 py-[15px] lg:min-w-0 lg:flex-1 lg:py-[15px] lg:pr-4 lg:pl-0"
+            "px-4 py-4 lg:min-w-0 lg:flex-1 lg:py-4 lg:pr-4 lg:pl-0"
         )}
       >
         {showCheckbox ? (
@@ -282,65 +258,65 @@ export function PortalListCard({
           />
         ) : null}
 
-        {!hasMedia ? (
-          <span className="portal-list-card-edge" aria-hidden />
-        ) : null}
+        {!hasMedia ? <span className="portal-list-card-edge" aria-hidden /> : null}
 
-        <div className="min-w-0 flex-1">
-          <PortalButton
-            variant="ghost"
-            type="button"
-            onClick={onClick}
-            className="flex w-full min-w-0 items-start gap-3.5 text-left"
-          >
-            <div className="min-w-0 flex-1">
-              <StatusWord
-                statusLabel={statusLabel}
-                statusPillClass={statusPillClass}
-                statusPillStyle={statusPillStyle}
-              />
+        <PortalButton
+          variant="ghost"
+          action={false}
+          type="button"
+          onClick={onClick}
+          className="portal-list-card-main flex min-w-0 flex-1 items-center gap-3 text-left"
+        >
+          <div className="min-w-0 flex-1">
+            <StatusWord
+              statusLabel={statusLabel}
+              statusPillClass={statusPillClass}
+              statusPillStyle={statusPillStyle}
+            />
+            <p
+              className="portal-list-card-title mt-1 line-clamp-2"
+              style={{ color: PORTAL_VAR.ink }}
+            >
+              {title}
+            </p>
+            {subLine ? (
               <p
-                className="portal-list-card-title mt-1 line-clamp-2"
-                style={{ color: PORTAL_VAR.ink }}
+                className="portal-list-card-sub mt-1 line-clamp-2"
+                style={{ color: PORTAL_VAR.sub }}
               >
-                {title}
+                {subLine}
               </p>
-              {subtitle ? (
-                <p
-                  className="portal-list-card-sub mt-1 line-clamp-2"
-                  style={{ color: PORTAL_VAR.sub }}
-                >
-                  {subtitle}
-                </p>
-              ) : null}
-              {meta.length > 0 ? (
-                <p
-                  className="portal-list-card-meta mt-1.5 line-clamp-2"
-                  style={{ color: PORTAL_VAR.faint }}
-                >
-                  {meta.map((m) => m.text).join(" · ")}
-                </p>
-              ) : null}
-              {hint ? (
-                <p
-                  className="portal-list-card-meta mt-1.5"
-                  style={{ color: PORTAL_VAR.faint }}
-                >
-                  {hint}
-                </p>
-              ) : null}
-            </div>
-
-            {showChevron ? (
-              <PortalIcon n="chevron-right" ctx="row" className="portal-list-card-chevron shrink-0" aria-hidden />
             ) : null}
-          </PortalButton>
+            {hint ? (
+              <p
+                className="portal-list-card-meta mt-1.5"
+                style={{ color: PORTAL_VAR.faint }}
+              >
+                {hint}
+              </p>
+            ) : null}
+            {footer ? <div className="mt-2">{footer}</div> : null}
+          </div>
 
-          {footer ? <div className="mt-2">{footer}</div> : null}
-          {trailingActions ? (
-            <TrailingActionsSlot>{trailingActions}</TrailingActionsSlot>
+          {showChevron ? (
+            <PortalIcon
+              n="chevron-right"
+              ctx="row"
+              className="portal-list-card-chevron shrink-0"
+              aria-hidden
+            />
           ) : null}
-        </div>
+        </PortalButton>
+
+        {trailingActions ? (
+          <div
+            className="portal-list-card-actions flex shrink-0 items-start self-center"
+            onClick={(e) => e.stopPropagation()}
+            onKeyDown={(e) => e.stopPropagation()}
+          >
+            {trailingActions}
+          </div>
+        ) : null}
       </div>
     </div>
   );

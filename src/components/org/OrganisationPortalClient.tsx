@@ -455,6 +455,16 @@ export function OrganisationPortalClient({
     endNavHold();
   }
 
+  /** Safety: pendingDetailId darf Shell nicht ewig blockieren. */
+  useEffect(() => {
+    if (!pendingDetailId) return;
+    const t = window.setTimeout(() => {
+      setPendingDetailId(null);
+      endNavHold();
+    }, 25_000);
+    return () => window.clearTimeout(t);
+  }, [pendingDetailId]);
+
   const allLeadsForFlow = useMemo(() => {
     const byId = new Map<string, OrganisationLead>();
     for (const l of [...leads, ...eingang]) byId.set(l.id, l);

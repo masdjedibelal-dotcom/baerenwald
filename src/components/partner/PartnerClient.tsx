@@ -48,7 +48,6 @@ import {
 } from "@/lib/list-return-url";
 import { useListUrlState } from "@/hooks/useListUrlState";
 import { PortalInboxEmpty } from "@/components/shared/PortalEmptyState";
-import { PortalActionMenu } from "@/components/shared/PortalActionMenu";
 import { PORTAL_EMPTY_TITLE, portalEmptySubtitle } from "@/lib/portal2/portal-states";
 import type { PartnerPlanerSection } from "@/lib/partner/build-partner-termine";
 import type {
@@ -817,17 +816,6 @@ export function PartnerClient({
         meta={[]}
         selected={false}
         onClick={() => selectRow(row.id)}
-        trailingActions={
-          <PortalActionMenu
-            title="Aktionen"
-            items={[
-              {
-                label: "Öffnen",
-                onClick: () => selectRow(row.id),
-              },
-            ]}
-          />
-        }
       />
     );
   }

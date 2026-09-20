@@ -204,20 +204,22 @@
 
 .portal-ki-gpt-composer {
   flex-shrink: 0;
-  border-top: 1px solid rgba(30, 28, 26, 0.08);
+  border-top: 1px solid var(--p2-line, rgba(0, 0, 0, 0.08));
   background: #fff;
-  padding: 0.55rem 0.85rem var(--portal-safe-pad-bottom, calc(14px + env(safe-area-inset-bottom, 0px)));
+  padding: 0.65rem 0.85rem
+    var(--portal-safe-pad-bottom, calc(14px + env(safe-area-inset-bottom, 0px)));
 }
 
+/* Wie globaler GPT/Rechner-Chat: Mic + Feld + Senden auf weißem Streifen */
 .portal-ki-gpt-inputbar {
   display: flex;
-  align-items: center;
-  gap: 0.45rem;
+  align-items: flex-end;
+  gap: 0.5rem;
   min-height: 44px;
-  border: 1.5px solid rgba(46, 125, 82, 0.35);
-  border-radius: 1.15rem;
-  background: #fff;
-  padding: 0.25rem 0.35rem;
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  padding: 0;
 }
 
 .portal-ki-gpt-voice-slot {
@@ -235,19 +237,36 @@
   order: -1;
 }
 
+/* portal-field-Styles zurücksetzen → Chat-Feld wie ki-rechner-chat-input */
+.portal-ki-gpt-textarea.portal-field,
 .portal-ki-gpt-textarea {
   flex: 1;
   min-width: 0;
+  min-height: 44px !important;
   max-height: calc(22px * 5 + 16px);
+  height: auto;
   resize: none;
-  border: 0;
-  background: transparent;
-  padding: 0.4rem 0.25rem;
+  box-sizing: border-box;
+  margin: 0;
+  border: 1px solid var(--p2-line, rgba(0, 0, 0, 0.12));
+  border-radius: 1.15rem;
+  background: #fff;
+  padding: 0.55rem 0.85rem;
   font: inherit;
   font-size: calc(15px * var(--p2-type-scale, 1.1));
   line-height: 22px;
-  color: #1e1c1a;
+  color: var(--p2-ink, #1e1c1a);
   outline: none;
+  box-shadow: none;
+  transition: border-color 0.12s ease, box-shadow 0.12s ease;
+}
+
+.portal-ki-gpt-textarea.portal-field:focus,
+.portal-ki-gpt-textarea.portal-field:focus-visible,
+.portal-ki-gpt-textarea:focus,
+.portal-ki-gpt-textarea:focus-visible {
+  border-color: var(--org-primary, var(--p2-primary, #2e7d52));
+  box-shadow: 0 0 0 3px var(--org-primary-soft, var(--p2-primary-soft, #e7f1e9));
 }
 
 .portal-ki-gpt-textarea:disabled {
@@ -256,22 +275,49 @@
 
 .portal-ki-gpt-send {
   display: inline-flex;
-  height: 40px;
-  width: 40px;
+  height: 40px !important;
+  width: 40px !important;
+  min-width: 40px !important;
+  min-height: 40px !important;
   flex-shrink: 0;
   align-items: center;
   justify-content: center;
-  border: 0;
-  border-radius: 9999px;
-  background: var(--org-primary, var(--p2-primary, #2e7d52));
-  color: #fff;
+  align-self: center;
+  margin: 0;
+  padding: 0 !important;
+  border: none !important;
+  border-radius: 9999px !important;
+  background: var(--org-primary, var(--p2-primary, #2e7d52)) !important;
+  color: #fff !important;
   cursor: pointer;
+  box-shadow: none !important;
+}
+
+.portal-ki-gpt-send:hover:not(:disabled) {
+  background: var(--org-primary-dk, #256b45) !important;
+  color: #fff !important;
 }
 
 .portal-ki-gpt-send:disabled {
-  background: #e5e7eb;
-  color: #9ca3af;
+  background: var(--org-primary-soft, var(--p2-primary-soft, #e7f1e9)) !important;
+  color: color-mix(in srgb, var(--org-primary, #2e7d52) 45%, #9ca3af) !important;
   cursor: default;
+  opacity: 1 !important;
+}
+
+/* Funnel-Shell im KI-Modus: weiß statt #f5f6f4 */
+.portal-ki-gpt-shell.portal-modal-shell--funnel .portal-modal-shell-panel--funnel,
+.portal-ki-gpt-shell .portal-modal-shell-panel--funnel {
+  background: #fff;
+}
+
+.portal-ki-gpt-shell .portal-modal-shell-header {
+  background: #fff;
+  border-bottom: 1px solid var(--p2-line, rgba(0, 0, 0, 0.08));
+}
+
+.portal-ki-gpt-shell .portal-modal-shell-body {
+  background: #fff;
 }
 
 @media (min-width: 768px) {
