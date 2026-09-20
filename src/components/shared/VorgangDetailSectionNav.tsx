@@ -168,6 +168,7 @@ export function VorgangDetailSectionNav({
           return (
             <PortalButton
               variant="ghost"
+              action={false}
               key={item.id}
               type="button"
               role={mode === "tabs" ? "tab" : undefined}

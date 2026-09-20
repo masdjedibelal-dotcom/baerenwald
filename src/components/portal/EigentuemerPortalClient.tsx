@@ -152,11 +152,11 @@ export function EigentuemerPortalClient({
   const [detailOpening, setDetailOpening] = useState(() =>
     Boolean(searchParams.get("id")?.trim())
   );
-  const detailOpeningTimerRef = useRef<ReturnType<typeof setTimeout> | null>(
-    null
-  );
+  const detailOpeningTimerRef = useRef<number | null>(null);
+  const detailHardTimeoutRef = useRef<number | null>(null);
   const ignoreUrlDetailRef = useRef(false);
   const pendingDetailIdRef = useRef<string | null>(null);
+  const [detailFailed, setDetailFailed] = useState(false);
 
   const { hold, release, flash } = usePortalBusy();
   const { refreshFlash } = usePortalRefresh();
@@ -168,19 +168,35 @@ export function EigentuemerPortalClient({
     window.setTimeout(() => setPageBusy(false), ms);
   }
 
+  function clearDetailTimers() {
+    if (detailOpeningTimerRef.current != null) {
+      window.clearTimeout(detailOpeningTimerRef.current);
+      detailOpeningTimerRef.current = null;
+    }
+    if (detailHardTimeoutRef.current != null) {
+      window.clearTimeout(detailHardTimeoutRef.current);
+      detailHardTimeoutRef.current = null;
+    }
+  }
+
   function beginDetailOpening() {
     if (!detailHoldRef.current) {
       detailHoldRef.current = true;
       hold();
     }
+    setDetailFailed(false);
     paintPortalBusyNow(setDetailOpening, setPageBusy);
-    if (detailOpeningTimerRef.current) {
-      clearTimeout(detailOpeningTimerRef.current);
-      detailOpeningTimerRef.current = null;
-    }
+    clearDetailTimers();
+    // Harte Obergrenze: kein Endlos-„Vorgang wird geladen…“
+    detailHardTimeoutRef.current = window.setTimeout(() => {
+      detailHardTimeoutRef.current = null;
+      endDetailOpening();
+      setDetailFailed(true);
+    }, 12_000);
   }
 
   function endDetailOpening() {
+    clearDetailTimers();
     setDetailOpening(false);
     setPageBusy(false);
     if (detailHoldRef.current) {
@@ -468,10 +484,22 @@ export function EigentuemerPortalClient({
     if (!detailOpening || !selectedId || !selectedItem) return;
     const t = window.setTimeout(() => {
       endDetailOpening();
+      setDetailFailed(false);
     }, PORTAL_BUSY_MIN_MS);
-    return () => window.clearTimeout(t);
+    detailOpeningTimerRef.current = t;
+    return () => {
+      window.clearTimeout(t);
+      if (detailOpeningTimerRef.current === t) {
+        detailOpeningTimerRef.current = null;
+      }
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [detailOpening, selectedId, selectedItem]);
+
+  useEffect(() => {
+    return () => clearDetailTimers();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const helloName =
     kunde.name?.trim().split(/\s+/)[0] ||
@@ -518,12 +546,14 @@ export function EigentuemerPortalClient({
         topbarTransparent={section === "uebersicht"}
         activeNavId={section}
         contentKey={`${section}:${einheitDetailId ?? ""}`}
-      contentBusy={pageBusy || detailOpening}
+      contentBusy={
+        (pageBusy || detailOpening) && !detailFailed
+      }
       contentBusyTitle={
-        detailOpening ? "Vorgang wird geladen…" : undefined
+        detailOpening && !detailFailed ? "Vorgang wird geladen…" : undefined
       }
       contentBusyBody={
-        detailOpening
+        detailOpening && !detailFailed
           ? "Einen Moment — wir öffnen die Details."
           : undefined
       }
@@ -605,7 +635,50 @@ export function EigentuemerPortalClient({
       ) : null}
 
       {section === "vorgaenge" ? (
-        selectedId && (detailOpening || !selectedItem) ? (
+        selectedId && detailFailed && !selectedItem ? (
+          <div className="flex min-h-[40vh] flex-col items-start justify-center gap-3 px-1 py-8">
+            <p className="text-fs-title font-semibold text-[var(--p2-ink)]">
+              Vorgang konnte nicht geladen werden
+            </p>
+            <p className="text-fs-body text-[var(--p2-muted)]">
+              Bitte zurück zur Liste oder nochmal versuchen.
+            </p>
+            <div className="flex flex-wrap gap-2">
+              <button
+                type="button"
+                className="btn primary"
+                onClick={() => {
+                  ignoreUrlDetailRef.current = true;
+                  pendingDetailIdRef.current = null;
+                  setDetailFailed(false);
+                  endDetailOpening();
+                  flushSync(() => setSelectedId(null));
+                  flashPageBusy();
+                  router.replace(
+                    parseReturn(searchParams, "/portal?section=vorgaenge"),
+                    { scroll: false }
+                  );
+                }}
+              >
+                Zurück zur Liste
+              </button>
+              <button
+                type="button"
+                className="btn"
+                onClick={() => {
+                  const id = selectedId;
+                  if (!id) return;
+                  setDetailFailed(false);
+                  beginDetailOpening();
+                  flushSync(() => setSelectedId(null));
+                  flushSync(() => setSelectedId(id));
+                }}
+              >
+                Nochmal versuchen
+              </button>
+            </div>
+          </div>
+        ) : selectedId && (detailOpening || !selectedItem) ? (
           <PortalContentBusy
             title="Vorgang wird geladen…"
             body="Einen Moment — wir öffnen die Details."

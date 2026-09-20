@@ -71,6 +71,7 @@ export function OrganisationObjektCard({
 
       <PortalButton
         variant="ghost"
+        action={false}
         type="button"
         className="portal-objekt-card-body"
         onClick={onOpen}

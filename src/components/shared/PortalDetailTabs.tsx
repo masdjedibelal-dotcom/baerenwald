@@ -41,6 +41,7 @@ export function PortalDetailTabs({
             return (
               <PortalButton
                 variant="ghost"
+                action={false}
                 key={t.id}
                 type="button"
                 role="tab"

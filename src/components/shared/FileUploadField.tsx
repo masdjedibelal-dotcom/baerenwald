@@ -67,7 +67,7 @@ export function FileUploadField({
 
   return (
     <div className={cn("block portal-text-body", className)}>
-      <span className="text-text-tertiary">{label}</span>
+      <span className="portal-text-label text-text-tertiary">{label}</span>
       <input
         ref={inputRef}
         type="file"
@@ -81,7 +81,8 @@ export function FileUploadField({
         }}
       />
       <PortalButton
-        variant="primary"
+        variant="ghost"
+        action={false}
         type="button"
         disabled={disabled}
         onClick={() => inputRef.current?.click()}
@@ -96,12 +97,10 @@ export function FileUploadField({
           takeFiles(e.dataTransfer.files);
         }}
         className={cn(
-          "mt-2 flex w-full flex-col items-center gap-1 rounded-sheet border-2 border-dashed text-center transition-colors",
-          compact ? "gap-1 px-3 py-4" : "gap-1.5 px-4 py-7",
-          showImagePreview && previewUrl && "py-3",
-          dragOver
-            ? "border-accent bg-accent-light/40"
-            : "border-border-default bg-white hover:bg-[var(--p2-hover)]",
+          "portal-file-upload mt-2 flex w-full flex-col items-center justify-center text-center transition-colors",
+          compact && "portal-file-upload--compact",
+          showImagePreview && previewUrl && "portal-file-upload--preview",
+          dragOver && "portal-file-upload--drag",
           disabled && "cursor-not-allowed opacity-60"
         )}
       >
@@ -116,15 +115,25 @@ export function FileUploadField({
             )}
           />
         ) : displayName && !showImagePreview ? (
-          <PortalIcon n="file-text" ctx="default" className={cn(
-              "text-text-secondary",
+          <PortalIcon
+            n="file-text"
+            ctx="default"
+            className={cn(
+              "shrink-0 text-text-secondary",
               compact ? "h-5 w-5" : "h-6 w-6"
-            )} aria-hidden />
+            )}
+            aria-hidden
+          />
         ) : (
-          <PortalIcon n="upload" ctx="default" className={cn(
-              "text-text-secondary",
+          <PortalIcon
+            n="upload"
+            ctx="default"
+            className={cn(
+              "shrink-0 text-text-secondary",
               compact ? "h-5 w-5" : "h-6 w-6"
-            )} aria-hidden />
+            )}
+            aria-hidden
+          />
         )}
         <span
           className={cn(

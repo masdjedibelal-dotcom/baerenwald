@@ -139,72 +139,86 @@ function BefundPunktCard({
   const titel = displayBefundPunktTitel(punkt);
 
   return (
-    <article
-      className="rounded-sheet border border-border-light bg-white p-3 shadow-sm"
-      style={{ borderColor: PORTAL_VAR.line }}
-    >
-      <div className="flex items-start gap-2">
+    <div className="flex items-start gap-2 border-b border-[var(--p2-line,rgba(20,32,25,0.1))] py-3 last:border-b-0">
+      <span
+        className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-[4px] border border-[var(--p2-line,rgba(20,32,25,0.18))]"
+        style={
+          punkt.status
+            ? {
+                background: "var(--p2-green-dark, #1a3d2b)",
+                borderColor: "var(--p2-green-dark, #1a3d2b)",
+                color: "#fff",
+              }
+            : undefined
+        }
+        aria-hidden
+      >
+        {punkt.status ? (
+          <PortalIcon n="check" ctx="default" className="h-3 w-3" />
+        ) : null}
+      </span>
+      <PortalButton
+        variant="ghost"
+        action={false}
+        type="button"
+        onClick={onOpen}
+        className="min-w-0 flex-1 !h-auto !min-h-0 !justify-start !rounded-none !border-0 !bg-transparent !p-0 !shadow-none text-left"
+      >
+        <p className="portal-text-body font-semibold text-text-primary">
+          {titel}
+          {datum ? (
+            <span className="portal-text-meta ml-2 font-normal text-text-tertiary">
+              {datum}
+            </span>
+          ) : !st ? (
+            <span className="portal-text-meta ml-2 font-normal text-text-tertiary">
+              Noch offen
+            </span>
+          ) : null}
+        </p>
+        {notiz ? (
+          <p className="portal-text-meta mt-0.5 line-clamp-2 text-text-secondary">
+            {notiz}
+          </p>
+        ) : null}
+        {st ? (
+          <span
+            className="mt-1 inline-block text-fs-caption font-semibold"
+            style={{ color: tone.color }}
+          >
+            {st}
+          </span>
+        ) : null}
+        {punkt.foto_refs.length > 0 ? (
+          <div className="mt-2 flex -space-x-1.5">
+            {punkt.foto_refs.slice(0, 4).map((url) => (
+              <span
+                key={url}
+                className="relative h-8 w-8 overflow-hidden rounded-field bg-[var(--p2-panel,#f3f5f4)]"
+              >
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={url} alt="" className="h-full w-full object-cover" />
+              </span>
+            ))}
+          </div>
+        ) : null}
+      </PortalButton>
+      {deletable && onDelete ? (
         <PortalButton
           variant="ghost"
+          action={false}
           type="button"
-          onClick={onOpen}
-          className="min-w-0 flex-1 text-left"
+          className="shrink-0 !h-9 !min-h-9 !w-9 !rounded-button !border-0 !bg-transparent !p-0 text-text-tertiary hover:bg-[var(--p2-hover)] hover:text-p2-danger"
+          aria-label={`${titel} entfernen`}
+          onClick={(e) => {
+            e.stopPropagation();
+            onDelete();
+          }}
         >
-          <div className="flex items-start gap-3">
-            <div className="min-w-0 flex-1">
-              <p className="portal-text-body font-semibold text-text-primary">
-                {titel}
-              </p>
-              {notiz ? (
-                <p className="portal-text-meta mt-0.5 line-clamp-2 text-text-secondary">
-                  {notiz}
-                </p>
-              ) : null}
-            </div>
-            {st ? (
-              <span
-                className="shrink-0 rounded-pill px-2.5 py-1 text-fs-caption font-semibold"
-                style={{ background: tone.bg, color: tone.color }}
-              >
-                {st}
-              </span>
-            ) : null}
-          </div>
-          <div className="mt-2 flex items-center justify-between gap-2">
-            <span className="portal-text-meta text-text-tertiary">
-              {datum ?? (st ? datum : "Noch offen")}
-            </span>
-            {punkt.foto_refs.length > 0 ? (
-              <div className="flex -space-x-1.5">
-                {punkt.foto_refs.slice(0, 4).map((url) => (
-                  <span
-                    key={url}
-                    className="relative h-8 w-8 overflow-hidden rounded-field border border-white bg-white"
-                  >
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={url} alt="" className="h-full w-full object-cover" />
-                  </span>
-                ))}
-              </div>
-            ) : null}
-          </div>
+          <PortalIcon n="trash" ctx="default" className="h-4 w-4" aria-hidden />
         </PortalButton>
-        {deletable && onDelete ? (
-          <PortalButton
-            variant="danger"
-            type="button"
-            className="shrink-0 rounded-button p-2 text-text-tertiary transition-colors hover:bg-[var(--p2-hover)] hover:text-p2-danger"
-            aria-label={`${titel} entfernen`}
-            onClick={(e) => {
-              e.stopPropagation();
-              onDelete();
-            }}
-          >
-            <PortalIcon n="trash" ctx="default" className="h-4 w-4" aria-hidden />
-          </PortalButton>
-        ) : null}
-      </div>
-    </article>
+      ) : null}
+    </div>
   );
 }
 
@@ -676,7 +690,7 @@ export function OrgHmBefundPanel({
           ) : null}
 
           {sichtbarePunkte.length > 0 ? (
-            <div className="space-y-2.5">
+            <div className="divide-y-0">
               {sichtbarePunkte.map((p) => (
                 <BefundPunktCard
                   key={p.id}
@@ -700,25 +714,18 @@ export function OrgHmBefundPanel({
           ) : null}
 
           {editable ? (
-            <div className="flex justify-center pt-1">
+            <div className="flex justify-start pt-1">
               <PortalActionMenu
                 variant="popover"
                 title="Prüfpunkt hinzufügen"
                 trigger={
-                  <PortalButton
-                    variant="ghost"
-                    type="button"
-                    className="inline-flex items-center gap-2 rounded-button px-3 py-2.5 text-fs-body font-semibold text-accent transition-opacity hover:opacity-90"
-                    style={{
-                      background:
-                        "var(--p2-accent-soft, rgba(46,125,82,0.12))",
-                    }}
-                    aria-label="Weitere hinzufügen"
-                  >
+                  <>
                     <PortalIcon n="plus" ctx="default" className="h-4 w-4" aria-hidden />
                     Weitere hinzufügen
-                  </PortalButton>
+                  </>
                 }
+                triggerClassName="!h-auto !min-h-0 !gap-1.5 !rounded-none !border-0 !bg-transparent !px-0 !py-2 !shadow-none text-fs-body font-semibold text-[var(--p2-ink)] hover:!bg-transparent hover:underline"
+                triggerLabel="Weitere hinzufügen"
                 items={addMenuItems}
               />
             </div>
@@ -815,8 +822,8 @@ export function OrgHmBefundPanel({
             {editable ? (
               <FileUploadField
                 label="Foto hinzufügen"
+                hint="Foto (JPG, PNG, WebP)"
                 accept="image/jpeg,image/png,image/webp"
-                size="compact"
                 onChange={(files) => void onFoto(files)}
               />
             ) : null}
@@ -926,8 +933,8 @@ export function OrgHmBefundPanel({
 
           <FileUploadField
             label="Fotos hinzufügen"
+            hint="Foto (JPG, PNG, WebP)"
             accept="image/jpeg,image/png,image/webp"
-            size="compact"
             multiple
             onChange={(files) => {
               if (!files.length) return;

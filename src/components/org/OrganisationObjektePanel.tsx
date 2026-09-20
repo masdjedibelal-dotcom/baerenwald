@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import "@/app/funnel-ui.css";
 
@@ -196,6 +196,28 @@ export function OrganisationObjektePanel({
     mode.kind === "detail"
       ? (objekte.find((o) => o.id === mode.id) ?? null)
       : null;
+
+  /** Während router.refresh() kurz leere Props — letztes Objekt behalten. */
+  const staleObjektRef = useRef<OrganisationObjekt | null>(null);
+  if (activeObjekt) staleObjektRef.current = activeObjekt;
+  if (mode.kind !== "detail") staleObjektRef.current = null;
+  const detailObjekt =
+    activeObjekt ??
+    (mode.kind === "detail" &&
+    staleObjektRef.current?.id === mode.id
+      ? staleObjektRef.current
+      : null);
+
+  /** „Objekt wird geladen…“ darf nicht ewig stehen (Refresh/Race). */
+  const [objektLoadTimedOut, setObjektLoadTimedOut] = useState(false);
+  useEffect(() => {
+    if (mode.kind !== "detail" || detailObjekt) {
+      setObjektLoadTimedOut(false);
+      return;
+    }
+    const t = window.setTimeout(() => setObjektLoadTimedOut(true), 8_000);
+    return () => window.clearTimeout(t);
+  }, [mode, detailObjekt]);
 
   const toggleSel = (id: string) => {
     setSelected((s) =>
@@ -484,11 +506,13 @@ export function OrganisationObjektePanel({
   }
 
   if (mode.kind === "detail") {
-    if (!activeObjekt) {
+    if (!detailObjekt) {
       return (
         <div className="space-y-3 py-8 text-center">
           <p className="portal-text-body text-text-secondary">
-            Objekt wird geladen…
+            {objektLoadTimedOut
+              ? "Objekt konnte nicht geladen werden."
+              : "Objekt wird geladen…"}
           </p>
           <PortalButton
             variant="ghost"
@@ -504,15 +528,15 @@ export function OrganisationObjektePanel({
     return (
       <>
         <OrganisationObjektDetail
-          objekt={activeObjekt}
+          objekt={detailObjekt}
           leads={leads}
-          offenCount={offenById[activeObjekt.id] ?? 0}
+          offenCount={offenById[detailObjekt.id] ?? 0}
           onBack={() => setMode({ kind: "list" })}
           onEdit={() =>
             setMode({
               kind: "wizard",
-              editId: activeObjekt.id,
-              draft: draftFromObjekt(activeObjekt, defaultHv),
+              editId: detailObjekt.id,
+              draft: draftFromObjekt(detailObjekt, defaultHv),
             })
           }
           onRefresh={onRefresh}

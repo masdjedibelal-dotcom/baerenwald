@@ -4,6 +4,84 @@ Belal committed über GitHub Desktop auf **staging**.
 
 ---
 
+## Datei-Dropzone Höhe — 2026-09-21
+
+**Commit-Text:** `fix: FileUploadField Dropzone nicht mehr auf 46px quetschen`
+
+### Dateien
+- `src/components/shared/FileUploadField.tsx` — kein `primary`-Button mehr; Klasse `portal-file-upload`
+- `src/app/globals.css` — Dropzone height:auto, genug Padding, gestrichelter Rand
+- `src/components/org/OrgHmBefundPanel.tsx` — Foto-Upload default-Größe statt compact
+- `docs/COMMIT-PLAN.md` — dieser Abschnitt
+
+---
+
+## HM-Checkliste flach — 2026-09-21
+
+**Commit-Text:** `fix: HM-Befund-Checkliste flach (keine Card-Borders, Link „Weitere hinzufügen“)`
+
+### Dateien
+- `src/components/org/OrgHmBefundPanel.tsx` — Prüfpunkte als Checkliste mit Divider; Trash ohne Danger-Pill
+- `src/components/shared/PortalActionMenu.tsx` — Custom-Trigger ohne Ghost-Doppelrahmen (`action={false}`)
+- `docs/COMMIT-PLAN.md` — dieser Abschnitt
+
+---
+
+## Active-Tabs dunkelgrün — 2026-09-21
+
+**Commit-Text:** `fix: Detail-Tabs Active dunkelgrün statt hellgrün/Ghost`
+
+### Dateien
+- `src/app/globals.css` — `.portal-detail-tab--active` fest auf `--p2-green-dark`; Override gegen `portal-btn`
+- `src/components/shared/PortalDetailTabs.tsx` — `action={false}`
+- `src/components/shared/VorgangDetailSectionNav.tsx` — `action={false}`
+- `docs/COMMIT-PLAN.md` — dieser Abschnitt
+
+---
+
+## Mehr-Kacheln + Objektkarten Layout — 2026-09-21
+
+**Commit-Text:** `fix: Mehr-Kacheln und Objektkarten nicht mehr durch portal-btn quetschen`
+
+### Dateien
+- `src/app/globals.css` — Overrides: height:auto, kein Ghost-Rahmen für `.portal-mehr-tile` / `.portal-objekt-card-body`
+- `src/components/org/OrganisationMehrScreen.tsx` — `action={false}`
+- `src/components/org/OrganisationObjektCard.tsx` — `action={false}`
+- `docs/COMMIT-PLAN.md` — dieser Abschnitt
+
+**Ursache:** `PortalButton` → `.portal-btn { height: 46px }` + Ghost-Weißrahmen hat Kacheln und Karten-Bodies zerquetscht/überlagert.
+
+---
+
+## Portal Detail schneller (kein Full-CRM-Rundtrip) — 2026-09-20
+
+**Commit-Text:** `perf: Portal Vorgang/Objekt öffnen ohne Full-Pipeline-Warten`
+
+### Dateien
+- `src/lib/portal/get-portal-vorgang-detail.ts` — `mode: "list"` statt `"full"` (kein Signed-URL-/Partner-Doku-Rundtrip)
+- `src/components/portal/PortalClient.tsx` — Listen-Item sofort zeigen; Shell-Busy nur ohne Listen-Treffer; Parent-Hold früher lösen
+- `src/components/org/OrganisationObjektePanel.tsx` — Stale-Objekt während Refresh; Timeout statt ewig „Objekt wird geladen…“
+- `docs/COMMIT-PLAN.md` — dieser Abschnitt
+
+**Ursache:** Jeder Vorgang-Klick lud die komplette `full`-Pipeline inkl. Storage-Signing; UI versteckte die schon vorhandenen Listen-Daten hinter Busy.
+
+---
+
+## Teil 3 — Portal: kein Endlos-Ladezustand — 2026-09-20
+
+**Commit-Text:** `fix: Portal Detail-Laden Timeout + Fehler-UI (kein Endlos-Spinner)`
+
+### Dateien
+- `src/components/portal/PortalClient.tsx` — `applyDetailFromUrl` auch bei leerer Liste; Hard-Timeout 12s; `detailFailed` + „Nochmal versuchen“; Prop `listLoadFailed`
+- `src/components/portal/EigentuemerPortalClient.tsx` — gleiche Hard-Timeout-/Fehler-Absicherung (Busy endete nur bei Listen-Treffer)
+- `docs/COMMIT-PLAN.md` — dieser Abschnitt
+
+**Nicht betroffen:** `HausmeisterPortalClient.tsx` — andere Konstruktion, beendet fehlende Selection nach 350ms (kein `vorgaengeItems.length`-Gate).
+
+**Liste-Fehler:** `listLoadFailed` Prop ergänzt; `page.tsx` liefert bei Totalausfall bisher AuthShell (kein Prop-Durchreich). Prop bereit für Refresh/Teilfehler.
+
+---
+
 ## HV Portal: Vorgang hängt auf „wird geladen…“ — 2026-09-20
 
 **Commit-Text:** `fix: HV-Portal Vorgang-Detail nicht mehr endlos laden`

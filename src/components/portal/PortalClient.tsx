@@ -275,6 +275,7 @@ export function PortalClient({
   auftragIdByLeadId: auftragIdByLeadIdProp = {},
   hvAbnahmeByLeadId = {},
   bautagebuchByLeadId = {},
+  listLoadFailed = false,
 }: {
   kunde: PortalKunde;
   leads: PortalLead[];
@@ -282,6 +283,11 @@ export function PortalClient({
   auftraege: PortalAuftrag[];
   /** Server-seitig gebaute List-Items (schlank, ohne Medien). */
   initialVorgaenge?: KundePortalDetailItem[];
+  /**
+   * Liste konnte serverseitig/Refresh nicht geladen werden.
+   * (page.tsx zeigt bei Totalausfall oft AuthShell — Prop für Teilfehler/Refresh.)
+   */
+  listLoadFailed?: boolean;
   mieterFeedbackByLeadId?: Record<
     string,
     { sterne: number; freitext?: string | null }
@@ -403,6 +409,10 @@ export function PortalClient({
     () =>
       Boolean(forceDetailId?.trim() || searchParams.get("id")?.trim())
   );
+  /** Detail-Fetch fehlgeschlagen / Timeout — Fehler-UI statt Spinner. */
+  const [detailFailed, setDetailFailed] = useState(false);
+  /** Erhöhen → Detail-Fetch erneut (Nochmal versuchen). */
+  const [detailRetryToken, setDetailRetryToken] = useState(0);
   const [listPage, setListPageLocal] = useState(1);
   const listUrl = useListUrlState({
     keys: ["filter", "page", "q"],
@@ -432,14 +442,16 @@ export function PortalClient({
   /** Nach Abschluss für diese ID kein erneutes Endlos-Loading (URL-/Layout-Sync). */
   const detailFetchSettledIdRef = useRef<string | null>(null);
 
-  function beginDetailBusy() {
-    if (!detailHoldRef.current) {
+  function beginDetailBusy(opts?: { shell?: boolean }) {
+    const useShell = opts?.shell !== false;
+    if (useShell && !detailHoldRef.current) {
       detailHoldRef.current = true;
       hold();
     }
     // Sofort painten — vor router.replace und vor URL-Sync-Effekt.
     flushSync(() => {
-      setPageBusy(true);
+      setDetailFailed(false);
+      if (useShell) setPageBusy(true);
       setDetailLoading(true);
     });
   }
@@ -452,6 +464,18 @@ export function PortalClient({
       release();
     }
     if (opts?.notifyReady !== false) onDetailReady?.();
+  }
+
+  function retryDetailFetch() {
+    const id = selectedId?.trim();
+    if (!id) return;
+    detailFetchSettledIdRef.current = null;
+    setDetailFailed(false);
+    setDetailItem(null);
+    beginDetailBusy({
+      shell: !findKundeVorgangByQueryId(vorgaengeItems, id),
+    });
+    setDetailRetryToken((n) => n + 1);
   }
 
   function flashNavBusy(ms = PORTAL_BUSY_MIN_MS) {
@@ -660,12 +684,10 @@ export function PortalClient({
             (Boolean(detailItem.leadId) &&
               detailItem.leadId === listSelectedItem.leadId))))
   );
-  /** Während Fetch kein Slim-Listen-Detail — sonst wirkt der Loader „zu spät“. */
+  /** Während Fetch: Listen-Item sofort zeigen — kein Warten auf CRM-Rundtrip. */
   const selectedItemRaw = detailMatchesSelection
     ? detailItem
-    : detailLoading
-      ? null
-      : listSelectedItem;
+    : listSelectedItem;
 
   const selectedItem = useMemo(() => {
     if (!selectedItemRaw) return null;
@@ -679,9 +701,10 @@ export function PortalClient({
     if (selectedId === forced) return;
     ignoreUrlDetailRef.current = false;
     pendingDetailIdRef.current = forced;
-    beginDetailBusy();
+    const known = Boolean(findKundeVorgangByQueryId(vorgaengeItems, forced));
+    beginDetailBusy({ shell: !known });
     flushSync(() => {
-      setDetailItem(null);
+      if (!known) setDetailItem(null);
       setSelectedId(forced);
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps -- nur bei forceDetailId
@@ -702,26 +725,37 @@ export function PortalClient({
     }
     // Fetch für diese ID schon durch — nicht wieder in Endlos-Busy.
     if (detailFetchSettledIdRef.current === selectedId) return;
+    if (detailFailed) return;
     setDetailLoading(true);
-  }, [selectedId, detailItem]);
+  }, [selectedId, detailItem, detailFailed]);
 
   /**
-   * Parent setzt forceDetailId + beginNavHold. Wenn selectedId schon passt
-   * (Init-State / Re-Open), läuft kein neuer Fetch — Busy trotzdem freigeben.
+   * Parent setzt forceDetailId + beginNavHold.
+   * Sobald Listen-Detail sichtbar (oder Fetch fertig): Shell-Busy freigeben —
+   * nicht auf den CRM-Enrich-Fetch warten.
    */
   useEffect(() => {
     const forced = forceDetailId?.trim() || null;
     if (!forced || !onDetailReady) return;
     if (selectedId !== forced) return;
-    if (detailLoading) return;
-    onDetailReady();
-  }, [forceDetailId, selectedId, detailLoading, onDetailReady]);
+    if (listSelectedItem || detailMatchesSelection || !detailLoading) {
+      onDetailReady();
+    }
+  }, [
+    forceDetailId,
+    selectedId,
+    detailLoading,
+    listSelectedItem,
+    detailMatchesSelection,
+    onDetailReady,
+  ]);
 
   useEffect(() => {
     if (!selectedId) {
       detailFetchSettledIdRef.current = null;
       setDetailItem(null);
       setDetailLoading(false);
+      setDetailFailed(false);
       setPageBusy(false);
       if (detailHoldRef.current) {
         detailHoldRef.current = false;
@@ -733,20 +767,43 @@ export function PortalClient({
     const fetchId = selectedId;
     const gen = ++detailFetchGenRef.current;
     detailFetchSettledIdRef.current = null;
+    setDetailFailed(false);
     let settled = false;
     let finishTimer: number | null = null;
-    const finish = () => {
+    let hardTimeoutId: number | null = null;
+    const finish = (failed = false) => {
       if (settled) return;
       settled = true;
+      if (hardTimeoutId != null) {
+        window.clearTimeout(hardTimeoutId);
+        hardTimeoutId = null;
+      }
+      if (finishTimer != null) {
+        window.clearTimeout(finishTimer);
+        finishTimer = null;
+      }
       if (gen !== detailFetchGenRef.current) return;
       detailFetchSettledIdRef.current = fetchId;
+      if (
+        failed &&
+        !findKundeVorgangByQueryId(vorgaengeItems, fetchId)
+      ) {
+        setDetailFailed(true);
+      }
       endDetailBusy();
     };
-    beginDetailBusy();
+    beginDetailBusy({
+      shell: !findKundeVorgangByQueryId(vorgaengeItems, fetchId),
+    });
     const started = Date.now();
     const q = hvPortalMode ? "?hv=1" : "";
     const ac = new AbortController();
-    const timeoutId = window.setTimeout(() => ac.abort(), 20_000);
+    // Harte Obergrenze: nach 12s Fehler-UI, kein Endlos-Spinner.
+    hardTimeoutId = window.setTimeout(() => {
+      ac.abort();
+      finish(true);
+    }, 12_000);
+    let gotItem = false;
     void fetch(`/api/portal/vorgaenge/${encodeURIComponent(fetchId)}${q}`, {
       signal: ac.signal,
     })
@@ -757,6 +814,8 @@ export function PortalClient({
       .then((json) => {
         if (gen !== detailFetchGenRef.current) return;
         if (json?.item) {
+          gotItem = true;
+          setDetailFailed(false);
           setDetailItem(json.item);
           const t = json.item.title?.trim();
           if (t) {
@@ -771,16 +830,20 @@ export function PortalClient({
         }
       })
       .catch(() => {
-        /* Liste / Fehler-UI als Fallback */
+        /* Timeout / Netz → finish(failed) */
       })
       .finally(() => {
-        window.clearTimeout(timeoutId);
+        if (settled) return;
+        if (hardTimeoutId != null) {
+          window.clearTimeout(hardTimeoutId);
+          hardTimeoutId = null;
+        }
         const wait = Math.max(0, PORTAL_BUSY_MIN_MS - (Date.now() - started));
-        finishTimer = window.setTimeout(finish, wait);
+        finishTimer = window.setTimeout(() => finish(!gotItem), wait);
       });
     return () => {
       ac.abort();
-      window.clearTimeout(timeoutId);
+      if (hardTimeoutId != null) window.clearTimeout(hardTimeoutId);
       if (finishTimer != null) window.clearTimeout(finishTimer);
       // Hold freigeben, aber Parent-pending nicht clearen (ID-Wechsel A→B).
       if (gen === detailFetchGenRef.current) {
@@ -794,7 +857,7 @@ export function PortalClient({
     };
     // begin/endDetailBusy stabil über Refs
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedId, hvPortalMode]);
+  }, [selectedId, hvPortalMode, detailRetryToken]);
 
   /** Nach Speichern im Detail: still neu laden (ohne Loader), sonst bleibt z. B. Kostenträger alt. */
   const refetchDetailSilent = useCallback(async () => {
@@ -807,7 +870,10 @@ export function PortalClient({
       );
       if (!res.ok) return;
       const json = (await res.json()) as { item?: KundePortalDetailItem };
-      if (json?.item) setDetailItem(json.item);
+      if (json?.item) {
+        setDetailItem(json.item);
+        setDetailFailed(false);
+      }
     } catch {
       /* Liste bleibt Fallback */
     }
@@ -817,7 +883,11 @@ export function PortalClient({
   useEffect(() => {
     if (!selectedId || listSelectedItem || detailMatchesSelection) return;
     if (detailLoading) return;
-    if (!vorgaengeItems.length) return;
+    if (detailFailed) return;
+    if (!vorgaengeItems.length) {
+      setDetailFailed(true);
+      return;
+    }
     pendingDetailIdRef.current = null;
     setSelectedId(null);
     setDetailItem(null);
@@ -826,6 +896,7 @@ export function PortalClient({
     listSelectedItem,
     detailMatchesSelection,
     detailLoading,
+    detailFailed,
     vorgaengeItems.length,
   ]);
 
@@ -897,18 +968,26 @@ export function PortalClient({
         return;
       }
       // Unbekannte id: nicht in Endlos-Ladezustand gehen (Filter-/Race-Reste).
-      if (vorgaengeItems.length > 0) {
-        pendingDetailIdRef.current = null;
-        setDetailLoading(false);
-        setSelectedId(null);
-        return;
-      }
+      // Wichtig: auch bei leerer Liste — sonst bleibt detailLoading für immer true.
       if (pending && pending === rawId) {
         pendingDetailIdRef.current = null;
       }
-      if (detailFetchSettledIdRef.current !== rawId) {
-        setDetailLoading(true);
+      if (vorgaengeItems.length > 0) {
+        pendingDetailIdRef.current = null;
+        setDetailLoading(false);
+        setDetailFailed(false);
+        setSelectedId(null);
+        return;
       }
+      // Leere Liste + Deep-Link: Fetch/Timeout → Fehler-UI, kein Endlos-Spinner.
+      if (detailFetchSettledIdRef.current === rawId) {
+        setDetailLoading(false);
+        setDetailFailed(true);
+        setSelectedId(rawId);
+        return;
+      }
+      setDetailFailed(false);
+      setDetailLoading(true);
       setSelectedId(rawId);
     };
 
@@ -982,9 +1061,9 @@ export function PortalClient({
     const matched = findKundeVorgangByQueryId(vorgaengeItems, vorgangId);
     const id = matched?.id ?? vorgangId;
     pendingDetailIdRef.current = id;
-    beginDetailBusy();
+    beginDetailBusy({ shell: !matched });
     flushSync(() => {
-      setDetailItem(null);
+      if (!matched) setDetailItem(null);
       setSection("vorgaenge");
       setSelectedId(id);
     });
@@ -1040,17 +1119,16 @@ export function PortalClient({
     return "offen";
   }
 
-  /** Sofort Loading + Detail öffnen (Liste, Dashboard, Deeplink-Hilfen). */
+  /** Sofort Detail öffnen (Liste → kein Shell-Busy; Deep-Link → Busy). */
   function openVorgangById(vorgangId: string, opts?: { focus?: string }) {
     ignoreUrlDetailRef.current = false;
     const matched = findKundeVorgangByQueryId(vorgaengeItems, vorgangId);
     const id = matched?.id ?? vorgangId.trim();
     if (!id) return;
     pendingDetailIdRef.current = id;
-    // Loading muss vor router.replace sichtbar sein (sonst Sekunden ohne Feedback).
-    beginDetailBusy();
+    beginDetailBusy({ shell: !matched });
     flushSync(() => {
-      setDetailItem(null);
+      if (!matched) setDetailItem(null);
       setSection("vorgaenge");
       setSelectedId(id);
     });
@@ -1082,6 +1160,7 @@ export function PortalClient({
     }
     setDetailItem(null);
     setDetailLoading(false);
+    setDetailFailed(false);
     setPageBusy(false);
     setSelectedId(null);
     flashNavBusy();
@@ -1219,10 +1298,44 @@ export function PortalClient({
   const selectedLeadId = selectedItem?.leadId ?? selectedItem?.id ?? "";
 
   /**
-   * Loader solange detailLoading (Klick setzt sofort true, Fetch hält min. PORTAL_BUSY_MIN_MS).
-   * Kein vorzeitiges Slim-Listen-Detail.
+   * Vollbild-Loader nur ohne Listen-Treffer (Deep-Link).
+   * Liste → Detail: sofort Slim-Item, Fetch reichert im Hintergrund an.
    */
-  const showDetailBusy = Boolean(selectedId && detailLoading);
+  const showDetailBusy = Boolean(
+    selectedId &&
+      detailLoading &&
+      !detailFailed &&
+      !listLoadFailed &&
+      !listSelectedItem &&
+      !detailMatchesSelection
+  );
+
+  const detailErrorScreen = (
+    <div className="flex min-h-[40vh] flex-col items-start justify-center gap-3 px-1 py-8">
+      <p className="text-fs-title font-semibold text-[var(--p2-ink)]">
+        Vorgang konnte nicht geladen werden
+      </p>
+      <p className="text-fs-body text-[var(--p2-muted)]">
+        {listLoadFailed
+          ? "Die Vorgangsliste ist fehlgeschlagen. Bitte erneut versuchen."
+          : "Bitte zurück zur Liste oder nochmal versuchen."}
+      </p>
+      <div className="flex flex-wrap gap-2">
+        <button type="button" className="btn primary" onClick={closeDetail}>
+          Zurück zur Liste
+        </button>
+        {!listLoadFailed ? (
+          <button
+            type="button"
+            className="btn"
+            onClick={retryDetailFetch}
+          >
+            Nochmal versuchen
+          </button>
+        ) : null}
+      </div>
+    </div>
+  );
 
   const detailScreen = showDetailBusy ? (
     <PortalContentBusy
@@ -1281,26 +1394,22 @@ export function PortalClient({
         onBack={closeDetail}
       />
     </div>
-  ) : selectedId ? (
-    <div className="flex min-h-[40vh] flex-col items-start justify-center gap-3 px-1 py-8">
-      <p className="text-fs-title font-semibold text-[var(--p2-ink)]">
-        Vorgang konnte nicht geladen werden
-      </p>
-      <p className="text-fs-body text-[var(--p2-muted)]">
-        Bitte zurück zur Liste und erneut öffnen.
-      </p>
-      <button type="button" className="btn primary" onClick={closeDetail}>
-        Zurück zur Liste
-      </button>
-    </div>
+  ) : selectedId || listLoadFailed ? (
+    detailErrorScreen
   ) : null;
 
   /** Mock: Liste und Detail sind getrennte Screens — kein Split-Pane. */
   const vorgaengeScreen =
-    selectedItem || selectedId || showDetailBusy ? detailScreen : listPanel;
+    listLoadFailed && !selectedItem
+      ? detailErrorScreen
+      : selectedItem || selectedId || showDetailBusy
+        ? detailScreen
+        : listPanel;
 
   if (embedded) {
-    const showEmbeddedBusy = Boolean(pageBusy || showDetailBusy || ctxBusy);
+    const showEmbeddedBusy = Boolean(
+      (pageBusy || showDetailBusy || ctxBusy) && !detailFailed && !listLoadFailed
+    );
     const embeddedBusyTitle =
       showDetailBusy || pageBusy
         ? "Vorgang wird geladen…"
@@ -1371,7 +1480,11 @@ export function PortalClient({
         topbarTransparent={section === "uebersicht"}
         activeNavId={section === "gpt" ? "uebersicht" : section}
         contentKey={`${section}:${privatChip ?? ""}:${controlledHvListeFilter ?? controlledVorgangFilter ?? ""}:${selectedId ? "detail" : "list"}`}
-        contentBusy={pageBusy || detailLoading || ctxBusy}
+        contentBusy={
+          (pageBusy || detailLoading || ctxBusy) &&
+          !detailFailed &&
+          !listLoadFailed
+        }
         contentBusyTitle={
           detailLoading || pageBusy
             ? "Vorgang wird geladen…"

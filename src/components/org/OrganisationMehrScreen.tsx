@@ -37,6 +37,7 @@ export function OrganisationMehrScreen({ onOpen }: Props) {
           return (
             <PortalButton
               variant="ghost"
+              action={false}
               key={tile.key}
               type="button"
               onClick={() => onOpen(sectionId)}

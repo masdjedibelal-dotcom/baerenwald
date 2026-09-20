@@ -202,13 +202,15 @@ export function PortalActionMenu({
 
   return (
     <div ref={rootRef} className={cn("relative inline-flex", className)}>
-      <PortalButton variant="ghost"
+      <PortalButton
+        variant="ghost"
+        action={false}
         ref={triggerRef}
         type="button"
         className={cn(
           isIconOnly
             ? "flex h-8 w-8 items-center justify-center rounded-card border border-border-default bg-white text-base text-text-secondary"
-            : undefined,
+            : "inline-flex items-center",
           triggerClassName
         )}
         aria-label={isIconOnly ? triggerLabel : undefined}

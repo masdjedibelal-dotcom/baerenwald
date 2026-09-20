@@ -74,8 +74,13 @@ export async function getPortalVorgangDetail(opts: {
   const leadId = await resolveLeadIdForVorgang(vorgangId, kundeId);
   if (!leadId) return null;
 
+  /**
+   * list, nicht full: Signed URLs / Partner-Doku / Bautagebuch-Signing
+   * machen jeden Klick zum CRM-Rundtrip von mehreren Sekunden.
+   * Medien kommen im HV-Portal bereits über Page-Props (bautagebuchByLeadId).
+   */
   const data = await getPortalDataForKunde(kundeId, {
-    mode: "full",
+    mode: "list",
     leadIds: [leadId],
     includeHandwerkerUpdates: Boolean(opts.hvPortalMode),
   });
