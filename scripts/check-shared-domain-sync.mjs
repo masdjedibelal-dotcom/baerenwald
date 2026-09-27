@@ -2,16 +2,24 @@
 /**
  * P2-4 Portal-Guard: synchronisierte Dateien dürfen nur über
  * CRM `npm run sync:shared-domain` geändert werden (byte-gleich zu transformierter CRM-Quelle).
- * Fehlt CRM-Manifest → Abbruch (kein stiller Erfolg / kein Skip).
+ *
+ * Lokal / mit Sibling: Fehlt CRM-Manifest → Abbruch (kein stiller Erfolg).
+ * Netlify: nur Portal-Repo ausgecheckt → Skip, wenn CRM_ROOT nicht gesetzt
+ * (Explizites CRM_ROOT auf Netlify bleibt hart: falsch konfiguriert → Abbruch).
  */
 import fs from 'fs'
 import path from 'path'
 import { fileURLToPath } from 'url'
 
 const PORTAL_ROOT = path.join(path.dirname(fileURLToPath(import.meta.url)), '..')
+const crmRootFromEnv = process.env.CRM_ROOT?.trim() || ''
 const CRM_ROOT =
-  process.env.CRM_ROOT || path.join(PORTAL_ROOT, '..', 'baerenwald-system')
+  crmRootFromEnv || path.join(PORTAL_ROOT, '..', 'baerenwald-system')
 const MANIFEST = path.join(CRM_ROOT, 'scripts/shared-domain-files.json')
+const onNetlify = process.env.NETLIFY === 'true'
+/** GitHub Actions checkt ebenfalls nur das Portal-Repo aus (staging-ci.yml). */
+const onGithubActions = process.env.GITHUB_ACTIONS === 'true'
+const onRemoteCiWithoutCrmCheckout = onNetlify || onGithubActions
 
 /** Muss mit CRM scripts/sync-shared-domain.mjs rewriteImportsForPortal identisch bleiben. */
 function rewriteImportsForPortal(src) {
@@ -51,6 +59,14 @@ function expectedPortalContent(crmRel, header, rewrite) {
 
 function main() {
   if (!fs.existsSync(MANIFEST)) {
+    // Netlify / GHA: nur Portal-Repo — Sync-Vergleich ohne CRM unmöglich.
+    if (onRemoteCiWithoutCrmCheckout && !crmRootFromEnv) {
+      const where = onNetlify ? 'Netlify' : 'GitHub Actions'
+      console.log(
+        `[check-shared-domain-sync] übersprungen — kein CRM-Sibling in ${where} (CRM_ROOT unset)`
+      )
+      process.exit(0)
+    }
     console.error(`[check-shared-domain-sync] CRM-Manifest fehlt: ${MANIFEST}`)
     console.error(
       'Setze CRM_ROOT oder lege baerenwald-system neben baerenwald. Sync-Guard ohne Gegenstück bricht ab.'

@@ -4,6 +4,26 @@ Belal committed über GitHub Desktop auf **staging**.
 
 ---
 
+## Fix — Shared-Domain-Guard auf Netlify/GHA — 2026-09-27
+
+**Commit-Text:** `fix(portal): Shared-Domain-Guard auf Netlify ohne CRM-Sibling überspringen`
+
+**Ursache:** `check-shared-domain-sync` brach ab, weil Netlify (und staging-ci) nur `baerenwald` auschecken — Manifest unter `../baerenwald-system` fehlt.
+
+**Verhalten jetzt:**
+
+| Umgebung | CRM-Manifest fehlt | Ergebnis |
+|----------|--------------------|----------|
+| Lokal | ja | exit 1 (wie FIX3) |
+| Netlify / GITHUB_ACTIONS, `CRM_ROOT` unset | ja | Skip exit 0 |
+| Netlify / GHA, `CRM_ROOT` gesetzt aber falsch | ja | exit 1 |
+
+Übrige Build-Guards ohne CRM-Sibling geprüft — nur dieser Guard war betroffen.
+
+**Datei:** `scripts/check-shared-domain-sync.mjs` · `docs/COMMIT-PLAN.md`
+
+---
+
 ## FIX7 — Positionen als Partner-Aufgabe gruppiert — 2026-09-26
 
 **Commit-Text:** `feat(portal): Positionen als Partner-Aufgabe gruppiert`
