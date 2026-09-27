@@ -255,7 +255,7 @@ export function PlanComparisonTable({
                 type="button"
                 className="plan-comparison-package-head"
                 onClick={() => onSelectColumn(col.id)}
-                aria-pressed={col.id === selectedColumnId}
+                aria-selected={col.id === selectedColumnId}
               >
                 {col.empfohlen ? (
                   <span className="conversion-plan-badge">Empfohlen</span>

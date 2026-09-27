@@ -667,6 +667,7 @@ export function OrganisationObjektDetail({
             <PortalInlineLoading label="Hausmeister wird geladen" />
           ) : hmAmObjekt ? (
             <PortalEntityList
+              nested
               ariaLabel="Hausmeister"
               columns={[
                 { key: "name", label: "Name", width: "minmax(0, 1.2fr)" },

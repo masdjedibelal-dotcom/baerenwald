@@ -160,6 +160,13 @@ export function PartnerAuftragDetail({
     ? HW_ABNAHME_COPY.rechnungFirmendatenHint
     : null;
 
+  const inPruefungAnzahl = useMemo(
+    () =>
+      item.positionen.filter(
+        (p) => (p.anerkennung_status ?? "").toLowerCase() === "in_pruefung"
+      ).length,
+    [item.positionen]
+  );
   const konditionZeilen = useMemo(() => {
     // Nachtrag/Regie in Prüfung oder abgelehnt nicht in die Vergütung einrechnen
     const freigegebene = item.positionen.filter((p) => {
@@ -549,18 +556,22 @@ export function PartnerAuftragDetail({
                   einheit: p.einheit,
                   menge: p.menge,
                   zeit_minuten_summe: p.zeit_minuten_summe,
+                  partner_aufgabe_id: p.partner_aufgabe_id,
+                  partner_aufgabe_titel: p.partner_aufgabe_titel,
+                  partner_aufgabe_beschreibung: p.partner_aufgabe_beschreibung,
                 }))}
                 onDone={() => refresh()}
               />
 
               <PartnerFachdokuSlots auftragId={item.id} className="mt-4" />
 
-              {konditionZeilen.length > 0 ? (
+              {konditionZeilen.length > 0 || inPruefungAnzahl > 0 ? (
                 <PartnerLeistungenKonditionenCard
                   zeilen={konditionZeilen}
                   mode="readonly"
                   variant="totalsOnly"
                   gesamtLabel={PARTNER_LEISTUNGEN_GESAMT_LABEL}
+                  inPruefungAnzahl={inPruefungAnzahl}
                 />
               ) : null}
             </PortalDetailCard>

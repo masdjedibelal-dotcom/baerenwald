@@ -1,6 +1,10 @@
 import { NextResponse } from "next/server";
 
 import { requireAccountSession } from "@/lib/account/require-account-session";
+import {
+  filterPartnerOwnedStoragePaths,
+  normalizePartnerUploadPath,
+} from "@/lib/partner/filter-partner-owned-storage-paths";
 import { createPartnerSignedUrlCache } from "@/lib/partner/partner-signed-url-cache";
 
 export const runtime = "nodejs";
@@ -33,17 +37,23 @@ export async function POST(req: Request) {
     return NextResponse.json({ ok: true, urls: {} as Record<string, string> });
   }
 
+  const ownedNorm = new Set(
+    await filterPartnerOwnedStoragePaths(session.entityId, paths)
+  );
+  if (!ownedNorm.size) {
+    return NextResponse.json({ ok: true, urls: {} as Record<string, string> });
+  }
+
   const cache = createPartnerSignedUrlCache();
-  const entries = await Promise.all(
-    paths.map(async (p) => {
-      const url = await cache.resolve(p);
-      return [p, url] as const;
+  const urls: Record<string, string> = {};
+  await Promise.all(
+    paths.map(async (original) => {
+      const norm = normalizePartnerUploadPath(original);
+      if (!norm || !ownedNorm.has(norm)) return;
+      const url = await cache.resolve(original);
+      if (url) urls[original] = url;
     })
   );
-  const urls: Record<string, string> = {};
-  for (const [p, url] of entries) {
-    if (url) urls[p] = url;
-  }
 
   return NextResponse.json({ ok: true, urls });
 }

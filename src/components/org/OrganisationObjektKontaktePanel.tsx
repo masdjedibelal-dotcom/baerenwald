@@ -281,6 +281,7 @@ export function OrganisationObjektKontaktePanel({ objektId }: Props) {
           <PortalInboxEmpty title="Noch keine Kontakte" compact />
         ) : (
           <PortalEntityList
+            nested
             columns={[...LIST_COLS]}
             rows={rows}
             ariaLabel="Kontakte vor Ort"

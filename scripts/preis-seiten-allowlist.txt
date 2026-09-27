@@ -1,0 +1,4 @@
+# Ausnahmen für check-preis-seiten.mjs
+# Format: relativer/pfad.ts  oder  relativer/pfad.ts:zeile
+# Höchstzahl Einträge: ALLOWLIST_MAX_LINES im Skript (aktuell 0).
+# Nur schrumpfen — Begründung hier dokumentieren, falls jemals nötig.

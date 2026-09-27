@@ -36,6 +36,11 @@ type Props = {
   className?: string;
   /** Accessibility */
   ariaLabel?: string;
+  /**
+   * Innerhalb Section-/Detail-Card: flache Zeilen mit Trennlinie,
+   * keine zweite weiße Karte (R5.2 eine Fläche pro Ebene).
+   */
+  nested?: boolean;
 };
 
 /**
@@ -47,6 +52,7 @@ export function PortalEntityList({
   rows,
   className,
   ariaLabel,
+  nested = false,
 }: Props) {
   const isMobile = useIsPortalMobile();
   const cols = columns
@@ -57,7 +63,11 @@ export function PortalEntityList({
   if (isMobile) {
     return (
       <ul
-        className={cn("portal-entity-cards", className)}
+        className={cn(
+          "portal-entity-cards",
+          nested && "portal-entity-cards--nested",
+          className
+        )}
         aria-label={ariaLabel}
       >
         {rows.map((r) => (
@@ -66,8 +76,9 @@ export function PortalEntityList({
               {r.onClick ? (
                 <PortalButton
                   variant="ghost"
+                  action={false}
                   type="button"
-                  className="portal-entity-card-hit"
+                  className="portal-entity-card-hit portal-btn-stack"
                   onClick={r.onClick}
                 >
                   <div className="portal-entity-card-top">
@@ -79,7 +90,7 @@ export function PortalEntityList({
                   ) : null}
                 </PortalButton>
               ) : (
-                <div className="portal-entity-card-hit portal-entity-card-hit--static">
+                <div className="portal-entity-card-hit portal-entity-card-hit--static portal-btn-stack">
                   <div className="portal-entity-card-top">
                     <span className="portal-entity-card-name">{r.title}</span>
                     {r.badge}
@@ -136,6 +147,7 @@ export function PortalEntityList({
           {r.onClick ? (
             <PortalButton
               variant="ghost"
+              action={false}
               type="button"
               className="portal-entity-list__hit"
               onClick={r.onClick}

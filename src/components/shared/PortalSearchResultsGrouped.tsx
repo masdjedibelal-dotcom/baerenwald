@@ -65,6 +65,7 @@ export function PortalSearchResultsGrouped({
                 key={h.id}
                 type="button"
                 variant="ghost"
+                action={false}
                 role="option"
                 aria-selected={active}
                 className={

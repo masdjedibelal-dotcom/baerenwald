@@ -73,7 +73,7 @@ export function OrganisationObjektCard({
         variant="ghost"
         action={false}
         type="button"
-        className="portal-objekt-card-body"
+        className="portal-objekt-card-body portal-btn-stack"
         onClick={onOpen}
       >
         <span className="portal-objekt-card-name">{card.name}</span>

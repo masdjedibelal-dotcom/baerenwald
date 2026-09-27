@@ -198,17 +198,22 @@ export async function GET(request: Request) {
     if (creds) {
       const res = await signInWithPassword(creds.email, creds.password);
       error = res.error;
-    } else {
-      const email = await resolveEmailForRole(role);
-      if (!email) {
-        return NextResponse.json(
-          { error: `Kein Auth-User für Rolle „${role}" gefunden.` },
-          { status: 404 }
-        );
-      }
-      const res = await signInWithServiceOtp(email);
-      error = res.error;
     }
+  }
+
+  if (error || (!forcedEmail && !getDevPortalCredentials(role))) {
+    const email =
+      forcedEmail ||
+      getDevPortalCredentials(role)?.email ||
+      (await resolveEmailForRole(role));
+    if (!email) {
+      return NextResponse.json(
+        { error: `Kein Auth-User für Rolle „${role}" gefunden.` },
+        { status: 404 }
+      );
+    }
+    const res = await signInWithServiceOtp(email);
+    error = res.error;
   }
 
   if (error) {

@@ -4,6 +4,377 @@ Belal committed über GitHub Desktop auf **staging**.
 
 ---
 
+## FIX7 — Positionen als Partner-Aufgabe gruppiert — 2026-09-26
+
+**Commit-Text:** `feat(portal): Positionen als Partner-Aufgabe gruppiert`
+
+**Branch:** eigener Branch (GitHub Desktop).
+
+### Einhängung
+
+| Schicht | Was |
+|---------|-----|
+| Daten | `get-partner-data`: `partner_aufgabe_id` + Lookup `auftrag_partner_aufgaben` (Titel/Beschreibung) |
+| Blöcke | `buildPartnerAufgabeBloecke` — nur Darstellung |
+| UI | `PartnerPositionLebenszyklusList` (offen + erledigt): Gruppenkopf + Positionen darunter; Aktionen unverändert je Position |
+| Feed | `PartnerAuftragDetail` mappt die drei Anzeige-Felder |
+
+### Kein Titel gesetzt
+
+`partnerAufgabeGruppenkopfTitel`: Partner-Titel wenn gesetzt; sonst LV der ersten Position; bei mehreren `LV · N weitere` (kein „Aufgabe 1“).
+
+### Summen
+
+Zwischensumme je Gruppe: `partnerSummeBetraege` → `summeBetraege(..., "partner")`. Auftrag-Gesamt unverändert über alle Positionen (Konditionen-Card).
+
+### Guard
+
+`check-preis-seiten`: Kundenseite verbietet jetzt auch `partner_aufgabe_id` / `_titel` / `_beschreibung`.
+
+**Abnahme:** `tsc` · `check-preis-seiten` · `check-shared-domain-sync` grün; `partner_aufgabe_*` nur in Display-Pfaden.
+
+**Dateien:** `get-partner-data.ts` · `partner-aufgabe-display.ts` · `partner-aufgabe-gruppen.ts` · `PartnerPositionLebenszyklusList.tsx` · `PartnerAuftragDetail.tsx` · `supabase.ts` · `check-preis-seiten.mjs` · `COMMIT-PLAN.md`
+
+---
+
+## FIX6 Commit 4 — Unklar + Guard — 2026-09-26
+
+**Commit-Text:** `feat(portal): Guard gegen ungebundene Kennungen in Actions und Routen`
+
+**Branch:** eigener Branch. **FIX6 abgeschlossen.**
+
+### Unklare Fälle (je eine Zeile)
+
+| Stelle | Urteil |
+|--------|--------|
+| `GET …/einheit-bewohner?objektId=` | **offen → fix:** `assertOrgObjekt` |
+| `ki-assist` `hm_befund_notiz` | **offen (8.) → fix:** `requireBefundActor` |
+| `ki-assist` `funnel_beschreibung` | **sicher:** öffentlich + Rate-Limit, keine Mandanten-ID |
+| Abnahme bestätigen/versenden `protokollId` | **offen → fix:** `assertProtokollIdForAuftrag` |
+| CRM-`protokoll_id` lokal | **offen → fix:** Select/Update an Auftrag+HW |
+
+### Guard `check-action-gates.mjs`
+
+- Actions: Gate-Aufruf vor erstem `supabaseAdmin` in exportierter Funktion
+- Routen: Client-Kennung + Admin ohne `assert*` und ohne Session-Bindung → Fehler; unsicher → zählen/überspringen
+- Allowlist max 18 mit Begründung (Melden, KI-Rechner, ICS, Internal-Notify, Funnel-Lead, RV-Preview)
+- In Build vor `audit-status`; Smoke: Action ohne Gate → exit 1
+
+**Abnahme:** `npx tsc --noEmit` + `node scripts/check-action-gates.mjs` grün.
+
+**Dateien:** `einheit-bewohner/route.ts` · `ki-assist/route.ts` · `partner-abnahmeprotokoll.ts` · `check-action-gates.mjs` · `action-gates-allowlist.txt` · `package.json` · `MANDANTENTRENNUNG-…` · `COMMIT-PLAN.md`
+
+---
+
+## FIX6 Commit 3 — Partner-Routen binden Kennungen — 2026-09-26
+
+**Commit-Text:** `fix(portal): Partner-Routen binden Kennungen an den eigenen Betrieb`
+
+**Branch:** eigener Branch. **Anhalten** — Commit 4 wartet.
+
+### 6 · `POST /api/partner/signed-urls`
+
+| | |
+|--|--|
+| Datei | `src/app/api/partner/signed-urls/route.ts` |
+| Bindung | `filterPartnerOwnedStoragePaths(session.entityId, paths)` (gemeinsam mit Commit 1) |
+| Ablauf | Fremde Pfade → nicht in `urls`; eigene Keys bleiben Original-Pfade für Client-Lookup |
+
+### 7 · `loadLocalAbnahmeStatus` / GET Abnahme `?protokoll=`
+
+| | |
+|--|--|
+| Datei | `partner-abnahmeprotokoll.ts` (`fetchRow` byId) |
+| Bindung | `.eq("id", byId).eq("auftrag_id", auftragId).eq("handwerker_id", handwerkerId)` |
+| Ablauf | Fremde `protokollId` bei eigenem Auftrag → kein Treffer, Fallback auf eigenes Protokoll (bestehende Logik) |
+
+**Abnahme:** `npx tsc --noEmit` grün.
+
+**Dateien:** `signed-urls/route.ts` · `partner-abnahmeprotokoll.ts` · `docs/COMMIT-PLAN.md`
+
+---
+
+## FIX6 Commit 2 — Org-Routen binden Kennungen — 2026-09-26
+
+**Commit-Text:** `fix(portal): Org-Routen binden Kennungen an die Sitzung`
+
+**Branch:** eigener Branch. **Anhalten** — Commits 3–4 warten.
+
+### 3 · `GET /api/org/hausmeister?objektId=`
+
+| | |
+|--|--|
+| Datei | `src/app/api/org/hausmeister/route.ts` |
+| Bindung | `assertOrgObjekt(session.kunde.id, objektId)` vor `loadHausmeisterForObjekt` |
+| Ablauf | Fremdes `objektId` → 404 statt HM-Daten; eigene Objekte unverändert. POST/DELETE hatten Objekt-Bindung schon. |
+
+### 4 · `POST /api/org/katalog/bestellen` · `einheitId`
+
+| | |
+|--|--|
+| Datei | `src/app/api/org/katalog/bestellen/route.ts` |
+| Bindung | `assertOrgEinheit` + `kunde_objekt_id === kundeObjektId` (dieselbe Bestellung) |
+| Ablauf | Einheit einer anderen Org/Objekts → 404; Bestellung ohne `einheitId` unverändert. |
+
+### 5 · `DELETE /api/org/objekte/einheiten?id=`
+
+| | |
+|--|--|
+| Datei | `src/app/api/org/objekte/einheiten/route.ts` |
+| Bindung | `assertOrgEinheit` wie PATCH |
+| Weitere Methoden | GET/POST: Objekt via `kunde_id`; PATCH: Assert schon — nur DELETE fehlte |
+
+**Abnahme:** `npx tsc --noEmit` grün.
+
+**Dateien:** `hausmeister/route.ts` · `katalog/bestellen/route.ts` · `objekte/einheiten/route.ts` · `docs/COMMIT-PLAN.md`
+
+---
+
+## FIX6 Commit 1 — Partner-Actions ohne Anmeldung — 2026-09-26
+
+**Commit-Text:** `fix(portal): Partner-Actions ohne Anmeldung abgesichert`
+
+**Branch:** eigener Branch (GitHub Desktop). **Anhalten** — Commits 2–4 warten.
+
+### 1 · `getPartnerBautagebuchFotoUrls`
+
+| | |
+|--|--|
+| Datei | `partner-bautagebuch.ts` + `filter-partner-owned-storage-paths.ts` |
+| Bindung | `requireAccountSession` + `kind === "handwerker"`; Pfade nur mit Präfix `{handwerkerId}/` **und** Treffer in Bautagebuch/`eintrag_fotos`/`partner_dokumente`/`angebot_handwerker`/`fachdoku` (Zuweisung) |
+| Ablauf | Keine bekannten Client-Aufrufer; bei Auth-Fehler oder fremdem Pfad → leeres Array (still) |
+
+### 2 · `acceptPartnerRahmenvertragForEmail`
+
+| | |
+|--|--|
+| Vorher | Exportierte Server-Action, E-Mail vom Client, keine Session |
+| Aufruf | Nur `registerPartnerWithOtp` |
+| Fix | Action **entfernt**. Persistenz erst in `confirmPortalSignupCode` (Partner) nach Funnel-OTP → Mailbox-Besitz. Lib: `acceptPortalRahmenvertragAfterVerifiedEmail` + Audit `herkunft: partner_registrierung_otp` |
+| Ablauf | Checkbox weiter bei Registrierung; rechtliche Annahme erst nach OTP-Code. Abbruch vor OTP → kein RV mehr in DB (vorher schon angenommen — das war unsicher). Eingeloggt: `acceptPartnerRahmenvertrag` unverändert + Audit `partner_portal_eingeloggt` |
+
+**Abnahme:** `npx tsc --noEmit` grün.
+
+**Dateien:** `partner-bautagebuch.ts` · `partner-vertrag.ts` · `portal-signup-otp.ts` · `filter-partner-owned-storage-paths.ts` · `accept-portal-rahmenvertrag-registration.ts` · `docs/COMMIT-PLAN.md`
+
+---
+
+## FIX3 — Guards brechen ab statt stillschweigend zu überspringen — 2026-09-26
+
+**Commit-Text:** `fix(portal): Guards brechen ab statt stillschweigend zu überspringen`
+
+**Branch:** eigener Branch (GitHub Desktop).
+
+### Entscheidung Punkt 4
+
+| Guard | Entscheidung | Begründung |
+|-------|--------------|------------|
+| `check-empty-catch-warn` | **bleibt im Build, bricht ab** bei Treffern | Bestand aktuell 0; harte Gate ohne Baseline sinnvoll |
+| `check-drift-warn` | **raus aus Build** → `npm run guard:drift` | Aggregat-Metriken (Hex≈300, raw buttons≈119); Zeilen-Grundlinie wäre Rauschen, kein Korrektheits-Gate |
+
+### Punkt 5 — Guard-Inventur (Skip / nie-Abbruch)
+
+| Guard | Befund | Maßnahme |
+|-------|--------|----------|
+| `check-db-spalten` | Sibling + CI-Skip → exit 0 | **behoben:** nur `src/types/supabase.ts`; fehlt → exit 1; Baseline |
+| `check-shared-domain-sync` | kein Manifest → exit 0 | **behoben:** fehlt → exit 1 |
+| `check-drift-warn` | immer exit 0 | **behoben:** aus Build-Kette |
+| `check-empty-catch-warn` | immer exit 0 | **behoben:** exit 1 bei Hits |
+| `check-service-role-gate` / `portal-btn` / `no-hardcoded-supabase-ref` / `status-writes` / `preis-seiten` / `inline-css` / `auswahl-zustand` | exit 0 nur bei Erfolg | OK |
+| `check-nav-suche` | nicht in Build | gelistet, unverändert |
+| Parser-`skip()` in db-spalten | interne Unsicherheits-Pfad-Zähler, kein Self-Disable | OK (kein „Guard aus“) |
+
+**Hinweis Netlify:** `check-shared-domain-sync` braucht `CRM_ROOT` oder Sibling `baerenwald-system`. Ohne Gegenstück bricht der Build ab (gewollt). Zusätzlich CRM-Commit: Manifest + Sync `supabase.ts`.
+
+### Grundlinie Startwert
+
+`scripts/db-spalten-baseline.txt`: **23** unique Keys (`<datei>:<tabelle>:<spalte>`), aus **25** Fund-Zeilen (Duplikate gleiche Spalte). `BASELINE_MAX_LINES=23`. Lauf: `Grundlinie: 23 offen`.
+
+### CRM (Sibling, eigener Commit)
+
+- `baerenwald-system/scripts/shared-domain-files.json` — Eintrag `src/types/supabase.ts` → Portal, `rewrite: false`
+- Sync ausgeführt → Portal `src/types/supabase.ts` mit Sync-Header
+
+### Abnahme
+
+- Typdatei umbenannt → exit 1, Meldung Sync
+- `CRM_ROOT=/nonexistent` → exit 1
+- Guard-Kette + `tsc --noEmit` grün
+
+**Dateien (Portal):** `check-db-spalten.mjs` · `db-spalten-baseline.txt` · `check-shared-domain-sync.mjs` · `check-empty-catch-warn.mjs` · `check-drift-warn.mjs` · `package.json` · `src/types/supabase.ts` · `docs/COMMIT-PLAN.md`
+
+---
+
+## FIX1 — Auswahl grün, echte Checkboxen — 2026-09-26
+
+**Commit-Text:** `fix(portal): Auswahl grün statt weiß, echte Checkboxen`
+
+**Branch:** eigener Branch (GitHub Desktop).
+
+**Befund:** `--p2-selected` war `#ffffff`; Ghost-Chrome überdeckte Auswahl; Fake-Checkboxen mit `aria-pressed`.
+
+**Tokens:** `--p2-selected: #2e7d52`; neu `--p2-surface-card: #ffffff` (Kartenfläche). Disabled-Pill nutzt surface-card statt selected.
+
+**Auswahl-Klassen (grün + weiße Schrift):** `.portal-liste-chip--active`, `.portal-detail-tab--active`, `.portal-auswahl--active`, `.portal-einstellungen-nav-item--active` — alle über `--p2-selected` / `--org-primary`.
+
+**action={false} + Klassen statt Tailwind/Inline:** EinstellungenShell (mobil+desktop), HwKalk-Modus-Reiter, Mieter-Sprachwahl, NotificationBell-Filter; FilterChip/DetailTabs hatten es schon. Shell-Nav + SearchResults: action={false} (eigene Active-Klassen; Sidebar bleibt inverse Weiß-auf-Dunkelgrün).
+
+**Checkboxen:** `PartnerPositionLebenszyklusList` + `PortalListeFilterBar` → `PortalCheckbox`. Toggle Einstellungen → `role="switch"` + `aria-checked`. Marketing `aria-pressed` → `aria-selected`.
+
+**CSS:** keine `!important`-Sonderregel für `portal-detail-tab--active` (war schon nur in `@layer`; Stil jetzt über `--p2-selected`).
+
+**Guard:** `scripts/check-auswahl-zustand.mjs` + Allowlist max 2 (`.mock-icon--active`, `.portal-notif-row--active`) — in Build vor `audit-status`.
+
+**Ghost-Zuordnung (Punkt 3):** vollständige Tabelle → `docs/FIX1-GHOST-ZUORDNUNG.md` (111 Rest = Schaltfläche). Umgestellt auf Auswahl/Container: Shell-Nav mobil+desktop, SearchResultsGrouped, HwKalk-Reiter, Einstellungen/Mieter/Notif (siehe oben).
+
+**Abnahme:** `aria-pressed` in `src/components/` = 0; `--p2-selected` ≠ weiß; `tsc --noEmit` grün; Guard OK.
+
+**Dateien:**
+- `src/app/globals.css` · `src/lib/portal2/tokens.ts` · `layout-chrome.ts` · `section-card-contract.ts`
+- `PortalEinstellungenShell` · `PortalEinstellungenUi` · `PortalEinstellungenMieter` · `PortalNotificationBell`
+- `PortalListeChrome` · `PortalListeFilterBar` · `PartnerHwKalkulationScreen` · `PartnerPositionLebenszyklusList`
+- `PortalShell` · `PortalSearchResultsGrouped` · KiRechnerStarter · PlanCard · PlanComparisonTable
+- `scripts/check-auswahl-zustand.mjs` · `scripts/auswahl-zustand-allowlist.txt` · `package.json`
+- `docs/FIX1-GHOST-ZUORDNUNG.md` · `docs/COMMIT-PLAN.md`
+
+---
+
+## Paket D-Portal Teil 1: Handwerker-Gesamtsumme — 2026-09-26
+
+**Commit-Text:** `fix(portal): Handwerker-Gesamtsumme rechnet Regie als Menge mal Satz`
+
+**Voraussetzung:** Sync `regie-betrag.ts` aus D-CRM.
+
+**Umgestellt:** Zeilenbeträge/Summen über `positionBetrag` / `summeBetraege` (Adapter `partner-betrag.ts`); Hinweis „n Position(en) in Prüfung, noch nicht enthalten“.
+
+**Dateien:**
+- `src/lib/shared-domain/regie-betrag.ts` — Sync (nicht handedit)
+- `src/lib/partner/partner-betrag.ts` — Adapter
+- `src/lib/partner/partner-leistungen-display.ts` / `partner-portal-display.ts` / `partner-konditionen.ts`
+- `src/components/partner/PartnerLeistungenKonditionenCard.tsx` — summeBetraege + in-Prüfung-Zeile
+- `src/components/partner/PartnerAuftragDetail.tsx` — inPruefungAnzahl
+- `src/components/partner/PartnerPositionLebenszyklusList.tsx` — Zeilenbetrag via Adapter
+- `docs/COMMIT-PLAN.md`
+
+---
+
+## Paket B-Portal: Partnersatz / Kundensatz — 2026-09-26
+
+**Commit-Text:** `fix(portal): Partnersatz im HW-Portal, Kundensatz im Kundenportal`
+
+**Zuordnung (Bestandsaufnahme):** siehe Bericht im Chat — Kern:
+- Partner (`components/partner`, `lib/partner`, Partner-Actions) → `stundensatz` / `preis_partner`
+- Kunde/HV (`get-portal-data`, `kunde-auftrag-aenderung`) → `stundensatz_kunde` (+ Rückfall `stundensatz`), `preis_fix`; kein `preis_partner` mehr laden/anzeigen
+- Geteilt: `src/lib/portal/stundensatz-ansicht.ts` mit Pflicht-`ansicht: "partner" | "kunde"`
+
+**Live-Fehler (vorher):** Kundenpfad nutzte `stundensatz` und Fallback `preis_partner` → Einkaufspreis sichtbar.
+
+**Dateien:**
+- `src/lib/portal/stundensatz-ansicht.ts` — resolve + Pflicht-ansicht
+- `src/lib/portal-copy/preise.ts` (+ index) — „dein Stundensatz“ / „Stundensatz“
+- `src/lib/portal/get-portal-data.ts` — Select ohne `preis_partner`, mit `stundensatz_kunde`
+- `src/lib/portal/kunde-auftrag-aenderung.ts` — Kundensatz + Rückfall, kein `preis_partner`
+- `src/components/partner/PartnerPositionLebenszyklusList.tsx` / `PartnerDokumentPreviewModal.tsx` — Copy + resolve
+- `scripts/check-preis-seiten.mjs` + Allowlist (0) + Build-Kette / `check:preis-seiten`
+
+---
+
+## Auftrag A Teil 5: Portal preis_kunde → preis_fix — 2026-09-26
+
+**Commit-Text:** `fix(portal): preis_kunde existiert nicht — auf die richtige Preisspalte`
+
+**Zuordnung (alle kunden-/HV-seitig → preis_fix):**
+| Stelle | Zielgruppe | Neu |
+|---|---|---|
+| get-portal-data.ts Select | Kunde/HV/Eigentümer/Hausmeister via getPortalDataForKunde | preis_fix |
+| get-portal-data.ts Mapping | wie oben | preis_fix |
+| kunde-auftrag-aenderung.ts Typ/Resolve/Map | Kunden-Anzeige | preis_fix |
+
+Partner: kein `preis_kunde`; bleibt `preis_partner`. Resolve behält `preis_partner` nur als letzten Fallback wenn VK/Stundensatz fehlen.
+
+**Guard:** vorher Verstöße 26 (20 unique) → nachher 25 (19 unique); `preis_kunde` weg. Weitere Treffer nicht repariert.
+
+---
+
+
+## Auftrag A Teil 2: Guard DB-Spalten — 2026-09-26
+
+**Commit-Text:** `feat(crm+portal): Guard gegen unbekannte DB-Spalten in Abfragen`
+
+Portal: `scripts/check-db-spalten.mjs` + Allowlist (0) + `check:db-spalten` + Build-Kette.
+Typen: Fallback CRM-Sibling (siehe OFFENE-FRAGEN). Lauf: geprüft 2169 / übersprungen 338 / Verstöße 26 — nicht repariert.
+
+---
+
+
+## R5 Schritt 2 — Container stapeln + Box-in-Box — 2026-09-26
+
+**Commit-Text:** `fix(portal): R5.2 Container stapeln, eine Fläche pro Ebene`
+
+**Befund:** Nach chromfreiem `portal-btn` fehlten noch vertikale Stacks und zweite weiße Karten in Section-Cards.
+
+**Dateien:**
+- `src/app/globals.css` — `.portal-btn-stack`; `.portal-entity-cards--nested`
+- `src/components/shared/PortalEntityList.tsx` — `action={false}` + Stack; Prop `nested`
+- `src/components/org/OrgHmBefundPanel.tsx` — Titel/Datum gestapelt
+- `src/components/org/OrganisationObjektEinheitenTab.tsx` — Mieterzeile + nested Liste
+- `src/components/org/OrganisationObjektKontaktePanel.tsx` / `…PruefpflichtenPanel.tsx` / `…ObjektDetail.tsx` — nested
+- `src/components/shared/PortalListCard.tsx` / `OrganisationMehrScreen` / `OrganisationObjektCard` — Stack
+- `src/components/shared/PortalListeChrome.tsx` / `PortalListeFilterBar.tsx` / `PortalEinstellungenShell.tsx` / `PortalNotificationBell.tsx` — `action={false}`
+- `src/components/shared/PortalEntityCard.tsx` — gelöscht (0 Aufrufe)
+- `docs/COMMIT-PLAN.md` / `docs/PORTAL-PATTERN-KATALOG.md`
+
+**Noch offen:** R5.2b Selected=grün; R5.3 Guards.
+
+---
+
+## Shared-Domain Sync (Build-Gate) — 2026-09-26
+
+**Commit-Text:** `chore(portal): shared-domain Sync von CRM (geld-datum, Titel, PDF, Aushang)`
+
+**Befund:** `check-shared-domain-sync` blockierte `npm run build` — Portal lag hinter CRM (Beträge/Daten, Vorgangstitel, PDF-Chrome, Aushang).
+
+**Dateien (nur Sync, nicht handedit):**
+- `src/lib/shared-domain/geld-datum.ts`
+- `src/lib/crm-vorgang/vorgang-anzeige-titel.ts`
+- `src/lib/shared-domain/pdf-chrome.ts`
+- `src/lib/shared-domain/aushang-template.ts`
+- `docs/COMMIT-PLAN.md` — dieser Abschnitt
+
+**Quelle:** CRM `npm run sync:shared-domain`
+
+---
+
+## D1 Schritt 1 — Design-Skalen durchsetzen — 2026-09-26
+
+**Commit-Text:** `fix(portal): D1.1 Radien/Abstände/Schatten Tokens durchsetzen`
+
+**Befund:** Tokens existierten, wurden aber kaum benutzt (12 Roh-Radien, 3 Pillen-Schreibweisen, ~50 Schatten).
+
+**Dateien:**
+- `src/app/globals.css` — 5 Radien; 6 Space + 4 Dichte-Vars; 3 Schatten; list-stack eine Lücke
+- `src/lib/portal2/tokens.ts` — Space/Schatten/Dichte in PORTAL_C / PORTAL_VAR / CSS_VARS
+- `docs/COMMIT-PLAN.md` — dieser Abschnitt
+- `docs/PORTAL-PATTERN-KATALOG.md` — Radien/Abstände/Schatten kurz
+
+**Noch offen (D1 Schritt 2+):** Zustandsmatrix, Fokus, aria-busy, Farben/Fallbacks, Guard.
+
+---
+
+## R5 Schritt 1 — portal-btn chromfrei (Ursache der Klemme) — 2026-09-26
+
+**Commit-Text:** `fix(portal): R5.1 action={false} wirkt — Optik nur noch auf portal-action-btn`
+
+**Befund:** Unlayered `.portal-ui .portal-btn` (feste 46px + Flex-Zentrierung) hat `action={false}` wirkungslos gemacht; Zwillinge pro Klasse waren die Folge.
+
+**Dateien:**
+- `src/app/globals.css` — `.portal-btn` chromfrei; unlayered Größen auf `.portal-ui .portal-action-btn`; 12 `.portal-ui .portal-btn.*`-Zwillinge entfernt
+- `docs/COMMIT-PLAN.md` — dieser Abschnitt
+
+**Noch offen (Schritt 2+):** Abstandsskala, Box-in-Box, Selected=grün, Guards/Tests.
+
+---
+
 ## Live-Status: Rechnung-Punkt erledigt — 2026-09-21
 
 **Commit-Text:** `fix(portal): Live-Status Punkt 5 Rechnung als erledigt bei Flow rechnung`

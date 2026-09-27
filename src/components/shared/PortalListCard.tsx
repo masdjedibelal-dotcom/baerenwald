@@ -139,9 +139,10 @@ export function PortalListCard({
         className={cn(
           "relative",
           portalListItemClass("row", { selected }),
+          "portal-btn-stack",
           showLeftAccent ? "border-l-4 pl-3 sm:pl-4" : "px-4",
           showLeftAccent && ACCENT_CLASS[accent],
-          media && "flex items-start gap-3"
+          media && "!flex-row items-start gap-[var(--p2-row-gap)]"
         )}
       >
         {showAttention ? (

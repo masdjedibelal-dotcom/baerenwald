@@ -3,11 +3,10 @@
 import { logDbError } from '@/lib/errors/log-db-error'
 import { revalidatePath } from "next/cache";
 
-import { confirmCrmProjektvertrag, acceptCrmRahmenvertragForEmail, acceptCrmRahmenvertragLoggedIn } from "@/lib/partner/partner-crm-api";
+import { confirmCrmProjektvertrag, acceptCrmRahmenvertragLoggedIn } from "@/lib/partner/partner-crm-api";
 import { persistPortalRahmenvertragAkzeptanz } from "@/lib/partner/persist-portal-rahmenvertrag";
 import { linkPortalHandwerkerToAuthUser } from "@/lib/partner/link-portal-handwerker";
-import { findHandwerkerForRegistration } from "@/lib/partner/partner-registration-eligibility";
-import { PARTNER_AUTH_COPY } from "@/lib/partner/partner-auth-copy";
+import { writeAuditEvent } from "@/lib/audit/write-audit-event";
 import { createClient } from "@/lib/supabase/server";
 import { isSupabaseConfigured, supabaseAdmin } from "@/lib/supabase";
 import { assertPartnerAktiveZuweisung } from "@/lib/partner/partner-zuweisung-access";
@@ -123,52 +122,10 @@ export async function confirmPartnerProjektvertrag(opts: {
 
 export type PartnerRahmenvertragAcceptResult = { ok: true } | { ok: false; error: string };
 
-/** Registrierung: Annahme per E-Mail (Handwerker muss im Stamm existieren). */
-export async function acceptPartnerRahmenvertragForEmail(opts: {
-  email: string;
-  akzeptiert: boolean;
-}): Promise<PartnerRahmenvertragAcceptResult> {
-  if (!isSupabaseConfigured()) {
-    return { ok: false, error: "Datenbank nicht konfiguriert." };
-  }
-
-  if (!opts.akzeptiert) {
-    return {
-      ok: false,
-      error: "Bitte bestätige die Geschäftsbedingungen inkl. der Anlagen.",
-    };
-  }
-
-  const email = opts.email.trim().toLowerCase();
-  if (!email) return { ok: false, error: "E-Mail fehlt." };
-
-  const hw = await findHandwerkerForRegistration(email);
-
-  if (!hw?.id) {
-    return {
-      ok: false,
-      error: PARTNER_AUTH_COPY.errors.betriebNichtAngelegt,
-    };
-  }
-
-  const crm = await acceptCrmRahmenvertragForEmail(email);
-  if (!crm.ok) {
-    console.warn("[partner-vertrag] CRM Rahmenvertrag (Registrierung):", crm.error);
-  }
-
-  const persisted = await persistPortalRahmenvertragAkzeptanz({
-    handwerkerId: String(hw.id),
-    akzeptiertAt: new Date().toISOString(),
-    vertragsNr: crm.ok ? crm.vertrags_nr : null,
-    pdfUrl: crm.ok ? crm.pdf_url : null,
-  });
-  if (!persisted.ok) {
-    return { ok: false, error: persisted.error };
-  }
-
-  return { ok: true };
-}
-
+/**
+ * Eingeloggt: Rahmenvertrag annehmen.
+ * (Registrierung: siehe acceptPortalRahmenvertragAfterVerifiedEmail nach OTP.)
+ */
 export async function acceptPartnerRahmenvertrag(opts: {
   vertragId: string;
   akzeptiert: boolean;
@@ -196,6 +153,7 @@ export async function acceptPartnerRahmenvertrag(opts: {
   });
   if (!link.ok) return { ok: false, error: link.error };
 
+  const akzeptiertAt = new Date().toISOString();
   const crm = await acceptCrmRahmenvertragLoggedIn();
   if (!crm.ok) {
     console.warn("[partner-vertrag] CRM Rahmenvertrag (eingeloggt):", crm.error);
@@ -204,10 +162,27 @@ export async function acceptPartnerRahmenvertrag(opts: {
   const persisted = await persistPortalRahmenvertragAkzeptanz({
     handwerkerId: link.handwerkerId,
     authUserId: user.id,
+    akzeptiertAt,
     vertragsNr: crm.ok ? crm.vertrags_nr : null,
     pdfUrl: crm.ok ? crm.pdf_url : null,
   });
   if (!persisted.ok) return { ok: false, error: persisted.error };
+
+  await writeAuditEvent({
+    entityType: "handwerker_vertraege",
+    entityId: persisted.vertragId || opts.vertragId || link.handwerkerId,
+    aktion: "rahmenvertrag_portal_akzeptiert",
+    actorId: user.id,
+    actorRolle: "handwerker",
+    payload: {
+      handwerker_id: link.handwerkerId,
+      email: user.email,
+      akzeptiert_at: akzeptiertAt,
+      herkunft: "partner_portal_eingeloggt",
+      vertrag_id: opts.vertragId,
+      crm_ok: crm.ok,
+    },
+  });
 
   revalidatePath("/partner");
   return { ok: true };

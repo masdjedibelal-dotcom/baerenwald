@@ -37,6 +37,7 @@ export function PortalListeFilterChip({
   return (
     <PortalButton
       variant="ghost"
+      action={false}
       type="button"
       disabled={disabled}
       onClick={onClick}
@@ -62,7 +63,7 @@ export function PortalListeFilterChip({
           className="portal-liste-chip-badge"
           style={{
             color: active ? PORTAL_VAR.greenDark : PALETTE.h1a2e1f,
-            background: active ? "var(--p2-panel)" : "var(--p2-sand)",
+            background: active ? "var(--p2-surface-card)" : "var(--p2-sand)",
           }}
         >
           {countBadge}

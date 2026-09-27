@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 
 import {
   assertOrgEinheit,
+  assertOrgObjekt,
   requireOrgWrite,
 } from "@/lib/org/assert-org-objekt";
 import {
@@ -289,6 +290,10 @@ export async function GET(req: Request) {
       { error: "objektId oder einheitId fehlt." },
       { status: 400 }
     );
+  }
+
+  if (!(await assertOrgObjekt(session.kunde.id, objektId))) {
+    return NextResponse.json({ error: "Objekt nicht gefunden." }, { status: 404 });
   }
 
   const {data: einheiten, error: __dbErr167_5} = await supabaseAdmin

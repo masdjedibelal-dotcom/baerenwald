@@ -2,6 +2,7 @@
 /**
  * P2-4 Portal-Guard: synchronisierte Dateien dürfen nur über
  * CRM `npm run sync:shared-domain` geändert werden (byte-gleich zu transformierter CRM-Quelle).
+ * Fehlt CRM-Manifest → Abbruch (kein stiller Erfolg / kein Skip).
  */
 import fs from 'fs'
 import path from 'path'
@@ -50,16 +51,11 @@ function expectedPortalContent(crmRel, header, rewrite) {
 
 function main() {
   if (!fs.existsSync(MANIFEST)) {
-    // Netlify/CI: nur Portal-Repo ausgecheckt — Sync-Guard braucht Sibling CRM.
-    // Lokal / mit CRM_ROOT weiter strikt prüfen.
-    const netlifyOrCi = Boolean(process.env.NETLIFY || process.env.CI)
-    console.warn(`[check-shared-domain-sync] CRM-Manifest fehlt: ${MANIFEST}`)
-    console.warn(
-      netlifyOrCi
-        ? '[check-shared-domain-sync] Netlify/CI ohne CRM_ROOT — Guard übersprungen (Build bricht nicht).'
-        : '[check-shared-domain-sync] Setze CRM_ROOT oder lege baerenwald-system neben baerenwald. Lokal: Guard übersprungen.'
+    console.error(`[check-shared-domain-sync] CRM-Manifest fehlt: ${MANIFEST}`)
+    console.error(
+      'Setze CRM_ROOT oder lege baerenwald-system neben baerenwald. Sync-Guard ohne Gegenstück bricht ab.'
     )
-    process.exit(0)
+    process.exit(1)
   }
 
   const raw = JSON.parse(fs.readFileSync(MANIFEST, 'utf8'))

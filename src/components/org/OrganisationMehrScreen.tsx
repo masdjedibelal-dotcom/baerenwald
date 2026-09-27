@@ -41,7 +41,7 @@ export function OrganisationMehrScreen({ onOpen }: Props) {
               key={tile.key}
               type="button"
               onClick={() => onOpen(sectionId)}
-              className="portal-mehr-tile"
+              className="portal-mehr-tile portal-btn-stack"
             >
               <span className="portal-mehr-tile-icon">
                 <PortalNavIcon

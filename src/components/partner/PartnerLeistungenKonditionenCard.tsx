@@ -6,14 +6,18 @@ import { PortalButton } from "@/components/portal/PortalButton";
 
 import { PartnerPreisBearbeitenDialog } from "@/components/partner/PartnerPreisBearbeitenDialog";
 import { fmtPartnerEuro } from "@/lib/partner/partner-detail-format";
+import { nettoZeilenAlsBetragPositionen } from "@/lib/partner/partner-betrag";
 import {
   PARTNER_KONDITION_MWST,
-  summeKonditionBrutto,
-  summeKonditionNetto,
   type PartnerKonditionZeile,
 } from "@/lib/partner/partner-konditionen";
 import { PARTNER_LEISTUNGEN_ANGEBOTSPREIS_LABEL } from "@/lib/partner/partner-portal-display";
 import { stripHtmlToPlainText } from "@/lib/portal/portal-display";
+import {
+  positionBetrag,
+  roundBetrag2,
+  summeBetraege,
+} from "@/lib/shared-domain/regie-betrag";
 import { cn } from "@/lib/utils";
 
 const GRID_COLS = "sm:grid-cols-[1fr_11rem]";
@@ -72,6 +76,11 @@ function zeilenNotiz(
   return undefined;
 }
 
+function inPruefungHinweis(n: number): string {
+  if (n === 1) return "1 Position in Prüfung, noch nicht enthalten";
+  return `${n} Positionen in Prüfung, noch nicht enthalten`;
+}
+
 type Props = {
   zeilen: PartnerKonditionZeile[];
   /** `edit` = Preis per Popup; `readonly` = gleiche Ansicht ohne Bearbeitung */
@@ -87,6 +96,8 @@ type Props = {
    * `totalsOnly` = nur Netto/MwSt/Gesamt (Zeilen stehen in Leistungskarten).
    */
   variant?: "boxed" | "plain" | "totalsOnly";
+  /** Regie/Nachtrag in Prüfung — unter der Summe sichtbar, nicht eingerechnet. */
+  inPruefungAnzahl?: number;
 };
 
 export function PartnerLeistungenKonditionenCard({
@@ -98,12 +109,13 @@ export function PartnerLeistungenKonditionenCard({
   onHwNotizChange,
   gesamtLabel = "Vergütung Brutto inkl. MwSt.",
   variant = "boxed",
+  inPruefungAnzahl = 0,
 }: Props) {
   const [editId, setEditId] = useState<string | null>(null);
   const [draftPreis, setDraftPreis] = useState("");
   const [draftNotiz, setDraftNotiz] = useState("");
 
-  if (!zeilen.length) return null;
+  if (!zeilen.length && inPruefungAnzahl <= 0) return null;
 
   const useHwForSum = true;
   const sumZeilen = zeilen.filter((z) => z.zeilenBadge !== "entfernt").map((z) => {
@@ -115,9 +127,30 @@ export function PartnerLeistungenKonditionenCard({
     }
     return z;
   });
-  const sumNetto = summeKonditionNetto(sumZeilen, useHwForSum);
-  const sumBrutto = summeKonditionBrutto(sumZeilen, useHwForSum);
-  const sumMwst = Math.round((sumBrutto - sumNetto) * 100) / 100;
+  const nettoWerte = sumZeilen.map((z) =>
+    useHwForSum
+      ? z.hwNetto != null
+        ? z.hwNetto
+        : z.vorschlagNetto
+      : z.vorschlagNetto
+  );
+  const sumNetto = summeBetraege(
+    nettoZeilenAlsBetragPositionen(nettoWerte),
+    "partner"
+  );
+  let sumBrutto = 0;
+  for (const z of sumZeilen) {
+    const netto = useHwForSum
+      ? z.hwNetto != null
+        ? z.hwNetto
+        : z.vorschlagNetto
+      : z.vorschlagNetto;
+    if (netto == null || !Number.isFinite(netto) || netto < 0) continue;
+    const line = positionBetrag({ preis_partner: netto }, "partner");
+    sumBrutto += roundBetrag2(line * (1 + z.mwstSatz / 100));
+  }
+  sumBrutto = roundBetrag2(sumBrutto);
+  const sumMwst = roundBetrag2(sumBrutto - sumNetto);
 
   const editZeile = editId ? zeilen.find((z) => z.id === editId) : null;
 
@@ -155,24 +188,36 @@ export function PartnerLeistungenKonditionenCard({
     return n != null && Number.isFinite(n) && n >= 0;
   });
 
+  const pruefungZeile =
+    inPruefungAnzahl > 0 ? (
+      <p className="pt-2 text-fs-meta text-text-secondary">
+        {inPruefungHinweis(inPruefungAnzahl)}
+      </p>
+    ) : null;
+
   if (totalsOnly) {
-    if (!hasAnyNetto) return null;
+    if (!hasAnyNetto && inPruefungAnzahl <= 0) return null;
     return (
       <div className="space-y-1 border-t border-[var(--p2-line2)] pt-4 text-right">
-        <div className="text-fs-meta text-text-secondary">
-          Netto{" "}
-          <span className="ml-3 tabular-nums text-text-primary">
-            {fmtPartnerEuro(sumNetto)}
-          </span>
-        </div>
-        <div className="text-fs-meta text-text-secondary">
-          MwSt. {PARTNER_KONDITION_MWST}%{" "}
-          <span className="ml-3 tabular-nums">{fmtPartnerEuro(sumMwst)}</span>
-        </div>
-        <div className="pt-1 text-fs-body font-bold text-text-primary">
-          Gesamt{" "}
-          <span className="ml-3 tabular-nums">{fmtPartnerEuro(sumBrutto)}</span>
-        </div>
+        {hasAnyNetto ? (
+          <>
+            <div className="text-fs-meta text-text-secondary">
+              Netto{" "}
+              <span className="ml-3 tabular-nums text-text-primary">
+                {fmtPartnerEuro(sumNetto)}
+              </span>
+            </div>
+            <div className="text-fs-meta text-text-secondary">
+              MwSt. {PARTNER_KONDITION_MWST}%{" "}
+              <span className="ml-3 tabular-nums">{fmtPartnerEuro(sumMwst)}</span>
+            </div>
+            <div className="pt-1 text-fs-body font-bold text-text-primary">
+              Gesamt{" "}
+              <span className="ml-3 tabular-nums">{fmtPartnerEuro(sumBrutto)}</span>
+            </div>
+          </>
+        ) : null}
+        {pruefungZeile}
       </div>
     );
   }
@@ -335,7 +380,7 @@ export function PartnerLeistungenKonditionenCard({
           })}
         </ul>
 
-        {hasAnyNetto ? (
+        {hasAnyNetto || inPruefungAnzahl > 0 ? (
           <div
             className={cn(
               plain
@@ -343,51 +388,54 @@ export function PartnerLeistungenKonditionenCard({
                 : "border-t border-border-default bg-muted/40 px-4 py-3.5"
             )}
           >
-            {plain ? (
-              <>
-                <div className="text-fs-meta text-text-secondary">
-                  Netto{" "}
-                  <span className="ml-3 tabular-nums text-text-primary">
-                    {fmtPartnerEuro(sumNetto)}
-                  </span>
-                </div>
-                <div className="text-fs-meta text-text-secondary">
-                  MwSt. {PARTNER_KONDITION_MWST}%{" "}
-                  <span className="ml-3 tabular-nums">
-                    {fmtPartnerEuro(sumMwst)}
-                  </span>
-                </div>
-                <div className="pt-1 text-fs-body font-bold text-text-primary">
-                  Gesamt{" "}
-                  <span className="ml-3 tabular-nums">
-                    {fmtPartnerEuro(sumBrutto)}
-                  </span>
-                </div>
-              </>
-            ) : (
-              <>
-                <div className="flex items-center justify-between gap-4 text-sm">
-                  <span className="text-text-tertiary">Summe netto</span>
-                  <span className="font-medium tabular-nums text-text-primary">
-                    {fmtPartnerEuro(sumNetto)}
-                  </span>
-                </div>
-                <div className="mt-1 flex items-center justify-between gap-4 text-sm">
-                  <span className="text-text-tertiary">
-                    MwSt. ({PARTNER_KONDITION_MWST} %)
-                  </span>
-                  <span className="tabular-nums text-text-secondary">
-                    {fmtPartnerEuro(sumMwst)}
-                  </span>
-                </div>
-                <div className="mt-2 flex items-center justify-between gap-4 border-t border-border-light pt-2">
-                  <span className="font-semibold text-text-primary">{gesamtLabel}</span>
-                  <span className="text-lg font-bold tabular-nums text-text-primary">
-                    {fmtPartnerEuro(sumBrutto)}
-                  </span>
-                </div>
-              </>
-            )}
+            {hasAnyNetto ? (
+              plain ? (
+                <>
+                  <div className="text-fs-meta text-text-secondary">
+                    Netto{" "}
+                    <span className="ml-3 tabular-nums text-text-primary">
+                      {fmtPartnerEuro(sumNetto)}
+                    </span>
+                  </div>
+                  <div className="text-fs-meta text-text-secondary">
+                    MwSt. {PARTNER_KONDITION_MWST}%{" "}
+                    <span className="ml-3 tabular-nums">
+                      {fmtPartnerEuro(sumMwst)}
+                    </span>
+                  </div>
+                  <div className="pt-1 text-fs-body font-bold text-text-primary">
+                    Gesamt{" "}
+                    <span className="ml-3 tabular-nums">
+                      {fmtPartnerEuro(sumBrutto)}
+                    </span>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div className="flex items-center justify-between gap-4 text-sm">
+                    <span className="text-text-tertiary">Summe netto</span>
+                    <span className="font-medium tabular-nums text-text-primary">
+                      {fmtPartnerEuro(sumNetto)}
+                    </span>
+                  </div>
+                  <div className="mt-1 flex items-center justify-between gap-4 text-sm">
+                    <span className="text-text-tertiary">
+                      MwSt. ({PARTNER_KONDITION_MWST} %)
+                    </span>
+                    <span className="tabular-nums text-text-secondary">
+                      {fmtPartnerEuro(sumMwst)}
+                    </span>
+                  </div>
+                  <div className="mt-2 flex items-center justify-between gap-4 border-t border-border-light pt-2">
+                    <span className="font-semibold text-text-primary">{gesamtLabel}</span>
+                    <span className="text-lg font-bold tabular-nums text-text-primary">
+                      {fmtPartnerEuro(sumBrutto)}
+                    </span>
+                  </div>
+                </>
+              )
+            ) : null}
+            {pruefungZeile}
           </div>
         ) : null}
       </div>

@@ -7,11 +7,12 @@ import {
   formatAnfrageZeitraum,
   type PortalAnfrageLeadSource,
 } from "@/lib/portal/portal-anfrage-display";
+import type { PartnerAuftragPosition } from "@/lib/partner/get-partner-data";
+import { partnerPositionBetrag } from "@/lib/partner/partner-betrag";
 import {
   buildPartnerAuftragKonditionZeilen,
   type PartnerAngebotPositionenFilter,
 } from "@/lib/partner/partner-leistungen-display";
-import type { PartnerAuftragPosition } from "@/lib/partner/get-partner-data";
 import {
   buildNachreichungKonditionZeilen,
   buildPartnerKonditionZeilen,
@@ -33,12 +34,9 @@ function overlayAuftragPartnerEk(
   return zeilen.map((z) => {
     const ap = byId.get(z.id);
     if (!ap) return z;
-    if (
-      ap.preis_partner != null &&
-      Number.isFinite(ap.preis_partner) &&
-      ap.preis_partner >= 0
-    ) {
-      return { ...z, vorschlagNetto: Math.round(ap.preis_partner * 100) / 100 };
+    const betrag = partnerPositionBetrag(ap);
+    if (betrag > 0) {
+      return { ...z, vorschlagNetto: betrag };
     }
     return z;
   });

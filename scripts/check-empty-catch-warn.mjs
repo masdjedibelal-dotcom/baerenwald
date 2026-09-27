@@ -1,5 +1,8 @@
 #!/usr/bin/env node
-/** P4-2 Portal: Warn-Guard leere catch. Ausnahmen: Umfeld mit `P4-2-ok`. */
+/**
+ * P4-2 Portal: leere catch — Build bricht bei Treffern.
+ * Ausnahmen: Umfeld mit `P4-2-ok`.
+ */
 import { readdirSync, readFileSync, statSync } from 'node:fs'
 import { join, relative } from 'node:path'
 
@@ -39,10 +42,13 @@ for (const file of walk(root)) {
     const n = countHits(src, re)
     if (n) {
       hits += n
-      console.warn(`[P4-2 ${name}] ${relative(process.cwd(), file)} ×${n}`)
+      console.error(`[P4-2 ${name}] ${relative(process.cwd(), file)} ×${n}`)
     }
   }
 }
-if (hits) console.warn(`\n[P4-2] ${hits} stille catch-Stelle(n) (Warnung).`)
-else console.log('[P4-2] ok')
+if (hits) {
+  console.error(`\n[P4-2] ${hits} stille catch-Stelle(n) — Build abgebrochen.`)
+  process.exit(1)
+}
+console.log('[P4-2] ok')
 process.exit(0)

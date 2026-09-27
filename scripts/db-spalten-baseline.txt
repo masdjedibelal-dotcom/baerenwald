@@ -1,0 +1,25 @@
+# Grundlinie check-db-spalten — Format: <datei>:<tabelle>:<spalte>
+# Darf schrumpfen, nicht wachsen (BASELINE_MAX_LINES=23; 25 Funde → 23 unique Keys).
+src/app/actions/partner-abnahmeprotokoll.ts:auftrag_positionen:updated_at
+src/app/actions/partner-abnahmeprotokoll.ts:auftrag_abnahmeprotokolle:handwerker_bestaetigt_at
+src/app/actions/partner-auto-dokumente.ts:angebot_handwerker:updated_at
+src/app/actions/partner-hw-kalkulation.ts:angebote:gesamt_preis
+src/app/actions/portal-angebot.ts:leads:titel
+src/app/actions/portal-angebot.ts:leads:gewerk
+src/app/actions/portal-auftrag.ts:auftrag_positionen:kunde_akzeptiert_at
+src/app/api/account/export/route.ts:leads:ort
+src/app/api/org/export/rechnungen/route.ts:auftraege:kunde_objekt_id
+src/app/api/org/suche/route.ts:kunden_dokumente:titel
+src/app/api/org/suche/route.ts:kunden_dokumente:dateiname
+src/app/api/org/suche/route.ts:kunden_dokumente:kunde_objekt_id
+src/app/api/partner/suche/route.ts:auftraege:plz
+src/app/api/partner/suche/route.ts:auftraege:ort
+src/app/api/partner/suche/route.ts:leads:ort
+src/app/api/portal/suche/route.ts:leads:ort
+src/lib/melde/melde-bestaetigung.ts:leads:email
+src/lib/melde/melde-bestaetigung.ts:leads:name
+src/lib/melde/melde-bestaetigung.ts:leads:telefon
+src/lib/partner/ensure-partner-angebot-handwerker-for-auftrag.ts:auftrag_positionen:gewerk_id
+src/lib/partner/load-partner-compliance-data.ts:handwerker_vertraege:auftrag_titel
+src/lib/partner/sync-angebot-handwerker.ts:auftrag_positionen:gewerk_id
+src/lib/portal/get-portal-data.ts:auftrag_positionen:kunde_akzeptiert_at

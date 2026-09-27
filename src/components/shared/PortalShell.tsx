@@ -286,6 +286,7 @@ export function PortalShell({
     return (
       <PortalButton
         variant="ghost"
+        action={false}
         key={item.id}
         type="button"
         onClick={() => onNavChange(item.id)}
@@ -378,6 +379,7 @@ export function PortalShell({
                     return (
                       <PortalButton
                         variant="ghost"
+                        action={false}
                         key={item.id}
                         type="button"
                         onClick={() => onNavChange(item.id)}

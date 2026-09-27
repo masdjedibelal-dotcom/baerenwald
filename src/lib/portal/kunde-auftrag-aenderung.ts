@@ -1,5 +1,6 @@
 import type { PortalAngebotPositionDisplay } from "@/lib/portal/portal-angebot-display";
 import { stripHtmlToPlainText } from "@/lib/portal/portal-display";
+import { resolveStundensatz } from "@/lib/portal/stundensatz-ansicht";
 
 export type KundeAuftragAenderungTyp = "neu" | "geaendert" | "entfernt";
 
@@ -13,8 +14,10 @@ export type KundeAuftragPositionInput = {
   lohn_fix?: number | null;
   material_fix?: number | null;
   /** Kunden-VK (Stück) — Regie/Nachtrag nach CRM-Anerkennung */
-  preis_kunde?: number | null;
-  preis_partner?: number | null;
+  preis_fix?: number | null;
+  /** Kundensatz €/h — Altdaten: Fallback über stundensatz (Partnersatz). */
+  stundensatz_kunde?: number | null;
+  /** Partnersatz nur als Altdaten-Rückfall, nie als Primäranzeige. */
   stundensatz?: number | null;
   typ?: string | null;
   anerkennung_status?: string | null;
@@ -105,11 +108,14 @@ function resolvePositionNetto(
   const fromFix = nettoFromParts(pos.lohn_fix ?? 0, pos.material_fix ?? 0, menge);
   if (fromFix > 0) return fromFix;
 
-  // Regie/Nachtrag: CRM setzt preis_kunde / stundensatz / preis_partner (Stück €/h)
+  // Regie/Nachtrag: Kunden-VK bzw. Kundensatz (Altdaten → Partnersatz-Rückfall)
   const unit =
-    (pos.preis_kunde != null && pos.preis_kunde > 0 ? pos.preis_kunde : 0) ||
-    (pos.stundensatz != null && pos.stundensatz > 0 ? pos.stundensatz : 0) ||
-    (pos.preis_partner != null && pos.preis_partner > 0 ? pos.preis_partner : 0);
+    (pos.preis_fix != null && pos.preis_fix > 0 ? pos.preis_fix : 0) ||
+    (resolveStundensatz({
+      ansicht: "kunde",
+      stundensatz_kunde: pos.stundensatz_kunde,
+      stundensatz: pos.stundensatz,
+    }) ?? 0);
   if (unit > 0) return round2(unit * menge);
 
   const angebotRow = angebotById.get(pos.id);
@@ -218,8 +224,9 @@ export function mapPortalAuftragPositionRow(
     einheit: (raw.einheit as string | null) ?? null,
     lohn_fix: raw.lohn_fix != null ? Number(raw.lohn_fix) : null,
     material_fix: raw.material_fix != null ? Number(raw.material_fix) : null,
-    preis_kunde: raw.preis_kunde != null ? Number(raw.preis_kunde) : null,
-    preis_partner: raw.preis_partner != null ? Number(raw.preis_partner) : null,
+    preis_fix: raw.preis_fix != null ? Number(raw.preis_fix) : null,
+    stundensatz_kunde:
+      raw.stundensatz_kunde != null ? Number(raw.stundensatz_kunde) : null,
     stundensatz: raw.stundensatz != null ? Number(raw.stundensatz) : null,
     typ: (raw.typ as string | null) ?? null,
     anerkennung_status: (raw.anerkennung_status as string | null) ?? null,

@@ -15,7 +15,10 @@ import {
   isBaerenwaldPrimaryStaffEmail,
 } from "@/lib/org/ensure-hausmeister-portal";
 import { requireOrganisationSession } from "@/lib/org/require-org-session";
-import { requireOrgWrite } from "@/lib/org/assert-org-objekt";
+import {
+  assertOrgObjekt,
+  requireOrgWrite,
+} from "@/lib/org/assert-org-objekt";
 import { orgDisplayName } from "@/lib/org/org-mieter-kontakt";
 import { supabaseAdmin } from "@/lib/supabase";
 
@@ -29,9 +32,14 @@ export async function GET(req: Request) {
   const objektId = url.searchParams.get("objektId")?.trim() || "";
 
   const list = await listOrgHausmeister(session.kunde.id);
-  const amObjekt = objektId
-    ? await loadHausmeisterForObjekt(objektId)
-    : null;
+
+  let amObjekt = null;
+  if (objektId) {
+    if (!(await assertOrgObjekt(session.kunde.id, objektId))) {
+      return NextResponse.json({ error: "Objekt nicht gefunden." }, { status: 404 });
+    }
+    amObjekt = await loadHausmeisterForObjekt(objektId);
+  }
 
   return NextResponse.json({
     hausmeister: list,

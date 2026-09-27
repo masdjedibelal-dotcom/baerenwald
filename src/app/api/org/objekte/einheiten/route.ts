@@ -186,6 +186,10 @@ export async function DELETE(req: Request) {
     return NextResponse.json({ error: "ID fehlt." }, { status: 400 });
   }
 
+  if (!(await assertOrgEinheit(session.kunde.id, id))) {
+    return NextResponse.json({ error: "Einheit nicht gefunden." }, { status: 404 });
+  }
+
   const { error } = await supabaseAdmin
     .from("objekt_einheiten")
     .update({ aktiv: false })

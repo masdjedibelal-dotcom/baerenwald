@@ -117,7 +117,7 @@ export function PartnerHwKalkulationScreen({
       )}
 
       {einholung ? null : (
-        <div className="mb-3 flex rounded-[10px] border border-border-default bg-white p-1">
+        <div className="mb-3 flex rounded-[10px] border border-border-default bg-[var(--p2-surface-card,#fff)] p-1">
           {(
             [
               ["kalkulieren", "Kalkulieren"],
@@ -126,13 +126,12 @@ export function PartnerHwKalkulationScreen({
           ).map(([key, label]) => (
             <PortalButton
               variant="ghost"
+              action={false}
               key={key}
               type="button"
               className={cn(
-                "flex-1 rounded-button py-2 text-fs-meta font-semibold",
-                modus === key
-                  ? "bg-white text-text-primary shadow-sm"
-                  : "text-text-secondary"
+                "portal-auswahl flex-1 rounded-button border-0 py-2 text-fs-meta font-semibold",
+                modus === key && "portal-auswahl--active"
               )}
               onClick={() => setModus(key)}
             >

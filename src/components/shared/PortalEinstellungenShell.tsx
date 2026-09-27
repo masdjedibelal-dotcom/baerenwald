@@ -20,7 +20,6 @@ import {
   PortalListeEyebrow,
   PortalListeTitle,
 } from "@/components/shared/PortalListeChrome";
-import { PORTAL_VAR } from "@/lib/portal2/tokens";
 import { cn } from "@/lib/utils";
 
 type Props = {
@@ -107,17 +106,16 @@ export function PortalEinstellungenShell({
                 return (
                   <PortalButton
                     variant="ghost"
+                    action={false}
                     key={item.id}
                     type="button"
                     role="tab"
                     aria-selected={on}
                     onClick={() => selectTab(item.id)}
-                    className="portal-text-meta shrink-0 rounded-pill px-3.5 py-2 font-semibold min-h-11 min-w-11 box-border"
-                    style={{
-                      border: `0.0625rem solid ${on ? "transparent" : PORTAL_VAR.line}`,
-                      background: on ? PORTAL_VAR.greenDark : "var(--p2-panel)",
-                      color: on ? "var(--p2-panel)" : PORTAL_VAR.sub,
-                    }}
+                    className={cn(
+                      "portal-text-meta portal-auswahl shrink-0 rounded-pill px-3.5 py-2 font-semibold min-h-11 min-w-11 box-border",
+                      on && "portal-auswahl--active"
+                    )}
                   >
                     {item.label}
                   </PortalButton>
@@ -136,19 +134,14 @@ export function PortalEinstellungenShell({
                     <li key={item.id}>
                       <PortalButton
                         variant="ghost"
+                        action={false}
                         type="button"
                         onClick={() => selectTab(item.id)}
                         aria-current={on ? "page" : undefined}
                         className={cn(
-                          "portal-text-nav w-full rounded-[14px] px-[15px] py-[13px] text-left transition-colors",
-                          on
-                            ? "bg-white font-extrabold shadow-[var(--p2-shadow)]"
-                            : "bg-transparent font-semibold hover:bg-white/70"
+                          "portal-text-nav portal-einstellungen-nav-item w-full rounded-[14px] px-[15px] py-[13px] text-left transition-colors",
+                          on && "portal-einstellungen-nav-item--active"
                         )}
-                        style={{
-                          color: on ? PORTAL_VAR.greenDark : "var(--p2-sub)",
-                          fontWeight: on ? 800 : 600,
-                        }}
                       >
                         {item.label}
                       </PortalButton>

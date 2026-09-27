@@ -532,7 +532,7 @@ export async function getPortalDataForKunde(
         supabaseAdmin
           .from("auftrag_positionen")
           .select(
-            "id, auftrag_id, gewerk_name, leistung_name, beschreibung, leistung_status, handwerker_status, handwerker_id, menge, einheit, lohn_fix, material_fix, aenderung_typ, preis_alt, kunde_akzeptiert_at, preis_kunde, preis_partner, stundensatz, typ, anerkennung_status"
+            "id, auftrag_id, gewerk_name, leistung_name, beschreibung, leistung_status, handwerker_status, handwerker_id, menge, einheit, lohn_fix, material_fix, aenderung_typ, preis_alt, kunde_akzeptiert_at, preis_fix, stundensatz_kunde, stundensatz, typ, anerkennung_status"
           )
           .in("auftrag_id", auftragIds),
         loadBautagebuchMedia
@@ -1070,9 +1070,10 @@ export async function getPortalDataForKunde(
             einheit: (p as { einheit?: string | null }).einheit ?? null,
             lohn_fix: p.lohn_fix,
             material_fix: p.material_fix,
-            preis_kunde: (p as { preis_kunde?: number | null }).preis_kunde ?? null,
-            preis_partner:
-              (p as { preis_partner?: number | null }).preis_partner ?? null,
+            preis_fix: (p as { preis_fix?: number | null }).preis_fix ?? null,
+            stundensatz_kunde:
+              (p as { stundensatz_kunde?: number | null }).stundensatz_kunde ??
+              null,
             stundensatz: (p as { stundensatz?: number | null }).stundensatz ?? null,
             typ: (p as { typ?: string | null }).typ ?? null,
             anerkennung_status:

@@ -147,7 +147,7 @@ export function PlanCard({
       className={`conversion-plan-card${selected ? " conversion-plan-card--selected" : ""}${featured ? " conversion-plan-card--featured" : ""}`}
       onClick={selectCard}
       onKeyDown={onKeyDown}
-      aria-pressed={selected}
+      aria-selected={selected}
     >
       {badge === "gewerk" && !hideGewerkBadge ? (
         <span className="conversion-plan-badge conversion-plan-badge--gewerk">

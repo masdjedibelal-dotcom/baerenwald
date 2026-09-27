@@ -1,6 +1,11 @@
 import type { PartnerAuftragPosition } from "@/lib/partner/get-partner-data";
+import {
+  partnerPositionBetrag,
+  partnerSummeBetraege,
+} from "@/lib/partner/partner-betrag";
 import type { PartnerKonditionZeile } from "@/lib/partner/partner-konditionen";
 import { stripHtmlToPlainText } from "@/lib/portal/portal-display";
+import { roundBetrag2 } from "@/lib/shared-domain/regie-betrag";
 
 export type PartnerAngebotPositionenFilter = {
   gewerkId?: string | null;
@@ -135,12 +140,8 @@ export function buildPartnerAuftragKonditionZeilen(
   return positionen.map((pos) => {
     const title =
       [pos.gewerk_name, pos.leistung_name].filter(Boolean).join(" — ") || "Leistung";
-    const partnerNetto =
-      pos.preis_partner != null &&
-      Number.isFinite(pos.preis_partner) &&
-      pos.preis_partner >= 0
-        ? pos.preis_partner
-        : null;
+    const partnerNettoRaw = partnerPositionBetrag(pos);
+    const partnerNetto = partnerNettoRaw > 0 ? partnerNettoRaw : null;
     const typ = pos.aenderung_typ ?? null;
     const isEntfernt = typ === "entfernt";
     const isGeaendert = typ === "geaendert";
@@ -185,15 +186,9 @@ export function buildPartnerAuftragKonditionZeilen(
 }
 
 function auftragPositionPartnerBrutto(pos: PartnerAuftragPosition, defaultMwst = 19): number {
-  if (
-    pos.preis_partner == null ||
-    !Number.isFinite(pos.preis_partner) ||
-    pos.preis_partner < 0
-  ) {
-    return 0;
-  }
-  const netto = Math.round(pos.preis_partner * 100) / 100;
-  return Math.round(netto * (1 + defaultMwst / 100) * 100) / 100;
+  const netto = partnerPositionBetrag(pos);
+  if (netto <= 0) return 0;
+  return roundBetrag2(netto * (1 + defaultMwst / 100));
 }
 
 export function mapPartnerAuftragPositionenMitPreis(
@@ -227,8 +222,7 @@ export function resolvePartnerAuftragGesamtBrutto(
   positionen: PartnerAuftragPosition[],
   defaultMwst = 19
 ): number | undefined {
-  const parsed = mapPartnerAuftragPositionenMitPreis(positionen, defaultMwst);
-  if (!parsed.length) return undefined;
-  const sum = parsed.reduce((s, p) => s + p.preisBrutto, 0);
-  return Math.round(sum * 100) / 100;
+  const netto = partnerSummeBetraege(positionen);
+  if (netto <= 0) return undefined;
+  return roundBetrag2(netto * (1 + defaultMwst / 100));
 }

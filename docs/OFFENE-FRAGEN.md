@@ -9,3 +9,10 @@
 | 2026-09-19 | Melde EN | `melde-copy.ts` behält DE+EN für öffentliche Melde-Links (nicht Portal-i18n). E7 nur Portal — EN für Melde belassen? | 4 |
 
 Siehe auch CRM `baerenwald-system/docs/OFFENE-FRAGEN.md`.
+
+## Offen: Portal ohne `src/types/supabase.ts` (Auftrag A Teil 2)
+
+Der Spalten-Guard braucht generierte Typen als Wahrheitsquelle. Im Portal fehlt die Datei;
+der Guard nutzt lokal den Sibling `../baerenwald-system/src/types/supabase.ts` (wie Shared-Domain).
+Entscheidung: Typen im Portal generieren/pflegen, Sync vom CRM, oder Sibling-Fallback dauerhaft?
+

@@ -162,35 +162,31 @@ function BefundPunktCard({
         action={false}
         type="button"
         onClick={onOpen}
-        className="min-w-0 flex-1 !h-auto !min-h-0 !justify-start !rounded-none !border-0 !bg-transparent !p-0 !shadow-none text-left"
+        className="portal-btn-stack min-w-0 flex-1 border-0 bg-transparent p-0 shadow-none"
       >
-        <p className="portal-text-body font-semibold text-text-primary">
-          {titel}
-          {datum ? (
-            <span className="portal-text-meta ml-2 font-normal text-text-tertiary">
-              {datum}
-            </span>
-          ) : !st ? (
-            <span className="portal-text-meta ml-2 font-normal text-text-tertiary">
-              Noch offen
-            </span>
-          ) : null}
-        </p>
+        <p className="portal-text-body font-semibold text-text-primary">{titel}</p>
+        {datum ? (
+          <p className="portal-text-meta font-normal text-text-tertiary">{datum}</p>
+        ) : !st ? (
+          <p className="portal-text-meta font-normal text-text-tertiary">
+            Noch offen
+          </p>
+        ) : null}
         {notiz ? (
-          <p className="portal-text-meta mt-0.5 line-clamp-2 text-text-secondary">
+          <p className="portal-text-meta line-clamp-2 text-text-secondary">
             {notiz}
           </p>
         ) : null}
         {st ? (
           <span
-            className="mt-1 inline-block text-fs-caption font-semibold"
+            className="inline-block text-fs-caption font-semibold"
             style={{ color: tone.color }}
           >
             {st}
           </span>
         ) : null}
         {punkt.foto_refs.length > 0 ? (
-          <div className="mt-2 flex -space-x-1.5">
+          <div className="flex -space-x-1.5">
             {punkt.foto_refs.slice(0, 4).map((url) => (
               <span
                 key={url}

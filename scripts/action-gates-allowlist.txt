@@ -1,0 +1,27 @@
+# Bewusste Ausnahmen für check-action-gates.mjs — darf nicht wachsen (MAX 18).
+# Format: relativer Pfad oder pfad:Funktionsname
+# Begründung in Kommentar.
+
+# Öffentliche Melde-/Funnel-Endpunkte (Token / absichtlich ohne Session)
+src/app/api/meldung/route.ts
+src/app/api/meldung/upload/route.ts
+src/app/api/meldung/ergaenzen/route.ts
+src/app/api/melden/feedback/route.ts
+src/app/api/melden/status/route.ts
+src/app/api/melden/terminslots/route.ts
+src/app/api/ki-rechner/route.ts
+
+# ICS-Feed: Token → kunde_id des Feeds (kein assert*)
+src/app/api/org/kalender/ics/route.ts
+
+# Interne Partner-Notify: Secret-Header (siehe check-service-role-gate)
+src/app/api/internal/partner-notify/route.ts
+src/app/api/internal/partner-notify-anfrage/route.ts
+src/app/api/internal/partner-notify-angebot-antwort/route.ts
+src/app/api/internal/partner-notify-angebot-bestaetigt/route.ts
+
+# Funnel-Lead ohne Auth (öffentlicher Funnel)
+src/app/actions/submit-funnel-lead.ts:submitFunnelLeadAction
+
+# Registrierungs-Preview: nur Stamm-Lookup per E-Mail, kein Schreibzugriff auf fremde Daten
+src/app/actions/partner-rahmenvertrag-preview.ts:getPartnerRahmenvertragPreview

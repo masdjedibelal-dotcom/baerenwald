@@ -71,3 +71,10 @@ Stand: 2026-09-19 · Repo: baerenwald
 
 Summe: erledigt **17** · offen **5** · total **22**
 
+## Auftrag A Teil 2 (2026-09-26)
+
+Guard DB-Spalten eingehängt; 26 Verstöße gelistet, nicht repariert; Typen via CRM-Sibling.
+
+## Auftrag A Teil 5 (2026-09-26)
+
+`preis_kunde` → `preis_fix` in get-portal-data + kunde-auftrag-aenderung (Kundenpreis). Guard 26→25 Verstöße.

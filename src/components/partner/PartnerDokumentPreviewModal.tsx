@@ -17,6 +17,7 @@ import { usePortalUploadBusy } from "@/components/shared/usePortalUploadBusy";
 import type { AutoDocRegieOverride } from "@/lib/partner/partner-auto-doc-positionen";
 import { PORTAL_VAR } from "@/lib/portal2/tokens";
 import { partnerPortalToast } from "@/lib/shared/portal-toast";
+import { stundensatzBeschriftung } from "@/lib/portal-copy";
 
 function fmtEur(n: number): string {
   return new Intl.NumberFormat("de-DE", {
@@ -816,7 +817,7 @@ export function PartnerDokumentPreviewModal({
                     {fields.some((f) => f.key.startsWith("regie_satz")) ? (
                       <label className="block space-y-1">
                         <span className="text-fs-caption font-semibold text-text-tertiary">
-                          Stundensatz (€) *
+                          {stundensatzBeschriftung("partner")} (€) *
                         </span>
                         <PortalInput
                           type="number"

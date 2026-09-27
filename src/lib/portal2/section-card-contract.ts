@@ -31,4 +31,4 @@ export const PORTAL_NESTED_PANEL_CLASS = "portal-nested-panel" as const;
 /** Listen & Filter: nie in Section-Card wrappen. */
 export const PORTAL_LIST_PAGE_CHROME_CLASS = "portal-list-page-chrome" as const;
 
-/** Flächen auf Page-BG (var(--p2-bg)): Cards/Boxen immer var(--p2-panel) — siehe --p2-selected, .portal-section-card */
+/** Flächen auf Page-BG (var(--p2-bg)): Cards/Boxen immer var(--p2-surface-card) / var(--p2-panel) — Auswahl = var(--p2-selected) */

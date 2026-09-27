@@ -10,6 +10,7 @@ import {
   resolveBestellBetragAsync,
 } from "@/lib/katalog/katalog-produkte";
 import { initialHvMeldungState } from "@/lib/org/hv-meldung-workflow";
+import { assertOrgEinheit } from "@/lib/org/assert-org-objekt";
 import { requireOrganisationSession } from "@/lib/org/require-org-session";
 import { supabaseAdmin } from "@/lib/supabase";
 
@@ -68,6 +69,16 @@ export async function POST(req: Request) {
   }
 
   const einheitId = String(body.einheitId ?? "").trim();
+  if (einheitId) {
+    const einheit = await assertOrgEinheit(session.kunde.id, einheitId);
+    if (!einheit || String(einheit.kunde_objekt_id) !== kundeObjektId) {
+      return NextResponse.json(
+        { error: "Einheit nicht gefunden." },
+        { status: 404 }
+      );
+    }
+  }
+
   let m2 = body.m2 != null && body.m2 > 0 ? Number(body.m2) : undefined;
   if (!m2 && einheitId) {
     const flaeche = await loadEinheitFlaeche(einheitId);

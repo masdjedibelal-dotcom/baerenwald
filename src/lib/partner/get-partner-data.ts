@@ -186,6 +186,10 @@ export type PartnerAuftragPosition = {
   /** CRM-Änderungstyp — null nach HW-Bestätigung. */
   aenderung_typ?: "neu" | "geaendert" | "entfernt" | null;
   preis_alt?: number | null;
+  /** Nur Darstellung: Gruppierung unter Partner-Aufgabe. */
+  partner_aufgabe_id?: string | null;
+  partner_aufgabe_titel?: string | null;
+  partner_aufgabe_beschreibung?: string | null;
 };
 
 export type PartnerBautagebuchItem = {
@@ -810,7 +814,8 @@ export async function getPartnerDataForHandwerker(
           material_fix,
           aenderung_typ,
           preis_alt,
-          stundensatz
+          stundensatz,
+          partner_aufgabe_id
         )
       `
       )
@@ -820,6 +825,28 @@ export async function getPartnerDataForHandwerker(
 
     if (aufErr) {
       console.error("[partner] auftraege laden fehlgeschlagen:", aufErr.message);
+    }
+
+    const { data: partnerAufgabenRows, error: aufgabenErr } = await supabaseAdmin
+      .from("auftrag_partner_aufgaben")
+      .select("id, auftrag_id, handwerker_id, titel, beschreibung")
+      .eq("handwerker_id", id)
+      .in("auftrag_id", auftragIds);
+    if (aufgabenErr) {
+      logDbError(
+        "lib/partner/get-partner-data:auftrag_partner_aufgaben",
+        aufgabenErr
+      );
+    }
+    const aufgabeById = new Map<
+      string,
+      { titel: string | null; beschreibung: string | null }
+    >();
+    for (const row of partnerAufgabenRows ?? []) {
+      aufgabeById.set(String(row.id), {
+        titel: (row.titel as string | null) ?? null,
+        beschreibung: (row.beschreibung as string | null) ?? null,
+      });
     }
 
     const {data: btRows, error: __dbErr382_3} = await supabaseAdmin
@@ -1022,6 +1049,20 @@ export async function getPartnerDataForHandwerker(
           return null;
         })(),
         preis_alt: p.preis_alt != null ? Number(p.preis_alt) : null,
+        partner_aufgabe_id: (() => {
+          const raw = String(p.partner_aufgabe_id ?? "").trim();
+          return raw || null;
+        })(),
+        partner_aufgabe_titel: (() => {
+          const raw = String(p.partner_aufgabe_id ?? "").trim();
+          if (!raw) return null;
+          return aufgabeById.get(raw)?.titel ?? null;
+        })(),
+        partner_aufgabe_beschreibung: (() => {
+          const raw = String(p.partner_aufgabe_id ?? "").trim();
+          if (!raw) return null;
+          return aufgabeById.get(raw)?.beschreibung ?? null;
+        })(),
       }));
 
       const aid = String(raw.id);

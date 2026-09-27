@@ -58,6 +58,36 @@ async function assertPartnerAuftrag(handwerkerId: string, auftragId: string) {
   return assertPartnerAktiveZuweisung(handwerkerId, auftragId);
 }
 
+/**
+ * Client-`protokollId`: wenn lokal vorhanden, muss sie zum Auftrag+HW gehören.
+ * Fehlt die Zeile lokal (nur CRM), bleibt der CRM-Pfad mit bereits geprüftem `auftragId`.
+ */
+async function assertProtokollIdForAuftrag(
+  handwerkerId: string,
+  auftragId: string,
+  protokollId?: string | null
+): Promise<boolean> {
+  const pid = protokollId?.trim();
+  if (!pid) return true;
+  const { data, error } = await supabaseAdmin
+    .from("auftrag_abnahmeprotokolle")
+    .select("id, auftrag_id, handwerker_id")
+    .eq("id", pid)
+    .maybeSingle();
+  if (error) {
+    logDbError(
+      "app/actions/partner-abnahmeprotokoll:assertProtokollIdForAuftrag",
+      error
+    );
+    return false;
+  }
+  if (!data) return true;
+  return (
+    String(data.auftrag_id) === auftragId &&
+    String(data.handwerker_id) === handwerkerId
+  );
+}
+
 async function partnerAuth() {
   if (!isSupabaseConfigured()) {
     return { ok: false as const, error: "Datenbank nicht konfiguriert." };
@@ -151,6 +181,8 @@ async function loadOwnAbnahmeLink(auftragId: string, handwerkerId: string) {
       .from("auftrag_abnahmeprotokolle")
       .select("freigabe_status")
       .eq("id", protokollId)
+      .eq("auftrag_id", auftragId)
+      .eq("handwerker_id", handwerkerId)
       .maybeSingle();
     if (__dbErr24_2) logDbError('app/actions/partner-abnahmeprotokoll:auftrag_abnahmeprotokolle', __dbErr24_2)
     freigabeStatus =
@@ -313,6 +345,8 @@ export async function submitPartnerAbnahmeNachSignatur(
       .from("auftrag_abnahmeprotokolle")
       .select("id")
       .eq("id", crm.protokoll_id)
+      .eq("auftrag_id", id)
+      .eq("handwerker_id", auth.handwerkerId)
       .maybeSingle();
     if (__dbErr26_4) logDbError('app/actions/partner-abnahmeprotokoll:auftrag_abnahmeprotokolle', __dbErr26_4)
     if (existingProto?.id) {
@@ -326,7 +360,9 @@ export async function submitPartnerAbnahmeNachSignatur(
           freigabe_status: "zur_freigabe",
           updated_at: new Date().toISOString(),
         })
-        .eq("id", crm.protokoll_id);
+        .eq("id", crm.protokoll_id)
+        .eq("auftrag_id", id)
+        .eq("handwerker_id", auth.handwerkerId);
       if (__dbErr30_8) logDbError('app/actions/partner-abnahmeprotokoll:auftrag_abnahmeprotokolle', __dbErr30_8)
     } else {
       await persistLocalTeilabnahme({
@@ -505,6 +541,8 @@ async function loadLocalAbnahmeStatus(
           "id, pdf_url, abnahme_datum, punkte, maengel, an_kunde_gesendet_at, handwerker_bestaetigt_at, freigabe_status, meta"
         )
         .eq("id", byId)
+        .eq("auftrag_id", auftragId)
+        .eq("handwerker_id", handwerkerId)
         .maybeSingle();
     }
     return supabaseAdmin
@@ -568,6 +606,9 @@ export async function getPartnerAbnahmeStatus(
   if (!id) return { ok: false as const, error: "Auftrag fehlt." };
   const allowed = await assertPartnerAuftrag(auth.handwerkerId, id);
   if (!allowed) return { ok: false as const, error: "Kein Zugriff." };
+  if (!(await assertProtokollIdForAuftrag(auth.handwerkerId, id, protokollId))) {
+    return { ok: false as const, error: "Protokoll nicht gefunden." };
+  }
 
   const crm = await fetchCrmAbnahmeStatus(id, protokollId);
   if (crm.ok && (crm.punkte_count > 0 || crm.maengel_count > 0 || crm.protokoll_id)) {
@@ -599,6 +640,9 @@ export async function bestaetigePartnerAbnahme(
   if (!id) return { ok: false as const, error: "Auftrag fehlt." };
   const allowed = await assertPartnerAuftrag(auth.handwerkerId, id);
   if (!allowed) return { ok: false as const, error: "Kein Zugriff." };
+  if (!(await assertProtokollIdForAuftrag(auth.handwerkerId, id, protokollId))) {
+    return { ok: false as const, error: "Protokoll nicht gefunden." };
+  }
   const r = await postCrmAbnahmeAction(id, "bestaetigen", protokollId);
   if (r.ok) revalidatePath("/partner");
   return r;
@@ -618,6 +662,9 @@ export async function versendePartnerAbnahme(
   if (!id) return { ok: false as const, error: "Auftrag fehlt." };
   const allowed = await assertPartnerAuftrag(auth.handwerkerId, id);
   if (!allowed) return { ok: false as const, error: "Kein Zugriff." };
+  if (!(await assertProtokollIdForAuftrag(auth.handwerkerId, id, protokollId))) {
+    return { ok: false as const, error: "Protokoll nicht gefunden." };
+  }
   const r = await postCrmAbnahmeAction(id, "versenden", protokollId);
   if (r.ok) revalidatePath("/partner");
   return r;

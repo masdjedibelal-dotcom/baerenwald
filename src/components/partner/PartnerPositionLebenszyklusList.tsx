@@ -27,6 +27,9 @@ import {
 } from "@/app/actions/partner-position-eintraege";
 import { PartnerLeistungUpdatesAccordion } from "@/components/partner/PartnerLeistungUpdatesAccordion";
 import { normalizePartnerCameraPhoto } from "@/lib/partner/normalize-camera-photo";
+import { stundensatzBeschriftung } from "@/lib/portal-copy";
+import { partnerPositionBetrag } from "@/lib/partner/partner-betrag";
+import { buildPartnerAufgabeBloecke } from "@/lib/partner/partner-aufgabe-gruppen";
 import {
   formatZeitMinuten,
   lebenszyklusLabel,
@@ -50,6 +53,10 @@ export type LebenszyklusPosition = {
   einheit?: string | null;
   menge?: number | null;
   zeit_minuten_summe?: number | null;
+  /** Nur Darstellung — Gruppierung. */
+  partner_aufgabe_id?: string | null;
+  partner_aufgabe_titel?: string | null;
+  partner_aufgabe_beschreibung?: string | null;
 };
 
 type SheetMode = "start" | "fortschritt" | "erledigt";
@@ -83,20 +90,7 @@ function isRegiePosition(p: LebenszyklusPosition): boolean {
   );
 }
 
-function regieStundensatz(p: LebenszyklusPosition): number | null {
-  if (p.stundensatz != null && p.stundensatz > 0) return p.stundensatz;
-  const einheit = String(p.einheit ?? "").toLowerCase();
-  if (
-    (einheit === "h" || einheit === "std") &&
-    p.preis_partner != null &&
-    p.preis_partner > 0
-  ) {
-    return p.preis_partner;
-  }
-  return null;
-}
-
-/** Erfasste Minuten — Zeitbuchung, sonst Menge in Stunden. */
+/** Erfasste Minuten — Anzeige; Betrag kommt aus shared-domain. */
 function regieArbeitsminuten(p: LebenszyklusPosition): number {
   if (p.zeit_minuten_summe != null && p.zeit_minuten_summe > 0) {
     return Math.round(p.zeit_minuten_summe);
@@ -112,33 +106,9 @@ function regieArbeitsminuten(p: LebenszyklusPosition): number {
   return 0;
 }
 
-function regieGesamtpreis(p: LebenszyklusPosition): number | null {
-  const min = regieArbeitsminuten(p);
-  const satz = regieStundensatz(p);
-  if (min > 0 && satz != null) {
-    return Math.round((min / 60) * satz * 100) / 100;
-  }
-  const einheit = String(p.einheit ?? "").toLowerCase();
-  if (
-    p.preis_partner != null &&
-    p.preis_partner > 0 &&
-    einheit !== "h" &&
-    einheit !== "std"
-  ) {
-    return p.preis_partner;
-  }
-  return null;
-}
-
 function formatPartnerPreisLabel(p: LebenszyklusPosition): string | null {
-  if (isRegiePosition(p)) {
-    const gesamt = regieGesamtpreis(p);
-    return gesamt != null ? formatEuro(gesamt) : null;
-  }
-  if (p.preis_partner != null && p.preis_partner > 0) {
-    return formatEuro(p.preis_partner);
-  }
-  return null;
+  const gesamt = partnerPositionBetrag(p);
+  return gesamt > 0 ? formatEuro(gesamt) : null;
 }
 
 function mengeLabel(p: LebenszyklusPosition): string | null {
@@ -197,6 +167,37 @@ function PositionActionIconBtn({
     >
       {children}
     </PortalButton>
+  );
+}
+
+function PartnerAufgabeGruppenkopf({
+  titel,
+  beschreibung,
+  zwischensumme,
+}: {
+  titel: string;
+  beschreibung: string | null;
+  zwischensumme: number;
+}) {
+  return (
+    <div className="border-b border-border-light px-0 pb-2 pt-3">
+      <p className="text-fs-title font-bold leading-snug text-text-primary">
+        {titel}
+      </p>
+      {beschreibung ? (
+        <p className="mt-1 text-fs-meta leading-snug text-text-secondary whitespace-pre-wrap">
+          {beschreibung}
+        </p>
+      ) : null}
+      {zwischensumme > 0 ? (
+        <p className="mt-1.5 flex justify-between gap-3 text-fs-meta text-text-secondary">
+          <span className="text-text-tertiary">Zwischensumme</span>
+          <span className="font-semibold tabular-nums text-text-primary">
+            {formatEuro(zwischensumme)}
+          </span>
+        </p>
+      ) : null}
+    </div>
   );
 }
 
@@ -325,6 +326,14 @@ export function PartnerPositionLebenszyklusList({
     () =>
       sortedPositionen.filter((p) => (p.leistung_status ?? "offen") === "erledigt"),
     [sortedPositionen]
+  );
+  const offenBloecke = useMemo(
+    () => buildPartnerAufgabeBloecke(offenPositionen),
+    [offenPositionen]
+  );
+  const erledigtBloecke = useMemo(
+    () => buildPartnerAufgabeBloecke(erledigtPositionen),
+    [erledigtPositionen]
   );
   const progressPct =
     actionablePositionen.length > 0
@@ -880,8 +889,28 @@ export function PartnerPositionLebenszyklusList({
       ) : (
         <div className="space-y-1">
           {offenPositionen.length > 0 ? (
-            <ul className="divide-y divide-border-light">
-              {offenPositionen.map((p) => {
+            <ul className="space-y-1">
+              {offenBloecke.map((block) => {
+                const rows =
+                  block.kind === "solo" ? [block.position] : block.positionen;
+                const hideRowTitle =
+                  block.kind === "gruppe" &&
+                  (Boolean(block.partnerTitel) || block.positionen.length === 1);
+                const blockKey =
+                  block.kind === "solo"
+                    ? block.position.id
+                    : `aufgabe-${block.aufgabeId}`;
+                return (
+                  <li key={blockKey} className="list-none">
+                    {block.kind === "gruppe" ? (
+                      <PartnerAufgabeGruppenkopf
+                        titel={block.anzeigeTitel}
+                        beschreibung={block.beschreibung}
+                        zwischensumme={block.zwischensumme}
+                      />
+                    ) : null}
+                    <ul className="divide-y divide-border-light">
+                      {rows.map((p) => {
                 const st = p.leistung_status ?? "offen";
                 const isArbeit = st === "in_arbeit";
                 const isAufwand = p.verguetung === "aufwand";
@@ -891,7 +920,9 @@ export function PartnerPositionLebenszyklusList({
                 const isAbgelehnt = p.anerkennung_status === "abgelehnt";
                 const isBlocked = inPruefung || isAbgelehnt;
                 const arbeitsMin = isRegie ? regieArbeitsminuten(p) : 0;
-                const gesamtPreis = isRegie ? regieGesamtpreis(p) : null;
+                const gesamtPreis = isRegie ? partnerPositionBetrag(p) : 0;
+                const gesamtPreisLabel =
+                  isRegie && gesamtPreis > 0 ? formatEuro(gesamtPreis) : null;
                 const meta = positionMetaLine(p, {
                   preferred: isPreferred,
                   blocked: isBlocked,
@@ -919,49 +950,40 @@ export function PartnerPositionLebenszyklusList({
                   >
                     <div className="flex items-start gap-2.5">
                       {!readOnly && !isBlocked ? (
-                        <PortalButton
-                          variant="primary"
-                          type="button"
-                          className={cn(
-                            "mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-field border",
-                            bulkSelected.includes(p.id)
-                              ? "border-accent bg-accent text-white"
-                              : "border-border-default bg-white"
-                          )}
-                          aria-pressed={bulkSelected.includes(p.id)}
+                        <PortalCheckbox
+                          className="mt-0.5"
+                          checked={bulkSelected.includes(p.id)}
+                          onChange={() => toggleBulk(p.id)}
                           aria-label={`${p.leistung_name} auswählen`}
-                          onClick={() => toggleBulk(p.id)}
-                        >
-                          {bulkSelected.includes(p.id) ? (
-                            <PortalIcon n="check" ctx="default" className="h-3 w-3" />
-                          ) : null}
-                        </PortalButton>
-                      ) : (
-                        <div
-                          className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-field border border-border-default bg-white"
-                          aria-hidden
                         />
+                      ) : (
+                        <span className="mt-0.5 inline-block h-[1.125rem] w-[1.125rem] shrink-0" aria-hidden />
                       )}
 
                       <div className="min-w-0 flex-1">
                         <div className="flex items-start justify-between gap-2">
-                          <p
-                            className={cn(
-                              "text-fs-title font-bold leading-snug",
-                              isBlocked
-                                ? "text-text-secondary"
-                                : "text-text-primary"
-                            )}
-                          >
-                            {p.leistung_name}
-                          </p>
+                          {hideRowTitle ? (
+                            <span className="sr-only">{p.leistung_name}</span>
+                          ) : (
+                            <p
+                              className={cn(
+                                "text-fs-title font-bold leading-snug",
+                                isBlocked
+                                  ? "text-text-secondary"
+                                  : "text-text-primary"
+                              )}
+                            >
+                              {p.leistung_name}
+                            </p>
+                          )}
                           {preisLabel ? (
                             <p
                               className={cn(
                                 "hidden shrink-0 text-fs-title font-bold tabular-nums sm:block",
                                 isBlocked
                                   ? "text-text-tertiary"
-                                  : "text-text-primary"
+                                  : "text-text-primary",
+                                hideRowTitle && "ml-auto"
                               )}
                             >
                               {preisLabel}
@@ -988,9 +1010,7 @@ export function PartnerPositionLebenszyklusList({
                                 Gesamtpreis
                               </span>
                               <span className="min-w-0 text-right font-semibold tabular-nums text-text-primary">
-                                {gesamtPreis != null
-                                  ? formatEuro(gesamtPreis)
-                                  : "—"}
+                                {gesamtPreisLabel ?? "—"}
                               </span>
                             </p>
                           </div>
@@ -1064,6 +1084,10 @@ export function PartnerPositionLebenszyklusList({
                     />
                   </li>
                 );
+                      })}
+                    </ul>
+                  </li>
+                );
               })}
             </ul>
           ) : (
@@ -1090,8 +1114,31 @@ export function PartnerPositionLebenszyklusList({
                   )} aria-hidden />
               </PortalButton>
               {erledigtAccordionOpen ? (
-                <ul className="divide-y divide-border-light border-t border-border-light">
-                  {erledigtPositionen.map((p) => {
+                <ul className="space-y-1 border-t border-border-light">
+                  {erledigtBloecke.map((block) => {
+                    const rows =
+                      block.kind === "solo"
+                        ? [block.position]
+                        : block.positionen;
+                    const hideRowTitle =
+                      block.kind === "gruppe" &&
+                      (Boolean(block.partnerTitel) ||
+                        block.positionen.length === 1);
+                    const blockKey =
+                      block.kind === "solo"
+                        ? block.position.id
+                        : `aufgabe-done-${block.aufgabeId}`;
+                    return (
+                      <li key={blockKey} className="list-none">
+                        {block.kind === "gruppe" ? (
+                          <PartnerAufgabeGruppenkopf
+                            titel={block.anzeigeTitel}
+                            beschreibung={block.beschreibung}
+                            zwischensumme={block.zwischensumme}
+                          />
+                        ) : null}
+                        <ul className="divide-y divide-border-light">
+                          {rows.map((p) => {
                     const isAufwand = p.verguetung === "aufwand";
                     const isRegie = p.typ === "regie" || isAufwand;
                     const meta = positionMetaLine(p, {
@@ -1112,11 +1159,20 @@ export function PartnerPositionLebenszyklusList({
                           </div>
                           <div className="min-w-0 flex-1">
                             <div className="flex items-start justify-between gap-2">
-                              <p className="text-fs-title font-bold leading-snug text-text-primary">
-                                {p.leistung_name}
-                              </p>
+                              {hideRowTitle ? (
+                                <span className="sr-only">{p.leistung_name}</span>
+                              ) : (
+                                <p className="text-fs-title font-bold leading-snug text-text-primary">
+                                  {p.leistung_name}
+                                </p>
+                              )}
                               {preisLabel ? (
-                                <p className="shrink-0 text-fs-title font-bold tabular-nums text-text-primary">
+                                <p
+                                  className={cn(
+                                    "shrink-0 text-fs-title font-bold tabular-nums text-text-primary",
+                                    hideRowTitle && "ml-auto"
+                                  )}
+                                >
                                   {preisLabel}
                                 </p>
                               ) : null}
@@ -1129,6 +1185,10 @@ export function PartnerPositionLebenszyklusList({
                             />
                           </div>
                         </div>
+                      </li>
+                    );
+                          })}
+                        </ul>
                       </li>
                     );
                   })}
@@ -1610,7 +1670,7 @@ export function PartnerPositionLebenszyklusList({
           <div className="grid grid-cols-2 gap-2">
             <label className="flex flex-col gap-1">
               <span className="text-fs-caption font-bold tracking-wide text-text-tertiary">
-                Stundensatz in €
+                {stundensatzBeschriftung("partner")} in €
               </span>
               <PortalInput
                 type="text"

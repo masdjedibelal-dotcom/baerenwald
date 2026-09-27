@@ -1,6 +1,15 @@
 import type { PartnerAuftragPosition } from "@/lib/partner/get-partner-data";
+import {
+  nettoZeilenAlsBetragPositionen,
+  partnerPositionBetrag,
+} from "@/lib/partner/partner-betrag";
 import type { PartnerAngebotPositionenFilter } from "@/lib/partner/partner-leistungen-display";
 import { positionBrauchtHandwerkerAktion as crmPositionBrauchtHandwerkerAktion } from "@/lib/crm-vorgang/handwerker-aktion-offen";
+import {
+  positionBetrag,
+  roundBetrag2,
+  summeBetraege,
+} from "@/lib/shared-domain/regie-betrag";
 
 const SKIP_POSITION_SLUGS = new Set(["__freitext__", "__gesamtrabatt__"]);
 
@@ -166,13 +175,9 @@ function agreedHwPositionForZeile(
 function konditionZeileFromAuftragPosition(
   p: PartnerAuftragPosition
 ): PartnerKonditionZeile {
-  // Nur Partner-EK (preis_partner = Netto-Zeile). Kein VK-Fallback über Lohn/Material.
-  const vorschlagNetto =
-    p.preis_partner != null &&
-    Number.isFinite(p.preis_partner) &&
-    p.preis_partner >= 0
-      ? round2(p.preis_partner)
-      : null;
+  // Partner-Zeilenbetrag über shared-domain (Regie = Menge × Satz).
+  const betrag = partnerPositionBetrag(p);
+  const vorschlagNetto = betrag > 0 ? betrag : null;
   return {
     id: p.id,
     title: p.leistung_name,
@@ -461,16 +466,14 @@ export function summeKonditionNetto(
   zeilen: Array<{ hwNetto?: number | null; vorschlagNetto?: number | null }>,
   useHw = false
 ): number {
-  let sum = 0;
-  for (const z of zeilen) {
-    const n = useHw
+  const betraege = zeilen.map((z) =>
+    useHw
       ? z.hwNetto != null
         ? z.hwNetto
         : z.vorschlagNetto
-      : z.vorschlagNetto;
-    if (n != null && Number.isFinite(n) && n >= 0) sum += n;
-  }
-  return round2(sum);
+      : z.vorschlagNetto
+  );
+  return summeBetraege(nettoZeilenAlsBetragPositionen(betraege), "partner");
 }
 
 export function summeKonditionBrutto(
@@ -485,9 +488,13 @@ export function summeKonditionBrutto(
         : z.vorschlagNetto
       : z.vorschlagNetto;
     if (netto == null || !Number.isFinite(netto) || netto < 0) continue;
-    sum += round2(netto * (1 + z.mwstSatz / 100));
+    const line = positionBetrag(
+      { preis_partner: netto },
+      "partner"
+    );
+    sum += roundBetrag2(line * (1 + z.mwstSatz / 100));
   }
-  return round2(sum);
+  return roundBetrag2(sum);
 }
 
 export function mapKonditionZeilenVereinbart(

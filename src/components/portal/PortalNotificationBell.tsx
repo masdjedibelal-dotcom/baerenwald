@@ -196,22 +196,14 @@ export function PortalNotificationBell({
         ).map((f) => (
           <PortalButton
             variant="ghost"
+            action={false}
             key={f.id}
             type="button"
             onClick={() => setFilter(f.id)}
             className={cn(
-              "portal-text-meta rounded-pill px-3 py-1.5 font-semibold",
-              filter === f.id ? "text-white" : "border"
+              "portal-text-meta portal-auswahl rounded-pill px-3 py-1.5 font-semibold",
+              filter === f.id && "portal-auswahl--active"
             )}
-            style={
-              filter === f.id
-                ? { background: PORTAL_VAR.primary }
-                : {
-                    borderColor: "var(--p2-line)",
-                    color: "var(--p2-sub)",
-                    background: "var(--p2-panel)",
-                  }
-            }
           >
             {f.label}
           </PortalButton>

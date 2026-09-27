@@ -1,0 +1,8 @@
+# Ausnahmen: unlayered CSS-Selektoren mit --active / --selected
+# Format: Substring der im Selektor vorkommen darf (eine Zeile = ein Eintrag)
+# Darf nicht wachsen — neue Treffer gehören in @layer components, nicht hierher.
+#
+# mock-icon--active: Icon-Zustandsfarbe (Glyph), kein Auswahl-Chrome
+.mock-icon--active
+# portal-notif-row--active: klickbare Notizzeile (Hover/Cursor), kein Filter-Selected
+.portal-notif-row--active

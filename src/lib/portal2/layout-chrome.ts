@@ -42,7 +42,7 @@ export function portalListItemClass(
     );
   }
   return cn(
-    "portal-list-card flex w-full items-stretch gap-3 border-0 bg-white px-4 py-[15px] text-left transition-shadow rounded-[18px]",
+    "portal-list-card flex w-full items-stretch gap-3 border-0 bg-[var(--p2-surface-card,#fff)] px-4 py-[15px] text-left transition-shadow rounded-[18px]",
     selected
       ? "ring-2 ring-[var(--org-primary,var(--p2-primary))]/25"
       : "hover:shadow-[var(--p2-shadow-hover)]"

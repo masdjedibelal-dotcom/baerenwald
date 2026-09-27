@@ -32,7 +32,7 @@ export function KiRechnerStarter({ selected, onSelect }: KiRechnerStarterProps) 
 
       <button
         type="button"
-        aria-pressed={selected === "funnel"}
+        aria-selected={selected === "funnel"}
         className={cn(
           "ki-rechner-starter-card ki-rechner-starter-card--funnel",
           selected === "funnel" && "selected"
@@ -51,7 +51,7 @@ export function KiRechnerStarter({ selected, onSelect }: KiRechnerStarterProps) 
 
       <button
         type="button"
-        aria-pressed={selected === "ki"}
+        aria-selected={selected === "ki"}
         className={cn(
           "ki-rechner-starter-card ki-rechner-starter-card--ki",
           selected === "ki" && "selected"

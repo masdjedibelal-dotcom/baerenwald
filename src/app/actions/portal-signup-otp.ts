@@ -3,7 +3,6 @@
 import { logDbError } from '@/lib/errors/log-db-error'
 import { assertPartnerEmailAllowed } from "@/app/actions/assert-partner-email-allowed";
 import { assertPortalEmailAllowed } from "@/app/actions/assert-portal-email-allowed";
-import { acceptPartnerRahmenvertragForEmail } from "@/app/actions/partner-vertrag";
 import {
   generateFunnelOtpCode,
   issueSignupOtp,
@@ -13,6 +12,7 @@ import {
   type PortalOtpBrand,
 } from "@/lib/funnel/funnel-portal-otp";
 import { normalizeKundenEmail } from "@/lib/kunden/kunde-email";
+import { acceptPortalRahmenvertragAfterVerifiedEmail } from "@/lib/partner/accept-portal-rahmenvertrag-registration";
 import { linkPortalHandwerkerToAuthUser } from "@/lib/partner/link-portal-handwerker";
 import { PARTNER_AUTH_COPY } from "@/lib/partner/partner-auth-copy";
 import { verifyPartnerRegistrationEmail } from "@/lib/partner/partner-registration-eligibility";
@@ -225,11 +225,14 @@ export async function registerPartnerWithOtp(input: {
   const check = await verifyPartnerRegistrationEmail(email);
   if (!check.ok) return check;
 
-  const rvRes = await acceptPartnerRahmenvertragForEmail({
-    email,
-    akzeptiert: input.rahmenAkzeptiert,
-  });
-  if (!rvRes.ok) return rvRes;
+  if (!input.rahmenAkzeptiert) {
+    return {
+      ok: false,
+      error: "Bitte bestätige die Geschäftsbedingungen inkl. der Anlagen.",
+    };
+  }
+
+  const rvAkzeptiertAt = new Date().toISOString();
 
   const { data: created, error: createErr } =
     await supabaseAdmin.auth.admin.createUser({
@@ -238,7 +241,8 @@ export async function registerPartnerWithOtp(input: {
       email_confirm: false,
       user_metadata: {
         portal_role: "handwerker",
-        rv_akzeptiert_at: new Date().toISOString(),
+        rv_akzeptiert_at: rvAkzeptiertAt,
+        rv_akzeptiert_pending: true,
       },
     });
 
@@ -329,6 +333,38 @@ export async function confirmPortalSignupCode(opts: {
       email,
     });
     if (!link.ok) return { ok: false, error: link.error };
+
+    const { data: userData } = await supabaseAdmin.auth.admin.getUserById(
+      result.userId
+    );
+    const meta = (userData.user?.user_metadata ?? {}) as Record<
+      string,
+      unknown
+    >;
+    const pendingRv =
+      meta.rv_akzeptiert_pending === true ||
+      Boolean(
+        typeof meta.rv_akzeptiert_at === "string" &&
+          meta.rv_akzeptiert_at.trim()
+      );
+
+    if (pendingRv) {
+      const rvRes = await acceptPortalRahmenvertragAfterVerifiedEmail({
+        email,
+        authUserId: result.userId,
+        herkunft: "partner_registrierung_otp",
+      });
+      if (!rvRes.ok) return rvRes;
+
+      await supabaseAdmin.auth.admin.updateUserById(result.userId, {
+        user_metadata: {
+          ...meta,
+          rv_akzeptiert_pending: false,
+          rv_akzeptiert_persisted_at: new Date().toISOString(),
+        },
+      });
+    }
+
     return { ok: true };
   }
 

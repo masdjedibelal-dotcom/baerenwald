@@ -631,13 +631,15 @@ export function EinstellungenToggle({
     >
       <div className="flex w-full items-start gap-3">
         <PortalButton
-          variant="primary"
+          variant="ghost"
+          action={false}
           type="button"
+          role="switch"
           disabled={disabled}
-          aria-pressed={checked}
+          aria-checked={checked}
           onClick={() => onChange(!checked)}
           className={cn(
-            "relative mt-0.5 h-7 w-12 shrink-0 rounded-pill transition-colors disabled:cursor-not-allowed",
+            "relative mt-0.5 h-7 w-12 shrink-0 rounded-pill transition-colors disabled:cursor-not-allowed border-0",
             checked ? "bg-[var(--p2-primary)]" : "bg-[var(--p2-toggle-off)]"
           )}
         >

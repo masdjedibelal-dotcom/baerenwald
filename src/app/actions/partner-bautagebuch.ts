@@ -3,6 +3,8 @@
 import { logDbError } from '@/lib/errors/log-db-error'
 import { revalidatePath } from "next/cache";
 
+import { requireAccountSession } from "@/lib/account/require-account-session";
+import { filterPartnerOwnedStoragePaths } from "@/lib/partner/filter-partner-owned-storage-paths";
 import { linkPortalHandwerkerToAuthUser } from "@/lib/partner/link-portal-handwerker";
 import { sendPartnerInternalBautagebuchMail } from "@/lib/partner/partner-mail";
 import {
@@ -296,9 +298,18 @@ export async function deletePartnerBautagebuchEintrag(opts: {
   return { ok: true };
 }
 
-/** Für Client-Vorschau nach Upload (optional). */
+/** Für Client-Vorschau nach Upload (optional). Nur eigene, in DB gebundene Pfade. */
 export async function getPartnerBautagebuchFotoUrls(
   paths: string[]
 ): Promise<string[]> {
-  return resolvePartnerFileUrls(paths);
+  const session = await requireAccountSession();
+  if (!session.ok || session.kind !== "handwerker") return [];
+
+  const list = Array.isArray(paths) ? paths.slice(0, 80) : [];
+  if (!list.length) return [];
+
+  const owned = await filterPartnerOwnedStoragePaths(session.entityId, list);
+  if (!owned.length) return [];
+
+  return resolvePartnerFileUrls(owned);
 }

@@ -211,6 +211,7 @@ export function OrganisationObjektPruefpflichtenPanel({ objektId }: { objektId: 
         />
       ) : (
         <PortalEntityList
+          nested
           ariaLabel="Prüfpflichten"
           columns={[
             { key: "typ", label: "Typ", width: "minmax(0, 1.4fr)" },

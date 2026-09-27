@@ -148,15 +148,14 @@ export function PortalEinstellungenMieter({
                   >
                     {(["de", "en"] as const).map((l) => (
                       <PortalButton
-                        variant="primary"
+                        variant="ghost"
+                        action={false}
                         key={l}
                         type="button"
                         onClick={() => setUiLang(l)}
                         className={cn(
-                          "portal-text-meta min-w-[52px] rounded-[9px] border px-3 py-2 font-bold uppercase",
-                          lang === l
-                            ? "border-accent bg-accent text-white"
-                            : "border-border-default bg-white text-text-secondary"
+                          "portal-text-meta portal-auswahl min-w-[52px] rounded-[9px] px-3 py-2 font-bold uppercase",
+                          lang === l && "portal-auswahl--active"
                         )}
                       >
                         {l}

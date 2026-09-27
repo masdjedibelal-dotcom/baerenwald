@@ -11,6 +11,8 @@ Kurzentscheidungen für Portal-UI (Kunde / Partner / HV). Neue Varianten nur nac
 | Alias | **`ActionBtn`** = Re-Export von `PortalButton` |
 | Pill (inline) | `PortalButton action={false}` (+ optional `compact`) und `className` mit `btn-pill-*` |
 | Sticky / entscheidend | `PortalButton` (Default `action`); CSS-Selektoren auf `.portal-action-btn` bleiben gültig |
+| **Container** (R5.2) | `action={false}` + Klasse **`portal-btn-stack`** (Spalte, `align-items: flex-start`, Gap `--p2-row-gap`) — nie Ghost-Chrome für Kartenzeilen/Kacheln |
+| **Eine Fläche** (R5.2) | In Section-/Detail-Card: Listen mit `PortalEntityList nested` (Trennlinie, keine zweite Karte) |
 
 `portal-action-btn` ist **kein** zweites System — spezialisierte Action-Variante derselben Familie. Neue Screens: `PortalButton`, keine rohen Klassen-Strings.
 
@@ -102,6 +104,34 @@ Keine parallelen Toast-APIs; Copy aus den Helpern, nicht ad-hoc.
 | Website / Marketing / Funnel-Landing | `--fl-*` |
 
 **Keine Vermischung** von `--p2-` und `--fl-` in derselben Oberfläche. Keine neuen Hex nahe Markengrün außerhalb Tokens.
+
+### Radien (D1 — genau fünf)
+
+| Token | Wert | Nutzung |
+|-------|------|---------|
+| `--p2-radius-sm` | 12 | Buttons, Fields, kleine Flächen |
+| `--p2-radius-md` | 18 | Listenkarten, Objektkarten |
+| `--p2-radius-lg` | 22 | Section-Cards, große Kacheln |
+| `--p2-radius-sheet` | 28 | Sheets / große Abrundungen |
+| `--p2-radius-pill` | 999px | Chips, Tabs, Pillen |
+| `0` / `50%` | — | eckig / echte Kreise (Avatar) |
+
+`--portal-btn-radius` = `var(--p2-radius-sm)`. Keine Roh-px, keine Token-Fallbacks `var(--p2-radius-*, …)`.
+
+### Abstände (D1 — sechs + Dichte)
+
+`--p2-space-1…6`: 2 · 4 · 8 · 12 · 16 · 24.  
+Dichte: `--p2-row-pad` / `--p2-row-gap` / `--p2-card-pad` / `--p2-stack` (Desktop kompakt, ≤767px luftig).
+
+### Schatten (D1 — drei)
+
+| Token | Rolle |
+|-------|--------|
+| `--p2-shadow-flat` | Trennung ohne Erhebung (0,5px-Linie) |
+| `--p2-shadow-card` | Karten Ruhe |
+| `--p2-shadow-float` | Hover, Sheets, Menüs, schwebende Leisten |
+
+Legacy `--p2-shadow*` sind Aliase auf card/float. Fokus-Ringe (`0 0 0 Npx …`) sind **keine** Erhebung — bleiben bis D1.2.
 
 ## Modals / Sheets
 

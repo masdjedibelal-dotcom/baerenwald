@@ -5,6 +5,7 @@ import { PortalButton } from "@/components/portal/PortalButton";
 import { useEffect, useId, useRef, useState, type ReactNode } from "react";
 
 import { PortalIcon } from "@/components/portal/PortalIcon";
+import { PortalCheckbox } from "@/components/shared/PortalFormControls";
 import { PortalListeFilterChip } from "@/components/shared/PortalListeChrome";
 import { PORTAL_VAR } from "@/lib/portal2/tokens";
 import { cn } from "@/lib/utils";
@@ -123,7 +124,9 @@ function PortalListeMultiSelectPopover({
       ref={rootRef}
       className={cn("relative shrink-0", open && "z-50")}
     >
-      <PortalButton variant="ghost"
+      <PortalButton
+        variant="ghost"
+        action={false}
         type="button"
         aria-haspopup="listbox"
         aria-expanded={open}
@@ -142,7 +145,7 @@ function PortalListeMultiSelectPopover({
             className="portal-liste-chip-badge"
             style={{
               color: active ? PORTAL_VAR.greenDark : PALETTE.h1a2e1f,
-              background: active ? "var(--p2-panel)" : "var(--p2-sand)",
+              background: active ? "var(--p2-surface-card)" : "var(--p2-sand)",
             }}
             aria-hidden
           >
@@ -164,30 +167,16 @@ function PortalListeMultiSelectPopover({
           </p>
           <ul className="max-h-[min(50vh,320px)] overflow-y-auto py-1">
             <li>
-              <PortalButton variant="primary"
-                type="button"
-                role="option"
-                aria-selected={allSelected}
-                className="flex w-full items-center gap-2.5 px-3.5 py-2.5 text-left hover:bg-muted/60"
-                onClick={selectAll}
-              >
-                <span
-                  className={cn(
-                    "flex h-[18px] w-[18px] shrink-0 items-center justify-center rounded-[5px] border",
-                    allSelected
-                      ? "border-accent bg-accent text-white"
-                      : "border-border-default bg-white"
-                  )}
-                  aria-hidden
-                >
-                  {allSelected ? (
-                    <PortalIcon n="check" ctx="default" className="h-3 w-3" />
-                  ) : null}
-                </span>
+              <label className="flex w-full cursor-pointer items-center gap-2.5 px-3.5 py-2.5 text-left hover:bg-muted/60">
+                <PortalCheckbox
+                  checked={allSelected}
+                  onChange={() => selectAll()}
+                  aria-label={allLabel}
+                />
                 <span className="portal-text-body font-semibold text-text-primary">
                   {allLabel}
                 </span>
-              </PortalButton>
+              </label>
             </li>
             {options.map((o) => {
               const checked =
@@ -195,30 +184,16 @@ function PortalListeMultiSelectPopover({
               const titel = o.label.trim() || "Objekt";
               return (
                 <li key={o.id}>
-                  <PortalButton variant="primary"
-                    type="button"
-                    role="option"
-                    aria-selected={checked}
-                    className="flex w-full items-center gap-2.5 px-3.5 py-2.5 text-left hover:bg-muted/60"
-                    onClick={() => toggleOne(o.id)}
-                  >
-                    <span
-                      className={cn(
-                        "flex h-[18px] w-[18px] shrink-0 items-center justify-center rounded-[5px] border",
-                        checked
-                          ? "border-accent bg-accent text-white"
-                          : "border-border-default bg-white"
-                      )}
-                      aria-hidden
-                    >
-                      {checked ? (
-                        <PortalIcon n="check" ctx="default" className="h-3 w-3" />
-                      ) : null}
-                    </span>
+                  <label className="flex w-full cursor-pointer items-center gap-2.5 px-3.5 py-2.5 text-left hover:bg-muted/60">
+                    <PortalCheckbox
+                      checked={checked}
+                      onChange={() => toggleOne(o.id)}
+                      aria-label={titel}
+                    />
                     <span className="portal-text-body min-w-0 flex-1 truncate text-text-primary">
                       {titel}
                     </span>
-                  </PortalButton>
+                  </label>
                 </li>
               );
             })}

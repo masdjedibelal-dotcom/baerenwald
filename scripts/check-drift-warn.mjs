@@ -1,8 +1,9 @@
 #!/usr/bin/env node
 /**
- * P0-5: Drift-Zähler (Warnung, bricht Build nicht).
+ * P0-5: Drift-Zähler (Diagnose — nicht in npm run build).
  * Zählt Hex außerhalb Token-CSS, Tailwind-Standardfarben, rohe <button>,
  * Modal-Importe, DB-Abfragen ohne error-Auswertung.
+ * Aufruf: npm run guard:drift
  */
 import fs from 'fs'
 import path from 'path'
@@ -88,10 +89,9 @@ const report = {
   awaitDataWithOptionalError: dataWithErrorBind,
 }
 
-console.log('[drift-warn] P0-5 Drift-Zähler (Build bricht nicht)')
+console.log('[drift-warn] P0-5 Drift-Zähler (Diagnose, nicht Build-Gate)')
 for (const [k, v] of Object.entries(report)) {
   console.log(`  ${k}: ${v}`)
 }
 
-// Immer exit 0 — nur Warnung
 process.exit(0)

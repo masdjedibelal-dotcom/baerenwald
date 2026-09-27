@@ -667,14 +667,15 @@ export function OrganisationObjektEinheitenTab({
                 >
                   <PortalButton
                     variant="ghost"
+                    action={false}
                     type="button"
-                    className="flex min-w-0 flex-1 items-center gap-2.5 text-left"
+                    className="flex min-w-0 flex-1 items-center gap-[var(--p2-row-gap)] text-left"
                     onClick={() => openPersonEdit(b)}
                   >
                     <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-pill bg-muted text-xs font-bold text-text-primary">
                       {initial}
                     </span>
-                    <div className="min-w-0 flex-1">
+                    <div className="portal-btn-stack min-w-0 flex-1">
                       <p className="truncate text-fs-body font-semibold text-text-primary">
                         {b.name}
                       </p>
@@ -733,6 +734,7 @@ export function OrganisationObjektEinheitenTab({
         <PortalInboxEmpty title="Noch keine Einheiten" compact />
       ) : (
         <PortalEntityList
+          nested
           ariaLabel="Einheiten"
           columns={[
             { key: "name", label: "Einheit", width: "minmax(0, 1.2fr)" },
