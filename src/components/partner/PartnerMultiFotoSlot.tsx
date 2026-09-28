@@ -129,13 +129,14 @@ export function PartnerMultiFotoSlot({
   }
 
   function onPick(e: React.ChangeEvent<HTMLInputElement>) {
-    const list = e.target.files;
+    // Wichtig: FileList ist an den Input gebunden — value="" leert sie auf iOS.
+    const picked = e.target.files ? Array.from(e.target.files) : [];
     e.target.value = "";
-    if (!list?.length) {
+    if (!picked.length) {
       setError(TOAST.foto_auswahl_fehlgeschlagen_bitte_erneut_versuchen);
       return;
     }
-    void addFiles(Array.from(list));
+    void addFiles(picked);
   }
 
   function removeAt(i: number) {

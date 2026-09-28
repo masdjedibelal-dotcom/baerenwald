@@ -4,6 +4,20 @@ Belal committed über GitHub Desktop auf **staging**.
 
 ---
 
+## Fix — Partner MultiFoto: iOS FileList nach value="" leer — 2026-09-28
+
+**Commit-Text:** `fix(portal): MultiFoto FileList vor value-Reset kopieren (iOS)`
+
+**Symptom (Screenshot):** Update → „Foto-Auswahl fehlgeschlagen“ trotz Foto gewählt; keine Thumbnails.
+
+**Ursache:** In `onPick` wurde `input.value = ""` gesetzt, **bevor** die Dateien aus der FileList kopiert wurden. Auf iOS Safari ist die FileList an den Input gebunden — Reset leert sie → `length === 0` → Fehlertext (vorher still).
+
+**Fix:** `Array.from(e.target.files)` **vor** dem Reset. Übrige Uploads (DirektKamera, FileUploadField, …) kopieren bereits vorher.
+
+**Datei:** `PartnerMultiFotoSlot.tsx` · `COMMIT-PLAN.md`
+
+---
+
 ## Fix — Partner/Portal Foto-Picker iOS (Update + einheitlich) — 2026-09-28
 
 **Commit-Text:** `fix(portal): iOS Foto-Picker ohne multiple + Fehler bei leerer Auswahl`
