@@ -6,6 +6,7 @@ import { PortalButton } from "@/components/portal/PortalButton";
 
 import { normalizePartnerCameraPhoto } from "@/lib/partner/normalize-camera-photo";
 import { useIsPortalMobile } from "@/lib/portal2/use-is-portal-mobile";
+import { TOAST } from "@/lib/portal-copy";
 import { cn } from "@/lib/utils";
 
 type Props = {
@@ -22,8 +23,8 @@ type Props = {
 };
 
 /**
- * Foto-Slot: ein Picker ohne HTML-`capture`, damit iOS/Android den
- * System-Dialog zeigen (Kamera / Mediathek / Dateien).
+ * Foto-Slot: ein Picker ohne HTML-`capture` und ohne `multiple`, damit
+ * iOS/Android den System-Dialog zeigen und die Datei zuverlässig zurückkommt.
  */
 export function PartnerDirektKameraSlot({
   label,
@@ -45,7 +46,11 @@ export function PartnerDirektKameraSlot({
   async function onPick(e: React.ChangeEvent<HTMLInputElement>) {
     const raw = e.target.files?.[0];
     e.target.value = "";
-    if (!raw) return;
+    if (!raw) {
+      setError(TOAST.foto_auswahl_fehlgeschlagen_bitte_erneut_versuchen);
+      setStatus("idle");
+      return;
+    }
     const iso = new Date().toISOString();
     setCaptureAt(iso);
     setError(null);
@@ -55,9 +60,13 @@ export function PartnerDirektKameraSlot({
       const file = await normalizePartnerCameraPhoto(raw);
       const input = fileRef.current;
       if (input) {
-        const dt = new DataTransfer();
-        dt.items.add(file);
-        input.files = dt.files;
+        try {
+          const dt = new DataTransfer();
+          dt.items.add(file);
+          input.files = dt.files;
+        } catch {
+          /* iOS: DataTransfer oft unzuverlässig — Parent nutzt onCaptured */
+        }
       }
 
       if (preview) URL.revokeObjectURL(preview);
@@ -68,7 +77,7 @@ export function PartnerDirektKameraSlot({
     } catch {
       setStatus("idle");
       setPreview(null);
-      setError("Foto konnte nicht verarbeitet werden. Bitte erneut versuchen.");
+      setError(TOAST.foto_konnte_nicht_verarbeitet_werden_bitte_erneu);
     }
   }
 

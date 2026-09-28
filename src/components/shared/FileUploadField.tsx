@@ -4,6 +4,9 @@ import { PortalIcon } from "@/components/portal/PortalIcon";
 import { useEffect, useRef, useState } from "react";
 import { PortalButton } from "@/components/portal/PortalButton";
 
+import { allowMultipleFilePicker } from "@/lib/portal2/file-picker";
+import { useIsPortalMobile } from "@/lib/portal2/use-is-portal-mobile";
+import { TOAST } from "@/lib/portal-copy";
 import { cn } from "@/lib/utils";
 
 type FileUploadFieldProps = {
@@ -43,8 +46,11 @@ export function FileUploadField({
   size = "default",
 }: FileUploadFieldProps) {
   const inputRef = useRef<HTMLInputElement>(null);
+  const isMobile = useIsPortalMobile();
+  const inputMultiple = Boolean(multiple) && allowMultipleFilePicker(isMobile);
   const [dragOver, setDragOver] = useState(false);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [pickError, setPickError] = useState<string | null>(null);
   const compact = size === "compact";
   const displayName = selectedName ?? selectedFile?.name ?? null;
   const showImagePreview = isImageFile(selectedFile);
@@ -62,7 +68,12 @@ export function FileUploadField({
   function takeFiles(list: FileList | File[] | null) {
     if (!list || disabled) return;
     const files = Array.from(list);
-    if (files.length) onChange(files);
+    if (!files.length) {
+      setPickError(TOAST.foto_auswahl_fehlgeschlagen_bitte_erneut_versuchen);
+      return;
+    }
+    setPickError(null);
+    onChange(files);
   }
 
   return (
@@ -72,7 +83,7 @@ export function FileUploadField({
         ref={inputRef}
         type="file"
         accept={accept}
-        multiple={multiple}
+        multiple={inputMultiple}
         disabled={disabled}
         className="sr-only"
         onChange={(e) => {
@@ -157,6 +168,9 @@ export function FileUploadField({
           </span>
         )}
       </PortalButton>
+      {pickError ? (
+        <p className="mt-1 text-xs text-text-secondary">{pickError}</p>
+      ) : null}
     </div>
   );
 }

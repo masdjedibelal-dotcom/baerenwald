@@ -6,7 +6,9 @@ import { PortalButton } from "@/components/portal/PortalButton";
 
 import { normalizePartnerCameraPhoto } from "@/lib/partner/normalize-camera-photo";
 import { useImageFileDrop } from "@/hooks/useImageFileDrop";
+import { allowMultipleFilePicker } from "@/lib/portal2/file-picker";
 import { useIsPortalMobile } from "@/lib/portal2/use-is-portal-mobile";
+import { TOAST } from "@/lib/portal-copy";
 import { cn } from "@/lib/utils";
 
 /** Analog CRM: bis 12 Fotos pro Eintrag. */
@@ -25,9 +27,9 @@ export type PartnerMultiFotoSlotProps = {
 /**
  * Foto-Zone: Klick + Drag-and-Drop, Mehrfachauswahl — analog CRM FotoDropZone.
  *
- * Mobil: bewusst OHNE `capture` — iOS/Android zeigen den System-Picker
- * (Foto aufnehmen / Mediathek / Dateien). `capture` + `multiple` bricht auf
- * Safari oft den Rückweg nach dem Foto.
+ * Mobil: bewusst OHNE `capture` und OHNE `multiple` am File-Input —
+ * iOS liefert sonst nach Kamera oft eine leere FileList (still).
+ * Weitere Fotos: erneut tippen. Desktop: Mehrfachauswahl + Drag & Drop.
  */
 export function PartnerMultiFotoSlot({
   label = "Fotos",
@@ -40,6 +42,7 @@ export function PartnerMultiFotoSlot({
 }: PartnerMultiFotoSlotProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const isMobile = useIsPortalMobile();
+  const inputMultiple = allowMultipleFilePicker(isMobile);
   const [internal, setInternal] = useState<File[]>([]);
   const [previews, setPreviews] = useState<string[]>([]);
   const [status, setStatus] = useState<"idle" | "uploading">("idle");
@@ -128,7 +131,10 @@ export function PartnerMultiFotoSlot({
   function onPick(e: React.ChangeEvent<HTMLInputElement>) {
     const list = e.target.files;
     e.target.value = "";
-    if (!list?.length) return;
+    if (!list?.length) {
+      setError(TOAST.foto_auswahl_fehlgeschlagen_bitte_erneut_versuchen);
+      return;
+    }
     void addFiles(Array.from(list));
   }
 
@@ -137,17 +143,18 @@ export function PartnerMultiFotoSlot({
   }
 
   const canAdd = files.length < max && !disabled;
-    const ctaLabel = status === "uploading"
-    ? progressLabel ?? "wird vorbereitet…"
-    : isDragging
-      ? "Fotos hier ablegen"
-      : isMobile
-        ? files.length
-          ? "Weitere Fotos"
-          : "Foto aufnehmen oder wählen"
-        : files.length
-          ? "Weitere Fotos tippen oder ablegen"
-          : "Fotos tippen oder ablegen";
+  const ctaLabel =
+    status === "uploading"
+      ? progressLabel ?? "wird vorbereitet…"
+      : isDragging
+        ? "Fotos hier ablegen"
+        : isMobile
+          ? files.length
+            ? "Weitere Fotos"
+            : "Foto aufnehmen oder wählen"
+          : files.length
+            ? "Weitere Fotos tippen oder ablegen"
+            : "Fotos tippen oder ablegen";
 
   // dropProps vor onClick: Klick öffnet Picker, Drop bleibt aktiv
   const zoneProps = {
@@ -166,7 +173,8 @@ export function PartnerMultiFotoSlot({
         ) : (
           <span className="font-medium text-text-tertiary">
             {" "}
-            · bis {max} Fotos · Drag & Drop
+            · bis {max} Fotos
+            {isMobile ? " · einzeln wählen" : " · Drag & Drop"}
           </span>
         )}
       </p>
@@ -207,7 +215,7 @@ export function PartnerMultiFotoSlot({
         ref={inputRef}
         type="file"
         accept="image/*"
-        multiple
+        multiple={inputMultiple}
         className="sr-only"
         disabled={busy}
         onChange={onPick}
@@ -217,7 +225,7 @@ export function PartnerMultiFotoSlot({
         <div className="space-y-1.5">
           <p className="text-fs-caption font-medium text-text-tertiary">
             Vorschau · {files.length}
-            {max > 1 ? ` / ${max}` : ""} · wischen · × zum Entfernen
+            {max > 1 ? ` / ${max}` : ""} · erfasst · × zum Entfernen
           </p>
           <div
             className="partner-foto-carousel flex gap-2.5 overflow-x-auto overscroll-x-contain pb-1 pt-0.5 [-webkit-overflow-scrolling:touch] [scrollbar-width:thin] snap-x snap-mandatory"

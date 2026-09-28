@@ -52,6 +52,7 @@ export const TOAST = {
   fachnachweis_hochgeladen: "Fachnachweis hochgeladen",
   feedback_gesendet: "Feedback gesendet",
   firmendaten_unvollstaendig: "Firmendaten unvollständig",
+  foto_auswahl_fehlgeschlagen_bitte_erneut_versuchen: "Foto-Auswahl fehlgeschlagen. Bitte erneut versuchen.",
   foto_konnte_nicht_verarbeitet_werden_bitte_erneu: "Foto konnte nicht verarbeitet werden. Bitte erneut versuchen.",
   foto_nicht_gespeichert: "Foto nicht gespeichert",
   freigabe_abgelehnt: "Freigabe abgelehnt",

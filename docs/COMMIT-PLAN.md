@@ -4,6 +4,23 @@ Belal committed über GitHub Desktop auf **staging**.
 
 ---
 
+## Fix — Partner/Portal Foto-Picker iOS (Update + einheitlich) — 2026-09-28
+
+**Commit-Text:** `fix(portal): iOS Foto-Picker ohne multiple + Fehler bei leerer Auswahl`
+
+**Symptom:** Handwerker-Update — Foto gewählt, keine Thumbnails, Speichern ohne Bild.
+
+**Ursache:** `<input multiple>` + Kamera auf iOS liefert oft leere FileList; Picker brach still ab → Datei nie im State → kein Upload.
+
+**Fix (einheitlich):**
+- `allowMultipleFilePicker(isMobile)` — mobil kein `multiple` am File-Input (Drag & Drop weiter mehrfach)
+- Leere Auswahl → sichtbarer Fehler (Toast-Copy)
+- Angewendet auf: `PartnerMultiFotoSlot`, `PartnerDirektKameraSlot`, `FileUploadField`, `PortalDokumentUploadZone`, `PhotoUpload`, `PartnerFachdokuSlots`
+
+**Dateien:** `file-picker.ts` · `PartnerMultiFotoSlot.tsx` · `PartnerDirektKameraSlot.tsx` · `FileUploadField.tsx` · `PortalDokumentUi.tsx` · `PhotoUpload.tsx` · `PartnerFachdokuSlots.tsx` · `toast.ts` · `COMMIT-PLAN.md`
+
+---
+
 ## Fix — Regie Start/Ende: stilles OK ohne Speichern — 2026-09-28
 
 **Commit-Text:** `fix(portal): Regie-Kamera-File aus State + Toast bei Validierung`

@@ -165,7 +165,13 @@ export function PartnerFachdokuSlots({
                     onChange={(e) => {
                       const f = e.target.files?.[0];
                       e.target.value = "";
-                      if (f) void onUpload(s.id, f);
+                      if (!f) {
+                        portalToastError(
+                          TOAST.foto_auswahl_fehlgeschlagen_bitte_erneut_versuchen
+                        );
+                        return;
+                      }
+                      void onUpload(s.id, f);
                     }}
                   />
                   <PortalButton
@@ -231,7 +237,13 @@ export function PartnerFachdokuSlots({
                 onChange={(e) => {
                   const f = e.target.files?.[0];
                   e.target.value = "";
-                  if (f) void onUpload(s.id, f);
+                  if (!f) {
+                    portalToastError(
+                      TOAST.foto_auswahl_fehlgeschlagen_bitte_erneut_versuchen
+                    );
+                    return;
+                  }
+                  void onUpload(s.id, f);
                 }}
               />
               <PortalButton

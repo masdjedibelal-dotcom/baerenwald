@@ -6,7 +6,10 @@ import { PortalButton } from "@/components/portal/PortalButton";
 
 import { PdfFileIcon } from "@/components/shared/PdfFileIcon";
 import { PortalDocOpenButton } from "@/components/shared/PortalDocOpenButton";
+import { allowMultipleFilePicker } from "@/lib/portal2/file-picker";
+import { useIsPortalMobile } from "@/lib/portal2/use-is-portal-mobile";
 import { triggerPortalDocDownload } from "@/lib/portal2/doc-viewer";
+import { TOAST } from "@/lib/portal-copy";
 import { cn } from "@/lib/utils";
 
 const ACTION_BTN =
@@ -196,12 +199,20 @@ export function PortalDokumentUploadZone({
   variant = "stack",
 }: UploadZoneProps) {
   const inputRef = useRef<HTMLInputElement>(null);
+  const isMobile = useIsPortalMobile();
+  const inputMultiple = Boolean(multiple) && allowMultipleFilePicker(isMobile);
   const [dragOver, setDragOver] = useState(false);
+  const [pickError, setPickError] = useState<string | null>(null);
 
   function takeFiles(list: FileList | File[] | null) {
     if (!list || disabled || !onFiles) return;
     const files = Array.from(list);
-    if (files.length) onFiles(files);
+    if (!files.length) {
+      setPickError(TOAST.foto_auswahl_fehlgeschlagen_bitte_erneut_versuchen);
+      return;
+    }
+    setPickError(null);
+    onFiles(files);
   }
 
   function activate() {
@@ -216,6 +227,7 @@ export function PortalDokumentUploadZone({
   const stacked = variant === "stack";
 
   return (
+    <div className={className}>
     <div
       role="button"
       tabIndex={disabled ? -1 : 0}
@@ -232,8 +244,7 @@ export function PortalDokumentUploadZone({
               "portal-file-upload",
               dragOver && "portal-file-upload--drag"
             ),
-        disabled && "cursor-not-allowed opacity-60",
-        className
+        disabled && "cursor-not-allowed opacity-60"
       )}
       onClick={activate}
       onKeyDown={(e) => {
@@ -259,7 +270,7 @@ export function PortalDokumentUploadZone({
           ref={inputRef}
           type="file"
           accept={accept}
-          multiple={multiple}
+          multiple={inputMultiple}
           disabled={disabled}
           className="sr-only"
           onChange={(e) => {
@@ -278,6 +289,10 @@ export function PortalDokumentUploadZone({
           <p className="portal-text-meta text-text-tertiary">{hint}</p>
         ) : null}
       </div>
+    </div>
+    {pickError ? (
+      <p className="mt-1 text-xs text-text-secondary">{pickError}</p>
+    ) : null}
     </div>
   );
 }

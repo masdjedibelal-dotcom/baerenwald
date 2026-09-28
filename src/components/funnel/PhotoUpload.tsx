@@ -4,6 +4,9 @@ import { MockIconSvg } from "@/components/shared/mock-icon-svgs";
 import { useCallback, useRef, useState } from "react";
 
 import { optimizeImageForUpload } from "@/lib/media/optimize-image-for-upload";
+import { allowMultipleFilePicker } from "@/lib/portal2/file-picker";
+import { useIsPortalMobile } from "@/lib/portal2/use-is-portal-mobile";
+import { TOAST } from "@/lib/portal-copy";
 import { cn } from "@/lib/utils";
 
 const MAX_FILE_SIZE = 8 * 1024 * 1024;
@@ -93,6 +96,8 @@ export function PhotoUpload({
   example = null,
 }: PhotoUploadProps) {
   const inputRef = useRef<HTMLInputElement>(null);
+  const isMobile = useIsPortalMobile();
+  const inputMultiple = allowMultipleFilePicker(isMobile);
   const [previews, setPreviews] = useState<Record<string, string>>({});
   const [dragOver, setDragOver] = useState(false);
   const [uploadError, setUploadError] = useState("");
@@ -132,7 +137,10 @@ export function PhotoUpload({
 
   const processIncomingFiles = useCallback(
     async (incoming: File[]) => {
-      if (incoming.length === 0) return;
+      if (incoming.length === 0) {
+        setUploadError(TOAST.foto_auswahl_fehlgeschlagen_bitte_erneut_versuchen);
+        return;
+      }
 
       setUploadError("");
       setIsCompressing(true);
@@ -268,7 +276,7 @@ export function PhotoUpload({
         ref={inputRef}
         type="file"
         accept={UPLOAD_ACCEPT}
-        multiple
+        multiple={inputMultiple}
         className="hidden"
         onChange={onInput}
       />
