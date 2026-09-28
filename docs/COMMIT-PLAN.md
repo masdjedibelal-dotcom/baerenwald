@@ -4,6 +4,36 @@ Belal committed über GitHub Desktop auf **staging**.
 
 ---
 
+## Fix — Regie Start/Ende: stilles OK ohne Speichern — 2026-09-28
+
+**Commit-Text:** `fix(portal): Regie-Kamera-File aus State + Toast bei Validierung`
+
+**Symptom (Frohberger):** Foto erfasst → OK → nichts passiert, keine Fehlermeldung.
+
+**Ursache:**
+1. `PartnerDirektKameraSlot` setzt `input.files` per DataTransfer — auf iOS oft leer → FormData ohne Foto → Client-Validierung bricht ab.
+2. Validierungsfehler nur als Feldfehler, **ohne Toast** → wirkt wie „nichts passiert“.
+
+**Fix:** File + Capture-Zeit im Sheet-State (`onCaptured`); vor Submit ins FormData; bei Validierungsfehlern Toast mit erstem Fehler.
+
+**Dateien:** `PartnerPositionLebenszyklusList.tsx` · `COMMIT-PLAN.md`
+
+---
+
+## Fix — Partner-Fotos bei Update/Abschluss — 2026-09-28
+
+**Commit-Text:** `fix(portal): Partner-Fotos aus Multi-Slot und Regie-Ende zuverlässig mitsenden`
+
+**Symptom (Frohberger):** Foto hochladen / Update / Abschluss scheitert.
+
+**Ursache:** `PartnerMultiFotoSlot` hält Dateien nur im React-State. Beim Submit wurden sie nur bei **Nicht-Regie** nach `fotos` kopiert — bei Regie-**Update** gingen Fotos verloren. Server sah keine Datei → Fehlermeldung.
+
+**Fix:** State-Fotos immer ins FormData; `foto_ende`/`foto_start` früh auf `foto` mappen; Server akzeptiert zusätzlich `foto_ende`/`foto_start`.
+
+**Dateien:** `PartnerPositionLebenszyklusList.tsx` · `partner-position-eintraege.ts` · `COMMIT-PLAN.md`
+
+---
+
 ## Fix — Shared-Domain-Guard auf Netlify/GHA — 2026-09-27
 
 **Commit-Text:** `fix(portal): Shared-Domain-Guard auf Netlify ohne CRM-Sibling überspringen`

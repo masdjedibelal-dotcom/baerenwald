@@ -267,18 +267,20 @@ function parseFotoFromForm(formData: FormData): {
   return { file: photo, captureAt, nachgereicht, nachreichGrund };
 }
 
-/** Bis zu 12 Fotos: `fotos` (mehrfach) + Legacy `foto`. */
+/** Bis zu 12 Fotos: `fotos` (mehrfach) + Legacy `foto` / `foto_ende` / `foto_start`. */
 function parseFotosFromForm(formData: FormData): File[] {
   const out: File[] = [];
   for (const entry of formData.getAll("fotos")) {
     if (entry instanceof File && entry.size > 0) out.push(entry);
   }
-  const single = formData.get("foto");
-  if (single instanceof File && single.size > 0) {
-    const already = out.some(
-      (f) => f.name === single.name && f.size === single.size
-    );
-    if (!already) out.unshift(single);
+  for (const key of ["foto", "foto_ende", "foto_start"] as const) {
+    const single = formData.get(key);
+    if (single instanceof File && single.size > 0) {
+      const already = out.some(
+        (f) => f.name === single.name && f.size === single.size
+      );
+      if (!already) out.unshift(single);
+    }
   }
   return out.slice(0, 12);
 }

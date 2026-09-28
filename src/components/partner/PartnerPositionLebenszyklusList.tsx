@@ -240,6 +240,9 @@ export function PartnerPositionLebenszyklusList({
   const [submitting, setSubmitting] = useState(false);
   const [beschreibung, setBeschreibung] = useState("");
   const [sheetFotos, setSheetFotos] = useState<File[]>([]);
+  /** Regie Start/Ende: File aus Kamera-Slot (iOS setzt input.files oft nicht). */
+  const [sheetDirektFoto, setSheetDirektFoto] = useState<File | null>(null);
+  const [sheetDirektCaptureAt, setSheetDirektCaptureAt] = useState("");
   const [updates, setUpdates] = useState<PartnerTagebuchListenEintrag[]>([]);
   const autoOpenedRef = useRef(false);
   const updateOpenedRef = useRef(false);
@@ -381,6 +384,8 @@ export function PartnerPositionLebenszyklusList({
   useEffect(() => {
     setBeschreibung("");
     setSheetFotos([]);
+    setSheetDirektFoto(null);
+    setSheetDirektCaptureAt("");
   }, [sheet?.position.id, sheet?.mode]);
 
   function toggleBulk(id: string) {
@@ -558,12 +563,43 @@ export function PartnerPositionLebenszyklusList({
     const mode = sheet.mode;
     const positionId = sheet.position.id;
 
-    // Regie: Start-Slot → einheitlich als foto (Duplikat foto_start entfernen)
+    // Kamera-Slot: File aus State (zuverlässiger als input.files / DataTransfer auf iOS)
+    if (sheetDirektFoto && sheetDirektFoto.size > 0) {
+      formData.set("foto", sheetDirektFoto);
+      if (mode === "start") formData.set("foto_start", sheetDirektFoto);
+      if (mode === "erledigt") formData.set("foto_ende", sheetDirektFoto);
+      if (sheetDirektCaptureAt) {
+        formData.set("captureAt", sheetDirektCaptureAt);
+        formData.set(
+          mode === "start" ? "captureAt_start" : "captureAt_ende",
+          sheetDirektCaptureAt
+        );
+      }
+    }
+
+    // Regie-Slots → einheitlich `foto` (Server liest foto/fotos, nicht foto_start/ende)
     const startSlot = formData.get("foto_start");
     if (startSlot instanceof File && startSlot.size > 0) {
       formData.set("foto", startSlot);
     }
     formData.delete("foto_start");
+
+    const endeSlot = formData.get("foto_ende");
+    if (endeSlot instanceof File && endeSlot.size > 0) {
+      const existing = formData.get("foto");
+      if (!(existing instanceof File) || existing.size <= 0) {
+        formData.set("foto", endeSlot);
+      }
+    }
+    const captureEndeEarly = String(
+      formData.get("captureAt_ende") ?? ""
+    ).trim();
+    if (
+      captureEndeEarly &&
+      !String(formData.get("captureAt") ?? "").trim()
+    ) {
+      formData.set("captureAt", captureEndeEarly);
+    }
 
     /* FORM_VALIDATION: partner-position-lebenszyklus */
     if (sheetIsRegie && (mode === "start" || mode === "erledigt")) {
@@ -571,7 +607,11 @@ export function PartnerPositionLebenszyklusList({
       if (mode === "start" && !hasFoto(formData, "foto")) {
         errors.foto = TOAST.bitte_ein_start_foto_hinzufuegen;
       }
-      if (mode === "erledigt" && !hasFoto(formData, "foto_ende")) {
+      if (
+        mode === "erledigt" &&
+        !hasFoto(formData, "foto") &&
+        !hasFoto(formData, "foto_ende")
+      ) {
         errors.foto = TOAST.bitte_ein_ende_foto_hinzufuegen;
       }
       const beschr = String(formData.get("beschreibung") ?? "").trim();
@@ -588,6 +628,8 @@ export function PartnerPositionLebenszyklusList({
       }
       if (Object.keys(errors).length) {
         applyFieldErrors(errors, sheetFormRef.current);
+        const first = Object.values(errors)[0];
+        if (first) portalToastError(first);
         return;
       }
     }
@@ -612,15 +654,20 @@ export function PartnerPositionLebenszyklusList({
           const hasEnde =
             endeFoto instanceof File && endeFoto.size > 0 && sheetIsRegie;
 
-          if (!sheetIsRegie && sheetFotos.length > 0) {
+          // MultiFotoSlot hält Dateien nur im State — immer ins FormData legen
+          // (auch bei Regie-Update / Fortschritt; Start/Ende-Slots haben sheetFotos=[]).
+          if (sheetFotos.length > 0) {
             formData.delete("fotos");
-            formData.delete("foto");
+            if (!sheetIsRegie) {
+              formData.delete("foto");
+            }
             try {
               for (const f of sheetFotos.slice(0, 12)) {
                 formData.append("fotos", await normalizePartnerCameraPhoto(f));
               }
             } catch {
-              portalToastError(TOAST.foto_konnte_nicht_verarbeitet_werden_bitte_erneu
+              portalToastError(
+                TOAST.foto_konnte_nicht_verarbeitet_werden_bitte_erneu
               );
               return;
             }
@@ -698,6 +745,8 @@ export function PartnerPositionLebenszyklusList({
           setSheet(null);
           setBeschreibung("");
           setSheetFotos([]);
+          setSheetDirektFoto(null);
+          setSheetDirektCaptureAt("");
         }, Math.max(PORTAL_BUSY_MIN_MS, 600));
       } catch {
         portalToastError(TOAST.speichern_fehlgeschlagen_bitte_erneut_versuchen);
@@ -1238,6 +1287,7 @@ export function PartnerPositionLebenszyklusList({
             !submitting &&
             (beschreibung.trim().length > 0 ||
               sheetFotos.length > 0 ||
+              sheetDirektFoto != null ||
               sheet.mode !== "erledigt")
           }
           closeOnBackdrop={!submitting}
@@ -1284,6 +1334,11 @@ export function PartnerPositionLebenszyklusList({
                   captureAtName="captureAt_start"
                   label="Start-Foto"
                   required
+                  onCaptured={(file, iso) => {
+                    setSheetDirektFoto(file);
+                    setSheetDirektCaptureAt(iso);
+                    clearField("foto");
+                  }}
                 />
               </PortalField>
             ) : sheetIsRegie && sheet.mode === "erledigt" ? (
@@ -1297,6 +1352,11 @@ export function PartnerPositionLebenszyklusList({
                   captureAtName="captureAt_ende"
                   label="Ende-Foto"
                   required
+                  onCaptured={(file, iso) => {
+                    setSheetDirektFoto(file);
+                    setSheetDirektCaptureAt(iso);
+                    clearField("foto");
+                  }}
                 />
               </PortalField>
             ) : (
