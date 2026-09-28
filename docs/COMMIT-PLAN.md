@@ -4,6 +4,20 @@ Belal committed über GitHub Desktop auf **staging**.
 
 ---
 
+## Fix — Update-Liste: kein „Ohne Text“, Foto-Thumbnails — 2026-09-28
+
+**Commit-Text:** `fix(portal): Partner-Updates Text nur wenn vorhanden + Foto-Thumbs`
+
+**Befund:** Accordion zeigte „Ohne Text“ / „Kein Text“; Thumbnail nur rechts wenn `fotos[0]` — bei Foto-only irreführend.
+
+**Fix:** Platzhalter entfernt; Beschreibung nur bei Inhalt; Fotos als Thumbnail-Leiste (zugeklappt + aufgeklappt).
+
+**Hinweis:** Einträge ohne gespeicherte `eintrag_fotos` (älterer Upload-Bug) bleiben ohne Bild — neuer Upload zeigt Thumbs.
+
+**Datei:** `PartnerLeistungUpdatesAccordion.tsx` · `COMMIT-PLAN.md`
+
+---
+
 ## Fix — Partner MultiFoto: iOS FileList nach value="" leer — 2026-09-28
 
 **Commit-Text:** `fix(portal): MultiFoto FileList vor value-Reset kopieren (iOS)`

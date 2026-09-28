@@ -21,8 +21,55 @@ function fmtDatumZeit(v?: string | null): string {
   });
 }
 
+function FotoThumbs({
+  urls,
+  size = "sm",
+}: {
+  urls: string[];
+  size?: "sm" | "md";
+}) {
+  if (urls.length === 0) return null;
+  const box =
+    size === "sm"
+      ? "h-10 w-10 rounded-card"
+      : "h-[4.5rem] w-[4.5rem] rounded-sheet border border-border-default";
+  return (
+    <div
+      className={cn(
+        "flex gap-1.5 overflow-x-auto [-webkit-overflow-scrolling:touch]",
+        size === "md" && "gap-2 pb-0.5"
+      )}
+      role="list"
+      aria-label={`${urls.length} Foto${urls.length === 1 ? "" : "s"}`}
+    >
+      {urls.map((url, i) => (
+        <a
+          key={`${url}-${i}`}
+          href={url}
+          target="_blank"
+          rel="noopener noreferrer"
+          role="listitem"
+          className={cn(
+            "relative shrink-0 overflow-hidden bg-white",
+            box
+          )}
+          onClick={(e) => e.stopPropagation()}
+        >
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={url}
+            alt={`Foto ${i + 1}`}
+            className="h-full w-full object-cover"
+          />
+        </a>
+      ))}
+    </div>
+  );
+}
+
 /**
  * Unter einer Leistung: Accordion mit den eigenen Updates (Text + Fotos + Datum).
+ * Text nur anzeigen wenn vorhanden; Fotos als Thumbnails (kein „Ohne Text“).
  */
 export function PartnerLeistungUpdatesAccordion({
   eintraege,
@@ -61,9 +108,8 @@ export function PartnerLeistungUpdatesAccordion({
           {eintraege.map((e) => {
             const rowOpen = openId === e.id;
             const label = eintragTypLabel(e.typ) || e.titel;
-            const preview =
-              e.beschreibung?.trim() ||
-              (e.fotos.length > 0 ? `${e.fotos.length} Foto(s)` : "Ohne Text");
+            const text = e.beschreibung?.trim() || "";
+            const hasFotos = e.fotos.length > 0;
             return (
               <li key={e.id}>
                 <PortalButton
@@ -82,20 +128,17 @@ export function PartnerLeistungUpdatesAccordion({
                         {fmtDatumZeit(e.datum)}
                       </span>
                     </div>
-                    {!rowOpen ? (
-                      <p className="mt-0.5 line-clamp-1 text-fs-meta text-text-secondary">
-                        {preview}
+                    {!rowOpen && text ? (
+                      <p className="mt-0.5 line-clamp-2 text-fs-meta text-text-secondary">
+                        {text}
                       </p>
                     ) : null}
+                    {!rowOpen && hasFotos ? (
+                      <div className="mt-1.5">
+                        <FotoThumbs urls={e.fotos.slice(0, 6)} size="sm" />
+                      </div>
+                    ) : null}
                   </div>
-                  {e.fotos[0] && !rowOpen ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img
-                      src={e.fotos[0]}
-                      alt=""
-                      className="h-10 w-10 shrink-0 rounded-card object-cover"
-                    />
-                  ) : null}
                   <PortalIcon n="chevron-down" ctx="row" className={cn(
                       "mt-1 h-4 w-4 shrink-0 text-text-tertiary transition-transform",
                       rowOpen && "rotate-180"
@@ -103,34 +146,13 @@ export function PartnerLeistungUpdatesAccordion({
                 </PortalButton>
                 {rowOpen ? (
                   <div className="space-y-2.5 border-t border-border-light bg-[var(--p2-bg)] px-3 py-3">
-                    {e.beschreibung?.trim() ? (
+                    {text ? (
                       <p className="whitespace-pre-wrap text-fs-meta leading-relaxed text-text-primary">
-                        {e.beschreibung.trim()}
+                        {text}
                       </p>
-                    ) : (
-                      <p className="text-fs-meta text-text-tertiary">
-                        Kein Text
-                      </p>
-                    )}
-                    {e.fotos.length > 0 ? (
-                      <div className="flex gap-2 overflow-x-auto pb-0.5 [-webkit-overflow-scrolling:touch]">
-                        {e.fotos.map((url, i) => (
-                          <a
-                            key={`${e.id}-foto-${i}`}
-                            href={url}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="relative h-[4.5rem] w-[4.5rem] shrink-0 overflow-hidden rounded-sheet border border-border-default bg-white"
-                          >
-                            {/* eslint-disable-next-line @next/next/no-img-element */}
-                            <img
-                              src={url}
-                              alt={`Foto ${i + 1}`}
-                              className="h-full w-full object-cover"
-                            />
-                          </a>
-                        ))}
-                      </div>
+                    ) : null}
+                    {hasFotos ? (
+                      <FotoThumbs urls={e.fotos} size="md" />
                     ) : null}
                   </div>
                 ) : null}
