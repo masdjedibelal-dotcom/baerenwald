@@ -118,7 +118,6 @@ export async function submitPartnerHwKalkulation(input: {
 
     const patch: Record<string, unknown> = {
       positionen: positionenJson,
-      gesamt_preis: Math.round(sum.brutto * 100) / 100,
       gesamt_min: Math.round(sum.net * 100) / 100,
       gesamt_max: Math.round(sum.brutto * 100) / 100,
       status_einfach: "gesendet",
@@ -207,8 +206,7 @@ export async function submitPartnerHwKalkulation(input: {
       .from("angebote")
       .update({
         positionen: positionenJson,
-        gesamt_preis: Math.round(sum.brutto * 100) / 100,
-        gesamt_min: Math.round(sum.net * 100) / 100,
+          gesamt_min: Math.round(sum.net * 100) / 100,
         gesamt_max: Math.round(sum.brutto * 100) / 100,
         updated_at: now,
       })

@@ -939,7 +939,7 @@ export async function retryPendingPartnerAutoAngebote(): Promise<{
     .select("id, status, hw_angebot_pdf_url")
     .eq("handwerker_id", auth.handwerkerId)
     .in("status", ["akzeptiert", "angenommen"])
-    .order("updated_at", { ascending: false })
+    .order("created_at", { ascending: false })
     .limit(20);
   if (__dbErr71_9) logDbError('app/actions/partner-auto-dokumente:angebot_handwerker', __dbErr71_9)
 

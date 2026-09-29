@@ -1,9 +1,2 @@
 # Grundlinie check-db-spalten — Format: <datei>:<tabelle>:<spalte>
 # Darf schrumpfen, nicht wachsen (BASELINE_MAX_LINES=23; 25 Funde → 23 unique Keys).
-src/app/actions/partner-abnahmeprotokoll.ts:auftrag_positionen:updated_at
-src/app/actions/partner-abnahmeprotokoll.ts:auftrag_abnahmeprotokolle:handwerker_bestaetigt_at
-src/app/actions/partner-auto-dokumente.ts:angebot_handwerker:updated_at
-src/app/actions/partner-hw-kalkulation.ts:angebote:gesamt_preis
-src/lib/partner/ensure-partner-angebot-handwerker-for-auftrag.ts:auftrag_positionen:gewerk_id
-src/lib/partner/load-partner-compliance-data.ts:handwerker_vertraege:auftrag_titel
-src/lib/partner/sync-angebot-handwerker.ts:auftrag_positionen:gewerk_id

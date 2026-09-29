@@ -16,7 +16,7 @@ const ALLOWLIST_PATH = path.join(__dirname, 'db-spalten-allowlist.txt')
 const ALLOWLIST_MAX_LINES = 0
 const BASELINE_PATH = path.join(__dirname, 'db-spalten-baseline.txt')
 /** Festgeschrieben: Grundlinie darf schrumpfen, nicht wachsen. */
-const BASELINE_MAX_LINES = 7
+const BASELINE_MAX_LINES = 0
 
 const FILTER_METHODS = new Set([
   'eq', 'neq', 'is', 'in', 'gt', 'gte', 'lt', 'lte', 'like', 'ilike', 'order',

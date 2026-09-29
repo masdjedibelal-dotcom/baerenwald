@@ -419,7 +419,6 @@ export async function submitPartnerAbnahmeNachSignatur(
       .update({
         handwerker_status: "erledigt",
         leistung_status: "erledigt",
-        updated_at: new Date().toISOString(),
       })
       .in(
         "id",
@@ -538,7 +537,7 @@ async function loadLocalAbnahmeStatus(
       return supabaseAdmin
         .from("auftrag_abnahmeprotokolle")
         .select(
-          "id, pdf_url, abnahme_datum, punkte, maengel, an_kunde_gesendet_at, handwerker_bestaetigt_at, freigabe_status, meta"
+          "id, pdf_url, abnahme_datum, punkte, maengel, an_kunde_gesendet_at, freigabe_status, meta"
         )
         .eq("id", byId)
         .eq("auftrag_id", auftragId)
@@ -548,7 +547,7 @@ async function loadLocalAbnahmeStatus(
     return supabaseAdmin
       .from("auftrag_abnahmeprotokolle")
       .select(
-        "id, pdf_url, abnahme_datum, punkte, maengel, an_kunde_gesendet_at, handwerker_bestaetigt_at, freigabe_status, meta"
+        "id, pdf_url, abnahme_datum, punkte, maengel, an_kunde_gesendet_at, freigabe_status, meta"
       )
       .eq("auftrag_id", auftragId)
       .eq("handwerker_id", handwerkerId)
@@ -575,7 +574,6 @@ async function loadLocalAbnahmeStatus(
     punkte?: unknown;
     maengel?: unknown;
     an_kunde_gesendet_at?: string | null;
-    handwerker_bestaetigt_at?: string | null;
     freigabe_status?: string | null;
     meta?: Record<string, unknown> | null;
   };
@@ -589,7 +587,8 @@ async function loadLocalAbnahmeStatus(
     punkte_count: countJsonArray(row.punkte),
     maengel_count: countJsonArray(row.maengel),
     an_kunde_gesendet_at: row.an_kunde_gesendet_at ?? null,
-    handwerker_bestaetigt_at: row.handwerker_bestaetigt_at ?? null,
+    // Spalte existiert am Protokoll nicht (nie geschrieben) → immer offen.
+    handwerker_bestaetigt_at: null,
     abnahme_ergebnis:
       typeof meta.abnahme_ergebnis === "string" ? meta.abnahme_ergebnis : null,
     freigabe_status: row.freigabe_status ?? null,

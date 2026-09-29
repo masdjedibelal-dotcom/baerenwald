@@ -167,16 +167,24 @@ async function resolveGewerkId(
   auftragId: string,
   handwerkerId: string
 ): Promise<string | null> {
+  // auftrag_positionen hat keine gewerk_id, nur gewerk_slug → über gewerke auflösen.
   const {data: pos, error: __dbErr378_2} = await supabaseAdmin
     .from("auftrag_positionen")
-    .select("gewerk_id")
+    .select("gewerk_slug")
     .eq("auftrag_id", auftragId)
     .eq("handwerker_id", handwerkerId)
-    .not("gewerk_id", "is", null)
+    .not("gewerk_slug", "is", null)
     .limit(1)
     .maybeSingle();
   if (__dbErr378_2) logDbError('lib/partner/ensure-partner-angebot-handwerker-for-auftrag:auftrag_positionen', __dbErr378_2)
-  if (pos?.gewerk_id) return String(pos.gewerk_id);
+  if (pos?.gewerk_slug) {
+    const { data: gewerk } = await supabaseAdmin
+      .from("gewerke")
+      .select("id")
+      .eq("slug", String(pos.gewerk_slug))
+      .maybeSingle();
+    if (gewerk?.id) return String(gewerk.id);
+  }
 
   const {data: zuw, error: __dbErr379_3} = await supabaseAdmin
     .from("auftrag_handwerker")

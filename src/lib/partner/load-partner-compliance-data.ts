@@ -164,7 +164,7 @@ async function loadProjektvertragDb(
   const {data, error: __dbErr394_6} = await supabaseAdmin
     .from("handwerker_vertraege")
     .select(
-      "id, vertrags_nr, status, pdf_url, auftrag_titel, gewerk_name, bauvorhaben, leistungsumfang, verguetung_text, signiert_am"
+      "id, vertrags_nr, status, pdf_url, auftrag_titel:bauvorhaben, gewerk_name, bauvorhaben, leistungsumfang, verguetung_text, signiert_am"
     )
     .eq("handwerker_id", handwerkerId)
     .eq("auftrag_id", auftragId)
