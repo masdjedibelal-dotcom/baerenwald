@@ -1,4 +1,5 @@
 import type { PortalAngebotPositionDisplay } from "@/lib/portal/portal-angebot-display";
+import { positionBetrag } from "@/lib/shared-domain/regie-betrag";
 import { stripHtmlToPlainText } from "@/lib/portal/portal-display";
 import { resolveStundensatz } from "@/lib/portal/stundensatz-ansicht";
 
@@ -104,6 +105,12 @@ function resolvePositionNetto(
   pos: KundeAuftragPositionInput,
   angebotById: Map<string, Record<string, unknown>>
 ): number {
+  // Gemeinsamer Rechenkern (wie CRM-Detail und Rechnung): preis_fix ist der Zeilenbetrag,
+  // Regie = Stunden × Kundensatz. Nicht noch einmal mit der Menge multiplizieren (Umbau P07).
+  const kern = positionBetrag(pos, "kunde");
+  if (kern > 0) return kern;
+
+  // Rückfall nur für Positionen ganz ohne Preis (Altdaten).
   const menge = Math.max(pos.menge ?? 1, 0.0001);
   const fromFix = nettoFromParts(pos.lohn_fix ?? 0, pos.material_fix ?? 0, menge);
   if (fromFix > 0) return fromFix;
