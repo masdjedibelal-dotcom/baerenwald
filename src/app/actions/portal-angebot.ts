@@ -1,7 +1,6 @@
 "use server";
 
 import { logDbError } from '@/lib/errors/log-db-error'
-import { randomBytes } from "crypto";
 import { revalidatePath } from "next/cache";
 
 import { linkPortalKundeToAuthUser } from "@/lib/portal/link-portal-kunde";
@@ -9,6 +8,7 @@ import { notifyCrmOrgPortal } from "@/lib/org/notify-crm-org";
 import { funnelDirektauftragFromDaten } from "@/lib/org/freigabe-bypass";
 import { orgFreigabeBlockiertPartner } from "@/lib/org/org-freigabe-status";
 import { angebotPositionenJsonToAuftragRows } from "@/lib/portal/copy-angebot-positionen-to-auftrag";
+import { auftragAusAngebotViaCrm } from "@/lib/crm/auftrag-aus-angebot";
 import { isAngebotPortalAnnehmbar } from "@/lib/portal/portal-angebot-sichtbarkeit";
 import { createClient } from "@/lib/supabase/server";
 import { isSupabaseConfigured, supabaseAdmin } from "@/lib/supabase";
@@ -21,15 +21,7 @@ function normalizeStatus(s?: string | null): string {
   return (s ?? "").toLowerCase().replace(/[\s-]+/g, "_");
 }
 
-function addDaysIso(isoDate: string, days: number): string {
-  const d = new Date(`${isoDate}T12:00:00`);
-  d.setDate(d.getDate() + days);
-  return d.toISOString().slice(0, 10);
-}
 
-function defaultStartDatum(): string {
-  return new Date().toISOString().slice(0, 10);
-}
 
 /**
  * HV/Kunde nimmt gesendetes Angebot im Portal an.
@@ -193,8 +185,25 @@ export async function acceptKundeAngebot(
     return { ok: true, auftragId: existingId };
   }
 
-  if (alreadyAccepted) {
-    // Status schon gesetzt, Auftrag fehlt noch → nachziehen
+  // Bereits Auftrag zu anderem Angebot am Lead? → kein zweiter Auftrag.
+  if (leadId) {
+    const {data: leadAuftraege, error: __dbErr110_4} = await supabaseAdmin
+      .from("auftraege")
+      .select("id, angebot_id, status")
+      .eq("lead_id", leadId)
+      .neq("status", "storniert")
+      .limit(10);
+    if (__dbErr110_4) logDbError('app/actions/portal-angebot:auftraege', __dbErr110_4)
+    const anderer = (leadAuftraege ?? []).find(
+      (a) => String(a.angebot_id ?? "") !== id
+    );
+    if (anderer?.id) {
+      return {
+        ok: false,
+        error:
+          "Zu diesem Vorgang existiert bereits ein Auftrag. Bitte den bestehenden Auftrag nutzen.",
+      };
+    }
   }
 
   const now = new Date().toISOString();
@@ -212,6 +221,23 @@ export async function acceptKundeAngebot(
     console.error("[acceptKundeAngebot] angebot", upErr.message);
     return { ok: false, error: "Annahme konnte nicht gespeichert werden." };
   }
+
+  // Auftrag legt das CRM an — dieselbe Funktion wie bei Annahme im CRM (Umbau P06).
+  const crm = await auftragAusAngebotViaCrm(id);
+  if (!crm.ok) {
+    // Keine halbe Annahme: Status zurück, damit der Kunde erneut annehmen kann.
+    const { error: revErr } = await supabaseAdmin
+      .from("angebote")
+      .update({
+        status: angebot.status,
+        status_einfach: angebot.status_einfach,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", id);
+    if (revErr) logDbError("app/actions/portal-angebot:angebote-revert", revErr);
+    return { ok: false, error: crm.error };
+  }
+  const auftragId = crm.auftragId;
 
   // Andere Angebote am Lead entwerten (inkl. frühere Annahmen) — eine aktive Version.
   if (leadId) {
@@ -249,118 +275,6 @@ export async function acceptKundeAngebot(
         const { error: __dbErr116_10 } = await supabaseAdmin.from("angebote").update(patch).eq("id", row.id as string);
         if (__dbErr116_10) logDbError('app/actions/portal-angebot:angebote', __dbErr116_10)
       }
-    }
-  }
-
-  // Bereits Auftrag zu anderem Angebot am Lead? → kein zweiter Auftrag.
-  if (leadId) {
-    const {data: leadAuftraege, error: __dbErr110_4} = await supabaseAdmin
-      .from("auftraege")
-      .select("id, angebot_id, status")
-      .eq("lead_id", leadId)
-      .neq("status", "storniert")
-      .limit(10);
-    if (__dbErr110_4) logDbError('app/actions/portal-angebot:auftraege', __dbErr110_4)
-    const anderer = (leadAuftraege ?? []).find(
-      (a) => String(a.angebot_id ?? "") !== id
-    );
-    if (anderer?.id) {
-      return {
-        ok: false,
-        error:
-          "Zu diesem Vorgang existiert bereits ein Auftrag. Bitte den bestehenden Auftrag nutzen.",
-      };
-    }
-  }
-
-  let resolvedKundeId = angebotKundeId ?? kundeId;
-  let titel = "Auftrag";
-  let istBauprojekt = false;
-
-  if (leadId) {
-    const {data: leadRow, error: __dbErr111_5} = await supabaseAdmin
-      .from("leads")
-      .select("kunde_id, auftraggeber_kunde_id, ist_bauprojekt")
-      .eq("id", leadId)
-      .maybeSingle();
-    if (__dbErr111_5) logDbError('app/actions/portal-angebot:leads', __dbErr111_5)
-    if (leadRow) {
-      istBauprojekt = leadRow.ist_bauprojekt === true;
-      resolvedKundeId =
-        (leadRow.auftraggeber_kunde_id != null
-          ? String(leadRow.auftraggeber_kunde_id)
-          : null) ||
-        (leadRow.kunde_id != null ? String(leadRow.kunde_id) : null) ||
-        resolvedKundeId;
-    }
-  }
-
-  // Titel wie im CRM (createAuftragFromAngebot): Gewerke der Angebotspositionen.
-  const gewerkNamen = Array.isArray(angebot.positionen)
-    ? Array.from(
-        new Set(
-          (angebot.positionen as Array<{ gewerk_name?: unknown }>)
-            .map((p) => String(p?.gewerk_name ?? "").trim())
-            .filter(Boolean)
-        )
-      )
-    : [];
-  if (gewerkNamen.length) titel = gewerkNamen.join(", ").slice(0, 240);
-
-  const {data: kundeRow, error: __dbErr112_6} = await supabaseAdmin
-    .from("kunden")
-    .select("name")
-    .eq("id", resolvedKundeId)
-    .maybeSingle();
-  if (__dbErr112_6) logDbError('app/actions/portal-angebot:kunden', __dbErr112_6)
-  if (kundeRow?.name) {
-    titel = `${titel} — ${kundeRow.name}`.slice(0, 240);
-  }
-
-  const start = defaultStartDatum();
-  const end = addDaysIso(start, 14);
-  const kundenToken = randomBytes(32).toString("hex");
-
-  const { data: auftrag, error: aErr } = await supabaseAdmin
-    .from("auftraege")
-    .insert({
-      angebot_id: id,
-      lead_id: leadId,
-      kunde_id: resolvedKundeId,
-      status: "offen",
-      titel,
-      notizen: null,
-      start_datum: start,
-      end_datum: end,
-      abnahme_datum: null,
-      abnahme_protokoll_url: null,
-      kunden_token: kundenToken,
-      fortschritt: 0,
-      betreuer_id: null,
-      zahlungsplan: null,
-      ist_bauprojekt: istBauprojekt,
-    })
-    .select("id")
-    .single();
-  if (aErr) logDbError('app/actions/portal-angebot:auftraege', aErr)
-
-  if (aErr || !auftrag?.id) {
-    console.error("[acceptKundeAngebot] auftrag", aErr?.message);
-    return {
-      ok: false,
-      error: aErr?.message ?? "Auftrag konnte nicht angelegt werden.",
-    };
-  }
-
-  const auftragId = String(auftrag.id);
-  const posRows = angebotPositionenJsonToAuftragRows(auftragId, angebot.positionen);
-  if (posRows.length) {
-    const { error: posErr } = await supabaseAdmin
-      .from("auftrag_positionen")
-      .insert(posRows);
-    if (posErr) logDbError('app/actions/portal-angebot:auftrag_positionen', posErr)
-    if (posErr) {
-      console.error("[acceptKundeAngebot] auftrag_positionen", posErr.message);
     }
   }
 

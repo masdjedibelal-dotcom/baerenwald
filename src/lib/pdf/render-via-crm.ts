@@ -5,7 +5,7 @@
 const PDF_UI_ERROR =
   "PDF konnte nicht erzeugt werden. Bitte erneut versuchen.";
 
-function resolveCrmBaseUrl(): string {
+export function resolveCrmBaseUrl(): string {
   const raw =
     process.env.NEXT_PUBLIC_CRM_URL?.trim() ||
     process.env.CRM_DASHBOARD_URL?.trim() ||
