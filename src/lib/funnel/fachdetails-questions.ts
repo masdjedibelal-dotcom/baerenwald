@@ -721,7 +721,7 @@ export const DACH_Q1_KAPUTT: FachdetailQuestionDef = {
   id: "dach_vorhaben",
   title: "Was ist akut am Dach beschädigt?",
   education:
-    "Wähle den dringendsten Schaden — Details zur genauen Ursache klären wir beim Einsatz vor Ort.",
+    "Wählen Sie den dringendsten Schaden. Die genaue Ursache klären wir beim Einsatz vor Ort.",
   inputType: "single",
   options: [
     {

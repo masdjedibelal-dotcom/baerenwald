@@ -106,7 +106,7 @@ function RechnungDokumentVorschau({
                 className="text-fs-title font-bold"
                 style={{ color: PORTAL_VAR.ink }}
               >
-                {fd.firma || "Dein Betrieb"}
+                {fd.firma || "Ihr Betrieb"}
               </p>
               {absenderZeile ? (
                 <p className="text-fs-caption" style={{ color: PORTAL_VAR.sub }}>

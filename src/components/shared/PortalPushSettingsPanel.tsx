@@ -140,7 +140,7 @@ export function PortalPushSettingsPanel({ portal }: Props) {
         onChange={onToggle}
         disabled={disableToggle}
         title="Push-Benachrichtigungen"
-        description={loading ? "Lade Status…" : statusHint || undefined}
+        description={loading ? "Status wird geladen …" : statusHint || undefined}
       />
 
       {enabled ? (

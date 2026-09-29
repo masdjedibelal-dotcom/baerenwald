@@ -108,8 +108,8 @@ export function PortalInviteMailtoSheet({
       }
     >
       <p className="portal-text-body text-text-secondary">
-        Der Browser öffnet die Mail-App oft nicht von allein. Tippe auf „Mail-App
-        öffnen“ — oder kopiere den Link und sende ihn selbst.
+        Der Browser öffnet die Mail-App oft nicht von allein. Tippen Sie auf „Mail-App
+        öffnen“ oder kopieren Sie den Link und senden Sie ihn selbst.
       </p>
       {url ? (
         <p className="mt-3 break-all rounded-[10px] border border-border-light bg-white px-3 py-2.5 text-fs-meta text-text-secondary">

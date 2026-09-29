@@ -199,7 +199,7 @@ export async function sendFunnelOtpEmail(opts: {
   try {
     const html = `
         <p>${greeting},</p>
-        <p>Dein Bestätigungscode für ${escapeHtml(productLabel)}:</p>
+        <p>Ihr Bestätigungscode für ${escapeHtml(productLabel)}:</p>
         <p style="font-size:28px;font-weight:700;letter-spacing:6px;color:var(--p2-primary);">${escapeHtml(opts.code)}</p>
         <p>Der Code ist 15 Minuten gültig.</p>
         <p style="color:var(--p2-faint);font-size:13px;">${escapeHtml(SITE_CONFIG.companyName)} · ${escapeHtml(SITE_CONFIG.addressLine)}</p>

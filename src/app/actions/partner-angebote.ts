@@ -367,7 +367,7 @@ export async function submitPartnerRechnung(
   }
 
   if (row.hw_rechnung_eingereicht_at) {
-    return { ok: false, error: "Du hast bereits eine Rechnung hochgeladen." };
+    return { ok: false, error: "Sie haben bereits eine Rechnung hochgeladen." };
   }
 
   const upload = await uploadPartnerPdf({

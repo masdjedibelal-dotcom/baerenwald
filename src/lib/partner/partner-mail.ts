@@ -82,7 +82,7 @@ function mailShell(title: string, bodyHtml: string, preheader?: string): string 
   return buildStandardMailHtml({
     preheader: preheader ?? title,
     bodyHtml: `${headline}${bodyHtml}
-      <p style="margin:24px 0 0;font-size:15px;color:${MAIL_COLORS.gray700};line-height:1.6;">${mailTeamGrussHtml("du")}</p>`,
+      <p style="margin:24px 0 0;font-size:15px;color:${MAIL_COLORS.gray700};line-height:1.6;">${mailTeamGrussHtml("sie")}</p>`,
     disclaimer:
       "Sie erhalten diese Mail, weil Ihnen im Partner-Portal ein Vorgang zugewiesen wurde.",
     footerNote: "Bärenwald München · Partner-Portal",
@@ -315,7 +315,7 @@ export async function sendHandwerkerAngebotBestaetigtMail(opts: {
 ${preisBlock}
 ${mailBtn("Zum Partner-Portal", portalHref)}`
     : `<p style="margin:0 0 12px;font-size:15px;line-height:1.6;">Hallo ${escapeHtml(opts.handwerkerName)},</p>
-<p style="margin:0 0 12px;font-size:15px;line-height:1.6;">Dein Angebot wurde übernommen. Status unter <strong>Angebote</strong>.</p>
+<p style="margin:0 0 12px;font-size:15px;line-height:1.6;">Ihr Angebot wurde übernommen. Den Stand sehen Sie unter <strong>Angebote</strong>.</p>
 ${preisBlock}
 ${mailBtn("Zum Partner-Portal", portalHref)}`;
 

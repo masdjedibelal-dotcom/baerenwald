@@ -138,7 +138,7 @@ export function applyGroesseStepCopy(
       ...step,
       question: "Wie viele Räume sollen gestrichen werden?",
       subtext:
-        "Wähle die passende Größe — wir rechnen intern mit typischer Wandfläche.",
+        "Wählen Sie die passende Größe. Wir rechnen intern mit einer typischen Wandfläche.",
     };
   }
   if (situation === "erneuern" && b.has("boden") && !b.has("bad")) {

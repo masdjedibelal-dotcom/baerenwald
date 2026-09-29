@@ -4,7 +4,7 @@ export default function PartnerLoading() {
   return (
     <PortalContentBusy
       variant="page"
-      body="Einen Moment — wir bereiten deine Übersicht vor."
+      body="Einen Moment, Ihre Übersicht wird vorbereitet."
     />
   );
 }

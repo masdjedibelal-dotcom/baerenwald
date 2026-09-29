@@ -64,7 +64,7 @@ function schedulePartnerPush(input: {
           typ: input.typ,
           titel: subject,
           body: /rechnung\s+wurde\s+überwiesen/i.test(String(input.leistungName ?? ""))
-            ? "Deine Rechnung wurde überwiesen."
+            ? "Ihre Rechnung wurde überwiesen."
             : "Bitte im Partner-Portal prüfen.",
           link: input.link,
           defaultUrl: "/partner",
@@ -95,7 +95,7 @@ function partnerNotifyBodyHtml(opts: {
   rechnungUeberwiesen?: boolean;
 }): string {
   const ctaHint = opts.rechnungUeberwiesen
-    ? "Deine eingereichte Rechnung wurde von Bärenwald überwiesen."
+    ? "Ihre eingereichte Rechnung wurde von Bärenwald überwiesen."
     : opts.bautagebuch
       ? "Bitte im Partner-Portal einen Bautagebuch-Eintrag erstellen — am Auftrag hat sich nichts geändert."
       : "Bitte im Partner-Portal prüfen und bestätigen.";
@@ -103,11 +103,11 @@ function partnerNotifyBodyHtml(opts: {
     ? "Zum Vorgang im Partner-Portal →"
     : "Zum Partner-Portal →";
   return `
-    <p style="margin:0 0 12px;font-size:15px;color:var(--p2-ink);line-height:1.6;">${mailBegruessungHtml("du", opts.handwerkerName)}</p>
+    <p style="margin:0 0 12px;font-size:15px;color:var(--p2-ink);line-height:1.6;">${mailBegruessungHtml("sie", opts.handwerkerName)}</p>
     <p style="margin:0 0 16px;font-size:15px;color:var(--p2-ink);line-height:1.6;"><strong>${escapeHtml(opts.subjectLine)}</strong></p>
     <p style="margin:0 0 8px;font-size:15px;color:var(--p2-ink);line-height:1.6;">${ctaHint}</p>
     ${mailPrimaryButtonHtml(ctaLabel, opts.portalUrl)}
-    <p style="margin:24px 0 0;font-size:15px;color:var(--p2-ink);line-height:1.6;">${mailTeamGrussHtml("du")}</p>
+    <p style="margin:24px 0 0;font-size:15px;color:var(--p2-ink);line-height:1.6;">${mailTeamGrussHtml("sie")}</p>
   `;
 }
 
