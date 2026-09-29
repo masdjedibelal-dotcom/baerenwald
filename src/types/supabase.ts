@@ -1183,6 +1183,7 @@ export type Database = {
           abnahme_signiert_am: string | null
           absprachen: string | null
           auftrag_id: string
+          compliance_pflicht_slugs: string[] | null
           created_at: string
           erledigt_gemeldet_am: string | null
           gewerk_id: string | null
@@ -1190,6 +1191,7 @@ export type Database = {
           id: string
           notizen: string | null
           projektvertrag_bestaetigt_am: string | null
+          projektvertrag_quelle: string | null
           status: string
           vereinbarter_preis: number | null
         }
@@ -1198,6 +1200,7 @@ export type Database = {
           abnahme_signiert_am?: string | null
           absprachen?: string | null
           auftrag_id: string
+          compliance_pflicht_slugs?: string[] | null
           created_at?: string
           erledigt_gemeldet_am?: string | null
           gewerk_id?: string | null
@@ -1205,6 +1208,7 @@ export type Database = {
           id?: string
           notizen?: string | null
           projektvertrag_bestaetigt_am?: string | null
+          projektvertrag_quelle?: string | null
           status?: string
           vereinbarter_preis?: number | null
         }
@@ -1213,6 +1217,7 @@ export type Database = {
           abnahme_signiert_am?: string | null
           absprachen?: string | null
           auftrag_id?: string
+          compliance_pflicht_slugs?: string[] | null
           created_at?: string
           erledigt_gemeldet_am?: string | null
           gewerk_id?: string | null
@@ -1220,6 +1225,7 @@ export type Database = {
           id?: string
           notizen?: string | null
           projektvertrag_bestaetigt_am?: string | null
+          projektvertrag_quelle?: string | null
           status?: string
           vereinbarter_preis?: number | null
         }
@@ -2884,21 +2890,27 @@ export type Database = {
           anhang_dateiname: string | null
           auftrag_id: string | null
           betreff: string | null
+          cc_email: string | null
           created_at: string | null
           empfaenger: string
           fehler_nachricht: string | null
           fehler_text: string | null
           gesendet_von: string | null
           id: string
+          in_reply_to_log_id: string | null
           inhalt_html: string | null
+          internet_message_id: string | null
+          kontext_typ: string | null
           kunde_id: string | null
           lead_id: string | null
           rechnung_id: string | null
           resend_id: string | null
+          richtung: string
           sent_at: string
           status: string
           subject: string
           typ: string
+          von_email: string | null
         }
         Insert: {
           an_email?: string | null
@@ -2907,21 +2919,27 @@ export type Database = {
           anhang_dateiname?: string | null
           auftrag_id?: string | null
           betreff?: string | null
+          cc_email?: string | null
           created_at?: string | null
           empfaenger: string
           fehler_nachricht?: string | null
           fehler_text?: string | null
           gesendet_von?: string | null
           id?: string
+          in_reply_to_log_id?: string | null
           inhalt_html?: string | null
+          internet_message_id?: string | null
+          kontext_typ?: string | null
           kunde_id?: string | null
           lead_id?: string | null
           rechnung_id?: string | null
           resend_id?: string | null
+          richtung?: string
           sent_at?: string
           status?: string
           subject: string
           typ: string
+          von_email?: string | null
         }
         Update: {
           an_email?: string | null
@@ -2930,21 +2948,27 @@ export type Database = {
           anhang_dateiname?: string | null
           auftrag_id?: string | null
           betreff?: string | null
+          cc_email?: string | null
           created_at?: string | null
           empfaenger?: string
           fehler_nachricht?: string | null
           fehler_text?: string | null
           gesendet_von?: string | null
           id?: string
+          in_reply_to_log_id?: string | null
           inhalt_html?: string | null
+          internet_message_id?: string | null
+          kontext_typ?: string | null
           kunde_id?: string | null
           lead_id?: string | null
           rechnung_id?: string | null
           resend_id?: string | null
+          richtung?: string
           sent_at?: string
           status?: string
           subject?: string
           typ?: string
+          von_email?: string | null
         }
         Relationships: [
           {
