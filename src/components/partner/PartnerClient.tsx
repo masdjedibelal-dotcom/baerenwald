@@ -1,6 +1,7 @@
 "use client";
 
 import { useRouter, useSearchParams } from "next/navigation";
+import { PartnerEinsaetzeSection } from "@/components/partner/PartnerEinsaetzeSection";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { flushSync } from "react-dom";
 
@@ -1080,11 +1081,14 @@ export function PartnerClient({
               actionSlides={partnerActionSlides}
               onActionRefresh={() => refreshFlash()}
               beforeTiles={
-                <PartnerOnboardingReminderBanner
-                  handwerker={handwerker}
-                  profil={profil}
-                  variant="chip"
-                />
+                <>
+                  <PartnerOnboardingReminderBanner
+                    handwerker={handwerker}
+                    profil={profil}
+                    variant="chip"
+                  />
+                  <PartnerEinsaetzeSection />
+                </>
               }
               kpis={{
                 offen: vorgaengeState.filter(
