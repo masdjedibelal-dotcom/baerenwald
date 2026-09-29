@@ -1,4 +1,5 @@
 "use client";
+import { safeAction } from "@/lib/actions/safe-action";
 
 import { useState } from "react";
 
@@ -42,7 +43,7 @@ export function PortalSignupOtpStep({
     e.preventDefault();
     setBusy(true);
     setError(null);
-    const result = await confirmPortalSignupCode({ email, code, brand });
+    const result = await safeAction(confirmPortalSignupCode({ email, code, brand }));
     if (!result.ok) {
       setBusy(false);
       setError(result.error);
@@ -66,7 +67,7 @@ export function PortalSignupOtpStep({
     setBusy(true);
     setError(null);
     setResent(false);
-    const result = await resendPortalSignupCode(email, brand);
+    const result = await safeAction(resendPortalSignupCode(email, brand));
     setBusy(false);
     if (!result.ok) {
       setError(result.error);

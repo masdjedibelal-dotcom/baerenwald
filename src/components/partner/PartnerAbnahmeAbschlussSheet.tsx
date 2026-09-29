@@ -1,4 +1,5 @@
 "use client";
+import { safeAction } from '@/lib/actions/safe-action'
 
 import { PortalIcon } from "@/components/portal/PortalIcon";
 import { useCallback, useEffect, useMemo, useState } from "react";
@@ -452,7 +453,7 @@ export function PartnerAbnahmeAbschlussSheet({
     setLoading(true);
     setError(null);
     try {
-      const res = await submitPartnerAbnahmeNachSignatur({
+      const res = await safeAction(submitPartnerAbnahmeNachSignatur({
         auftragId,
         abnahmeDatum,
         ort,
@@ -466,7 +467,7 @@ export function PartnerAbnahmeAbschlussSheet({
         kundeUnterschriftName: kundeName,
         hwSignaturPng: hwSig,
         kundeSignaturPng: kundeSig,
-      });
+      }));
       if (!res.ok) {
         setError(res.error);
         setLoading(false);

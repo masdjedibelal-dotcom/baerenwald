@@ -1,4 +1,5 @@
 "use client";
+import { safeAction } from "@/lib/actions/safe-action";
 
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -232,7 +233,7 @@ export function PortalRegisterForm({
 
     setLoading(true);
     setError(null);
-    const result = await registerMeinBaerenwaldWithOtp({
+    const result = await safeAction(registerMeinBaerenwaldWithOtp({
       name: displayName || email.trim(),
       vorname: vorname.trim() || undefined,
       nachname: nachname.trim() || undefined,
@@ -246,7 +247,7 @@ export function PortalRegisterForm({
       password,
       einladungToken: inviteToken || undefined,
       kundentyp: askKundeTyp ? kundentyp ?? undefined : undefined,
-    });
+    }));
     setLoading(false);
     if (!result.ok) {
       const already =

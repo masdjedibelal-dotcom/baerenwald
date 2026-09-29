@@ -1,4 +1,5 @@
 "use client";
+import { safeAction } from "@/lib/actions/safe-action";
 
 import type { ReactNode } from "react";
 import { useRouter } from "next/navigation";
@@ -89,9 +90,9 @@ function ComplianceDokumentItem({
     if (!item.dokument?.id) return;
     setLoading(true);
     setError(null);
-    const res = await deletePartnerComplianceDokument({
+    const res = await safeAction(deletePartnerComplianceDokument({
       dokumentId: item.dokument.id,
-    });
+    }));
     setLoading(false);
     setConfirmOpen(false);
     if (!res.ok) {

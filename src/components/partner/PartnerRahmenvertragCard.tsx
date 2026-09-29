@@ -1,4 +1,5 @@
 "use client";
+import { safeAction } from "@/lib/actions/safe-action";
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
@@ -39,10 +40,10 @@ export function PartnerRahmenvertragCard({
     if (!rahmenvertrag) return;
     setLoading(true);
     setError(null);
-    const res = await acceptPartnerRahmenvertrag({
+    const res = await safeAction(acceptPartnerRahmenvertrag({
       vertragId: rahmenvertrag.id,
       akzeptiert,
-    });
+    }));
     setLoading(false);
     if (!res.ok) {
       setError(res.error);

@@ -1,4 +1,5 @@
 "use client";
+import { safeAction } from "@/lib/actions/safe-action";
 
 import { PortalIcon } from "@/components/portal/PortalIcon";
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -311,7 +312,7 @@ export function OrgHmBefundPanel({
   async function reload() {
     setLoading(true);
     setError(null);
-    const res = await getLeadBefundAction({ leadId });
+    const res = await safeAction(getLeadBefundAction({ leadId }));
     if (!res.ok) {
       setError(res.error);
       setBefund(null);

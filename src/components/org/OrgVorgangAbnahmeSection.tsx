@@ -1,4 +1,5 @@
 "use client";
+import { safeAction } from "@/lib/actions/safe-action";
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
@@ -93,14 +94,14 @@ export function OrgVorgangAbnahmeSection({
   async function submit(nextArt: HvAbnahmeArt) {
     setBusy(true);
     setError(null);
-    const res = await submitOrgHvAbnahme({
+    const res = await safeAction(submitOrgHvAbnahme({
       leadId,
       auftragId,
       art: nextArt,
       anmerkung: anmerkung.trim() || undefined,
       signiertName,
       signaturPng: signatur ?? undefined,
-    });
+    }));
     setBusy(false);
     if (!res.ok) {
       setError(res.error);

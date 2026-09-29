@@ -1,4 +1,5 @@
 "use client";
+import { safeAction } from "@/lib/actions/safe-action";
 
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -52,7 +53,8 @@ export function PortalLoginForm({
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [hashBusy, setHashBusy] = useState(true);
+  // Formular sofort zeigen; Ladeanzeige nur, wenn ein Anmelde-Link (#access_token) verarbeitet wird.
+  const [hashBusy, setHashBusy] = useState(false);
   const [awaitingOtp, setAwaitingOtp] = useState(false);
   const [otpConfirmed, setOtpConfirmed] = useState(false);
 
@@ -64,9 +66,9 @@ export function PortalLoginForm({
   useEffect(() => {
     const { access_token, refresh_token } = parseHashSession();
     if (!access_token || !refresh_token) {
-      setHashBusy(false);
       return;
     }
+    setHashBusy(true);
 
     const supabase = getSupabaseBrowserClient();
     void supabase.auth
@@ -92,7 +94,7 @@ export function PortalLoginForm({
     setLoading(true);
     setError(null);
     try {
-      const allowed = await assertPortalEmailAllowed(email.trim());
+      const allowed = await safeAction(assertPortalEmailAllowed(email.trim()));
       if (!allowed.ok) {
         setError(allowed.error);
         setLoading(false);

@@ -1,6 +1,13 @@
 /** Grenzen für Partner-Uploads (Client + Server). */
 
-export const PARTNER_MAX_PDF_BYTES = 10 * 1024 * 1024;
+/**
+ * Netlify nimmt je Anfrage nur rund 6 MB an (Server-Action-Body, teils Base64) —
+ * darüber scheitert der Upload ohne Meldung. Deshalb PDF und Summe je Upload auf 4 MB.
+ */
+export const PARTNER_MAX_PDF_BYTES = 4 * 1024 * 1024;
+export const PARTNER_MAX_UPLOAD_GESAMT_BYTES = 4 * 1024 * 1024;
+/** Fotos werden vor dem Upload auf höchstens ~1,5 MB verkleinert. */
+const FOTO_NACH_KOMPRESSION_BYTES = 1.5 * 1024 * 1024;
 export const PARTNER_MAX_PHOTO_BYTES = 6 * 1024 * 1024;
 /** Max. Anhänge (Fotos + PDF) pro Bautagebuch-Eintrag. */
 export const PARTNER_MAX_BAUTAGEBUCH_ANHAENGE = 5;
@@ -75,6 +82,18 @@ export function validatePartnerBautagebuchFile(file: File): string | null {
   return "Nur JPG, PNG, WebP oder PDF erlaubt.";
 }
 
+/** Summe je Upload (Fotos mit ihrer Größe nach Verkleinerung). */
+function uploadGesamtFehler(files: File[]): string | null {
+  const summe = files.reduce(
+    (s, f) => s + (isImageFile(f) ? Math.min(f.size, FOTO_NACH_KOMPRESSION_BYTES) : f.size),
+    0
+  );
+  if (summe > PARTNER_MAX_UPLOAD_GESAMT_BYTES) {
+    return `Zusammen höchstens ${formatPartnerMaxMb(PARTNER_MAX_UPLOAD_GESAMT_BYTES)} MB pro Upload. Bitte weniger oder kleinere Dateien wählen.`;
+  }
+  return null;
+}
+
 export function validatePartnerBautagebuchFiles(
   files: File[],
   existingCount = 0
@@ -90,7 +109,7 @@ export function validatePartnerBautagebuchFiles(
     const err = validatePartnerBautagebuchFile(file);
     if (err) return err;
   }
-  return null;
+  return uploadGesamtFehler(files);
 }
 
 /**
@@ -113,5 +132,5 @@ export function validatePartnerAngebotFiles(
     const err = validatePartnerBautagebuchFile(file);
     if (err) return err;
   }
-  return null;
+  return uploadGesamtFehler(list);
 }

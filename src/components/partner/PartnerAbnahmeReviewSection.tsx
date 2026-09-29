@@ -1,4 +1,5 @@
 "use client";
+import { safeAction } from "@/lib/actions/safe-action";
 
 import { PortalIcon } from "@/components/portal/PortalIcon";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -99,7 +100,7 @@ export function PartnerAbnahmeReviewSection({
 
   const load = useCallback(async () => {
     setLoading(true);
-    const r = await getPartnerAbnahmeStatus(auftragId, protokollId);
+    const r = await safeAction(getPartnerAbnahmeStatus(auftragId, protokollId));
     setLoading(false);
     if (!r.ok) {
       if (!initialPdfUrl && !initialFreigabeStatus) setStatus(null);

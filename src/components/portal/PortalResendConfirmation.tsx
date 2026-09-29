@@ -1,4 +1,5 @@
 "use client";
+import { safeAction } from "@/lib/actions/safe-action";
 
 import { useState } from "react";
 import { PortalButton } from "@/components/portal/PortalButton";
@@ -30,7 +31,7 @@ export function PortalResendConfirmation({
     }
     setLoading(true);
     setError(null);
-    const result = await resendPortalSignupCode(trimmed, brand);
+    const result = await safeAction(resendPortalSignupCode(trimmed, brand));
     setLoading(false);
     if (!result.ok) {
       setError(result.error);

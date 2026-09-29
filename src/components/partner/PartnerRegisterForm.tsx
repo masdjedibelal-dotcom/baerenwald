@@ -1,4 +1,5 @@
 "use client";
+import { safeAction } from "@/lib/actions/safe-action";
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -94,7 +95,7 @@ export function PartnerRegisterForm() {
     setError(null);
     const trimmedEmail = email.trim();
 
-    const allowed = await assertPartnerEmailAllowed(trimmedEmail);
+    const allowed = await safeAction(assertPartnerEmailAllowed(trimmedEmail));
     if (!allowed.ok) {
       setLoading(false);
       setError(allowed.error);

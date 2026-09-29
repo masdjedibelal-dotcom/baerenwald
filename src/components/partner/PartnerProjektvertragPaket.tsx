@@ -1,4 +1,5 @@
 "use client";
+import { safeAction } from "@/lib/actions/safe-action";
 
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -63,11 +64,11 @@ export function PartnerProjektvertragPaket({
   async function onConfirm() {
     setLoading(true);
     setError(null);
-    const res = await confirmPartnerProjektvertrag({
+    const res = await safeAction(confirmPartnerProjektvertrag({
       auftragId,
       gelesen,
       verbindlich,
-    });
+    }));
     setLoading(false);
     setConfirmOpen(false);
     if (!res.ok) {

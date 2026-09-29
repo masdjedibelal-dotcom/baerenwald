@@ -1,4 +1,5 @@
 "use client";
+import { safeAction } from "@/lib/actions/safe-action";
 
 import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
@@ -73,7 +74,7 @@ export function PartnerAbnahmeprotokollForm({
     setLoading(true);
     setError(null);
 
-    const res = await submitPartnerAbnahmeprotokoll({
+    const res = await safeAction(submitPartnerAbnahmeprotokoll({
       auftragId,
       protokollText,
       maengelText: maengelText.trim() || undefined,
@@ -84,7 +85,7 @@ export function PartnerAbnahmeprotokollForm({
       hwSignaturPng: hwSig,
       kundeSignaturPng: kundeHasSig ? kundeSig ?? undefined : undefined,
       abschlussChecks: checks,
-    });
+    }));
 
     setLoading(false);
     if (!res.ok) {

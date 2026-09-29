@@ -1,4 +1,5 @@
 "use client";
+import { safeAction } from '@/lib/actions/safe-action'
 
 import { useState } from "react";
 
@@ -39,7 +40,7 @@ export function PartnerTermineRueckfrageSection({
     e.preventDefault();
     setBusy(true);
     setError(null);
-    const res = await createPartnerRueckfrage(auftragId, rueckfrage);
+    const res = await safeAction(createPartnerRueckfrage(auftragId, rueckfrage));
     setBusy(false);
     if (!res.ok) {
       setError(res.error);
@@ -55,9 +56,9 @@ export function PartnerTermineRueckfrageSection({
     if (!slotBeginn) return;
     setBusy(true);
     setError(null);
-    const res = await createPartnerTerminSlots(auftragId, [
+    const res = await safeAction(createPartnerTerminSlots(auftragId, [
       { beginn: slotBeginn, ende: slotEnde || undefined },
-    ]);
+    ]));
     setBusy(false);
     if (!res.ok) {
       setError(res.error);

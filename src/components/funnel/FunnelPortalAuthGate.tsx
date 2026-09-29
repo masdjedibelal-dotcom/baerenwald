@@ -1,4 +1,5 @@
 "use client";
+import { safeAction } from "@/lib/actions/safe-action";
 
 import { PortalIcon } from "@/components/portal/PortalIcon";
 import { useEffect, useState } from "react";
@@ -170,7 +171,7 @@ export function FunnelPortalAuthGate({
     e.preventDefault();
     setBusy(true);
     setError(null);
-    const verified = await verifyFunnelPortalCode({ email, code });
+    const verified = await safeAction(verifyFunnelPortalCode({ email, code }));
     if (!verified.ok) {
       setBusy(false);
       setError(verified.error);
@@ -196,7 +197,7 @@ export function FunnelPortalAuthGate({
   async function onResendCode() {
     setBusy(true);
     setError(null);
-    const result = await resendFunnelPortalCode(email);
+    const result = await safeAction(resendFunnelPortalCode(email));
     setBusy(false);
     if (!result.ok) {
       setError(result.error);
