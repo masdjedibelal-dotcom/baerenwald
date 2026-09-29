@@ -54,7 +54,7 @@ export async function GET(req: Request) {
     const {data: leads, error: __dbErr129_2} = await supabaseAdmin
       .from("leads")
       .select(
-        "id, status, vorgang_phase, created_at, situation, plz, ort, strasse, kanal, hv_meldung_status"
+        "id, status, vorgang_phase, created_at, situation, plz, strasse, kanal, hv_meldung_status"
       )
       .eq("kunde_id", session.entityId)
       .order("created_at", { ascending: false })

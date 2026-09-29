@@ -280,7 +280,7 @@ export async function acceptKundeAngebot(
   if (leadId) {
     const {data: leadRow, error: __dbErr111_5} = await supabaseAdmin
       .from("leads")
-      .select("kunde_id, auftraggeber_kunde_id, ist_bauprojekt, titel, gewerk")
+      .select("kunde_id, auftraggeber_kunde_id, ist_bauprojekt")
       .eq("id", leadId)
       .maybeSingle();
     if (__dbErr111_5) logDbError('app/actions/portal-angebot:leads', __dbErr111_5)
@@ -292,13 +292,20 @@ export async function acceptKundeAngebot(
           : null) ||
         (leadRow.kunde_id != null ? String(leadRow.kunde_id) : null) ||
         resolvedKundeId;
-      const leadTitel =
-        typeof leadRow.titel === "string" ? leadRow.titel.trim() : "";
-      const gewerk =
-        typeof leadRow.gewerk === "string" ? leadRow.gewerk.trim() : "";
-      titel = (leadTitel || gewerk || "Auftrag").slice(0, 240);
     }
   }
+
+  // Titel wie im CRM (createAuftragFromAngebot): Gewerke der Angebotspositionen.
+  const gewerkNamen = Array.isArray(angebot.positionen)
+    ? Array.from(
+        new Set(
+          (angebot.positionen as Array<{ gewerk_name?: unknown }>)
+            .map((p) => String(p?.gewerk_name ?? "").trim())
+            .filter(Boolean)
+        )
+      )
+    : [];
+  if (gewerkNamen.length) titel = gewerkNamen.join(", ").slice(0, 240);
 
   const {data: kundeRow, error: __dbErr112_6} = await supabaseAdmin
     .from("kunden")

@@ -61,7 +61,8 @@ export async function generateMeldeQrPng(
     // Quiet Zone ≥ 4 Module — wichtig für Handy-Kameras
     margin: 4,
     errorCorrectionLevel: "H",
-    color: { dark: PALETTE.h000000, light: "var(--p2-panel)" },
+    // qrcode akzeptiert nur Hex, keine CSS-Variablen.
+    color: { dark: PALETTE.h000000, light: PALETTE.hffffff },
   });
   return new Uint8Array(buf);
 }

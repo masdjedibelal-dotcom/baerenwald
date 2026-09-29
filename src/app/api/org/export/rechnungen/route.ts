@@ -31,7 +31,7 @@ export async function GET(req: Request) {
   let q = supabaseAdmin
     .from("rechnungen")
     .select(
-      "id, rechnungsnummer, status, netto, mwst_betrag, brutto, lohnanteil_eur, lohnanteil_prozent, leistungszeitraum_von, leistungszeitraum_bis, kostentraeger, rechnungsdatum, auftrag_id, kunde_id"
+      "id, rechnungsnummer, status, netto, mwst_betrag, brutto, lohnanteil_eur, lohnanteil_prozent, leistungszeitraum_von, leistungszeitraum_bis, kostentraeger, rechnungsdatum, auftrag_id, kunde_id, kunde_objekt_id"
     )
     .eq("kunde_id", session.kunde.id)
     .order("created_at", { ascending: false });
@@ -44,39 +44,45 @@ export async function GET(req: Request) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
+  // Objekt: an der Rechnung, sonst über den Vorgang (Auftrag → Anfrage).
   const auftragIds = Array.from(new Set((rows ?? []).map((r) => r.auftrag_id).filter(Boolean)));
-  const objektByAuftrag = new Map<string, { titel: string; kostenstelle: string }>();
-
+  const leadObjektByAuftrag = new Map<string, string>();
   if (auftragIds.length) {
     const {data: auftraege, error: __dbErr173_1} = await supabaseAdmin
       .from("auftraege")
-      .select("id, kunde_objekt_id, kostentraeger")
+      .select("id, leads(kunde_objekt_id)")
       .in("id", auftragIds);
     if (__dbErr173_1) logDbError('app/api/org/export/rechnungen/route:auftraege', __dbErr173_1)
-
-    const objektIds = Array.from(
-      new Set((auftraege ?? []).map((a) => a.kunde_objekt_id).filter(Boolean))
-    );
-    const objektMap = new Map<string, { titel: string; kostenstelle_nr: string | null }>();
-    if (objektIds.length) {
-      const {data: objekte, error: __dbErr174_2} = await supabaseAdmin
-        .from("kunden_objekte")
-        .select("id, titel, kostenstelle_nr")
-        .in("id", objektIds);
-      if (__dbErr174_2) logDbError('app/api/org/export/rechnungen/route:kunden_objekte', __dbErr174_2)
-      for (const o of objekte ?? []) {
-        objektMap.set(String(o.id), {
-          titel: String(o.titel ?? ""),
-          kostenstelle_nr: o.kostenstelle_nr as string | null,
-        });
-      }
-    }
-
     for (const a of auftraege ?? []) {
-      const obj = a.kunde_objekt_id ? objektMap.get(String(a.kunde_objekt_id)) : null;
-      objektByAuftrag.set(String(a.id), {
-        titel: obj?.titel ?? "",
-        kostenstelle: obj?.kostenstelle_nr ?? "",
+      const lead = (Array.isArray(a.leads) ? a.leads[0] : a.leads) as
+        | { kunde_objekt_id?: string | null }
+        | null;
+      if (lead?.kunde_objekt_id) leadObjektByAuftrag.set(String(a.id), String(lead.kunde_objekt_id));
+    }
+  }
+
+  const objektIdByRechnung = new Map<string, string>();
+  for (const r of rows ?? []) {
+    const oid = r.kunde_objekt_id
+      ? String(r.kunde_objekt_id)
+      : r.auftrag_id
+        ? leadObjektByAuftrag.get(String(r.auftrag_id))
+        : undefined;
+    if (oid) objektIdByRechnung.set(String(r.id), oid);
+  }
+
+  const objektMap = new Map<string, { titel: string; kostenstelle_nr: string | null }>();
+  const objektIds = Array.from(new Set(objektIdByRechnung.values()));
+  if (objektIds.length) {
+    const {data: objekte, error: __dbErr174_2} = await supabaseAdmin
+      .from("kunden_objekte")
+      .select("id, titel, kostenstelle_nr")
+      .in("id", objektIds);
+    if (__dbErr174_2) logDbError('app/api/org/export/rechnungen/route:kunden_objekte', __dbErr174_2)
+    for (const o of objekte ?? []) {
+      objektMap.set(String(o.id), {
+        titel: String(o.titel ?? ""),
+        kostenstelle_nr: o.kostenstelle_nr as string | null,
       });
     }
   }
@@ -98,9 +104,10 @@ export async function GET(req: Request) {
   ].join(";");
 
   const lines = (rows ?? []).flatMap((r) => {
-    const obj = r.auftrag_id ? objektByAuftrag.get(String(r.auftrag_id)) : null;
+    const oid = objektIdByRechnung.get(String(r.id));
+    const obj = oid ? objektMap.get(oid) : null;
     const kt = String(r.kostentraeger ?? "").trim();
-    const kostenstelle = obj?.kostenstelle?.trim() || (r.auftrag_id ? String(r.auftrag_id).slice(0, 8) : "");
+    const kostenstelle = obj?.kostenstelle_nr?.trim() || (r.auftrag_id ? String(r.auftrag_id).slice(0, 8) : "");
     const base = [
       csvEscape(r.rechnungsnummer),
       csvEscape(String(r.rechnungsdatum ?? "").slice(0, 10)),

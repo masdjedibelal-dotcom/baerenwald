@@ -55,9 +55,9 @@ export async function GET(req: Request) {
 
   const dokRes = await supabaseAdmin
     .from("kunden_dokumente")
-    .select("id, titel, dateiname, kunde_objekt_id")
+    .select("id, name")
     .eq("kunde_id", kundeId)
-    .or(`titel.ilike.${pattern},dateiname.ilike.${pattern}`)
+    .ilike("name", pattern)
     .limit(6);
 
   if (leadsRes.error) logDbError("api/org/suche:leads", leadsRes.error);
@@ -122,12 +122,8 @@ export async function GET(req: Request) {
 
   for (const d of dokRes.error ? [] : dokRes.data ?? []) {
     const label =
-      (d.titel as string | null)?.trim() ||
-      (d.dateiname as string | null)?.trim() ||
-      "Dokument";
-    const href = d.kunde_objekt_id
-      ? `/portal?section=objekte&id=${encodeURIComponent(String(d.kunde_objekt_id))}`
-      : `/portal?section=objekte`;
+      (d.name as string | null)?.trim() || "Dokument";
+    const href = `/portal?section=objekte`;
     hits.push({
       id: `d-${d.id}`,
       group: "dokumente",

@@ -557,7 +557,7 @@ export async function previewPartnerAutoDokument(input: {
     ...built.missingRegie,
   ];
   const nettoSumme = built.positionen.reduce((s, p) => s + p.netto, 0);
-  const empfaenger = getPartnerDocEmpfaenger();
+  const empfaenger = await getPartnerDocEmpfaenger();
 
   return {
     ok: true,
@@ -654,7 +654,7 @@ export async function submitPartnerAutoAngebot(
     pdfBytes = await renderPdfViaCrm("partner-dokument", {
       docArt: "angebot",
       absender: hw.absender,
-      empfaenger: getPartnerDocEmpfaenger(),
+      empfaenger: await getPartnerDocEmpfaenger(),
       dokumentNr,
       datum: new Date().toISOString(),
       betreff: ctx.betreff,
@@ -797,7 +797,7 @@ export async function submitPartnerAutoRechnung(input: {
     pdfBytes = await renderPdfViaCrm("partner-dokument", {
       docArt: "rechnung",
       absender: hw.absender,
-      empfaenger: getPartnerDocEmpfaenger(),
+      empfaenger: await getPartnerDocEmpfaenger(),
       dokumentNr,
       datum: new Date().toISOString(),
       betreff: ctx.betreff,

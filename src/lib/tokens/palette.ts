@@ -1,6 +1,7 @@
 /** Rest-Palette — Hex nur in /tokens (P5-19). */
 export const PALETTE = {
   h000000: "#000000",
+  hffffff: "#ffffff",
   h00695c: "#00695c",
   h0c447c: "#0C447C",
   h0d1f16: "#0d1f16",

@@ -40,16 +40,16 @@ export async function GET(req: Request) {
     supabaseAdmin
       .from("auftraege")
       .select(
-        "id, titel, status, plz, ort, auftrag_positionen!inner(handwerker_id)"
+        "id, titel, status, auftrag_positionen!inner(handwerker_id)"
       )
       .eq("auftrag_positionen.handwerker_id", hwId)
-      .or(`titel.ilike.${pattern},plz.ilike.${pattern},ort.ilike.${pattern}`)
+      .ilike("titel", pattern)
       .order("updated_at", { ascending: false })
       .limit(10),
     supabaseAdmin
       .from("angebot_handwerker")
       .select(
-        "id, status, angebote(id, notizen, leads(kontakt_name, situation, plz, ort))"
+        "id, status, angebote(id, notizen, leads(kontakt_name, situation, plz, strasse))"
       )
       .eq("handwerker_id", hwId)
       .order("created_at", { ascending: false })
@@ -68,9 +68,7 @@ export async function GET(req: Request) {
     if (seen.has(id)) continue;
     seen.add(id);
     const label = (a.titel as string | null)?.trim() || "Auftrag";
-    const sub = [a.status, [a.plz, a.ort].filter(Boolean).join(" ")]
-      .filter(Boolean)
-      .join(" · ");
+    const sub = [a.status].filter(Boolean).join(" · ");
     hits.push({
       id: `a-${id}`,
       group: "vorgaenge",
@@ -91,7 +89,7 @@ export async function GET(req: Request) {
             kontakt_name?: string | null;
             situation?: string | null;
             plz?: string | null;
-            ort?: string | null;
+            strasse?: string | null;
           } | null;
         }
       | null
@@ -105,7 +103,7 @@ export async function GET(req: Request) {
       lead?.kontakt_name,
       lead?.situation,
       lead?.plz,
-      lead?.ort,
+      lead?.strasse,
       row.status,
     ]
       .filter(Boolean)

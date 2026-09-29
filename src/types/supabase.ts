@@ -1415,6 +1415,7 @@ export type Database = {
           handwerker_id: string | null
           handwerker_status: string | null
           id: string
+          kunde_akzeptiert_at: string | null
           leistung_name: string
           leistung_status: string | null
           lohn_fix: number | null
@@ -1463,6 +1464,7 @@ export type Database = {
           handwerker_id?: string | null
           handwerker_status?: string | null
           id?: string
+          kunde_akzeptiert_at?: string | null
           leistung_name: string
           leistung_status?: string | null
           lohn_fix?: number | null
@@ -1511,6 +1513,7 @@ export type Database = {
           handwerker_id?: string | null
           handwerker_status?: string | null
           id?: string
+          kunde_akzeptiert_at?: string | null
           leistung_name?: string
           leistung_status?: string | null
           lohn_fix?: number | null

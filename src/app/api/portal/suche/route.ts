@@ -36,7 +36,7 @@ export async function GET(req: Request) {
   const { data: leads, error } = await supabaseAdmin
     .from("leads")
     .select(
-      "id, kontakt_name, melder_name, anlass, status, situation, plz, ort, created_at"
+      "id, kontakt_name, melder_name, anlass, status, situation, plz, strasse, created_at"
     )
     .eq("kunde_id", kundeId)
     .is("geloescht_am", null)
@@ -47,7 +47,7 @@ export async function GET(req: Request) {
         `anlass.ilike.${pattern}`,
         `situation.ilike.${pattern}`,
         `plz.ilike.${pattern}`,
-        `ort.ilike.${pattern}`,
+        `strasse.ilike.${pattern}`,
         `status.ilike.${pattern}`,
       ].join(",")
     )
@@ -64,7 +64,7 @@ export async function GET(req: Request) {
       "Vorgang";
     const sub = [
       l.anlass,
-      [l.plz, l.ort].filter(Boolean).join(" "),
+      [l.strasse, l.plz].filter(Boolean).join(" "),
       l.status,
     ]
       .filter(Boolean)

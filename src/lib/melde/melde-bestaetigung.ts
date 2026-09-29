@@ -21,7 +21,7 @@ export async function loadMeldeContactByToken(
 
   const { data, error } = await supabaseAdmin
     .from("leads")
-    .select("id, melder_name, melder_email, melder_telefon, email, name, telefon")
+    .select("id, melder_name, melder_email, melder_telefon, kontakt_email, kontakt_name, kontakt_telefon")
     .eq("melde_tracking_token", t)
     .maybeSingle();
   if (error) logDbError('lib/melde/melde-bestaetigung:leads', error)
@@ -29,15 +29,15 @@ export async function loadMeldeContactByToken(
   if (error || !data) return null;
 
   const email = normalizeKundenEmail(
-    String(data.melder_email ?? data.email ?? "")
+    String(data.melder_email ?? data.kontakt_email ?? "")
   );
-  const name = String(data.melder_name ?? data.name ?? "").trim();
+  const name = String(data.melder_name ?? data.kontakt_name ?? "").trim();
   if (!email && !name) return null;
 
   return {
     name,
     email,
-    telefon: String(data.melder_telefon ?? data.telefon ?? "").trim() || null,
+    telefon: String(data.melder_telefon ?? data.kontakt_telefon ?? "").trim() || null,
     leadId: data.id ? String(data.id) : null,
   };
 }
