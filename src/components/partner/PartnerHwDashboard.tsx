@@ -41,6 +41,8 @@ type Props = {
   onKpiClick?: (id: keyof PartnerHwDashboardKpis) => void;
   heroImageUrl?: string | null;
   beforeTiles?: ReactNode;
+  /** P18: nur Einsätze — keine alten Vorgangs-Kacheln/-Liste */
+  nurEinsaetze?: boolean;
 };
 
 /** Deep Green Handwerker-Dashboard. */
@@ -55,6 +57,7 @@ export function PartnerHwDashboard({
   onKpiClick,
   heroImageUrl,
   beforeTiles,
+  nurEinsaetze = false,
 }: Props) {
   return (
     <PortalScreenDashboard
@@ -64,7 +67,8 @@ export function PartnerHwDashboard({
       brandSubline={firmName}
       heroImageUrl={heroImageUrl}
       beforeTiles={beforeTiles}
-      tiles={KPI_DEFS.map((def) => ({
+      hideRecent={nurEinsaetze}
+      tiles={nurEinsaetze ? [] : KPI_DEFS.map((def) => ({
         id: def.id,
         label: def.label,
         value: kpis[def.id],

@@ -51,6 +51,8 @@ type Props = {
   /** @deprecated Alias → afterFocus */
   afterTiles?: ReactNode;
   recent: PortalDashboardRecentRow[];
+  /** Liste „Zuletzt“ ausblenden (z. B. Partner: nur Einsätze) */
+  hideRecent?: boolean;
   onOpenAll: () => void;
   onOpenItem: (id: string) => void;
   recentTitle?: string;
@@ -76,6 +78,7 @@ export function PortalScreenDashboard({
   onOpenActionItem,
   onActionRefresh,
   recent,
+  hideRecent = false,
   onOpenAll,
   onOpenItem,
   recentTitle = "Zuletzt",
@@ -162,6 +165,7 @@ export function PortalScreenDashboard({
 
         {strip ? <div className="portal-dash-strip">{strip}</div> : null}
 
+        {hideRecent ? null : (
         <div className="portal-dash-recent">
           <div className="portal-dash-recent-head">
             <h2 className="portal-dash-recent-title">{recentTitle}</h2>
@@ -205,6 +209,7 @@ export function PortalScreenDashboard({
             )}
           </div>
         </div>
+        )}
 
         {after}
       </div>

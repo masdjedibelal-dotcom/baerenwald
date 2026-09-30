@@ -1080,6 +1080,7 @@ export function PartnerClient({
               heroImageUrl={portalHeaderHeroSrc("handwerker")}
               actionSlides={partnerActionSlides}
               onActionRefresh={() => refreshFlash()}
+              nurEinsaetze
               beforeTiles={
                 <>
                   <PartnerOnboardingReminderBanner

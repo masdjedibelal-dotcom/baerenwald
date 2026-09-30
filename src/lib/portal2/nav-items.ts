@@ -44,18 +44,7 @@ export const PORTAL_NAV_ITEMS: Record<PortalNavRole, readonly PortalNavItemDef[]
       { key: "home", label: PORTAL_NAV_FAMILY_LABELS.home, glyph: "◈" },
       { key: "liste", label: PORTAL_NAV_FAMILY_LABELS.liste, glyph: "▤" },
       { key: "objekte", label: PORTAL_NAV_FAMILY_LABELS.objekte, glyph: "▦" },
-      {
-        key: "servicepakete",
-        label: "Serviceabos",
-        glyph: "◇",
-        tag: "In Kürze",
-      },
-      {
-        key: "marktplatz",
-        label: "Marktplatz",
-        glyph: "▣",
-        tag: "In Kürze",
-      },
+      // „Serviceabos“ und „Marktplatz“ (In Kürze) entfallen — keine toten Menüpunkte (30.09.2026)
       { key: "settings", label: PORTAL_NAV_FAMILY_LABELS.settings, glyph: "⚙" },
     ],
     kunde_privat: [
@@ -75,12 +64,11 @@ export const PORTAL_NAV_ITEMS: Record<PortalNavRole, readonly PortalNavItemDef[]
       { key: "objekte", label: PORTAL_NAV_FAMILY_LABELS.objekte, glyph: "▦" },
     ],
     /**
-     * N4: Übersicht · Vorgänge · Einstellungen
-     * (Inhalt Settings = Firmendaten; Label bleibt Einstellungen.)
+     * P18 (30.09.2026): Partner arbeiten nur über Einsätze auf der Übersicht —
+     * kein Menüpunkt „Vorgänge“ (alter Positions-Weg).
      */
     handwerker: [
       { key: "home", label: PORTAL_NAV_FAMILY_LABELS.home, glyph: "◈" },
-      { key: "liste", label: PORTAL_NAV_FAMILY_LABELS.liste, glyph: "▤" },
       { key: "settings", label: PORTAL_NAV_FAMILY_LABELS.settings, glyph: "⚙" },
     ],
   } as const;
@@ -99,18 +87,6 @@ export const PORTAL_HV_MEHR_TILES: readonly {
   glyph: string;
   tag?: string;
 }[] = [
-  {
-    key: "servicepakete",
-    label: "Serviceabos",
-    glyph: "◇",
-    tag: "In Kürze",
-  },
-  {
-    key: "marktplatz",
-    label: "Marktplatz",
-    glyph: "▣",
-    tag: "In Kürze",
-  },
   { key: "settings", label: PORTAL_NAV_FAMILY_LABELS.settings, glyph: "⚙" },
 ] as const;
 
