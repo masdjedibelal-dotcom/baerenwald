@@ -32,7 +32,8 @@ function extractRaw(error: unknown): string | null {
 
 function looksTechnical(text: string): boolean {
   if (TECH_RE.test(text)) return true;
-  if (text.length > 120) return true;
+  // Verständliche Sätze nicht verschlucken (sonst nur „Etwas ist schiefgelaufen“)
+  if (text.length > 280) return true;
   if (/^[A-Z]{2,}_[A-Z0-9_]+$/.test(text)) return true;
   return false;
 }
@@ -47,7 +48,7 @@ export function userMessage(
   return clipToast(raw);
 }
 
-export function clipToast(text: string, maxWords = 8): string {
+export function clipToast(text: string, maxWords = 40): string {
   const words = text.trim().split(/\s+/).filter(Boolean);
   if (words.length <= maxWords) return text.trim();
   return `${words.slice(0, maxWords).join(" ")}…`;
