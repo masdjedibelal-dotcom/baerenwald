@@ -9,6 +9,7 @@ import {
   einsatzMitteilungSenden,
   einsatzRechnungSenden,
   listPartnerEinsaetze,
+  type EinsatzMeldungTyp,
   type PartnerEinsatz,
 } from "@/app/actions/partner-einsatz";
 import { PortalButton } from "@/components/portal/PortalButton";
@@ -23,10 +24,18 @@ import { portalToastError, portalToastSuccess } from "@/lib/shared/portal-toast"
 
 const STATUS: Record<PartnerEinsatz["status"], { label: string; tone: PortalStatusTone }> = {
   gesendet: { label: "Neu", tone: "neu" },
-  angenommen: { label: "Angenommen", tone: "aktiv" },
+  angenommen: { label: "Läuft", tone: "aktiv" },
   abgelehnt: { label: "Abgelehnt", tone: "danger" },
-  fertig: { label: "Fertig", tone: "fertig" },
+  fertig: { label: "Erledigt", tone: "fertig" },
 };
+
+const REGIE_STAND: Record<PartnerEinsatz["regie"][number]["stand"], string> = {
+  offen: "wartet auf Bärenwald",
+  angenommen: "angenommen",
+  abgelehnt: "abgelehnt",
+};
+
+const FOTO_ACCEPT = "image/jpeg,image/png,image/webp,image/heic,application/pdf";
 
 function datum(iso: string | null): string {
   const d = String(iso ?? "").slice(0, 10);
@@ -43,12 +52,14 @@ type Dialog =
   | { art: "ablehnen"; einsatz: PartnerEinsatz }
   | { art: "fertig"; einsatz: PartnerEinsatz }
   | { art: "rechnung"; einsatz: PartnerEinsatz }
-  | { art: "mitteilung"; einsatz: PartnerEinsatz }
+  | { art: "update"; einsatz: PartnerEinsatz }
+  | { art: "regie"; einsatz: PartnerEinsatz }
   | null;
 
 /**
- * Einsätze im Partner-Portal (Umbau P12): Anweisung und EK. Annehmen oder ablehnen,
- * in einem Schritt fertig melden, danach Rechnung.
+ * Einsätze im Partner-Portal: höchstens zwei Knöpfe je Stand.
+ * Neu: Annehmen / Ablehnen. Läuft: Update, Regie melden, Erledigt. Erledigt: Rechnung hochladen.
+ * Updates und Regie sind intern (nur Bärenwald), getrennt vom Bautagebuch für den Kunden.
  */
 export function PartnerEinsaetzeSection() {
   const [einsaetze, setEinsaetze] = useState<PartnerEinsatz[] | null>(null);
@@ -60,7 +71,6 @@ export function PartnerEinsaetzeSection() {
   const [positionen, setPositionen] = useState<{ text: string; betrag: string }[]>([
     { text: "", betrag: "" },
   ]);
-  const [mitteilungTyp, setMitteilungTyp] = useState<"regie" | "behinderung">("regie");
   const [stunden, setStunden] = useState("");
 
   const laden = useCallback(async () => {
@@ -77,7 +87,6 @@ export function PartnerEinsaetzeSection() {
     setText("");
     setDateien([]);
     setPositionen([{ text: "", betrag: "" }]);
-    setMitteilungTyp("regie");
     setStunden("");
     setDialog(d);
   }
@@ -111,15 +120,16 @@ export function PartnerEinsaetzeSection() {
     if (dialog.art === "fertig") {
       fd.set("text", text);
       for (const f of dateien) fd.append("dateien", f);
-      ausfuehren(einsatzFertigMelden(fd), "Fertig gemeldet");
+      ausfuehren(einsatzFertigMelden(fd), "Als erledigt gemeldet");
       return;
     }
-    if (dialog.art === "mitteilung") {
-      fd.set("typ", mitteilungTyp);
+    if (dialog.art === "update" || dialog.art === "regie") {
+      const typ: EinsatzMeldungTyp = dialog.art;
+      fd.set("typ", typ);
       fd.set("text", text);
-      if (mitteilungTyp === "regie") fd.set("stunden", stunden);
+      if (typ === "regie") fd.set("stunden", stunden);
       for (const f of dateien) fd.append("dateien", f);
-      ausfuehren(einsatzMitteilungSenden(fd), "Mitteilung an Bärenwald gesendet");
+      ausfuehren(einsatzMitteilungSenden(fd), typ === "regie" ? "Regie gemeldet" : "Update gesendet");
       return;
     }
     if (dateien[0]) fd.set("pdf", dateien[0]);
@@ -131,7 +141,7 @@ export function PartnerEinsaetzeSection() {
           .filter((p) => p.text && p.betrag > 0)
       )
     );
-    ausfuehren(einsatzRechnungSenden(fd), "Rechnung gesendet");
+    ausfuehren(einsatzRechnungSenden(fd), "Rechnung hochgeladen");
   }
 
   if (!einsaetze || einsaetze.length === 0) return null;
@@ -140,12 +150,17 @@ export function PartnerEinsaetzeSection() {
     dialog?.art === "ablehnen"
       ? "Einsatz ablehnen"
       : dialog?.art === "fertig"
-        ? "Fertig melden"
-        : dialog?.art === "mitteilung"
-          ? "Regie oder Behinderung melden"
-          : "Rechnung senden";
+        ? "Als erledigt melden"
+        : dialog?.art === "update"
+          ? "Update senden"
+          : dialog?.art === "regie"
+            ? "Regie melden"
+            : "Rechnung hochladen";
   const confirmLabel =
-    dialog?.art === "ablehnen" ? "Ablehnen" : dialog?.art === "fertig" ? "Fertig melden" : "Senden";
+    dialog?.art === "ablehnen" ? "Ablehnen" : dialog?.art === "fertig" ? "Erledigt" : dialog?.art === "rechnung" ? "Hochladen" : "Senden";
+  const updateUnvollstaendig =
+    (dialog?.art === "update" && !text.trim() && dateien.length === 0) ||
+    (dialog?.art === "regie" && (!text.trim() || !stunden.trim()));
 
   return (
     <>
@@ -166,6 +181,14 @@ export function PartnerEinsaetzeSection() {
                     .filter(Boolean)
                     .join(" · ")}
                 </div>
+                {e.status === "angenommen" && e.letztes_update_at ? (
+                  <div className="text-fs-meta text-[var(--p2-sub)]">Letztes Update: {datum(e.letztes_update_at)}</div>
+                ) : null}
+                {e.regie.map((r) => (
+                  <div key={r.id} className="text-fs-meta text-[var(--p2-sub)]">
+                    Regie{r.stunden ? ` ${String(r.stunden).replace(".", ",")} Std` : ""}: {REGIE_STAND[r.stand]}
+                  </div>
+                ))}
                 {e.ek_betrag != null ? (
                   <div className="text-fs-meta">
                     Vergütung: {euro(e.ek_betrag)} {e.ek_art}
@@ -184,17 +207,20 @@ export function PartnerEinsaetzeSection() {
                   ) : null}
                   {e.status === "angenommen" ? (
                     <>
-                      <PortalButton variant="primary" disabled={busy} onClick={() => oeffne({ art: "fertig", einsatz: e })}>
-                        Fertig melden
+                      <PortalButton variant="secondary" disabled={busy} onClick={() => oeffne({ art: "update", einsatz: e })}>
+                        Update
                       </PortalButton>
-                      <PortalButton variant="secondary" disabled={busy} onClick={() => oeffne({ art: "mitteilung", einsatz: e })}>
-                        Regie oder Behinderung
+                      <PortalButton variant="secondary" disabled={busy} onClick={() => oeffne({ art: "regie", einsatz: e })}>
+                        Regie melden
+                      </PortalButton>
+                      <PortalButton variant="primary" disabled={busy} onClick={() => oeffne({ art: "fertig", einsatz: e })}>
+                        Erledigt
                       </PortalButton>
                     </>
                   ) : null}
                   {e.status === "fertig" && !e.rechnung_eingereicht_at ? (
                     <PortalButton variant="primary" disabled={busy} onClick={() => oeffne({ art: "rechnung", einsatz: e })}>
-                      Rechnung senden
+                      Rechnung hochladen
                     </PortalButton>
                   ) : null}
                   {e.rechnung_eingereicht_at ? (
@@ -215,7 +241,7 @@ export function PartnerEinsaetzeSection() {
           onClose={() => setDialog(null)}
           onConfirm={bestaetigen}
           confirmLabel={confirmLabel}
-          confirmDisabled={busy || (dialog.art === "ablehnen" && !grund.trim())}
+          confirmDisabled={busy || (dialog.art === "ablehnen" && !grund.trim()) || updateUnvollstaendig}
           busy={busy}
         >
           {dialog.art === "ablehnen" ? (
@@ -225,52 +251,34 @@ export function PartnerEinsaetzeSection() {
           ) : null}
           {dialog.art === "fertig" ? (
             <>
-              <PortalField label="Fotos und Dokumente" hint="JPG, PNG oder PDF, zusammen höchstens 4 MB.">
-                <input
-                  type="file"
-                  multiple
-                  accept="image/jpeg,image/png,image/webp,application/pdf"
-                  onChange={(ev) => setDateien(Array.from(ev.target.files ?? []))}
-                />
+              <PortalField label="Fotos (freiwillig)" hint="Zusammen höchstens 4 MB.">
+                <input type="file" multiple accept={FOTO_ACCEPT} onChange={(ev) => setDateien(Array.from(ev.target.files ?? []))} />
               </PortalField>
-              <PortalField label="Beschreibung (optional)">
-                <PortalTextarea rows={4} value={text} onChange={(ev) => setText(ev.target.value)} />
+              <PortalField label="Notiz (freiwillig)">
+                <PortalTextarea rows={3} value={text} onChange={(ev) => setText(ev.target.value)} />
               </PortalField>
             </>
           ) : null}
-          {dialog.art === "mitteilung" ? (
+          {dialog.art === "update" ? (
             <>
-              <div className="flex gap-2">
-                <PortalButton
-                  variant={mitteilungTyp === "regie" ? "primary" : "secondary"}
-                  onClick={() => setMitteilungTyp("regie")}
-                >
-                  Regie
-                </PortalButton>
-                <PortalButton
-                  variant={mitteilungTyp === "behinderung" ? "primary" : "secondary"}
-                  onClick={() => setMitteilungTyp("behinderung")}
-                >
-                  Behinderung
-                </PortalButton>
-              </div>
-              {mitteilungTyp === "regie" ? (
-                <PortalField label="Stunden" hint="Zusätzliche Arbeit nach Aufwand.">
-                  <PortalInput inputMode="decimal" value={stunden} onChange={(ev) => setStunden(ev.target.value)} />
-                </PortalField>
-              ) : null}
-              <PortalField
-                label="Beschreibung"
-                hint={mitteilungTyp === "regie" ? "Was wurde zusätzlich gemacht und warum?" : "Was hindert Sie an der Arbeit?"}
-              >
+              <PortalField label="Text" hint="Nur für Bärenwald, der Kunde sieht das nicht.">
                 <PortalTextarea rows={4} value={text} onChange={(ev) => setText(ev.target.value)} />
               </PortalField>
-              <PortalField label="Foto (optional)">
-                <input
-                  type="file"
-                  accept="image/jpeg,image/png,image/webp,application/pdf"
-                  onChange={(ev) => setDateien(Array.from(ev.target.files ?? []).slice(0, 3))}
-                />
+              <PortalField label="Fotos" hint="Zusammen höchstens 4 MB.">
+                <input type="file" multiple accept={FOTO_ACCEPT} onChange={(ev) => setDateien(Array.from(ev.target.files ?? []).slice(0, 6))} />
+              </PortalField>
+            </>
+          ) : null}
+          {dialog.art === "regie" ? (
+            <>
+              <PortalField label="Stunden">
+                <PortalInput inputMode="decimal" value={stunden} onChange={(ev) => setStunden(ev.target.value)} />
+              </PortalField>
+              <PortalField label="Was wurde gemacht?" hint="Bärenwald nimmt die Regie an oder lehnt sie ab. Sie sehen das hier.">
+                <PortalTextarea rows={4} value={text} onChange={(ev) => setText(ev.target.value)} />
+              </PortalField>
+              <PortalField label="Fotos (freiwillig)">
+                <input type="file" multiple accept={FOTO_ACCEPT} onChange={(ev) => setDateien(Array.from(ev.target.files ?? []).slice(0, 6))} />
               </PortalField>
             </>
           ) : null}

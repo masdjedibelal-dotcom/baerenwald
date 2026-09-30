@@ -32,7 +32,13 @@ export type PartnerEinsatz = {
   status: "gesendet" | "angenommen" | "abgelehnt" | "fertig";
   fertig_at: string | null;
   rechnung_eingereicht_at: string | null;
+  /** Datum des letzten eigenen Updates. */
+  letztes_update_at: string | null;
+  /** Gemeldete Regie mit Rückmeldung von Bärenwald. */
+  regie: { id: string; stunden: number | null; text: string; stand: "offen" | "angenommen" | "abgelehnt" }[];
 };
+
+export type EinsatzMeldungTyp = "update" | "regie";
 
 type Result = { ok: true } | { ok: false; error: string };
 
@@ -70,12 +76,38 @@ export async function listPartnerEinsaetze(): Promise<
     logDbError("app/actions/partner-einsatz:list", error);
     return { ok: false, error: "Einsätze konnten nicht geladen werden." };
   }
+  const ids = (data ?? []).map((r) => r.id as string);
+  const letzte = new Map<string, string>();
+  const regie = new Map<string, PartnerEinsatz["regie"]>();
+  if (ids.length) {
+    const { data: meldungen } = await supabaseAdmin
+      .from("einsatz_mitteilungen")
+      .select("id, einsatz_id, typ, text, stunden, status, created_at")
+      .in("einsatz_id", ids)
+      .order("created_at", { ascending: false });
+    for (const m of meldungen ?? []) {
+      if (m.typ === "regie") {
+        const liste = regie.get(m.einsatz_id) ?? [];
+        liste.push({
+          id: m.id,
+          stunden: m.stunden == null ? null : Number(m.stunden),
+          text: m.text ?? "",
+          stand: m.status === "uebernommen" ? "angenommen" : m.status === "erledigt" ? "abgelehnt" : "offen",
+        });
+        regie.set(m.einsatz_id, liste);
+      } else if (!letzte.has(m.einsatz_id)) {
+        letzte.set(m.einsatz_id, m.created_at);
+      }
+    }
+  }
   return {
     ok: true,
     einsaetze: (data ?? []).map((r) => ({
-      ...(r as Omit<PartnerEinsatz, "ek_betrag" | "ek_art">),
+      ...(r as Omit<PartnerEinsatz, "ek_betrag" | "ek_art" | "letztes_update_at" | "regie">),
       ek_betrag: r.ek_betrag == null ? null : Number(r.ek_betrag),
       ek_art: r.ek_art === "brutto" ? "brutto" : "netto",
+      letztes_update_at: letzte.get(r.id as string) ?? null,
+      regie: regie.get(r.id as string) ?? [],
     })) as PartnerEinsatz[],
   };
 }
@@ -156,7 +188,7 @@ async function uploadDateien(
   return { ok: true, dateien: out };
 }
 
-/** Fertig melden in einem Schritt: Text optional, Fotos/Protokolle als Dateien. */
+/** Erledigt melden in einem Schritt: Text und Fotos sind freiwillig. */
 export async function einsatzFertigMelden(formData: FormData): Promise<Result> {
   const auth = await partnerAuth();
   if (!auth.ok) return auth;
@@ -166,7 +198,6 @@ export async function einsatzFertigMelden(formData: FormData): Promise<Result> {
   const e = await eigenerEinsatz(auth.handwerkerId, einsatzId);
   if (!e) return { ok: false, error: "Einsatz nicht gefunden." };
   if (e.status !== "angenommen") return { ok: false, error: "Bitte den Einsatz zuerst annehmen." };
-  if (!text && !files.length) return { ok: false, error: "Bitte Fotos, Dokumente oder eine kurze Beschreibung angeben." };
   if (files.length) {
     const err = validatePartnerAngebotFiles(files, { required: false });
     if (err) return { ok: false, error: err };
@@ -251,7 +282,8 @@ export async function einsatzMitteilungSenden(formData: FormData): Promise<Resul
   const auth = await partnerAuth();
   if (!auth.ok) return auth;
   const einsatzId = String(formData.get("einsatzId") ?? "").trim();
-  const typ = String(formData.get("typ") ?? "") === "behinderung" ? "behinderung" : "regie";
+  const typRaw = String(formData.get("typ") ?? "");
+  const typ: EinsatzMeldungTyp = typRaw === "regie" ? "regie" : "update";
   const text = String(formData.get("text") ?? "").trim();
   const stundenRaw = Number(String(formData.get("stunden") ?? "").replace(",", "."));
   const stunden = Number.isFinite(stundenRaw) && stundenRaw > 0 ? Math.round(stundenRaw * 100) / 100 : null;
@@ -259,8 +291,13 @@ export async function einsatzMitteilungSenden(formData: FormData): Promise<Resul
 
   const e = await eigenerEinsatz(auth.handwerkerId, einsatzId);
   if (!e) return { ok: false, error: "Einsatz nicht gefunden." };
-  if (e.status !== "angenommen") return { ok: false, error: "Mitteilungen sind während eines angenommenen Einsatzes möglich." };
-  if (!text) return { ok: false, error: "Bitte kurz beschreiben, worum es geht." };
+  if (e.status !== "angenommen") return { ok: false, error: "Updates sind möglich, solange der Einsatz läuft." };
+  if (typ === "update" ? !text && files.length === 0 : !text) {
+    return {
+      ok: false,
+      error: typ === "update" ? "Bitte einen Text oder ein Foto hinzufügen." : "Bitte kurz beschreiben, was gemacht wurde.",
+    };
+  }
   if (typ === "regie" && !stunden) return { ok: false, error: "Bitte die Stunden für die Regie angeben." };
   if (files.length) {
     const err = validatePartnerAngebotFiles(files, { required: false });
@@ -280,7 +317,7 @@ export async function einsatzMitteilungSenden(formData: FormData): Promise<Resul
   });
   if (error) {
     logDbError("app/actions/partner-einsatz:mitteilung", error);
-    return { ok: false, error: "Mitteilung konnte nicht gesendet werden." };
+    return { ok: false, error: "Update konnte nicht gesendet werden." };
   }
   return done();
 }
