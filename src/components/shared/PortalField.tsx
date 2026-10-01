@@ -22,7 +22,7 @@ function isNativeFormControl(type: unknown): boolean {
 export function PortalField({
   label,
   required,
-  hint,
+  hint: _hint,
   error,
   children,
   className,
@@ -76,7 +76,7 @@ export function PortalField({
         </label>
       ) : null}
       {kids}
-      {hint && !error ? <p className="portal-field-hint">{hint}</p> : null}
+      {/* Entlastung 01.10.2026: keine Erklär-Hinweise unter Feldern, nur Fehler */}
       {error ? (
         <p id={errorId} className="portal-field-error" role="alert">
           {error}
