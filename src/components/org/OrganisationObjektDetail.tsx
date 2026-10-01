@@ -151,12 +151,8 @@ export function OrganisationObjektDetail({
   );
 
   const detailTabs = useMemo((): readonly PortalDetailTab[] => {
-    return OBJ_DETAIL_TABS.map((t) =>
-      t.id === "pruefpflichten" && pruefpflichtBadge > 0
-        ? { ...t, badge: pruefpflichtBadge }
-        : t
-    );
-  }, [pruefpflichtBadge]);
+    return OBJ_DETAIL_TABS.map((t) => ({ ...t }));
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -635,12 +631,6 @@ export function OrganisationObjektDetail({
   if (tab === "stamm") {
     body = (
       <div className="flex flex-col gap-3">
-        {akteLoading ? (
-          <PortalInlineLoading label="Kennzahlen werden geladen" />
-        ) : akte ? (
-          <OrganisationObjektFinanzPanel objektId={objekt.id} />
-        ) : null}
-
         <EinstellungenSectionCard title="Objektdaten" onEdit={onEdit}>
           <EinstellungenPfList>
             <EinstellungenPfRow label="Bezeichnung" value={dash(objekt.titel)} />
@@ -848,24 +838,6 @@ export function OrganisationObjektDetail({
           </EinstellungenEditModal>
         </EinstellungenSectionCard>
       </div>
-    );
-  } else if (tab === "anlagen") {
-    body = akteLoading ? (
-      <PortalInlineLoading label="Anlagen werden geladen" />
-    ) : (
-      <OrganisationObjektAnlagenPanel anlagen={akte?.anlagen ?? []} />
-    );
-  } else if (tab === "pruefpflichten") {
-    body = <OrganisationObjektPruefpflichtenPanel objektId={objekt.id} />;
-  } else if (tab === "historie") {
-    body = akteLoading ? (
-      <PortalInlineLoading label="Historie wird geladen" />
-    ) : (
-      <OrganisationObjektHistoriePanel
-        rows={akte?.historie ?? []}
-        anlagen={akte?.anlagen ?? []}
-        onOpenVorgang={onOpenVorgang}
-      />
     );
   } else if (tab === "einheiten") {
     body = (

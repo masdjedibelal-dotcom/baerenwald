@@ -68,13 +68,10 @@ export const OBJ_WIZ_TITLES: Record<ObjWizStepId, string> = {
   fertig: "Prüfen & anlegen",
 };
 
-/** Mock-Detail-Tabs (`screenObjektDetail`). */
+/** Objekt-Tabs der HV. Entlastung 01.10.2026: Anlagen, Prüfpflichten, Historie entfallen. */
 export const OBJ_DETAIL_TABS = [
   { id: "stamm", label: "Stammdaten" },
   { id: "einheiten", label: "Einheiten" },
-  { id: "anlagen", label: "Anlagen" },
-  { id: "pruefpflichten", label: "Prüfpflichten" },
-  { id: "historie", label: "Historie" },
   { id: "vorgaenge", label: "Vorgänge" },
   { id: "regeln", label: "Freigabe" },
   { id: "dokumente", label: "Dokumente" },

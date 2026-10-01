@@ -198,9 +198,7 @@ export function PortalVorgangDetail({
         ? [{ id: "bautagebuch" as const, label: "Updates" }]
         : []),
       { id: "dokumente" as const, label: "Dokumente" },
-      ...(showFeedbackTab
-        ? [{ id: "feedback" as const, label: "Feedback" }]
-        : []),
+      // Entlastung 01.10.2026: Feedback-Tab entfällt
     ],
     [showBautagebuchTab, showFeedbackTab]
   );

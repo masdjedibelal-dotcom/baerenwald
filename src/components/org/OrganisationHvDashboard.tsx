@@ -1,7 +1,6 @@
 "use client";
 
 import { PortalScreenDashboard } from "@/components/shared/PortalScreenDashboard";
-import { PortalServiceVersprechenStrip } from "@/components/shared/PortalDashboardFocusCard";
 import {
   HV_DASHBOARD_EMPTY_RECENT,
   HV_DASHBOARD_KPI_DEFS,
@@ -61,7 +60,6 @@ export function OrganisationHvDashboard({
       actionSlides={actionSlides}
       onOpenActionItem={onOpenItem}
       onActionRefresh={onActionRefresh ?? (() => {})}
-      afterFocus={<PortalServiceVersprechenStrip />}
       recent={recent.slice(0, 4).map((v) => ({
         id: v.id,
         titel: v.titel,

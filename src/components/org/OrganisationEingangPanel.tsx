@@ -438,14 +438,6 @@ function MeldungDetail({
         );
       })()}
 
-      <OrgVorgangFeedbackSection
-        leadId={lead.id}
-        feedbackBereit={feedbackBereit}
-        handwerkerErledigt={hwErledigt}
-        hvFeedback={hvFeedback}
-        onSubmitted={onRefresh}
-      />
-
       <VorgangKommentareThread leadId={lead.id} />
 
       <OrganisationVorgangNotizenPanel leadId={lead.id} />
