@@ -9,6 +9,8 @@ import type {
 import { PORTAL_SEARCH_GROUP_LABELS } from "@/lib/search/portal-search-types";
 
 const RECENT_KEY = "bw-portal-recent-search";
+/** Stabile Referenz — ein neues `[]` je Render ließ den Such-Effekt endlos laufen. */
+const KEINE_NAV_HITS: PortalSearchHit[] = [];
 
 export type UsePortalSearchOptions = {
   minChars?: number;
@@ -30,7 +32,7 @@ export function usePortalSearch(opts: UsePortalSearchOptions) {
     minChars = 2,
     debounceMs = 220,
     includeNav = false,
-    navHits = [],
+    navHits = KEINE_NAV_HITS,
     apiPath,
     maxHits = 14,
   } = opts;
@@ -66,7 +68,7 @@ export function usePortalSearch(opts: UsePortalSearchOptions) {
   useEffect(() => {
     const needle = q.trim();
     if (needle.length < minChars) {
-      setHits([]);
+      setHits((h) => (h.length ? [] : h));
       setLoading(false);
       return;
     }

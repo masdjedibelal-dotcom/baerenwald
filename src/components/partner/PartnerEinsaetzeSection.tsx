@@ -74,8 +74,13 @@ export function PartnerEinsaetzeSection() {
   const [stunden, setStunden] = useState("");
 
   const laden = useCallback(async () => {
-    const res = await safeAction(listPartnerEinsaetze());
-    setEinsaetze(res.ok ? res.einsaetze : []);
+    try {
+      const r = await fetch("/api/partner/einsaetze", { cache: "no-store" });
+      const res = (await r.json()) as Awaited<ReturnType<typeof listPartnerEinsaetze>>;
+      setEinsaetze(res.ok ? res.einsaetze : []);
+    } catch {
+      setEinsaetze([]);
+    }
   }, []);
 
   useEffect(() => {
