@@ -5,7 +5,7 @@ import type { ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
-import { PortalInput, PortalTextarea } from "@/components/shared/PortalFormControls";
+import { PortalInput, PortalSelect, PortalTextarea } from "@/components/shared/PortalFormControls";
 import {
   deletePartnerComplianceDokument,
   uploadPartnerComplianceDokument,
@@ -228,7 +228,7 @@ export function PartnerStammDokumenteListe({
   function openItemUpload(item: PartnerComplianceItem) {
     setDraft({
       typ: item.slug || EIGENES_STAMM_DOKUMENT_TYP,
-      titel: item.bezeichnung,
+      titel: "",
       beschreibung: item.beschreibung?.trim() || "",
       file: null,
     });
@@ -242,10 +242,19 @@ export function PartnerStammDokumenteListe({
     setFormError(null);
   }
 
+  // Art des Dokuments: Pflichtarten aus der Liste + „Sonstiges“ — Titel kommt aus der Art, wenn leer
+  const arten = [
+    ...Array.from(
+      new Map(handwerkskarte.filter((i) => i.slug).map((i) => [i.slug, { slug: i.slug, label: i.bezeichnung }])).values()
+    ),
+    { slug: EIGENES_STAMM_DOKUMENT_TYP, label: "Sonstiges" },
+  ];
+  const artLabel = arten.find((a) => a.slug === draft.typ)?.label ?? "Dokument";
+
   async function submitUpload() {
-    const titel = draft.titel.trim();
+    const titel = draft.titel.trim() || (draft.typ !== EIGENES_STAMM_DOKUMENT_TYP ? artLabel : "");
     if (titel.length < 2) {
-      setFormError("Bitte einen Titel angeben.");
+      setFormError("Bitte Art wählen oder einen Titel angeben.");
       return;
     }
     if (!draft.file) {
@@ -307,7 +316,6 @@ export function PartnerStammDokumenteListe({
       <PortalModalShell
         open={uploadOpen}
         title="Dokument hochladen"
-        subtitle="Titel und optional Beschreibung — dann PDF oder Foto wählen."
         onClose={closeUpload}
         variant="edit"
         dirty
@@ -321,7 +329,24 @@ export function PartnerStammDokumenteListe({
       >
         <label className="block space-y-1">
           <span className="portal-text-label normal-case text-text-tertiary">
-            Titel
+            Art
+          </span>
+          <PortalSelect
+            className="portal-field w-full"
+            value={draft.typ}
+            onChange={(e) => setDraft((d) => ({ ...d, typ: e.target.value }))}
+            disabled={saving}
+          >
+            {arten.map((a) => (
+              <option key={a.slug} value={a.slug}>
+                {a.label}
+              </option>
+            ))}
+          </PortalSelect>
+        </label>
+        <label className="block space-y-1">
+          <span className="portal-text-label normal-case text-text-tertiary">
+            {draft.typ === EIGENES_STAMM_DOKUMENT_TYP ? "Titel" : "Titel (optional)"}
           </span>
           <PortalInput
             className="portal-field w-full"
@@ -329,7 +354,7 @@ export function PartnerStammDokumenteListe({
             onChange={(e) =>
               setDraft((d) => ({ ...d, titel: e.target.value }))
             }
-            placeholder="z. B. Gewerbeanmeldung"
+            placeholder={draft.typ === EIGENES_STAMM_DOKUMENT_TYP ? "z. B. Zertifikat" : artLabel}
             disabled={saving}
           />
         </label>
