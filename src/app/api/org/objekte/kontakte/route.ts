@@ -11,6 +11,7 @@ import { supabaseAdmin } from "@/lib/supabase";
 export const runtime = "nodejs";
 
 const KONTAKT_ROLLEN = [
+  "ansprechpartner",
   "beirat",
   "dienstleister",
   "notfall",

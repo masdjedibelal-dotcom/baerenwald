@@ -103,6 +103,9 @@ export function OrganisationObjektEinheitenTab({
   const [einheitForm, setEinheitForm] = useState<null | { mode: "create" }>(
     null
   );
+  const [neuMieterName, setNeuMieterName] = useState("");
+  const [neuMieterTelefon, setNeuMieterTelefon] = useState("");
+  const [neuMieterEmail, setNeuMieterEmail] = useState("");
   const [bezeichnung, setBezeichnung] = useState("");
   const [etage, setEtage] = useState("");
   const [m2, setM2] = useState("");
@@ -253,11 +256,36 @@ export function OrganisationObjektEinheitenTab({
               : null,
           }),
         });
-        const json = (await res.json()) as { error?: string };
+        const json = (await res.json()) as { error?: string; id?: string | null };
         if (!res.ok) {
           portalToastError(TOAST.einheit_nicht_angelegt, json.error);
           return;
         }
+        // Mieter gleich mit anlegen (ein Schritt statt Einheit öffnen → Mieter hinzufügen)
+        const mieterName = neuMieterName.trim();
+        if (mieterName && json.id) {
+          const r2 = await fetch("/api/org/einheit-bewohner", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              objektId,
+              einheitId: json.id,
+              name: mieterName,
+              telefon: neuMieterTelefon.trim() || undefined,
+              email: neuMieterEmail.trim() || undefined,
+              rolle: "mieter",
+              sondereigentum_verwaltung: false,
+              selbstbewohnt: false,
+            }),
+          });
+          if (!r2.ok) {
+            const j2 = (await r2.json().catch(() => ({}))) as { error?: string };
+            portalToastError("Mieter nicht angelegt", j2.error);
+          }
+        }
+        setNeuMieterName("");
+        setNeuMieterTelefon("");
+        setNeuMieterEmail("");
         setEinheitForm(null);
         orgPortalToast.objektAktualisiert();
         await load();
@@ -1016,22 +1044,8 @@ export function OrganisationObjektEinheitenTab({
                 checked={selbstbewohnt}
                 onChange={setSelbstbewohnt}
                 title="Wohnung selbstbewohnt"
-                description="Ja = Eigentümer wohnt selbst — zählt wie Mieter für Belegung und Vorgänge. Mieter hinzufügen ist dann gesperrt."
-              />
-              <EinstellungenToggle
-                checked={seVerwaltung}
-                onChange={setSeVerwaltung}
-                title="Sondereigentumsverwaltung durch HV"
-                description="Ja = HV führt SE-Aufträge; Freigabe über Schwelle beim Eigentümer."
               />
             </>
-          ) : !assigningExistingEigentuemer ? (
-            <EinstellungenEdField
-              label="Miet-Hinweis (optional)"
-              value={mieteHinweis}
-              onChange={setMieteHinweis}
-              placeholder="z. B. seit 2022"
-            />
           ) : null}
         </EinstellungenEditModal>
       </PortalModalShell>
@@ -1039,7 +1053,6 @@ export function OrganisationObjektEinheitenTab({
       <EinstellungenEditModal
         open={einheitForm?.mode === "create"}
         title="Einheit anlegen"
-        subtitle="Danach Mieter und Eigentümer zuordnen."
         onClose={closeEinheitForm}
         onSave={() => void saveEinheitCreate()}
         saving={einheitBusy}
@@ -1074,6 +1087,28 @@ export function OrganisationObjektEinheitenTab({
             onChange={setM2}
             placeholder="z. B. 68"
           />
+          <EinstellungenEdField
+            label="Mieter (optional)"
+            value={neuMieterName}
+            onChange={setNeuMieterName}
+            placeholder="Vor- und Nachname"
+          />
+          {neuMieterName.trim() ? (
+            <>
+              <EinstellungenEdField
+                label="Telefon"
+                value={neuMieterTelefon}
+                onChange={setNeuMieterTelefon}
+                type="tel"
+              />
+              <EinstellungenEdField
+                label="E-Mail"
+                value={neuMieterEmail}
+                onChange={setNeuMieterEmail}
+                type="email"
+              />
+            </>
+          ) : null}
         </div>
       </EinstellungenEditModal>
 

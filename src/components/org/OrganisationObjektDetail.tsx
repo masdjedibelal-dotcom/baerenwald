@@ -648,63 +648,8 @@ export function OrganisationObjektDetail({
           </EinstellungenPfList>
         </EinstellungenSectionCard>
 
-        <EinstellungenSectionCard
-          title={hmAmObjekt ? "Hausmeister · 1" : "Hausmeister"}
-          onAdd={hmLoading || hmAmObjekt ? undefined : openHmEdit}
-          addLabel="Hausmeister hinzufügen"
-        >
-          {hmLoading ? (
-            <PortalInlineLoading label="Hausmeister wird geladen" />
-          ) : hmAmObjekt ? (
-            <PortalEntityList
-              nested
-              ariaLabel="Hausmeister"
-              columns={[
-                { key: "name", label: "Name", width: "minmax(0, 1.2fr)" },
-                { key: "status", label: "Status", width: "minmax(0, 0.9fr)" },
-                { key: "kontakt", label: "Kontakt", width: "minmax(0, 1.4fr)" },
-              ]}
-              rows={[
-                {
-                  id: hmAmObjekt.id ?? "hm",
-                  title: hmAmObjekt.name,
-                  meta: (
-                    <div className="space-y-0.5">
-                      <p>
-                        Portal:{" "}
-                        {
-                          HAUSMEISTER_PORTAL_STATUS_LABEL[
-                            resolveHausmeisterPortalStatus(hmAmObjekt)
-                          ]
-                        }
-                      </p>
-                      {hmAmObjekt.email?.trim() ? (
-                        <p>{hmAmObjekt.email.trim()}</p>
-                      ) : null}
-                    </div>
-                  ),
-                  cells: [
-                    hmAmObjekt.name,
-                    HAUSMEISTER_PORTAL_STATUS_LABEL[
-                      resolveHausmeisterPortalStatus(hmAmObjekt)
-                    ],
-                    hmAmObjekt.email?.trim() || "—",
-                  ],
-                  onClick: openHmEdit,
-                  menu: (
-                    <OrganisationObjektHausmeisterMenu
-                      canEinladen={Boolean(hmAmObjekt.email?.trim())}
-                      onEinladen={() => void inviteHausmeister()}
-                      onBearbeiten={openHmEdit}
-                      onEntfernen={() => setHmConfirmRemove(true)}
-                    />
-                  ),
-                },
-              ]}
-            />
-          ) : (
-            <PortalInboxEmpty title="Noch kein Hausmeister" compact />
-          )}
+        {/* Hausmeister: nur noch Auswahl/Einladung — angezeigt wird er in „Personen“ */}
+        <>
           <EinstellungenEditModal
             open={hmEditOpen}
             title={hmAmObjekt ? "Hausmeister bearbeiten" : "Hausmeister hinzufügen"}
@@ -790,9 +735,57 @@ export function OrganisationObjektDetail({
             onCancel={() => setHmConfirmRemove(false)}
             onConfirm={() => void removeHausmeister()}
           />
-        </EinstellungenSectionCard>
+                </>
 
-        <OrganisationObjektKontaktePanel objektId={objekt.id} />
+        <OrganisationObjektKontaktePanel
+          objektId={objekt.id}
+          onAddHausmeister={hmLoading ? undefined : openHmEdit}
+          hausmeisterRow={
+            hmAmObjekt
+              ? {
+                    id: hmAmObjekt.id ?? "hm",
+                    title: hmAmObjekt.name,
+                    meta: (
+                      <div className="space-y-0.5">
+                        <p>
+                          Portal:{" "}
+                          {
+                            HAUSMEISTER_PORTAL_STATUS_LABEL[
+                              resolveHausmeisterPortalStatus(hmAmObjekt)
+                            ]
+                          }
+                        </p>
+                        {hmAmObjekt.email?.trim() ? (
+                          <p>{hmAmObjekt.email.trim()}</p>
+                        ) : null}
+                      </div>
+                    ),
+                    badge: (
+                      <span className="rounded-pill bg-muted px-2 py-0.5 text-fs-caption font-semibold text-text-secondary">
+                        Hausmeister
+                      </span>
+                    ),
+                    cells: [
+                      hmAmObjekt.name,
+                      "Hausmeister",
+                      [
+                        hmAmObjekt.email?.trim() || "—",
+                        `Portal: ${HAUSMEISTER_PORTAL_STATUS_LABEL[resolveHausmeisterPortalStatus(hmAmObjekt)]}`,
+                      ].join(" · "),
+                    ],
+                    onClick: openHmEdit,
+                    menu: (
+                      <OrganisationObjektHausmeisterMenu
+                        canEinladen={Boolean(hmAmObjekt.email?.trim())}
+                        onEinladen={() => void inviteHausmeister()}
+                        onBearbeiten={openHmEdit}
+                        onEntfernen={() => setHmConfirmRemove(true)}
+                      />
+                    ),
+                  }
+              : null
+          }
+        />
 
         <EinstellungenSectionCard
           title="Gebäudeversicherung"

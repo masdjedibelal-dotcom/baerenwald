@@ -106,12 +106,16 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Objekt nicht gefunden." }, { status: 404 });
   }
 
-  const { error } = await supabaseAdmin.from("objekt_einheiten").insert({
-    kunde_objekt_id: objektId,
-    bezeichnung,
-    etage: body.etage?.trim() || null,
-    wohnflaeche_m2: body.wohnflaeche_m2 ?? null,
-  });
+  const { data: neu, error } = await supabaseAdmin
+    .from("objekt_einheiten")
+    .insert({
+      kunde_objekt_id: objektId,
+      bezeichnung,
+      etage: body.etage?.trim() || null,
+      wohnflaeche_m2: body.wohnflaeche_m2 ?? null,
+    })
+    .select("id")
+    .maybeSingle();
   if (error) logDbError('app/api/org/objekte/einheiten/route:objekt_einheiten', error)
 
   if (error) {
@@ -129,7 +133,8 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
-  return NextResponse.json({ ok: true });
+  // ID zurück: so kann der Mieter im selben Schritt angelegt werden
+  return NextResponse.json({ ok: true, id: neu?.id ?? null });
 }
 
 export async function PATCH(req: Request) {
