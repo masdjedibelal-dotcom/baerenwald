@@ -48,6 +48,22 @@ export function resolveKundeDashboardActions(
       continue;
     }
 
+    if (item.isAuftragDetail && !item.offeneAenderung) {
+      // z. B. Terminvorschlag bestätigen (auch Mieter) — im Vorgang erledigen
+      slides.push({
+        openId: item.id,
+        leadId: item.leadId ?? item.id,
+        kicker: item.actionHint?.trim() || "Termin bestätigen",
+        kickerTone: "sand",
+        title: item.title,
+        subtitle: item.cardSubtitle?.trim() || undefined,
+        sortTs: itemSortTs(item),
+        kind: "kunde_termin",
+        buttons: [{ id: "oeffnen", label: "Ansehen", variant: "primary", mode: "open" }],
+      });
+      continue;
+    }
+
     if (item.isAuftragDetail) {
       slides.push({
         openId: item.id,

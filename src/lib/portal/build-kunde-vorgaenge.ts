@@ -228,6 +228,13 @@ function filterVorgangDokumente(
   });
 }
 
+/** HV ist Auftraggeber, der Portal-Nutzer hat nur gemeldet (Mieter) → entscheidet nichts. */
+function istNurMelderLead(lead: PortalLead): boolean {
+  const auftraggeberId = (lead as { auftraggeber_kunde_id?: string | null }).auftraggeber_kunde_id?.trim();
+  const melderId = (lead as { kunde_id?: string | null }).kunde_id?.trim();
+  return Boolean(auftraggeberId && auftraggeberId !== melderId);
+}
+
 function resolveVorgangStatusForLead(
   lead: PortalLead,
   angebot: PortalAngebot | null,
@@ -264,19 +271,20 @@ function resolveVorgangStatusForLead(
     hv_meldung_status: lead.hv_meldung_status,
     org_freigabe_status: lead.org_freigabe_status,
     angebotStatus,
-    angebotEntscheidbar,
+    // Mieter (HV-Meldung) nimmt nichts an — Angebot und Änderungen entscheidet die HV
+    angebotEntscheidbar: useLegacyHvMieter ? false : angebotEntscheidbar,
     auftragStatus: auftrag?.status,
     auftragFortschritt: auftrag?.fortschritt,
     hasAngebotRecord: Boolean(angebot),
     hasAuftragRecord: Boolean(auftrag),
-    hasPendingAuftragAenderung: opts.hasPendingAuftragAenderung,
+    hasPendingAuftragAenderung: useLegacyHvMieter ? false : opts.hasPendingAuftragAenderung,
     useHvMieterStatus: useLegacyHvMieter,
     hasMieterTermin: hasMieterTerminPhase(terminSlots),
     hasOffeneTerminvorschlaege: hasOffeneTerminvorschlaege(terminSlots),
     auftragPositionen: auftrag?.positionen,
   });
 
-  return resolvePortalKundeVorgangStatus({
+  const status = resolvePortalKundeVorgangStatus({
     lead: {
       id: lead.id,
       status: lead.status,
@@ -318,6 +326,12 @@ function resolveVorgangStatusForLead(
     useLegacyHvMieter,
     legacy,
   });
+  // Melder/Mieter einer HV-Meldung (HV ist Auftraggeber): nimmt weder Angebot noch Änderungen an —
+  // das entscheidet die HV. Nur Terminvorschläge (Zugang zur Wohnung) bleiben eine Aufgabe.
+  if (istNurMelderLead(lead)) {
+    return { ...status, needsAction: hasOffeneTerminvorschlaege(terminSlots) };
+  }
+  return status;
 }
 
 function formatAnfrageGewerk(bereiche?: string[] | null): string | undefined {
@@ -630,6 +644,13 @@ function buildItemFromLead(
       hvMieterView,
       terminAuftragId: auftrag.id,
       terminSlots: auftrag.terminSlots ?? [],
+      // Nur der Auftraggeber nimmt Änderungen an — nie nach Abschluss, nie Mieter/Eigentümer
+      offeneAenderung:
+        !eigentuemerView &&
+        !hvMieterView &&
+        pendingAenderung &&
+        !istNurMelderLead(lead) &&
+        vorgangStatus.phase !== "abgeschlossen",
       infoHint: eigentuemerView
         ? undefined
         : !hvMieterView && pendingAenderung

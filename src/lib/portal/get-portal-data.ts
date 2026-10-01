@@ -276,7 +276,7 @@ export async function getPortalDataForKunde(
     });
 
   const leadSelectList =
-    "id, situation, bereiche, status, vorgang_phase, created_at, plz, strasse, hausnummer, zeitraum, kontakt_name, preis_min, preis_max, budget_ca, kontakt_nachricht, funnel_daten, kunde_objekt_id, anlass, kanal, auftraggeber_kunde_id, hv_meldung_status, org_freigabe_status, freigabe_bypass_grund, melde_tracking_token, melder_name, melder_einheit, melder_telefon, melder_email, kostentraeger, kostentraeger_vorgeschlagen, versicherungs_nr, versicherungsakte_pdf_url";
+    "id, situation, bereiche, status, vorgang_phase, created_at, plz, strasse, hausnummer, zeitraum, kontakt_name, preis_min, preis_max, budget_ca, kontakt_nachricht, funnel_daten, kunde_objekt_id, anlass, kanal, kunde_id, auftraggeber_kunde_id, hv_meldung_status, org_freigabe_status, freigabe_bypass_grund, melde_tracking_token, melder_name, melder_einheit, melder_telefon, melder_email, kostentraeger, kostentraeger_vorgeschlagen, versicherungs_nr, versicherungsakte_pdf_url";
 
   let leadsQuery = supabaseAdmin
     .from("leads")

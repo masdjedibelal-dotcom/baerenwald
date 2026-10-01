@@ -203,7 +203,10 @@ export function resolvePortalKundeVorgangStatus(input: {
     ...input.legacy,
     label: display.phaseLabel,
     pillKey,
-    needsAction: resolved.needsAction || input.legacy.needsAction,
+    // Nur Aufgaben, die wirklich beim Kunden liegen — und nie, wenn der Vorgang fertig ist
+    needsAction:
+      input.legacy.phase !== "abgeschlossen" &&
+      ((resolved.needsAction && resolved.actor === "kunde") || input.legacy.needsAction),
     resolverPhaseLabel: display.phaseLabel,
     resolverUnterstatusLabel: display.unterstatusLabel,
     resolverActionHint: display.actionHint,

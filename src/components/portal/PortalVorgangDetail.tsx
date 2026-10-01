@@ -240,7 +240,7 @@ export function PortalVorgangDetail({
   }, [sectionTabs, searchParams, item.id, item.leadId]);
 
   const isAngebotAccept = Boolean(item.isAngebotDetail && item.needsAction);
-  const isAuftragAccept = Boolean(item.isAuftragDetail && item.needsAction);
+  const isAuftragAccept = Boolean(item.isAuftragDetail && item.offeneAenderung);
 
   useEffect(() => {
     if (searchParams.get("focus")?.trim() !== "ablehnen") return;

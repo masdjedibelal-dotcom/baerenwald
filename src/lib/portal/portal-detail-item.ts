@@ -55,6 +55,8 @@ export type KundePortalDetailItem = {
   title: string;
   status?: string;
   statusPillKey?: string;
+  /** Auftrag: Leistungsänderung wartet auf Annahme durch diesen Kunden. */
+  offeneAenderung?: boolean;
   vorgangPhase?: string;
   needsAction?: boolean;
   /** CRM-Resolver: rollenspezifischer Hinweis (z. B. „Freigabe ausstehend“). */
