@@ -12,10 +12,11 @@ import {
   EinstellungenPfRow,
   EinstellungenSectionCard,
 } from "@/components/shared/PortalEinstellungenUi";
-import type { OrganisationKunde } from "@/lib/org/types";
+import type { OrganisationKunde, OrganisationObjekt } from "@/lib/org/types";
 
 type Props = {
   kunde: OrganisationKunde;
+  objekte?: OrganisationObjekt[];
   onSaved: () => void;
   isAdmin?: boolean;
 };
@@ -25,6 +26,7 @@ type Props = {
  */
 export function OrganisationEinstellungenScreen({
   kunde,
+  objekte = [],
   onSaved,
   isAdmin = true,
 }: Props) {
@@ -82,6 +84,7 @@ export function OrganisationEinstellungenScreen({
         return (
           <OrganisationFreigabeRegelnPanel
             kunde={kunde}
+            objekte={objekte}
             onSaved={onSaved}
             isAdmin={isAdmin}
           />

@@ -68,12 +68,11 @@ export const OBJ_WIZ_TITLES: Record<ObjWizStepId, string> = {
   fertig: "Prüfen & anlegen",
 };
 
-/** Objekt-Tabs der HV. Entlastung 01.10.2026: Anlagen, Prüfpflichten, Historie entfallen. */
+/** Objekt-Tabs der HV. Entlastung 01.10.2026: Anlagen, Prüfpflichten, Historie entfallen; Freigabe steht gesammelt in den Einstellungen. */
 export const OBJ_DETAIL_TABS = [
   { id: "stamm", label: "Stammdaten" },
   { id: "einheiten", label: "Einheiten" },
   { id: "vorgaenge", label: "Vorgänge" },
-  { id: "regeln", label: "Freigabe" },
   { id: "dokumente", label: "Dokumente" },
 ] as const;
 

@@ -799,6 +799,7 @@ export function OrganisationPortalClient({
 
           {section === "profil" ? (
             <OrganisationEinstellungenScreen
+              objekte={objekte}
               kunde={kunde}
               onSaved={refresh}
               isAdmin={mitgliedRolle === "admin"}

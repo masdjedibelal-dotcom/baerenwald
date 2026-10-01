@@ -11,12 +11,9 @@ import {
   EinstellungenSectionCard,
   EinstellungenSheetCard,
 } from "@/components/shared/PortalEinstellungenUi";
-import {
-  SofortmassnahmeAkutTitle,
-  SofortmassnahmeFaelleEditor,
-} from "@/components/org/SofortmassnahmeFaelleLink";
-import { normalizeAkutFallIds } from "@/lib/org/sofortmassnahme-faelle";
-import type { OrganisationKunde } from "@/lib/org/types";
+import { PortalButton } from "@/components/portal/PortalButton";
+import { ALL_AKUT_FALL_IDS, normalizeAkutFallIds } from "@/lib/org/sofortmassnahme-faelle";
+import type { OrganisationKunde, OrganisationObjekt } from "@/lib/org/types";
 import {
   EINSTELLUNGEN_AKUT_INTRO,
   EINSTELLUNGEN_SCHWELLE_BETRAG_TITLE,
@@ -35,6 +32,8 @@ import { EMPTY, TOAST } from "@/lib/portal-copy";
 
 type Props = {
   kunde: OrganisationKunde;
+  /** Für „Abweichungen je Objekt“ */
+  objekte?: OrganisationObjekt[];
   onSaved: () => void;
   isAdmin?: boolean;
 };
@@ -52,6 +51,7 @@ function schwelleAktivFromKunde(
  */
 export function OrganisationFreigabeRegelnPanel({
   kunde,
+  objekte = [],
   onSaved,
   isAdmin = true,
 }: Props) {
@@ -139,7 +139,6 @@ export function OrganisationFreigabeRegelnPanel({
 
   function openEdit() {
     setEditSchwelle(schwelle);
-    setEditAkutFaelle(akutFaelle);
     setEditOpen(true);
   }
 
@@ -167,9 +166,14 @@ export function OrganisationFreigabeRegelnPanel({
     onSaved();
   }
 
+  /** Notfälle (Wasser, Strom, Heizung): ein Haken statt Fall-Liste — gilt für alle Notfall-Fälle. */
   async function saveToggleAkut(next: boolean) {
-    await patchEinstellungen({ notfall_direkt: next });
+    await patchEinstellungen({
+      notfall_direkt: next,
+      akut_fall_ids: next ? [...ALL_AKUT_FALL_IDS] : akutFaelle,
+    });
     setAkutDirekt(next);
+    if (next) setAkutFaelle([...ALL_AKUT_FALL_IDS]);
   }
 
   async function saveToggleSchwelle(next: boolean) {
@@ -190,16 +194,10 @@ export function OrganisationFreigabeRegelnPanel({
     if (!isAdmin) return;
     setSaving(true);
     try {
-      await patchEinstellungen({
-        freigabe_schwelle_eur: schwelleAktiv
-          ? snapEinstellungenSchwelle(Math.max(editSchwelle, 500))
-          : null,
-        akut_fall_ids: editAkutFaelle,
-      });
-      if (schwelleAktiv) {
-        setSchwelle(snapEinstellungenSchwelle(Math.max(editSchwelle, 500)));
-      }
-      setAkutFaelle(editAkutFaelle);
+      const eur = snapEinstellungenSchwelle(Math.max(editSchwelle, 500));
+      await patchEinstellungen({ freigabe_schwelle_eur: eur });
+      setSchwelleAktiv(true);
+      setSchwelle(eur);
       setEditOpen(false);
     } catch {
       /* toast already */
@@ -208,152 +206,202 @@ export function OrganisationFreigabeRegelnPanel({
     }
   }
 
-  const formDirty =
-    JSON.stringify(editAkutFaelle) !== JSON.stringify(akutFaelle) ||
-    (schwelleAktiv && editSchwelle !== schwelle);
+  // ── Abweichungen je Objekt (leer = wie oben) ──
+  const [objEdit, setObjEdit] = useState<OrganisationObjekt | null>(null);
+  const [objEigenerBetrag, setObjEigenerBetrag] = useState(false);
+  const [objBetrag, setObjBetrag] = useState(500);
+  const [objNotfall, setObjNotfall] = useState<"standard" | "an" | "aus">("standard");
 
-  const faelleValue =
-    akutFaelle.length === 0
-      ? EMPTY.freigabeNichtsDirekt
-      : akutFaelle.length === 1
-        ? "1 Fall"
-        : `${akutFaelle.length} Fälle`;
+  function openObjekt(o: OrganisationObjekt) {
+    const eigener = o.freigabe_schwelle_eur != null && Number(o.freigabe_schwelle_eur) > 0;
+    setObjEigenerBetrag(eigener);
+    setObjBetrag(eigener ? Number(o.freigabe_schwelle_eur) : schwelle || 500);
+    setObjNotfall(o.notfall_direkt == null ? "standard" : o.notfall_direkt ? "an" : "aus");
+    setObjEdit(o);
+  }
+
+  async function saveObjekt() {
+    if (!objEdit) return;
+    setSaving(true);
+    try {
+      const res = await fetch("/api/org/objekte", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          id: objEdit.id,
+          freigabe_schwelle_eur: objEigenerBetrag
+            ? snapEinstellungenSchwelle(Math.max(objBetrag, 500))
+            : null,
+          notfall_direkt: objNotfall === "standard" ? null : objNotfall === "an",
+        }),
+      });
+      const json = (await res.json()) as { error?: string };
+      if (!res.ok) {
+        portalToastError(TOAST.freigabe_regeln_nicht_gespeichert, json.error);
+        return;
+      }
+      orgPortalToast.objektAktualisiert();
+      setObjEdit(null);
+      onSaved();
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  function objektRegelText(o: OrganisationObjekt): string {
+    const teile: string[] = [];
+    if (o.freigabe_schwelle_eur != null && Number(o.freigabe_schwelle_eur) > 0) {
+      teile.push(`bis ${formatEinstellungenSchwelle(Number(o.freigabe_schwelle_eur))}`);
+    }
+    if (o.notfall_direkt != null) teile.push(o.notfall_direkt ? "Notfälle sofort" : "Notfälle mit Freigabe");
+    return teile.length ? teile.join(" · ") : "Wie oben";
+  }
 
   return (
-    <EinstellungenSectionCard
-      title={EINSTELLUNGEN_SCHWELLE_TITLE}
-      onEdit={isAdmin ? openEdit : undefined}
-      editLabel="Freigabe-Regeln bearbeiten"
-    >
-      {!isAdmin ? (
-        <p
-          className="text-fs-meta leading-[1.55]"
-          style={{ color: PORTAL_VAR.sub }}
-        >
-          Nur Administratoren können Freigabe-Regeln und Schwellen ändern.
-        </p>
+    <>
+      <EinstellungenSectionCard
+        title={EINSTELLUNGEN_SCHWELLE_TITLE}
+        onEdit={isAdmin && schwelleAktiv ? openEdit : undefined}
+        editLabel="Betrag ändern"
+      >
+        <div className="mb-1 space-y-2.5">
+          <EinstellungenInstantToggle
+            nested
+            checked={schwelleAktiv}
+            disabled={!isAdmin}
+            title={
+              schwelleAktiv
+                ? `Ohne Freigabe bis ${formatEinstellungenSchwelle(schwelle)}`
+                : "Ohne Freigabe bis zu einem Betrag"
+            }
+            description={schwelleAktiv ? "Darüber fragen wir Sie." : "Aus: Jedes Angebot braucht Ihre Freigabe."}
+            confirmTitle={schwelleAktiv ? "Betrag ausschalten?" : "Betrag einschalten?"}
+            confirmDescription={
+              schwelleAktiv
+                ? "Jedes Angebot braucht dann Ihre Freigabe."
+                : `Angebote bis ${formatEinstellungenSchwelle(schwelle || 500)} ohne Freigabe.`
+            }
+            onSave={saveToggleSchwelle}
+          />
+          <EinstellungenInstantToggle
+            nested
+            checked={akutDirekt}
+            disabled={!isAdmin}
+            title="Notfälle sofort beheben"
+            description="Wasser, Strom, Heizung"
+            confirmTitle={akutDirekt ? "Notfälle mit Freigabe?" : "Notfälle sofort beheben?"}
+            confirmDescription={
+              akutDirekt
+                ? "Auch Notfälle brauchen dann Ihre Freigabe."
+                : "Notfälle (Wasser, Strom, Heizung) beheben wir sofort und informieren Sie."
+            }
+            onSave={saveToggleAkut}
+          />
+          <EinstellungenInstantToggle
+            nested
+            checked={hmAuto}
+            disabled={!isAdmin}
+            title="Neue Meldungen zuerst an den Hausmeister"
+            confirmTitle={hmAuto ? "Ausschalten?" : "Einschalten?"}
+            confirmDescription={
+              hmAuto
+                ? "Neue Meldungen gehen nicht mehr zuerst an den Hausmeister."
+                : "Neue Meldungen (keine Notfälle) gehen zuerst an den Hausmeister."
+            }
+            onSave={saveToggleHmAuto}
+          />
+        </div>
+      </EinstellungenSectionCard>
+
+      {objekte.length > 0 ? (
+        <EinstellungenSectionCard title="Abweichungen je Objekt">
+          <div className="flex flex-col">
+            {objekte.map((o) => (
+              <button
+                key={o.id}
+                type="button"
+                disabled={!isAdmin}
+                onClick={() => openObjekt(o)}
+                className="flex min-w-0 items-center justify-between gap-3 border-b border-[var(--p2-line)] py-2.5 text-left last:border-b-0"
+              >
+                <span className="portal-text-body min-w-0 truncate font-semibold text-text-primary">{o.titel}</span>
+                <span className="portal-text-meta shrink-0 text-text-secondary">{objektRegelText(o)}</span>
+              </button>
+            ))}
+          </div>
+        </EinstellungenSectionCard>
       ) : null}
-
-      <div className="mb-3 space-y-2.5">
-        <EinstellungenInstantToggle
-          nested
-          checked={akutDirekt}
-          disabled={!isAdmin}
-          title={<SofortmassnahmeAkutTitle />}
-          description={
-            akutDirekt
-              ? `${EINSTELLUNGEN_AKUT_INTRO} Aktiv: Nur die ausgewählten Fälle ohne Ihre Freigabe, nur Info.`
-              : "Aus: Auch Sofortmaßnahmen laufen über Angebot und Freigabe."
-          }
-          confirmTitle={
-            akutDirekt
-              ? "Sofortmaßnahme ausschalten?"
-              : "Sofortmaßnahme einschalten?"
-          }
-          confirmDescription={
-            akutDirekt
-              ? "Auch Sofortmaßnahmen brauchen dann Ihre Freigabe."
-              : "Ausgewählte Fälle laufen ohne Freigabe (nur Info)."
-          }
-          onSave={saveToggleAkut}
-        />
-
-        <EinstellungenPfList>
-          <EinstellungenPfRow label="Sofortmaßnahme-Fälle" value={faelleValue} />
-        </EinstellungenPfList>
-
-        <EinstellungenInstantToggle
-          nested
-          checked={schwelleAktiv}
-          disabled={!isAdmin}
-          title={EINSTELLUNGEN_UNTER_SCHWELLE_TITLE}
-          description={
-            schwelleAktiv
-              ? EINSTELLUNGEN_UNTER_SCHWELLE_INTRO
-              : "Aus: Jedes Angebot braucht Ihre Freigabe, unabhängig vom Betrag."
-          }
-          confirmTitle={
-            schwelleAktiv
-              ? "Unter-Schwelle ausschalten?"
-              : "Unter-Schwelle einschalten?"
-          }
-          confirmDescription={
-            schwelleAktiv
-              ? "Jedes Angebot braucht dann Ihre Freigabe."
-              : `Angebote unter ${formatEinstellungenSchwelle(schwelle || 500)} ohne Freigabe.`
-          }
-          onSave={saveToggleSchwelle}
-        />
-
-        {schwelleAktiv ? (
-          <EinstellungenPfList>
-            <EinstellungenPfRow
-              label={EINSTELLUNGEN_SCHWELLE_BETRAG_TITLE}
-              value={formatEinstellungenSchwelle(schwelle)}
-            />
-          </EinstellungenPfList>
-        ) : null}
-
-        <EinstellungenInstantToggle
-          nested
-          checked={hmAuto}
-          disabled={!isAdmin}
-          title="Automatisch an Hausmeister"
-          description={
-            hmAuto
-              ? "Aktiv: Neue Meldungen (nicht Sofortmaßnahme) gehen direkt in die Hausmeister-Prüfung."
-              : "Aus: Sie starten den Hausmeister-Pfad manuell am Vorgang."
-          }
-          confirmTitle={
-            hmAuto
-              ? "Hausmeister-Auto ausschalten?"
-              : "Hausmeister-Auto einschalten?"
-          }
-          confirmDescription={
-            hmAuto
-              ? "Neue Meldungen gehen nicht mehr automatisch an den Hausmeister."
-              : "Neue Meldungen (nicht Sofortmaßnahme) gehen direkt in die Hausmeister-Prüfung."
-          }
-          onSave={saveToggleHmAuto}
-        />
-      </div>
 
       <EinstellungenEditModal
         open={editOpen}
-        title={EINSTELLUNGEN_SCHWELLE_TITLE}
+        title="Ohne Freigabe bis"
         onClose={closeEdit}
         onSave={() => void saveEdit()}
         saving={saving}
-        dirty={formDirty}
+        dirty={editSchwelle !== schwelle}
       >
-        <EinstellungenSheetCard
-          title="Sofortmaßnahme-Fälle"
-          description="Leer = nichts geht direkt — unabhängig vom Schalter oben."
-        >
-          <SofortmassnahmeFaelleEditor
-            selected={editAkutFaelle}
-            onChange={setEditAkutFaelle}
-            disabled={saving}
+        <EinstellungenSheetCard title={EINSTELLUNGEN_SCHWELLE_BETRAG_TITLE}>
+          <EinstellungenEuroSlider
+            value={editSchwelle}
+            min={Math.max(EINSTELLUNGEN_SCHWELLE_SLIDER_MIN, 500)}
+            max={EINSTELLUNGEN_SCHWELLE_SLIDER_MAX}
+            step={EINSTELLUNGEN_SCHWELLE_SLIDER_STEP}
+            formatValue={formatEinstellungenSchwelle}
+            onChange={(v) => setEditSchwelle(snapEinstellungenSchwelle(Math.max(v, 500)))}
           />
         </EinstellungenSheetCard>
-        {schwelleAktiv ? (
-          <EinstellungenSheetCard
-            title={EINSTELLUNGEN_SCHWELLE_BETRAG_TITLE}
-            description={EINSTELLUNGEN_UNTER_SCHWELLE_INTRO}
-          >
+      </EinstellungenEditModal>
+
+      <EinstellungenEditModal
+        open={Boolean(objEdit)}
+        title={objEdit?.titel ?? "Objekt"}
+        onClose={() => {
+          if (!saving) setObjEdit(null);
+        }}
+        onSave={() => void saveObjekt()}
+        saving={saving}
+        dirty
+      >
+        <EinstellungenSheetCard title="Ohne Freigabe bis">
+          <div className="mb-3 flex gap-2">
+            <PortalButton variant={objEigenerBetrag ? "secondary" : "primary"} onClick={() => setObjEigenerBetrag(false)}>
+              Wie oben
+            </PortalButton>
+            <PortalButton variant={objEigenerBetrag ? "primary" : "secondary"} onClick={() => setObjEigenerBetrag(true)}>
+              Eigener Betrag
+            </PortalButton>
+          </div>
+          {objEigenerBetrag ? (
             <EinstellungenEuroSlider
-              value={editSchwelle}
+              value={objBetrag}
               min={Math.max(EINSTELLUNGEN_SCHWELLE_SLIDER_MIN, 500)}
               max={EINSTELLUNGEN_SCHWELLE_SLIDER_MAX}
               step={EINSTELLUNGEN_SCHWELLE_SLIDER_STEP}
               formatValue={formatEinstellungenSchwelle}
-              onChange={(v) =>
-                setEditSchwelle(snapEinstellungenSchwelle(Math.max(v, 500)))
-              }
+              onChange={(v) => setObjBetrag(snapEinstellungenSchwelle(Math.max(v, 500)))}
             />
-          </EinstellungenSheetCard>
-        ) : null}
+          ) : null}
+        </EinstellungenSheetCard>
+        <EinstellungenSheetCard title="Notfälle">
+          <div className="flex flex-wrap gap-2">
+            {(
+              [
+                ["standard", "Wie oben"],
+                ["an", "Sofort beheben"],
+                ["aus", "Mit Freigabe"],
+              ] as const
+            ).map(([wert, label]) => (
+              <PortalButton
+                key={wert}
+                variant={objNotfall === wert ? "primary" : "secondary"}
+                onClick={() => setObjNotfall(wert)}
+              >
+                {label}
+              </PortalButton>
+            ))}
+          </div>
+        </EinstellungenSheetCard>
       </EinstellungenEditModal>
-    </EinstellungenSectionCard>
+    </>
   );
 }

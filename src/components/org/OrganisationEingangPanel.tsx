@@ -62,7 +62,6 @@ import {
   orgAngebotPdfZeilen,
   type OrgFreigabeAngebot,
 } from "@/components/org/OrgAngebotFreigabeInhalt";
-import { VorgangKommentareThread } from "@/components/org/VorgangKommentareThread";
 import { VorgangStornoDialog } from "@/components/org/VorgangStornoDialog";
 type Props = {
   kunde: OrganisationKunde;
@@ -437,8 +436,6 @@ function MeldungDetail({
           />
         );
       })()}
-
-      <VorgangKommentareThread leadId={lead.id} />
 
       <OrganisationVorgangNotizenPanel leadId={lead.id} />
 
