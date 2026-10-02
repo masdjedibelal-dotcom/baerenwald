@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState, type ReactNode } from "react";
 
 import {
   einsatzAblehnen,
@@ -61,7 +61,10 @@ type Dialog =
  * Neu: Annehmen / Ablehnen. Läuft: Update, Regie melden, Erledigt. Erledigt: Rechnung hochladen.
  * Updates und Regie sind intern (nur Bärenwald), getrennt vom Bautagebuch für den Kunden.
  */
-export function PartnerEinsaetzeSection() {
+/**
+ * @param rechnungHinweis z. B. „Firmendaten fehlen“ — erst beim Abrechnen zeigen, nicht vorne auf der Startseite.
+ */
+export function PartnerEinsaetzeSection({ rechnungHinweis }: { rechnungHinweis?: ReactNode } = {}) {
   const [einsaetze, setEinsaetze] = useState<PartnerEinsatz[] | null>(null);
   const [dialog, setDialog] = useState<Dialog>(null);
   const [busy, setBusy] = useState(false);
@@ -72,6 +75,7 @@ export function PartnerEinsaetzeSection() {
     { text: "", betrag: "" },
   ]);
   const [stunden, setStunden] = useState("");
+  const [rechnungPdf, setRechnungPdf] = useState<File | null>(null);
 
   const laden = useCallback(async () => {
     try {
@@ -93,6 +97,7 @@ export function PartnerEinsaetzeSection() {
     setDateien([]);
     setPositionen([{ text: "", betrag: "" }]);
     setStunden("");
+    setRechnungPdf(null);
     setDialog(d);
   }
 
@@ -125,7 +130,16 @@ export function PartnerEinsaetzeSection() {
     if (dialog.art === "fertig") {
       fd.set("text", text);
       for (const f of dateien) fd.append("dateien", f);
-      ausfuehren(einsatzFertigMelden(fd), "Als erledigt gemeldet");
+      // Rechnung gleich mit (freiwillig — sonst später „Rechnung hochladen“)
+      if (rechnungPdf) fd.set("rechnungPdf", rechnungPdf);
+      const pos = positionen
+        .map((p) => ({ text: p.text.trim(), betrag: Number(p.betrag.replace(",", ".")) || 0 }))
+        .filter((p) => p.text && p.betrag > 0);
+      fd.set("positionen", JSON.stringify(pos));
+      ausfuehren(
+        einsatzFertigMelden(fd),
+        rechnungPdf || pos.length ? "Erledigt gemeldet, Rechnung eingereicht" : "Als erledigt gemeldet"
+      );
       return;
     }
     if (dialog.art === "update" || dialog.art === "regie") {
@@ -262,6 +276,34 @@ export function PartnerEinsaetzeSection() {
               <PortalField label="Notiz (freiwillig)">
                 <PortalTextarea rows={3} value={text} onChange={(ev) => setText(ev.target.value)} />
               </PortalField>
+              <p className="portal-text-label pt-2">Rechnung (gleich mit oder später)</p>
+              {rechnungHinweis}
+              <PortalField label="Rechnung als PDF">
+                <input
+                  type="file"
+                  accept="application/pdf"
+                  onChange={(ev) => setRechnungPdf(ev.target.files?.[0] ?? null)}
+                />
+              </PortalField>
+              {positionen.map((p, i) => (
+                <div key={i} className="grid grid-cols-[minmax(0,1fr)_7.5rem] gap-2">
+                  <PortalInput
+                    placeholder="Leistung"
+                    value={p.text}
+                    onChange={(ev) =>
+                      setPositionen((l) => l.map((x, j) => (j === i ? { ...x, text: ev.target.value } : x)))
+                    }
+                  />
+                  <PortalInput
+                    placeholder="Betrag €"
+                    inputMode="decimal"
+                    value={p.betrag}
+                    onChange={(ev) =>
+                      setPositionen((l) => l.map((x, j) => (j === i ? { ...x, betrag: ev.target.value } : x)))
+                    }
+                  />
+                </div>
+              ))}
             </>
           ) : null}
           {dialog.art === "update" ? (
@@ -289,6 +331,7 @@ export function PartnerEinsaetzeSection() {
           ) : null}
           {dialog.art === "rechnung" ? (
             <>
+              {rechnungHinweis}
               <PortalField label="Rechnung als PDF" hint="Oder unten Positionen eintragen.">
                 <input
                   type="file"
@@ -297,7 +340,7 @@ export function PartnerEinsaetzeSection() {
                 />
               </PortalField>
               {positionen.map((p, i) => (
-                <div key={i} className="flex gap-2">
+                <div key={i} className="grid grid-cols-[minmax(0,1fr)_7.5rem] gap-2">
                   <PortalInput
                     placeholder="Leistung"
                     value={p.text}

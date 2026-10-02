@@ -10,7 +10,6 @@ import {
   validatePartnerAngebotFiles,
   validatePartnerPdfFile,
 } from "@/lib/partner/partner-upload-limits";
-import { planAuftragStatusWrite } from "@/lib/status/write-auftrag-status";
 import { writeEinsatzStatus } from "@/lib/status/write-einsatz-status";
 import { createClient } from "@/lib/supabase/server";
 import { isSupabaseConfigured, supabaseAdmin } from "@/lib/supabase";
@@ -143,16 +142,6 @@ export async function einsatzAnnehmen(einsatzId: string): Promise<Result> {
     extra: { angenommen_at: new Date().toISOString() },
   });
   if (!w.ok) return w;
-  // Partner hat angenommen → Auftrag läuft (nur aus „offen“, spätere Stände bleiben)
-  const auftragId = (e as { auftrag_id?: string | null }).auftrag_id;
-  if (auftragId) {
-    const { error: aErr } = await supabaseAdmin
-      .from("auftraege")
-      .update(planAuftragStatusWrite("in_arbeit"))
-      .eq("id", auftragId)
-      .eq("status", "offen");
-    if (aErr) logDbError("app/actions/partner-einsatz:auftrag-in-arbeit", aErr);
-  }
   return done();
 }
 
@@ -199,7 +188,54 @@ async function uploadDateien(
   return { ok: true, dateien: out };
 }
 
-/** Erledigt melden in einem Schritt: Text und Fotos sind freiwillig. */
+/** Rechnung aus Formular (PDF und/oder Positionen) → Felder am Einsatz; null = keine Rechnung angegeben. */
+async function rechnungAusFormData(
+  handwerkerId: string,
+  einsatzId: string,
+  formData: FormData,
+  pdfFeld: string
+): Promise<{ ok: true; patch: Record<string, unknown> | null } | { ok: false; error: string }> {
+  const pdf = formData.get(pdfFeld);
+  const hatPdf = pdf instanceof File && pdf.size > 0;
+  let positionen: { text: string; betrag: number }[] = [];
+  try {
+    const raw = JSON.parse(String(formData.get("positionen") ?? "[]")) as unknown;
+    if (Array.isArray(raw)) {
+      positionen = raw
+        .map((p) => ({
+          text: String((p as { text?: unknown }).text ?? "").trim(),
+          betrag: Number(String((p as { betrag?: unknown }).betrag ?? "").replace(",", ".")) || 0,
+        }))
+        .filter((p) => p.text && p.betrag > 0);
+    }
+  } catch {
+    positionen = [];
+  }
+  if (!hatPdf && !positionen.length) return { ok: true, patch: null };
+  let pdfPath: string | null = null;
+  if (hatPdf) {
+    const err = validatePartnerPdfFile(pdf as File);
+    if (err) return { ok: false, error: err };
+    const up = await uploadDateien(handwerkerId, einsatzId, [pdf as File], "rechnung");
+    if (!up.ok) return up;
+    pdfPath = up.dateien[0]?.path ?? null;
+  }
+  const betrag = positionen.length
+    ? Math.round(positionen.reduce((sum, p) => sum + p.betrag, 0) * 100) / 100
+    : null;
+  return {
+    ok: true,
+    patch: {
+      rechnung_pdf_url: pdfPath,
+      rechnung_positionen: positionen.length ? positionen : null,
+      rechnung_betrag: betrag,
+      rechnung_eingereicht_at: new Date().toISOString(),
+      rechnung_von: "partner",
+    },
+  };
+}
+
+/** Erledigt melden in einem Schritt: Text, Fotos und Rechnung (PDF oder Positionen) sind freiwillig. */
 export async function einsatzFertigMelden(formData: FormData): Promise<Result> {
   const auth = await partnerAuth();
   if (!auth.ok) return auth;
@@ -215,12 +251,21 @@ export async function einsatzFertigMelden(formData: FormData): Promise<Result> {
   }
   const up = await uploadDateien(auth.handwerkerId, einsatzId, files, "fertig");
   if (!up.ok) return up;
+  // Rechnung gleich mitschicken (oder später nachreichen)
+  const re = await rechnungAusFormData(auth.handwerkerId, einsatzId, formData, "rechnungPdf");
+  if (!re.ok) return re;
   const w = await writeEinsatzStatus(supabaseAdmin, {
     einsatzId,
     handwerkerId: auth.handwerkerId,
     von: "angenommen",
     nach: "fertig",
-    extra: { fertig_at: new Date().toISOString(), fertig_text: text, fertig_dateien: up.dateien },
+    extra: {
+      fertig_at: new Date().toISOString(),
+      fertig_text: text,
+      fertig_dateien: up.dateien,
+      fertig_von: "partner",
+      ...(re.patch ?? {}),
+    },
   });
   if (!w.ok) return w;
   return done();

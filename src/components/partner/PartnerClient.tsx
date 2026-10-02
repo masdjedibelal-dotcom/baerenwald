@@ -1084,12 +1084,16 @@ export function PartnerClient({
               nurEinsaetze
               beforeTiles={
                 <>
-                  <PartnerOnboardingReminderBanner
-                    handwerker={handwerker}
-                    profil={profil}
-                    variant="chip"
+                  {/* Firmendaten/Handwerkskarte erst beim Abrechnen — nicht vorne auf der Startseite */}
+                  <PartnerEinsaetzeSection
+                    rechnungHinweis={
+                      <PartnerOnboardingReminderBanner
+                        handwerker={handwerker}
+                        profil={profil}
+                        variant="chip"
+                      />
+                    }
                   />
-                  <PartnerEinsaetzeSection />
                 </>
               }
               kpis={{
