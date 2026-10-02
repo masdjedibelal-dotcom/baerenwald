@@ -13,6 +13,7 @@ import {
   type PartnerEinsatz,
 } from "@/app/actions/partner-einsatz";
 import { PortalButton } from "@/components/portal/PortalButton";
+import { FileUploadField } from "@/components/shared/FileUploadField";
 import { PortalDetailCard } from "@/components/shared/PortalDetailCard";
 import { PortalField } from "@/components/shared/PortalField";
 import { PortalInput, PortalTextarea } from "@/components/shared/PortalFormControls";
@@ -61,6 +62,65 @@ type Dialog =
  * Neu: Annehmen / Ablehnen. Läuft: Update, Regie melden, Erledigt. Erledigt: Rechnung hochladen.
  * Updates und Regie sind intern (nur Bärenwald), getrennt vom Bautagebuch für den Kunden.
  */
+/** Mehrere Fotos wählen: gestaltete Upload-Zone + Vorschau mit × zum Entfernen (statt nacktem Browser-Feld). */
+function FotoAuswahl({
+  label,
+  dateien,
+  onChange,
+  max = 6,
+}: {
+  label: string;
+  dateien: File[];
+  onChange: (next: File[]) => void;
+  max?: number;
+}) {
+  const [urls, setUrls] = useState<string[]>([]);
+  useEffect(() => {
+    const next = dateien.map((f) => (f.type.startsWith("image/") ? URL.createObjectURL(f) : ""));
+    setUrls(next);
+    return () => next.forEach((u) => u && URL.revokeObjectURL(u));
+  }, [dateien]);
+  return (
+    <div className="space-y-2">
+      {dateien.length < max ? (
+        <FileUploadField
+          label={label}
+          accept={FOTO_ACCEPT}
+          multiple
+          size="compact"
+          onChange={(files) => onChange([...dateien, ...files].slice(0, max))}
+        />
+      ) : (
+        <span className="portal-text-label text-text-tertiary">{label}</span>
+      )}
+      {dateien.length ? (
+        <div className="flex flex-wrap gap-2">
+          {dateien.map((f, i) => (
+            <div key={`${f.name}-${i}`} className="relative h-16 w-16 overflow-hidden rounded-card border border-border-default bg-surface-card">
+              {urls[i] ? (
+                // eslint-disable-next-line @next/next/no-img-element -- lokale Blob-Vorschau
+                <img src={urls[i]} alt="" className="h-full w-full object-cover" />
+              ) : (
+                <span className="portal-text-meta block p-1 break-all">{f.name}</span>
+              )}
+              <PortalButton
+                variant="ghost"
+                action={false}
+                type="button"
+                aria-label={`${f.name} entfernen`}
+                className="absolute right-0.5 top-0.5 !h-5 !min-h-0 !w-5 !rounded-full !bg-black/55 !p-0 !text-white"
+                onClick={() => onChange(dateien.filter((_, j) => j !== i))}
+              >
+                ×
+              </PortalButton>
+            </div>
+          ))}
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
 /**
  * @param rechnungHinweis z. B. „Firmendaten fehlen“ — erst beim Abrechnen zeigen, nicht vorne auf der Startseite.
  */
@@ -270,21 +330,19 @@ export function PartnerEinsaetzeSection({ rechnungHinweis }: { rechnungHinweis?:
           ) : null}
           {dialog.art === "fertig" ? (
             <>
-              <PortalField label="Fotos (freiwillig)" hint="Zusammen höchstens 4 MB.">
-                <input type="file" multiple accept={FOTO_ACCEPT} onChange={(ev) => setDateien(Array.from(ev.target.files ?? []))} />
-              </PortalField>
+              <FotoAuswahl label="Fotos (freiwillig)" dateien={dateien} onChange={setDateien} />
               <PortalField label="Notiz (freiwillig)">
                 <PortalTextarea rows={3} value={text} onChange={(ev) => setText(ev.target.value)} />
               </PortalField>
               <p className="portal-text-label pt-2">Rechnung (gleich mit oder später)</p>
               {rechnungHinweis}
-              <PortalField label="Rechnung als PDF">
-                <input
-                  type="file"
-                  accept="application/pdf"
-                  onChange={(ev) => setRechnungPdf(ev.target.files?.[0] ?? null)}
-                />
-              </PortalField>
+              <FileUploadField
+                label="Rechnung als PDF"
+                accept="application/pdf"
+                size="compact"
+                selectedFile={rechnungPdf}
+                onChange={(files) => setRechnungPdf(files[0] ?? null)}
+              />
               {positionen.map((p, i) => (
                 <div key={i} className="grid grid-cols-[minmax(0,1fr)_7.5rem] gap-2">
                   <PortalInput
@@ -311,9 +369,7 @@ export function PartnerEinsaetzeSection({ rechnungHinweis }: { rechnungHinweis?:
               <PortalField label="Text" hint="Nur für Bärenwald, der Kunde sieht das nicht.">
                 <PortalTextarea rows={4} value={text} onChange={(ev) => setText(ev.target.value)} />
               </PortalField>
-              <PortalField label="Fotos" hint="Zusammen höchstens 4 MB.">
-                <input type="file" multiple accept={FOTO_ACCEPT} onChange={(ev) => setDateien(Array.from(ev.target.files ?? []).slice(0, 6))} />
-              </PortalField>
+              <FotoAuswahl label="Fotos" dateien={dateien} onChange={setDateien} />
             </>
           ) : null}
           {dialog.art === "regie" ? (
@@ -324,21 +380,19 @@ export function PartnerEinsaetzeSection({ rechnungHinweis }: { rechnungHinweis?:
               <PortalField label="Was wurde gemacht?" hint="Bärenwald nimmt die Regie an oder lehnt sie ab. Sie sehen das hier.">
                 <PortalTextarea rows={4} value={text} onChange={(ev) => setText(ev.target.value)} />
               </PortalField>
-              <PortalField label="Fotos (freiwillig)">
-                <input type="file" multiple accept={FOTO_ACCEPT} onChange={(ev) => setDateien(Array.from(ev.target.files ?? []).slice(0, 6))} />
-              </PortalField>
+              <FotoAuswahl label="Fotos (freiwillig)" dateien={dateien} onChange={setDateien} />
             </>
           ) : null}
           {dialog.art === "rechnung" ? (
             <>
               {rechnungHinweis}
-              <PortalField label="Rechnung als PDF" hint="Oder unten Positionen eintragen.">
-                <input
-                  type="file"
-                  accept="application/pdf"
-                  onChange={(ev) => setDateien(Array.from(ev.target.files ?? []).slice(0, 1))}
-                />
-              </PortalField>
+              <FileUploadField
+                label="Rechnung als PDF"
+                accept="application/pdf"
+                size="compact"
+                selectedFile={dateien[0] ?? null}
+                onChange={(files) => setDateien(files.slice(0, 1))}
+              />
               {positionen.map((p, i) => (
                 <div key={i} className="grid grid-cols-[minmax(0,1fr)_7.5rem] gap-2">
                   <PortalInput
