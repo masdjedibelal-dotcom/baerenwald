@@ -504,15 +504,21 @@ export function OrganisationHvVorgangDetail({
     rechnungPdfHref?.trim() ||
       dokumente.some((d) => /rechnung/i.test(d.name ?? ""))
   );
-  /** Rechnung gesendet → Hinweis „Rechnung“ statt „Auftrag“ (nur Kunden-/Privat-Portal).
-   * HV: Abschlags-/Kundenrechnung ist CRM — Status bleibt Abschluss/Auftrag. */
+  /** Rechnung gesendet → Phase „Rechnung“ (Kunde und HV). */
   const displayFlowStatus: PortalMockStatusId = (() => {
     if (rejected || flowStatus === "abgelehnt") {
       return "abgelehnt";
     }
     if (detailRole === "hv") {
-      if (flowStatus === "rechnung") return "abschluss";
       if (flowStatus === "bezahlt") return "bezahlt";
+      // HV sieht ihre Rechnungen unter Dokumente → Phase „Rechnung“, sobald eine vorliegt
+      if (
+        hasRechnungDoc &&
+        (flowStatus === "auftrag" || flowStatus === "abschluss" || flowStatus === "rechnung")
+      ) {
+        return "rechnung";
+      }
+      if (flowStatus === "rechnung") return "abschluss";
     } else if (
       hasRechnungDoc &&
       (flowStatus === "auftrag" ||

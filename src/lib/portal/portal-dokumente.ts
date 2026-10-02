@@ -92,12 +92,13 @@ export function dokumenteFromRechnungen(
     if (st === "entwurf" || st === "storniert") continue;
     const href = r.pdf_url?.trim();
     if (!href) continue;
+    // Storno-Gutschriften (Nummer „GS-…“) auch so benennen
+    const nr = r.rechnungsnummer?.trim() || "";
+    const art = /^GS-/i.test(nr) ? "Gutschrift" : "Rechnung";
     rows.push({
       id: `rechnung-${r.id}`,
-      name: r.rechnungsnummer?.trim()
-        ? `Rechnung ${r.rechnungsnummer.trim()}`
-        : "Rechnung",
-      subtitle: "Rechnung",
+      name: nr ? `${art} ${nr}` : art,
+      subtitle: art,
       datum: r.gesendet_at ?? r.rechnungsdatum ?? undefined,
       href,
       art: "rechnung",

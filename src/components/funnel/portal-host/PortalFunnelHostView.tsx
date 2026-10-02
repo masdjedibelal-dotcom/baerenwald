@@ -629,7 +629,7 @@ export function PortalFunnelHostView(m: PortalFunnelHostModel) {
       {step === "fachdetail" && currentFachId && useMeldeKaputtFlow && currentMeldeFrage ? (
         <StepWrapper
           layout={stepLayout}
-          stepLabel={`Detail ${fachIdx + 1}/${Math.max(1, fachIds.length)}`}
+          stepLabel="Details"
           question={currentMeldeFrage.frage}
           animateKey={currentFachId}
         >

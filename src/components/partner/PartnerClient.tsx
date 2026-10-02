@@ -957,7 +957,8 @@ export function PartnerClient({
         variant="partner"
         brandTitle="MeinBärenwald"
         brandSubtitle="Partner-Portal"
-        brandKuerzel="B"
+        // Kürzel des Betriebs (der Name steht daneben) statt „B“ für Bärenwald
+        brandKuerzel={partnerFooter.trim().charAt(0).toUpperCase() || "B"}
         sidebarOwner={partnerFooter}
         hideMobileChrome={section === "gpt"}
         contentFullBleed={

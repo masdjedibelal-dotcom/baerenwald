@@ -1,3 +1,4 @@
+import { buildMeldeVorgangTitel } from "@/lib/org/melde-vorgang-titel";
 import { logDbError } from '@/lib/errors/log-db-error'
 import { createHash } from "crypto";
 
@@ -232,6 +233,20 @@ export async function persistMeldungLead(input: PersistMeldungLeadInput) {
 
   const bypassAktiv = direktauftrag && notfallDirektAktiv;
 
+  // Ein Titel für alle Seiten: sprechender Melde-Titel („Wasser tritt aus in der Küche“) als Vorhaben —
+  // das CRM übernimmt ihn für Anfrage, Angebot und Auftrag.
+  const vorhaben = buildMeldeVorgangTitel({
+    situation,
+    bereiche,
+    funnelDaten: {
+      melde_kategorie: input.kategorie,
+      melde_bereich: input.bereichId,
+      fachdetailAnswers: input.fachdetailAnswers ?? {},
+    },
+    beschreibung: input.beschreibung,
+    notfall: direktauftrag,
+  }).trim();
+
   const result = await persistLead({
     name: input.name,
     email: input.email,
@@ -264,6 +279,7 @@ export async function persistMeldungLead(input: PersistMeldungLeadInput) {
     notizen: input.beschreibung,
     funnel_quelle: "meldung",
     funnel_daten: {
+      ...(vorhaben ? { vorhaben } : {}),
       melde_kategorie: input.kategorie,
       melde_bereich: input.bereichId,
       fachdetailAnswers: input.fachdetailAnswers ?? {},
@@ -331,6 +347,7 @@ export async function persistMeldungLead(input: PersistMeldungLeadInput) {
     hv_meldung_status: initial.hv_meldung_status,
     anlass: "meldung",
     funnel_daten: {
+      ...(vorhaben ? { vorhaben } : {}),
       melde_kategorie: input.kategorie,
     },
   });

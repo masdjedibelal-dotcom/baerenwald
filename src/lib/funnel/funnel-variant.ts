@@ -116,7 +116,8 @@ export const FUNNEL_VARIANT: Record<FunnelChannel, FunnelVariantConfig> = {
       beschreibung: true,
       notfallDringlichkeit: false,
       verwaltungInfo: false,
-      datenschutzCheckbox: true,
+      // Angemeldet: Einwilligung liegt aus der Registrierung vor
+      datenschutzCheckbox: false,
     },
   },
   portal_hv: {
