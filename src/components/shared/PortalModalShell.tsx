@@ -85,7 +85,10 @@ function removePortalModalHistoryLayer(
 ) {
   const i = portalModalHistoryStack.findIndex((l) => l.id === id);
   if (i >= 0) portalModalHistoryStack.splice(i, 1);
-  if (consumeHistoryEntry) {
+  // Nur zurück, wenn wir wirklich auf einem Overlay-Eintrag stehen — sonst verlässt Back die Seite
+  // (z. B. doppelt laufender Effekt in Entwicklung → Sprung auf die vorige Seite/about:blank).
+  const state = window.history.state as Record<string, unknown> | null;
+  if (consumeHistoryEntry && state && state[HISTORY_KEY]) {
     portalModalHistorySuppress += 1;
     window.history.back();
   }

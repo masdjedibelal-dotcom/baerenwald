@@ -1,4 +1,5 @@
 import { logDbError } from '@/lib/errors/log-db-error'
+import { loadMieterMeldeKontext } from "@/lib/portal/load-mieter-melde-kontext";
 import {
   parseAngebotPositionenMitPreis,
   resolveAngebotGesamtBrutto,
@@ -568,7 +569,8 @@ export async function getPortalDataForKunde(
           .in("auftrag_id", auftragIds)
           .in("status", ["vorgeschlagen", "bestaetigt"])
           .order("slot_beginn", { ascending: true }),
-        listMode
+        // Rechnungen sind leicht: im Detail (einzelner Vorgang) auch im List-Mode laden
+        listMode && !opts?.leadIds?.length
           ? Promise.resolve(emptyChild)
           : supabaseAdmin
               .from("rechnungen")
@@ -970,6 +972,11 @@ export async function getPortalDataForKunde(
               : Number(bruttoRaw);
           return {
             ...base,
+            // Für Rechnungs-Dokumente (PDF) — Resolver-Mapping lässt diese Felder weg
+            pdf_url: (r as { pdf_url?: string | null }).pdf_url ?? null,
+            rechnungsnummer: (r as { rechnungsnummer?: string | null }).rechnungsnummer ?? null,
+            gesendet_at: (r as { gesendet_at?: string | null }).gesendet_at ?? null,
+            rechnungsdatum: (r as { rechnungsdatum?: string | null }).rechnungsdatum ?? null,
             brutto: Number.isFinite(brutto) ? brutto : undefined,
             rechnung_art:
               typeof (r as { rechnung_art?: string | null }).rechnung_art ===
@@ -1234,6 +1241,10 @@ export async function getPortalDataForKunde(
   }
 
   const hausverwaltungBrand = await hausverwaltungBrandPromise;
+  // Mieter einer HV: „Schaden melden“ geht über die HV (Meldung), nicht als Website-Anfrage
+  const mieterMelde = hausverwaltungBrand
+    ? await loadMieterMeldeKontext({ portalKundeId: kunde.id, email: kunde.email })
+    : null;
 
   return {
     kunde,
@@ -1242,6 +1253,7 @@ export async function getPortalDataForKunde(
     auftraege: mappedAuftraege,
     mieterFeedbackByLeadId,
     hausverwaltungBrand,
+    mieterMelde,
     /** @deprecated Nur für Abwärtskompatibilität — Pipeline-Split clientseitig. */
     splitPipeline: split,
   };

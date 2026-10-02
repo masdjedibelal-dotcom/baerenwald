@@ -1,4 +1,5 @@
 "use client";
+import type { PortalDokument } from "@/lib/portal/portal-dokumente";
 
 import dynamic from "next/dynamic";
 import { flushSync } from "react-dom";
@@ -307,7 +308,8 @@ export function OrganisationPortalClient({
           subtitle: d.subtitle,
           datum: d.datum,
           href: d.href,
-          art: "protokoll" as const,
+          // Eigene Art behalten (Rechnung, Angebot …) — nicht alles als Protokoll einsortieren
+          art: ((d as { art?: PortalDokument["art"] }).art ?? "protokoll") as PortalDokument["art"],
         }));
       return { ...item, dokumente: [...existing, ...extraAsPortal] };
     });

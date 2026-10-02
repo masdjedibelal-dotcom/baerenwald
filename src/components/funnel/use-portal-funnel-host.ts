@@ -1038,7 +1038,8 @@ export function usePortalFunnelHost({
     setError(null);
     let navigatedAway = false;
     try {
-      if (channel === "melde_anon" && melde) {
+      // Aushang/QR und angemeldeter Mieter: Meldung geht an die HV (Freigabe dort)
+      if ((channel === "melde_anon" || channel === "portal_mieter") && melde) {
         const bereich = state.bereiche[0] ?? "sonstiges";
         const bereichId = kaputtBereichToMeldeId(bereich);
         const fachAnswers = compactFachdetailAnswers(
@@ -1112,6 +1113,13 @@ export function usePortalFunnelHost({
         };
         if (!res.ok) {
           setError(json.error ?? "Senden fehlgeschlagen.");
+          return;
+        }
+        if (channel === "portal_mieter") {
+          // Angemeldet: im Portal bleiben, Meldung erscheint in der Liste
+          clearMeldeZwischenstand();
+          portalToastSuccess(TOAST.anfrage_gesendet);
+          onDone();
           return;
         }
         if (!isErgaenzen) {

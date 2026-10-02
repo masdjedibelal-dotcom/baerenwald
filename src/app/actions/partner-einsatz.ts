@@ -10,6 +10,7 @@ import {
   validatePartnerAngebotFiles,
   validatePartnerPdfFile,
 } from "@/lib/partner/partner-upload-limits";
+import { planAuftragStatusWrite } from "@/lib/status/write-auftrag-status";
 import { writeEinsatzStatus } from "@/lib/status/write-einsatz-status";
 import { createClient } from "@/lib/supabase/server";
 import { isSupabaseConfigured, supabaseAdmin } from "@/lib/supabase";
@@ -142,6 +143,16 @@ export async function einsatzAnnehmen(einsatzId: string): Promise<Result> {
     extra: { angenommen_at: new Date().toISOString() },
   });
   if (!w.ok) return w;
+  // Partner hat angenommen → Auftrag läuft (nur aus „offen“, spätere Stände bleiben)
+  const auftragId = (e as { auftrag_id?: string | null }).auftrag_id;
+  if (auftragId) {
+    const { error: aErr } = await supabaseAdmin
+      .from("auftraege")
+      .update(planAuftragStatusWrite("in_arbeit"))
+      .eq("id", auftragId)
+      .eq("status", "offen");
+    if (aErr) logDbError("app/actions/partner-einsatz:auftrag-in-arbeit", aErr);
+  }
   return done();
 }
 

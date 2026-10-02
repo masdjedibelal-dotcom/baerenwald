@@ -24,7 +24,7 @@ import { portalToastError, portalToastSuccess } from "@/lib/shared/portal-toast"
 
 const STATUS: Record<PartnerEinsatz["status"], { label: string; tone: PortalStatusTone }> = {
   gesendet: { label: "Neu", tone: "neu" },
-  angenommen: { label: "Läuft", tone: "aktiv" },
+  angenommen: { label: "In Bearbeitung", tone: "aktiv" },
   abgelehnt: { label: "Abgelehnt", tone: "danger" },
   fertig: { label: "Erledigt", tone: "fertig" },
 };

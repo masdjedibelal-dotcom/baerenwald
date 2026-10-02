@@ -142,6 +142,7 @@ import {
   portalMieterStatusLabel,
   type PortalMockStatusId,
 } from "@/lib/portal2/status";
+import type { PortalFunnelMeldeCtx } from "@/components/funnel/portal-funnel-types";
 import type { MieterHvBrand } from "@/lib/portal/load-mieter-hv-brand";
 import { cn } from "@/lib/utils";
 import { PortalButton } from "@/components/portal/PortalButton";
@@ -269,6 +270,7 @@ export function PortalClient({
   hvPortalMode = false,
   kundeTyp: kundeTypProp,
   hausverwaltungBrand = null,
+  mieterMelde = null,
   mieterFeedbackByLeadId = {},
   hwErledigtByLeadId = {},
   hvFeedbackByLeadId = {},
@@ -335,6 +337,8 @@ export function PortalClient({
   kundeTyp?: PortalKundeTyp;
   /** Mieter-Portal: White-Label der Hausverwaltung (Desktop-Topbar). */
   hausverwaltungBrand?: MieterHvBrand | null;
+  /** Mieter einer HV: Meldung über die HV statt Website-Anfrage. */
+  mieterMelde?: PortalFunnelMeldeCtx | null;
 }) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -1645,11 +1649,16 @@ export function PortalClient({
 
       <PortalCreateFunnelModal
         open={createOpen}
-        channel={portalClientCreateChannel({
-          hvPortalMode,
-          kundeTyp,
-          navRole,
-        })}
+        channel={
+          mieterMelde
+            ? "portal_mieter"
+            : portalClientCreateChannel({
+                hvPortalMode,
+                kundeTyp,
+                navRole,
+              })
+        }
+        melde={mieterMelde ?? undefined}
         title={portalCreateLabel(navRole)}
         prefill={fabContactPrefill}
         onClose={() => setCreateOpen(false)}

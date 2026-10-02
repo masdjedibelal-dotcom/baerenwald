@@ -1,3 +1,5 @@
+import { dokumenteFromRechnungen } from "@/lib/portal/portal-dokumente";
+import { mapPortalRechnungForResolver } from "@/lib/crm-vorgang/portal-resolve";
 import { logDbError } from '@/lib/errors/log-db-error'
 import { resolveLeadObjektId } from "@/lib/org/match-lead-objekt";
 import { getPortalDataForKunde } from "@/lib/portal/get-portal-data";
@@ -318,6 +320,8 @@ export async function getOrganisationPortalData(
     };
   }
 
+  /** Rechnungs-PDFs je Vorgang — auch im List-Mode unter „Dokumente“. */
+  const rechnungDokumenteByLeadId: Record<string, PortalDokument[]> = {};
   const bautagebuchByLeadId: Record<
     string,
     Array<{
@@ -402,6 +406,52 @@ export async function getOrganisationPortalData(
           list.push(entry);
           timelineByAuftrag.set(aid, list);
         }
+      }
+    }
+
+    // Rechnungen an die HV — wie im Kundenportal (ohne Entwürfe und Partner-Eingangsrechnungen)
+    if (auftragIds.length > 0) {
+      const { data: reRows, error: reErr } = await supabaseAdmin
+        .from("rechnungen")
+        .select(
+          "id, auftrag_id, rechnungsnummer, pdf_url, status, rechnungsdatum, gesendet_at, faellig_am, created_at, updated_at, brutto, netto, rechnung_art, abschlag_index, bezahlt_at, richtung"
+        )
+        .in("auftrag_id", auftragIds)
+        .neq("status", "entwurf");
+      if (reErr) logDbError("lib/org/get-organisation-portal-data:rechnungen", reErr);
+      for (const a of mergedAuftraege) {
+        const aid = String(a.id);
+        const eigene = (reRows ?? []).filter(
+          (r) => String(r.auftrag_id) === aid && String(r.richtung ?? "") !== "eingehend"
+        );
+        // Rechnungs-PDFs erscheinen beim HV unter „Dokumente“
+        const reDocs = dokumenteFromRechnungen(
+          eigene as Parameters<typeof dokumenteFromRechnungen>[0]
+        );
+        const leadIdRe = String((a as { lead_id?: string | null }).lead_id ?? "");
+        if (reDocs.length && leadIdRe) {
+          rechnungDokumenteByLeadId[leadIdRe] = mergeDokumente(
+            rechnungDokumenteByLeadId[leadIdRe] ?? [],
+            reDocs
+          );
+        }
+        (a as { rechnungen?: unknown[] }).rechnungen = (reRows ?? [])
+          .filter((r) => String(r.auftrag_id) === aid && String(r.richtung ?? "") !== "eingehend")
+          .map((r) => {
+            const brutto = Number(r.brutto);
+            return {
+              ...mapPortalRechnungForResolver(r),
+              pdf_url: r.pdf_url ?? null,
+              rechnungsnummer: r.rechnungsnummer ?? null,
+              gesendet_at: r.gesendet_at ?? null,
+              rechnungsdatum: r.rechnungsdatum ?? null,
+              brutto: Number.isFinite(brutto) ? brutto : undefined,
+              rechnung_art: typeof r.rechnung_art === "string" ? r.rechnung_art : null,
+              abschlag_index: typeof r.abschlag_index === "number" ? r.abschlag_index : null,
+              bezahlt_at: typeof r.bezahlt_at === "string" ? r.bezahlt_at : null,
+              richtung: typeof r.richtung === "string" ? r.richtung : null,
+            };
+          });
       }
     }
 
@@ -513,6 +563,9 @@ export async function getOrganisationPortalData(
   }
 
   const dokumenteByLeadId: Record<string, PortalDokument[]> = {};
+  for (const [lid, docs] of Object.entries(rechnungDokumenteByLeadId)) {
+    dokumenteByLeadId[lid] = mergeDokumente(dokumenteByLeadId[lid] ?? [], docs);
+  }
   // Angebot-PDFs auch im List-Mode (Slim behält sie für Dokumente-Tab / Flow).
   for (const ang of base.angebote) {
     const leadId =

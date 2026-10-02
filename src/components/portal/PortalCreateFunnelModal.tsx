@@ -3,6 +3,7 @@
 import { PortalFunnelHost } from "@/components/funnel/PortalFunnelHost";
 import type { PortalFunnelObjekt } from "@/components/funnel/PortalFunnelHost";
 import { PortalModalShell } from "@/components/shared/PortalModalShell";
+import type { PortalFunnelMeldeCtx } from "@/components/funnel/portal-funnel-types";
 import type { FunnelChannel } from "@/lib/funnel/funnel-variant";
 
 type Props = {
@@ -23,6 +24,8 @@ type Props = {
     strasse?: string;
     hausnummer?: string;
   };
+  /** Mieter: Meldung über die HV (Organisation + Objekt). */
+  melde?: PortalFunnelMeldeCtx;
   onClose: () => void;
   onDone: () => void;
 };
@@ -34,6 +37,7 @@ export function PortalCreateFunnelModal({
   title,
   objekte = [],
   prefill,
+  melde,
   onClose,
   onDone,
 }: Props) {
@@ -53,6 +57,7 @@ export function PortalCreateFunnelModal({
         layout="modal"
         objekte={objekte}
         prefill={prefill}
+        melde={melde}
         onClose={onClose}
         onDone={onDone}
       />

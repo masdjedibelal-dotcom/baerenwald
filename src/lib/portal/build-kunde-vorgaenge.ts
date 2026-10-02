@@ -1,3 +1,4 @@
+import { dokumenteFromRechnungen } from "@/lib/portal/portal-dokumente";
 import { labelSituation, labelBereich } from "@/lib/lead-funnel-labels";
 import {
   fachdetailRowsFromFunnelDaten,
@@ -624,7 +625,16 @@ function buildItemFromLead(
         collectVorgangDokumente({
           leadDocs: lead.dokumente,
           angebotDocs: angebot?.dokumente,
-          auftragDocs: auftrag.dokumente,
+          // HV sieht Rechnungen unter „Dokumente“ (eigener Rechnungsbereich nur im Kundenportal)
+          auftragDocs:
+            !mieterStatusMode && !eigentuemerView
+              ? [
+                  ...(auftrag.dokumente ?? []),
+                  ...dokumenteFromRechnungen(
+                    (auftrag.rechnungen ?? []) as Parameters<typeof dokumenteFromRechnungen>[0]
+                  ),
+                ]
+              : auftrag.dokumente,
         })
       ),
       bautagebuch: auftrag.bautagebuch ?? [],
