@@ -330,7 +330,7 @@ export function PartnerEinsaetzeSection({ rechnungHinweis }: { rechnungHinweis?:
           ) : null}
           {dialog.art === "fertig" ? (
             <>
-              <FotoAuswahl label="Fotos (freiwillig)" dateien={dateien} onChange={setDateien} />
+              <FotoAuswahl label="Fotos oder Dokumente (freiwillig)" dateien={dateien} onChange={setDateien} />
               <PortalField label="Notiz (freiwillig)">
                 <PortalTextarea rows={3} value={text} onChange={(ev) => setText(ev.target.value)} />
               </PortalField>
@@ -369,7 +369,7 @@ export function PartnerEinsaetzeSection({ rechnungHinweis }: { rechnungHinweis?:
               <PortalField label="Text" hint="Nur für Bärenwald, der Kunde sieht das nicht.">
                 <PortalTextarea rows={4} value={text} onChange={(ev) => setText(ev.target.value)} />
               </PortalField>
-              <FotoAuswahl label="Fotos" dateien={dateien} onChange={setDateien} />
+              <FotoAuswahl label="Fotos oder Dokumente" dateien={dateien} onChange={setDateien} />
             </>
           ) : null}
           {dialog.art === "regie" ? (
@@ -380,7 +380,7 @@ export function PartnerEinsaetzeSection({ rechnungHinweis }: { rechnungHinweis?:
               <PortalField label="Was wurde gemacht?" hint="Bärenwald nimmt die Regie an oder lehnt sie ab. Sie sehen das hier.">
                 <PortalTextarea rows={4} value={text} onChange={(ev) => setText(ev.target.value)} />
               </PortalField>
-              <FotoAuswahl label="Fotos (freiwillig)" dateien={dateien} onChange={setDateien} />
+              <FotoAuswahl label="Fotos oder Dokumente (freiwillig)" dateien={dateien} onChange={setDateien} />
             </>
           ) : null}
           {dialog.art === "rechnung" ? (
