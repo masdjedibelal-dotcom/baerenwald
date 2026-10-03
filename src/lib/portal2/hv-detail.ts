@@ -190,8 +190,8 @@ export function pickEmpfohlenesAngebot(
 
 export const HV_DETAIL_COPY = {
   freigabeTitle: "Freigabe erforderlich",
-  freigabeBtn: "Freigeben",
-  freigabeBtnMobile: "Freigeben",
+  freigabeBtn: "Annehmen",
+  freigabeBtnMobile: "Annehmen",
   ablehnen: "Ablehnen",
   privatAuto: "Automatisch freigegeben (Privatkunde)",
   angeboteVergleichen: "Angebotdetails",

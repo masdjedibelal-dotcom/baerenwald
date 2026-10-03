@@ -70,7 +70,6 @@ export function OrganisationFreigabeRegelnPanel({
   const [akutFaelle, setAkutFaelle] = useState(() =>
     normalizeAkutFallIds(kunde.akut_fall_ids)
   );
-  const [hmAuto, setHmAuto] = useState(Boolean(kunde.hm_auto_zuweisen));
 
   const [editOpen, setEditOpen] = useState(false);
   const [editSchwelle, setEditSchwelle] = useState(schwelle);
@@ -90,12 +89,10 @@ export function OrganisationFreigabeRegelnPanel({
     );
     setAkutDirekt(kunde.notfall_direkt !== false);
     setAkutFaelle(normalizeAkutFallIds(kunde.akut_fall_ids));
-    setHmAuto(Boolean(kunde.hm_auto_zuweisen));
   }, [
     kunde.freigabe_schwelle_eur,
     kunde.notfall_direkt,
     kunde.akut_fall_ids,
-    kunde.hm_auto_zuweisen,
   ]);
 
   useEffect(() => {
@@ -183,11 +180,6 @@ export function OrganisationFreigabeRegelnPanel({
     await patchEinstellungen({ freigabe_schwelle_eur: eur });
     setSchwelleAktiv(next);
     if (next && eur != null) setSchwelle(eur);
-  }
-
-  async function saveToggleHmAuto(next: boolean) {
-    await patchEinstellungen({ hm_auto_zuweisen: next });
-    setHmAuto(next);
   }
 
   async function saveEdit() {
@@ -296,19 +288,6 @@ export function OrganisationFreigabeRegelnPanel({
                 : "Notfälle (Wasser, Strom, Heizung) beheben wir sofort und informieren Sie."
             }
             onSave={saveToggleAkut}
-          />
-          <EinstellungenInstantToggle
-            nested
-            checked={hmAuto}
-            disabled={!isAdmin}
-            title="Neue Meldungen zuerst an den Hausmeister"
-            confirmTitle={hmAuto ? "Ausschalten?" : "Einschalten?"}
-            confirmDescription={
-              hmAuto
-                ? "Neue Meldungen gehen nicht mehr zuerst an den Hausmeister."
-                : "Neue Meldungen (keine Notfälle) gehen zuerst an den Hausmeister."
-            }
-            onSave={saveToggleHmAuto}
           />
         </div>
       </EinstellungenSectionCard>

@@ -49,7 +49,7 @@ export function buildPortalDashboardFocus(
         noteTone: "warn",
         buttons: [
           { label: "Ablehnen", variant: "secondary", onClick: onOpen },
-          { label: "Freigeben", variant: "primary", onClick: onOpen },
+          { label: "Annehmen", variant: "primary", onClick: onOpen },
         ],
         ...openBtn,
       };

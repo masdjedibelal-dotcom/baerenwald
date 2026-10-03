@@ -185,7 +185,7 @@ export function OrgFreigabeBanner({
             disabled={busy}
             onClick={() => void act("freigegeben")}
           >
-            {busy ? "Wird geladen…" : "Freigeben"}
+            {busy ? "Wird geladen…" : "Annehmen"}
           </PortalButton>
         </div>
       </div>
@@ -211,18 +211,11 @@ export function OrgFreigabeBanner({
           {busy ? "Wird geladen…" : "Ablehnen"}
         </PortalButton>
         <PortalButton
-          variant="secondary"
-          disabled={busy}
-          onClick={() => void act("beschluss_ausstehend")}
-        >
-          {busy ? "Wird geladen…" : "Beschluss erforderlich"}
-        </PortalButton>
-        <PortalButton
           variant="primary"
           disabled={busy}
           onClick={() => void act("freigegeben")}
         >
-          {busy ? "Wird geladen…" : "Freigeben"}
+          {busy ? "Wird geladen…" : "Annehmen"}
         </PortalButton>
       </div>
     </div>

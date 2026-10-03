@@ -383,66 +383,7 @@ export async function persistMeldungLead(input: PersistMeldungLeadInput) {
 
   const { error: __dbErr361_9 } = await supabaseAdmin.from("leads").update(patch).eq("id", result.id);
   if (__dbErr361_9) logDbError('lib/org/persist-meldung-lead:leads', __dbErr361_9)
-  // Auto an Hausmeister (Freigabe-Toggle), wenn nicht Akut-Bypass
-  if (!bypassAktiv && input.kunde_objekt_id?.trim()) {
-    try {
-      const {data: orgHm, error: __dbErr357_5} = await supabaseAdmin
-        .from("kunden")
-        .select("hm_auto_zuweisen")
-        .eq("id", input.auftraggeber_kunde_id)
-        .maybeSingle();
-      if (__dbErr357_5) logDbError('lib/org/persist-meldung-lead:kunden', __dbErr357_5)
-      if (orgHm?.hm_auto_zuweisen === true) {
-        const {
-          assertHausmeisterDelegierbar,
-          loadObjektHausmeisterKontakt,
-        } = await import("@/lib/org/objekt-hausmeister");
-        const { insertLeadBefundIfMissing } = await import(
-          "@/lib/org/lead-befund-create"
-        );
-        const hmGate = assertHausmeisterDelegierbar(
-          await loadObjektHausmeisterKontakt(input.kunde_objekt_id)
-        );
-        if (!hmGate.ok) {
-          // Auto-Pfad still: ohne aktiven Objekt-HM bleibt Status neu
-          console.warn("[persistMeldungLead] hm_auto skip:", hmGate.error);
-        } else {
-          const hm = hmGate.hm;
-          await supabaseAdmin
-            .from("leads")
-            .update({ hv_meldung_status: "hm_pruefung" })
-            .eq("id", result.id);
-          await insertLeadBefundIfMissing({
-            leadId: result.id,
-            durchgefuehrtVon: hm.name,
-            createdByKundeId: input.auftraggeber_kunde_id,
-          });
-          if (hm.email) {
-            const { notifyHausmeisterPruefung } = await import(
-              "@/lib/org/notify-hausmeister-pruefung"
-            );
-            void notifyHausmeisterPruefung({
-              leadId: result.id,
-              toEmail: hm.email,
-              kontaktName: hm.name,
-            });
-          }
-          void import("@/lib/portal/notify-portal-hausmeister").then(
-            ({ notifyPortalHausmeisterNeuerVorgang }) =>
-              notifyPortalHausmeisterNeuerVorgang({
-                leadId: result.id,
-                kundeObjektId: input.kunde_objekt_id,
-              }).catch((e) =>
-                console.warn("[persistMeldungLead] hm portal notify:", e)
-              )
-          );
-        }
-      }
-    } catch (e) {
-      console.warn("[persistMeldungLead] hm_auto:", e);
-    }
-  }
-
+  // Hausmeister nur noch per Knopf der HV (keine Automatik mehr, 03.10.)
   // Ohne HM: Schadenakte sofort aus der Meldung.
   // Mit HM (hm_pruefung): nur Kostenträger vormerken, PDF nach Befund-Abschluss.
   void import("@/lib/org/ensure-versicherungsakte").then(

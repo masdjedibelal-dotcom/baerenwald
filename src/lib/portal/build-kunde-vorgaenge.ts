@@ -278,10 +278,11 @@ function resolveVorgangStatusForLead(
     auftragFortschritt: auftrag?.fortschritt,
     hasAngebotRecord: Boolean(angebot),
     hasAuftragRecord: Boolean(auftrag),
-    hasPendingAuftragAenderung: useLegacyHvMieter ? false : opts.hasPendingAuftragAenderung,
+    hasPendingAuftragAenderung: false,
     useHvMieterStatus: useLegacyHvMieter,
-    hasMieterTermin: hasMieterTerminPhase(terminSlots),
-    hasOffeneTerminvorschlaege: hasOffeneTerminvorschlaege(terminSlots),
+    // Terminvorschläge entfallen (03.10.) — kein eigener Schritt mehr für Kunde/Mieter
+    hasMieterTermin: false,
+    hasOffeneTerminvorschlaege: false,
     auftragPositionen: auftrag?.positionen,
   });
 
@@ -330,7 +331,7 @@ function resolveVorgangStatusForLead(
   // Melder/Mieter einer HV-Meldung (HV ist Auftraggeber): nimmt weder Angebot noch Änderungen an —
   // das entscheidet die HV. Nur Terminvorschläge (Zugang zur Wohnung) bleiben eine Aufgabe.
   if (istNurMelderLead(lead)) {
-    return { ...status, needsAction: hasOffeneTerminvorschlaege(terminSlots) };
+    return { ...status, needsAction: false };
   }
   return status;
 }
@@ -655,12 +656,8 @@ function buildItemFromLead(
       terminAuftragId: auftrag.id,
       terminSlots: auftrag.terminSlots ?? [],
       // Nur der Auftraggeber nimmt Änderungen an — nie nach Abschluss, nie Mieter/Eigentümer
-      offeneAenderung:
-        !eigentuemerView &&
-        !hvMieterView &&
-        pendingAenderung &&
-        !istNurMelderLead(lead) &&
-        vorgangStatus.phase !== "abgeschlossen",
+      // Änderungen nach der Annahme gehen per korrigiertem Dokument raus — keine Annahme im Portal
+      offeneAenderung: false,
       infoHint: eigentuemerView
         ? undefined
         : !hvMieterView && pendingAenderung

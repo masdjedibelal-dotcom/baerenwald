@@ -157,8 +157,8 @@ export async function POST(req: Request) {
     kunde_objekt_id: objektId,
     service_modus: body.service_modus ?? null,
     kundentyp: "hausverwaltung",
-    hv_meldung_status:
-      anlass === "meldung" ? initial.hv_meldung_status : null,
+    // Von der HV selbst angelegt → geht direkt an Bärenwald (keine eigene Meldungs-Entscheidung)
+    hv_meldung_status: anlass === "meldung" ? "angebot_eingefordert" : null,
     org_freigabe_status: initial.org_freigabe_status,
     melder_name: melderName,
     melder_email: melderEmail,

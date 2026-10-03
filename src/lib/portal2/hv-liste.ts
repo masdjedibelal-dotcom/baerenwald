@@ -83,7 +83,7 @@ export const HV_ANGEBOT_ACTIONS = [
   },
   {
     id: "freigegeben" as const,
-    label: "Freigeben",
+    label: "Annehmen",
     variant: "primary" as const,
   },
 ] as const;

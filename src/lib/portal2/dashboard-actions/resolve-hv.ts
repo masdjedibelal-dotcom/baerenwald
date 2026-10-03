@@ -138,7 +138,7 @@ function resolveHvAngebotFreigabeSlide(input: {
   const kicker =
     freigabeStatus === "beschluss_ausstehend"
       ? "Wartet auf Beschluss"
-      : "Angebot zur Freigabe";
+      : "Angebot liegt vor";
 
   return {
     openId: lead.id,
