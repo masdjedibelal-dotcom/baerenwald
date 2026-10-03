@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 
 import { logDbError } from "@/lib/errors/log-db-error";
 import { linkPortalHandwerkerToAuthUser } from "@/lib/partner/link-portal-handwerker";
+import { filterActiveLeadIds } from "@/lib/portal/lead-not-deleted";
 import { PARTNER_UPLOAD_BUCKET } from "@/lib/partner/partner-storage";
 import {
   validatePartnerAngebotFiles,
@@ -61,14 +62,49 @@ async function partnerAuth() {
 const SELECT =
   "id, titel, anweisung, termin_von, termin_bis, ort, kontakt_vor_ort, ek_betrag, ek_art, status, fertig_at, rechnung_eingereicht_at";
 
+/**
+ * Datenschutz: Der Partner sieht nur, was ihn noch betrifft. Abgelehnte Einsätze, gelöschte
+ * Vorgänge und stornierte Aufträge (solange nicht fertig) verschwinden aus dem Portal.
+ * Fertige Einsätze bleiben als Erledigt sichtbar.
+ */
+async function sichtbareEinsatzIds(
+  rows: { id: string; auftrag_id: string; status: string }[]
+): Promise<Set<string>> {
+  const offen = rows.filter((r) => r.status !== "abgelehnt");
+  const auftragIds = Array.from(new Set(offen.map((r) => r.auftrag_id)));
+  if (!auftragIds.length) return new Set();
+  const { data: auftraege, error } = await supabaseAdmin
+    .from("auftraege")
+    .select("id, status, lead_id")
+    .in("id", auftragIds);
+  if (error) logDbError("app/actions/partner-einsatz:auftraege", error);
+  const aktiveLeads = await filterActiveLeadIds(
+    (auftraege ?? []).map((a) => String(a.lead_id ?? "")).filter(Boolean)
+  );
+  const auftragOk = new Map<string, { storniert: boolean }>();
+  for (const a of auftraege ?? []) {
+    const leadId = String(a.lead_id ?? "");
+    if (leadId && !aktiveLeads.has(leadId)) continue;
+    auftragOk.set(String(a.id), { storniert: a.status === "storniert" });
+  }
+  return new Set(
+    offen
+      .filter((r) => {
+        const a = auftragOk.get(r.auftrag_id);
+        return Boolean(a) && (!a!.storniert || r.status === "fertig");
+      })
+      .map((r) => r.id)
+  );
+}
+
 export async function listPartnerEinsaetze(): Promise<
   { ok: true; einsaetze: PartnerEinsatz[] } | { ok: false; error: string }
 > {
   const auth = await partnerAuth();
   if (!auth.ok) return auth;
-  const { data, error } = await supabaseAdmin
+  const { data: alle, error } = await supabaseAdmin
     .from("einsaetze")
-    .select(SELECT)
+    .select(`${SELECT}, auftrag_id`)
     .eq("handwerker_id", auth.handwerkerId)
     .order("gesendet_at", { ascending: false })
     .limit(100);
@@ -76,7 +112,17 @@ export async function listPartnerEinsaetze(): Promise<
     logDbError("app/actions/partner-einsatz:list", error);
     return { ok: false, error: "Einsätze konnten nicht geladen werden." };
   }
-  const ids = (data ?? []).map((r) => r.id as string);
+  const sichtbar = await sichtbareEinsatzIds(
+    (alle ?? []).map((r) => ({
+      id: r.id as string,
+      auftrag_id: r.auftrag_id as string,
+      status: r.status as string,
+    }))
+  );
+  const data = (alle ?? [])
+    .filter((r) => sichtbar.has(r.id as string))
+    .map(({ auftrag_id: _a, ...r }) => r);
+  const ids = data.map((r) => r.id as string);
   const letzte = new Map<string, string>();
   const regie = new Map<string, PartnerEinsatz["regie"]>();
   if (ids.length) {
@@ -102,7 +148,7 @@ export async function listPartnerEinsaetze(): Promise<
   }
   return {
     ok: true,
-    einsaetze: (data ?? []).map((r) => ({
+    einsaetze: data.map((r) => ({
       ...(r as Omit<PartnerEinsatz, "ek_betrag" | "ek_art" | "letztes_update_at" | "regie">),
       ek_betrag: r.ek_betrag == null ? null : Number(r.ek_betrag),
       ek_art: r.ek_art === "brutto" ? "brutto" : "netto",
@@ -120,7 +166,11 @@ async function eigenerEinsatz(handwerkerId: string, einsatzId: string) {
     .eq("handwerker_id", handwerkerId)
     .maybeSingle();
   if (error) logDbError("app/actions/partner-einsatz:load", error);
-  return data;
+  if (!data) return null;
+  const sichtbar = await sichtbareEinsatzIds([
+    { id: data.id as string, auftrag_id: data.auftrag_id as string, status: data.status as string },
+  ]);
+  return sichtbar.has(data.id as string) ? data : null;
 }
 
 function done(): Result {

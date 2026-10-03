@@ -652,7 +652,8 @@ export async function getPartnerDataForHandwerker(
   ).filter((_, i) => {
     const row = rawRows[i]!;
     const st = String(row.status ?? "").toLowerCase();
-    if (st === "ersetzt") return false;
+    // Datenschutz: abgelehnte/ersetzte Anfragen sind nicht mehr aktuell → nicht im Portal.
+    if (st === "ersetzt" || st === "abgelehnt") return false;
     const ang = Array.isArray(row.angebote) ? row.angebote[0] : row.angebote;
     const leadRaw =
       ang && typeof ang === "object"
@@ -965,6 +966,17 @@ export async function getPartnerDataForHandwerker(
           | null;
         const leadId = String(raw.lead_id ?? "").trim();
         if (!leadId || !leadRow || leadRow.geloescht_am) return false;
+        // Datenschutz: stornierte Aufträge und nicht mehr zugewiesene Partner sehen nichts mehr.
+        if (String(raw.status ?? "").toLowerCase() === "storniert") return false;
+        const aidAktiv = String(raw.id);
+        const nochZugewiesen =
+          hwStatusByAuftrag.has(aidAktiv) ||
+          ((raw.auftrag_positionen ?? []) as Array<Record<string, unknown>>).some(
+            (p) =>
+              String(p.handwerker_id ?? "") === id &&
+              String(p.handwerker_status ?? "").trim().toLowerCase() !== "abgelehnt"
+          );
+        if (!nochZugewiesen) return false;
         const gate = extractPartnerLeadGateFromAuftragRow(raw);
         if (!isPartnerBlockedByOrgFreigabe(gate)) return true;
         const aid = String(raw.id);

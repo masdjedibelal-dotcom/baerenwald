@@ -34,6 +34,7 @@ async function loadOrgLead(leadId: string, kundeId: string) {
       "id, auftraggeber_kunde_id, kunde_id, versicherungsakte_pdf_url, kostentraeger"
     )
     .eq("id", leadId)
+    .is("geloescht_am", null)
     .maybeSingle()
     .then(async (r) => {
       const lead = r.data;
