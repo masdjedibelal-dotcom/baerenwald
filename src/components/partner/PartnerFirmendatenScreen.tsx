@@ -209,13 +209,6 @@ export function PartnerFirmendatenScreen({
                   stammItems={profil.stamm}
                   handwerkskarte={handwerkskarte}
                 />
-                {handwerkskarte.length === 0 ? (
-                  <PartnerDetailInfoBox>
-                    Weitere Unterlagen zum Bauauftrag (z. B.
-                    Freistellungsbescheinigung, Personalliste) erscheinen, sobald
-                    Bärenwald Ihr Angebot übernommen hat — unter „Vorgänge“.
-                  </PartnerDetailInfoBox>
-                ) : null}
               </div>
             );
           }

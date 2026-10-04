@@ -242,13 +242,10 @@ export function PartnerStammDokumenteListe({
     setFormError(null);
   }
 
-  // Art des Dokuments: Pflichtarten aus der Liste + „Sonstiges“ — Titel kommt aus der Art, wenn leer
-  const arten = [
-    ...Array.from(
-      new Map(handwerkskarte.filter((i) => i.slug).map((i) => [i.slug, { slug: i.slug, label: i.bezeichnung }])).values()
-    ),
-    { slug: EIGENES_STAMM_DOKUMENT_TYP, label: "Sonstiges" },
-  ];
+  // Im Profil nur noch die Handwerkskarte
+  const arten = Array.from(
+    new Map(handwerkskarte.filter((i) => i.slug).map((i) => [i.slug, { slug: i.slug, label: i.bezeichnung }])).values()
+  );
   const artLabel = arten.find((a) => a.slug === draft.typ)?.label ?? "Dokument";
 
   async function submitUpload() {
@@ -300,13 +297,7 @@ export function PartnerStammDokumenteListe({
           ))}
         </div>
 
-        <PortalDokumentUploadZone
-          className="mt-3"
-          variant="stack"
-          label="Dokument hochladen"
-          hint="PDF, JPG, PNG oder WebP"
-          onClick={openNewUpload}
-        />
+        {/* Nur Handwerkskarte + Rahmenvertrag im Profil (04.10.2026) — Dokumente zum Auftrag am Einsatz */}
 
         {footer ? (
           <div className="mt-4 border-t border-border-light pt-4">{footer}</div>

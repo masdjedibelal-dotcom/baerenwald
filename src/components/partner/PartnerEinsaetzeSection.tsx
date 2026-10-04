@@ -5,6 +5,7 @@ import { useCallback, useEffect, useState, type ReactNode } from "react";
 import {
   einsatzAblehnen,
   einsatzAnnehmen,
+  einsatzDokumentHochladen,
   einsatzFertigMelden,
   einsatzMitteilungSenden,
   einsatzRechnungSenden,
@@ -16,7 +17,7 @@ import { PortalButton } from "@/components/portal/PortalButton";
 import { FileUploadField } from "@/components/shared/FileUploadField";
 import { PortalDetailCard } from "@/components/shared/PortalDetailCard";
 import { PortalField } from "@/components/shared/PortalField";
-import { PortalInput, PortalTextarea } from "@/components/shared/PortalFormControls";
+import { PortalInput, PortalSelect, PortalTextarea } from "@/components/shared/PortalFormControls";
 import { PortalModalShell } from "@/components/shared/PortalModalShell";
 import { PortalStatusPill } from "@/components/shared/PortalStatusPill";
 import { safeAction } from "@/lib/actions/safe-action";
@@ -53,6 +54,7 @@ type Dialog =
   | { art: "ablehnen"; einsatz: PartnerEinsatz }
   | { art: "fertig"; einsatz: PartnerEinsatz }
   | { art: "rechnung"; einsatz: PartnerEinsatz }
+  | { art: "dokument"; einsatz: PartnerEinsatz }
   | { art: "update"; einsatz: PartnerEinsatz }
   | { art: "regie"; einsatz: PartnerEinsatz }
   | null;
@@ -132,6 +134,7 @@ export function PartnerEinsaetzeSection({ rechnungHinweis }: { rechnungHinweis?:
   const [text, setText] = useState("");
   const [dateien, setDateien] = useState<File[]>([]);
   const [stunden, setStunden] = useState("");
+  const [dokArt, setDokArt] = useState<"angebot" | "rechnung" | "protokoll" | "sonstiges">("sonstiges");
   const [rechnungPdf, setRechnungPdf] = useState<File | null>(null);
 
   const laden = useCallback(async () => {
@@ -203,6 +206,12 @@ export function PartnerEinsaetzeSection({ rechnungHinweis }: { rechnungHinweis?:
       ausfuehren(einsatzMitteilungSenden(fd), typ === "regie" ? "Regie gemeldet" : "Update gesendet");
       return;
     }
+    if (dialog.art === "dokument") {
+      if (dateien[0]) fd.set("datei", dateien[0]);
+      fd.set("art", dokArt);
+      ausfuehren(einsatzDokumentHochladen(fd), "Dokument hochgeladen");
+      return;
+    }
     if (dateien[0]) fd.set("pdf", dateien[0]);
     ausfuehren(einsatzRechnungSenden(fd), "Rechnung hochgeladen");
   }
@@ -218,9 +227,11 @@ export function PartnerEinsaetzeSection({ rechnungHinweis }: { rechnungHinweis?:
           ? "Update senden"
           : dialog?.art === "regie"
             ? "Regie melden"
-            : "Rechnung hochladen";
+            : dialog?.art === "dokument"
+              ? "Dokument hochladen"
+              : "Rechnung hochladen";
   const confirmLabel =
-    dialog?.art === "ablehnen" ? "Ablehnen" : dialog?.art === "fertig" ? "Erledigt" : dialog?.art === "rechnung" ? "Hochladen" : "Senden";
+    dialog?.art === "ablehnen" ? "Ablehnen" : dialog?.art === "fertig" ? "Erledigt" : dialog?.art === "rechnung" || dialog?.art === "dokument" ? "Hochladen" : "Senden";
   const updateUnvollstaendig =
     (dialog?.art === "update" && !text.trim() && dateien.length === 0) ||
     (dialog?.art === "regie" && (!text.trim() || !stunden.trim()));
@@ -286,6 +297,18 @@ export function PartnerEinsaetzeSection({ rechnungHinweis }: { rechnungHinweis?:
                       Rechnung hochladen
                     </PortalButton>
                   ) : null}
+                  {e.status === "angenommen" || e.status === "fertig" ? (
+                    <PortalButton
+                      variant="secondary"
+                      disabled={busy}
+                      onClick={() => {
+                        setDokArt("sonstiges");
+                        oeffne({ art: "dokument", einsatz: e });
+                      }}
+                    >
+                      Dokument hochladen
+                    </PortalButton>
+                  ) : null}
                   {e.rechnung_eingereicht_at ? (
                     <span className="text-fs-meta text-[var(--p2-sub)]">
                       {e.rechnung_bezahlt_at ? `Rechnung bezahlt am ${datum(e.rechnung_bezahlt_at)}` : "Rechnung hochgeladen"}
@@ -348,6 +371,28 @@ export function PartnerEinsaetzeSection({ rechnungHinweis }: { rechnungHinweis?:
                 <PortalTextarea rows={4} value={text} onChange={(ev) => setText(ev.target.value)} />
               </PortalField>
               <FotoAuswahl label="Fotos oder Dokumente (freiwillig)" dateien={dateien} onChange={setDateien} />
+            </>
+          ) : null}
+          {dialog.art === "dokument" ? (
+            <>
+              <PortalField label="Art">
+                <PortalSelect
+                  value={dokArt}
+                  onChange={(ev) => setDokArt(ev.target.value as typeof dokArt)}
+                >
+                  <option value="angebot">Angebot</option>
+                  {!dialog.einsatz.rechnung_eingereicht_at ? <option value="rechnung">Rechnung</option> : null}
+                  <option value="protokoll">Protokoll</option>
+                  <option value="sonstiges">Sonstiges</option>
+                </PortalSelect>
+              </PortalField>
+              <FileUploadField
+                label={dokArt === "rechnung" ? "Rechnung als PDF" : "Datei"}
+                accept={dokArt === "rechnung" ? "application/pdf" : "application/pdf,image/*"}
+                size="compact"
+                selectedFile={dateien[0] ?? null}
+                onChange={(files) => setDateien(files.slice(0, 1))}
+              />
             </>
           ) : null}
           {dialog.art === "rechnung" ? (

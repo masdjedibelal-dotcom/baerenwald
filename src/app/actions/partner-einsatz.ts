@@ -382,3 +382,82 @@ export async function einsatzMitteilungSenden(formData: FormData): Promise<Resul
   }
   return done();
 }
+
+const DOKUMENT_ARTEN = ["angebot", "rechnung", "protokoll", "sonstiges"] as const;
+type DokumentArt = (typeof DOKUMENT_ARTEN)[number];
+
+/**
+ * Dokument zum Einsatz hochladen (04.10.2026): Art Angebot / Rechnung / Protokoll / Sonstiges.
+ * Rechnung → Partner-Rechnung am Einsatz (CRM markiert bezahlt); alles andere → Dokumente des Vorgangs.
+ */
+export async function einsatzDokumentHochladen(formData: FormData): Promise<Result> {
+  const auth = await partnerAuth();
+  if (!auth.ok) return auth;
+  const einsatzId = String(formData.get("einsatzId") ?? "").trim();
+  const artRaw = String(formData.get("art") ?? "sonstiges").trim() as DokumentArt;
+  const art: DokumentArt = DOKUMENT_ARTEN.includes(artRaw) ? artRaw : "sonstiges";
+  const file = formData.get("datei");
+  if (!(file instanceof File) || file.size === 0) return { ok: false, error: "Bitte eine Datei wählen." };
+  const e = await eigenerEinsatz(auth.handwerkerId, einsatzId);
+  if (!e) return { ok: false, error: "Einsatz nicht gefunden." };
+  if (e.status !== "angenommen" && e.status !== "fertig") {
+    return { ok: false, error: "Dokumente sind möglich, sobald Sie den Einsatz angenommen haben." };
+  }
+
+  if (art === "rechnung") {
+    if (e.rechnung_eingereicht_at) return { ok: false, error: "Die Rechnung ist bereits hochgeladen." };
+    const fd = new FormData();
+    fd.set("pdf", file);
+    const re = await rechnungAusFormData(auth.handwerkerId, einsatzId, fd, "pdf");
+    if (!re.ok) return re;
+    if (!re.patch) return { ok: false, error: "Bitte die Rechnung als PDF hochladen." };
+    const { error } = await supabaseAdmin
+      .from("einsaetze")
+      .update({ ...re.patch, updated_at: new Date().toISOString() })
+      .eq("id", einsatzId)
+      .eq("handwerker_id", auth.handwerkerId);
+    if (error) {
+      logDbError("app/actions/partner-einsatz:dokument-rechnung", error);
+      return { ok: false, error: "Rechnung konnte nicht gespeichert werden." };
+    }
+    return done();
+  }
+
+  const err = validatePartnerAngebotFiles([file]);
+  if (err) return { ok: false, error: err };
+  const { data: auf, error: aufErr } = await supabaseAdmin
+    .from("auftraege")
+    .select("lead_id")
+    .eq("id", e.auftrag_id as string)
+    .maybeSingle();
+  if (aufErr) logDbError("app/actions/partner-einsatz:dokument-auftrag", aufErr);
+  const leadId = String(auf?.lead_id ?? "").trim();
+  if (!leadId) return { ok: false, error: "Vorgang nicht gefunden." };
+  const safe = (file.name || "dokument").replace(/[^a-zA-Z0-9._-]+/g, "_").slice(-80);
+  const path = `${leadId}/partner-${auth.handwerkerId.slice(0, 8)}-${Date.now()}-${safe}`;
+  const { error: upErr } = await supabaseAdmin.storage
+    .from("lead-dokumente")
+    .upload(path, Buffer.from(await file.arrayBuffer()), {
+      contentType: file.type || "application/octet-stream",
+      upsert: false,
+    });
+  if (upErr) {
+    logDbError("app/actions/partner-einsatz:dokument-upload", upErr);
+    return { ok: false, error: "Datei konnte nicht hochgeladen werden." };
+  }
+  const { data: pub } = supabaseAdmin.storage.from("lead-dokumente").getPublicUrl(path);
+  const { error: insErr } = await supabaseAdmin.from("lead_dokumente").insert({
+    lead_id: leadId,
+    name: file.name || "Dokument",
+    datei_url: pub.publicUrl,
+    groesse_bytes: file.size,
+    art,
+    von: "partner",
+    handwerker_id: auth.handwerkerId,
+  });
+  if (insErr) {
+    logDbError("app/actions/partner-einsatz:dokument-insert", insErr);
+    return { ok: false, error: "Dokument konnte nicht gespeichert werden." };
+  }
+  return done();
+}

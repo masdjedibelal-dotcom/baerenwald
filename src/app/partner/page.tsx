@@ -153,19 +153,7 @@ export default async function PartnerDashboardPage({
         <PortalContentBusy variant="page" />
       }
     >
-      <PartnerClient
-        handwerker={data.handwerker}
-        profil={data.profil}
-        termine={data.termine}
-        aufgaben={data.aufgaben}
-        anfragen={data.anfragen}
-        angebote={data.angebote}
-        angeboteAlleAkzeptiert={data.angeboteAlleAkzeptiert}
-        vorgaenge={data.vorgaenge}
-        auftragAnfragen={data.auftragAnfragen}
-        auftraege={data.auftraege}
-        offen={data.offen}
-      />
+      <PartnerClient handwerker={data.handwerker} profil={data.profil} />
     </Suspense>
   );
 }

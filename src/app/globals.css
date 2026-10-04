@@ -1079,7 +1079,8 @@ h3 {
     background: color-mix(in srgb, var(--p2-surface-card, #fff) 70%, transparent);
   }
 
-  .portal-einstellungen-nav-item--active {
+  .portal-einstellungen-nav-item--active,
+  .portal-einstellungen-nav-item.portal-einstellungen-nav-item--active:hover {
     background: var(--org-primary, var(--p2-selected));
     color: #fff;
     font-weight: 800;

@@ -12,14 +12,11 @@ export const RAHMENVERTRAG_TYP_SLUG = "rahmenvertrag";
 export const HANDWERKSKARTE_TYP_SLUG = "handwerkskarte";
 export { EIGENES_STAMM_DOKUMENT_TYP };
 
-/** Handwerkskarte + eigene Uploads — unter Rahmenvertrag im Profil. */
+/** Nur die Handwerkskarte — unter Rahmenvertrag im Profil (keine weiteren Pflichtnachweise, 04.10.2026). */
 export function filterProfilStammCompliance(
   items: PartnerComplianceItem[]
 ): PartnerComplianceItem[] {
-  return items.filter(
-    (i) =>
-      i.slug === HANDWERKSKARTE_TYP_SLUG || i.slug === EIGENES_STAMM_DOKUMENT_TYP
-  );
+  return items.filter((i) => i.slug === HANDWERKSKARTE_TYP_SLUG);
 }
 
 /** Stamm-Unterlagen je Bauauftrag (ohne Handwerkskarte & Rahmenvertrag). */
