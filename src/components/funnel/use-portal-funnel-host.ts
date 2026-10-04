@@ -227,12 +227,8 @@ export function usePortalFunnelHost({
       mieterVollname.length > 1 ||
       (mieterVorname.trim().length > 0 && mieterNachname.trim().length > 0);
     if (channel === "portal_hv") {
-      return (
-        mieterVorname.trim().length > 0 &&
-        mieterNachname.trim().length > 0 &&
-        mieterStrasse.trim().length > 1 &&
-        mieterHausnummer.trim().length > 0
-      );
+      // Kontakt vor Ort: Name + Telefon oder E-Mail genügt (Adresse = Objekt)
+      return nameOk && (mieterTel.trim().length > 4 || mieterEmail.trim().includes("@"));
     }
     return (
       nameOk &&
@@ -244,6 +240,7 @@ export function usePortalFunnelHost({
     );
   }, [
     channel,
+    mieterTel,
     mieterVollname,
     mieterVorname,
     mieterNachname,
@@ -302,24 +299,7 @@ export function usePortalFunnelHost({
     channel === "portal_eigentuemer" ||
     isHvIntern;
 
-  useEffect(() => {
-    if (!isHvIntern || !objektId) {
-      setHvMieterListe([]);
-      return;
-    }
-    let cancelled = false;
-    void (async () => {
-      try {
-        const list = await loadHvMieterListe(objektId);
-        if (!cancelled) setHvMieterListe(list);
-      } catch {
-        if (!cancelled) setHvMieterListe([]);
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [isHvIntern, objektId, loadHvMieterListe]);
+  // Keine Mieterverwaltung mehr (04.10.2026) — Kontakt vor Ort wird in der Anfrage frei eingetragen
 
   const meldeFachfragen = useMemo(() => {
     if (!useMeldeKaputtFlow) return [];

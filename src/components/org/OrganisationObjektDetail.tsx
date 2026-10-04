@@ -7,9 +7,7 @@ import { OrganisationObjektFinanzPanel } from "@/components/org/OrganisationObje
 import { OrganisationObjektPruefpflichtenPanel } from "@/components/org/OrganisationObjektPruefpflichtenPanel";
 import { OrganisationObjektAnlagenPanel } from "@/components/org/OrganisationObjektAnlagenPanel";
 import { OrganisationObjektDokumentePanel } from "@/components/org/OrganisationObjektDokumentePanel";
-import { OrganisationObjektEinheitenTab } from "@/components/org/OrganisationObjektEinheitenTab";
 import { OrganisationObjektHistoriePanel } from "@/components/org/OrganisationObjektHistoriePanel";
-import { OrganisationObjektHausmeisterMenu } from "@/components/org/OrganisationObjektHausmeisterMenu";
 import { OrganisationObjektKontaktePanel } from "@/components/org/OrganisationObjektKontaktePanel";
 import {
   PortalConfirmDialog,
@@ -70,10 +68,6 @@ import {
 } from "@/lib/portal2/objekte";
 import type { PortalDetailTab } from "@/components/shared/PortalDetailTabs";
 import { orgPortalToast, portalToastError } from "@/lib/shared/portal-toast";
-import {
-  HAUSMEISTER_PORTAL_STATUS_LABEL,
-  resolveHausmeisterPortalStatus,
-} from "@/lib/org/objekt-hausmeister";
 import {
   plattformStatusLabel,
   plattformStatusPillClass,
@@ -174,30 +168,6 @@ export function OrganisationObjektDetail({
     };
   }, [objekt.id]);
 
-  const [hmOptions, setHmOptions] = useState<
-    Array<{
-      id: string;
-      name: string;
-      email?: string | null;
-      portal_zugang?: boolean;
-    }>
-  >([]);
-  const [hmAmObjekt, setHmAmObjekt] = useState<{
-    id: string;
-    name: string;
-    email?: string | null;
-    portal_zugang?: boolean;
-  } | null>(null);
-  const [hmEditOpen, setHmEditOpen] = useState(false);
-  const [hmMode, setHmMode] = useState<"existing" | "new">("existing");
-  const [editHmId, setEditHmId] = useState("");
-  const [editHmName, setEditHmName] = useState("");
-  const [editHmEmail, setEditHmEmail] = useState("");
-  const [editHmPortal, setEditHmPortal] = useState(false);
-  const [hmSaving, setHmSaving] = useState(false);
-  const [hmConfirmRemove, setHmConfirmRemove] = useState(false);
-  const [hmLoading, setHmLoading] = useState(true);
-
   const [versicherer, setVersicherer] = useState(objekt.versicherer ?? "");
   const [objVersNr, setObjVersNr] = useState(objekt.versicherungs_nr ?? "");
   const [autoSchadenakte, setAutoSchadenakte] = useState(
@@ -212,46 +182,6 @@ export function OrganisationObjektDetail({
   const [akte, setAkte] = useState<ObjektAktePortalPayload | null>(null);
   const [akteLoading, setAkteLoading] = useState(true);
 
-  useEffect(() => {
-    let cancelled = false;
-    setHmLoading(true);
-    void fetch(
-      `/api/org/hausmeister?objektId=${encodeURIComponent(objekt.id)}`
-    )
-      .then((r) => r.json())
-      .then(
-        (j: {
-          hausmeister?: Array<{
-            id: string;
-            name: string;
-            email?: string | null;
-            portal_zugang?: boolean;
-          }>;
-          amObjekt?: {
-            id: string;
-            name: string;
-            email?: string | null;
-            portal_zugang?: boolean;
-          } | null;
-        }) => {
-          if (cancelled) return;
-          setHmOptions(j.hausmeister ?? []);
-          setHmAmObjekt(j.amObjekt ?? null);
-        }
-      )
-      .catch(() => {
-        if (!cancelled) {
-          setHmOptions([]);
-          setHmAmObjekt(null);
-        }
-      })
-      .finally(() => {
-        if (!cancelled) setHmLoading(false);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [objekt.id]);
 
   useEffect(() => {
     let cancelled = false;
@@ -351,179 +281,6 @@ export function OrganisationObjektDetail({
     [leads, objekt]
   );
 
-  function openHmEdit() {
-    if (hmAmObjekt?.id) {
-      setHmMode("existing");
-      setEditHmId(hmAmObjekt.id);
-      setEditHmName(hmAmObjekt.name);
-      setEditHmEmail(hmAmObjekt.email ?? "");
-      setEditHmPortal(Boolean(hmAmObjekt.portal_zugang));
-    } else {
-      setHmMode("new");
-      setEditHmId("");
-      setEditHmName("");
-      setEditHmEmail("");
-      setEditHmPortal(false);
-    }
-    setHmEditOpen(true);
-  }
-
-  function closeHmEdit() {
-    if (hmSaving) return;
-    setHmEditOpen(false);
-  }
-
-  async function saveHmEdit() {
-    const name = editHmName.trim();
-    if (!name && hmMode === "new") {
-      portalToastError(TOAST.name_fehlt);
-      return;
-    }
-    if (editHmPortal && !editHmEmail.trim()) {
-      portalToastError(TOAST.e_mail_fehlt,
-        "Für Portal-Zugang bitte eine E-Mail angeben."
-      );
-      return;
-    }
-    setHmSaving(true);
-    try {
-      const body =
-        hmMode === "existing" && editHmId
-          ? {
-              objektId: objekt.id,
-              hausmeisterId: editHmId,
-              name: name || undefined,
-              email: editHmEmail.trim() || null,
-              portalZugang: editHmPortal,
-              invite: false,
-            }
-          : {
-              objektId: objekt.id,
-              name,
-              email: editHmPortal ? editHmEmail.trim() : editHmEmail.trim() || null,
-              portalZugang: editHmPortal,
-              invite: editHmPortal,
-            };
-      const willInvite = Boolean(
-        body.invite && (body.email as string | null | undefined)?.toString().trim()
-      );
-      const run = async () => {
-        const res = await fetch("/api/org/hausmeister", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(body),
-        });
-        const json = (await res.json()) as {
-          error?: string;
-          inviteMailto?: string | null;
-          inviteUrl?: string | null;
-        };
-        if (!res.ok) {
-          portalToastError(TOAST.hausmeister_nicht_gespeichert, json.error);
-          return;
-        }
-        setHmEditOpen(false);
-        orgPortalToast.objektAktualisiert();
-        if (json.inviteMailto) {
-          setInviteMailtoReady({
-            mailto: json.inviteMailto,
-            url: json.inviteUrl,
-            rolle: "Hausmeister",
-            toEmail: editHmEmail.trim() || hmAmObjekt?.email || null,
-          });
-        }
-        onRefresh();
-        const reload = await fetch(
-          `/api/org/hausmeister?objektId=${encodeURIComponent(objekt.id)}`
-        );
-        const j = (await reload.json()) as {
-          hausmeister?: typeof hmOptions;
-          amObjekt?: typeof hmAmObjekt;
-        };
-        setHmOptions(j.hausmeister ?? []);
-        setHmAmObjekt(j.amObjekt ?? null);
-      };
-      if (willInvite) await runBusy(run, 500);
-      else await run();
-    } catch {
-      portalToastError(TOAST.hausmeister_nicht_gespeichert);
-    } finally {
-      setHmSaving(false);
-    }
-  }
-
-  async function inviteHausmeister() {
-    if (!hmAmObjekt?.id) return;
-    if (!hmAmObjekt.email?.trim()) {
-      portalToastError(TOAST.portal_link_nicht_moeglich,
-        "Bitte zuerst eine E-Mail beim Hausmeister hinterlegen."
-      );
-      return;
-    }
-    await runBusy(async () => {
-      const res = await fetch("/api/org/hausmeister", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          objektId: objekt.id,
-          hausmeisterId: hmAmObjekt.id,
-          portalZugang: true,
-          invite: true,
-        }),
-      });
-      const json = (await res.json()) as {
-        error?: string;
-        inviteMailto?: string | null;
-        inviteUrl?: string | null;
-      };
-      if (!res.ok) {
-        portalToastError(TOAST.einladung_fehlgeschlagen, json.error);
-        return;
-      }
-      if (json.inviteMailto) {
-        setInviteMailtoReady({
-          mailto: json.inviteMailto,
-          url: json.inviteUrl,
-          rolle: "Hausmeister",
-          toEmail: hmAmObjekt.email,
-        });
-      } else {
-        orgPortalToast.portalLinkGesendet({ rolle: "Hausmeister" });
-      }
-      const reload = await fetch(
-        `/api/org/hausmeister?objektId=${encodeURIComponent(objekt.id)}`
-      );
-      const j = (await reload.json()) as {
-        hausmeister?: typeof hmOptions;
-        amObjekt?: typeof hmAmObjekt;
-      };
-      setHmOptions(j.hausmeister ?? []);
-      setHmAmObjekt(j.amObjekt ?? null);
-    }, 500);
-  }
-
-  async function removeHausmeister() {
-    setHmSaving(true);
-    try {
-      await runBusy(async () => {
-        const res = await fetch(
-          `/api/org/hausmeister?objektId=${encodeURIComponent(objekt.id)}`,
-          { method: "DELETE" }
-        );
-        const json = (await res.json()) as { error?: string };
-        if (!res.ok) {
-          portalToastError(TOAST.hausmeister_nicht_entfernt, json.error);
-          return;
-        }
-        setHmAmObjekt(null);
-        setHmConfirmRemove(false);
-        orgPortalToast.objektAktualisiert();
-        onRefresh();
-      });
-    } finally {
-      setHmSaving(false);
-    }
-  }
 
   function openVersEdit() {
     setEditVersicherer(versicherer);
@@ -648,143 +405,8 @@ export function OrganisationObjektDetail({
           </EinstellungenPfList>
         </EinstellungenSectionCard>
 
-        {/* Hausmeister: nur noch Auswahl/Einladung — angezeigt wird er in „Personen“ */}
-        <>
-          <EinstellungenEditModal
-            open={hmEditOpen}
-            title={hmAmObjekt ? "Hausmeister bearbeiten" : "Hausmeister hinzufügen"}
-            onClose={closeHmEdit}
-            onSave={() => void saveHmEdit()}
-            saving={hmSaving}
-          >
-            <label className="block">
-              <span className="portal-text-label mb-1.5 block text-text-secondary">
-                Hausmeister
-              </span>
-              <PortalSelect
-                className="portal-field w-full"
-                value={hmMode === "new" ? "__new__" : editHmId}
-                onChange={(e) => {
-                  const v = e.target.value;
-                  if (v === "__new__") {
-                    setHmMode("new");
-                    setEditHmId("");
-                    setEditHmName("");
-                    setEditHmEmail("");
-                    setEditHmPortal(false);
-                  } else {
-                    setHmMode("existing");
-                    setEditHmId(v);
-                    const found = hmOptions.find((h) => h.id === v);
-                    if (found) {
-                      setEditHmName(found.name);
-                      setEditHmEmail(found.email ?? "");
-                      setEditHmPortal(Boolean(found.portal_zugang));
-                    }
-                  }
-                }}
-              >
-                <option value="">Bitte wählen…</option>
-                {hmOptions.map((h) => (
-                  <option key={h.id} value={h.id}>
-                    {h.name}
-                  </option>
-                ))}
-                <option value="__new__">＋ Neu anlegen</option>
-              </PortalSelect>
-            </label>
-            <EinstellungenEdField
-              label="Name"
-              value={editHmName}
-              onChange={setEditHmName}
-              placeholder="Max Mustermann"
-              autoComplete="name"
-            />
-            <EinstellungenEdField
-              label="E-Mail"
-              type="email"
-              value={editHmEmail}
-              onChange={setEditHmEmail}
-              placeholder="name@firma.de"
-              autoComplete="email"
-            />
-            <label className="flex items-start gap-3 rounded-[10px] border border-border-light bg-white p-3">
-              <PortalCheckbox
-                className="mt-0.5"
-                checked={editHmPortal}
-                onChange={(e) => setEditHmPortal(e.target.checked)}
-              />
-              <span className="text-fs-meta text-text-secondary">
-                {hmMode === "new"
-                  ? "Portal einladen — Konto ist erst nach Registrierung über den Link aktiv"
-                  : "Portal-Zugang — Einladung über das Menü (⋯) möglich"}
-              </span>
-            </label>
-          </EinstellungenEditModal>
-          <PortalConfirmDialog
-            open={hmConfirmRemove}
-            title="Hausmeister entfernen?"
-            description={
-              hmAmObjekt
-                ? `${hmAmObjekt.name} wird von diesem Objekt entfernt. Die Person bleibt für andere Objekte erhalten.`
-                : "Hausmeister von diesem Objekt entfernen?"
-            }
-            confirmLabel="Löschen"
-            confirmVariant="danger"
-            loading={hmSaving}
-            onCancel={() => setHmConfirmRemove(false)}
-            onConfirm={() => void removeHausmeister()}
-          />
-                </>
-
         <OrganisationObjektKontaktePanel
           objektId={objekt.id}
-          onAddHausmeister={hmLoading ? undefined : openHmEdit}
-          hausmeisterRow={
-            hmAmObjekt
-              ? {
-                    id: hmAmObjekt.id ?? "hm",
-                    title: hmAmObjekt.name,
-                    meta: (
-                      <div className="space-y-0.5">
-                        <p>
-                          Portal:{" "}
-                          {
-                            HAUSMEISTER_PORTAL_STATUS_LABEL[
-                              resolveHausmeisterPortalStatus(hmAmObjekt)
-                            ]
-                          }
-                        </p>
-                        {hmAmObjekt.email?.trim() ? (
-                          <p>{hmAmObjekt.email.trim()}</p>
-                        ) : null}
-                      </div>
-                    ),
-                    badge: (
-                      <span className="rounded-pill bg-muted px-2 py-0.5 text-fs-caption font-semibold text-text-secondary">
-                        Hausmeister
-                      </span>
-                    ),
-                    cells: [
-                      hmAmObjekt.name,
-                      "Hausmeister",
-                      [
-                        hmAmObjekt.email?.trim() || "—",
-                        `Portal: ${HAUSMEISTER_PORTAL_STATUS_LABEL[resolveHausmeisterPortalStatus(hmAmObjekt)]}`,
-                      ].join(" · "),
-                    ],
-                    onClick: openHmEdit,
-                    menu: (
-                      <OrganisationObjektHausmeisterMenu
-                        canEinladen={Boolean(hmAmObjekt.email?.trim())}
-                        onEinladen={() => void inviteHausmeister()}
-                        onBearbeiten={openHmEdit}
-                        onEntfernen={() => setHmConfirmRemove(true)}
-                      />
-                    ),
-                  }
-              : null
-          }
         />
 
         <EinstellungenSectionCard
@@ -831,17 +453,6 @@ export function OrganisationObjektDetail({
           </EinstellungenEditModal>
         </EinstellungenSectionCard>
       </div>
-    );
-  } else if (tab === "einheiten") {
-    body = (
-      <OrganisationObjektEinheitenTab
-        objektId={objekt.id}
-        objektLabel={objekt.titel?.trim() || "Objekt"}
-        orgAnzeigename={orgAnzeigename}
-        hv={hv}
-        onGotoVorgaenge={() => setTab("vorgaenge")}
-        onEinheitenChange={onRefresh}
-      />
     );
   } else if (tab === "vorgaenge") {
     body = (

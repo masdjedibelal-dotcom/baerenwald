@@ -3,12 +3,7 @@ import { NextResponse } from "next/server";
 
 import { canOfferKleinreparatur } from "@/lib/org/hv-meldung-workflow";
 import { notifyCrmOrgPortal } from "@/lib/org/notify-crm-org";
-import { notifyHausmeisterPruefung } from "@/lib/org/notify-hausmeister-pruefung";
 import { notifyHvMieterEvent } from "@/lib/org/notify-hv-mieter-event";
-import {
-  assertHausmeisterDelegierbar,
-  loadObjektHausmeisterKontakt,
-} from "@/lib/org/objekt-hausmeister";
 import { requireOrganisationSession } from "@/lib/org/require-org-session";
 import { requireOrgWrite } from "@/lib/org/assert-org-objekt";
 import { buildSubject } from "@/lib/shared-domain/build-subject";
@@ -22,7 +17,6 @@ export const runtime = "nodejs";
 type Aktion =
   | "angebot_einfordern"
   | "direkt_baerenwald"
-  | "hm_begutachten"
   | "ablehnen"
   | "kleinreparatur_freigeben";
 
@@ -33,7 +27,6 @@ type Body = {
 
 /**
  * HV-Aktion auf Meldung:
- * - hm_begutachten (neu → hm_pruefung; Objekt-HM + aktives Portal-Konto Pflicht)
  * - direkt_baerenwald / angebot_einfordern (neu|hm_pruefung → angebot_eingefordert)
  * - ablehnen / kleinreparatur (Legacy)
  */
@@ -53,7 +46,6 @@ export async function POST(req: Request) {
   const allowed: Aktion[] = [
     "angebot_einfordern",
     "direkt_baerenwald",
-    "hm_begutachten",
     "ablehnen",
     "kleinreparatur_freigeben",
   ];
@@ -79,130 +71,6 @@ export async function POST(req: Request) {
 
   const hvStatus = (lead.hv_meldung_status ?? "neu").trim().toLowerCase();
 
-  // --- hm_begutachten -------------------------------------------------------
-  if (aktion === "hm_begutachten") {
-    if (hvStatus !== "neu") {
-      return NextResponse.json(
-        { error: "Hausmeister-Prüfung nur aus Status „Neu“ möglich." },
-        { status: 409 }
-      );
-    }
-
-    const { hvFreigabeEntfaellt } = await import("@/lib/org/freigabe-bypass");
-    const funnelDa =
-      lead.funnel_daten &&
-      typeof lead.funnel_daten === "object" &&
-      !Array.isArray(lead.funnel_daten)
-        ? (lead.funnel_daten as { direktauftrag?: unknown }).direktauftrag ===
-          true
-        : false;
-    if (
-      hvFreigabeEntfaellt({
-        orgFreigabeStatus: lead.org_freigabe_status,
-        bypassGrund: lead.freigabe_bypass_grund,
-        funnelDirektauftrag: funnelDa,
-        hvMeldungStatus: lead.hv_meldung_status,
-        angebotZugestellt: false,
-      })
-    ) {
-      return NextResponse.json(
-        { error: "Akut-Pfad — Hausmeister-Prüfung entfällt." },
-        { status: 409 }
-      );
-    }
-
-    const hmGate = assertHausmeisterDelegierbar(
-      await loadObjektHausmeisterKontakt(lead.kunde_objekt_id)
-    );
-    if (!hmGate.ok) {
-      return NextResponse.json({ error: hmGate.error }, { status: 409 });
-    }
-    const hm = hmGate.hm;
-
-    const { error: updErr } = await supabaseAdmin
-      .from("leads")
-      .update({
-        hv_meldung_status: "hm_pruefung",
-        // Vorzeitige Akte verwerfen — neu nach Befund
-        versicherungsakte_pdf_url: null,
-      })
-      .eq("id", leadId);
-    if (updErr) logDbError('app/api/org/meldung-aktion/route:leads', updErr)
-    if (updErr) {
-      if (/versicherungsakte_pdf_url/i.test(updErr.message)) {
-        const { error: retryErr } = await supabaseAdmin
-          .from("leads")
-          .update({ hv_meldung_status: "hm_pruefung" })
-          .eq("id", leadId);
-        if (retryErr) logDbError('app/api/org/meldung-aktion/route:leads', retryErr)
-        if (retryErr) {
-          return NextResponse.json({ error: retryErr.message }, { status: 500 });
-        }
-      } else {
-        return NextResponse.json({ error: updErr.message }, { status: 500 });
-      }
-    }
-
-    // Kostenträger Versicherung vormerken (PDF erst nach Befund)
-    void import("@/lib/org/ensure-versicherungsakte").then(
-      ({ applyAutomatischeSchadenakteIfEnabled }) =>
-        applyAutomatischeSchadenakteIfEnabled(leadId).catch((e) =>
-          console.warn("[meldung-aktion] schadenakte-kt:", e)
-        )
-    );
-
-    const { insertLeadBefundIfMissing } = await import(
-      "@/lib/org/lead-befund-create"
-    );
-    const befundRes = await insertLeadBefundIfMissing({
-      leadId,
-      durchgefuehrtVon: hm.name,
-      createdByKundeId: session.kunde.id,
-    });
-    if (!befundRes.ok) {
-      console.warn("[meldung-aktion] befund:", befundRes.error);
-    }
-
-    if (hm.email) {
-      const hmMail = await notifyHausmeisterPruefung({
-        leadId,
-        toEmail: hm.email,
-        kontaktName: hm.name,
-      });
-      if (!hmMail.ok && !hmMail.skipped) {
-        console.warn("[meldung-aktion] HM-Mail:", hmMail.error);
-      }
-    }
-
-    try {
-      const { notifyPortalHausmeisterNeuerVorgang } = await import(
-        "@/lib/portal/notify-portal-hausmeister"
-      );
-      await notifyPortalHausmeisterNeuerVorgang({
-        leadId,
-        kundeObjektId: lead.kunde_objekt_id,
-      });
-    } catch (e) {
-      console.warn("[meldung-aktion] hm portal notify:", e);
-    }
-
-    try {
-      const { notifyHvWirKuemmernUns } = await import(
-        "@/lib/org/notify-hv-wir-kuemmern"
-      );
-      await notifyHvWirKuemmernUns({ leadId });
-    } catch (e) {
-      console.warn("[meldung-aktion] hv wir-kuemmern:", e);
-    }
-
-    return NextResponse.json({
-      ok: true,
-      status: "hm_pruefung",
-      befundId: befundRes.ok ? befundRes.befundId : null,
-    });
-  }
-
-  // --- direkt_baerenwald / angebot_einfordern (Override aus hm_pruefung) ----
   if (aktion === "direkt_baerenwald" || aktion === "angebot_einfordern") {
     if (hvStatus !== "neu" && hvStatus !== "hm_pruefung") {
       return NextResponse.json(

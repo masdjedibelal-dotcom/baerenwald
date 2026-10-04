@@ -23,20 +23,6 @@ import {
   defaultListHrefForDetail,
 } from "@/lib/list-return-url";
 
-const OrganisationServicepaketePanel = dynamic(
-  () =>
-    import("@/components/org/OrganisationServicepaketePanel").then(
-      (m) => m.OrganisationServicepaketePanel
-    ),
-  { ssr: false, loading: () => null }
-);
-const OrganisationMarktplatzPanel = dynamic(
-  () =>
-    import("@/components/org/OrganisationMarktplatzPanel").then(
-      (m) => m.OrganisationMarktplatzPanel
-    ),
-  { ssr: false, loading: () => null }
-);
 const OrganisationAnfrageHub = dynamic(
   () =>
     import("@/components/org/OrganisationAnfrageHub").then(
@@ -102,7 +88,6 @@ import {
   type HvDashboardAuftragSlice,
 } from "@/lib/portal2/hv-dashboard";
 import { filterPortalListableLeads } from "@/lib/portal/portal-lead-sichtbarkeit";
-import { fetchObjektHmDelegierbar } from "@/lib/org/fetch-objekt-hm-delegierbar";
 import { resolveHvDashboardActions } from "@/lib/portal2/dashboard-actions";
 import {
   compareByNewestCreated,
@@ -571,12 +556,8 @@ export function OrganisationPortalClient({
     }
     let cancelled = false;
     void (async () => {
-      const entries = await Promise.all(
-        Array.from(ids).map(async (oid) => {
-          const r = await fetchObjektHmDelegierbar(oid);
-          return [oid, r.canDelegate] as const;
-        })
-      );
+      // Hausmeister entfällt (04.10.2026) — nie delegierbar
+      const entries = Array.from(ids).map((oid) => [oid, false] as const);
       if (!cancelled) {
         setHmDelegierbarByObjektId(Object.fromEntries(entries));
       }
@@ -794,10 +775,6 @@ export function OrganisationPortalClient({
               onOpen={(id) => switchSection(id as OrgSection)}
             />
           ) : null}
-
-          {section === "leistungen" ? <OrganisationServicepaketePanel /> : null}
-
-          {section === "marktplatz" ? <OrganisationMarktplatzPanel /> : null}
 
           {section === "profil" ? (
             <OrganisationEinstellungenScreen

@@ -67,22 +67,9 @@ function resolveHvMeldungSlide(input: {
   if (status !== "neu") return null;
   if (!isInOrgFreigabeQueue(lead, auftragByLeadId)) return null;
 
-  const objektId = lead.kunde_objekt_id?.trim() ?? "";
-  const hasHm = objektId
-    ? input.hmDelegierbarByObjektId?.[objektId] === true
-    : false;
-
   const buttons: PortalDashboardActionSlide["buttons"] = [
     { id: "ablehnen", label: "Ablehnen", variant: "danger", mode: "inline" },
   ];
-  if (hasHm) {
-    buttons.push({
-      id: "hm_begutachten",
-      label: "Hausmeister",
-      variant: "secondary",
-      mode: "inline",
-    });
-  }
   buttons.push({
     id: "direkt_baerenwald",
     label: "Direkt Bärenwald",

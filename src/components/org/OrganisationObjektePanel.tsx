@@ -225,19 +225,6 @@ export function OrganisationObjektePanel({
     );
   };
 
-  const [hmOptions, setHmOptions] = useState<
-    Array<{ id: string; name: string; email?: string | null }>
-  >([]);
-
-  useEffect(() => {
-    void fetch("/api/org/hausmeister")
-      .then((r) => r.json())
-      .then((j: { hausmeister?: Array<{ id: string; name: string; email?: string | null }> }) => {
-        setHmOptions(j.hausmeister ?? []);
-      })
-      .catch(() => setHmOptions([]));
-  }, [mode.kind]);
-
   const persistPayload = async (
     payload: ObjWizPayload & {
       hmId?: string | null;
@@ -277,39 +264,6 @@ export function OrganisationObjektePanel({
       return null;
     }
     const objektId = json.objekt?.id ?? editId ?? null;
-    if (objektId) {
-      const hmRes = await fetch("/api/org/hausmeister", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          objektId,
-          hausmeisterId:
-            payload.hmMode === "existing" ? payload.hmId : undefined,
-          name:
-            payload.hmMode === "new" || !payload.hmId
-              ? payload.hmName
-              : undefined,
-          email: payload.hmPortalZugang ? payload.hmEmail : null,
-          portalZugang: Boolean(payload.hmPortalZugang),
-          invite: Boolean(payload.hmPortalZugang),
-        }),
-      });
-      const hmJson = (await hmRes.json()) as {
-        error?: string;
-        inviteMailto?: string | null;
-        inviteUrl?: string | null;
-      };
-      if (!hmRes.ok) {
-        portalToastError(TOAST.hausmeister_nicht_gespeichert, hmJson.error);
-      } else if (hmJson.inviteMailto) {
-        setInviteMailtoReady({
-          mailto: hmJson.inviteMailto,
-          url: hmJson.inviteUrl,
-          rolle: "Hausmeister",
-          toEmail: payload.hmEmail?.trim() || null,
-        });
-      }
-    }
     if (editId) orgPortalToast.objektAktualisiert();
     else orgPortalToast.objektAngelegt();
     return objektId;
@@ -485,7 +439,6 @@ export function OrganisationObjektePanel({
           initialDraft={mode.draft}
           existingNotizen={editObj?.notizen_intern}
           defaultHv={defaultHv}
-          hausmeisterOptions={hmOptions}
           onCancel={closeWizard}
           onDone={async (payload) => {
             setWizardBusy(true);

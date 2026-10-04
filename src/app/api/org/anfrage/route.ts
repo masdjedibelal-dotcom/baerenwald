@@ -2,7 +2,6 @@ import { logDbError } from '@/lib/errors/log-db-error'
 import { NextResponse } from "next/server";
 
 import { persistLead } from "@/lib/lead/persist-lead";
-import { ensureObjektBewohner } from "@/lib/org/ensure-objekt-bewohner";
 import { initialHvMeldungState } from "@/lib/org/hv-meldung-workflow";
 import { requireOrganisationSession } from "@/lib/org/require-org-session";
 import { supabaseAdmin } from "@/lib/supabase";
@@ -103,14 +102,6 @@ export async function POST(req: Request) {
       (body.funnel_daten as Record<string, unknown>).ohne_mieter === true
   );
 
-  const createBewohner =
-    !ohneMieter &&
-    Boolean(
-      body.funnel_daten &&
-        typeof body.funnel_daten === "object" &&
-        !Array.isArray(body.funnel_daten) &&
-        (body.funnel_daten as Record<string, unknown>).mieter_neu === true
-    );
 
   if (!contactEmail && !(contactTel && contactTel.length >= 3)) {
     return NextResponse.json(
@@ -189,33 +180,9 @@ export async function POST(req: Request) {
   );
   await finalizeOrgSelfCreatedLead(result.id);
 
-  let bewohnerId: string | null = null;
-  if (createBewohner && melderName) {
-    const einheitLabel =
-      melderEinheit ||
-      (typeof mieterFromFunnel?.einheit === "string"
-        ? mieterFromFunnel.einheit.trim()
-        : "") ||
-      null;
-    const created = await ensureObjektBewohner({
-      kundeId: org.id,
-      objektId,
-      name: melderName,
-      wohnung: einheitLabel,
-      etage: einheitLabel,
-      email: melderEmail,
-      telefon: melderTelefon,
-    });
-    if (created.ok) {
-      bewohnerId = created.bewohnerId;
-    } else {
-      console.error("[org/anfrage] ensureObjektBewohner:", created.error);
-    }
-  }
-
+  // Mieterdaten nur noch in der Meldung — keine Mieterverwaltung mehr (04.10.2026)
   return NextResponse.json({
     ok: true,
     id: result.id,
-    ...(bewohnerId ? { bewohnerId } : {}),
   });
 }

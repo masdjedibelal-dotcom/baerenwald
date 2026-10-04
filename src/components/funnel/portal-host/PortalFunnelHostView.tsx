@@ -257,11 +257,11 @@ export function PortalFunnelHostView(m: PortalFunnelHostModel) {
       {step === "mieter" ? (
         <StepWrapper
           layout={stepLayout}
-          stepLabel="Mieter"
-          question="Mieter zuordnen?"
+          stepLabel={isHvIntern ? "Kontakt" : "Mieter"}
+          question={isHvIntern ? "Wer ist vor Ort erreichbar?" : "Mieter zuordnen?"}
           subtext={
             isHvIntern
-              ? "Optional — ohne Mieter oder aus der Liste wählen"
+              ? "Optional — Name und Telefon, damit der Handwerker einen Termin abstimmen kann"
               : cfg.prefix.einheit
                 ? "Optional Einheit angeben"
                 : "Optional — oder ohne Mieter"
@@ -269,17 +269,10 @@ export function PortalFunnelHostView(m: PortalFunnelHostModel) {
           animateKey="mieter"
         >
           {isHvIntern ? (
+            /* Kontakt vor Ort — keine Mieterverwaltung mehr (04.10.2026), Daten nur in dieser Anfrage */
             <div className="funnel-step-tiles-card flex flex-col gap-2">
-              <div className="mb-1 flex items-center justify-between gap-2">
-                <span className="text-fs-caption font-semibold uppercase tracking-wide text-text-tertiary">
-                  Auswahl
-                </span>
-              </div>
               <SelectionTile
-                option={{
-                  value: "ohne",
-                  label: "Ohne Mieter",
-                }}
+                option={{ value: "ohne", label: "Ohne Kontakt vor Ort", hint: "Wir melden uns bei Ihnen" }}
                 multi={false}
                 selected={mieterMode === "ohne"}
                 onChange={() => {
@@ -288,39 +281,59 @@ export function PortalFunnelHostView(m: PortalFunnelHostModel) {
                   setSelectedMieterId(null);
                 }}
               />
-              {hvMieterListe.map((m) => (
-                <SelectionTile
-                  key={m.id}
-                  option={{
-                    value: m.id,
-                    label: [m.name, objekt?.titel].filter(Boolean).join(" · "),
-                    hint: [m.einheitLabel, m.email, m.telefon]
-                      .filter(Boolean)
-                      .join(" · "),
-                  }}
-                  multi={false}
-                  selected={mieterMode === "liste" && selectedMieterId === m.id}
-                  onChange={() => {
-                    setMieterMode("liste");
-                    setOhneMieter(false);
-                    setSelectedMieterId(m.id);
-                    setMieterName(m.name);
-                    setMieterVorname("");
-                    setMieterNachname("");
-                    setMieterEmail(m.email ?? "");
-                    setMieterTel(m.telefon ?? "");
-                    setMieterStrasse(objekt?.strasse?.trim() || "");
-                    setMieterHausnummer(objekt?.hausnummer?.trim() || "");
-                    setMieterPlz(objekt?.plz?.trim() || "");
-                    setMieterOrt(objekt?.ort?.trim() || "");
-                    if (m.einheitLabel) setEinheit(m.einheitLabel);
-                  }}
-                />
-              ))}
-              {hvMieterListe.length === 0 && cfg.prefix.mieterNeu ? (
-                <p className="text-sm text-text-secondary">
-                  Noch kein Mieter — legen Sie einen an.
-                </p>
+              <SelectionTile
+                option={{ value: "neu", label: "Kontakt vor Ort angeben", hint: "z. B. Mieterin oder Mieter" }}
+                multi={false}
+                selected={mieterMode !== "ohne"}
+                onChange={() => {
+                  setMieterMode("neu");
+                  setOhneMieter(false);
+                  setSelectedMieterId(null);
+                  setMieterStrasse(objekt?.strasse?.trim() || "");
+                  setMieterHausnummer(objekt?.hausnummer?.trim() || "");
+                  setMieterPlz(objekt?.plz?.trim() || "");
+                  setMieterOrt(objekt?.ort?.trim() || "");
+                }}
+              />
+              {mieterMode !== "ohne" ? (
+                <div className="mt-2 space-y-2">
+                  <div className="grid grid-cols-2 gap-2">
+                    <input
+                      className="funnel-input w-full"
+                      placeholder="Vorname"
+                      value={mieterVorname}
+                      onChange={(e) => setMieterVorname(e.target.value)}
+                      autoComplete="off"
+                    />
+                    <input
+                      className="funnel-input w-full"
+                      placeholder="Nachname"
+                      value={mieterNachname}
+                      onChange={(e) => setMieterNachname(e.target.value)}
+                      autoComplete="off"
+                    />
+                  </div>
+                  <input
+                    className="funnel-input w-full"
+                    type="tel"
+                    placeholder="Telefon"
+                    value={mieterTel}
+                    onChange={(e) => setMieterTel(e.target.value)}
+                  />
+                  <input
+                    className="funnel-input w-full"
+                    type="email"
+                    placeholder="E-Mail (optional)"
+                    value={mieterEmail}
+                    onChange={(e) => setMieterEmail(e.target.value)}
+                  />
+                  <input
+                    className="funnel-input w-full"
+                    placeholder="Wohnung / Lage (optional)"
+                    value={einheit}
+                    onChange={(e) => setEinheit(e.target.value)}
+                  />
+                </div>
               ) : null}
             </div>
           ) : (
@@ -1327,23 +1340,6 @@ export function PortalFunnelHostView(m: PortalFunnelHostModel) {
         </button>
       ) : null}
 
-      {step === "mieter" && isHvIntern && cfg.prefix.mieterNeu ? (
-        <button
-          type="button"
-          className="portal-funnel-objekt-fab"
-          aria-label="Neuen Mieter anlegen"
-          title="Neuen Mieter anlegen"
-          onClick={() => {
-            resetMieterNeuForm(objekt);
-            setMieterMode("neu");
-            setOhneMieter(false);
-            setSelectedMieterId(null);
-            setStep("mieter_neu");
-          }}
-        >
-          <PortalIcon n="plus" ctx="default" className="h-6 w-6" aria-hidden />
-        </button>
-      ) : null}
 
       <FunnelFooter
         className={

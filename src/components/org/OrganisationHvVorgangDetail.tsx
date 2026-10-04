@@ -28,7 +28,6 @@ import {
   hvFreigabeEntfaellt,
   resolveAngebotZugestelltForHvFreigabe,
 } from "@/lib/org/freigabe-bypass";
-import { fetchObjektHmDelegierbar } from "@/lib/org/fetch-objekt-hm-delegierbar";
 import { acceptKundeAngebot, rejectKundeAngebot } from "@/app/actions/portal-angebot";
 import {
   PortalAngebotAblehnenModal,
@@ -479,10 +478,10 @@ export function OrganisationHvVorgangDetail({
         }
         return;
       }
-      const st = await fetchObjektHmDelegierbar(oid);
+      // Hausmeister entfällt (04.10.2026)
       if (cancelled) return;
-      setHasHmKontakt(st.canDelegate);
-      setHmPortalZugang(st.portalAktiv);
+      setHasHmKontakt(false);
+      setHmPortalZugang(false);
     })();
     return () => {
       cancelled = true;
@@ -907,7 +906,6 @@ export function OrganisationHvVorgangDetail({
     aktion:
       | "angebot_einfordern"
       | "direkt_baerenwald"
-      | "hm_begutachten"
       | "ablehnen"
   ) => {
     setBusy(true);
@@ -925,11 +923,7 @@ export function OrganisationHvVorgangDetail({
           setError(json.error ?? "Aktion fehlgeschlagen.");
           return;
         }
-        if (aktion === "hm_begutachten") {
-          orgPortalToast.hmBegutachten();
-          setHvStatusOptimistic("hm_pruefung");
-          setActiveSection("hm_pruefung");
-        } else if (
+        if (
           aktion === "angebot_einfordern" ||
           aktion === "direkt_baerenwald"
         ) {
@@ -938,7 +932,7 @@ export function OrganisationHvVorgangDetail({
           orgPortalToast.meldungAbgelehnt();
         }
         await onUpdated();
-        if (aktion !== "hm_begutachten") onBack?.();
+        onBack?.();
       }, 480);
     } finally {
       setBusy(false);
@@ -1272,15 +1266,6 @@ export function OrganisationHvVorgangDetail({
           loading={busyAktion === "ablehnen"}
           onClick={() => void meldungAct("ablehnen")}
         />
-        {hasHmKontakt ? (
-          <ActionBtn
-            label="Hausmeister"
-            variant="secondary"
-            disabled={busy}
-            loading={busyAktion === "hm_begutachten"}
-            onClick={() => void meldungAct("hm_begutachten")}
-          />
-        ) : null}
         <ActionBtn
           label="Direkt Bärenwald"
           variant="primary"

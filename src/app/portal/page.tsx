@@ -44,11 +44,7 @@ export default async function PortalDashboardPage({
     );
   }
 
-  const sp = searchParams ? await searchParams : {};
-  const forceHausmeisterView =
-    String(sp.view ?? "")
-      .trim()
-      .toLowerCase() === "hausmeister";
+  void searchParams;
 
   const supabase = await createClient();
   const {
@@ -119,86 +115,11 @@ export default async function PortalDashboardPage({
     );
   }
 
-  // Offene HM-/Bewohner-Einladungen zur Login-E-Mail (Auth existiert schon → ohne Redeem nur privat)
-  const {
-    tryRedeemOpenHausmeisterInvitesForAuthUser,
-    tryRedeemOpenBewohnerInvitesForAuthUser,
-  } = await import("@/lib/portal2/portal-einladungen-server");
-
-  const {data: linkKundeRow, error: __dbErr247_1} = await supabaseAdmin
-    .from("kunden")
-    .select("id, portal_modus, typ")
-    .eq("id", link.kundeId)
-    .maybeSingle();
-  if (__dbErr247_1) logDbError('app/portal/page:kunden', __dbErr247_1)
-  const linkIsOrg =
-    String(linkKundeRow?.portal_modus ?? "").toLowerCase() === "organisation" ||
-    ["hausverwaltung", "hv"].includes(
-      String(linkKundeRow?.typ ?? "").toLowerCase()
-    );
-
-  // HM-Redeem darf Org-/HV-Login nicht überschreiben — nur bei ?view=hausmeister
-  // oder wenn kein Organisations-Konto verknüpft ist.
+  // Hausmeister- und Mieter-Konten entfallen (04.10.2026) — keine Einladungen mehr einlösen
   let portalKundeId = link.kundeId;
-  if (forceHausmeisterView || !linkIsOrg) {
-    const hmRedeem = await tryRedeemOpenHausmeisterInvitesForAuthUser({
-      authUserId: user.id,
-      email: user.email,
-      name: meta?.name,
-      telefon: meta?.telefon,
-    });
-    if (hmRedeem.portalKundeId) {
-      portalKundeId = hmRedeem.portalKundeId;
-    } else if (!linkIsOrg) {
-      const bewRedeem = await tryRedeemOpenBewohnerInvitesForAuthUser({
-        authUserId: user.id,
-        email: user.email,
-        name: meta?.name,
-        telefon: meta?.telefon,
-      });
-      if (bewRedeem.portalKundeId) {
-        portalKundeId = bewRedeem.portalKundeId;
-      }
-    }
-  }
 
-  const { isBaerenwaldPrimaryStaffEmail } = await import(
-    "@/lib/auth/baerenwald-primary-staff"
-  );
-  const { ensureHausmeisterPortalActivation } = await import(
-    "@/lib/org/ensure-hausmeister-portal"
-  );
-
-  // Team-Mail: bei ?view=hausmeister (CRM-Login) HM-Stub auflösen / aktivieren
-  if (forceHausmeisterView && isBaerenwaldPrimaryStaffEmail(user.email)) {
-    const {data: hmRows, error: __dbErr248_2} = await supabaseAdmin
-      .from("org_hausmeister")
-      .select("id, org_kunde_id, portal_kunde_id, portal_zugang")
-      .ilike("email", user.email.trim().toLowerCase())
-      .eq("portal_zugang", true)
-      .limit(5);
-    if (__dbErr248_2) logDbError('app/portal/page:org_hausmeister', __dbErr248_2)
-    for (const row of hmRows ?? []) {
-      const hmId = String(row.id ?? "");
-      const orgId = String(row.org_kunde_id ?? "");
-      if (!hmId || !orgId) continue;
-      if (row.portal_kunde_id) {
-        portalKundeId = String(row.portal_kunde_id);
-        break;
-      }
-      const act = await ensureHausmeisterPortalActivation({
-        orgHausmeisterId: hmId,
-        orgKundeId: orgId,
-      });
-      if (act.ok) {
-        portalKundeId = act.portalKundeId;
-        break;
-      }
-    }
-  }
-
-  // Ohne view=hausmeister: wenn zur E-Mail ein Org-Konto existiert, immer dorthin
-  if (!forceHausmeisterView) {
+  // Wenn zur E-Mail ein Org-Konto existiert, immer dorthin
+  {
     const {data: orgKunde, error: __dbErr249_3} = await supabaseAdmin
       .from("kunden")
       .select("id")
@@ -235,8 +156,24 @@ export default async function PortalDashboardPage({
     kundeTypField = null;
   }
 
-  if (forceHausmeisterView) {
-    portalModus = "hausmeister";
+  // Mieter melden per Link, Hausmeister gibt es nicht mehr → kein Portal (04.10.2026)
+  if (portalModus === "mieter" || portalModus === "hausmeister") {
+    return (
+      <PortalAuthShell title="Kein Zugang mehr nötig">
+        <div className="space-y-4">
+          <p className="portal-text-body text-text-secondary">
+            Schäden melden Sie einfach über den Melde-Link oder QR-Code Ihrer Hausverwaltung.
+            Den Stand Ihrer Meldung sehen Sie über den Link in Ihrer Bestätigungs-Mail —
+            ein Konto brauchen Sie dafür nicht.
+          </p>
+          <form action="/portal/auth/signout" method="post">
+            <button type="submit" className="btn-pill-outline w-full !py-2.5">
+              Abmelden
+            </button>
+          </form>
+        </div>
+      </PortalAuthShell>
+    );
   }
 
   /** D8 — eigene Rolle / Client */
@@ -270,44 +207,6 @@ export default async function PortalDashboardPage({
           leads={eigData.leads}
           angebote={eigData.angebote}
           auftraege={eigData.auftraege}
-        />
-      </Suspense>
-    );
-  }
-
-  if (portalModus === "hausmeister") {
-    const { getHausmeisterPortalData } = await import(
-      "@/lib/portal/get-hausmeister-portal-data"
-    );
-    const { HausmeisterPortalClient } = await import(
-      "@/components/portal/HausmeisterPortalClient"
-    );
-    const hmData = await getHausmeisterPortalData(portalKundeId);
-    if (!hmData) {
-      return (
-        <PortalAuthShell title="Keine Kundendaten">
-          <p className="portal-text-body text-text-secondary">
-            Hausmeister-Daten konnten nicht geladen werden.
-          </p>
-        </PortalAuthShell>
-      );
-    }
-    return (
-      <Suspense
-        fallback={
-          <PortalContentBusy
-            variant="page"
-            body="Einen Moment — wir bereiten Ihre Übersicht vor."
-          />
-        }
-      >
-        <HausmeisterPortalClient
-          kunde={hmData.kunde}
-          objekte={hmData.objekte}
-          hausverwaltungBrand={hmData.hausverwaltungBrand}
-          leads={hmData.leads}
-          angebote={hmData.angebote}
-          auftraege={hmData.auftraege}
         />
       </Suspense>
     );
