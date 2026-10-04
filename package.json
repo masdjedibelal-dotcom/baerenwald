@@ -70,12 +70,9 @@
   "dependencies": {
     "@anthropic-ai/sdk": "^0.100.1",
     "@napi-rs/canvas": "^1.0.0",
-    "@radix-ui/react-progress": "^1.1.8",
-    "@radix-ui/react-slot": "^1.2.4",
     "@sentry/nextjs": "^10.75.0",
     "@supabase/ssr": "^0.6.1",
     "@supabase/supabase-js": "^2.102.1",
-    "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "framer-motion": "^11.18.2",
     "lucide-react": "^1.7.0",

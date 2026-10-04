@@ -1,8 +1,8 @@
-import { logDbError } from '@/lib/errors/log-db-error'
+import { logDbError } from '@/lib/errors/log-db-error';
 import { randomUUID } from "crypto";
 
 import { GPT_VIZ_STORAGE_BUCKET } from "@/lib/gpt-viz/constants";
-import { isSupabaseConfigured, supabaseAdmin } from "@/lib/supabase";
+import { isSupabaseConfigured,supabaseAdmin } from "@/lib/supabase";
 
 const MAX_IMAGE_BYTES = 12 * 1024 * 1024;
 const ALLOWED_MIME = new Set(["image/jpeg", "image/png", "image/webp"]);
@@ -118,24 +118,6 @@ export async function uploadGptVizImage(
 
   const { data } = supabaseAdmin.storage.from(GPT_VIZ_STORAGE_BUCKET).getPublicUrl(path);
   return { ok: true, path, publicUrl: data.publicUrl };
-}
-
-export async function uploadGptVizPngBuffer(
-  sessionId: string,
-  buffer: Buffer,
-  subfolder: "zielbild" | "render" = "zielbild"
-): Promise<{ ok: true; path: string; publicUrl: string } | { ok: false; error: string }> {
-  if (!isSupabaseConfigured()) {
-    return { ok: false, error: "Storage nicht konfiguriert." };
-  }
-  const pathKey = `sessions/${sessionId}/${subfolder}/${randomUUID()}.png`;
-  const { error } = await supabaseAdmin.storage
-    .from(GPT_VIZ_STORAGE_BUCKET)
-    .upload(pathKey, buffer, { contentType: "image/png", upsert: false });
-  if (error) logDbError('lib/gpt-viz/storage:query', error)
-  if (error) return { ok: false, error: error.message };
-  const { data } = supabaseAdmin.storage.from(GPT_VIZ_STORAGE_BUCKET).getPublicUrl(pathKey);
-  return { ok: true, path: pathKey, publicUrl: data.publicUrl };
 }
 
 export async function uploadGptVizFromUrl(

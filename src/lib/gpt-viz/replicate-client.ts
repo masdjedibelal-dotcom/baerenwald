@@ -14,26 +14,6 @@ export function getReplicateToken(): string | undefined {
   return token.length > 0 ? token : undefined;
 }
 
-export function isPlausibleReplicateApiToken(token: string): boolean {
-  return /^r8_[A-Za-z0-9]+$/.test(token) && token.length >= 20;
-}
-
-export function getReplicateTokenDiagnostics(): {
-  configured: boolean;
-  keyLength: number;
-  keyFormatOk: boolean;
-} {
-  const token = getReplicateToken();
-  if (!token) {
-    return { configured: false, keyLength: 0, keyFormatOk: false };
-  }
-  return {
-    configured: true,
-    keyLength: token.length,
-    keyFormatOk: isPlausibleReplicateApiToken(token),
-  };
-}
-
 type Prediction = {
   id: string;
   status: "starting" | "processing" | "succeeded" | "failed" | "canceled";
