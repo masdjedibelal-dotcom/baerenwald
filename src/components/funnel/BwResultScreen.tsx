@@ -430,7 +430,9 @@ function ZuKomplexScreen({
   const [beschreibung, setBeschreibung] = useState("");
   const [datenschutz, setDatenschutz] = useState(false);
   const [showDatenschutzError, setShowDatenschutzError] = useState(false);
-  const [errors, setErrors] = useState<{ telefon?: string; email?: string }>({});
+  const [errors, setErrors] = useState<{ telefon?: string; email?: string; beschreibung?: string }>({});
+  /** „Sonstiges“: ohne Beschreibung wissen wir nicht, worum es geht → Pflichtfeld (mit KI-Hilfe) */
+  const beschreibungPflicht = state.bereiche.includes("sonstiges");
   const [submitStatus, setSubmitStatus] = useState<
     "idle" | "loading" | "error"
   >("idle");
@@ -468,10 +470,15 @@ function ZuKomplexScreen({
     setErrors({});
     const emailErr = validateKomplexEmail(email);
     const telErr = validateKomplexTelefon(telefon);
-    if (emailErr || telErr) {
+    const beschreibungErr =
+      beschreibungPflicht && beschreibung.trim().length < 10
+        ? "Bitte kurz beschreiben, was gemacht werden soll."
+        : undefined;
+    if (emailErr || telErr || beschreibungErr) {
       setErrors({
         email: emailErr,
         telefon: telErr,
+        beschreibung: beschreibungErr,
       });
       return;
     }
@@ -528,6 +535,7 @@ function ZuKomplexScreen({
     }
   }, [
     beschreibung,
+    beschreibungPflicht,
     datenschutz,
     email,
     nachname,
@@ -733,7 +741,8 @@ function ZuKomplexScreen({
 
           <PortalKiAssistField
             scope="funnel_beschreibung"
-            label="Beschreibung"
+            label={beschreibungPflicht ? "Was soll gemacht werden?" : "Beschreibung"}
+            required={beschreibungPflicht}
             value={beschreibung}
             onApply={setBeschreibung}
             contextHint={
@@ -743,13 +752,21 @@ function ZuKomplexScreen({
             }
           >
             <textarea
-              placeholder="Kurze Beschreibung Ihres Projekts (optional)"
+              placeholder={
+                beschreibungPflicht
+                  ? "z. B. Carport-Dach abdichten, Treppe neu belegen … — die KI-Hilfe formuliert mit"
+                  : "Kurze Beschreibung Ihres Projekts (optional)"
+              }
               className="funnel-textarea"
-              rows={3}
+              rows={beschreibungPflicht ? 4 : 3}
               value={beschreibung}
-              onChange={(e) => setBeschreibung(e.target.value)}
+              onChange={(e) => {
+                setBeschreibung(e.target.value);
+                if (errors.beschreibung) setErrors((prev) => ({ ...prev, beschreibung: undefined }));
+              }}
             />
           </PortalKiAssistField>
+          {errors.beschreibung ? <p className="field-error">{errors.beschreibung}</p> : null}
 
           <DatenschutzCheckbox
             checked={datenschutz}

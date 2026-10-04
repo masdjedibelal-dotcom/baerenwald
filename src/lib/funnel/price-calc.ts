@@ -859,12 +859,47 @@ function resolveFassadePriceType(
   return null;
 }
 
+/**
+ * Erneuern ohne seriöse Ferneinschätzung (04.10.2026): alle Fragen bleiben, aber statt Preisrahmen
+ * „individuelle Einschätzung nach Besichtigung“. Zu viele Unbekannte (Statik, Anlage, Aufmaß, Förderung).
+ */
+export function istErneuernOhnePreis(state: FunnelState): boolean {
+  if (state.situation !== "erneuern") return false;
+  const b = (k: string) => state.bereiche.includes(k);
+  const fd = state.fachdetails;
+  if (b("sonstiges") || b("elektrik") || b("fassade") || b("fenster")) return true;
+  if (b("ausbau_dg") || b("ausbau_keller") || b("grundriss_umbau") || b("anbau")) return true;
+  if (b("heizung")) {
+    // Wartung / Heizkörper bleiben bepreist, Anlagentausch nicht
+    const typ = fd?.heizung?.typ;
+    return !(typ === "wartung" || typ === "heizkoerper" || fd?.heizung?.vorhaben === "wartung");
+  }
+  if (b("dach")) {
+    const v = fd?.dach?.vorhaben;
+    return !(v === "regenrinne" || v === "dachfenster" || v === "ziegel_wenige");
+  }
+  return false;
+}
+
+/**
+ * Kalibrierung an echte Aufträge (Prod, 03.10.2026: Ist ≈ 0,5–0,7 der Rechner-Mitte).
+ * Nur wo Daten vorliegen; bei neuen Aufträgen nachjustieren.
+ */
+const ERNEUERN_KALIBRIERUNG: Record<string, number> = {
+  bad: 0.75,
+  boden: 0.75,
+  projekt: 0.75,
+};
+
 export function mapToPrice(state: FunnelState): BwPriceMapping | null {
   const { situation, bereiche } = state;
   const fd = state.fachdetails;
   const b = (k: string) => bereiche.includes(k);
 
   if (situation === "gewerbe") {
+    return null;
+  }
+  if (istErneuernOhnePreis(state)) {
     return null;
   }
 
@@ -1674,8 +1709,10 @@ function computePriceCore(state: FunnelState): {
     }
   }
 
-  const rawMin = basisMin * multiplier;
-  const rawMax = basisMax * multiplier;
+  const kalibrierung =
+    state.situation === "erneuern" ? ERNEUERN_KALIBRIERUNG[String(service)] ?? 1 : 1;
+  const rawMin = basisMin * multiplier * kalibrierung;
+  const rawMax = basisMax * multiplier * kalibrierung;
   const mitte0 = (rawMin + rawMax) / 2;
   const halbSpanne = (rawMax - rawMin) / 2;
 

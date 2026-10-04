@@ -454,6 +454,13 @@ export const SITUATIONEN_CONFIG: Record<
             infoText:
               "Großprojekte wie Anbau oder Garage erfordern eine individuelle statische Prüfung und Architektenplanung. Unser GU-Team kontaktiert Sie für ein persönliches Beratungsgespräch und eine Vor-Ort-Analyse.",
           },
+          {
+            value: "sonstiges",
+            label: "Etwas anderes",
+            hint: "Passt nichts dazu — kurz beschreiben, wir melden uns mit einer Einschätzung",
+            icon: "02-reparatur",
+            triggerGewerke: ["sonstiges"],
+          },
         ],
       },
       {
