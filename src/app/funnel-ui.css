@@ -602,3 +602,41 @@
     max-height: 88vh;
   }
 }
+
+/* Website „Individuell“: freie Anfrage statt Rechner */
+.individuell-form__aktionen {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding-top: 4px;
+}
+.individuell-form__aktionen .komplex-submit-btn {
+  width: auto;
+  flex: 1 1 auto;
+  max-width: 280px;
+}
+.individuell-form__zurueck {
+  background: none;
+  border: none;
+  padding: 8px 0;
+  font-size: 14px;
+  color: var(--bw-text-muted, #6b7280);
+  cursor: pointer;
+}
+.individuell-danke {
+  text-align: center;
+  padding: 24px 8px;
+}
+.individuell-danke__titel {
+  margin: 0 0 6px;
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--bw-green-dark, #1f4d34);
+}
+.individuell-danke__text {
+  margin: 0;
+  font-size: 15px;
+  color: var(--bw-text-muted, #6b7280);
+}

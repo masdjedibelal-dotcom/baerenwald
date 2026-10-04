@@ -19,6 +19,7 @@ import { FachdetailsStep } from "@/components/funnel/FachdetailsStep";
 import { FunnelErrorBoundary } from "@/components/funnel/FunnelErrorBoundary";
 import { FunnelPortalAuthGate } from "@/components/funnel/FunnelPortalAuthGate";
 import { HWLeadForm } from "@/components/funnel/HWLeadForm";
+import { IndividuellAnfrageForm } from "@/components/funnel/IndividuellAnfrageForm";
 import type { PortalContactPrefill } from "@/lib/portal/portal-contact-prefill";
 import {
   buildBwLeadPayload,
@@ -286,6 +287,8 @@ function FunnelRechnerInner({ resetPath }: { resetPath: string }) {
   const [kiPreisBereit, setKiPreisBereit] = useState(false);
   const [kiBeratungBereit, setKiBeratungBereit] = useState(false);
   const [screen, setScreen] = useState<Screen>("trust_intro");
+  /** „Individuell“: Kontaktformular statt Rechner */
+  const [individuellOffen, setIndividuellOffen] = useState(false);
   const [mindestauftragAktiv, setMindestauftrag] = useState(false);
   const [isAusserhalbLead, setIsAusserhalbLead] = useState(false);
   const [ausserhalbBeschreibung, setAusserhalbBeschreibung] = useState("");
@@ -2032,6 +2035,19 @@ function FunnelRechnerInner({ resetPath }: { resetPath: string }) {
       case "trust_qualitaet":
         return <TrustScreen variant="qualitaet" />;
       case "situation":
+        if (individuellOffen) {
+          return (
+            <StepWrapper
+              stepLabel="Individuell"
+              question="Erzählen Sie uns von Ihrem Vorhaben"
+              subtext="Kurz beschreiben reicht — wir melden uns persönlich."
+              animateKey="individuell"
+              tilesCard
+            >
+              <IndividuellAnfrageForm onZurueck={() => setIndividuellOffen(false)} />
+            </StepWrapper>
+          );
+        }
         return (
           <StepWrapper
             stepLabel="Vorhaben"
@@ -2058,6 +2074,20 @@ function FunnelRechnerInner({ resetPath }: { resetPath: string }) {
                   </button>
                 );
               })}
+              {/* Individuell: freie Anfrage ohne Rechner (wie „Frei“ im CRM) */}
+              <button
+                type="button"
+                onClick={() => setIndividuellOffen(true)}
+                className="funnel-tile sm:col-span-2"
+              >
+                <span className="funnel-tile-icon-wrap" aria-hidden>
+                  <PortalIcon asset="23-chat" />
+                </span>
+                <span className="funnel-tile-label">Individuell</span>
+                <span className="funnel-tile-hint">
+                  Eigenes Vorhaben — kurz beschreiben, wir melden uns persönlich
+                </span>
+              </button>
             </div>
           </StepWrapper>
         );
