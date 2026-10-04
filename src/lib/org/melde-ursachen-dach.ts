@@ -13,11 +13,6 @@ export type DachUrsacheId =
   | "ziegel_lose"
   | "sonstiges";
 
-export type DachUrsacheOption = {
-  id: DachUrsacheId;
-  label: string;
-};
-
 export type MeldeUrsachenDachState = {
   bereich: "dach";
   selectedUrsacheId: DachUrsacheId | null;
@@ -25,14 +20,6 @@ export type MeldeUrsachenDachState = {
   entscheidung: "hm_geloest" | "fachfirma" | null;
   material?: string[];
   updatedAt?: string | null;
-};
-
-const ALL: Record<DachUrsacheId, string> = {
-  rinne_verstopft: "Dachrinne mit Laub / Schmutz verstopft",
-  rinne_halterung: "Dachrinne beschädigt oder Halterung locker",
-  fallrohr: "Fallrohr verstopft oder beschädigt",
-  ziegel_lose: "Dachziegel lose oder verschoben",
-  sonstiges: "Sonstiges",
 };
 
 function ans(a: MeldeAnswers, id: string): string {
@@ -43,56 +30,6 @@ function ans(a: MeldeAnswers, id: string): string {
 function normalizeProblem(raw: string): string {
   return normalizeMeldeDachProblem(raw);
 }
-
-function orderIds(ids: DachUrsacheId[]): DachUrsacheOption[] {
-  const uniq = ids.filter((id, i) => ids.indexOf(id) === i);
-  if (!uniq.includes("sonstiges")) uniq.push("sonstiges");
-  return uniq.map((id) => ({ id, label: ALL[id] }));
-}
-
-export function dachUrsachenForAnswers(
-  answers: MeldeAnswers | undefined
-): DachUrsacheOption[] {
-  const problem = normalizeProblem(ans(answers ?? {}, "melde_problem"));
-
-  switch (problem) {
-    case "regenrinne_ueber":
-      return orderIds([
-        "rinne_verstopft",
-        "rinne_halterung",
-        "fallrohr",
-        "sonstiges",
-      ]);
-    case "wasser_fassade":
-      return orderIds([
-        "fallrohr",
-        "rinne_verstopft",
-        "rinne_halterung",
-        "sonstiges",
-      ]);
-    case "ziegel_boden":
-      return orderIds(["ziegel_lose", "sonstiges"]);
-    default:
-      return orderIds([
-        "rinne_verstopft",
-        "fallrohr",
-        "ziegel_lose",
-        "rinne_halterung",
-        "sonstiges",
-      ]);
-  }
-}
-
-export function dachUrsacheLabel(id: string | null | undefined): string {
-  if (!id) return "—";
-  return ALL[id as DachUrsacheId] ?? id;
-}
-
-export const DACH_MATERIAL_OPTIONS = [
-  { value: "gereinigt", label: "Gereinigt" },
-  { value: "freigemacht", label: "Freigemacht" },
-  { value: "sonstiges", label: "Sonstiges" },
-] as const;
 
 export function dachSchadenKurz(answers: MeldeAnswers | undefined): string {
   const a = answers ?? {};

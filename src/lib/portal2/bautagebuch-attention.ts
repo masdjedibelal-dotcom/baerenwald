@@ -40,25 +40,6 @@ export type BautagebuchAttentionEntry = {
   datum?: string | null;
 };
 
-/** Neuester Zeitstempel aus Einträgen. */
-export function latestBautagebuchAt(
-  entries: BautagebuchAttentionEntry[] | null | undefined
-): string | null {
-  let best: number | null = null;
-  let bestIso: string | null = null;
-  for (const e of entries ?? []) {
-    const raw = (e.created_at ?? e.datum ?? "").trim();
-    if (!raw) continue;
-    const t = new Date(raw).getTime();
-    if (!Number.isFinite(t)) continue;
-    if (best == null || t > best) {
-      best = t;
-      bestIso = raw;
-    }
-  }
-  return bestIso;
-}
-
 export function countUnreadBautagebuch(
   entries: BautagebuchAttentionEntry[] | null | undefined,
   lastSeenAt: string | null | undefined

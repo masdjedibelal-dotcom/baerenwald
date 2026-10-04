@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect,useMemo,useState } from "react";
 import { useSearchParams } from "next/navigation";
 
 import { PortalClient } from "@/components/portal/PortalClient";
@@ -218,11 +218,6 @@ export function OrganisationVorgaengeSection({
   const filteredLeads = useMemo(
     () => filterOrgLeadsByObjektIds(allLeads, objekte, selectedObjektIds),
     [allLeads, objekte, selectedObjektIds]
-  );
-
-  const filteredEingang = useMemo(
-    () => filterOrgLeadsByObjektIds(eingang, objekte, selectedObjektIds),
-    [eingang, objekte, selectedObjektIds]
   );
 
   return (

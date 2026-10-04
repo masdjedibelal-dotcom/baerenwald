@@ -1,4 +1,4 @@
-import { logDbError } from '@/lib/errors/log-db-error'
+import { logDbError } from '@/lib/errors/log-db-error';
 import { ensurePartnerAngebotHandwerkerForAuftrag } from "@/lib/partner/ensure-partner-angebot-handwerker-for-auftrag";
 import { isPartnerAuftragAnfrageAktionErforderlich } from "@/lib/partner/partner-anfrage-status";
 import {
@@ -46,13 +46,13 @@ import {
   partnerHatMeisterGewerke,
   partnerLeistetBauleistung,
 } from "@/lib/partner/compliance-partner-profile";
-import { buildPartnerAufgaben, type PartnerAufgabeItem } from "@/lib/partner/build-partner-aufgaben";
+import { buildPartnerAufgaben,type PartnerAufgabeItem } from "@/lib/partner/build-partner-aufgaben";
 import {
   buildPartnerVorgaenge,
   type PartnerVorgangItem,
 } from "@/lib/partner/build-partner-vorgaenge";
 import { ensurePartnerOffenNotifications } from "@/lib/partner/notify-partner-offen";
-import { buildPartnerTermine, type PartnerTerminItem } from "@/lib/partner/build-partner-termine";
+import { buildPartnerTermine,type PartnerTerminItem } from "@/lib/partner/build-partner-termine";
 import {
   applyRahmenvertragPortalAkzeptanz,
   buildBauauftragComplianceItems,
@@ -71,7 +71,7 @@ import { resolvePartnerListenTitel } from "@/lib/partner/partner-listen-titel";
 import { acceptCrmRahmenvertragLoggedIn } from "@/lib/partner/partner-crm-api";
 import { persistPortalRahmenvertragAkzeptanz } from "@/lib/partner/persist-portal-rahmenvertrag";
 import { createClient } from "@/lib/supabase/server";
-import { isSupabaseConfigured, supabaseAdmin } from "@/lib/supabase";
+import { isSupabaseConfigured,supabaseAdmin } from "@/lib/supabase";
 import { stripHtmlToPlainText } from "@/lib/portal/portal-display";
 import type { PartnerHwKonditionen } from "@/lib/partner/partner-konditionen";
 import {
@@ -311,14 +311,6 @@ export type PartnerProfilKontext = {
   profil: { leistet_bauleistung: boolean; hat_meister_gewerke: boolean };
   rahmenvertrag: PartnerRahmenvertrag | null;
   offeneLeistungsunterlagen: PartnerOffeneLeistungsUnterlage[];
-};
-
-export type PartnerTodoItem = {
-  id: string;
-  titel: string;
-  erledigt: boolean;
-  sort_order: number;
-  created_at: string;
 };
 
 export type { PartnerAufgabeItem, PartnerTerminItem, PartnerVorgangItem };

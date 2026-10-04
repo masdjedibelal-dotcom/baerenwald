@@ -2,7 +2,7 @@
 import { PALETTE } from "@/lib/tokens/palette";
 import { PortalButton } from "@/components/portal/PortalButton";
 
-import { useEffect, useId, useRef, useState, type ReactNode } from "react";
+import { useEffect,useId,useRef,useState } from "react";
 
 import { PortalIcon } from "@/components/portal/PortalIcon";
 import { PortalCheckbox } from "@/components/shared/PortalFormControls";
@@ -250,9 +250,4 @@ export function PortalListeFilterBar<T extends string>({
       ) : null}
     </div>
   );
-}
-
-/** Hilfs-Wrapper — API-Kompatibilität. */
-export function PortalListeFilterSheetHint({ children }: { children: ReactNode }) {
-  return <>{children}</>;
 }

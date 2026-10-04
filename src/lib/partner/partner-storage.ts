@@ -1,14 +1,11 @@
-import { logDbError } from '@/lib/errors/log-db-error'
+import { logDbError } from '@/lib/errors/log-db-error';
 import { randomUUID } from "crypto";
 
-import { isSupabaseConfigured, supabaseAdmin } from "@/lib/supabase";
+import { isSupabaseConfigured,supabaseAdmin } from "@/lib/supabase";
 
 import {
-  PARTNER_MAX_ANGEBOT_DATEIEN,
-  PARTNER_MAX_BAUTAGEBUCH_ANHAENGE,
-  validatePartnerAngebotFiles,
   validatePartnerBautagebuchFile,
-  validatePartnerPdfFile,
+  validatePartnerPdfFile
 } from "@/lib/partner/partner-upload-limits";
 
 export const PARTNER_UPLOAD_BUCKET = "handwerker-uploads";
@@ -47,61 +44,6 @@ export async function resolvePartnerFileUrl(
 
   if (error || !data?.signedUrl) return null;
   return data.signedUrl;
-}
-
-export async function uploadPartnerPdf(opts: {
-  handwerkerId: string;
-  anfrageId: string;
-  file: File;
-  /** Standard: Angebots-PDF. `rechnung` → separater Storage-Pfad. */
-  kind?: "angebot" | "rechnung";
-}): Promise<{ ok: true; path: string } | { ok: false; error: string }> {
-  if (!isSupabaseConfigured()) {
-    return { ok: false, error: "Storage nicht konfiguriert." };
-  }
-
-  const pdfErr = validatePartnerPdfFile(opts.file);
-  if (pdfErr) {
-    return { ok: false, error: pdfErr };
-  }
-  const mime = opts.file.type || "application/pdf";
-
-  const prefix =
-    opts.kind === "rechnung"
-      ? `${opts.handwerkerId}/angebote/${opts.anfrageId}/rechnung`
-      : `${opts.handwerkerId}/angebote/${opts.anfrageId}/angebot`;
-  const path = `${prefix}-${randomUUID()}.pdf`;
-  const buf = Buffer.from(await opts.file.arrayBuffer());
-
-  const { error } = await supabaseAdmin.storage
-    .from(PARTNER_UPLOAD_BUCKET)
-    .upload(path, buf, { contentType: mime, upsert: false });
-  if (error) logDbError('lib/partner/partner-storage:query', error)
-
-  if (error) return { ok: false, error: error.message };
-  return { ok: true, path };
-}
-
-/** Abnahmeprotokoll-PDF (Auftrag). */
-export async function uploadAbnahmeProtokollPdf(opts: {
-  handwerkerId: string;
-  auftragId: string;
-  pdfBytes: Uint8Array;
-}): Promise<{ ok: true; path: string } | { ok: false; error: string }> {
-  if (!isSupabaseConfigured()) {
-    return { ok: false, error: "Storage nicht konfiguriert." };
-  }
-
-  const path = `${opts.handwerkerId}/auftraege/${opts.auftragId}/abnahme-${randomUUID()}.pdf`;
-  const buf = Buffer.from(opts.pdfBytes);
-
-  const { error } = await supabaseAdmin.storage
-    .from(PARTNER_UPLOAD_BUCKET)
-    .upload(path, buf, { contentType: "application/pdf", upsert: false });
-  if (error) logDbError('lib/partner/partner-storage:query', error)
-
-  if (error) return { ok: false, error: error.message };
-  return { ok: true, path };
 }
 
 /** Generiertes Partner-PDF (Angebot/Rechnung) als Bytes. */
@@ -161,131 +103,6 @@ export async function uploadPartnerLogo(opts: {
   return { ok: true, path };
 }
 
-export async function uploadPartnerAngebotPdfs(opts: {
-  handwerkerId: string;
-  anfrageId: string;
-  files: File[];
-}): Promise<{ ok: true; paths: string[] } | { ok: false; error: string }> {
-  if (!isSupabaseConfigured()) {
-    return { ok: false, error: "Storage nicht konfiguriert." };
-  }
-
-  const list = opts.files.slice(0, PARTNER_MAX_ANGEBOT_DATEIEN);
-  const batchErr = validatePartnerAngebotFiles(list);
-  if (batchErr) {
-    return { ok: false, error: batchErr };
-  }
-
-  const paths: string[] = [];
-  for (const file of list) {
-    const mimeRaw = (file.type || "").toLowerCase();
-    const isPdf =
-      mimeRaw === "application/pdf" || file.name.toLowerCase().endsWith(".pdf");
-    const mime = isPdf
-      ? "application/pdf"
-      : mimeRaw ||
-        (/\.png$/i.test(file.name)
-          ? "image/png"
-          : /\.webp$/i.test(file.name)
-            ? "image/webp"
-            : "image/jpeg");
-    const ext = extFromMime(mime);
-    const path = `${opts.handwerkerId}/angebote/${opts.anfrageId}/angebot-${randomUUID()}.${ext}`;
-    const buf = Buffer.from(await file.arrayBuffer());
-    const { error } = await supabaseAdmin.storage
-      .from(PARTNER_UPLOAD_BUCKET)
-      .upload(path, buf, { contentType: mime, upsert: false });
-    if (error) logDbError('lib/partner/partner-storage:query', error)
-    if (error) return { ok: false, error: error.message };
-    paths.push(path);
-  }
-
-  return { ok: true, paths };
-}
-
-export async function uploadPartnerBautagebuchAnhaenge(opts: {
-  handwerkerId: string;
-  auftragId: string;
-  files: File[];
-  /** Bereits gespeicherte Anzahl (bei Bearbeitung). */
-  existingCount?: number;
-}): Promise<{ ok: true; paths: string[] } | { ok: false; error: string }> {
-  if (!isSupabaseConfigured()) {
-    return { ok: false, error: "Storage nicht konfiguriert." };
-  }
-
-  const existing = opts.existingCount ?? 0;
-  const maxNew = Math.max(0, PARTNER_MAX_BAUTAGEBUCH_ANHAENGE - existing);
-  const list = opts.files.slice(0, maxNew);
-  if (!list.length) {
-    if (opts.files.length > 0 && maxNew === 0) {
-      return {
-        ok: false,
-        error: `Maximal ${PARTNER_MAX_BAUTAGEBUCH_ANHAENGE} Anhänge pro Eintrag.`,
-      };
-    }
-    return { ok: true, paths: [] };
-  }
-
-  const paths: string[] = [];
-
-  for (const file of list) {
-    const err = validatePartnerBautagebuchFile(file);
-    if (err) {
-      return { ok: false, error: err };
-    }
-    const mime =
-      file.type ||
-      (file.name.toLowerCase().endsWith(".pdf") ? "application/pdf" : "image/jpeg");
-
-    const ext = extFromMime(mime);
-    const path = `${opts.handwerkerId}/bautagebuch/${opts.auftragId}/${randomUUID()}.${ext}`;
-    const buf = Buffer.from(await file.arrayBuffer());
-    const { error } = await supabaseAdmin.storage
-      .from(PARTNER_UPLOAD_BUCKET)
-      .upload(path, buf, { contentType: mime, upsert: false });
-    if (error) logDbError('lib/partner/partner-storage:query', error)
-
-    if (error) return { ok: false, error: error.message };
-    paths.push(path);
-  }
-
-  return { ok: true, paths };
-}
-
-/** Foto für Positions-Eintrag (Lebenszyklus). */
-export async function uploadPartnerEintragFoto(opts: {
-  handwerkerId: string;
-  auftragId: string;
-  positionId: string;
-  file: File;
-}): Promise<{ ok: true; path: string } | { ok: false; error: string }> {
-  if (!isSupabaseConfigured()) {
-    return { ok: false, error: "Storage nicht konfiguriert." };
-  }
-  const err = validatePartnerBautagebuchFile(opts.file);
-  if (err) return { ok: false, error: err };
-
-  const mime = opts.file.type || "image/jpeg";
-  if (!/^image\//i.test(mime)) {
-    return { ok: false, error: "Bitte ein Foto aufnehmen." };
-  }
-
-  const ext = extFromMime(mime);
-  const path = `${opts.handwerkerId}/position-eintraege/${opts.auftragId}/${opts.positionId}/${randomUUID()}.${ext}`;
-  const buf = Buffer.from(await opts.file.arrayBuffer());
-  const { error } = await supabaseAdmin.storage
-    .from(PARTNER_UPLOAD_BUCKET)
-    .upload(path, buf, { contentType: mime, upsert: false });
-  if (error) logDbError('lib/partner/partner-storage:query', error)
-
-  if (error) return { ok: false, error: error.message };
-  return { ok: true, path };
-}
-
-/** @deprecated — nutze uploadPartnerBautagebuchAnhaenge */
-export const uploadPartnerPhotos = uploadPartnerBautagebuchAnhaenge;
-
 export async function uploadPartnerComplianceDoc(opts: {
   handwerkerId: string;
   auftragId?: string | null;
@@ -306,46 +123,6 @@ export async function uploadPartnerComplianceDoc(opts: {
   const ext = extFromMime(isPdf ? "application/pdf" : mime);
   const scope = opts.auftragId?.trim() ? `auftrag/${opts.auftragId}` : "stamm";
   const path = `${opts.handwerkerId}/compliance/${scope}/${opts.typ}-${randomUUID()}.${ext}`;
-  const buf = Buffer.from(await opts.file.arrayBuffer());
-
-  const { error } = await supabaseAdmin.storage
-    .from(PARTNER_UPLOAD_BUCKET)
-    .upload(path, buf, {
-      contentType: isPdf ? "application/pdf" : mime,
-      upsert: false,
-    });
-  if (error) logDbError('lib/partner/partner-storage:query', error)
-
-  if (error) return { ok: false, error: error.message };
-  return { ok: true, path };
-}
-
-/** Fachnachweis-Protokoll (PDF/Foto) am Auftrag-Slot. */
-export async function uploadPartnerFachdokuDoc(opts: {
-  handwerkerId: string | null;
-  auftragId: string;
-  slotCode: string;
-  file: File;
-  /** CRM-Upload ohne Partner → Pfad unter crm/ */
-  crm?: boolean;
-}): Promise<{ ok: true; path: string } | { ok: false; error: string }> {
-  if (!isSupabaseConfigured()) {
-    return { ok: false, error: "Storage nicht konfiguriert." };
-  }
-
-  const mime = opts.file.type || "application/pdf";
-  const isPdf =
-    mime === "application/pdf" || opts.file.name.toLowerCase().endsWith(".pdf");
-  const err = isPdf
-    ? validatePartnerPdfFile(opts.file)
-    : validatePartnerBautagebuchFile(opts.file);
-  if (err) return { ok: false, error: err };
-
-  const ext = extFromMime(isPdf ? "application/pdf" : mime);
-  const owner = opts.crm
-    ? "crm"
-    : opts.handwerkerId?.trim() || "crm";
-  const path = `${owner}/fachdoku/${opts.auftragId}/${opts.slotCode}-${randomUUID()}.${ext}`;
   const buf = Buffer.from(await opts.file.arrayBuffer());
 
   const { error } = await supabaseAdmin.storage

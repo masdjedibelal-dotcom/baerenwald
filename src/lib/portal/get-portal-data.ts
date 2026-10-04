@@ -1,5 +1,4 @@
-import { logDbError } from '@/lib/errors/log-db-error'
-import { loadMieterMeldeKontext } from "@/lib/portal/load-mieter-melde-kontext";
+import { logDbError } from '@/lib/errors/log-db-error';
 import {
   parseAngebotPositionenMitPreis,
   resolveAngebotGesamtBrutto,
@@ -23,41 +22,15 @@ import {
 } from "@/lib/portal/portal-objekt";
 import { isHvPortalLead } from "@/lib/portal/hv-portal-lead";
 import { loadMieterHvBrand } from "@/lib/portal/load-mieter-hv-brand";
-import { resolvePartnerFileUrl, resolvePartnerFileUrls } from "@/lib/partner/partner-storage";
+import { resolvePartnerFileUrl,resolvePartnerFileUrls } from "@/lib/partner/partner-storage";
 import {
   PORTAL_LIST_AUFTRAG_LIMIT,
   PORTAL_LIST_LEAD_LIMIT,
 } from "@/lib/portal/portal-list-limits";
 import { handwerkerFirmenLabel } from "@/lib/portal2/handwerker-display";
-import { isSupabaseConfigured, supabaseAdmin } from "@/lib/supabase";
+import { isSupabaseConfigured,supabaseAdmin } from "@/lib/supabase";
 
-type PortalPositionRow = {
-  id: string;
-  auftrag_id: string;
-  gewerk_name: string | null;
-  leistung_name: string | null;
-  beschreibung: string | null;
-  leistung_status: string | null;
-  handwerker_status: string | null;
-  handwerker_id: string | null;
-  menge: number | null;
-  lohn_fix: number | null;
-  material_fix: number | null;
-  aenderung_typ: string | null;
-  preis_alt: number | null;
-  kunde_akzeptiert_at: string | null;
-};
 
-type PortalBautagebuchRow = {
-  id: string;
-  auftrag_id: string;
-  datum: string | null;
-  titel: string | null;
-  beschreibung: string | null;
-  foto_urls: unknown;
-  fuer_kunde_freigegeben: boolean | null;
-  eintrag_typ?: string | null;
-};
 
 type PortalKundenObjektRow = {
   id: string;
@@ -92,28 +65,7 @@ type PortalAngebotRow = {
   herkunft?: string | null;
 };
 
-type PortalRechnungRow = {
-  id: string;
-  auftrag_id: string;
-  rechnungsnummer: string | null;
-  pdf_url: string | null;
-  status: string | null;
-  rechnungsdatum: string | null;
-  gesendet_at: string | null;
-  faellig_am?: string | null;
-  created_at?: string | null;
-  updated_at?: string | null;
-};
 
-type PortalTimelineRow = {
-  id: string;
-  auftrag_id: string;
-  titel: string | null;
-  beschreibung: string | null;
-  foto_urls: string[] | null;
-  created_at: string | null;
-  fuer_kunde_freigegeben: boolean | null;
-};
 
 function extractUrlsFromUnknown(value: unknown): string[] {
   const out = new Set<string>();
@@ -1241,10 +1193,6 @@ export async function getPortalDataForKunde(
   }
 
   const hausverwaltungBrand = await hausverwaltungBrandPromise;
-  // Mieter einer HV: „Schaden melden“ geht über die HV (Meldung), nicht als Website-Anfrage
-  const mieterMelde = hausverwaltungBrand
-    ? await loadMieterMeldeKontext({ portalKundeId: kunde.id, email: kunde.email })
-    : null;
 
   return {
     kunde,
@@ -1253,7 +1201,6 @@ export async function getPortalDataForKunde(
     auftraege: mappedAuftraege,
     mieterFeedbackByLeadId,
     hausverwaltungBrand,
-    mieterMelde,
     /** @deprecated Nur für Abwärtskompatibilität — Pipeline-Split clientseitig. */
     splitPipeline: split,
   };

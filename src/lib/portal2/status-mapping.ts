@@ -269,7 +269,3 @@ export function portalMieterFlowTimeline(
     active: i === idx,
   }));
 }
-
-export function portalFlowMeta(id: PortalMockStatusId): PortalMockStatusMeta {
-  return PORTAL_STATUS[id];
-}

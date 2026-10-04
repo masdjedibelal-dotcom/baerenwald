@@ -1,4 +1,4 @@
-import { logDbError } from '@/lib/errors/log-db-error'
+import { logDbError } from '@/lib/errors/log-db-error';
 import {
   createAnthropicClient,
   getClaudeApiKey,
@@ -11,7 +11,7 @@ import {
 } from "@/lib/lead/vertriebs-analyse-context";
 import type { KundenVertriebsKontext } from "@/lib/lead/kunden-vertrieb-status";
 import type { MarketingJourney } from "@/lib/marketing/journey-types";
-import { isSupabaseConfigured, supabaseAdmin } from "@/lib/supabase";
+import { isSupabaseConfigured,supabaseAdmin } from "@/lib/supabase";
 
 const KI_ZUSAMMENFASSUNG_MODEL = "claude-sonnet-4-20250514";
 
@@ -130,17 +130,4 @@ export async function generateLeadVertriebsAnalyse(
       console.error("[generateLeadVertriebsAnalyse] ki_anfragen_log:", logErr);
     }
   }
-}
-
-/** @deprecated Alias — bitte {@link generateLeadVertriebsAnalyse} nutzen. */
-export async function generateKiZusammenfassung(
-  leadId: string,
-  chatVerlauf: KiChatVerlaufEntry[],
-  sessionId: string
-): Promise<void> {
-  return generateLeadVertriebsAnalyse({
-    leadId,
-    sessionId,
-    chatVerlauf,
-  });
 }

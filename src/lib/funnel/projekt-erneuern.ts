@@ -1,4 +1,4 @@
-import type { FachdetailsState, FunnelState, FunnelStep } from "./types";
+import type { FachdetailsState,FunnelState,FunnelStep } from "./types";
 
 /** Top-Level „Ausbau & Umbau“ unter Situation „Zuhause erneuern“. */
 export const ERNEUERN_PROJEKT_BEREICHE = [
@@ -39,45 +39,6 @@ export function erneuernProjektTyp(
 export function zeigtGuProjektPaketBanner(state: FunnelState): boolean {
   return isErneuernProjektBereich(state.bereiche);
 }
-
-export const STEP_PROJEKT_TERRASSE_MATERIAL: FunnelStep = {
-  id: "projekt_terrasse_material",
-  question: "Welches Material soll die Terrasse bekommen?",
-  subtext: "Entscheidet über Aufbau und Kostenrahmen",
-  inputType: "tiles-single",
-  options: [
-    {
-      value: "holz",
-      label: "Holz / WPC",
-      hint: "Natürlich oder pflegeleicht",
-    },
-    {
-      value: "stein",
-      label: "Stein / Platten",
-      hint: "Keramik, Naturstein",
-    },
-  ],
-};
-
-export const STEP_PROJEKT_TERRASSE_UNTERBAU: FunnelStep = {
-  id: "projekt_terrasse_unterbau",
-  question: "Ist ein Unterbau / Erdarbeiten erforderlich?",
-  subtext:
-    "z. B. Höhenausgleich, tragende Schicht, Entwässerung — wir rechnen das im GU-Paket ein",
-  inputType: "tiles-single",
-  options: [
-    {
-      value: "ja",
-      label: "Ja, notwendig",
-      hint: "Größerer Aufwand vor dem Aufbau",
-    },
-    {
-      value: "nein",
-      label: "Nein / kaum",
-      hint: "Bestehende Fläche ist tragfähig",
-    },
-  ],
-};
 
 export const STEP_PROJEKT_DURCHBRUCH_ANZAHL: FunnelStep = {
   id: "projekt_durchbruch_anzahl",

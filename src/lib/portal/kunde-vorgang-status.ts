@@ -374,7 +374,3 @@ export function resolveKundeVorgangStatus(input: {
     needsAction: false,
   };
 }
-
-export function kundeVorgangStatusLabel(phase: KundeVorgangPhase): string {
-  return LABELS[phase];
-}

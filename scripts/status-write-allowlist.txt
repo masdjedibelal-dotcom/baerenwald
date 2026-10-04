@@ -12,7 +12,6 @@ src/app/actions/partner-position-eintraege.ts
 src/app/actions/partner-rueckfrage-termine.ts
 src/app/actions/partner-vertrag.ts
 src/app/actions/portal-angebot.ts
-src/app/actions/portal-termin.ts
 src/app/api/account/delete/route.ts
 src/app/api/melden/terminslots/route.ts
 src/app/api/meldung/ergaenzen/route.ts
@@ -29,4 +28,3 @@ src/lib/lead/persist-lead.ts
 src/lib/org/finalize-org-self-created-lead.ts
 src/lib/org/persist-meldung-lead.ts
 src/lib/partner/ensure-partner-angebot-handwerker-for-auftrag.ts
-src/lib/portal2/portal-einladungen-server.ts

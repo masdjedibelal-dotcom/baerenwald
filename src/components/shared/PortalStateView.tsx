@@ -201,12 +201,6 @@ export function PortalNotFoundState(
   return <PortalStateView kind="e404" {...props} />;
 }
 
-export function PortalForbiddenState(
-  props: Omit<PortalStateViewProps, "kind">
-) {
-  return <PortalStateView kind="zugriff" {...props} />;
-}
-
 export function PortalServerErrorState(
   props: Omit<PortalStateViewProps, "kind">
 ) {

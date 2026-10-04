@@ -12,8 +12,3 @@ export function portalDayGreeting(now = new Date()): string {
 export function portalDayGreetingPhrase(now = new Date()): string {
   return `${portalDayGreeting(now)},`;
 }
-
-/** @deprecated Legacy Uppercase — Dashboard nutzt `portalDayGreetingPhrase`. */
-export function portalDayGreetingLabel(now = new Date()): string {
-  return `${portalDayGreeting(now).toUpperCase()} 👋`;
-}

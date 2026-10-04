@@ -2,7 +2,6 @@ import {
   buildBetreuungHaeufigkeitStep,
   shouldSkipBetreuungHaeufigkeit,
 } from "./betreuung-haeufigkeit";
-import { isFlatFachdetailsBlockComplete } from "./fachdetail-questions-flat";
 import {
   shouldSwapFachdetailsBeforeGroesse,
   skipGroesseForSanierenDachKleinjob,
@@ -735,16 +734,6 @@ export const BW_FUNNEL_STEP_BAD_AUSSTATTUNG: FunnelStep = {
   ],
 };
 
-/** Weiter nur wenn je sichtbarem Block (max. 2) die gestaffelten Fragen vollständig beantwortet sind */
-export function isFachdetailsStepComplete(state: {
-  situation: Situation | null;
-  bereiche: string[];
-  fachdetails: FachdetailsState;
-}): boolean {
-  if (!bereicheNeedFachdetails(state.bereiche)) return true;
-  return isFlatFachdetailsBlockComplete(state);
-}
-
 /** Kurz-Hinweis unter Zugänglichkeit + Zustand (Rechner) */
 export const BW_FUNNEL_PREIS_HINWEIS_ZUG_ZUSTAND =
   "Diese Angabe hilft uns, den Preis genauer einzuschätzen.";
@@ -929,13 +918,6 @@ function zustandVariantOptions(variant: ZustandStepVariant): StepOption[] {
   }
 }
 
-/** Dynamische Zustands-Frage (Kurzform, z. B. Step-Label). */
-export function getZustandQuestionForBereiche(bereiche: string[]): string {
-  const v = getZustandStepVariantFromBereiche(bereiche);
-  if (v) return zustandVariantQuestion(v);
-  return "Wie ist der Zustand der Räume?";
-}
-
 /** Zustand-Schritt mit passender Frage und Kacheln je Gewerk. */
 export function buildZustandStepForBereiche(bereiche: string[]): FunnelStep {
   const v = getZustandStepVariantFromBereiche(bereiche);
@@ -960,13 +942,6 @@ export function getZustandDisplayLabel(
     (v ? zustandVariantOptions(v) : BW_FUNNEL_STEP_ZUSTAND.options) ?? [];
   const hit = opts.find((o) => o.value === z);
   return hit?.label ?? null;
-}
-
-/** @see getZustandQuestionForBereiche — API mit State-Schnittstelle */
-export function getZustandLabel(
-  state: Pick<FunnelState, "bereiche">
-): string {
-  return getZustandQuestionForBereiche(state.bereiche);
 }
 
 /** Zugänglichkeit: nur bei Außeneinsatz / Außenprojekten; nicht bei reiner Innensanierung ohne Dach, Fassade, Wände (Außen). */

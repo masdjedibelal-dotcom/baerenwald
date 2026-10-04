@@ -1,5 +1,4 @@
-/** @deprecated Nutze limits.ts / brief.limits — Gast nach Lead: 3 */
-export const GPT_VIZ_MAX_RENDERS = 3;
+
 
 /** Freemium-Limits — Projekt- & Kontobasiert, nicht IP-Stunde */
 export const GPT_VIZ_LIMITS = {

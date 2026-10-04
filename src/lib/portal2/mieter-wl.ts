@@ -97,13 +97,6 @@ export const MIETER_WL_FOOTER = {
   noreply_en: "This message cannot be replied to.",
 } as const;
 
-export function mieterWlT(
-  lang: MeldeLang,
-  pair: { de: string; en: string }
-): string {
-  return lang === "en" ? pair.en : pair.de;
-}
-
 export function mieterWlLogoLetter(brand: MieterWlBrand): string {
   const k = brand.logoKuerzel?.trim();
   if (k) return k.slice(0, 4).toUpperCase();
@@ -174,13 +167,4 @@ export function mieterStgActiveCopy(
   const steps = buildMieterStgTimeline(stufe, lang);
   const active = steps.find((s) => s.active) ?? steps[steps.length - 1]!;
   return { title: active.title, subtitle: active.subtitle };
-}
-
-/** Format „Eingegangen — Subtitle“ (Spec-Schreibweise). */
-export function formatMieterStgHeadline(
-  stufe: string,
-  lang: MeldeLang
-): string {
-  const { title, subtitle } = mieterStgActiveCopy(stufe, lang);
-  return `${title} — ${subtitle}`;
 }

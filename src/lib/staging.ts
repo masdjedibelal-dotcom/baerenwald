@@ -1,8 +1,6 @@
 /** Staging-Website (Netlify-Branch `staging`). Nur wirksam mit Staging-Supabase. */
 
 export const STAGING_WEBSITE_ORIGIN = "https://staging--baerenwald.netlify.app";
-export const STAGING_CRM_ORIGIN =
-  "https://staging--baerenwald-backend.netlify.app";
 export const PROD_WEBSITE_ORIGIN = "https://baerenwaldmuenchen.de";
 
 export const STAGING_PORTAL_PASSWORD = "StagingTest!2026";
@@ -16,9 +14,6 @@ export function stagingSupabaseRef(): string {
     ""
   );
 }
-
-/** @deprecated Nutze stagingSupabaseRef() */
-export const STAGING_SUPABASE_REF = stagingSupabaseRef();
 
 export function isStagingSupabase(): boolean {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";

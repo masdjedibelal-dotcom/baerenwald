@@ -35,5 +35,3 @@ export const MAIL_COLORS = {
   c25: "#FFF8E1",
   white: "#ffffff",
 } as const;
-
-export type MailColorKey = keyof typeof MAIL_COLORS;

@@ -1,17 +1,7 @@
-import { logDbError } from '@/lib/errors/log-db-error'
+import { logDbError } from '@/lib/errors/log-db-error';
 import { createPartnerNotification } from "@/lib/partner/create-partner-notification";
-import { partnerNotificationVorgangKey } from "@/lib/partner/partner-notifications";
 import { partnerVorgangPortalPath } from "@/lib/partner/partner-site-url";
-import { isSupabaseConfigured, supabaseAdmin } from "@/lib/supabase";
-
-/** Legacy: CRM fordert kein Bautagebuch mehr an — Typ nur für Nachzieh-Notify. */
-type PartnerBautagebuchAnfrageItem = {
-  id: string;
-  auftrag_id: string;
-  notiz: string | null;
-  created_at: string;
-  position_ids?: string[];
-};
+import { isSupabaseConfigured,supabaseAdmin } from "@/lib/supabase";
 
 export async function notifyPartnerBautagebuchAnfrage(opts: {
   auftragId: string;
@@ -111,58 +101,4 @@ export async function notifyPartnerBautagebuchAnfrage(opts: {
 
   if (!notify.ok) return notify;
   return { ok: true, anfrageId: anfrageId ?? undefined };
-}
-
-/** Einmalige Glocke, wenn CRM nur die DB-Zeile angelegt hat (ohne Notify-API). */
-export async function ensurePartnerBautagebuchNotifications(opts: {
-  handwerkerId: string;
-  anfragen: PartnerBautagebuchAnfrageItem[];
-  titelByAuftragId: Map<string, string>;
-}): Promise<void> {
-  if (!isSupabaseConfigured() || !opts.anfragen.length) return;
-
-  const handwerkerId = opts.handwerkerId.trim();
-  if (!handwerkerId) return;
-
-  for (const bt of opts.anfragen) {
-    const link = partnerVorgangPortalPath(bt.auftrag_id, {
-      focus: "bautagebuch",
-      anfrageId: bt.id,
-    });
-    const vorgangKey = partnerNotificationVorgangKey(link);
-    if (!vorgangKey) continue;
-
-    const {data: unreadRows, error: __dbErr405_4} = await supabaseAdmin
-      .from("notifications")
-      .select("id, link")
-      .eq("handwerker_id", handwerkerId)
-      .eq("gelesen", false)
-      .order("created_at", { ascending: false })
-      .limit(30);
-    if (__dbErr405_4) logDbError('lib/partner/notify-partner-bautagebuch-anfrage:notifications', __dbErr405_4)
-    const hatUngelesen = (unreadRows ?? []).some(
-      (row) =>
-        partnerNotificationVorgangKey(String(row.link ?? "")) === vorgangKey
-    );
-    if (hatUngelesen) continue;
-
-    const {data: existingNotifs, error: __dbErr406_5} = await supabaseAdmin
-      .from("notifications")
-      .select("id")
-      .eq("handwerker_id", handwerkerId)
-      .in("typ", ["bautagebuch", "erinnerung"])
-      .ilike("link", `%id=${vorgangKey}%`)
-      .limit(1);
-    if (__dbErr406_5) logDbError('lib/partner/notify-partner-bautagebuch-anfrage:notifications', __dbErr406_5)
-    if ((existingNotifs ?? []).length > 0) continue;
-
-    await notifyPartnerBautagebuchAnfrage({
-      auftragId: bt.auftrag_id,
-      handwerkerId,
-      notiz: bt.notiz,
-      anfrageId: bt.id,
-      positionIds: bt.position_ids,
-      skipDbInsert: true,
-    });
-  }
 }

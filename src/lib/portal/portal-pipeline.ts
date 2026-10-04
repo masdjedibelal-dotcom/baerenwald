@@ -37,15 +37,6 @@ export function isPortalAuftragAbgeschlossenRecord(input: {
   return false;
 }
 
-export function isPortalAuftragAktivRecord(input: {
-  status?: string | null;
-  fortschritt?: number | null;
-}): boolean {
-  const s = normalizePortalStatus(input.status);
-  if (s.includes("storniert")) return false;
-  return !isPortalAuftragAbgeschlossenRecord(input);
-}
-
 /** Auftrags-Phase für Lead-Status (nicht für auftraege.status „offen“). */
 export function isPortalAuftragPhaseStatus(status?: string | null): boolean {
   const s = normalizePortalStatus(status);

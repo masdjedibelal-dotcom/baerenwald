@@ -21,47 +21,13 @@ export const EINSTELLUNGEN_BRANDING_FOOTER = "" as const;
 export const EINSTELLUNGEN_LOGO_HINT =
   "PNG oder JPG, quadratisch, min. 256 px. Ohne Upload nutzen wir Ihr Namenskürzel" as const;
 
-export const EINSTELLUNGEN_HERO_HINT =
-  "Breites Foto für die Übersicht (ca. 1600×400 px). Ohne Upload bleibt das Standardbild." as const;
-
 export const EINSTELLUNGEN_SCHWELLE_TITLE = "Freigabe-Regeln" as const;
 
 export const EINSTELLUNGEN_SCHWELLE_INTRO = "" as const;
 
 export const EINSTELLUNGEN_SCHWELLE_BETRAG_TITLE = "Freigabeschwelle" as const;
 
-export const EINSTELLUNGEN_SCHWELLE_BETRAG_INTRO =
-  "Angebote bis zu diesem Betrag ohne Ihre Freigabe — Sie erhalten nur eine Info." as const;
-
-/** @deprecated kein Kleinreparatur-Pfad mehr */
-export const EINSTELLUNGEN_KLEINREPARATUR_TITLE =
-  "Kleinreparaturen ohne Angebot" as const;
-
-/** @deprecated */
-export const EINSTELLUNGEN_KLEINREPARATUR_INTRO =
-  "Entfernt — unter der Schwelle: CRM „Direkt Auftrag“ ohne Ihre Freigabe (nur Info)." as const;
-
-export const EINSTELLUNGEN_AKUT_TITLE =
-  "Direktbeauftragung bei Sofortmaßnahme" as const;
-
-export const EINSTELLUNGEN_AKUT_INTRO =
-  "Nur ausgewählte Sofortmaßnahme-Fälle. Leere Fall-Liste = nichts geht direkt." as const;
-
-export const EINSTELLUNGEN_UNTER_SCHWELLE_TITLE =
-  "Direktbeauftragung wenn unter Schwelle" as const;
-
-export const EINSTELLUNGEN_UNTER_SCHWELLE_INTRO =
-  "Liegt das Angebot unter Ihrer Freigabeschwelle, entfällt die Freigabe — nur Benachrichtigung." as const;
-
-export const EINSTELLUNGEN_OBJEKT_SCHWELLE_TITLE =
-  "Ausnahmen je Objekt" as const;
-
-export const EINSTELLUNGEN_OBJEKT_SCHWELLE_INTRO = "" as const;
-
 export const EINSTELLUNGEN_PROFIL_EDIT = "Profil bearbeiten" as const;
-
-/** @deprecated Pills entfernt — nutzen Sie den Slider (0–5000 / 500er). */
-export const EINSTELLUNGEN_SCHWELLE_PRESETS = [500, 1000, 1500, 2000, 2500, 5000] as const;
 
 /** Regler: 0–5000 € in 500er-Schritten. */
 export const EINSTELLUNGEN_SCHWELLE_SLIDER_MIN = 0;
@@ -79,14 +45,6 @@ export function snapEinstellungenSchwelle(value: number): number {
   );
 }
 
-export function formatEinstellungenSchwellePreset(value: number): string {
-  if (value >= 1000) {
-    const k = value / 1000;
-    return Number.isInteger(k) ? `${k}k €` : `${k}k €`;
-  }
-  return `${value} €`;
-}
-
 /** Format wie Mock `money(schwelle)`. */
 export function formatEinstellungenSchwelle(
   value: number | null | undefined
@@ -98,8 +56,4 @@ export function formatEinstellungenSchwelle(
     currency: "EUR",
     maximumFractionDigits: 0,
   }).format(n);
-}
-
-export function einstellungenSchwelleInfo(value: number): string {
-  return "";
 }

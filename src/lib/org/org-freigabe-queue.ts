@@ -1,4 +1,4 @@
-import { hvFreigabeEntfaellt, funnelDirektauftragFromDaten, resolveAngebotZugestelltForHvFreigabe } from "@/lib/org/freigabe-bypass";
+import { hvFreigabeEntfaellt,funnelDirektauftragFromDaten,resolveAngebotZugestelltForHvFreigabe } from "@/lib/org/freigabe-bypass";
 import type { OrganisationLead } from "@/lib/org/types";
 
 type FreigabeLead = Pick<
@@ -103,23 +103,4 @@ export function buildAuftragByLeadId(
     if (leadId) map[leadId] = String(a.id);
   }
   return map;
-}
-
-export function filterOrgFreigabeLeads<T extends FreigabeLead>(
-  leads: T[],
-  auftragByLeadId: Record<string, string>
-): T[] {
-  return leads.filter((l) => isInOrgFreigabeQueue(l, auftragByLeadId));
-}
-
-export function countOrgFreigabeLeads(
-  eingang: FreigabeLead[],
-  leads: FreigabeLead[],
-  auftragByLeadId: Record<string, string>
-): number {
-  const ids = new Set<string>();
-  for (const l of [...eingang, ...leads]) {
-    if (isInOrgFreigabeQueue(l, auftragByLeadId)) ids.add(l.id);
-  }
-  return ids.size;
 }

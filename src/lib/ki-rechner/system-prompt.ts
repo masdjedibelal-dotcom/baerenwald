@@ -190,6 +190,3 @@ export function getKiRechnerSystemPrompt(): string {
 BÄRENWALD-PREISTABELLE (Rechner-Basis, München, unverbindlich — NUR diese Werte für Zahlen nennen):
 ${prices}`;
 }
-
-/** @deprecated Nutze getKiRechnerSystemPrompt() — ohne Preistabelle. */
-export const KI_RECHNER_SYSTEM_PROMPT = KI_RECHNER_SYSTEM_PROMPT_BASE;

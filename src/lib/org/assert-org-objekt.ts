@@ -1,4 +1,4 @@
-import { logDbError } from '@/lib/errors/log-db-error'
+import { logDbError } from '@/lib/errors/log-db-error';
 import { canOrgFreigabe } from "@/lib/org/org-rbac";
 import type { OrgSessionResult } from "@/lib/org/require-org-session";
 import { supabaseAdmin } from "@/lib/supabase";
@@ -12,19 +12,6 @@ export async function assertOrgObjekt(kundeId: string, objektId: string) {
     .maybeSingle();
   if (__dbErr268_1) logDbError('lib/org/assert-org-objekt:kunden_objekte', __dbErr268_1)
   return data;
-}
-
-export async function assertOrgEinheit(kundeId: string, einheitId: string) {
-  const {data: einheit, error: __dbErr269_2} = await supabaseAdmin
-    .from("objekt_einheiten")
-    .select("id, kunde_objekt_id, bezeichnung")
-    .eq("id", einheitId)
-    .maybeSingle();
-  if (__dbErr269_2) logDbError('lib/org/assert-org-objekt:objekt_einheiten', __dbErr269_2)
-  if (!einheit?.kunde_objekt_id) return null;
-  const obj = await assertOrgObjekt(kundeId, einheit.kunde_objekt_id);
-  if (!obj) return null;
-  return einheit;
 }
 
 export async function assertOrgLead(kundeId: string, leadId: string) {

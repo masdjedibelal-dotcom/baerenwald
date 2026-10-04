@@ -3,9 +3,7 @@
  * Keine eigene Regie-Mathematik hier.
  */
 import {
-  positionBetrag,
-  summeBetraege,
-  type BetragPosition,
+  positionBetrag,type BetragPosition
 } from "@/lib/shared-domain/regie-betrag";
 
 export type PartnerBetragQuelle = {
@@ -30,18 +28,4 @@ export function partnerToBetragPosition(p: PartnerBetragQuelle): BetragPosition 
 
 export function partnerPositionBetrag(p: PartnerBetragQuelle): number {
   return positionBetrag(partnerToBetragPosition(p), "partner");
-}
-
-export function partnerSummeBetraege(positionen: PartnerBetragQuelle[]): number {
-  return summeBetraege(positionen.map(partnerToBetragPosition), "partner");
-}
-
-/** Bereits aufgelöste Zeilenbeträge (z. B. HW-Eingabe) als Pauschalen summierbar machen. */
-export function nettoZeilenAlsBetragPositionen(
-  betraege: Array<number | null | undefined>
-): BetragPosition[] {
-  return betraege.map((n) => ({
-    preis_partner:
-      n != null && Number.isFinite(n) && n >= 0 ? n : null,
-  }));
 }

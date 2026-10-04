@@ -1,7 +1,4 @@
-import type { BadAusstattungStufe, Produkt, ProduktGroesse } from "./types";
-
-/** Nutzer-sichtbarer Name der Produktfamilie (intern: bad, Chip-ID: projekt). */
-export const BAD_FAMILIE_LABEL = "Neues Bad";
+import type { BadAusstattungStufe,Produkt,ProduktGroesse } from "./types";
 
 const BAD_LEISTUNGEN_STANDARD = [
   "Demontage & Entsorgung",

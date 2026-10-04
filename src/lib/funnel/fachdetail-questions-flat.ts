@@ -531,26 +531,6 @@ export function getActiveFachdetailQuestionIds(
   return getActiveFachdetailQuestions(state).map((q) => q.id);
 }
 
-/** Alle aktuell sichtbaren Fachdetail-Fragen haben eine gültige Antwort. */
-export function isFlatFachdetailsBlockComplete(
-  state: FachdetailFilterState
-): boolean {
-  for (const q of getActiveFachdetailQuestions(state)) {
-    const v = fachdetailAnswer(state, q.id);
-    if (q.inputType === "multi") {
-      const n = Array.isArray(v)
-        ? v.length
-        : typeof v === "string" && v
-          ? v.split(",").filter(Boolean).length
-          : 0;
-      if (n === 0) return false;
-    } else if (v === undefined || v === "") {
-      return false;
-    }
-  }
-  return true;
-}
-
 export function fachdetailQuestionScreenId(id: string): string {
   return `fachdetail_${id}`;
 }

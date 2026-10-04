@@ -16,7 +16,6 @@ import {
   bereicheOptions,
   dringlichkeitOptions,
 } from "@/components/funnel/portal-funnel-options";
-import type { SummaryRow } from "@/components/funnel/portal-funnel-types";
 import type { PortalFunnelHostModel } from "@/components/funnel/use-portal-funnel-host";
 import { getMeldeFotoBeispiele } from "@/lib/funnel/melde-foto-beispiel";
 import {
@@ -68,10 +67,7 @@ export function PortalFunnelHostView(m: PortalFunnelHostModel) {
     setMieterMode,
     setOhneMieter,
     setSelectedMieterId,
-    hvMieterListe,
-    selectedMieterId,
     objekt,
-    setMieterName,
     setMieterVorname,
     setMieterNachname,
     setMieterEmail,
@@ -119,7 +115,6 @@ export function PortalFunnelHostView(m: PortalFunnelHostModel) {
     summaryRows,
     error,
     setStep,
-    resetMieterNeuForm,
     steps,
     goBack,
     goNext,
@@ -978,7 +973,6 @@ export function PortalFunnelHostView(m: PortalFunnelHostModel) {
             onChange={(files) => setState((s) => ({ ...s, photos: files }))}
             buttonTitle={
               channel === "melde_anon" ||
-              channel === "portal_mieter" ||
               hvMitMieter
                 ? "Fotos hochladen"
                 : isHvIntern
@@ -987,7 +981,6 @@ export function PortalFunnelHostView(m: PortalFunnelHostModel) {
             }
             buttonHint={
               channel === "melde_anon" ||
-              channel === "portal_mieter" ||
               hvMitMieter
                 ? "Fotos vom Schaden — optional"
                 : isHvIntern
@@ -1082,7 +1075,6 @@ export function PortalFunnelHostView(m: PortalFunnelHostModel) {
           layout={stepLayout}
           stepLabel={
             channel === "melde_anon" ||
-            channel === "portal_mieter" ||
             melde?.needsAddress ||
             cfg.include.ortPlz
               ? "Ort & Kontakt"
@@ -1090,7 +1082,6 @@ export function PortalFunnelHostView(m: PortalFunnelHostModel) {
           }
           question={
             channel === "melde_anon" ||
-            channel === "portal_mieter" ||
             melde?.needsAddress ||
             cfg.include.ortPlz
               ? "Ihre Adresse und Kontaktdaten"
@@ -1139,7 +1130,6 @@ export function PortalFunnelHostView(m: PortalFunnelHostModel) {
               />
             )}
             {(channel === "melde_anon" ||
-              channel === "portal_mieter" ||
               melde?.needsAddress ||
               (cfg.include.ortPlz && channel === "portal_privat")) && (
               <>
@@ -1219,7 +1209,7 @@ export function PortalFunnelHostView(m: PortalFunnelHostModel) {
               </label>
             ) : null}
             {melde?.orgName &&
-            (channel === "melde_anon" || channel === "portal_mieter") ? (
+            channel === "melde_anon" ? (
               <MeldeDatenschutzHinweis
                 orgName={melde.orgName}
                 mode={melde.ergaenzenToken ? "ergaenzen" : "melden"}

@@ -1,9 +1,9 @@
 "use client";
 
-import { useRouter, useSearchParams } from "next/navigation";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useSearchParams } from "next/navigation";
+import { useEffect,useMemo,useRef,useState } from "react";
 
-import { acceptKundeAngebot, rejectKundeAngebot } from "@/app/actions/portal-angebot";
+import { acceptKundeAngebot,rejectKundeAngebot } from "@/app/actions/portal-angebot";
 import { acceptKundeAuftragAenderungen } from "@/app/actions/portal-auftrag";
 import { OrgAnlassBadge } from "@/components/org/OrgAnlassBadge";
 import { OrganisationHvVorgangDetail } from "@/components/org/OrganisationHvVorgangDetail";
@@ -35,7 +35,6 @@ import { usePortalBusy } from "@/components/shared/PortalBusyContext";
 import { usePortalRefresh } from "@/components/shared/usePortalRefresh";
 import { kundePortalToast } from "@/lib/shared/portal-toast";
 import type { KundePortalDetailItem } from "@/lib/portal/portal-detail-item";
-import { fmtPortalRelativeTime } from "@/lib/shared/portal-detail-format";
 import { portalDetailStatusPillClass } from "@/lib/shared/portal-detail-format";
 import {
   buildHvOffersFromItem,
@@ -47,9 +46,9 @@ import {
   portalDeepLinkTabForSimpleNav,
   PORTAL_DETAIL_TAB_QUERY,
 } from "@/lib/portal2/portal-detail-deep-link";
-import type { PortalFlowTimelineVariant, PortalMockStatusId } from "@/lib/portal2/status";
+import type { PortalFlowTimelineVariant,PortalMockStatusId } from "@/lib/portal2/status";
 import { portalMieterStatusLabel } from "@/lib/portal2/status";
-import { EMPTY, COPY_ERROR } from '@/lib/portal-copy'
+import { EMPTY,COPY_ERROR } from '@/lib/portal-copy';
 
 function extractProjektbeschreibung(item: KundePortalDetailItem): string {
   const fromMelde = item.meldeBeschreibung?.trim();
@@ -110,7 +109,6 @@ export function PortalVorgangDetail({
   auftragId,
   hvAbnahme,
   showHvAbnahme,
-  hausmeisterActor = false,
   orgFreigabeStatus,
   freigabeBypassGrund,
   hvMeldungStatus,
@@ -139,7 +137,6 @@ export function PortalVorgangDetail({
   } | null;
   showHvAbnahme?: boolean;
   /** Hausmeister-Portal: Befund im Tab bearbeitbar (nicht unter allen Menüpunkten). */
-  hausmeisterActor?: boolean;
   /** D7: Privat/Gewerbe — kein Freigabe-Schritt, Hinweis „Automatisch freigegeben“ */
   privatkunde?: boolean;
   orgFreigabeStatus?: string | null;
@@ -157,7 +154,6 @@ export function PortalVorgangDetail({
    */
   flowTimelineVariant?: PortalFlowTimelineVariant;
 }) {
-  const router = useRouter();
   const { refresh } = usePortalRefresh();
   const { runBusy } = usePortalBusy();
   const searchParams = useSearchParams();
@@ -332,14 +328,11 @@ export function PortalVorgangDetail({
         detailRole={
           mieterStatusMode || item.hvMieterView
             ? "mieter"
-            : hausmeisterActor
-              ? "hausmeister"
-              : privatkunde
+            : privatkunde
                 ? "kunde"
                 : "hv"
         }
         flowTimelineVariant={flowTimelineVariant}
-        hausmeisterActor={hausmeisterActor}
         mieterStatusMode={mieterStatusMode || Boolean(item.hvMieterView)}
         statusLabelOverride={
           mieterStatusMode || item.hvMieterView

@@ -5,7 +5,7 @@ import type { ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
-import { PortalInput, PortalSelect, PortalTextarea } from "@/components/shared/PortalFormControls";
+import { PortalInput,PortalSelect,PortalTextarea } from "@/components/shared/PortalFormControls";
 import {
   deletePartnerComplianceDokument,
   uploadPartnerComplianceDokument,
@@ -15,8 +15,7 @@ import { FileUploadField } from "@/components/shared/FileUploadField";
 import { PortalDokumentCard } from "@/components/shared/PortalDokumentCard";
 import {
   PortalDokumentActions,
-  PortalDokumentMetaLine,
-  PortalDokumentUploadZone,
+  PortalDokumentMetaLine
 } from "@/components/shared/PortalDokumentUi";
 import { PortalConfirmDialog } from "@/components/shared/PortalDetailUi";
 import { PortalModalShell } from "@/components/shared/PortalModalShell";
@@ -213,17 +212,6 @@ export function PartnerStammDokumenteListe({
     file: null,
   });
   const [formError, setFormError] = useState<string | null>(null);
-
-  function openNewUpload() {
-    setDraft({
-      typ: EIGENES_STAMM_DOKUMENT_TYP,
-      titel: "",
-      beschreibung: "",
-      file: null,
-    });
-    setFormError(null);
-    setUploadOpen(true);
-  }
 
   function openItemUpload(item: PartnerComplianceItem) {
     setDraft({

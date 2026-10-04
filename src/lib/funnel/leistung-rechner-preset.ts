@@ -1,5 +1,4 @@
 import type { Situation } from "@/lib/funnel/types";
-import { isErneuernProjektBereich } from "@/lib/funnel/projekt-erneuern";
 
 /**
  * Einstieg über `?leistung=<slug>` oder `?situation=…&gewerk=…` — Situation + Gewerk-Kachel.
@@ -53,13 +52,6 @@ export function getLeistungRechnerPreset(
   if (!slug) return null;
   const key = normalizeLeistungPresetKey(slug);
   return LEISTUNG_RECHNER_PRESET[key] ?? null;
-}
-
-/** Für Deep-Links: Projekt-GU-Kacheln unter „Zuhause erneuern“. */
-export function heroPresetIsProjektGu(slug: string): boolean {
-  const key = normalizeLeistungPresetKey(slug);
-  const p = LEISTUNG_RECHNER_PRESET[key];
-  return p ? isErneuernProjektBereich(p.bereiche) : false;
 }
 
 /** Prüft, ob `gewerk` als erste Kachel zu `situation` im Rechner vorkommt (Deep-Link). */

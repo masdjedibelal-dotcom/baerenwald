@@ -1,5 +1,5 @@
 import { createClient } from "@supabase/supabase-js";
-import { createServerClient, type CookieOptions } from "@supabase/ssr";
+import { createServerClient,type CookieOptions } from "@supabase/ssr";
 import { cookies } from "next/headers";
 
 import {
@@ -106,14 +106,6 @@ export function adminViewCookiePayload(payload: {
       path: "/",
     },
   };
-}
-
-export function setAdminViewCookie(payload: {
-  roleLabel: string;
-  adminEmail: string;
-}) {
-  const c = adminViewCookiePayload(payload);
-  cookies().set(c.name, c.value, c.options);
 }
 
 /**

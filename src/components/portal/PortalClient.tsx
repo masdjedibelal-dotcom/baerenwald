@@ -1,6 +1,6 @@
 "use client";
 
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter,useSearchParams } from "next/navigation";
 import {
   useCallback,
   useEffect,
@@ -27,6 +27,84 @@ import {
 } from "@/components/shared/PortalBusyContext";
 import { PortalContentBusy } from "@/components/shared/PortalContentBusy";
 import { usePortalRefresh } from "@/components/shared/usePortalRefresh";
+import { PortalLegalFooter } from "@/components/shared/PortalLegalFooter";
+import { PortalShell } from "@/components/shared/PortalShell";
+import { PortalHeaderSearch } from "@/components/shared/PortalHeaderSearch";
+import {
+  buildListReturnUrl,
+  parseReturn,
+} from "@/lib/list-return-url";
+import { useListUrlState } from "@/hooks/useListUrlState";
+import { PortalInboxEmpty } from "@/components/shared/PortalEmptyState";
+import { PORTAL_EMPTY_TITLE,portalEmptySubtitle } from "@/lib/portal2/portal-states";
+import { PortalListCard } from "@/components/shared/PortalListCard";
+import {
+  PORTAL_LIST_PAGE_SIZE,
+  PortalListPagination,
+} from "@/components/shared/PortalListPagination";
+import {
+  PortalListeTitle,
+} from "@/components/shared/PortalListeChrome";
+import { PortalListeFilterBar } from "@/components/shared/PortalListeFilterBar";
+import {
+  countUnreadBautagebuch,
+  getBautagebuchLastSeenAt,
+} from "@/lib/portal2/bautagebuch-attention";
+import { portalListStackClass } from "@/lib/portal2/layout-chrome";
+import { buildKundeVorgaenge } from "@/lib/portal/build-kunde-vorgaenge";
+import { findKundeVorgangByQueryId } from "@/lib/portal/portal-detail-item";
+import {
+  countKundeVorgaengeNeedsAction,
+  filterKundeVorgaenge,
+  type KundeVorgangFilter,
+} from "@/lib/portal/kunde-vorgang-filter";
+import type { OrgVorgangFilter } from "@/lib/org/org-vorgang-filter";
+import {
+  buildKundeVorgangCardRows,
+  type PortalCardRow,
+} from "@/lib/portal/portal-list-mappers";
+import {
+  compareByNewestCreated,
+  compareVorgangListOrder,
+  PORTAL_DASHBOARD_RECENT_LIMIT,
+  portalFlowSortRank,
+} from "@/lib/portal/portal-vorgang-sort";
+import { portalClientCreateChannel,portalCreateLabel } from "@/lib/portal2/create";
+import { buildPortalContactPrefill } from "@/lib/portal/portal-contact-prefill";
+import {
+  countLeadsByPortalFlow,
+  pickPreferredAngebotForPortalFlow,
+  resolveLeadPortalFlowStatus,
+} from "@/lib/portal2/hv-dashboard";
+import { hvListeChipMatches } from "@/lib/portal2/hv-liste";
+import { resolveKundeDashboardActions } from "@/lib/portal2/dashboard-actions";
+import {
+  buildPrivatDashboardKpis,
+  PRIVAT_LISTE_CHIPS,
+  privatKpiToListeChip,
+  privatListeChipMatches,
+  type PrivatListeChip,
+} from "@/lib/portal2/kunde-dashboard";
+import {
+  portalKundeDashboardHello,
+  portalKundeListeTitle,
+  portalNavRoleForKundeTyp,
+  resolvePortalKundeTyp,
+  type PortalKundeTyp,
+} from "@/lib/portal2/kunde-typ";
+import { buildPortalShellNav } from "@/lib/portal2/nav-items";
+import { portalDetailStatusPillClass } from "@/lib/shared/portal-detail-format";
+import {
+  portalListeStatusChipStyle,
+  portalListeStatusLabel,
+} from "@/lib/portal2/liste-status";
+import {
+  portalMieterStatusLabel,
+  type PortalMockStatusId,
+} from "@/lib/portal2/status";
+import type { MieterHvBrand } from "@/lib/portal/load-mieter-hv-brand";
+import { cn } from "@/lib/utils";
+import { PortalButton } from "@/components/portal/PortalButton";
 
 const PortalBaerenwaldGpt = dynamic(
   () =>
@@ -67,85 +145,6 @@ const PortalVorgangDetail = dynamic(
     ),
   }
 );
-import { PortalLegalFooter } from "@/components/shared/PortalLegalFooter";
-import { PortalShell } from "@/components/shared/PortalShell";
-import { PortalHeaderSearch } from "@/components/shared/PortalHeaderSearch";
-import {
-  buildListReturnUrl,
-  parseReturn,
-} from "@/lib/list-return-url";
-import { useListUrlState } from "@/hooks/useListUrlState";
-import { PortalInboxEmpty } from "@/components/shared/PortalEmptyState";
-import { PORTAL_EMPTY_TITLE, portalEmptySubtitle } from "@/lib/portal2/portal-states";
-import { PortalListCard } from "@/components/shared/PortalListCard";
-import {
-  PORTAL_LIST_PAGE_SIZE,
-  PortalListPagination,
-} from "@/components/shared/PortalListPagination";
-import {
-  PortalListeTitle,
-} from "@/components/shared/PortalListeChrome";
-import { PortalListeFilterBar } from "@/components/shared/PortalListeFilterBar";
-import {
-  countUnreadBautagebuch,
-  getBautagebuchLastSeenAt,
-} from "@/lib/portal2/bautagebuch-attention";
-import { portalListStackClass } from "@/lib/portal2/layout-chrome";
-import { buildKundeVorgaenge } from "@/lib/portal/build-kunde-vorgaenge";
-import { findKundeVorgangByQueryId } from "@/lib/portal/portal-detail-item";
-import {
-  countKundeVorgaengeNeedsAction,
-  filterKundeVorgaenge,
-  type KundeVorgangFilter,
-} from "@/lib/portal/kunde-vorgang-filter";
-import type { OrgVorgangFilter } from "@/lib/org/org-vorgang-filter";
-import {
-  buildKundeVorgangCardRows,
-  type PortalCardRow,
-} from "@/lib/portal/portal-list-mappers";
-import {
-  compareByNewestCreated,
-  compareVorgangListOrder,
-  PORTAL_DASHBOARD_RECENT_LIMIT,
-  portalFlowSortRank,
-} from "@/lib/portal/portal-vorgang-sort";
-import { portalClientCreateChannel, portalCreateLabel } from "@/lib/portal2/create";
-import { buildPortalContactPrefill } from "@/lib/portal/portal-contact-prefill";
-import {
-  countLeadsByPortalFlow,
-  pickPreferredAngebotForPortalFlow,
-  resolveLeadPortalFlowStatus,
-} from "@/lib/portal2/hv-dashboard";
-import { hvListeChipMatches } from "@/lib/portal2/hv-liste";
-import { resolveKundeDashboardActions } from "@/lib/portal2/dashboard-actions";
-import {
-  buildPrivatDashboardKpis,
-  PRIVAT_LISTE_CHIPS,
-  privatKpiToListeChip,
-  privatListeChipMatches,
-  type PrivatListeChip,
-} from "@/lib/portal2/kunde-dashboard";
-import {
-  portalKundeDashboardHello,
-  portalKundeListeTitle,
-  portalNavRoleForKundeTyp,
-  resolvePortalKundeTyp,
-  type PortalKundeTyp,
-} from "@/lib/portal2/kunde-typ";
-import { buildPortalShellNav } from "@/lib/portal2/nav-items";
-import { portalDetailStatusPillClass } from "@/lib/shared/portal-detail-format";
-import {
-  portalListeStatusChipStyle,
-  portalListeStatusLabel,
-} from "@/lib/portal2/liste-status";
-import {
-  portalMieterStatusLabel,
-  type PortalMockStatusId,
-} from "@/lib/portal2/status";
-import type { PortalFunnelMeldeCtx } from "@/components/funnel/portal-funnel-types";
-import type { MieterHvBrand } from "@/lib/portal/load-mieter-hv-brand";
-import { cn } from "@/lib/utils";
-import { PortalButton } from "@/components/portal/PortalButton";
 
 type PortalKunde = {
   name?: string | null;
@@ -270,7 +269,6 @@ export function PortalClient({
   hvPortalMode = false,
   kundeTyp: kundeTypProp,
   hausverwaltungBrand = null,
-  mieterMelde = null,
   mieterFeedbackByLeadId = {},
   hwErledigtByLeadId = {},
   hvFeedbackByLeadId = {},
@@ -338,7 +336,6 @@ export function PortalClient({
   /** Mieter-Portal: White-Label der Hausverwaltung (Desktop-Topbar). */
   hausverwaltungBrand?: MieterHvBrand | null;
   /** Mieter einer HV: Meldung über die HV statt Website-Anfrage. */
-  mieterMelde?: PortalFunnelMeldeCtx | null;
 }) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -1649,16 +1646,11 @@ export function PortalClient({
 
       <PortalCreateFunnelModal
         open={createOpen}
-        channel={
-          mieterMelde
-            ? "portal_mieter"
-            : portalClientCreateChannel({
-                hvPortalMode,
-                kundeTyp,
-                navRole,
-              })
-        }
-        melde={mieterMelde ?? undefined}
+        channel={portalClientCreateChannel({
+          hvPortalMode,
+          kundeTyp,
+          navRole,
+        })}
         title={portalCreateLabel(navRole)}
         prefill={fabContactPrefill}
         onClose={() => setCreateOpen(false)}

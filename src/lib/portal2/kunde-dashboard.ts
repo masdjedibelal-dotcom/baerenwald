@@ -6,15 +6,10 @@ import { PALETTE } from "@/lib/tokens/palette";
 import type { PortalMockStatusId } from "@/lib/portal2/status";
 import type { HvFlowCountMap } from "@/lib/portal2/hv-dashboard";
 
-export const PRIVAT_DASHBOARD_ROLE_LABEL = "" as const;
-/** Kein Kundentyp im Hero — irritiert Endkunden. */
-export const GEWERBE_DASHBOARD_ROLE_LABEL = "" as const;
-
 export const PRIVAT_DASHBOARD_RECENT_TITLE = "Zuletzt" as const;
 export const PRIVAT_DASHBOARD_RECENT_ALL = "Alle ansehen" as const;
 export const PRIVAT_DASHBOARD_EMPTY_RECENT =
   "Noch keine Vorgänge — Ihre Anfragen erscheinen hier." as const;
-export const PRIVAT_DASHBOARD_KPI_SECTION = "Vorgänge" as const;
 
 export type PrivatDashboardKpiId = "offen" | "in_arbeit" | "erledigt";
 

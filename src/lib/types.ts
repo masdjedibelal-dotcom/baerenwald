@@ -107,25 +107,3 @@ export interface FunnelStep {
   infoText?: string;
   showFor?: Partial<FunnelState>;
 }
-
-/** Lead-Übermittlung (API / Formular) */
-export interface LeadPayload {
-  name: string;
-  email: string;
-  telefon?: string;
-  message?: string;
-  meta?: Record<string, unknown>;
-}
-
-/** Chips / Auswahl-Komponenten */
-export interface ChipOption {
-  value: string;
-  label: string;
-  hint?: string;
-}
-
-export interface FakeTimeSlot {
-  id: string;
-  label: string;
-  isoStart: string;
-}

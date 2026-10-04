@@ -4,7 +4,7 @@ import {
   computeHausserviceMonatPreis,
   HAUSSERVICE_DEFAULT_INPUT,
 } from "./hausservice-preis";
-import { PRODUKTE_BY_FAMILIE, getProdukt } from "./katalog";
+import { getProdukt } from "./katalog";
 import {
   produktToFunnelState,
   type ProduktFunnelOverrides,
@@ -73,26 +73,6 @@ export function produktPreis(
   };
 }
 
-/** Niedrigster „ab“-Preis einer Familie (ohne PLZ). */
-export function produktFamilieAbPreis(
-  familie: "bad" | "fix" | "garten" | "hausservice"
-): number | null {
-  const slugs = getProduktSlugsForFamilie(familie);
-  let min: number | null = null;
-  for (const slug of slugs) {
-    const p = produktPreis(slug);
-    if (!p || p.min <= 0) continue;
-    min = min == null ? p.min : Math.min(min, p.min);
-  }
-  return min;
-}
-
-function getProduktSlugsForFamilie(
-  familie: "bad" | "fix" | "garten" | "hausservice"
-): string[] {
-  return PRODUKTE_BY_FAMILIE[familie].map((p) => p.slug);
-}
-
 export function formatProduktPreisRange(min: number, max: number): string {
   const fmt = (n: number) =>
     new Intl.NumberFormat("de-DE", {
@@ -104,13 +84,6 @@ export function formatProduktPreisRange(min: number, max: number): string {
   if (max > 0) return `ca. ${fmt(max)} €`;
   if (min > 0) return `ab ${fmt(min)} €`;
   return "Preis auf Anfrage";
-}
-
-export function formatProduktAbPreis(min: number): string {
-  const fmt = new Intl.NumberFormat("de-DE", {
-    maximumFractionDigits: 0,
-  }).format(Math.round(min));
-  return `ab ${fmt} €`;
 }
 
 /** Garten-Abo: 2 Besuche pro Monat (Apr–Okt) — Anzeige im Katalog. */

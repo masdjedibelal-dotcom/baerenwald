@@ -1,4 +1,4 @@
-import { PORTAL_FLOW, type PortalMockStatusId } from "@/lib/portal2/status";
+import { PORTAL_FLOW,type PortalMockStatusId } from "@/lib/portal2/status";
 
 /** Startseite „Zuletzt“ — überall maximal so viele Einträge. */
 export const PORTAL_DASHBOARD_RECENT_LIMIT = 4;
@@ -22,17 +22,6 @@ export function compareByNewestCreated(
   b: { sortDate: number }
 ): number {
   return b.sortDate - a.sortDate;
-}
-
-/** Neueste zuerst, dann auf Dashboard-Limit kürzen. */
-export function takeNewestCreated<T>(
-  items: T[],
-  getCreatedAtMs: (item: T) => number,
-  limit = PORTAL_DASHBOARD_RECENT_LIMIT
-): T[] {
-  return [...items]
-    .sort((a, b) => getCreatedAtMs(b) - getCreatedAtMs(a))
-    .slice(0, limit);
 }
 
 /** Portal-Flow (HV/Privat-Chips): Index in PORTAL_FLOW. */

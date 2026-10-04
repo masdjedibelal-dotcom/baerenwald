@@ -28,5 +28,3 @@ export function createPartnerSignedUrlCache() {
 
   return { resolve, resolveMany };
 }
-
-export type PartnerSignedUrlCache = ReturnType<typeof createPartnerSignedUrlCache>;

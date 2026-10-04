@@ -1,5 +1,4 @@
-import type { MeldeKategorie, OrganisationLead } from "@/lib/org/types";
-import { hvMeldungStatusLabel } from "@/lib/org/hv-meldung-workflow";
+import type { MeldeKategorie,OrganisationLead } from "@/lib/org/types";
 
 export function meldeFotosFromFunnelDaten(funnel_daten: unknown): string[] {
   const fd = funnel_daten as { fotos?: unknown } | null | undefined;
@@ -22,28 +21,4 @@ export function meldeKategorieFromLead(lead: OrganisationLead): MeldeKategorie |
     return k;
   }
   return null;
-}
-
-export function meldeBereichFromLead(lead: OrganisationLead): string | null {
-  const fd = lead.funnel_daten as { melde_bereich?: string } | null | undefined;
-  return fd?.melde_bereich?.trim() || null;
-}
-
-/** @deprecated Badge „Notfall“ entfernt — nutze leadIstMeldeDirektauftrag. */
-export function isMeldeNotfall(_lead: OrganisationLead): boolean {
-  return false;
-}
-
-export function eingangStatusLabel(lead: OrganisationLead): string {
-  if (lead.einladung_status === "offen") return "Wartet auf Melder";
-  if (lead.hv_meldung_status) {
-    return hvMeldungStatusLabel(lead.hv_meldung_status);
-  }
-  if (lead.org_freigabe_status === "ausstehend") return "Angebot zur Freigabe";
-  if (lead.org_freigabe_status === "beschluss_ausstehend") {
-    return "Wartet auf Beschluss";
-  }
-  if (lead.org_freigabe_status === "abgelehnt") return "Abgelehnt";
-  if (lead.org_freigabe_status === "freigegeben") return "Freigegeben";
-  return lead.status?.trim() || "Neu";
 }

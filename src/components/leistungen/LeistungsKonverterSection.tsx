@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback,useEffect,useState } from "react";
 
 import { ConversionCheckoutModal } from "@/components/products/ConversionCheckoutModal";
 import { ConversionWidget } from "@/components/products/ConversionWidget";
@@ -15,8 +15,6 @@ import {
   getProdukteForLeistung,
   normalizeLeistungSlug,
 } from "@/lib/leistungen/leistung-produkt-map";
-import {
-} from "@/lib/products/build-rechner-url";
 import { getProdukt } from "@/lib/products/katalog";
 import type { KatalogQuelle } from "@/lib/products/types";
 import { SITE_CONFIG } from "@/lib/config";

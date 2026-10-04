@@ -60,8 +60,3 @@ export function portalKundeDashboardHello(
   const short = n.split(/\s+/)[0] || n;
   return `Hallo ${short}`;
 }
-
-/** Mock `listFor()` — Privat/Gewerbe sehen nur „eigene“ Vorgänge (Portal-Daten sind bereits kundenbezogen). */
-export function listForOwnsAllPortalRows(_typ: PortalKundeTyp): boolean {
-  return true;
-}

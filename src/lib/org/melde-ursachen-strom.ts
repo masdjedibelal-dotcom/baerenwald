@@ -19,11 +19,6 @@ export type StromUrsacheId =
   | "notentriegelung"
   | "sonstiges";
 
-export type StromUrsacheOption = {
-  id: StromUrsacheId;
-  label: string;
-};
-
 export type MeldeUrsachenStromState = {
   bereich: "strom";
   selectedUrsacheId: StromUrsacheId | null;
@@ -31,20 +26,6 @@ export type MeldeUrsachenStromState = {
   entscheidung: "hm_geloest" | "fachfirma" | null;
   material?: string[];
   updatedAt?: string | null;
-};
-
-const ALL: Record<StromUrsacheId, string> = {
-  fi_automat: "FI- oder Sicherungsautomat ausgelöst",
-  steckdose: "Steckdose locker oder beschädigt",
-  licht_schalter: "Licht / Schalter defekt",
-  leuchtmittel: "Leuchtmittel defekt",
-  klingel: "Klingel / Türsprecher",
-  tor_strom: "Stromversorgung / Sicherung am Tor",
-  lichtschranke: "Lichtschranke verschmutzt oder blockiert",
-  verklemmt: "Tor / Schiene verklemmt",
-  fb_batterie: "Fernbedienung Batterie leer",
-  notentriegelung: "Notentriegelung / Tor mechanisch",
-  sonstiges: "Sonstiges",
 };
 
 function ans(a: MeldeAnswers, id: string): string {
@@ -55,78 +36,6 @@ function ans(a: MeldeAnswers, id: string): string {
 function normalizeProblem(raw: string): string {
   return normalizeMeldeStromProblem(raw);
 }
-
-function orderIds(ids: StromUrsacheId[]): StromUrsacheOption[] {
-  const uniq = ids.filter((id, i) => ids.indexOf(id) === i);
-  if (!uniq.includes("sonstiges")) uniq.push("sonstiges");
-  return uniq.map((id) => ({ id, label: ALL[id] }));
-}
-
-/** Mögliche Ursachen — wahrscheinlichste zuerst. */
-export function stromUrsachenForAnswers(
-  answers: MeldeAnswers | undefined
-): StromUrsacheOption[] {
-  const a = answers ?? {};
-  const problem = normalizeProblem(ans(a, "melde_problem"));
-  const sicherung = ans(a, "melde_sicherung_raus");
-  const wieder = ans(a, "melde_wieder_raus");
-
-  switch (problem) {
-    case "kein_strom":
-    case "fi_sicherung":
-      if (wieder === "ja" || wieder === "weiss_nicht") {
-        return orderIds(["fi_automat", "sonstiges"]);
-      }
-      if (sicherung === "ja") {
-        return orderIds(["fi_automat", "sonstiges"]);
-      }
-      return orderIds(["fi_automat", "sonstiges"]);
-
-    case "einzelner_punkt":
-      return orderIds([
-        "leuchtmittel",
-        "licht_schalter",
-        "steckdose",
-        "fi_automat",
-        "sonstiges",
-      ]);
-
-    case "klingel":
-      return orderIds(["klingel", "sonstiges"]);
-
-    case "garagentor":
-      return orderIds([
-        "tor_strom",
-        "lichtschranke",
-        "verklemmt",
-        "fb_batterie",
-        "notentriegelung",
-        "sonstiges",
-      ]);
-
-    default:
-      return orderIds([
-        "fi_automat",
-        "steckdose",
-        "leuchtmittel",
-        "licht_schalter",
-        "klingel",
-        "sonstiges",
-      ]);
-  }
-}
-
-export function stromUrsacheLabel(id: string | null | undefined): string {
-  if (!id) return "—";
-  return ALL[id as StromUrsacheId] ?? id;
-}
-
-export const STROM_MATERIAL_OPTIONS = [
-  { value: "sicherung", label: "Sicherung" },
-  { value: "leuchtmittel", label: "Leuchtmittel" },
-  { value: "batterie", label: "Batterie" },
-  { value: "sonstiges", label: "Sonstiges" },
-] as const;
 
 export function stromSchadenKurz(answers: MeldeAnswers | undefined): string {
   const a = answers ?? {};

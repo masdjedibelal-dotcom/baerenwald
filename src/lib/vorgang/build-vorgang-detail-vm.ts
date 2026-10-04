@@ -4,7 +4,6 @@
 
 import type { PortalAngebotPositionDisplay } from "@/lib/portal/portal-angebot-display";
 import type { PortalAuftragPositionDisplay } from "@/lib/portal/kunde-auftrag-aenderung";
-import type { PartnerKonditionZeile } from "@/lib/partner/partner-konditionen";
 import {
   formatAnfrageBereiche,
   formatAnfrageZeitraum,
@@ -15,14 +14,11 @@ import {
 import { labelSituation } from "@/lib/lead-funnel-labels";
 import type { PortalObjekt } from "@/lib/portal/portal-objekt";
 import {
-  extractKundenFreitext,
   fachdetailRowsFromFunnelDaten,
   filterVorgangDetailFachRows,
-  normalizeFunnelDaten,
+  normalizeFunnelDaten
 } from "@/lib/lead-funnel-daten";
-import { meldeFotosFromFunnelDaten } from "@/lib/org/org-eingang-utils";
 import { formatAuftragDatumSpan } from "@/lib/portal/portal-auftrag-display";
-import { isPrivatPortalKontext } from "@/lib/portal/portal-titel";
 import {
   kostentraegerLabel,
   type VorgangDetailAusfuehrung,
@@ -127,20 +123,6 @@ function mergeLeistungenByTitle(
     map.set(key, z);
   }
   return Array.from(map.values());
-}
-
-function leistungenFromPartnerKonditionen(
-  zeilen: PartnerKonditionZeile[] | undefined
-): VorgangLeistungZeile[] {
-  if (!zeilen?.length) return [];
-  return zeilen.map((z) => ({
-    id: z.id,
-    title: z.title,
-    beschreibung: z.beschreibung,
-    preisEkNetto: z.vorschlagNetto ?? z.hwNetto ?? null,
-    aenderungBadge:
-      z.zeilenBadge === "vereinbart" ? undefined : z.zeilenBadge,
-  }));
 }
 
 export type BuildKundeHvVmInput = {
@@ -332,224 +314,5 @@ export function buildKundeHvVorgangDetailVm(
     ausfuehrung,
     leistungen,
     detailsLeistungen,
-  };
-}
-
-export type BuildPartnerVmInput = {
-  idLabel: string;
-  titel: string;
-  statusLabel?: string;
-  lead?: PortalAnfrageLeadSource | null;
-  plz?: string;
-  ort?: string;
-  zeitraum?: string;
-  aufgabeNotiz?: string | null;
-  gewerkName?: string | null;
-  konditionZeilen?: PartnerKonditionZeile[];
-  startDatum?: string | null;
-  endDatum?: string | null;
-  fotos?: string[];
-  /**
-   * Preisanfrage (LV-Einholung): kein Melder/Zugang/Dringlichkeit —
-   * nur Ort + kurze Beschreibung + optional CRM-Text.
-   */
-  variant?: "default" | "einholung";
-  /** Überschreibt Melde-Beschreibung (z. B. CRM-Projektbeschreibung). */
-  beschreibungPlain?: string | null;
-  /**
-   * Kontakt vor Ort nur ab Auftrag (nicht bei Angebots-/Anfrage-Phase).
-   */
-  includeKontaktVorOrt?: boolean;
-};
-
-export function buildPartnerVorgangDetailVm(
-  input: BuildPartnerVmInput
-): VorgangDetailVM {
-  const einholung = input.variant === "einholung";
-  const lead = input.lead;
-  const privat = isPrivatPortalKontext({
-    auftraggeber_kunde_id: lead?.auftraggeber_kunde_id,
-    situation: lead?.situation,
-  });
-  const addr = resolveAnfrageAdresse({
-    ...(lead ?? {}),
-    plz: lead?.plz ?? input.plz,
-    ort: lead?.ort ?? input.ort,
-  });
-  const melder = resolveAnfrageMelder(lead ?? {});
-  const strasse = addr.strasseZeile || null;
-  const plzOrt =
-    [addr.plz ?? input.plz, addr.ort ?? input.ort]
-      .filter(Boolean)
-      .join(" ")
-      .trim() || null;
-  const adresse =
-    (addr.listOrtLine !== "—" ? addr.listOrtLine : null) ||
-    [input.plz, input.ort].filter(Boolean).join(" ") ||
-    null;
-
-  const leistungen = leistungenFromPartnerKonditionen(input.konditionZeilen);
-  const summeEk = leistungen.reduce(
-    (acc, z) => acc + (typeof z.preisEkNetto === "number" ? z.preisEkNetto : 0),
-    0
-  );
-
-  const norm = lead
-    ? normalizeFunnelDaten(lead.funnel_daten, lead.bereiche)
-    : null;
-  const situationSlug = norm?.situation || lead?.situation || undefined;
-  const situationLabel =
-    !einholung &&
-    situationSlug &&
-    labelSituation(situationSlug) !== "—"
-      ? labelSituation(situationSlug)
-      : null;
-  const bereichLabel =
-    !einholung && lead ? formatAnfrageBereiche(lead) ?? null : null;
-  const fachdetailRows =
-    !einholung && lead?.funnel_daten
-      ? fachdetailRowsFromFunnelDaten(lead.funnel_daten, lead.bereiche)
-      : [];
-  const zeitraumLabel = einholung
-    ? null
-    : input.zeitraum?.trim() ||
-      (lead ? formatAnfrageZeitraum(lead) : null) ||
-      null;
-
-  const beschreibung = einholung
-    ? input.beschreibungPlain?.trim() || null
-    : input.beschreibungPlain?.trim() ||
-      (norm
-        ? extractKundenFreitext(norm, lead?.kontakt_nachricht)
-        : null) ||
-      lead?.kontakt_nachricht?.trim() ||
-      lead?.notizen?.trim() ||
-      null;
-
-  const fotos =
-    input.fotos && input.fotos.length > 0
-      ? input.fotos
-      : meldeFotosFromFunnelDaten(lead?.funnel_daten);
-
-  const objektName = lead?.objekt?.name?.trim() || null;
-  const showObjekt =
-    !privat &&
-    Boolean(objektName && objektName !== "Leistungsort" && objektName !== "Objekt");
-
-  const showMeldeKontakt = !privat && !einholung && Boolean(input.includeKontaktVorOrt);
-
-  return {
-    role: "partner",
-    kopf: {
-      idLabel: input.idLabel,
-      titel: input.titel,
-      statusLabel: input.statusLabel,
-      kategorie: input.gewerkName ?? undefined,
-    },
-    auftraggeber: {},
-    objektMelder: {
-      // HV: Objektname; Privat: keine Objekt-/Meldezeile — nur Kundenstraße
-      objektTitel: showObjekt ? objektName : null,
-      adresseZeile: adresse,
-      adresseStrasse: strasse,
-      plzOrt,
-      einheit: privat || einholung ? null : (melder.einheit ?? lead?.melder_einheit ?? null),
-      zugangshinweis:
-        privat || einholung ? null : (lead?.einheiten_hinweis ?? null),
-      melderName: showMeldeKontakt
-        ? melder.name ?? lead?.kontakt_name ?? null
-        : null,
-      melderTelefon: showMeldeKontakt
-        ? melder.telefon ?? lead?.melder_telefon ?? null
-        : null,
-      melderEmail: showMeldeKontakt ? melder.email ?? null : null,
-      beschreibung,
-      fotos,
-      situationLabel,
-      bereichLabel,
-      zeitraumLabel,
-      fachdetailRows,
-    },
-    ausfuehrung: {
-      gewerk: input.gewerkName ?? null,
-      aufgabeNotiz: einholung ? null : (input.aufgabeNotiz ?? null),
-      terminVon: einholung ? null : (input.startDatum ?? null),
-      terminBis: einholung ? null : (input.endDatum ?? null),
-      terminLabel: einholung
-        ? null
-        : zeitraumLabel ||
-          formatAuftragDatumSpan(input.startDatum, input.endDatum) ||
-          null,
-      kontaktVorOrtName: showMeldeKontakt
-        ? melder.name ?? lead?.kontakt_name ?? null
-        : null,
-      kontaktVorOrtTel: showMeldeKontakt
-        ? melder.telefon ?? lead?.melder_telefon ?? null
-        : null,
-      summeEkNetto: summeEk > 0 ? summeEk : null,
-    },
-    leistungen,
-  };
-}
-
-export type BuildMieterVmInput = {
-  idLabel: string;
-  titel: string;
-  statusLabel?: string;
-  objektTitel: string;
-  einheit?: string | null;
-  melderName?: string | null;
-  beschreibungPlain?: string | null;
-  leistungstitel?: string[];
-};
-
-export function buildMieterVorgangDetailVm(
-  input: BuildMieterVmInput
-): VorgangDetailVM {
-  const leistungen: VorgangLeistungZeile[] = (input.leistungstitel ?? []).map(
-    (t, i) => ({
-      id: `mieter-leist-${i}`,
-      title: t,
-    })
-  );
-
-  return {
-    role: "mieter",
-    kopf: {
-      idLabel: input.idLabel,
-      titel: input.titel,
-      statusLabel: input.statusLabel,
-    },
-    auftraggeber: {},
-    objektMelder: {
-      objektTitel: input.objektTitel,
-      einheit: input.einheit ?? null,
-      melderName: input.melderName ?? null,
-      beschreibung: input.beschreibungPlain ?? null,
-      fotos: [],
-    },
-    ausfuehrung: {
-      kontaktVorOrtName: null,
-    },
-    leistungen,
-    detailsLeistungen:
-      leistungen.length > 0
-        ? { title: "Leistungen", mode: "plain" as const }
-        : null,
-  };
-}
-
-export function emptyVorgangDetailVm(
-  role: VorgangDetailRole,
-  titel = "Vorgang"
-): VorgangDetailVM {
-  return {
-    role,
-    kopf: { idLabel: "—", titel },
-    auftraggeber: {},
-    objektMelder: {},
-    ausfuehrung: {},
-    leistungen: [],
-    detailsLeistungen: null,
   };
 }

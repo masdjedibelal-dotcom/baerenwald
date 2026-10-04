@@ -30,10 +30,6 @@ export type PartnerDocAbsender = {
   kleinunternehmer?: boolean;
 };
 
-export function sumPartnerDocNetto(positionen: PartnerDocPosition[]): number {
-  return positionen.reduce((s, p) => s + (Number.isFinite(p.netto) ? p.netto : 0), 0);
-}
-
 export function formatPartnerRechnungsNr(year: number, seq: number): string {
   return `${year}-${String(seq).padStart(4, "0")}`;
 }

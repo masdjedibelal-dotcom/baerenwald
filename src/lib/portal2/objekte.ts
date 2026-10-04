@@ -381,57 +381,18 @@ export function objektHasActiveVorgaenge(
 export const OBJ_DELETE_BLOCKED =
   "Objekt kann nicht gelöscht werden: Es hängen noch offene Vorgänge daran." as const;
 
-export const OBJ_DELETE_CONFIRM_PREFIX = "Objekt" as const;
-
 export function objDeleteConfirm(name: string): string {
   return `Objekt „${name}“ wirklich löschen? Zugeordnete Vorgänge bleiben erhalten.`;
 }
 
-export const OBJ_AUTOPASS_OFFENER_PUNKT = "" as const; // legacy export — nicht mehr in der UI anzeigen
-
-/** @deprecated UI ohne Sofort-Ausrückung — nur noch Freigabeschwelle. */
-export const OBJ_AUTOPASS_WIZARD_DESC =
-  "Angebote bis zur Freigabeschwelle werden automatisch beauftragt — darüber ist Ihre Freigabe nötig." as const;
-
-/** @deprecated UI ohne Sofort-Ausrückung — nur noch Freigabeschwelle. */
-export const OBJ_AUTOPASS_DETAIL_DESC =
-  "Angebote bis zur Freigabeschwelle werden automatisch beauftragt — darüber ist Ihre Freigabe nötig." as const;
-
-export const OBJ_REGELN_FALLBACK =
-  "Ohne eigene Schwelle gilt die Standard-Regel Ihrer Verwaltung." as const;
-
 /** Freigabeschwelle — analog Einstellungen (Standard-Regel). */
 export const OBJ_SCHWELLE_WIZARD_TITLE = "Freigabeschwelle" as const;
-export const OBJ_SCHWELLE_WIZARD_DESC = "" as const;
-
-export const OBJ_SCHWELLE_INFO = (_value: number) => "";
-
-/** Mock `objMieterMenu` Labels. */
-export const OBJ_MIETER_MENU = {
-  einladen: "Portal-Link senden",
-  /** @deprecated Alias — immer „Portal-Link senden“. */
-  erneut: "Portal-Link senden",
-  bearbeiten: "Bearbeiten",
-  vorgaenge: "Vorgänge ansehen",
-  entfernen: "Löschen",
-} as const;
-
-export const OBJ_MIETER_PORTAL_STATUS = {
-  aktiv: "● Portal aktiv",
-  eingeladen: "◔ Eingeladen",
-  nicht: "○ Nicht eingeladen",
-} as const;
 
 export function formatObjRegelnReview(
   _autopass: boolean,
   schwelle: number
 ): string {
   return `Freigabeschwelle ${formatSchwelleEur(schwelle)}`;
-}
-
-export function formatObjektIdKurz(id: string): string {
-  const clean = id.replace(/-/g, "").slice(0, 4).toUpperCase();
-  return `OBJ-${clean || "----"}`;
 }
 
 /**
@@ -471,18 +432,6 @@ export function openObjEditDraft(
     schwelle: o.freigabe_schwelle_eur ?? 500,
     autopass: false,
   };
-}
-
-export type ObjMieterPortalStatus = keyof typeof OBJ_MIETER_PORTAL_STATUS;
-
-/** Heuristik ohne eigenes Portal-Konto-Feld: E-Mail → eingeladen. */
-export function resolveObjMieterPortalStatus(input: {
-  email?: string | null;
-  portalAktiv?: boolean | null;
-}): ObjMieterPortalStatus {
-  if (input.portalAktiv) return "aktiv";
-  if (input.email?.trim()) return "eingeladen";
-  return "nicht";
 }
 
 /**

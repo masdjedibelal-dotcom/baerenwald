@@ -1,5 +1,5 @@
 import { dokumenteFromRechnungen } from "@/lib/portal/portal-dokumente";
-import { labelSituation, labelBereich } from "@/lib/lead-funnel-labels";
+import { labelSituation,labelBereich } from "@/lib/lead-funnel-labels";
 import {
   fachdetailRowsFromFunnelDaten,
   normalizeFunnelDaten,
@@ -57,9 +57,7 @@ import { resolveKundeVorgangStatus } from "@/lib/portal/kunde-vorgang-status";
 import { isHvPortalLead } from "@/lib/portal/hv-portal-lead";
 import { meldeStatusUrl } from "@/lib/melde/melde-tracking";
 import {
-  hasMieterTerminPhase,
-  hasOffeneTerminvorschlaege,
-  type PortalTerminSlot,
+  type PortalTerminSlot
 } from "@/lib/portal/portal-termin";
 import type { PortalObjekt } from "@/lib/portal/portal-objekt";
 import {
@@ -73,7 +71,7 @@ import {
   leadIstMeldeTitelQuelle,
   titelFromFunnelLeistungen,
 } from "@/lib/org/melde-vorgang-titel";
-import { resolveAkteVorgangTitel, isPlaceholderVorgangTitel } from "@/lib/vorgang/vorgang-anzeige-titel";
+import { resolveAkteVorgangTitel,isPlaceholderVorgangTitel } from "@/lib/vorgang/vorgang-anzeige-titel";
 
 function meldeFotosFromFunnel(funnelDaten: unknown): string[] {
   const fd = funnelDaten as { fotos?: unknown } | null | undefined;
@@ -214,15 +212,12 @@ function filterVorgangDokumente(
   docs: PortalDokument[],
   opts: {
     hvMieterView?: boolean;
-    eigentuemerView?: boolean;
     erledigt?: boolean;
   }
 ): PortalDokument[] {
   const viewer = opts.hvMieterView
     ? "mieter"
-    : opts.eigentuemerView
-      ? "eigentuemer"
-      : "kunde";
+    : "kunde";
   return filterPortalDokumenteForViewer(docs, {
     viewer,
     erledigt: opts.erledigt,
@@ -252,7 +247,6 @@ function resolveVorgangStatusForLead(
     mieterStatusMode: useLegacyHvMieter,
     hvPortalMode: opts.hvPortalMode,
   });
-  const terminSlots = auftrag?.terminSlots ?? [];
   const angebotStatus = angebot?.status_einfach ?? angebot?.status;
   const angebotEntscheidbar = Boolean(
     angebot &&
@@ -464,7 +458,6 @@ function buildItemFromLead(
     string,
     { sterne: number; freitext?: string | null }
   >,
-  eigentuemerView?: boolean
 ): KundePortalDetailItem {
   const { anfrageVorhaben, anfrageGewerk } = anfrageTitleFromLead(lead);
   const title = resolveListCardTitle(lead, angebot, auftrag);
@@ -568,7 +561,7 @@ function buildItemFromLead(
     undefined;
 
   const wartetAufHw =
-    !hvMieterView && !eigentuemerView
+    !hvMieterView
       ? resolveHvWartetAufHw({
           positionen: auftrag?.positionen,
           hwAngebotAusstehend:
@@ -583,7 +576,6 @@ function buildItemFromLead(
       filterVorgangDokumente(docs, {
         /** Dokumente: Mieter bei HV-Lead — nur Abnahme. */
         hvMieterView,
-        eigentuemerView,
         erledigt: vorgangStatus.phase === "abgeschlossen",
       }),
       meldeFotos
@@ -628,7 +620,7 @@ function buildItemFromLead(
           angebotDocs: angebot?.dokumente,
           // HV sieht Rechnungen unter „Dokumente“ (eigener Rechnungsbereich nur im Kundenportal)
           auftragDocs:
-            !mieterStatusMode && !eigentuemerView
+            !mieterStatusMode
               ? [
                   ...(auftrag.dokumente ?? []),
                   ...dokumenteFromRechnungen(
@@ -658,16 +650,12 @@ function buildItemFromLead(
       // Nur der Auftraggeber nimmt Änderungen an — nie nach Abschluss, nie Mieter/Eigentümer
       // Änderungen nach der Annahme gehen per korrigiertem Dokument raus — keine Annahme im Portal
       offeneAenderung: false,
-      infoHint: eigentuemerView
-        ? undefined
-        : !hvMieterView && pendingAenderung
+      infoHint: !hvMieterView && pendingAenderung
           ? "Leistungsänderungen prüfen und annehmen."
           : undefined,
       vorgangPhase: vorgangStatus.phase,
-      needsAction: eigentuemerView ? false : vorgangStatus.needsAction,
-      actionHint: eigentuemerView
-        ? undefined
-        : vorgangStatus.resolverActionHint ?? undefined,
+      needsAction: vorgangStatus.needsAction,
+      actionHint: vorgangStatus.resolverActionHint ?? undefined,
       feedbackBereit,
       mieterFeedback,
       melderStatusUrl: hvMieterView ? undefined : melderStatusUrl,
@@ -706,10 +694,8 @@ function buildItemFromLead(
       ),
       infoHint: undefined,
       vorgangPhase: vorgangStatus.phase,
-      needsAction: eigentuemerView ? false : vorgangStatus.needsAction,
-      actionHint: eigentuemerView
-        ? undefined
-        : vorgangStatus.resolverActionHint ?? undefined,
+      needsAction: vorgangStatus.needsAction,
+      actionHint: vorgangStatus.resolverActionHint ?? undefined,
       feedbackBereit,
       mieterFeedback,
       melderStatusUrl: hvMieterView ? undefined : melderStatusUrl,
@@ -738,10 +724,8 @@ function buildItemFromLead(
       })
     ),
     vorgangPhase: vorgangStatus.phase,
-    needsAction: eigentuemerView ? false : vorgangStatus.needsAction,
-    actionHint: eigentuemerView
-      ? undefined
-      : vorgangStatus.resolverActionHint ?? undefined,
+    needsAction: vorgangStatus.needsAction,
+    actionHint: vorgangStatus.resolverActionHint ?? undefined,
     hidePreise,
     hvMieterView,
     feedbackBereit,
@@ -800,7 +784,6 @@ export function buildKundeVorgaenge(input: {
   /** MeinBärenwald: HV-Mieter sehen vereinfachte Status (Offen / In Bearbeitung / Termin / Erledigt). */
   mieterStatusMode?: boolean;
   /** Eigentümer: Dokumente ohne Rechnung. */
-  eigentuemerMode?: boolean;
   mieterFeedbackByLeadId?: Record<
     string,
     { sterne: number; freitext?: string | null }
@@ -838,8 +821,6 @@ export function buildKundeVorgaenge(input: {
   const feedbackMap = new Map(
     Object.entries(input.mieterFeedbackByLeadId ?? {})
   );
-  const eigentuemerView = Boolean(input.eigentuemerMode);
-
   for (const lead of input.leads) {
     const leadId = normPortalId(lead.id);
     if (!leadId) continue;
@@ -885,8 +866,7 @@ export function buildKundeVorgaenge(input: {
         auftrag,
         vorgangStatus,
         input.mieterStatusMode,
-        feedbackMap,
-        eigentuemerView
+        feedbackMap
       )
     );
   }
@@ -920,8 +900,7 @@ export function buildKundeVorgaenge(input: {
         null,
         vorgangStatus,
         input.mieterStatusMode,
-        feedbackMap,
-        eigentuemerView
+        feedbackMap
       )
     );
   }
@@ -961,8 +940,7 @@ export function buildKundeVorgaenge(input: {
         auftrag,
         vorgangStatus,
         input.mieterStatusMode,
-        feedbackMap,
-        eigentuemerView
+        feedbackMap
       )
     );
   }

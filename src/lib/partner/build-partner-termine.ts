@@ -190,19 +190,3 @@ export function buildPartnerTermine(input: {
     selectedId: card.selectedId,
   }));
 }
-
-export function groupPartnerTermine(
-  termine: PartnerTerminItem[]
-): Array<{ label: string; items: PartnerTerminItem[] }> {
-  const groups = new Map<string, PartnerTerminItem[]>();
-  for (const t of termine) {
-    const key =
-      t.sortDatum != null
-        ? fmtPartnerDate(t.sortDatum)
-        : t.datumLabel || "Demnächst";
-    const bucket = groups.get(key) ?? [];
-    bucket.push(t);
-    groups.set(key, bucket);
-  }
-  return Array.from(groups.entries()).map(([label, items]) => ({ label, items }));
-}

@@ -54,21 +54,3 @@ export const HOME_FAQ_ITEMS: HomeFaqItem[] = [
     a: "München und Umgebung — inklusive Landkreise München, Dachau, Ebersberg, Erding, Freising, Fürstenfeldbruck und Starnberg.",
   },
 ];
-
-export const HOME_TESTIMONIALS = [
-  {
-    quote:
-      "„Transparente Preisspanne, pünktlicher Meister — genau das, was wir gesucht haben.“",
-    who: "Familie K., Schwabing",
-  },
-  {
-    quote:
-      "„Ich hätte nie gedacht dass Bad-Renovierung so reibungslos läuft. Fliesen, Sanitär, Elektro — ich hatte einen Ansprechpartner für alles. Kein einziger Anruf den ich selbst koordinieren musste.“",
-    who: "Lena M., Maxvorstadt",
-  },
-  {
-    quote:
-      "„Unverbindliche Beratung, kein Druck. So wünscht man sich Handwerk.“",
-    who: "Thomas R., Grünwald",
-  },
-] as const;

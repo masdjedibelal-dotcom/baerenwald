@@ -1,6 +1,3 @@
-import type { PartnerAnfrageItem } from "@/lib/partner/get-partner-data";
-import { isPartnerAnfrageOffen } from "@/lib/partner/partner-anfrage-status";
-import { hasPartnerKonditionenNachreichungAusstehend } from "@/lib/partner/partner-konditionen";
 
 /** Menü-Bereich im Partner-Portal (Website). */
 export type PartnerPortalPhase = "anfrage" | "angebot" | "auftrag";
@@ -22,63 +19,6 @@ export type PartnerPortalPhase = "anfrage" | "angebot" | "auftrag";
  */
 
 const HW_PENDING = new Set(["angefragt", "ausstehend", "warten", "offen"]);
-const HW_BEANTWORTET = new Set(["akzeptiert", "abgelehnt"]);
-
-/** Eingabe für Phasen-Auflösung — Nachreichungs-Felder optional (z. B. E-Mail-Links). */
-export type ResolveAngebotHandwerkerPhaseInput = Pick<
-  PartnerAnfrageItem,
-  | "status"
-  | "antwort_at"
-  | "gesendet_at"
-  | "hw_eingereicht_at"
-  | "hw_status"
-  | "projektvertrag_bestaetigt_am"
-  | "projektvertrag_bereit"
-> &
-  Partial<
-    Pick<
-      PartnerAnfrageItem,
-      | "crm_positionen_raw"
-      | "crm_auftrag_positionen"
-      | "gewerk_id"
-      | "gewerk_name"
-      | "handwerker_id"
-      | "hw_konditionen"
-    >
-  >;
-
-export function resolveAngebotHandwerkerPhase(
-  item: ResolveAngebotHandwerkerPhaseInput
-): PartnerPortalPhase {
-  const st = item.status.toLowerCase();
-  const hwSt = (item.hw_status ?? "").toLowerCase();
-
-  if (st === "abgelehnt") return "auftrag";
-
-  /** Nachreichung: Vorgang bleibt unter Angebote; zusätzlich Eintrag unter Anfragen (get-partner-data). */
-
-  /** HW wartet auf CRM / neue Runde / CRM-Einigung bestätigen — bleibt unter Anfragen. */
-  if (
-    hwSt === "eingereicht" ||
-    hwSt === "bestaetigt" ||
-    hwSt === "rueckfrage" ||
-    hwSt === "abgelehnt"
-  ) {
-    return "anfrage";
-  }
-
-  /** HW hat CRM-Einigung bestätigt — Tab Aufträge (Rechnung unabhängig vom Projektvertrag). */
-  if (hwSt === "uebernommen" || hwSt === "bestaetigt") {
-    if (hasPartnerKonditionenNachreichungAusstehend(item)) return "anfrage";
-    return "auftrag";
-  }
-
-  /** Preiseinigung noch offen → Tab Anfragen. */
-  if (isPartnerAnfrageOffen(item)) return "anfrage";
-  if (st === "akzeptiert") return "anfrage";
-
-  return "auftrag";
-}
 
 /** Aggregierter HW-Status für einen Auftrag (Zuweisung + Positionen). */
 export function aggregateAuftragHandwerkerStatus(
@@ -128,50 +68,4 @@ export function resolveAuftragPortalPhase(
   if (HW_PENDING.has(h)) return "anfrage";
 
   return "auftrag";
-}
-
-/** Auftrag in „Anfragen“, solange HW noch antworten soll oder Preiseinigung läuft. */
-export function isAuftragAnfrageListItem(item: {
-  portalPhase: PartnerPortalPhase;
-  hwStatus: string;
-  angebotHwStatus?: string | null;
-  angebotHandwerkerId?: string | null;
-}): boolean {
-  const h = item.hwStatus.toLowerCase();
-  const ahSt = (item.angebotHwStatus ?? "").toLowerCase();
-
-  /** Nach Zusage: in Anfragen bis HW bestätigt hat (bestaetigt → uebernommen). */
-  if (h === "akzeptiert" && item.angebotHandwerkerId) {
-    if (ahSt === "bestaetigt" || ahSt === "uebernommen") return false;
-    return true;
-  }
-
-  if (item.portalPhase !== "anfrage") return false;
-  return !HW_BEANTWORTET.has(h);
-}
-
-/** Auftrag in „Aufträge“ — nach CRM-Freigabe/Annahme (kein Projektvertrag nötig). */
-export function isAuftragAuftraegeListItem(item: {
-  portalPhase: PartnerPortalPhase;
-  angebotHandwerkerId?: string | null;
-  hwStatus: string;
-  projektvertrag_bestaetigt_am?: string | null;
-}): boolean {
-  if (item.portalPhase !== "auftrag") return false;
-  const h = item.hwStatus.toLowerCase();
-  if (h === "akzeptiert") return false;
-  return true;
-}
-
-export function auftragHwStatusLabel(status: string | null | undefined): string {
-  const s = (status ?? "ausstehend").toLowerCase();
-  const map: Record<string, string> = {
-    angefragt: "Antwort ausstehend",
-    ausstehend: "Ausstehend",
-    warten: "Warten auf Antwort",
-    zugewiesen: "Zugewiesen",
-    akzeptiert: "Akzeptiert",
-    abgelehnt: "Abgelehnt",
-  };
-  return map[s] ?? status ?? "Ausstehend";
 }

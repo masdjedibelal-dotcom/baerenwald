@@ -36,10 +36,6 @@ export function writeCookieConsent(statistics: boolean): CookieConsentChoice {
   return choice;
 }
 
-export function hasConsentDecision(): boolean {
-  return readCookieConsent() !== null;
-}
-
 export function hasStatisticsConsent(): boolean {
   return readCookieConsent()?.statistics === true;
 }

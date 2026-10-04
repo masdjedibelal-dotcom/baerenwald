@@ -3,12 +3,9 @@ import {
   formatAnfrageStrasseHausnummer,
   resolveAnfrageAdresse,
 } from "@/lib/portal/portal-anfrage-display";
-import type { PortalDetailSection } from "@/lib/portal/portal-display";
 import {
   portalObjektFromKundenObjekt,
-  portalObjektFromLeadPlz,
-  portalObjektLeistungsortSection,
-  type PortalObjekt,
+  portalObjektFromLeadPlz,type PortalObjekt
 } from "@/lib/portal/portal-objekt";
 
 type KundenObjektRow = {
@@ -93,15 +90,4 @@ export function resolvePartnerLeistungsort(opts: {
     kundePlz: opts.kundePlz,
     kundeOrt: opts.kundeOrt,
   });
-}
-
-export function buildPartnerLeistungsortSection(
-  objekt: PortalObjekt | null | undefined,
-  lead?: PartnerLeistungsortLead | null
-): PortalDetailSection | null {
-  const merged = mergePartnerLeistungsort(objekt, lead);
-  if (!merged) return null;
-  const section = portalObjektLeistungsortSection(merged);
-  if (!section.rows?.length) return null;
-  return section;
 }

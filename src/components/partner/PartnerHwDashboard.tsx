@@ -4,7 +4,6 @@ import type { ReactNode } from "react";
 
 import { PortalScreenDashboard } from "@/components/shared/PortalScreenDashboard";
 import type { PortalDashboardActionSlide } from "@/lib/portal2/dashboard-actions/types";
-import { partnerStatusChipStyle } from "@/lib/partner/partner-list-mappers";
 
 export type PartnerHwDashboardKpis = {
   offen: number;
@@ -91,13 +90,4 @@ export function PartnerHwDashboard({
       recentEmpty="Noch keine Vorgänge — offene Vorgänge erscheinen hier."
     />
   );
-}
-
-/** Fallback-Farben wenn kein Mock-STATUS — dezent wie Partner-Pills. */
-export function partnerDashboardStatusColors(key: string): {
-  color: string;
-  bg: string;
-} {
-  const style = partnerStatusChipStyle(key);
-  return { color: style.color, bg: style.backgroundColor };
 }

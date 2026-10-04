@@ -126,18 +126,3 @@ export function portalObjektLeistungsortSection(
     rows,
   };
 }
-
-/** Einzeiler für Listen (Info-Spalte / Summary). */
-export function portalObjektKurzlabel(obj: PortalObjekt): string {
-  const ort = [obj.plz, obj.ort].filter(Boolean).join(" ");
-  const parts = [obj.name, obj.strasse, ort].filter(Boolean);
-  return parts.join(" · ") || obj.name;
-}
-
-export function prependObjektSection(
-  sections: PortalDetailSection[],
-  obj: PortalObjekt | null | undefined
-): PortalDetailSection[] {
-  if (!obj) return sections;
-  return [portalObjektSection(obj), ...sections];
-}

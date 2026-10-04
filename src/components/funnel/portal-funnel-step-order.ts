@@ -1,5 +1,5 @@
 import type { PortalFunnelStepId } from "@/components/funnel/portal-funnel-types";
-import type { FunnelChannel, FunnelVariantConfig } from "@/lib/funnel/funnel-variant";
+import type { FunnelChannel,FunnelVariantConfig } from "@/lib/funnel/funnel-variant";
 import {
   getMeldeKaputtFachfragen,
   isMeldeKaputtChannel,
@@ -9,7 +9,7 @@ import {
   mapResolvedStepsToPortalMid,
   shouldUseWebsiteMidSteps,
 } from "@/lib/funnel/portal-funnel-mid-steps";
-import type { FunnelState, FunnelStep } from "@/lib/funnel/types";
+import type { FunnelState,FunnelStep } from "@/lib/funnel/types";
 
 /** Nächster Schritt nach Fachdetails — auch wenn `fachdetail` aus der Order gefallen ist. */
 export function stepAfterFachdetail(
@@ -102,7 +102,7 @@ export function buildStepOrder({
   /** Privat / Melde / eingeloggter Mieter: Kontakt (+ Adresse) vor Ergebnis. */
   if (cfg.include.ortPlz && channel === "portal_privat") {
     out.push("kontakt");
-  } else if (channel === "melde_anon" || channel === "portal_mieter") {
+  } else if (channel === "melde_anon") {
     out.push("kontakt");
   }
   out.push("result");

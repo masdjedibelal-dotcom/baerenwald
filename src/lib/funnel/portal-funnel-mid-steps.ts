@@ -121,8 +121,6 @@ export function findResolvedGroesseStep(
   return resolved.find((s) => s.id.toLowerCase().includes("groesse"));
 }
 
-export type ProjektPatch = NonNullable<FachdetailsState["projekt"]>;
-
 export function portalProjektStepAnswered(
   stepId: PortalFunnelMidStepId,
   projekt: FachdetailsState["projekt"] | undefined

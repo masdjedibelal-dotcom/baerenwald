@@ -57,17 +57,6 @@ export function bereichMatchesFachdetailGewerk(
   }
 }
 
-/** Alle relevanten Fachdetail-Gewerke (Priorität), max. `max` für die UI. */
-export function getAktiveFachdetailGewerke(
-  bereiche: string[],
-  max: number = 2
-): FachdetailGewerkKey[] {
-  const relevant = FACHDETAILS_PRIORITAET.filter((g) =>
-    bereichMatchesFachdetailGewerk(g, bereiche)
-  );
-  return relevant.slice(0, max);
-}
-
 export function countFachdetailGewerke(bereiche: string[]): number {
   return FACHDETAILS_PRIORITAET.filter((g) =>
     bereichMatchesFachdetailGewerk(g, bereiche)

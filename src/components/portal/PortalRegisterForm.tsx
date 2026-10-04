@@ -2,14 +2,13 @@
 import { safeAction } from "@/lib/actions/safe-action";
 
 import Link from "next/link";
-import { useRouter, useSearchParams } from "next/navigation";
-import { useMemo, useState } from "react";
+import { useRouter,useSearchParams } from "next/navigation";
+import { useMemo,useState } from "react";
 
-import { PortalCheckbox, PortalInput } from "@/components/shared/PortalFormControls";
+import { PortalCheckbox,PortalInput } from "@/components/shared/PortalFormControls";
 import { registerMeinBaerenwaldWithOtp } from "@/app/actions/portal-signup-otp";
 import { PortalAuthBusy } from "@/components/portal/auth/PortalAuthBusy";
 import { PortalSignupOtpStep } from "@/components/portal/PortalSignupOtpStep";
-import { AUTH_INVITE, type AuthPortalRole } from "@/lib/portal2/auth";
 import {
   PORTAL_REGISTER_KUNDE_TYP_OPTIONS,
   type PortalRegisterKundeTyp,
@@ -34,15 +33,10 @@ export type PortalRegisterPrefill = {
 };
 
 type Props = {
-  /** Server-Prefill (Melde-Flow / Einladung); Query-Params greifen zusätzlich */
+  /** Server-Prefill (Melde-Flow); Query-Params greifen zusätzlich */
   prefill?: PortalRegisterPrefill;
-  /** E4: Einladungs-Token — nach OTP einlösen */
-  einladungToken?: string | null;
-  /** Rolle aus Einladung (steuert Consent / Copy) */
-  inviteRole?: AuthPortalRole | null;
   /** Hinweis über den locked Prefill-Feldern */
   lockedHint?: string | null;
-  /** Submit-Label (Einladung: „Konto aktivieren“) */
   submitLabel?: string;
 };
 
@@ -55,12 +49,10 @@ function splitPrefillName(full: string): { vorname: string; nachname: string } {
 
 /**
  * MeinBärenwald-Registrierung mit E-Mail-OTP statt Bestätigungslink.
- * Auch Einladung Mieter/Eigentümer (gleiche Schritte & Design).
+ * Einladungen für Mieter/Eigentümer/Hausmeister entfallen (04.10.2026).
  */
 export function PortalRegisterForm({
   prefill,
-  einladungToken,
-  inviteRole,
   lockedHint,
   submitLabel = "Konto anlegen",
 }: Props) {
@@ -125,11 +117,8 @@ export function PortalRegisterForm({
   const [error, setError] = useState<string | null>(null);
   const [awaitingOtp, setAwaitingOtp] = useState(false);
 
-  const inviteToken = einladungToken?.trim() || "";
-  const askKundeTyp = !inviteToken;
-  const isHausmeisterInvite = inviteRole === "hausmeister";
-  /** Hausmeister: Werkzeugnutzer der HV — keine Kunden-AGB / keine Consent-Checkboxen. */
-  const requireLegalConsent = !isHausmeisterInvite;
+  const askKundeTyp = true;
+  const requireLegalConsent = true;
   const needsFirma =
     askKundeTyp &&
     (kundentyp === "gewerbe" || kundentyp === "hausverwaltung");
@@ -144,44 +133,18 @@ export function PortalRegisterForm({
   const showVorname = !locked || Boolean(vorname.trim());
   const showNachname = !locked || Boolean(nachname.trim());
   const showTelefon = !locked || Boolean(telefon.trim());
-  const showNameRow =
-    needsStammAdresse ||
-    (Boolean(inviteToken) && (showVorname || showNachname));
+  const showNameRow = needsStammAdresse;
 
-  const nextPath =
-    searchParams.get("next") ||
-    (inviteToken
-      ? `/portal/einladung/${encodeURIComponent(inviteToken)}`
-      : "/portal");
+  const nextPath = searchParams.get("next") || "/portal";
   const loginHref = `/portal/login?next=${encodeURIComponent(nextPath)}${
     email.trim() ? `&email=${encodeURIComponent(email.trim())}` : ""
   }`;
 
   const hintText =
     lockedHint?.trim() ||
-    (inviteToken
-      ? isHausmeisterInvite
-        ? AUTH_INVITE.lockedHintHausmeister
-        : AUTH_INVITE.lockedHint
-      : locked
-        ? "Ihre Angaben aus der Schadenmeldung sind übernommen. Bitte Kundentyp wählen, Passwort vergeben und die Zustimmung erteilen."
-        : null);
-
-  async function redeemInviteIfNeeded() {
-    if (!inviteToken) return;
-    const res = await fetch(
-      `/api/portal/einladung/${encodeURIComponent(inviteToken)}`,
-      { method: "POST" }
-    );
-    const json = (await res.json()) as {
-      error?: string;
-      redirectTo?: string;
-    };
-    if (!res.ok) {
-      throw new Error(json.error ?? "Einladung konnte nicht eingelöst werden.");
-    }
-    router.replace(json.redirectTo || "/portal");
-  }
+    (locked
+      ? "Ihre Angaben aus der Schadenmeldung sind übernommen. Bitte Kundentyp wählen, Passwort vergeben und die Zustimmung erteilen."
+      : null);
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -245,19 +208,11 @@ export function PortalRegisterForm({
       email,
       telefon,
       password,
-      einladungToken: inviteToken || undefined,
       kundentyp: askKundeTyp ? kundentyp ?? undefined : undefined,
     }));
     setLoading(false);
     if (!result.ok) {
-      const already =
-        result.error.toLowerCase().includes("bereits registriert") &&
-        Boolean(inviteToken);
-      setError(
-        already
-          ? "Diese E-Mail ist bereits registriert. Bitte unten auf „Anmelden“ tippen — danach wird die Einladung automatisch eingelöst."
-          : result.error
-      );
+      setError(result.error);
       return;
     }
     setAwaitingOtp(true);
@@ -270,15 +225,7 @@ export function PortalRegisterForm({
       password,
     });
     if (signErr) {
-      throw new Error(
-        inviteToken
-          ? "Konto bestätigt — bitte anmelden und den Einladungslink erneut öffnen."
-          : "Konto bestätigt — bitte mit Passwort anmelden."
-      );
-    }
-    if (inviteToken) {
-      await redeemInviteIfNeeded();
-      return;
+      throw new Error("Konto bestätigt — bitte mit Passwort anmelden.");
     }
     const safeNext =
       typeof nextPath === "string" && nextPath.startsWith("/portal")

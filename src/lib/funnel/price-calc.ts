@@ -536,15 +536,6 @@ export function calculatePartialBadPrice(state: FunnelState): {
   };
 }
 
-/** Legacy-Konstante (nur noch für UI-Hinweise); Preis nutzt {@link getPlzFaktor}. */
-export const FAKTOREN = {
-  plz: {
-    innenstadt: 1.0,
-    stadt: 1.0,
-    umland: 1.03,
-  },
-} as const;
-
 type PreisServiceKey = keyof typeof PREISE;
 
 /** Preis-Mapping aus dem Funnel; `null` = kein automatisches Mapping */
@@ -1184,9 +1175,6 @@ export function mapToPrice(state: FunnelState): BwPriceMapping | null {
   return null;
 }
 
-/** @deprecated Bevorzugt {@link mapToPrice} */
-export const mapToServiceType = mapToPrice;
-
 const GEWERK_LABEL: Record<string, string> = {
   sanitaer: "Sanitär",
   elektro: "Elektro",
@@ -1386,32 +1374,6 @@ export function isBwZuKomplexErgebnis(
   return (
     resultModus === "zu_komplex" || getBwResultModus(state) === "zu_komplex"
   );
-}
-
-export function getBwPreisFaktorHint(state: FunnelState): string {
-  const parts: string[] = [];
-  const plzF = getPlzFaktor(state.plz ?? "");
-  if (plzF <= 1.001) parts.push("München Stadt (80/81)");
-  else if (plzF <= 1.035) parts.push("Umland nah");
-  else parts.push("Umland weiter");
-  if (
-    isReparaturNotfallSituation(state.situation) &&
-    getNotdienstGebuehr(state) > 0
-  ) {
-    parts.push("Notdienst-Pauschale");
-  }
-  const z = state.zeitraum;
-  if (z === "sofort") parts.push("Sehr zeitnaher Startwunsch");
-  if (z === "diese_woche" || z === "heute")
-    parts.push("Kurzfristiger Startwunsch");
-  if (z === "vier_wochen" || z === "woche")
-    parts.push("Termin innerhalb weniger Wochen");
-  if (z === "naechster_monat") parts.push("Start im nächsten Monat geplant");
-  if (z === "zwei_monate") parts.push("Start in 1–2 Monaten geplant");
-  if (z === "sechs_monate" || z === "naechste_saison")
-    parts.push("Mittelfristige Planung");
-  if (z === "naechstes_jahr") parts.push("Langfristige Planung");
-  return parts.length > 0 ? parts.join(" · ") : "Standardrahmen München";
 }
 
 function getBwAnzeigeModus(

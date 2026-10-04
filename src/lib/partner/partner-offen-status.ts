@@ -1,4 +1,4 @@
-import type { PartnerAnfrageItem, PartnerAuftragItem } from "@/lib/partner/get-partner-data";
+import type { PartnerAnfrageItem,PartnerAuftragItem } from "@/lib/partner/get-partner-data";
 import { isPartnerAnfrageAktionErforderlich } from "@/lib/partner/partner-anfrage-status";
 import {
   hasPartnerKonditionenNachreichungAusstehend,
@@ -143,14 +143,4 @@ export function buildPartnerOffenListe(input: {
         : new Date(b.item.start_datum || 0).getTime();
     return tb - ta;
   });
-}
-
-export function partnerOffenStatusLabel(typ: PartnerOffenKartenTyp): string {
-  if (typ === "nachreichung") return "Geändert";
-  return "Aktion nötig";
-}
-
-export function partnerOffenStatusPillKey(typ: PartnerOffenKartenTyp): string {
-  if (typ === "nachreichung") return "geaendert";
-  return "neu";
 }

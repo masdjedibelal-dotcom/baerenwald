@@ -13,7 +13,7 @@ const SERVICE_ROLE_IMPORT =
   /from\s+['"]@\/lib\/supabase['"]|supabaseAdmin\b|SUPABASE_SERVICE_ROLE_KEY|getServiceRole/
 
 const GATE =
-  /requireOrganisationSession|requireOrgAdminSession|requireOrgFreigabeSession|requireOrgWrite|requireAccountSession|requireEigentuemer|assertOrg|assertPartner|assertPortal|CRON_SECRET|INTERNAL_API_SECRET|PARTNER_INTERNAL_API_SECRET|GPT_VIZ_INTERNAL_API_SECRET|LEAD_API_SECRET|auth\.getUser\s*\(|\.auth\.getUser\s*\(|createServerClient|verifyToken|token_hash|getGptVizPortalKundeId|getGptVizSession|checkRateLimit/
+  /requireOrganisationSession|requireOrgAdminSession|requireOrgFreigabeSession|requireOrgWrite|requireAccountSession|requireBefundActor|assertOrg|assertPartner|assertPortal|CRON_SECRET|INTERNAL_API_SECRET|PARTNER_INTERNAL_API_SECRET|GPT_VIZ_INTERNAL_API_SECRET|LEAD_API_SECRET|auth\.getUser\s*\(|\.auth\.getUser\s*\(|createServerClient|verifyToken|token_hash|getGptVizPortalKundeId|getGptVizSession|checkRateLimit/
 
 const ALLOWLIST = new Set([
   'src/lib/supabase.ts',
@@ -33,7 +33,6 @@ const ALLOWLIST = new Set([
   'src/lib/vorgang/sync-lead-from-crm.ts',
   'src/lib/push/send-web-push.ts',
   'src/lib/push/resolve-recipients.ts',
-  'src/lib/portal2/portal-einladungen-server.ts',
 ])
 
 function walk(dir, acc = []) {

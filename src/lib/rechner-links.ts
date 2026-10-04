@@ -1,9 +1,6 @@
 /** Klassischer Preisrechner (Website-Funnel). */
 export const RECHNER_HREF = "/rechner";
 
-/** Direkt in den KI-Chat (Rechner überspringt Trust & Auswahl-Weiche). */
-export const RECHNER_KI_BERATUNG_HREF = "/portal-tools/rechner?modus=ki";
-
 export function isKiBeratungModusParam(
   value: string | null | undefined
 ): boolean {

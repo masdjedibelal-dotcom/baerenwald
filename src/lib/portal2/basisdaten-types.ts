@@ -17,9 +17,6 @@ export type MeldeObjektDisplay = {
   we: string | null;
 };
 
-/** Mock `MELDE_SLOTS[]` — Tupel [Datum, Uhrzeit-Fenster]. */
-export type MeldeSlotDisplay = readonly [dateLabel: string, timeLabel: string];
-
 /** Mock `HANDWERKER[]` — Anzeigeform. */
 export type HandwerkerDisplay = {
   id: string;
@@ -48,11 +45,6 @@ export type MeldeObjektSource = {
    * Nur wenn `einheiten_hinweis` leer → „{n} Wohneinheiten“.
    */
   einheitenCount?: number | null;
-};
-
-export type MeldeSlotSource = {
-  slot_beginn: string;
-  slot_ende?: string | null;
 };
 
 export type HandwerkerDisplaySource = {

@@ -1,124 +1,13 @@
 "use server";
 
-import { logDbError } from '@/lib/errors/log-db-error'
 import { revalidatePath } from "next/cache";
 
-import { confirmCrmProjektvertrag, acceptCrmRahmenvertragLoggedIn } from "@/lib/partner/partner-crm-api";
+import { acceptCrmRahmenvertragLoggedIn } from "@/lib/partner/partner-crm-api";
 import { persistPortalRahmenvertragAkzeptanz } from "@/lib/partner/persist-portal-rahmenvertrag";
 import { linkPortalHandwerkerToAuthUser } from "@/lib/partner/link-portal-handwerker";
 import { writeAuditEvent } from "@/lib/audit/write-audit-event";
 import { createClient } from "@/lib/supabase/server";
-import { isSupabaseConfigured, supabaseAdmin } from "@/lib/supabase";
-import { assertPartnerAktiveZuweisung } from "@/lib/partner/partner-zuweisung-access";
-
-export type PartnerVertragConfirmResult =
-  | { ok: true; vertrags_nr?: string; pdf_url?: string }
-  | { ok: false; error: string };
-
-export async function confirmPartnerProjektvertrag(opts: {
-  auftragId: string;
-  gelesen: boolean;
-  verbindlich: boolean;
-}): Promise<PartnerVertragConfirmResult> {
-  if (!isSupabaseConfigured()) {
-    return { ok: false, error: "Datenbank nicht konfiguriert." };
-  }
-
-  if (!opts.gelesen || !opts.verbindlich) {
-    return {
-      ok: false,
-      error: "Bitte Projektvertrag lesen und verbindliche Annahme bestätigen.",
-    };
-  }
-
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user?.email) return { ok: false, error: "Nicht angemeldet." };
-
-  const link = await linkPortalHandwerkerToAuthUser({
-    userId: user.id,
-    email: user.email,
-  });
-  if (!link.ok) return { ok: false, error: link.error };
-
-  const auftragId = opts.auftragId.trim();
-  if (!auftragId) return { ok: false, error: "Auftrag fehlt." };
-
-  if (!(await assertPartnerAktiveZuweisung(link.handwerkerId, auftragId))) {
-    return { ok: false, error: "Keine Berechtigung für diesen Auftrag." };
-  }
-
-  const {data: zuweisung, error: __dbErr102_1} = await supabaseAdmin
-    .from("auftrag_handwerker")
-    .select("id, projektvertrag_bestaetigt_am, status")
-    .eq("auftrag_id", auftragId)
-    .eq("handwerker_id", link.handwerkerId)
-    .neq("status", "ersetzt")
-    .maybeSingle();
-  if (__dbErr102_1) logDbError('app/actions/partner-vertrag:auftrag_handwerker', __dbErr102_1)
-  if (zuweisung?.projektvertrag_bestaetigt_am) {
-    return { ok: false, error: "Vertrag wurde bereits bestätigt." };
-  }
-
-  const crm = await confirmCrmProjektvertrag(auftragId);
-  const now = new Date().toISOString();
-
-  if (zuweisung) {
-    const { error: __dbErr104_3 } = await supabaseAdmin
-      .from("auftrag_handwerker")
-      .update({ projektvertrag_bestaetigt_am: now })
-      .eq("id", zuweisung.id);
-    if (__dbErr104_3) logDbError('app/actions/partner-vertrag:auftrag_handwerker', __dbErr104_3)
-  } else {
-    const { error: __dbErr105_4 } = await supabaseAdmin.from("auftrag_handwerker").insert({
-      auftrag_id: auftragId,
-      handwerker_id: link.handwerkerId,
-      status: "akzeptiert",
-      projektvertrag_bestaetigt_am: now,
-    });
-    if (__dbErr105_4) logDbError('app/actions/partner-vertrag:auftrag_handwerker', __dbErr105_4)
-  }
-
-  if (crm.ok && crm.pdf_url) {
-    const {data: existing, error: __dbErr103_2} = await supabaseAdmin
-      .from("handwerker_vertraege")
-      .select("id")
-      .eq("handwerker_id", link.handwerkerId)
-      .eq("auftrag_id", auftragId)
-      .eq("typ", "projekt")
-      .maybeSingle();
-    if (__dbErr103_2) logDbError('app/actions/partner-vertrag:handwerker_vertraege', __dbErr103_2)
-    const patch = {
-      status: "unterschrieben",
-      signiert_am: now,
-      vertrags_nr: crm.vertrags_nr ?? undefined,
-      pdf_url: crm.pdf_url,
-      updated_at: now,
-    };
-
-    if (existing?.id) {
-      const { error: __dbErr106_5 } = await supabaseAdmin
-        .from("handwerker_vertraege")
-        .update(patch)
-        .eq("id", existing.id);
-      if (__dbErr106_5) logDbError('app/actions/partner-vertrag:handwerker_vertraege', __dbErr106_5)
-    }
-  }
-
-  if (!crm.ok) {
-    revalidatePath("/partner");
-    return {
-      ok: true,
-      vertrags_nr: undefined,
-      pdf_url: undefined,
-    };
-  }
-
-  revalidatePath("/partner");
-  return crm;
-}
+import { isSupabaseConfigured } from "@/lib/supabase";
 
 export type PartnerRahmenvertragAcceptResult = { ok: true } | { ok: false; error: string };
 

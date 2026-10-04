@@ -9,11 +9,6 @@ export const MAIL_LOGO_HOST = "https://baerenwaldmuenchen.de";
 export const MAIL_LOGO_URL_GREEN = `${MAIL_LOGO_HOST}/mail-logo-green.png`;
 export const MAIL_LOGO_URL_WHITE = `${MAIL_LOGO_HOST}/mail-logo-white.png`;
 
-/** @deprecated Alias — früher CID; bleibt für Imports. */
-export const MAIL_LOGO_CID_GREEN = "baerenwald-logo-green";
-/** @deprecated */
-export const MAIL_LOGO_CID_WHITE = "baerenwald-logo-white";
-
 /**
  * Alle Logo-src (http, relativ, cid) → stabile HTTPS-URLs auf der Website.
  * Keine Anhänge — Client lädt das Bild vom Provider/Netz.
@@ -28,14 +23,4 @@ export function rewriteMailLogoUrlsToHosted(html: string): string {
       /src=(["'])([^"']*(?:logo-mark-white|mail-logo-white)\.png[^"']*|cid:baerenwald-logo-white)\1/gi,
       `src=$1${MAIL_LOGO_URL_WHITE}$1`
     );
-}
-
-/** @deprecated Nutze rewriteMailLogoUrlsToHosted */
-export function rewriteMailLogoUrlsToCid(html: string): string {
-  return rewriteMailLogoUrlsToHosted(html);
-}
-
-/** Keine Logo-Anhänge mehr. */
-export function inlineLogoAttachmentsForHtml(_html: string): never[] {
-  return [];
 }

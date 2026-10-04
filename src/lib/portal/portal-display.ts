@@ -232,37 +232,6 @@ export function buildAngebotPortalDisplay(angebot: {
   };
 }
 
-/** Status-Anzeige für Aufträge im Kundenportal (z. B. CRM „offen“ → „Vorbereitung“). */
-export function fmtPortalAuftragStatus(status?: string | null): string {
-  const s = (status ?? "offen").toLowerCase().replace(/[\s-]+/g, "_");
-  if (s === "offen" || s === "vorbereitung") return "Vorbereitung";
-  return fmtPortalStatus(status);
-}
-
-export function fmtPortalStatus(status?: string | null): string {
-  if (!status) return "Offen";
-  const s = status.toLowerCase().replace(/[\s-]+/g, "_");
-  const labels: Record<string, string> = {
-    neu: "Neu",
-    offen: "Offen",
-    entwurf: "In Vorbereitung",
-    gesendet: "Gesendet",
-    angenommen: "Angenommen",
-    kunde_akzeptiert: "Angenommen",
-    abgelehnt: "Abgelehnt",
-    abgelaufen: "Abgelaufen",
-    in_arbeit: "In Arbeit",
-    aktiv: "Aktiv",
-    planung: "Planung",
-    abgeschlossen: "Abgeschlossen",
-    fertig: "Abgeschlossen",
-    angebot: "Angebot",
-    auftrag: "Auftrag",
-    storniert: "Storniert",
-  };
-  return labels[s] || status.replace(/_/g, " ");
-}
-
 function dedupeStrings(values: string[]): string[] {
   const seen = new Set<string>();
   const out: string[] = [];

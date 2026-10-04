@@ -1,8 +1,6 @@
-import type { FunnelState } from "@/lib/funnel/types";
 import { LEISTUNGEN_DATA } from "@/lib/leistungen/data";
-import { getProdukt } from "@/lib/products/katalog";
 import { buildProduktMeta } from "@/lib/products/produkt-to-funnel";
-import type { KatalogQuelle, ProduktMeta } from "@/lib/products/types";
+import type { KatalogQuelle,ProduktMeta } from "@/lib/products/types";
 import { normalizeLeistungSlug } from "@/lib/leistungen/leistung-produkt-map";
 
 export type EnrichLeadContext = {
@@ -43,25 +41,6 @@ export function enrichFunnelDatenForLead(
     ...(ctx.katalogQuelle ? { katalog_quelle: ctx.katalogQuelle } : {}),
     ...(ctx.funnelQuelle ? { funnel_quelle: ctx.funnelQuelle } : {}),
   };
-}
-
-export function buildProduktLeadFunnelDaten(
-  state: FunnelState,
-  ctx: EnrichLeadContext
-): Record<string, unknown> {
-  const { photos, ...rest } = state;
-  return enrichFunnelDatenForLead(
-    {
-      ...rest,
-      photoCount: photos.length,
-      photos: [],
-    },
-    ctx
-  );
-}
-
-export function getProduktLabel(slug: string): string | null {
-  return getProdukt(slug)?.titel ?? null;
 }
 
 export function formatProduktSummaryLine(meta: ProduktMeta | undefined): string | null {

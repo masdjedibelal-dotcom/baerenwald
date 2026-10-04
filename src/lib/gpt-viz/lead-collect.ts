@@ -66,10 +66,6 @@ export function nextLeadField(draft: GptLeadDraft): GptLeadField | null {
   return null;
 }
 
-export function isLeadDraftComplete(draft: GptLeadDraft): boolean {
-  return nextLeadField(draft) === null;
-}
-
 export function leadFieldLabel(field: GptLeadField): string {
   switch (field) {
     case "name":

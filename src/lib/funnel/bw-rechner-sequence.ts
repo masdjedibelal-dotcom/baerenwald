@@ -1,5 +1,5 @@
-import type { FunnelState, FunnelStep, Situation } from "@/lib/funnel/types";
-import { getKundentypStep, getResolvedStepsForSituation } from "@/lib/funnel/config";
+import type { FunnelState,FunnelStep,Situation } from "@/lib/funnel/types";
+import { getKundentypStep,getResolvedStepsForSituation } from "@/lib/funnel/config";
 import { getBwResultModus } from "@/lib/funnel/price-calc";
 import {
   fachdetailQuestionScreenId,
@@ -14,11 +14,6 @@ export function isBwFachdetailQuestionScreenId(
   step: string
 ): step is FachdetailQuestionScreenId {
   return isFachdetailQuestionScreen(step);
-}
-
-/** @deprecated Altes Präfix `fachdetails_<gewerk>` — nur noch für Migrationstests */
-export function isBwFachdetailScreenId(step: string): boolean {
-  return step.startsWith("fachdetails_");
 }
 
 export type BwTrustScreenVariant =

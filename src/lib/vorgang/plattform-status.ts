@@ -77,17 +77,6 @@ export function plattformStatusLabel(key: PlattformStatusKey): string {
   return PLATTFORM_STATUS_LABELS[key];
 }
 
-/** HV-Listen: Beschluss-Parkzustand mit eigenem Label. */
-export function plattformStatusLabelForLead(
-  key: PlattformStatusKey,
-  orgFreigabeStatus?: string | null
-): string {
-  if ((orgFreigabeStatus ?? "").trim() === "beschluss_ausstehend") {
-    return "Wartet auf Beschluss";
-  }
-  return plattformStatusLabel(key);
-}
-
 export function plattformStatusPillClass(key: PlattformStatusKey): string {
   switch (key) {
     case "neu":

@@ -2,7 +2,7 @@ import { Suspense } from "react";
 
 import { PortalAuthShell } from "@/components/portal/PortalAuthShell";
 import { PortalLoginForm } from "@/components/portal/PortalLoginForm";
-import { AUTH_LOGIN, authBrandName } from "@/lib/portal2/auth";
+import { AUTH_LOGIN,authBrandName } from "@/lib/portal2/auth";
 
 export const dynamic = "force-dynamic";
 
@@ -16,14 +16,10 @@ type Props = {
 };
 
 export default function PortalLoginPage({ searchParams }: Props) {
-  const roleRaw =
-    typeof searchParams?.role === "string" ? searchParams.role : "";
-  const role =
-    roleRaw === "mieter" || roleRaw === "eigentuemer" || roleRaw === "kunde"
-      ? roleRaw
-      : "kunde";
+  void searchParams;
+  const role = "kunde" as const;
   const brand = authBrandName(role);
-  const wl = role === "mieter" || role === "eigentuemer";
+  const wl = false;
 
   return (
     <PortalAuthShell

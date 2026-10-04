@@ -232,23 +232,3 @@ export function DokumenteTabelle({
     </section>
   );
 }
-
-export function portalDokumenteToZeilen(
-  docs: Array<{
-    id: string;
-    name: string;
-    subtitle?: string;
-    datum?: string;
-    href?: string;
-    meta?: string;
-  }>
-): DokumentZeile[] {
-  return docs.map((d) => ({
-    id: d.id,
-    datum: d.datum,
-    name: d.name,
-    beschreibung: d.subtitle?.trim() || undefined,
-    href: d.href?.trim() || undefined,
-    meta: d.meta?.trim() || undefined,
-  }));
-}

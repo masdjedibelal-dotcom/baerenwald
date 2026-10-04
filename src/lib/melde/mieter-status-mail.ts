@@ -1,4 +1,4 @@
-import { logDbError } from '@/lib/errors/log-db-error'
+import { logDbError } from '@/lib/errors/log-db-error';
 import { notifyHvMieterEvent } from "@/lib/org/notify-hv-mieter-event";
 import {
   MELDE_NOTIF_COPY,
@@ -58,25 +58,6 @@ export async function notifyMieterStatusChange(leadId: string): Promise<void> {
     deepLinkTab: "uebersicht",
   });
 
-  const { notifyPortalEigentuemer } = await import(
-    "@/lib/portal/notify-portal-eigentuemer"
-  );
-  const abgeschlossen = stufe === "erledigt";
-  await notifyPortalEigentuemer({
-    leadId,
-    kind: abgeschlossen ? "abgeschlossen" : "update",
-    titel: abgeschlossen
-      ? formatMeldeNotifTitel(MELDE_NOTIF_COPY.partnerErledigt, {
-          titel: label,
-        })
-      : portalTitel,
-    text: abgeschlossen
-      ? `Der Vorgang für ${melder} wurde abgeschlossen.`
-      : `Update: Der Vorgang für ${melder} ist jetzt „${label}“.`,
-    deepLinkTab: "uebersicht",
-    kundeObjektId:
-      lead.kunde_objekt_id != null ? String(lead.kunde_objekt_id) : null,
-  });
 }
 
 /** Setzt kanonische Phase und triggert HV-Benachrichtigung. */

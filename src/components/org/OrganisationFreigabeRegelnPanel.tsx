@@ -1,34 +1,26 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect,useState } from "react";
 
 import {
   EinstellungenEditModal,
   EinstellungenEuroSlider,
-  EinstellungenInstantToggle,
-  EinstellungenPfList,
-  EinstellungenPfRow,
-  EinstellungenSectionCard,
-  EinstellungenSheetCard,
+  EinstellungenInstantToggle,EinstellungenSectionCard,
+  EinstellungenSheetCard
 } from "@/components/shared/PortalEinstellungenUi";
 import { PortalButton } from "@/components/portal/PortalButton";
-import { ALL_AKUT_FALL_IDS, normalizeAkutFallIds } from "@/lib/org/sofortmassnahme-faelle";
-import type { OrganisationKunde, OrganisationObjekt } from "@/lib/org/types";
+import { ALL_AKUT_FALL_IDS,normalizeAkutFallIds } from "@/lib/org/sofortmassnahme-faelle";
+import type { OrganisationKunde,OrganisationObjekt } from "@/lib/org/types";
 import {
-  EINSTELLUNGEN_AKUT_INTRO,
   EINSTELLUNGEN_SCHWELLE_BETRAG_TITLE,
   EINSTELLUNGEN_SCHWELLE_SLIDER_MAX,
   EINSTELLUNGEN_SCHWELLE_SLIDER_MIN,
   EINSTELLUNGEN_SCHWELLE_SLIDER_STEP,
-  EINSTELLUNGEN_SCHWELLE_TITLE,
-  EINSTELLUNGEN_UNTER_SCHWELLE_INTRO,
-  EINSTELLUNGEN_UNTER_SCHWELLE_TITLE,
-  formatEinstellungenSchwelle,
-  snapEinstellungenSchwelle,
+  EINSTELLUNGEN_SCHWELLE_TITLE,formatEinstellungenSchwelle,
+  snapEinstellungenSchwelle
 } from "@/lib/portal2/einstellungen";
-import { PORTAL_VAR } from "@/lib/portal2/tokens";
-import { orgPortalToast, portalToastError } from "@/lib/shared/portal-toast";
-import { EMPTY, TOAST } from "@/lib/portal-copy";
+import { orgPortalToast,portalToastError } from "@/lib/shared/portal-toast";
+import { TOAST } from "@/lib/portal-copy";
 
 type Props = {
   kunde: OrganisationKunde;
@@ -73,7 +65,6 @@ export function OrganisationFreigabeRegelnPanel({
 
   const [editOpen, setEditOpen] = useState(false);
   const [editSchwelle, setEditSchwelle] = useState(schwelle);
-  const [editAkutFaelle, setEditAkutFaelle] = useState(akutFaelle);
   const [saving, setSaving] = useState(false);
   const [migratedModus, setMigratedModus] = useState(false);
 

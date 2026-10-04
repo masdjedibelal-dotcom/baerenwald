@@ -1,11 +1,4 @@
-import type { FachdetailsState, Kundentyp, Situation, Zeitraum } from "@/lib/funnel/types";
-
-export type KiAnfrageTyp =
-  | "bekannt"
-  | "unbekannt"
-  | "zu_komplex"
-  | "off_topic"
-  | "chat";
+import type { FachdetailsState,Kundentyp,Situation,Zeitraum } from "@/lib/funnel/types";
 
 export type KiParsedBekannt = {
   typ: "bekannt";

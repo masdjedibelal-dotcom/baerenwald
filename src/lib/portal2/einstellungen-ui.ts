@@ -11,19 +11,11 @@ export function einstellungenContentMaxWidth(
   return variant === "handwerker" ? 640 : 560;
 }
 
-export function einstellungenMaxWidthClass(
-  variant: EinstellungenVariant
-): string {
-  return variant === "handwerker" ? "max-w-[640px]" : "max-w-[560px]";
-}
-
 /** Handwerker Firmendaten — Mock Copy 1:1. */
 export const HW_FIRMEN_CARD_TITLE =
   "Firmendaten für Angebote & Rechnungen" as const;
 
 export const HW_FIRMEN_INTRO = "" as const;
-
-export const HW_FIRMEN_LOGO_HINT = "" as const;
 
 export const HW_FIRMEN_FOOTER = "" as const;
 
@@ -42,7 +34,6 @@ export function mieterKontoZugangHinweis(orgMail: string): string {
 }
 
 export const MIETER_SPRACHE_TITLE = "Sprache" as const;
-export const MIETER_SPRACHE_INTRO = "" as const;
 
 export type PortalUiLang = "de" | "en";
 

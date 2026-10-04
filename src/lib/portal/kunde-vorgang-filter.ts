@@ -15,17 +15,6 @@ export function filterKundeVorgaenge(
   return items.filter((item) => !isErledigt(item));
 }
 
-export function countKundeVorgaengeFilter(
-  items: KundePortalDetailItem[]
-): Record<KundeVorgangFilter, number> {
-  const erledigt = items.filter(isErledigt).length;
-  return {
-    alle: items.length,
-    aktiv: items.length - erledigt,
-    erledigt,
-  };
-}
-
 export function countKundeVorgaengeNeedsAction(items: KundePortalDetailItem[]): number {
   return items.filter((item) => item.needsAction).length;
 }

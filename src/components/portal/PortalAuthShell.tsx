@@ -1,13 +1,7 @@
 import type { ReactNode } from "react";
 
 import { PortalAuthFrame } from "@/components/portal/auth/PortalAuthFrame";
-import { PortalRoleBadge } from "@/components/shared/PortalStatusPill";
-import {
-  AUTH_INVITE,
-  authBrandName,
-  type AuthPortalRole,
-} from "@/lib/portal2/auth";
-import type { PortalRoleBadgeRole } from "@/lib/portal2/role-badge";
+import { type AuthPortalRole } from "@/lib/portal2/auth";
 
 /**
  * TEIL F Auth-Shell — Mock `authFrame` + Body-Header.
@@ -24,7 +18,6 @@ export function PortalAuthShell({
   orgName,
   orgSub,
   logoKuerzel,
-  inviteRole,
   authRole,
 }: {
   title: string;
@@ -37,20 +30,12 @@ export function PortalAuthShell({
   orgName?: string | null;
   orgSub?: string | null;
   logoKuerzel?: string | null;
-  /** Mock auth invite: „Einladung von {brand} {roleBadge}“ */
-  inviteRole?: PortalRoleBadgeRole | string | null;
   /** Explizite Rolle; sonst aus brand abgeleitet. */
   authRole?: AuthPortalRole;
 }) {
   const role: AuthPortalRole =
     authRole ??
-    (brand === "partner"
-      ? "handwerker"
-      : brand === "whitelabel"
-        ? "mieter"
-        : "kunde");
-
-  const brandName = authBrandName(role, orgName);
+    (brand === "partner" ? "handwerker" : "kunde");
 
   return (
     <PortalAuthFrame
@@ -63,17 +48,6 @@ export function PortalAuthShell({
       orgSoft={orgSoft}
       legalVariant={brand === "partner" ? "partner" : "kunde"}
     >
-      {inviteRole ? (
-        <div className="mb-4 flex flex-wrap items-center gap-2">
-          <span className="text-fs-meta font-semibold text-text-tertiary">
-            {AUTH_INVITE.eyebrow}
-          </span>
-          <span className="text-fs-meta font-bold text-text-primary">
-            {brandName}
-          </span>
-          <PortalRoleBadge role={inviteRole} />
-        </div>
-      ) : null}
       <div className="mb-6">
         <h1 className="portal-auth-heading">{title}</h1>
         {subtitle ? <p className="portal-auth-sub mt-1.5">{subtitle}</p> : null}

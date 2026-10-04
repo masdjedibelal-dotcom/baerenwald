@@ -58,27 +58,6 @@ export const LEISTUNG_PRODUKT_MAP: Record<string, LeistungsProduktLink> = {
   },
 };
 
-/** Karussell-interner Slug → Leistungs-Basis-Slug. */
-export const KARUSSELL_LEISTUNG_MAP: Record<string, string> = {
-  malerarbeiten: "malerarbeiten",
-  "badezimmer-sanierung": "badezimmer-sanierung",
-  bodenbelag: "bodenbelag",
-  "fenster-tueren": "fenster-tueren",
-  trockenbau: "trockenbau",
-  "heizung-sanitaer": "heizung-sanitaer",
-  elektroarbeiten: "elektroarbeiten",
-  dacharbeiten: "dacharbeiten",
-  gartenpflege: "gartenpflege",
-  gartengestaltung: "gartengestaltung",
-  hausmeisterservice: "hausmeisterservice",
-  gebauedereinigung: "hausmeisterservice",
-  wartung: "heizung-sanitaer",
-  "winterdienst-service": "winterdienst",
-  "heizung-sanitaer-notfall": "heizung-sanitaer",
-  "wasser-notfall": "heizung-sanitaer",
-  "elektro-notfall": "elektroarbeiten",
-};
-
 export function normalizeLeistungSlug(slug: string): string {
   const s = slug.trim();
   if (s.endsWith("-muenchen")) return s.slice(0, -"-muenchen".length);
@@ -100,20 +79,4 @@ export function getDefaultProduktForLeistung(
   leistungSlug: string
 ): string | null {
   return getLeistungProduktLink(leistungSlug)?.defaultProduktSlug ?? null;
-}
-
-export function getLeistungForProdukt(produktSlug: string): string | null {
-  for (const [leistung, link] of Object.entries(LEISTUNG_PRODUKT_MAP)) {
-    if (link.produktSlugs.includes(produktSlug)) return leistung;
-  }
-  return null;
-}
-
-export function getKarussellLeistungSlug(karussellSlug: string): string {
-  return KARUSSELL_LEISTUNG_MAP[karussellSlug] ?? karussellSlug;
-}
-
-export function getKarussellDefaultProdukt(karussellSlug: string): string | null {
-  const leistung = getKarussellLeistungSlug(karussellSlug);
-  return getDefaultProduktForLeistung(leistung);
 }

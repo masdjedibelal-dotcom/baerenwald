@@ -2,10 +2,6 @@ import {
   BEREICH_LABELS,
   labelSituation,
 } from "@/lib/lead-funnel-labels";
-import type {
-  PartnerAnfrageItem,
-  PartnerAuftragItem,
-} from "@/lib/partner/get-partner-data";
 import type { PortalAnfrageLeadSource } from "@/lib/portal/portal-anfrage-display";
 import { objektPlzOrt } from "@/lib/portal/portal-detail-item";
 import type { PortalObjekt } from "@/lib/portal/portal-objekt";
@@ -224,86 +220,4 @@ export function resolvePartnerListenTitel(opts: PartnerListenTitelInput): string
 
   if (melde) return melde;
   return partnerContextFallback(opts);
-}
-
-export function resolvePartnerListenTitelFromAnfrage(
-  item: Pick<
-    PartnerAnfrageItem,
-    "gewerk_name" | "plz" | "ort" | "lead" | "angebot_titel" | "crm_leistungsumfang"
-  >
-): string {
-  return resolvePartnerListenTitel({
-    gewerk_name: item.gewerk_name,
-    plz: item.plz,
-    ort: item.ort,
-    lead: item.lead,
-    angebot: item.crm_leistungsumfang
-      ? { leistungsumfang: item.crm_leistungsumfang }
-      : null,
-    fallbackTitel: item.angebot_titel,
-  });
-}
-
-export function resolvePartnerListenTitelFromAuftrag(
-  item: Pick<
-    PartnerAuftragItem,
-    "plz" | "ort" | "lead" | "titel" | "positionen"
-  >
-): string {
-  return resolvePartnerListenTitel({
-    gewerk_names: item.positionen.map((p) => p.gewerk_name),
-    leistung_names: item.positionen.map((p) => p.leistung_name),
-    plz: item.plz,
-    ort: item.ort,
-    lead: item.lead,
-    auftragTitel: item.titel,
-    fallbackTitel: item.titel,
-  });
-}
-
-/**
- * Detail-Überschrift Auftrag: gleicher Titel wie die Vorgangs-Liste (`listen_titel`).
- */
-export function resolvePartnerDetailTitelFromAuftrag(
-  item: Pick<
-    PartnerAuftragItem,
-    "titel" | "listen_titel" | "plz" | "ort" | "lead" | "positionen"
-  >
-): string {
-  const leistungNames = item.positionen.map((p) => p.leistung_name);
-  const listen = usableTitel(item.listen_titel, leistungNames);
-  if (listen) return listen;
-
-  const fromLead = resolvePartnerListenTitelFromAuftrag(item);
-  if (fromLead && !isPlaceholderVorgangTitel(fromLead)) return fromLead;
-
-  const titel = usableTitel(item.titel, leistungNames);
-  if (titel) return titel;
-  return fromLead !== "Vorgang" ? fromLead : "Auftrag";
-}
-
-/**
- * Detail-Überschrift für Anfragen: gleicher Titel wie die Liste (`listen_titel`).
- */
-export function resolvePartnerDetailTitelFromAnfrage(
-  item: Pick<
-    PartnerAnfrageItem,
-    | "angebot_titel"
-    | "listen_titel"
-    | "gewerk_name"
-    | "plz"
-    | "ort"
-    | "lead"
-    | "crm_leistungsumfang"
-  >
-): string {
-  const listen = usableTitel(item.listen_titel);
-  if (listen) return listen;
-
-  const fromLead = resolvePartnerListenTitelFromAnfrage(item);
-  if (fromLead && !isPlaceholderVorgangTitel(fromLead)) return fromLead;
-
-  const titel = usableTitel(item.angebot_titel);
-  if (titel) return titel;
-  return fromLead !== "Vorgang" ? fromLead : "Projekt";
 }

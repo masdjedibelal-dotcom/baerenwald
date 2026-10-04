@@ -27,16 +27,6 @@ export const PORTAL_HEADER_HERO_BY_KIND: Record<PortalHeroKind, string> = {
   hausmeister: "/images/portal/header-hero-handwerker.jpg",
 };
 
-/** @deprecated Alias — bitte `portalHeaderHeroSrc(kind)` nutzen. */
-export const PORTAL_HEADER_HERO_MIETER_SRC =
-  PORTAL_HEADER_HERO_BY_KIND.mieter;
-/** @deprecated Alias */
-export const PORTAL_HEADER_HERO_PRIVAT_SRC =
-  PORTAL_HEADER_HERO_BY_KIND.privat;
-/** @deprecated Alias */
-export const PORTAL_HEADER_HERO_HANDWERKER_SRC =
-  PORTAL_HEADER_HERO_BY_KIND.handwerker;
-
 /** Fallback wenn kein Gebäudefoto hochgeladen. */
 export const PORTAL_OBJEKT_COVER_DEFAULT_SRC =
   "/images/portal/objekt-cover-default.jpg";
@@ -64,15 +54,6 @@ export function isPortalDefaultMediaUrl(url: string | null | undefined): boolean
     u.endsWith("/images/portal/header-hero-handwerker.jpg") ||
     u.endsWith("/images/portal/objekt-cover-default.jpg")
   );
-}
-
-export function resolvePortalHeroSrc(
-  orgHeroUrl?: string | null,
-  kind: PortalHeroKind = "hv"
-): string {
-  const custom = orgHeroUrl?.trim();
-  if (custom && !isPortalDefaultMediaUrl(custom)) return custom;
-  return portalHeaderHeroSrc(kind);
 }
 
 export function resolveObjektCoverSrc(

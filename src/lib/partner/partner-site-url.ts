@@ -8,21 +8,11 @@ export function partnerDashboardUrl(): string {
   return `${SITE_CONFIG.url}/partner`;
 }
 
-export function partnerRegisterUrl(): string {
-  return `${SITE_CONFIG.url}/partner/registrieren`;
-}
-
 /**
  * Auftrags-Zuweisung (CRM: Auftrag noch „offen“) — Bestätigung unter Tab Offen.
  * Listen-ID im Portal: `auftrag:{auftragId}`.
  */
 export function partnerAuftragAnfragePortalUrl(auftragId: string): string {
-  const id = auftragId.trim();
-  return `${SITE_CONFIG.url}/partner?section=vorgaenge&id=${encodeURIComponent(id)}`;
-}
-
-/** Laufender Auftrag — Tab Vorgänge. */
-export function partnerAuftragPortalUrl(auftragId: string): string {
   const id = auftragId.trim();
   return `${SITE_CONFIG.url}/partner?section=vorgaenge&id=${encodeURIComponent(id)}`;
 }
@@ -98,19 +88,6 @@ export function partnerVorgangIdFromNotificationLink(
   return id ? id.replace(/^auftrag:/, "") : null;
 }
 
-/** Listen-Ansicht ohne Detail-Deep-Link. */
-export function partnerSectionListPath(
-  section: "vorgaenge" | "offen" | "auftraege" | "anfragen" | "angebote"
-): string {
-  if (section === "anfragen" || section === "angebote" || section === "offen") {
-    return `/partner?section=vorgaenge`;
-  }
-  if (section === "auftraege") {
-    return `/partner?section=vorgaenge&filter=offen`;
-  }
-  return `/partner?section=${section}`;
-}
-
 /** Relativer Pfad — Tab Vorgänge (ersetzt Offen-Deep-Links). */
 export function partnerOffenPortalPath(anfrageId: string): string {
   return partnerVorgangPortalPath(anfrageId);
@@ -143,14 +120,4 @@ export function partnerLoginForAngebotUrl(anfrageId: string): string {
 /** Auftrags-Zuweisung — Annehmen/Ablehnen unter Anfragen. */
 export function partnerLoginForAuftragAnfrageUrl(auftragId: string): string {
   return partnerAuftragAnfragePortalUrl(auftragId);
-}
-
-/** Laufender Auftrag — Tab Aufträge. */
-export function partnerLoginForAuftragUrl(auftragId: string): string {
-  return partnerAuftragPortalUrl(auftragId);
-}
-
-/** Partner-Portal-Startseite. */
-export function partnerLoginForDashboardUrl(): string {
-  return partnerDashboardUrl();
 }

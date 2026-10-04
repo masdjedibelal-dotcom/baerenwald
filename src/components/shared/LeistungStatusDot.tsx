@@ -14,10 +14,6 @@ const AMPLE_LABEL: Record<LeistungStatusAmpel, string> = {
   rot: "Entfernt",
 };
 
-export function leistungStatusAmpelLabel(status: LeistungStatusAmpel): string {
-  return AMPLE_LABEL[status];
-}
-
 export function resolvePortalLeistungStatusAmpel(input: {
   aenderungBadge?: "neu" | "geaendert" | "entfernt";
   entfernt?: boolean;

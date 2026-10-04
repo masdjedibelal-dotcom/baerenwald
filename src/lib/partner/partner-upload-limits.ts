@@ -9,15 +9,8 @@ export const PARTNER_MAX_UPLOAD_GESAMT_BYTES = 4 * 1024 * 1024;
 /** Fotos werden vor dem Upload auf höchstens ~1,5 MB verkleinert. */
 const FOTO_NACH_KOMPRESSION_BYTES = 1.5 * 1024 * 1024;
 export const PARTNER_MAX_PHOTO_BYTES = 6 * 1024 * 1024;
-/** Max. Anhänge (Fotos + PDF) pro Bautagebuch-Eintrag. */
-export const PARTNER_MAX_BAUTAGEBUCH_ANHAENGE = 5;
 /** Max. PDFs bei Angebotseinreichung (ohne Rechnung). */
 export const PARTNER_MAX_ANGEBOT_DATEIEN = 3;
-/** @deprecated Alias — gleiche Grenze wie Anhänge gesamt. */
-export const PARTNER_MAX_BAUTAGEBUCH_PHOTOS = PARTNER_MAX_BAUTAGEBUCH_ANHAENGE;
-
-export const PARTNER_MAX_PDF_MB = PARTNER_MAX_PDF_BYTES / (1024 * 1024);
-export const PARTNER_MAX_PHOTO_MB = PARTNER_MAX_PHOTO_BYTES / (1024 * 1024);
 
 export function formatPartnerMaxMb(bytes: number): string {
   const mb = bytes / (1024 * 1024);
@@ -92,24 +85,6 @@ function uploadGesamtFehler(files: File[]): string | null {
     return `Zusammen höchstens ${formatPartnerMaxMb(PARTNER_MAX_UPLOAD_GESAMT_BYTES)} MB pro Upload. Bitte weniger oder kleinere Dateien wählen.`;
   }
   return null;
-}
-
-export function validatePartnerBautagebuchFiles(
-  files: File[],
-  existingCount = 0
-): string | null {
-  const max = PARTNER_MAX_BAUTAGEBUCH_ANHAENGE;
-  if (existingCount + files.length > max) {
-    const rest = Math.max(0, max - existingCount);
-    return rest === 0
-      ? `Maximal ${max} Anhänge pro Eintrag — bitte zuerst bestehende entfernen.`
-      : `Maximal ${max} Anhänge pro Eintrag (noch ${rest} möglich).`;
-  }
-  for (const file of files) {
-    const err = validatePartnerBautagebuchFile(file);
-    if (err) return err;
-  }
-  return uploadGesamtFehler(files);
 }
 
 /**

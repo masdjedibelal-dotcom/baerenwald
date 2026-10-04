@@ -1,6 +1,6 @@
 "use server";
 
-import { logDbError } from '@/lib/errors/log-db-error'
+import { logDbError } from '@/lib/errors/log-db-error';
 import { revalidatePath } from "next/cache";
 
 import {
@@ -9,7 +9,7 @@ import {
   type PartnerDocAbsender,
   type PartnerDocPosition,
 } from "@/lib/partner/partner-dokument-types";
-import { PDF_UI_ERROR, renderPdfViaCrm } from "@/lib/pdf/render-via-crm";
+import { PDF_UI_ERROR,renderPdfViaCrm } from "@/lib/pdf/render-via-crm";
 import { linkPortalHandwerkerToAuthUser } from "@/lib/partner/link-portal-handwerker";
 import {
   buildPartnerAutoDocPositionen,
@@ -34,7 +34,7 @@ import {
   uploadPartnerGeneratedPdf,
 } from "@/lib/partner/partner-storage";
 import { createClient } from "@/lib/supabase/server";
-import { isSupabaseConfigured, supabaseAdmin } from "@/lib/supabase";
+import { isSupabaseConfigured,supabaseAdmin } from "@/lib/supabase";
 
 export type PartnerAutoDocPreview = {
   anfrageId: string;
@@ -255,29 +255,6 @@ async function resolveDocPositionen(opts: {
     mwstSatz: p.mwst_satz || PARTNER_KONDITION_MWST,
   }));
   return { positionen, regieGaps: [], missingRegie: [] as AutoDocMissingField[] };
-}
-
-function firmendatenMissingFields(
-  labels: string[]
-): AutoDocMissingField[] {
-  const map: Record<string, AutoDocMissingField> = {
-    Firmenname: { key: "firma", label: "Firmenname", scope: "firmendaten", kind: "text" },
-    "Anschrift (Straße + PLZ/Ort)": {
-      key: "anschrift",
-      label: "Anschrift (Straße + PLZ/Ort)",
-      scope: "firmendaten",
-      kind: "text",
-    },
-    Telefon: { key: "telefon", label: "Telefon", scope: "firmendaten", kind: "tel" },
-    "Steuernummer oder USt-IdNr.": {
-      key: "steuer",
-      label: "Steuernummer oder USt-IdNr.",
-      scope: "firmendaten",
-      kind: "text",
-    },
-    IBAN: { key: "iban", label: "IBAN", scope: "firmendaten", kind: "iban" },
-  };
-  return labels.map((l) => map[l] ?? { key: l, label: l, scope: "firmendaten", kind: "text" });
 }
 
 type DocCtx = {
@@ -502,91 +479,6 @@ async function resolveRechnungCtx(input: {
     return loadAnfrageCtx(anfrageId, input.handwerkerId);
   }
   return { ok: false, error: "Auftrag oder Anfrage fehlt." };
-}
-
-/** Preview-Daten für Auto-Angebot / Auto-Rechnung. */
-export async function previewPartnerAutoDokument(input: {
-  /** Klassischer Angebot-Pfad. */
-  anfrageId?: string | null;
-  /** Direktauftrag/Akut: Rechnung aus Auftrags-Leistungen. */
-  auftragId?: string | null;
-  art: "angebot" | "rechnung";
-  overrides?: AutoDocRegieOverride[];
-}): Promise<{ ok: true; preview: PartnerAutoDocPreview } | { ok: false; error: string }> {
-  const auth = await partnerAuth();
-  if (!auth.ok) return auth;
-
-  const resolved =
-    input.art === "rechnung"
-      ? await resolveRechnungCtx({
-          anfrageId: input.anfrageId,
-          auftragId: input.auftragId,
-          handwerkerId: auth.handwerkerId,
-        })
-      : input.anfrageId?.trim()
-        ? await loadAnfrageCtx(input.anfrageId.trim(), auth.handwerkerId)
-        : { ok: false as const, error: "Anfrage fehlt." };
-  if (!resolved.ok) return resolved;
-  const { ctx } = resolved;
-
-  const hw = await loadHandwerkerAbsender(auth.handwerkerId);
-  const built = await resolveDocPositionen({
-    handwerkerId: auth.handwerkerId,
-    row: ctx.row,
-    art: input.art,
-    auftragId: ctx.auftragId,
-    overrides: input.overrides,
-  });
-  if (!built.positionen.length) {
-    return {
-      ok: false,
-      error: "Keine Konditionen/Positionen für das Dokument vorhanden.",
-    };
-  }
-
-  const year = new Date().getFullYear();
-  const dokumentNr =
-    input.art === "rechnung"
-      ? formatPartnerRechnungsNr(year, hw.rechnungsnrSeq + 1)
-      : formatPartnerAngebotsNr(hw.absender.firma, new Date().toISOString());
-
-  const firmMissing =
-    input.art === "rechnung" ? hw.gateMissingRechnung : hw.gateMissingAngebot;
-  const missingFields = [
-    ...firmendatenMissingFields(firmMissing),
-    ...built.missingRegie,
-  ];
-  const nettoSumme = built.positionen.reduce((s, p) => s + p.netto, 0);
-  const empfaenger = await getPartnerDocEmpfaenger();
-
-  return {
-    ok: true,
-    preview: {
-      anfrageId: ctx.anfrageId,
-      art: input.art,
-      dokumentNr,
-      betreff: ctx.betreff,
-      objektOrt: ctx.objektOrt,
-      positionen: built.positionen.map((p) => ({
-        titel: p.titel,
-        beschreibung: p.beschreibung,
-        netto: p.netto,
-        mwstSatz: p.mwstSatz,
-        menge: p.menge,
-        einheit: p.einheit,
-      })),
-      nettoSumme,
-      missingFirmendaten: firmMissing,
-      missingFields,
-      canSubmit: missingFields.length === 0,
-      firmendaten: hw.firmendaten,
-      empfaenger: {
-        firma: empfaenger.firma,
-        strasse: empfaenger.strasse,
-        plzOrt: empfaenger.plzOrt,
-      },
-    },
-  };
 }
 
 /** Konzept B: Angebot erzeugen und speichern. */

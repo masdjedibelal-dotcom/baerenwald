@@ -8,4 +8,3 @@ export * from "./hausservice-preis";
 export * from "./bad-comparison";
 export * from "./produkt-to-funnel";
 export * from "./produkt-preis";
-export * from "./build-rechner-url";

@@ -5,11 +5,6 @@ import {
   type PortalAnfrageLeadSource,
 } from "@/lib/portal/portal-anfrage-display";
 import type { PortalDetailSection } from "@/lib/portal/portal-display";
-import {
-  normalizePortalAuftragStatus,
-  portalAuftragAktuellePhaseLabel,
-  portalAuftragPhasenStates,
-} from "@/lib/portal/portal-auftrag-phasen";
 import type { PortalObjekt } from "@/lib/portal/portal-objekt";
 import { portalObjektLeistungsortSection } from "@/lib/portal/portal-objekt";
 import { fmtPortalDate } from "@/lib/shared/portal-detail-format";
@@ -56,32 +51,6 @@ export function buildAuftragCardMeta(
   const zeitraum = formatAuftragDatumSpan(start, end);
   if (zeitraum) meta.push({ icon: "calendar", text: zeitraum });
   return meta;
-}
-
-export function resolveAuftragPhasenInput(
-  input: PortalAuftragPhasenInput
-): {
-  states: ReturnType<typeof portalAuftragPhasenStates>;
-  aktuellePhase?: string;
-  fortschritt?: number;
-} {
-  const status = normalizePortalAuftragStatus(
-    input.status,
-    Boolean(input.abgeschlossen)
-  );
-  const states = portalAuftragPhasenStates({
-    status,
-    hatAngebot: Boolean(input.hatAngebot),
-  });
-  const fortschritt =
-    typeof input.fortschritt === "number" && Number.isFinite(input.fortschritt)
-      ? Math.round(input.fortschritt)
-      : undefined;
-  return {
-    states,
-    aktuellePhase: portalAuftragAktuellePhaseLabel(states),
-    fortschritt,
-  };
 }
 
 export function buildAuftragPortalSections(opts: {

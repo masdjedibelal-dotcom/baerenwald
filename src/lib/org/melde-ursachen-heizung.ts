@@ -18,11 +18,6 @@ export type HeizungUrsacheId =
   | "hebeanlage"
   | "sonstiges";
 
-export type HeizungUrsacheOption = {
-  id: HeizungUrsacheId;
-  label: string;
-};
-
 export type MeldeUrsachenHeizungState = {
   bereich: "heizung";
   selectedUrsacheId: HeizungUrsacheId | null;
@@ -30,18 +25,6 @@ export type MeldeUrsachenHeizungState = {
   entscheidung: "hm_geloest" | "fachfirma" | null;
   material?: string[];
   updatedAt?: string | null;
-};
-
-const ALL: Record<HeizungUrsacheId, string> = {
-  thermostat: "Thermostat zu oder aus",
-  entlueften: "Heizkörper muss entlüftet werden",
-  druck_niedrig: "Druck zu niedrig (nachfüllen möglich)",
-  anlage_aus: "Heizung / Anlage ausgeschaltet",
-  stoerung_sichtbar: "Störungsanzeige sichtbar (ohne Diagnose)",
-  ww_aus: "Warmwasser ausgeschaltet / Bereiter aus",
-  ww_trotz_heizung: "Kein Warmwasser trotz laufender Heizung",
-  hebeanlage: "Hebeanlage (Alarm / Überlauf / Pumpe)",
-  sonstiges: "Sonstiges",
 };
 
 function ans(a: MeldeAnswers, id: string): string {
@@ -52,90 +35,6 @@ function ans(a: MeldeAnswers, id: string): string {
 function normalizeProblem(raw: string): string {
   return normalizeMeldeHeizungProblem(raw);
 }
-
-function orderIds(ids: HeizungUrsacheId[]): HeizungUrsacheOption[] {
-  const uniq = ids.filter((id, i) => ids.indexOf(id) === i);
-  if (!uniq.includes("sonstiges")) uniq.push("sonstiges");
-  return uniq.map((id) => ({ id, label: ALL[id] }));
-}
-
-/**
- * Kurze Liste — wahrscheinlichste HM-Checks zuerst.
- */
-export function heizungUrsachenForAnswers(
-  answers: MeldeAnswers | undefined
-): HeizungUrsacheOption[] {
-  const a = answers ?? {};
-  const problem = normalizeProblem(ans(a, "melde_problem"));
-  const kalt = ans(a, "melde_heizung_kalt");
-
-  switch (problem) {
-    case "wohnung_kalt":
-      if (kalt === "einzelne" || kalt === "teilweise") {
-        return orderIds(["thermostat", "entlueften"]);
-      }
-      return orderIds([
-        "entlueften",
-        "druck_niedrig",
-        "anlage_aus",
-        "stoerung_sichtbar",
-        "thermostat",
-        "hebeanlage",
-      ]);
-
-    case "kein_warmwasser":
-      return orderIds([
-        "ww_aus",
-        "anlage_aus",
-        "stoerung_sichtbar",
-        "ww_trotz_heizung",
-        "hebeanlage",
-      ]);
-
-    case "geraeusche":
-      return orderIds([
-        "entlueften",
-        "druck_niedrig",
-        "stoerung_sichtbar",
-        "anlage_aus",
-        "hebeanlage",
-      ]);
-
-    case "wasser_am_hk":
-      return orderIds([
-        "druck_niedrig",
-        "stoerung_sichtbar",
-        "anlage_aus",
-        "hebeanlage",
-        "sonstiges",
-      ]);
-
-    default:
-      return orderIds([
-        "entlueften",
-        "druck_niedrig",
-        "anlage_aus",
-        "ww_aus",
-        "stoerung_sichtbar",
-        "thermostat",
-        "ww_trotz_heizung",
-        "hebeanlage",
-      ]);
-  }
-}
-
-export function heizungUrsacheLabel(id: string | null | undefined): string {
-  if (!id) return "—";
-  return ALL[id as HeizungUrsacheId] ?? id;
-}
-
-export const HEIZUNG_MATERIAL_OPTIONS = [
-  { value: "thermostat", label: "Thermostat" },
-  { value: "entlueftet", label: "Entlüftet" },
-  { value: "nachgefuellt", label: "Nachgefüllt" },
-  { value: "eingeschaltet", label: "Eingeschaltet" },
-  { value: "sonstiges", label: "Sonstiges" },
-] as const;
 
 export function heizungSchadenKurz(answers: MeldeAnswers | undefined): string {
   const a = answers ?? {};

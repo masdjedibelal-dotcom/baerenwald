@@ -4,18 +4,10 @@ import {
   filterLeistungComplianceTypen,
   filterPartnerComplianceTypen,
   istPflichtFuerPartner,
-  istPflichtFuerProjekt,
-  normalizeComplianceEbene,
-  type ComplianceEbene,
+  istPflichtFuerProjekt,type ComplianceEbene,
   type PartnerComplianceTypEbene,
-  type PartnerGewerkRow,
+  type PartnerGewerkRow
 } from "@/lib/partner/compliance-partner-profile";
-
-export type PartnerDokumentStatus =
-  | "hochgeladen"
-  | "in_pruefung"
-  | "freigegeben"
-  | "abgelehnt";
 
 export type PartnerComplianceTypRow = PartnerComplianceTypEbene & {
   bezeichnung: string;
@@ -203,28 +195,6 @@ export function itemFromTypForNachunternehmer(
   return itemFromTyp(typ, dokumente, opts);
 }
 
-/** @deprecated Nutze buildPartnerStammCompliance / buildProjektCompliance */
-export function buildComplianceChecklist(opts: {
-  typen: PartnerComplianceTypRow[];
-  dokumente: PartnerDokumentRow[];
-  scopeFilter?: Array<"stamm" | "bauprojekt" | "gewerk">;
-  auftragId?: string | null;
-}): PartnerComplianceItem[] {
-  const scopes = opts.scopeFilter ?? ["stamm", "bauprojekt", "gewerk"];
-  const typen = opts.typen
-    .filter((t) => scopes.includes(t.scope as "stamm" | "bauprojekt" | "gewerk"))
-    .sort((a, b) => a.sort_order - b.sort_order);
-
-  return typen.map((typ) => {
-    const ebene = normalizeComplianceEbene(typ);
-    return itemFromTyp(typ, opts.dokumente, {
-      pflicht: ebene === "leistung" ? typ.pflicht_bauprojekt : typ.pflicht_fuer_fachbetriebe === true,
-      auftragId: opts.auftragId,
-      ebene,
-    });
-  });
-}
-
 export function buildPartnerStammCompliance(opts: {
   typen: PartnerComplianceTypRow[];
   dokumente: PartnerDokumentRow[];
@@ -375,25 +345,6 @@ export function hasGueltigerProjektvertrag(
   );
 }
 
-export function compliancePflichtOffen(items: PartnerComplianceItem[]): boolean {
-  return items.some(
-    (i) =>
-      i.pflicht &&
-      i.status !== "erledigt" &&
-      i.status !== "in_pruefung" &&
-      i.status !== "ablauf_warnung"
-  );
-}
-
-export function complianceStatusLabel(status: PartnerComplianceItemStatus): string {
-  if (status === "erledigt") return "Bestätigt";
-  if (status === "in_pruefung") return "In Prüfung";
-  if (status === "abgelehnt") return "Abgelehnt";
-  if (status === "ablauf_warnung") return "Läuft bald ab";
-  if (status === "abgelaufen") return "Abgelaufen";
-  return "Fehlt";
-}
-
 /**
  * Stammunterlagen: nur CRM-Prüfstatus —
  * In Prüfung · Abgelehnt · Erledigt · Abgelaufen.
@@ -407,17 +358,4 @@ export function stammDokumentStatusLabel(
   if (status === "abgelaufen") return "Abgelaufen";
   if (status === "erledigt" || status === "ablauf_warnung") return "Erledigt";
   return null;
-}
-
-export function stammDokumentStatusPillClass(
-  status: PartnerComplianceItemStatus
-): string {
-  if (status === "erledigt" || status === "ablauf_warnung") {
-    return "tag bg-p2-primary-soft text-p2-primary";
-  }
-  if (status === "in_pruefung") return "tag bg-warning-bg text-warning-text";
-  if (status === "abgelehnt" || status === "abgelaufen") {
-    return "tag bg-p2-danger-soft text-p2-danger";
-  }
-  return "tag bg-muted text-text-secondary";
 }

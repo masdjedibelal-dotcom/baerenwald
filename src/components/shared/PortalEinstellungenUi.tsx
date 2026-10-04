@@ -1,19 +1,16 @@
 "use client";
 
 import { PortalIcon } from "@/components/portal/PortalIcon";
-import { useState, type ReactNode } from "react";
+import { useState,type ReactNode } from "react";
 
 import { PortalInput } from "@/components/shared/PortalFormControls";
 import {
-  PortalConfirmDialog,
-  PortalDetailInfoBox,
+  PortalConfirmDialog
 } from "@/components/shared/PortalDetailUi";
 import { PortalModalShell } from "@/components/shared/PortalModalShell";
 import { InfoTip } from "@/components/ui/InfoTip";
 import {
-  EINSTELLUNGEN_LOGO_HINT,
-  formatEinstellungenSchwelle,
-  snapEinstellungenSchwelle,
+  EINSTELLUNGEN_LOGO_HINT
 } from "@/lib/portal2/einstellungen";
 import {
   PORTAL_NESTED_PANEL_CLASS,
@@ -134,11 +131,6 @@ export function EinstellungenEdField({
       />
     </label>
   );
-}
-
-/** Alias — gleiche Info-Box wie Detail-Screens. */
-export function EinstellungenInfoBox({ children }: { children: ReactNode }) {
-  return <PortalDetailInfoBox>{children}</PortalDetailInfoBox>;
 }
 
 /** Weiße Section-Card — eine pro Einstellungs-Block (kein Outer-Wrapper). */
@@ -276,11 +268,6 @@ export function EinstellungenSectionHeader({
   );
 }
 
-/** @deprecated Alias — nutze EinstellungenSectionHeader. */
-export function EinstellungenSectionLabel({ children }: { children: string }) {
-  return <EinstellungenSectionHeader title={children} />;
-}
-
 /** Edit: mobil Bottom-Sheet, Desktop Side-Over (`variant="edit"`). */
 export function EinstellungenEditModal({
   open,
@@ -340,54 +327,6 @@ export function EinstellungenEditModal({
   );
 }
 
-/** Mock Auswahlkachel (Angebots-Freigabe). */
-export function EinstellungenChoiceCard({
-  selected,
-  title,
-  description,
-  onSelect,
-  disabled,
-}: {
-  selected: boolean;
-  title: string;
-  description: string;
-  onSelect: () => void;
-  disabled?: boolean;
-}) {
-  return (
-    <PortalButton
-      variant="primary"
-      type="button"
-      disabled={disabled}
-      onClick={onSelect}
-      className={cn(
-        "flex w-full items-start gap-3 rounded-[11px] border px-3.5 py-3 text-left transition-colors disabled:opacity-60",
-        selected
-          ? "border-accent bg-accent/[0.08]"
-          : "border-border-default bg-white hover:border-accent/30"
-      )}
-    >
-      <span
-        className={cn(
-          "mt-0.5 flex h-[18px] w-[18px] shrink-0 items-center justify-center rounded-pill border-2",
-          selected ? "border-accent" : "border-[var(--p2-border-soft)]"
-        )}
-        aria-hidden
-      >
-        {selected ? (
-          <span className="h-2 w-2 rounded-pill bg-accent" />
-        ) : null}
-      </span>
-      <span className="min-w-0">
-        <span className="portal-text-card-title block">{title}</span>
-        <span className="portal-text-meta mt-0.5 block" style={{ color: PORTAL_VAR.sub }}>
-          {description}
-        </span>
-      </span>
-    </PortalButton>
-  );
-}
-
 /** Desktop 2 Spalten, Mobile 1 — für Klartext-Felder mit etwas Luft. */
 export function EinstellungenGrid2({
   children,
@@ -422,60 +361,6 @@ export function EinstellungenCard({
     <EinstellungenSectionCard title={title} onEdit={onEdit} className={className}>
       {children}
     </EinstellungenSectionCard>
-  );
-}
-
-/** Mock globaler Schwellen-Slider + Geldanzeige (gap 12). */
-export function EinstellungenSchwelleSlider({
-  value,
-  onChange,
-  disabled,
-  min = 0,
-  max = 5000,
-  step = 500,
-}: {
-  value: number;
-  onChange: (value: number) => void;
-  disabled?: boolean;
-  min?: number;
-  max?: number;
-  step?: number;
-}) {
-  return (
-    <div className="flex items-center gap-3">
-      <PortalInput
-        type="range"
-        min={min}
-        max={max}
-        step={step}
-        value={value}
-        disabled={disabled}
-        onChange={(e) => onChange(Number(e.target.value))}
-        className="portal-einstellungen-range min-w-0 flex-1"
-        aria-valuetext={formatEinstellungenSchwelle(value)}
-      />
-      <span
-        className="portal-text-title w-[110px] shrink-0 text-right text-accent tabular-nums"
-      >
-        {formatEinstellungenSchwelle(value)}
-      </span>
-    </div>
-  );
-}
-
-/** Mock Objekt-Schwellen-Zeile — nur Name + Betrag. */
-export function EinstellungenObjektSchwelleRow({
-  name,
-  value,
-}: {
-  name: string;
-  value: string;
-}) {
-  return (
-    <div className="flex items-center justify-between gap-3 rounded-[9px] border border-border-default px-[13px] py-[11px]">
-      <span className="portal-text-card-title min-w-0 truncate">{name}</span>
-      <span className="portal-text-card-title shrink-0 text-accent">{value}</span>
-    </div>
   );
 }
 
@@ -566,37 +451,6 @@ export function EinstellungenSheetCard({
       ) : null}
       {children ? <div className="mt-3">{children}</div> : null}
     </div>
-  );
-}
-
-/** @deprecated Alias — gleicher Slider wie EinstellungenEuroSlider (0–5000 / 500er). */
-export function EinstellungenEuroInput({
-  value,
-  onChange,
-  disabled,
-  min = 0,
-  max = 5000,
-  step = 500,
-}: {
-  value: number;
-  onChange: (value: number) => void;
-  disabled?: boolean;
-  /** @deprecated Ignoriert — Slider statt Pills */
-  presets?: readonly number[];
-  min?: number;
-  max?: number;
-  step?: number;
-}) {
-  return (
-    <EinstellungenEuroSlider
-      value={snapEinstellungenSchwelle(value)}
-      onChange={(v) => onChange(snapEinstellungenSchwelle(v))}
-      disabled={disabled}
-      min={min}
-      max={max}
-      step={step}
-      formatValue={formatEinstellungenSchwelle}
-    />
   );
 }
 

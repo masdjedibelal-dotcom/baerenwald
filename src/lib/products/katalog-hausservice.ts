@@ -1,4 +1,4 @@
-import type { HausserviceStufe, Produkt } from "./types";
+import type { HausserviceStufe,Produkt } from "./types";
 
 /** Nutzer-sichtbarer Name (interne Familie/Slugs: hausservice). */
 export const HAUSBETREUUNG_FAMILIE_LABEL = "Service & Betreuung";
@@ -62,7 +62,5 @@ function hausserviceProdukt(stufe: HausserviceStufe): Produkt {
 export const HAUSSERVICE_PRODUKTE: Produkt[] = (
   ["basis", "komfort", "premium"] as HausserviceStufe[]
 ).map(hausserviceProdukt);
-
-export const HAUSSERVICE_DEFAULT_PRODUKT_SLUG = "hausservice-komfort";
 
 export const HAUSSERVICE_EMPFOHLEN_STUFE: HausserviceStufe = "komfort";

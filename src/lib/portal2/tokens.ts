@@ -95,8 +95,6 @@ export const PORTAL_C = {
   body: "'Plus Jakarta Sans', -apple-system, 'Segoe UI', system-ui, sans-serif",
 } as const;
 
-export type PortalTokenKey = keyof typeof PORTAL_C;
-
 /**
  * Inline-Style-Werte — respektieren Org-Brand (--org-primary*).
  * Statt `PORTAL_C.primary` in style={{}} verwenden.
@@ -210,59 +208,3 @@ export const PORTAL_CSS_VARS = {
   brandPrimaryDk: "--org-primary-dk",
   brandSoft: "--org-primary-soft",
 } as const;
-
-/** Inline-Style mit allen Default-Tokens (ohne Brand-Override). */
-export function portalTokenStyle(): Record<string, string> {
-  return {
-    [PORTAL_CSS_VARS.bg]: PORTAL_C.bg,
-    [PORTAL_CSS_VARS.bgContent]: PORTAL_C.bgContent,
-    [PORTAL_CSS_VARS.panel]: PORTAL_C.panel,
-    [PORTAL_CSS_VARS.line]: PORTAL_C.line,
-    [PORTAL_CSS_VARS.line2]: PORTAL_C.line2,
-    [PORTAL_CSS_VARS.ink]: PORTAL_C.ink,
-    [PORTAL_CSS_VARS.sub]: PORTAL_C.sub,
-    [PORTAL_CSS_VARS.faint]: PORTAL_C.faint,
-    [PORTAL_CSS_VARS.faint2]: PORTAL_C.faint2,
-    [PORTAL_CSS_VARS.primary]: PORTAL_C.primary,
-    [PORTAL_CSS_VARS.primaryDk]: PORTAL_C.primaryDk,
-    [PORTAL_CSS_VARS.primarySoft]: PORTAL_C.primarySoft,
-    [PORTAL_CSS_VARS.greenDark]: PORTAL_C.greenDark,
-    [PORTAL_CSS_VARS.green50]: PORTAL_C.green50,
-    [PORTAL_CSS_VARS.hover]: PORTAL_C.hover,
-    [PORTAL_CSS_VARS.surfaceCard]: PORTAL_C.surfaceCard,
-    [PORTAL_CSS_VARS.selected]: PORTAL_C.selected,
-    [PORTAL_CSS_VARS.sand]: PORTAL_C.sand,
-    [PORTAL_CSS_VARS.sandText]: PORTAL_C.sandText,
-    [PORTAL_CSS_VARS.skeleton]: PORTAL_C.skeleton,
-    [PORTAL_CSS_VARS.danger]: PORTAL_C.danger,
-    [PORTAL_CSS_VARS.dangerSoft]: PORTAL_C.dangerSoft,
-    [PORTAL_CSS_VARS.dangerBorder]: PORTAL_C.dangerBorder,
-    [PORTAL_CSS_VARS.shadowFlat]: PORTAL_C.shadowFlat,
-    [PORTAL_CSS_VARS.shadowCard]: PORTAL_C.shadowCard,
-    [PORTAL_CSS_VARS.shadowFloat]: PORTAL_C.shadowFloat,
-    [PORTAL_CSS_VARS.shadow]: PORTAL_C.shadow,
-    [PORTAL_CSS_VARS.shadowHover]: PORTAL_C.shadowHover,
-    [PORTAL_CSS_VARS.shadowFocus]: PORTAL_C.shadowFocus,
-    [PORTAL_CSS_VARS.shadowPrimaryBtn]: PORTAL_C.shadowPrimaryBtn,
-    [PORTAL_CSS_VARS.shadowNav]: PORTAL_C.shadowNav,
-    [PORTAL_CSS_VARS.shadowSheet]: PORTAL_C.shadowSheet,
-    [PORTAL_CSS_VARS.radiusSm]: PORTAL_C.radiusSm,
-    [PORTAL_CSS_VARS.radiusMd]: PORTAL_C.radiusMd,
-    [PORTAL_CSS_VARS.radiusLg]: PORTAL_C.radiusLg,
-    [PORTAL_CSS_VARS.radiusSheet]: PORTAL_C.radiusSheet,
-    [PORTAL_CSS_VARS.radiusPill]: PORTAL_C.radiusPill,
-    [PORTAL_CSS_VARS.space1]: PORTAL_C.space1,
-    [PORTAL_CSS_VARS.space2]: PORTAL_C.space2,
-    [PORTAL_CSS_VARS.space3]: PORTAL_C.space3,
-    [PORTAL_CSS_VARS.space4]: PORTAL_C.space4,
-    [PORTAL_CSS_VARS.space5]: PORTAL_C.space5,
-    [PORTAL_CSS_VARS.space6]: PORTAL_C.space6,
-    [PORTAL_CSS_VARS.rowPad]: PORTAL_C.rowPad,
-    [PORTAL_CSS_VARS.rowGap]: PORTAL_C.rowGap,
-    [PORTAL_CSS_VARS.cardPad]: PORTAL_C.cardPad,
-    [PORTAL_CSS_VARS.stack]: PORTAL_C.stack,
-    [PORTAL_CSS_VARS.scrim]: PORTAL_C.scrim,
-    [PORTAL_CSS_VARS.head]: PORTAL_C.head,
-    [PORTAL_CSS_VARS.body]: PORTAL_C.body,
-  };
-}

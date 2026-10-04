@@ -47,9 +47,3 @@ export function toMeldeObjektDisplay(src: MeldeObjektSource): MeldeObjektDisplay
     we: formatMeldeObjektWe(src.einheiten_hinweis, src.einheitenCount),
   };
 }
-
-export function toMeldeObjektDisplayList(
-  rows: MeldeObjektSource[]
-): MeldeObjektDisplay[] {
-  return rows.map(toMeldeObjektDisplay);
-}

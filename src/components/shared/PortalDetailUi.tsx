@@ -1,14 +1,12 @@
 "use client";
 
 import { PortalIcon } from "@/components/portal/PortalIcon";
-import { type ReactNode } from "react";
 
 import {
   LeistungStatusDot,
   resolvePortalLeistungStatusAmpel,
 } from "@/components/shared/LeistungStatusDot";
 import { PortalButton } from "@/components/portal/PortalButton";
-import { PortalModalShell } from "@/components/shared/PortalModalShell";
 import { PortalSheetConfirm } from "@/components/shared/PortalSheetConfirm";
 import { usePortalDetailLayoutFooter } from "@/components/shared/portal-detail-layout-context";
 import { cn } from "@/lib/utils";

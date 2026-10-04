@@ -1,16 +1,14 @@
-import { logDbError } from '@/lib/errors/log-db-error'
+import { logDbError } from '@/lib/errors/log-db-error';
 import { Suspense } from "react";
 import { redirect } from "next/navigation";
 
 import { OrganisationPortalClient } from "@/components/org/OrganisationPortalClient";
-import { EigentuemerPortalClient } from "@/components/portal/EigentuemerPortalClient";
 import { PortalClient } from "@/components/portal/PortalClient";
 import { PortalAuthShell } from "@/components/portal/PortalAuthShell";
 import { PortalContentBusy } from "@/components/shared/PortalContentBusy";
 import { SITE_CONFIG } from "@/lib/config";
 import { resolveOrgMitgliedRolle } from "@/lib/org/org-rbac";
 import { getOrganisationPortalData } from "@/lib/org/get-organisation-portal-data";
-import { getEigentuemerPortalData } from "@/lib/portal/get-eigentuemer-portal-data";
 import { getPortalDataForKunde } from "@/lib/portal/get-portal-data";
 import { linkPortalKundeToAuthUser } from "@/lib/portal/link-portal-kunde";
 import {
@@ -20,7 +18,7 @@ import {
 import { resolvePortalKundeTyp } from "@/lib/portal2/kunde-typ";
 import { clearAdminViewCookie } from "@/lib/auth/crm-impersonation-session";
 import { createClient } from "@/lib/supabase/server";
-import { isSupabaseConfigured, supabaseAdmin } from "@/lib/supabase";
+import { isSupabaseConfigured,supabaseAdmin } from "@/lib/supabase";
 
 export const dynamic = "force-dynamic";
 
@@ -156,15 +154,16 @@ export default async function PortalDashboardPage({
     kundeTypField = null;
   }
 
-  // Mieter melden per Link, Hausmeister gibt es nicht mehr → kein Portal (04.10.2026)
-  if (portalModus === "mieter" || portalModus === "hausmeister") {
+  // Mieter melden per Link; Hausmeister- und Eigentümer-Rolle gibt es nicht mehr → kein Portal (04.10.2026)
+  if (portalModus === "mieter" || portalModus === "hausmeister" || portalModus === "eigentuemer") {
     return (
       <PortalAuthShell title="Kein Zugang mehr nötig">
         <div className="space-y-4">
           <p className="portal-text-body text-text-secondary">
             Schäden melden Sie einfach über den Melde-Link oder QR-Code Ihrer Hausverwaltung.
             Den Stand Ihrer Meldung sehen Sie über den Link in Ihrer Bestätigungs-Mail —
-            ein Konto brauchen Sie dafür nicht.
+            ein Konto brauchen Sie dafür nicht. Bei Fragen erreichen Sie Ihre Hausverwaltung
+            oder uns direkt.
           </p>
           <form action="/portal/auth/signout" method="post">
             <button type="submit" className="btn-pill-outline w-full !py-2.5">
@@ -173,42 +172,6 @@ export default async function PortalDashboardPage({
           </form>
         </div>
       </PortalAuthShell>
-    );
-  }
-
-  /** D8 — eigene Rolle / Client */
-  if (portalModus === "eigentuemer") {
-    const eigData = await getEigentuemerPortalData(portalKundeId);
-    if (!eigData) {
-      return (
-        <PortalAuthShell title="Keine Kundendaten">
-          <p className="portal-text-body text-text-secondary">
-            Eigentümer-Daten konnten nicht geladen werden.
-          </p>
-        </PortalAuthShell>
-      );
-    }
-    return (
-      <Suspense
-        fallback={
-          <PortalContentBusy
-            variant="page"
-            body="Einen Moment — wir bereiten Ihre Übersicht vor."
-          />
-        }
-      >
-        <EigentuemerPortalClient
-          kunde={eigData.kunde}
-          schwelleEur={eigData.schwelleEur}
-          objekte={eigData.objekte}
-          einheiten={eigData.einheiten}
-          mieterByObjektId={eigData.mieterByObjektId}
-          hausverwaltungBrand={eigData.hausverwaltungBrand}
-          leads={eigData.leads}
-          angebote={eigData.angebote}
-          auftraege={eigData.auftraege}
-        />
-      </Suspense>
     );
   }
 
@@ -319,7 +282,6 @@ export default async function PortalDashboardPage({
         initialVorgaenge={slim.initialVorgaenge}
         mieterFeedbackByLeadId={data.mieterFeedbackByLeadId ?? {}}
         hausverwaltungBrand={data.hausverwaltungBrand}
-        mieterMelde={data.mieterMelde ?? null}
         kundeTyp={kundeTyp === "gewerbe" ? "gewerbe" : "privat"}
       />
     </Suspense>

@@ -1,6 +1,6 @@
 "use server";
 
-import { logDbError } from '@/lib/errors/log-db-error'
+import { logDbError } from '@/lib/errors/log-db-error';
 import { revalidatePath } from "next/cache";
 
 import { linkPortalHandwerkerToAuthUser } from "@/lib/partner/link-portal-handwerker";
@@ -14,7 +14,7 @@ import { partnerVorgangIdFromNotificationLink } from "@/lib/partner/partner-site
 import { filterActiveVorgangEntityIds } from "@/lib/portal/lead-not-deleted";
 import { limitReadNotifications } from "@/lib/portal2/notif-types";
 import { createClient } from "@/lib/supabase/server";
-import { isSupabaseConfigured, supabaseAdmin } from "@/lib/supabase";
+import { isSupabaseConfigured,supabaseAdmin } from "@/lib/supabase";
 
 export async function fetchPartnerNotifications(): Promise<{
   ok: boolean;
@@ -117,62 +117,6 @@ export async function markPartnerNotificationRead(
         )
         .map((r) => String(r.id))
     : [id.trim()];
-
-  if (!idsToMark.length) return { ok: true };
-
-  const { error } = await supabaseAdmin
-    .from("notifications")
-    .update({ gelesen: true })
-    .in("id", idsToMark)
-    .eq("handwerker_id", link.handwerkerId);
-  if (error) logDbError('app/actions/partner-notifications:notifications', error)
-
-  if (error) return { ok: false, error: error.message };
-  revalidatePath("/partner");
-  return { ok: true };
-}
-
-/** Beim Öffnen eines Vorgangs: alle zugehörigen Ungelesenen als gelesen. */
-export async function markPartnerNotificationsReadForVorgang(
-  vorgangId: string | string[]
-): Promise<{ ok: boolean; error?: string }> {
-  if (!isSupabaseConfigured()) {
-    return { ok: false, error: "Datenbank nicht konfiguriert." };
-  }
-
-  const keys = (Array.isArray(vorgangId) ? vorgangId : [vorgangId])
-    .map((v) => v.trim().replace(/^auftrag:/, ""))
-    .filter(Boolean);
-  if (!keys.length) return { ok: true };
-  const keySet = new Set(keys);
-
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user?.email) return { ok: false, error: "Nicht angemeldet." };
-
-  const link = await linkPortalHandwerkerToAuthUser({
-    userId: user.id,
-    email: user.email,
-  });
-  if (!link.ok) return { ok: false, error: link.error };
-
-  const {data: unreadRows, error: __dbErr81_2} = await supabaseAdmin
-    .from("notifications")
-    .select("id, link")
-    .eq("handwerker_id", link.handwerkerId)
-    .eq("gelesen", false);
-  if (__dbErr81_2) logDbError('app/actions/partner-notifications:notifications', __dbErr81_2)
-
-  const idsToMark = (unreadRows ?? [])
-    .filter((r) => {
-      const key = partnerNotificationVorgangKey(String(r.link ?? ""));
-      if (key && keySet.has(key)) return true;
-      const linkStr = String(r.link ?? "");
-      return Array.from(keySet).some((id) => linkStr.includes(`id=${id}`));
-    })
-    .map((r) => String(r.id));
 
   if (!idsToMark.length) return { ok: true };
 

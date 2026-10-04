@@ -21,18 +21,3 @@ export const PORTAL_KUNDE_ABLEHNUNG_GRUND_LABELS: Record<
   kein_interesse: "Kein Interesse mehr",
   sonstiges: "Sonstiges",
 };
-
-export function isPortalKundeAblehnungGrund(
-  v: string
-): v is PortalKundeAblehnungGrund {
-  return (PORTAL_KUNDE_ABLEHNUNG_GRUND_OPTIONS as readonly string[]).includes(v);
-}
-
-export function labelPortalKundeAblehnung(
-  raw: string | null | undefined
-): string {
-  if (!raw) return "—";
-  return isPortalKundeAblehnungGrund(raw)
-    ? PORTAL_KUNDE_ABLEHNUNG_GRUND_LABELS[raw]
-    : raw;
-}

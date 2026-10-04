@@ -1,6 +1,6 @@
 "use server";
 
-import { logDbError } from '@/lib/errors/log-db-error'
+import { logDbError } from '@/lib/errors/log-db-error';
 import { assertPartnerEmailAllowed } from "@/app/actions/assert-partner-email-allowed";
 import { assertPortalEmailAllowed } from "@/app/actions/assert-portal-email-allowed";
 import {
@@ -22,7 +22,7 @@ import {
   normalizePortalRegisterKundeTyp,
   type PortalRegisterKundeTyp,
 } from "@/lib/portal/portal-register-kunde-typ";
-import { isSupabaseConfigured, supabaseAdmin } from "@/lib/supabase";
+import { isSupabaseConfigured,supabaseAdmin } from "@/lib/supabase";
 
 export type PortalSignupOtpResult = { ok: true } | { ok: false; error: string };
 
@@ -58,7 +58,6 @@ export async function registerMeinBaerenwaldWithOtp(input: {
   email: string;
   telefon?: string;
   password: string;
-  einladungToken?: string;
   /** privat | gewerbe | hausverwaltung — Pflicht außer bei Einladung */
   kundentyp?: string;
   vorname?: string;
@@ -79,7 +78,6 @@ export async function registerMeinBaerenwaldWithOtp(input: {
   const email = normalizeKundenEmail(input.email);
   const password = input.password;
   const telefon = trimOrNull(input.telefon);
-  const invite = Boolean(input.einladungToken?.trim());
   const kundentyp = normalizePortalRegisterKundeTyp(input.kundentyp);
   const vorname = trimOrNull(input.vorname);
   const nachname = trimOrNull(input.nachname);
@@ -103,14 +101,13 @@ export async function registerMeinBaerenwaldWithOtp(input: {
   if (password.length < 8) {
     return { ok: false, error: "Passwort mindestens 8 Zeichen." };
   }
-  if (!invite && !kundentyp) {
+  if (!kundentyp) {
     return {
       ok: false,
       error: "Bitte wählen Sie, ob Privat, Gewerbe oder Hausverwaltung.",
     };
   }
   if (
-    !invite &&
     (kundentyp === "gewerbe" || kundentyp === "hausverwaltung") &&
     !firma
   ) {
@@ -122,10 +119,10 @@ export async function registerMeinBaerenwaldWithOtp(input: {
           : "Bitte Firmenname angeben.",
     };
   }
-  if (!invite && (!vorname || !nachname)) {
+  if ((!vorname || !nachname)) {
     return { ok: false, error: "Bitte Vor- und Nachname angeben." };
   }
-  if (!invite && (!strasse || !hausnummer || !plz || !ort)) {
+  if ((!strasse || !hausnummer || !plz || !ort)) {
     return {
       ok: false,
       error: "Bitte Straße, Hausnummer, PLZ und Ort angeben.",
@@ -150,9 +147,6 @@ export async function registerMeinBaerenwaldWithOtp(input: {
   if (hausnummer) meta.hausnummer = hausnummer;
   if (plz) meta.plz = plz;
   if (ort) meta.ort = ort;
-  if (input.einladungToken?.trim()) {
-    meta.portal_einladung_token = input.einladungToken.trim();
-  }
 
   const { data: created, error: createErr } =
     await supabaseAdmin.auth.admin.createUser({

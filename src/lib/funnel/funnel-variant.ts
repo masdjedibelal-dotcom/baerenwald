@@ -14,9 +14,7 @@
 export type FunnelChannel =
   | "web"
   | "melde_anon"
-  | "portal_mieter"
   | "portal_hv"
-  | "portal_eigentuemer"
   | "portal_privat";
 
 export type FunnelVariantConfig = {
@@ -96,30 +94,6 @@ export const FUNNEL_VARIANT: Record<FunnelChannel, FunnelVariantConfig> = {
       datenschutzCheckbox: true,
     },
   },
-  portal_mieter: {
-    channel: "portal_mieter",
-    showTrustAndGpt: false,
-    showPrice: false,
-    contactBeforePrice: false,
-    forceKaputt: true,
-    prefix: {
-      objekt: "prefilled",
-      objektNeu: false,
-      mieter: "prefilled",
-      mieterNeu: false,
-      einheit: true,
-    },
-    include: {
-      kundentyp: false,
-      ortPlz: false,
-      photos: true,
-      beschreibung: true,
-      notfallDringlichkeit: false,
-      verwaltungInfo: false,
-      // Angemeldet: Einwilligung liegt aus der Registrierung vor
-      datenschutzCheckbox: false,
-    },
-  },
   portal_hv: {
     channel: "portal_hv",
     showTrustAndGpt: false,
@@ -141,30 +115,6 @@ export const FUNNEL_VARIANT: Record<FunnelChannel, FunnelVariantConfig> = {
       notfallDringlichkeit: false,
       verwaltungInfo: false,
       datenschutzCheckbox: false,
-    },
-  },
-  portal_eigentuemer: {
-    channel: "portal_eigentuemer",
-    showTrustAndGpt: false,
-    showPrice: true,
-    contactBeforePrice: false,
-    forceKaputt: false,
-    prefix: {
-      objekt: "required",
-      /** Eigene Objekte ohne HV — Anlegen im Funnel. */
-      objektNeu: true,
-      mieter: "optional",
-      mieterNeu: true,
-      einheit: true,
-    },
-    include: {
-      kundentyp: false,
-      ortPlz: false,
-      photos: true,
-      beschreibung: true,
-      notfallDringlichkeit: true,
-      verwaltungInfo: false,
-      datenschutzCheckbox: true,
     },
   },
   portal_privat: {

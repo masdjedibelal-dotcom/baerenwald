@@ -3,7 +3,7 @@
  * CRM setzt `leads.geloescht_am` oder löscht den Lead (Kinder können als Geister bleiben).
  */
 
-import { logDbError } from '@/lib/errors/log-db-error'
+import { logDbError } from '@/lib/errors/log-db-error';
 import { supabaseAdmin } from "@/lib/supabase";
 
 const UUID_RE =
@@ -14,13 +14,6 @@ export function normalizeVorgangRef(raw: string | null | undefined): string | nu
     .trim()
     .replace(/^auftrag:/i, "");
   return UUID_RE.test(id) ? id : null;
-}
-
-/** Query-Builder: nur nicht gelöschte Leads (mit Fallback, falls Spalte fehlt). */
-export function withLeadNotDeleted<T extends { is: (col: string, val: null) => T }>(
-  query: T
-): T {
-  return query.is("geloescht_am", null);
 }
 
 /**
@@ -48,24 +41,6 @@ export async function filterActiveLeadIds(
   }
 
   return new Set((data ?? []).map((r) => String(r.id)));
-}
-
-/** true = Lead ist soft-gelöscht oder existiert nicht. */
-export async function isLeadSoftDeleted(leadId: string): Promise<boolean> {
-  const id = leadId.trim();
-  if (!id) return true;
-  const { data, error } = await supabaseAdmin
-    .from("leads")
-    .select("id, geloescht_am")
-    .eq("id", id)
-    .maybeSingle();
-  if (error) logDbError('lib/portal/lead-not-deleted:leads', error)
-  if (error && /geloescht_am/i.test(error.message)) {
-    const fb = await supabaseAdmin.from("leads").select("id").eq("id", id).maybeSingle();
-    return !fb.data?.id;
-  }
-  if (!data?.id) return true;
-  return Boolean((data as { geloescht_am?: string | null }).geloescht_am);
 }
 
 /**

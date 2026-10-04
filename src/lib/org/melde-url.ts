@@ -2,7 +2,7 @@ import { PALETTE } from "@/lib/tokens/palette";
 import QRCode from "qrcode";
 
 import { SITE_CONFIG } from "@/lib/config";
-import { isStagingDeploy, publicSiteOrigin } from "@/lib/staging";
+import { isStagingDeploy,publicSiteOrigin } from "@/lib/staging";
 
 /** Slug für Meldungen ohne zugeordnetes Objekt (Org-Einstieg ohne Gebäude). */
 export const MELDE_ALLGEMEIN_SLUG = "allgemein";
@@ -32,15 +32,6 @@ export function buildMeldeUrl(
     return `${base}/${encodeURIComponent(objektSlug.trim().toLowerCase())}`;
   }
   return base;
-}
-
-export function buildEinladungUrl(token: string): string {
-  return `${portalOrigin()}/melden/ergaenzen/${encodeURIComponent(token)}`;
-}
-
-/** @deprecated Externer QR-API-Link — bevorzugt `generateMeldeQrPng`. */
-export function buildMeldeQrUrl(meldeUrl: string): string {
-  return `https://api.qrserver.com/v1/create-qr-code/?size=480x480&margin=2&ecc=M&data=${encodeURIComponent(meldeUrl)}`;
 }
 
 /**

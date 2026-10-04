@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect,useMemo,useRef,useState } from "react";
 
 import "@/app/funnel-ui.css";
 
@@ -48,11 +48,10 @@ import {
   type ObjWizDraft,
   type ObjWizPayload,
 } from "@/lib/portal2/objekte";
-import { orgPortalToast, portalToastError } from "@/lib/shared/portal-toast";
+import { orgPortalToast,portalToastError } from "@/lib/shared/portal-toast";
 import { usePortalBusy } from "@/components/shared/PortalBusyContext";
-import { portalEinladungHvFromKunde } from "@/lib/portal2/portal-einladungen";
 import { PortalButton } from "@/components/portal/PortalButton";
-import { TOAST } from '@/lib/portal-copy'
+import { TOAST } from '@/lib/portal-copy';
 
 type Props = {
   objekte: OrganisationObjekt[];
@@ -136,27 +135,6 @@ export function OrganisationObjektePanel({
     | { kind: "bulk" }
     | null
   >(null);
-  const [pruefFaelligById, setPruefFaelligById] = useState<
-    Record<string, number>
-  >({});
-
-  useEffect(() => {
-    let cancelled = false;
-    void fetch("/api/org/objekte/pruefpflichten-summary")
-      .then(async (res) => {
-        if (!res.ok) return null;
-        return (await res.json()) as { byObjektId?: Record<string, number> };
-      })
-      .then((json) => {
-        if (!cancelled && json?.byObjektId) {
-          setPruefFaelligById(json.byObjektId);
-        }
-      })
-      .catch(() => undefined);
-    return () => {
-      cancelled = true;
-    };
-  }, [objekte.length]);
 
   useEffect(() => {
     onDetailOpenChange?.(mode.kind !== "list");
@@ -165,10 +143,6 @@ export function OrganisationObjektePanel({
   const defaultHv =
     kunde?.org_anzeigename?.trim() || kunde?.name?.trim() || "";
 
-  const einladungHv = useMemo(
-    () => portalEinladungHvFromKunde(kunde),
-    [kunde]
-  );
 
   const offenById = useMemo(
     () => countOffeneByObjektId(leads, objekte, { angebote, auftraege }),
@@ -495,7 +469,6 @@ export function OrganisationObjektePanel({
           onRefresh={onRefresh}
           onOpenVorgang={onOpenVorgang}
           orgAnzeigename={defaultHv || null}
-          hv={einladungHv}
           dokumenteByLeadId={dokumenteByLeadId}
         />
         {confirmDialog}
@@ -566,11 +539,8 @@ export function OrganisationObjektePanel({
           {objekte.map((o) => {
             const isSel = selected.includes(o.id);
             const offen = offenById[o.id] ?? 0;
-            const card = buildObjCardModel(
-              o,
-              offen,
-              pruefFaelligById[o.id] ?? 0
-            );
+            // Prüfpflichten entfallen (01.10./04.10.2026) — kein Zähler mehr
+            const card = buildObjCardModel(o, offen, 0);
             const canAushang = !!(
               orgKennung &&
               o.melde_slug &&

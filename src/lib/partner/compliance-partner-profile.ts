@@ -20,12 +20,6 @@ export type PartnerComplianceTypEbene = {
   sort_order?: number | null;
 };
 
-export const COMPLIANCE_EBENE_LABELS: Record<ComplianceEbene, string> = {
-  allgemein: "Unterlagen",
-  meister: "Meister & Fachbetrieb",
-  leistung: "Leistungsvertrag & Auftrag",
-};
-
 export function normalizeComplianceEbene(typ: PartnerComplianceTypEbene): ComplianceEbene {
   const ebene = typ.compliance_ebene;
   if (ebene === "meister" || ebene === "leistung") return ebene;

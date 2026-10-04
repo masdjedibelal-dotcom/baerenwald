@@ -70,9 +70,3 @@ export function handwerkerFirmenLabel(src: {
   const name = src.name?.trim() || "";
   return firma || name || null;
 }
-
-export function toHandwerkerDisplayList(
-  rows: HandwerkerDisplaySource[]
-): HandwerkerDisplay[] {
-  return rows.map(toHandwerkerDisplay);
-}

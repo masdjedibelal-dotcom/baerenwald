@@ -17,11 +17,6 @@ export type FensterUrsacheId =
   | "schmierung"
   | "sonstiges";
 
-export type FensterUrsacheOption = {
-  id: FensterUrsacheId;
-  label: string;
-};
-
 export type MeldeUrsachenFensterState = {
   bereich: "fenster_tuer";
   selectedUrsacheId: FensterUrsacheId | null;
@@ -29,19 +24,6 @@ export type MeldeUrsachenFensterState = {
   entscheidung: "hm_geloest" | "fachfirma" | null;
   material?: string[];
   updatedAt?: string | null;
-};
-
-const ALL: Record<FensterUrsacheId, string> = {
-  beschlag_griff: "Beschlag oder Griff verstellt / locker",
-  fluegel_schleift: "Fensterflügel schleift",
-  dichtung: "Dichtung undicht oder verschlissen",
-  glas: "Glas / Scheibe beschädigt",
-  tuer_abgesackt: "Tür abgesackt / Band locker",
-  schliessblech: "Schließblech verstellt",
-  schloss: "Schloss defekt",
-  schluessel: "Schlüssel defekt oder abgebrochen",
-  schmierung: "Schmierung fehlt",
-  sonstiges: "Sonstiges",
 };
 
 function ans(a: MeldeAnswers, id: string): string {
@@ -68,61 +50,6 @@ export function fensterMatchKey(answers: MeldeAnswers | undefined): string {
   }
   return problem || "sonstiges";
 }
-
-function orderIds(ids: FensterUrsacheId[]): FensterUrsacheOption[] {
-  const uniq = ids.filter((id, i) => ids.indexOf(id) === i);
-  if (!uniq.includes("sonstiges")) uniq.push("sonstiges");
-  return uniq.map((id) => ({ id, label: ALL[id] }));
-}
-
-export function fensterUrsachenForAnswers(
-  answers: MeldeAnswers | undefined
-): FensterUrsacheOption[] {
-  const key = fensterMatchKey(answers);
-
-  switch (key) {
-    case "fenster_geht_nicht":
-      return orderIds([
-        "beschlag_griff",
-        "fluegel_schleift",
-        "dichtung",
-        "sonstiges",
-      ]);
-    case "scheibe_kaputt":
-      return orderIds(["glas", "sonstiges"]);
-    case "tuer_schließt":
-      return orderIds([
-        "tuer_abgesackt",
-        "schliessblech",
-        "schloss",
-        "dichtung",
-        "sonstiges",
-      ]);
-    case "absperren":
-      return orderIds(["schloss", "schliessblech", "sonstiges"]);
-    case "schluessel":
-      return orderIds(["schloss", "schluessel", "schmierung", "sonstiges"]);
-    default:
-      return orderIds([
-        "beschlag_griff",
-        "tuer_abgesackt",
-        "schloss",
-        "glas",
-        "sonstiges",
-      ]);
-  }
-}
-
-export function fensterUrsacheLabel(id: string | null | undefined): string {
-  if (!id) return "—";
-  return ALL[id as FensterUrsacheId] ?? id;
-}
-
-export const FENSTER_MATERIAL_OPTIONS = [
-  { value: "eingestellt", label: "Eingestellt" },
-  { value: "geschmiert", label: "Geschmiert" },
-  { value: "sonstiges", label: "Sonstiges" },
-] as const;
 
 export function fensterSchadenKurz(answers: MeldeAnswers | undefined): string {
   const a = answers ?? {};

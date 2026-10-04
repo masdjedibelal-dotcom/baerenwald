@@ -114,26 +114,6 @@ export function isPartnerAnfrageAktionErforderlich(
   return isPartnerAnfrageOffen(item);
 }
 
-export function partnerAnfrageStatusPillKey(
-  item: PartnerAnfrageKonditionenFields
-): string {
-  if (isPartnerAnfrageAntwortAbgelaufen(item)) return "antwort_abgelaufen";
-  if (isPartnerAnfrageKonditionenNachreichung(item)) return "ergaenzung";
-  if (isPartnerAnfrageAktionErforderlich(item)) return "neu";
-  return item.status.toLowerCase();
-}
-
-export function partnerAnfrageStatusLabel(
-  item: PartnerAnfrageKonditionenFields
-): string {
-  if (isPartnerAnfrageAntwortAbgelaufen(item)) return "Antwort abgelaufen";
-  if (isPartnerAnfrageKonditionenNachreichung(item)) return "Geändert";
-  if (isPartnerAnfrageAktionErforderlich(item)) return "Aktion nötig";
-  const s = item.status.toLowerCase();
-  if (s === "abgelehnt") return "Abgelehnt";
-  return item.status;
-}
-
 type PartnerAuftragAnfrageTiming = Pick<
   PartnerAuftragItem,
   "hwStatus" | "start_datum" | "created_at" | "updated_at"
@@ -307,29 +287,4 @@ export function isPartnerAuftragAnfrageAktionErforderlich(
 ): boolean {
   if (item.angebotHandwerkerId) return false;
   return isPartnerAuftragAnfrageOffen(item);
-}
-
-export function partnerAuftragAnfrageStatusLabel(
-  item: Pick<
-    PartnerAuftragItem,
-    | "hwStatus"
-    | "start_datum"
-    | "status"
-    | "handwerker_bestaetigt_at"
-    | "created_at"
-    | "updated_at"
-  > & {
-    positionen: Array<{
-      start_datum?: string | null;
-      handwerker_status?: string | null;
-      handwerker_id?: string | null;
-      handwerker_angefragt_at?: string | null;
-    }>;
-  }
-): string {
-  if (isPartnerAuftragAnfrageAntwortAbgelaufen(item)) return "Antwort abgelaufen";
-  if (isPartnerAuftragAnfrageOffen(item)) return "Aktion nötig";
-  const hw = item.hwStatus.toLowerCase();
-  if (hw === "abgelehnt") return "Abgelehnt";
-  return "Aktion nötig";
 }

@@ -25,11 +25,6 @@ export type SofortmassnahmeFall = {
   label: string;
 };
 
-export type SofortmassnahmeFaelleGruppe = {
-  bereich: string;
-  faelle: readonly SofortmassnahmeFall[];
-};
-
 export const SOFORTMASSNAHME_FAELLE_KATALOG: readonly SofortmassnahmeFall[] = [
   {
     id: "wasser_laeuft",
@@ -121,35 +116,3 @@ export function normalizeAkutFallIds(raw: unknown): AkutFallId[] {
   }
   return out;
 }
-
-export function akutFallLabel(id: string): string {
-  return FALL_BY_ID.get(id as AkutFallId)?.label ?? id;
-}
-
-/** Katalog gruppiert (für „Hinzufügen“-UI). */
-export function sofortmassnahmeFaelleGruppen(): SofortmassnahmeFaelleGruppe[] {
-  const order: string[] = [];
-  const byBereich = new Map<string, SofortmassnahmeFall[]>();
-  for (const f of SOFORTMASSNAHME_FAELLE_KATALOG) {
-    if (!byBereich.has(f.bereich)) {
-      order.push(f.bereich);
-      byBereich.set(f.bereich, []);
-    }
-    byBereich.get(f.bereich)!.push(f);
-  }
-  return order.map((bereich) => ({
-    bereich,
-    faelle: byBereich.get(bereich) ?? [],
-  }));
-}
-
-export const SOFORTMASSNAHME_FAELLE_FOOTNOTE =
-  "Schimmel und sonstige Meldungen laufen immer über Angebot und Freigabe." as const;
-
-export const SOFORTMASSNAHME_FAELLE_INTRO =
-  "Nur die hier hinzugefügten Fälle werden bei aktiver Direktbeauftragung ohne Ihre Freigabe weitergeleitet. Die Liste startet leer — dann geht nichts direkt." as const;
-
-export const SOFORTMASSNAHME_FAELLE_POPUP_TITLE = "Fälle hinzufügen" as const;
-
-/** Alias für Gruppierung im Katalog-Popup. */
-export const SOFORTMASSNAHME_FAELLE_GRUPPEN = sofortmassnahmeFaelleGruppen();

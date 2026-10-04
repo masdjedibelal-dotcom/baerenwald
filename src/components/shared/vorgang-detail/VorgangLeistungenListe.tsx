@@ -29,7 +29,6 @@ export function VorgangLeistungenListe({
 
   const showVk = mode === "vk";
   const showEk = mode === "ek";
-  const showPlain = mode === "plain";
 
   const gesamt =
     showVk && typeof summeBrutto === "number" && summeBrutto >= 0

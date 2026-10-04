@@ -1,11 +1,9 @@
 import { BW_FUNNEL_STEP1_OPTIONS } from "@/lib/funnel/situation-options";
 import {
   BW_FUNNEL_STEP_BAD_AUSSTATTUNG,
-  BW_FUNNEL_STEP_ZUGAENGLICHKEIT,
-  BW_FUNNEL_STEP_ZUSTAND,
-  getKundentypOptions,
+  BW_FUNNEL_STEP_ZUGAENGLICHKEIT,getKundentypOptions,
   getZeitraumOptions,
-  SITUATIONEN_CONFIG,
+  SITUATIONEN_CONFIG
 } from "@/lib/funnel/config";
 import type { Situation } from "@/lib/funnel/types";
 
@@ -112,10 +110,6 @@ const ZUGAENGLICHKEIT_LABELS: Record<string, string> = Object.fromEntries(
   (BW_FUNNEL_STEP_ZUGAENGLICHKEIT.options ?? []).map((o) => [o.value, o.label])
 );
 
-const ZUSTAND_LABELS: Record<string, string> = Object.fromEntries(
-  (BW_FUNNEL_STEP_ZUSTAND.options ?? []).map((o) => [o.value, o.label])
-);
-
 const BAD_AUSSTATTUNG_LABELS: Record<string, string> = Object.fromEntries(
   (BW_FUNNEL_STEP_BAD_AUSSTATTUNG.options ?? []).map((o) => [o.value, o.label])
 );
@@ -175,11 +169,6 @@ export function labelDringlichkeit(slug: string | undefined | null): string {
 export function labelZugaenglichkeit(slug: string | undefined | null): string {
   if (!slug?.trim()) return "";
   return ZUGAENGLICHKEIT_LABELS[slug.trim()] ?? slug.replace(/_/g, " ");
-}
-
-export function labelZustand(slug: string | undefined | null): string {
-  if (!slug?.trim()) return "";
-  return ZUSTAND_LABELS[slug.trim()] ?? slug.replace(/_/g, " ");
 }
 
 export function labelBadAusstattung(slug: string | undefined | null): string {

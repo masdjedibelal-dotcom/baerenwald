@@ -277,21 +277,6 @@ export function calculatePrice(state: FunnelState): {
   };
 }
 
-export function applyPricingToState(state: FunnelState): FunnelState {
-  const { min, max, breakdown } = calculatePrice(state);
-  return {
-    ...state,
-    priceMin: min,
-    priceMax: max,
-    priceBreakdown: breakdown,
-  };
-}
-
-export function roundToStep(value: number, step: number): number {
-  if (step <= 0) return value;
-  return Math.round(value / step) * step;
-}
-
 export function formatCurrencyEUR(value: number): string {
   return new Intl.NumberFormat("de-DE", {
     style: "currency",

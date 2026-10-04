@@ -36,11 +36,3 @@ export function getConversionMode(leistungSlug: string): ConversionMode {
     : leistungSlug;
   return LEISTUNG_CONVERSION_MODE[key] ?? { type: "kurzflow" };
 }
-
-export function isNotfallKarussellSlug(karussellSlug: string): boolean {
-  return (
-    karussellSlug === "heizung-sanitaer-notfall" ||
-    karussellSlug === "wasser-notfall" ||
-    karussellSlug === "elektro-notfall"
-  );
-}

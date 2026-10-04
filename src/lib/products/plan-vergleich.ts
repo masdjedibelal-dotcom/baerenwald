@@ -1,8 +1,4 @@
 import {
-  BAD_PAKET_FEATURE_MATRIX,
-  getBadFeatureValue,
-} from "./bad-feature-matrix";
-import {
   GARTEN_PAKET_FEATURE_MATRIX,
   getGartenFeatureValue,
 } from "./garten-feature-matrix";
@@ -11,9 +7,8 @@ import {
   getHausserviceFeatureValue,
 } from "./hausservice-feature-matrix";
 import type {
-  BadAusstattungStufe,
   HausserviceStufe,
-  ProduktGroesse,
+  ProduktGroesse
 } from "./types";
 
 export type VergleichColumn = {
@@ -27,26 +22,6 @@ export type VergleichRow = {
   detail?: string;
   values: Record<string, string>;
 };
-
-export function buildBadVergleich(
-  stufen: BadAusstattungStufe[],
-  columnLabels: Record<BadAusstattungStufe, string>
-): { columns: VergleichColumn[]; rows: VergleichRow[] } {
-  const columns = stufen.map((s) => ({
-    id: s,
-    label: columnLabels[s],
-  }));
-
-  const rows = BAD_PAKET_FEATURE_MATRIX.filter((row) => row.primary).map((row) => ({
-    id: row.id,
-    label: row.label,
-    values: Object.fromEntries(
-      stufen.map((s) => [s, getBadFeatureValue(row, s)])
-    ),
-  }));
-
-  return { columns, rows };
-}
 
 export function buildGartenVergleich(
   groessen: ProduktGroesse[],

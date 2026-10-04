@@ -120,23 +120,6 @@ const PF_KEYS = [
   ["pf_hausnummer", "hausnummer"],
 ] as const;
 
-export function appendPortalPrefillToUrl(
-  href: string,
-  prefill: PortalContactPrefill
-): string {
-  const qIndex = href.indexOf("?");
-  const path = qIndex === -1 ? href : href.slice(0, qIndex);
-  const q = new URLSearchParams(qIndex === -1 ? "" : href.slice(qIndex + 1));
-
-  for (const [param, key] of PF_KEYS) {
-    const val = prefill[key]?.trim();
-    if (val) q.set(param, val);
-  }
-
-  const qs = q.toString();
-  return qs ? `${path}?${qs}` : path;
-}
-
 export function readPortalPrefillFromSearch(
   params: URLSearchParams
 ): PortalContactPrefill {

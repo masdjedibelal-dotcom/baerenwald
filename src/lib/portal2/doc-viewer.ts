@@ -177,29 +177,3 @@ export async function triggerPortalDocDownload(
   const kind = detectPortalDocKind(filename, blob.type);
   downloadPortalBlob(blob, portalDocDownloadName(filename, kind));
 }
-
-export async function sharePortalBlob(
-  blob: Blob,
-  filename: string
-): Promise<boolean> {
-  if (typeof navigator === "undefined" || typeof navigator.share !== "function") {
-    return false;
-  }
-  const file = new File([blob], filename, {
-    type: blob.type || "application/pdf",
-  });
-  const payload: ShareData = { files: [file], title: filename };
-  if (
-    typeof navigator.canShare === "function" &&
-    !navigator.canShare(payload)
-  ) {
-    return false;
-  }
-  try {
-    await navigator.share(payload);
-    return true;
-  } catch (e) {
-    if (e instanceof DOMException && e.name === "AbortError") return true;
-    return false;
-  }
-}

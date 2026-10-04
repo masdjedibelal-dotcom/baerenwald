@@ -1,4 +1,4 @@
-import { positionBrauchtVorgangAktion, positionHandwerkerErledigt, positionIstHandwerkerZugewiesen } from "@/lib/partner/partner-konditionen";
+import { positionBrauchtVorgangAktion,positionHandwerkerErledigt,positionIstHandwerkerZugewiesen } from "@/lib/partner/partner-konditionen";
 import type { PartnerAuftragPosition } from "@/lib/partner/get-partner-data";
 
 export { positionBrauchtVorgangAktion } from "@/lib/partner/partner-konditionen";
@@ -12,13 +12,6 @@ export type VorgangState =
   | "abgelehnt";
 
 export type VorgangFilter = "alle" | "offen" | "auftrag" | "erledigt";
-
-export const VORGANG_FILTER_ORDER: VorgangFilter[] = [
-  "alle",
-  "offen",
-  "auftrag",
-  "erledigt",
-];
 
 const ERLEDIGT_AUFTRAG_STATUS = new Set([
   "abgeschlossen",
@@ -144,21 +137,6 @@ export function vorgangStateLabel(state: VorgangState): string {
       return "Erledigt";
     case "abgelehnt":
       return "Abgelehnt";
-  }
-}
-
-export function vorgangStatePillKey(state: VorgangState): string {
-  switch (state) {
-    case "neu":
-      return "neu";
-    case "geaendert":
-      return "geaendert";
-    case "in_bearbeitung":
-      return "in_arbeit";
-    case "erledigt":
-      return "abgeschlossen";
-    case "abgelehnt":
-      return "abgelehnt";
   }
 }
 

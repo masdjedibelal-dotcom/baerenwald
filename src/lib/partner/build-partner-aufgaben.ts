@@ -24,17 +24,6 @@ export type PartnerAufgabeItem = {
   gruppeUntertitel?: string;
 };
 
-export type PartnerAufgabenGruppe = {
-  key: string;
-  titel: string;
-  untertitel?: string;
-  section: PartnerPlanerSection;
-  selectedId?: string;
-  sortKey: string;
-  items: PartnerAufgabeItem[];
-  dringend: boolean;
-};
-
 function pushAufgabe(
   list: PartnerAufgabeItem[],
   item: Omit<PartnerAufgabeItem, "sortKey"> & { sortKey?: string }
@@ -108,33 +97,4 @@ export function buildPartnerAufgaben(input: {
   }
 
   return list;
-}
-
-export function groupPartnerAufgaben(
-  items: PartnerAufgabeItem[]
-): PartnerAufgabenGruppe[] {
-  const byKey = new Map<string, PartnerAufgabenGruppe>();
-
-  for (const item of items) {
-    const existing = byKey.get(item.gruppeKey);
-    if (existing) {
-      existing.items.push(item);
-      existing.dringend = existing.dringend || Boolean(item.dringend);
-      continue;
-    }
-    byKey.set(item.gruppeKey, {
-      key: item.gruppeKey,
-      titel: item.gruppeTitel,
-      untertitel: item.gruppeUntertitel,
-      section: item.section,
-      selectedId: item.selectedId,
-      sortKey: item.sortKey,
-      items: [item],
-      dringend: Boolean(item.dringend),
-    });
-  }
-
-  return Array.from(byKey.values()).sort((a, b) =>
-    a.sortKey.localeCompare(b.sortKey)
-  );
 }

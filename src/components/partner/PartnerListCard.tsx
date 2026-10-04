@@ -1,7 +1,0 @@
-/** @deprecated Prefer `@/components/shared/PortalListCard`. */
-export {
-  PortalListCard as PartnerListCard,
-  type PortalListCardAccent as PartnerListCardAccent,
-  type PortalListCardMeta as PartnerListCardMeta,
-  type PortalListCardProps as PartnerListCardProps,
-} from "@/components/shared/PortalListCard";

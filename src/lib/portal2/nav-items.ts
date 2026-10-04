@@ -3,14 +3,12 @@
  * Quelle: Baerenwald Portale (5).html
  *
  * App-Section-IDs bleiben portal-spezifisch; `key` ist der Mock-Screen-Key.
- * N4/N8: einheitliche Labels; `mieter` entfernt (Mieter = kunde_privat).
+ * N4/N8: einheitliche Labels. Mieter, Eigentümer und Hausmeister haben kein Portal mehr (04.10.2026).
  */
 
 export type PortalNavRole =
   | "kunde_hv"
   | "kunde_privat"
-  | "eigentuemer"
-  | "hausmeister"
   | "handwerker";
 
 /** Mock-Keys aus `navItems()` / `setScreen(k)`. */
@@ -52,17 +50,6 @@ export const PORTAL_NAV_ITEMS: Record<PortalNavRole, readonly PortalNavItemDef[]
       { key: "liste", label: PORTAL_NAV_FAMILY_LABELS.liste, glyph: "▤" },
       { key: "settings", label: PORTAL_NAV_FAMILY_LABELS.settings, glyph: "⚙" },
     ],
-    eigentuemer: [
-      { key: "home", label: PORTAL_NAV_FAMILY_LABELS.home, glyph: "◈" },
-      { key: "liste", label: PORTAL_NAV_FAMILY_LABELS.liste, glyph: "▤" },
-      { key: "objekte", label: PORTAL_NAV_FAMILY_LABELS.objekte, glyph: "▦" },
-    ],
-    /** N4: gleiche Labels wie Eigentümer. */
-    hausmeister: [
-      { key: "home", label: PORTAL_NAV_FAMILY_LABELS.home, glyph: "◈" },
-      { key: "liste", label: PORTAL_NAV_FAMILY_LABELS.liste, glyph: "▤" },
-      { key: "objekte", label: PORTAL_NAV_FAMILY_LABELS.objekte, glyph: "▦" },
-    ],
     /**
      * P18 (30.09.2026): Partner arbeiten nur über Einsätze auf der Übersicht —
      * kein Menüpunkt „Vorgänge“ (alter Positions-Weg).
@@ -103,8 +90,6 @@ export const PORTAL_NAV_SECTION_BY_VARIANT = {
     home: "uebersicht",
     liste: "vorgaenge",
     objekte: "objekte",
-    servicepakete: "leistungen",
-    marktplatz: "marktplatz",
     settings: "profil",
     mehr: "mehr",
   },
@@ -112,18 +97,6 @@ export const PORTAL_NAV_SECTION_BY_VARIANT = {
     home: "uebersicht",
     liste: "vorgaenge",
     settings: "profil",
-  },
-  /** Eigentümer — Übersicht · Vorgänge · Objekte */
-  eigentuemer: {
-    home: "uebersicht",
-    liste: "vorgaenge",
-    objekte: "objekte",
-  },
-  /** Hausmeister — gleiche Sections wie Eigentümer */
-  hausmeister: {
-    home: "uebersicht",
-    liste: "vorgaenge",
-    objekte: "objekte",
   },
   partner: {
     home: "uebersicht",

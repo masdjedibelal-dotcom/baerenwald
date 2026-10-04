@@ -1,4 +1,4 @@
-import { logDbError } from '@/lib/errors/log-db-error'
+import { logDbError } from '@/lib/errors/log-db-error';
 import {
   buildMeldeVorgangTitel,
   formatMeldeNotifTitel,
@@ -7,7 +7,6 @@ import {
 import { createHvNotification } from "@/lib/org/create-hv-notification";
 import { createPortalNotification } from "@/lib/portal2/create-portal-notification";
 import { withPortalDetailDeepLink } from "@/lib/portal2/portal-detail-deep-link";
-import { notifyPortalEigentuemer } from "@/lib/portal/notify-portal-eigentuemer";
 import { supabaseAdmin } from "@/lib/supabase";
 
 async function hasRecentHvAngebotNotif(opts: {
@@ -216,13 +215,4 @@ export async function notifyPortalAngebotGesendet(
     }
   }
 
-  // Eigentümer: nur Status-Update (keine Freigabe über Schwelle)
-  await notifyPortalEigentuemer({
-    leadId: trimmed,
-    kind: "update",
-    titel: notifTitel,
-    text: `Update zu „${titel}“: Angebot liegt vor.`,
-    deepLinkTab: "uebersicht",
-    kundeObjektId: String(lead.kunde_objekt_id ?? "").trim() || null,
-  });
 }

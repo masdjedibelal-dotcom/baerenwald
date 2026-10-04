@@ -1,4 +1,4 @@
-import { logDbError } from '@/lib/errors/log-db-error'
+import { logDbError } from '@/lib/errors/log-db-error';
 import {
   buildPartnerStammCompliance,
   buildProjektCompliance,
@@ -377,40 +377,6 @@ export async function buildVertragKontextForAuftrag(opts: {
     projekt_gewerk_slugs: projektGewerkSlugs,
     ...stammKontext({ allgemein, meister }, leistung, compliance_bauauftrag),
     dokumente_zeilen,
-  };
-}
-
-export async function buildPartnerStammKontext(handwerkerId: string): Promise<
-  Pick<
-    PartnerVertragKontext,
-    | "compliance_allgemein"
-    | "compliance_meister"
-    | "compliance_stamm"
-  >
-> {
-  const [typen, alleGewerke, handwerkerGewerke, dokumente] = await Promise.all([
-    loadComplianceTypen(),
-    loadPartnerGewerke(),
-    loadHandwerkerGewerke(handwerkerId),
-    loadPartnerDokumente(handwerkerId, []),
-  ]);
-
-  const stammRaw = buildPartnerStammCompliance({
-    typen,
-    dokumente,
-    handwerkerGewerke,
-    alleGewerke,
-  });
-
-  const [allgemein, meister] = await Promise.all([
-    enrichComplianceWithSignedUrls(stammRaw.allgemein, dokumente),
-    enrichComplianceWithSignedUrls(stammRaw.meister, dokumente),
-  ]);
-
-  return {
-    compliance_allgemein: allgemein,
-    compliance_meister: meister,
-    compliance_stamm: [...allgemein, ...meister],
   };
 }
 

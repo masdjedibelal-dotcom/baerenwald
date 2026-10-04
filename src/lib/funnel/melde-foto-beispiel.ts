@@ -214,10 +214,3 @@ export function getMeldeFotoBeispiele(
   }
   return out.length ? out : [TIPS.sonstiges];
 }
-
-/** @deprecated Einzelbeispiel — nutze getMeldeFotoBeispiele */
-export function getMeldeFotoBeispielForFunnelBereich(
-  bereich: string | null | undefined
-): MeldeFotoBeispiel {
-  return getMeldeFotoBeispiele(bereich)[0] ?? TIPS.sonstiges;
-}

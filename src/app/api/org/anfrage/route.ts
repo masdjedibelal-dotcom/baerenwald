@@ -1,4 +1,4 @@
-import { logDbError } from '@/lib/errors/log-db-error'
+import { logDbError } from '@/lib/errors/log-db-error';
 import { NextResponse } from "next/server";
 
 import { persistLead } from "@/lib/lead/persist-lead";
@@ -95,12 +95,6 @@ export async function POST(req: Request) {
   const mieterOrt =
     typeof mieterFromFunnel?.ort === "string" ? mieterFromFunnel.ort.trim() : "";
 
-  const ohneMieter = Boolean(
-    body.funnel_daten &&
-      typeof body.funnel_daten === "object" &&
-      !Array.isArray(body.funnel_daten) &&
-      (body.funnel_daten as Record<string, unknown>).ohne_mieter === true
-  );
 
 
   if (!contactEmail && !(contactTel && contactTel.length >= 3)) {

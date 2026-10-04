@@ -1,6 +1,6 @@
-import { logDbError } from '@/lib/errors/log-db-error'
+import { logDbError } from '@/lib/errors/log-db-error';
 import { writeAuditEvent } from "@/lib/audit/write-audit-event";
-import { PDF_UI_ERROR, renderPdfViaCrm } from "@/lib/pdf/render-via-crm";
+import { PDF_UI_ERROR,renderPdfViaCrm } from "@/lib/pdf/render-via-crm";
 import { buildVersicherungsakteSchadenAngaben } from "@/lib/org/versicherungsakte-schaden-angaben";
 import {
   phaseStoragePath,
@@ -242,25 +242,6 @@ export async function getVersicherungPdfReadinessForLead(
     hmPathTaken,
     hasAuftrag: signals.hasAuftrag,
   });
-}
-
-/** Während HM-Prüfung: Ursache-PDF gesperrt. */
-export async function isVersicherungsakteBlockedByHmBefund(
-  leadId: string
-): Promise<boolean> {
-  const id = leadId?.trim();
-  if (!id) return false;
-  const {data: lead, error: __dbErr292_5} = await supabaseAdmin
-    .from("leads")
-    .select("hv_meldung_status")
-    .eq("id", id)
-    .maybeSingle();
-  if (__dbErr292_5) logDbError('lib/org/ensure-versicherungsakte:leads', __dbErr292_5)
-  return (
-    String(lead?.hv_meldung_status ?? "")
-      .trim()
-      .toLowerCase() === "hm_pruefung"
-  );
 }
 
 /**

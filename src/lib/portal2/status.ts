@@ -203,10 +203,6 @@ export function portalStatusMeta(id: PortalMockStatusId): PortalMockStatusMeta {
   return PORTAL_STATUS[id];
 }
 
-export function portalFlowIndex(id: PortalMockStatusId): number {
-  return PORTAL_FLOW.indexOf(id);
-}
-
 /** Index in der 5-Schritt-UI-Timeline (Zwischenstatus werden verdichtet). */
 export function portalFlowTimelineIndex(id: PortalMockStatusId): number {
   switch (id) {

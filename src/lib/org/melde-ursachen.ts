@@ -4,84 +4,36 @@
 
 import type { MeldeAnswers } from "@/lib/funnel/melde-dynamic-questions";
 import {
-  baumSchadenKurz,
-  baumUrsacheLabel,
-  baumUrsachenForAnswers,
-  isBaumMeldeContext,
-  BAUM_MATERIAL_OPTIONS,
-  type BaumUrsacheId,
-  type BaumUrsacheOption,
-  type MeldeUrsachenBaumState,
+  isBaumMeldeContext,type BaumUrsacheId,type MeldeUrsachenBaumState
 } from "@/lib/org/melde-ursachen-baum";
 import {
-  dachSchadenKurz,
-  dachUrsacheLabel,
-  dachUrsachenForAnswers,
-  isDachMeldeContext,
-  DACH_MATERIAL_OPTIONS,
-  type DachUrsacheId,
-  type DachUrsacheOption,
-  type MeldeUrsachenDachState,
+  dachSchadenKurz,isDachMeldeContext,type DachUrsacheId,type MeldeUrsachenDachState
 } from "@/lib/org/melde-ursachen-dach";
 import {
-  fensterSchadenKurz,
-  fensterUrsacheLabel,
-  fensterUrsachenForAnswers,
-  isFensterMeldeContext,
-  FENSTER_MATERIAL_OPTIONS,
-  type FensterUrsacheId,
-  type FensterUrsacheOption,
-  type MeldeUrsachenFensterState,
+  fensterSchadenKurz,isFensterMeldeContext,type FensterUrsacheId,type MeldeUrsachenFensterState
 } from "@/lib/org/melde-ursachen-fenster";
 import {
-  heizungSchadenKurz,
-  heizungUrsacheLabel,
-  heizungUrsachenForAnswers,
-  isHeizungMeldeContext,
-  HEIZUNG_MATERIAL_OPTIONS,
-  type HeizungUrsacheId,
-  type HeizungUrsacheOption,
-  type MeldeUrsachenHeizungState,
+  heizungSchadenKurz,isHeizungMeldeContext,type HeizungUrsacheId,type MeldeUrsachenHeizungState
 } from "@/lib/org/melde-ursachen-heizung";
 import {
   isSchimmelMeldeContext,
-  schimmelSchadenKurz,
-  schimmelUrsacheLabel,
-  schimmelUrsachenForAnswers,
-  SCHIMMEL_MATERIAL_OPTIONS,
-  type MeldeUrsachenSchimmelState,
-  type SchimmelUrsacheId,
-  type SchimmelUrsacheOption,
+  schimmelSchadenKurz,type MeldeUrsachenSchimmelState,
+  type SchimmelUrsacheId
 } from "@/lib/org/melde-ursachen-schimmel";
 import {
   isSonstigesMeldeContext,
-  sonstigesSchadenKurz,
-  sonstigesUrsacheLabel,
-  sonstigesUrsachenForAnswers,
-  SONSTIGES_MATERIAL_OPTIONS,
-  type MeldeUrsachenSonstigesState,
-  type SonstigesUrsacheId,
-  type SonstigesUrsacheOption,
+  sonstigesSchadenKurz,type MeldeUrsachenSonstigesState,
+  type SonstigesUrsacheId
 } from "@/lib/org/melde-ursachen-sonstiges";
 import {
   isStromMeldeContext,
-  stromSchadenKurz,
-  stromUrsacheLabel,
-  stromUrsachenForAnswers,
-  STROM_MATERIAL_OPTIONS,
-  type MeldeUrsachenStromState,
-  type StromUrsacheId,
-  type StromUrsacheOption,
+  stromSchadenKurz,type MeldeUrsachenStromState,
+  type StromUrsacheId
 } from "@/lib/org/melde-ursachen-strom";
 import {
   isWasserMeldeContext,
-  wasserSchadenKurz,
-  wasserUrsacheLabel,
-  wasserUrsachenForAnswers,
-  WASSER_MATERIAL_OPTIONS,
-  type MeldeUrsachenCheckState as WasserUrsachenState,
-  type WasserUrsacheId,
-  type WasserUrsacheOption,
+  wasserSchadenKurz,type MeldeUrsachenCheckState as WasserUrsachenState,
+  type WasserUrsacheId
 } from "@/lib/org/melde-ursachen-wasser";
 
 export type MeldeUrsachenBereich =
@@ -105,12 +57,6 @@ export type MeldeUrsachenCheckState =
   | MeldeUrsachenBaumState
   | MeldeUrsachenSchimmelState
   | MeldeUrsachenSonstigesState;
-
-export type MeldeUrsacheOption = {
-  id: string;
-  label: string;
-  gruppe?: string;
-};
 
 export function parseMeldeUrsachenCheck(
   funnelDaten: unknown
@@ -278,64 +224,6 @@ export function resolveMeldeUrsachenBereich(opts: {
   return null;
 }
 
-export function meldeUrsachenForAnswers(
-  bereich: MeldeUrsachenBereich,
-  answers: MeldeAnswers | undefined
-): MeldeUrsacheOption[] {
-  if (bereich === "heizung") {
-    return heizungUrsachenForAnswers(answers).map((u: HeizungUrsacheOption) => ({
-      id: u.id,
-      label: u.label,
-    }));
-  }
-  if (bereich === "strom") {
-    return stromUrsachenForAnswers(answers).map((u: StromUrsacheOption) => ({
-      id: u.id,
-      label: u.label,
-    }));
-  }
-  if (bereich === "fenster_tuer") {
-    return fensterUrsachenForAnswers(answers).map((u: FensterUrsacheOption) => ({
-      id: u.id,
-      label: u.label,
-    }));
-  }
-  if (bereich === "dach") {
-    return dachUrsachenForAnswers(answers).map((u: DachUrsacheOption) => ({
-      id: u.id,
-      label: u.label,
-    }));
-  }
-  if (bereich === "baum_notfall") {
-    return sonstigesUrsachenForAnswers(answers).map(
-      (u: SonstigesUrsacheOption) => ({
-        id: u.id,
-        label: u.label,
-      })
-    );
-  }
-  if (bereich === "schimmel") {
-    return schimmelUrsachenForAnswers(answers).map(
-      (u: SchimmelUrsacheOption) => ({
-        id: u.id,
-        label: u.label,
-      })
-    );
-  }
-  if (bereich === "sonstiges") {
-    return sonstigesUrsachenForAnswers(answers).map(
-      (u: SonstigesUrsacheOption) => ({
-        id: u.id,
-        label: u.label,
-      })
-    );
-  }
-  return wasserUrsachenForAnswers(answers).map((u: WasserUrsacheOption) => ({
-    id: u.id,
-    label: u.label,
-  }));
-}
-
 export function meldeSchadenKurz(
   bereich: MeldeUrsachenBereich,
   answers: MeldeAnswers | undefined
@@ -348,31 +236,6 @@ export function meldeSchadenKurz(
   if (bereich === "schimmel") return schimmelSchadenKurz(answers);
   if (bereich === "sonstiges") return sonstigesSchadenKurz(answers);
   return wasserSchadenKurz(answers);
-}
-
-export function meldeUrsacheLabel(
-  bereich: MeldeUrsachenBereich,
-  id: string | null | undefined
-): string {
-  if (bereich === "heizung") return heizungUrsacheLabel(id);
-  if (bereich === "strom") return stromUrsacheLabel(id);
-  if (bereich === "fenster_tuer") return fensterUrsacheLabel(id);
-  if (bereich === "dach") return dachUrsacheLabel(id);
-  if (bereich === "baum_notfall") return sonstigesUrsacheLabel(id);
-  if (bereich === "schimmel") return schimmelUrsacheLabel(id);
-  if (bereich === "sonstiges") return sonstigesUrsacheLabel(id);
-  return wasserUrsacheLabel(id);
-}
-
-export function meldeMaterialOptions(bereich: MeldeUrsachenBereich) {
-  if (bereich === "heizung") return HEIZUNG_MATERIAL_OPTIONS;
-  if (bereich === "strom") return STROM_MATERIAL_OPTIONS;
-  if (bereich === "fenster_tuer") return FENSTER_MATERIAL_OPTIONS;
-  if (bereich === "dach") return DACH_MATERIAL_OPTIONS;
-  if (bereich === "baum_notfall") return SONSTIGES_MATERIAL_OPTIONS;
-  if (bereich === "schimmel") return SCHIMMEL_MATERIAL_OPTIONS;
-  if (bereich === "sonstiges") return SONSTIGES_MATERIAL_OPTIONS;
-  return WASSER_MATERIAL_OPTIONS;
 }
 
 export type {

@@ -24,30 +24,10 @@ type MeldeQDef = {
   showWhen?: ShowWhen;
 };
 
-const JA_NEIN = [
-  { value: "ja", label: "Ja" },
-  { value: "nein", label: "Nein" },
-] as const;
-
 const JA_NEIN_WEISS = [
   { value: "ja", label: "Ja" },
   { value: "nein", label: "Nein" },
   { value: "weiss_nicht", label: "Weiß nicht" },
-] as const;
-
-const SEIT_WANN = [
-  { value: "gerade_eben", label: "Gerade eben" },
-  { value: "heute", label: "Heute" },
-  { value: "mehrere_tage", label: "Seit mehreren Tagen" },
-  { value: "unbekannt", label: "Unbekannt" },
-] as const;
-
-const BETRIFFT = [
-  { value: "wohnung", label: "Nur meine Wohnung" },
-  { value: "mehrere", label: "Mehrere Wohnungen" },
-  { value: "gemeinschaft", label: "Gemeinschaftsbereich" },
-  { value: "tiefgarage", label: "Tiefgarage" },
-  { value: "aussen", label: "Außenbereich" },
 ] as const;
 
 function ans(a: MeldeAnswers, id: string): string {
@@ -173,22 +153,6 @@ export function normalizeMeldeDachProblem(raw: string): string {
   ) {
     return p;
   }
-  return p || "sonstiges";
-}
-
-/** Schimmel → kanonische IDs (Fassade/Graffiti → sonstiges). */
-export function normalizeMeldeSchimmelProblem(raw: string): string {
-  const p = raw.trim().toLowerCase();
-  if (
-    p === "wand_ecke" ||
-    p === "bad" ||
-    p === "grossflaechig" ||
-    p === "feuchte_wand"
-  ) {
-    return "schimmel_feucht";
-  }
-  if (p === "fassade" || p === "graffiti") return "sonstiges";
-  if (p === "schimmel_feucht" || p === "sonstiges") return p;
   return p || "sonstiges";
 }
 
@@ -671,19 +635,6 @@ export function getMeldeDynamicQuestions(
       : (TREES[bereichId] ?? TREES.sonstiges);
   const a = answers ?? {};
   return tree.filter((q) => !q.showWhen || q.showWhen(a)).map(toUi);
-}
-
-/** Alle Pflichtfragen der aktuellen Kette beantwortet. */
-export function meldeDynamicQuestionsComplete(
-  questions: MeldeFachfrageUi[],
-  answers: MeldeAnswers | undefined
-): boolean {
-  if (!questions.length) return true;
-  const a = answers ?? {};
-  return questions.every((q) => {
-    const v = ans(a, q.id);
-    return Boolean(v);
-  });
 }
 
 export function meldeProblemId(answers: MeldeAnswers | undefined): string {

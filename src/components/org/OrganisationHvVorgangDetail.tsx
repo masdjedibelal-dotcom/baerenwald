@@ -1,7 +1,7 @@
 "use client";
 
 import { useSearchParams } from "next/navigation";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect,useMemo,useRef,useState } from "react";
 
 import { usePortalBusy } from "@/components/shared/PortalBusyContext";
 import { VorgangDetailBlocks } from "@/components/shared/vorgang-detail";
@@ -28,7 +28,7 @@ import {
   hvFreigabeEntfaellt,
   resolveAngebotZugestelltForHvFreigabe,
 } from "@/lib/org/freigabe-bypass";
-import { acceptKundeAngebot, rejectKundeAngebot } from "@/app/actions/portal-angebot";
+import { acceptKundeAngebot,rejectKundeAngebot } from "@/app/actions/portal-angebot";
 import {
   PortalAngebotAblehnenModal,
   type PortalAngebotAblehnenPayload,
@@ -58,9 +58,9 @@ import {
 import {
   type PortalDetailSectionId,
 } from "@/lib/portal2/layout-chrome";
-import { PORTAL_STATUS, portalFlowTimelineVariantForRole, type PortalFlowTimelineVariant, type PortalMockStatusId } from "@/lib/portal2/status";
+import { PORTAL_STATUS,portalFlowTimelineVariantForRole,type PortalFlowTimelineVariant,type PortalMockStatusId } from "@/lib/portal2/status";
 import { PORTAL_VAR } from "@/lib/portal2/tokens";
-import { kundePortalToast, orgPortalToast } from "@/lib/shared/portal-toast";
+import { kundePortalToast,orgPortalToast } from "@/lib/shared/portal-toast";
 import type { PortalBautagebuchEntry } from "@/lib/portal/portal-detail-item";
 import type { PortalAngebotPositionDisplay } from "@/lib/portal/portal-angebot-display";
 import type { PortalAuftragPositionDisplay } from "@/lib/portal/kunde-auftrag-aenderung";
@@ -70,7 +70,7 @@ import {
   type PortalDokument,
 } from "@/lib/portal/portal-dokumente";
 import { cn } from "@/lib/utils";
-import { EMPTY } from '@/lib/portal-copy'
+import { EMPTY } from '@/lib/portal-copy';
 
 export type OrganisationHvVorgangDetailProps = {
   idLabel: string;
@@ -153,14 +153,11 @@ export type OrganisationHvVorgangDetailProps = {
   meldeBereich?: string | null;
   meldeZeitraum?: string | null;
   meldeFachdetails?: Array<{ label: string; value: string }>;
-  detailRole?: "hv" | "kunde" | "mieter" | "hausmeister";
+  detailRole?: "hv" | "kunde" | "mieter";
   /**
    * Timeline-Labels. Default aus `detailRole`.
-   * Eigentümer: explizit `privat` (kein Freigabe — HV gibt frei; eigene Anfragen = Angebot annehmen).
    */
   flowTimelineVariant?: PortalFlowTimelineVariant;
-  /** Hausmeister-Portal: Befund im Tab editierbar, ohne HV-only CTAs. */
-  hausmeisterActor?: boolean;
   /**
    * Optionaler Status-Chip-/VM-Text (z. B. Mieter: „In Bearbeitung“
    * statt „Angebot“).
@@ -381,7 +378,6 @@ export function OrganisationHvVorgangDetail({
   terminBis,
   detailRole = "hv",
   flowTimelineVariant,
-  hausmeisterActor = false,
   statusLabelOverride,
   mieterStatusMode = false,
 }: OrganisationHvVorgangDetailProps) {
@@ -397,18 +393,11 @@ export function OrganisationHvVorgangDetail({
   const [rejected, setRejected] = useState(false);
   const [rejectOpen, setRejectOpen] = useState(false);
   const [btUnread, setBtUnread] = useState(0);
-  const [hasHmKontakt, setHasHmKontakt] = useState(false);
-  const [hmPortalZugang, setHmPortalZugang] = useState(false);
   const [hasBefund, setHasBefund] = useState(false);
   /** Nach HM-Delegation sofort Tab/UI, bevor Refresh ankommt. */
   const [hvStatusOptimistic, setHvStatusOptimistic] = useState<string | null>(
     null
   );
-  const [hmStickyActions, setHmStickyActions] = useState<{
-    editable: boolean;
-    openAbschluss: () => void;
-    ablehnenAnHv: () => void;
-  } | null>(null);
   const [activeSection, setActiveSection] =
     useState<PortalDetailSectionId>("uebersicht");
 
@@ -425,10 +414,6 @@ export function OrganisationHvVorgangDetail({
       hvStatusNorm === "hm_erledigt" ||
       hasBefund);
 
-  useEffect(() => {
-    if (!hausmeisterActor || !showHmTab) return;
-    setActiveSection("hm_pruefung");
-  }, [hausmeisterActor, showHmTab, leadId]);
 
   useEffect(() => {
     setHvStatusOptimistic(null);
@@ -451,42 +436,6 @@ export function OrganisationHvVorgangDetail({
     };
   }, [leadId, mieterStatusMode, hvMeldungStatus]);
 
-  useEffect(() => {
-    if (mieterStatusMode) {
-      setHasHmKontakt(false);
-      setHmPortalZugang(false);
-      return;
-    }
-    let cancelled = false;
-    void (async () => {
-      let oid = String(kundeObjektId ?? "").trim();
-      if (!oid && leadId) {
-        const { getLeadHausmeisterMetaAction } = await import(
-          "@/app/actions/lead-befund"
-        );
-        const meta = await getLeadHausmeisterMetaAction({ leadId });
-        if (cancelled) return;
-        if (meta.ok) {
-          oid = String(meta.kundeObjektId ?? "").trim();
-          // hasHausmeister = zugewiesen; Delegation braucht zusätzlich Portal-Aktivierung
-        }
-      }
-      if (!oid) {
-        if (!cancelled) {
-          setHasHmKontakt(false);
-          setHmPortalZugang(false);
-        }
-        return;
-      }
-      // Hausmeister entfällt (04.10.2026)
-      if (cancelled) return;
-      setHasHmKontakt(false);
-      setHmPortalZugang(false);
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [leadId, mieterStatusMode, kundeObjektId]);
 
   const angebotVorgelegt = Boolean(
     !mieterStatusMode &&
@@ -576,7 +525,6 @@ export function OrganisationHvVorgangDetail({
   const showVersicherungsakteTab =
     detailRole === "hv" &&
     !mieterStatusMode &&
-    !hausmeisterActor &&
     Boolean(leadId) &&
     versicherungsakteEligible !== false;
   const empfohlen = pickEmpfohlenesAngebot(offers);
@@ -1206,48 +1154,8 @@ export function OrganisationHvVorgangDetail({
       </PortalDetailInfoBox>
     ) : null;
 
-  const hmPruefungBanner =
-    hvStatusNorm === "hm_pruefung" && !mieterStatusMode ? (
-      <PortalDetailInfoBox variant="warning">
-        <p className="font-semibold text-warning-text">
-          {hausmeisterActor ? "Hausmeister-Prüfung" : "Hausmeister-Prüfung läuft"}
-        </p>
-        <p className="portal-text-body mt-1 text-warning-text/90">
-          {hausmeisterActor
-            ? "Unter Tab „Checkliste“ Punkte prüfen — danach selbst erledigen oder an Bärenwald weitergeben."
-            : "Der Vorgang liegt beim Hausmeister. Ergebnis erscheint unter Tab „Checkliste“, sobald die Prüfung abgeschlossen ist."}
-        </p>
-        {hausmeisterActor ? (
-          <PortalButton
-            variant="primary"
-            className="mt-3"
-            onClick={() => setActiveSection("hm_pruefung")}
-          >
-            Zur Checkliste
-          </PortalButton>
-        ) : showHmTab ? (
-          <PortalButton
-            variant="secondary"
-            className="mt-3"
-            onClick={() => setActiveSection("hm_pruefung")}
-          >
-            Zum Tab Checkliste
-          </PortalButton>
-        ) : null}
-      </PortalDetailInfoBox>
-    ) : null;
-
   const actionFooter =
-    hausmeisterActor &&
-    hvStatusNorm === "hm_pruefung" &&
-    hmStickyActions?.editable ? (
-      <PortalDetailStickyActions
-        primaryLabel="Prüfung abschließen"
-        onPrimary={() => hmStickyActions.openAbschluss()}
-        secondaryLabel="Ablehnen"
-        onSecondary={() => hmStickyActions.ablehnenAnHv()}
-      />
-    ) : actionKind === "angebot" && showAcceptCta ? (
+    actionKind === "angebot" && showAcceptCta ? (
       <PortalDetailStickyActions
         primaryLabel={HV_DETAIL_COPY.empfohlenAnnehmen}
         onPrimary={() => void acceptAngebotAct()}
@@ -1315,8 +1223,8 @@ export function OrganisationHvVorgangDetail({
           </div>
         ) : null}
 
-        {hmErledigtBanner ?? hmPruefungBanner ? (
-          <div className="mt-3">{hmErledigtBanner ?? hmPruefungBanner}</div>
+        {hmErledigtBanner ? (
+          <div className="mt-3">{hmErledigtBanner}</div>
         ) : null}
 
       </div>
@@ -1386,25 +1294,10 @@ export function OrganisationHvVorgangDetail({
               <OrgHmBefundPanel
                 leadId={leadId}
                 hvMeldungStatus={hvStatusOptimistic ?? hvMeldungStatus}
-                viewerRole={hausmeisterActor ? "hm" : "hv"}
-                readOnly={
-                  hausmeisterActor
-                    ? hvStatusNorm !== "hm_pruefung"
-                    : true
-                }
+                viewerRole="hv"
+                readOnly
                 onBefundPresence={setHasBefund}
                 onUpdated={onUpdated}
-                onCompleted={
-                  hausmeisterActor
-                    ? () => {
-                        onBack?.();
-                        onUpdated();
-                      }
-                    : undefined
-                }
-                onActionsReady={
-                  hausmeisterActor ? setHmStickyActions : undefined
-                }
                 hideInlineActions
               />
             </section>

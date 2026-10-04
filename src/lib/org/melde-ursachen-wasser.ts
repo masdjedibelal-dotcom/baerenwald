@@ -18,11 +18,6 @@ export type WasserUrsacheId =
   | "spuelmaschine"
   | "sonstiges";
 
-export type WasserUrsacheOption = {
-  id: WasserUrsacheId;
-  label: string;
-};
-
 export type MeldeUrsachenEntscheidung = "hm_geloest" | "fachfirma";
 
 export type MeldeUrsachenCheckState = {
@@ -34,18 +29,6 @@ export type MeldeUrsachenCheckState = {
   updatedAt?: string | null;
 };
 
-const ALL: Record<WasserUrsacheId, string> = {
-  eckventil: "Eckventil / Zulauf undicht",
-  siphon: "Siphon undicht oder lose",
-  flexschlauch: "Flexschlauch defekt",
-  armatur: "Armatur tropft / defekt",
-  ablauf: "Ablauf verstopft",
-  wand_decke: "Wasser aus Wand oder Decke",
-  waschmaschine: "Waschmaschine",
-  spuelmaschine: "Spülmaschine",
-  sonstiges: "Sonstiges",
-};
-
 function ans(a: MeldeAnswers, id: string): string {
   const v = a[id];
   return Array.isArray(v) ? String(v[0] ?? "") : String(v ?? "");
@@ -54,101 +37,6 @@ function ans(a: MeldeAnswers, id: string): string {
 function normalizeProblem(raw: string): string {
   return normalizeMeldeWasserProblem(raw);
 }
-
-function orderIds(ids: WasserUrsacheId[]): WasserUrsacheOption[] {
-  return ids.map((id) => ({ id, label: ALL[id] }));
-}
-
-/**
- * Dynamische Ursachen-Liste — wahrscheinlichste zuerst.
- */
-export function wasserUrsachenForAnswers(
-  answers: MeldeAnswers | undefined
-): WasserUrsacheOption[] {
-  const a = answers ?? {};
-  const problem = normalizeProblem(ans(a, "melde_problem"));
-  const ort = ans(a, "melde_ort");
-  const laeuft = ans(a, "melde_laeuft_noch");
-
-  const withKueche = (base: WasserUrsacheId[]): WasserUrsacheId[] => {
-    if (ort !== "kueche") return [...base, "sonstiges"];
-    const out = [...base];
-    if (!out.includes("waschmaschine")) out.push("waschmaschine");
-    if (!out.includes("spuelmaschine")) out.push("spuelmaschine");
-    out.push("sonstiges");
-    return out;
-  };
-
-  switch (problem) {
-    case "wasser_austritt":
-      if (ort === "bad") {
-        return orderIds(["eckventil", "siphon", "armatur", "flexschlauch", "sonstiges"]);
-      }
-      if (ort === "wc") {
-        return orderIds(["eckventil", "ablauf", "sonstiges"]);
-      }
-      if (ort === "keller") {
-        return orderIds(["wand_decke", "eckventil", "sonstiges"]);
-      }
-      if (laeuft === "ja" || laeuft === "weiss_nicht") {
-        return orderIds(
-          withKueche(["eckventil", "flexschlauch", "siphon", "armatur", "wand_decke"])
-        );
-      }
-      return orderIds(
-        withKueche(["eckventil", "siphon", "flexschlauch", "armatur"])
-      );
-
-    case "verstopfung":
-      if (ort === "kueche") {
-        return orderIds([
-          "ablauf",
-          "siphon",
-          "waschmaschine",
-          "spuelmaschine",
-          "sonstiges",
-        ]);
-      }
-      if (ort === "wc") return orderIds(["ablauf", "eckventil", "sonstiges"]);
-      return orderIds(["ablauf", "siphon", "sonstiges"]);
-
-    case "von_decke_wand":
-    case "feucht_ohne_lauf":
-      return orderIds(["wand_decke", "sonstiges"]);
-
-    default:
-      if (ort === "kueche") {
-        return orderIds(
-          withKueche(["eckventil", "siphon", "flexschlauch", "armatur", "ablauf"])
-        );
-      }
-      if (ort === "wc") return orderIds(["ablauf", "eckventil", "sonstiges"]);
-      if (ort === "keller") return orderIds(["wand_decke", "sonstiges"]);
-      return orderIds([
-        "eckventil",
-        "siphon",
-        "flexschlauch",
-        "armatur",
-        "ablauf",
-        "wand_decke",
-        "sonstiges",
-      ]);
-  }
-}
-
-export function wasserUrsacheLabel(id: string | null | undefined): string {
-  if (!id) return "—";
-  return ALL[id as WasserUrsacheId] ?? id;
-}
-
-export const WASSER_MATERIAL_OPTIONS = [
-  { value: "siphon", label: "Siphon" },
-  { value: "flexschlauch", label: "Flexschlauch" },
-  { value: "dichtung", label: "Dichtung" },
-  { value: "eckventil", label: "Eckventil" },
-  { value: "silikon", label: "Silikon" },
-  { value: "sonstiges", label: "Sonstiges" },
-] as const;
 
 /** Kurztext Schaden aus Mieter-Antworten. */
 export function wasserSchadenKurz(answers: MeldeAnswers | undefined): string {

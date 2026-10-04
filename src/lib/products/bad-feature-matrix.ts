@@ -144,19 +144,6 @@ export const BAD_PAKET_FEATURE_MATRIX: PaketFeatureRow[] = [
   },
 ];
 
-/** Exklusive Bullets oben in der Karte — macht Stufen-Unterschiede sofort sichtbar. */
-export const BAD_EXCLUSIVE_HIGHLIGHTS: Record<
-  BadAusstattungStufe,
-  string[]
-> = {
-  standard: [],
-  komfort: ["Bodengleiche Dusche inklusive"],
-  gehoben: [
-    "Indirekte Beleuchtung & Design-Spiegel",
-    "Premium-Fliesen & Design-Armaturen",
-  ],
-};
-
 export function getBadFeatureValue(
   row: PaketFeatureRow,
   stufe: BadAusstattungStufe
@@ -165,25 +152,4 @@ export function getBadFeatureValue(
   if (v === "yes") return "yes";
   if (v === "no") return "no";
   return String(v);
-}
-
-/** Kurzliste für Karten: exklusive Highlights zuerst, dann enthaltene Leistungen. */
-export function getBadCardHighlights(stufe: BadAusstattungStufe): string[] {
-  const exclusive = BAD_EXCLUSIVE_HIGHLIGHTS[stufe];
-  const rows = BAD_PAKET_FEATURE_MATRIX.filter((r) => {
-    const v = getBadFeatureValue(r, stufe);
-    return v === "yes" || (v !== "no" && v.length > 0);
-  });
-  const fromMatrix = rows.map((r) => {
-    const v = getBadFeatureValue(r, stufe);
-    if (v === "yes") return r.label;
-    return `${r.label}: ${v}`;
-  });
-  const combined = [...exclusive, ...fromMatrix];
-  const seen = new Set<string>();
-  return combined.filter((item) => {
-    if (seen.has(item)) return false;
-    seen.add(item);
-    return true;
-  });
 }

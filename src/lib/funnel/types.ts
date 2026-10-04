@@ -11,10 +11,6 @@ export function isB2B(s: Situation | null | undefined): boolean {
 /** Notfall Schritt 2 — Pauschale siehe {@link getNotdienstGebuehr} */
 export type NotfallDringlichkeit = "sofort" | "heute" | "diese_woche";
 
-export function isReparatur(s: Situation | null | undefined): boolean {
-  return s === "kaputt";
-}
-
 export type Kundentyp =
   | "eigentuemer"
   | "mieter"
@@ -236,15 +232,6 @@ export function isBwTrustScreenId(step: string): step is BwTrustScreenId {
     step === "trust_preis" ||
     step === "trust_qualitaet"
   );
-}
-
-export function isFachdetailStep(step: string): boolean {
-  return step.startsWith("fachdetail_") || step.startsWith("fachdetails_");
-}
-
-/** Frage-ID aus Screen `fachdetail_<id>` (ohne Gewerk — nur für Logging). */
-export function getFachdetailGewerk(step: string): string {
-  return step.replace(/^fachdetail_/, "").replace(/^fachdetails_/, "");
 }
 
 export interface FunnelStep {

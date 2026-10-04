@@ -10,19 +10,6 @@ export type HvMeldungStatus =
   | "hm_pruefung"
   | "hm_erledigt";
 
-export function hvMeldungStatusLabel(status: string | null | undefined): string {
-  const s = (status ?? "neu").toLowerCase();
-  if (s === "neu") return "Neu";
-  if (s === "notmassnahme") return "Läuft — Notmaßnahme";
-  if (s === "angebot_eingefordert") return "Angebot wird erstellt";
-  if (s === "kleinreparatur") return "Sofortpfad (alt)";
-  if (s === "abgelehnt") return "Abgelehnt";
-  if (s === "abgeschlossen") return "Abgeschlossen";
-  if (s === "hm_pruefung") return "Hausmeister-Prüfung";
-  if (s === "hm_erledigt") return "Vom Hausmeister erledigt";
-  return s;
-}
-
 /**
  * Neue Meldung: wartet auf HV.
  * `nicht_noetig` = noch keine Angebots-Freigabe fällig (nicht automatisch Akut).
@@ -47,27 +34,6 @@ export function canOfferKleinreparatur(
 ): boolean {
   // Kanon: kein Kleinreparatur-Sonderpfad mehr
   return false;
-}
-
-export function isLeadHavarie(lead: {
-  situation?: string | null;
-  funnel_daten?: unknown;
-  freigabe_bypass_grund?: string | null;
-}): boolean {
-  if ((lead.freigabe_bypass_grund ?? "").trim() === "akut") return true;
-  const fd = lead.funnel_daten as {
-    melde_kategorie?: string;
-    havarie?: boolean;
-    notfall?: boolean;
-    direktauftrag?: boolean;
-  } | null;
-  // Explizite Sofortmaßnahme / Direktauftrag
-  if (fd?.direktauftrag === true || fd?.havarie === true || fd?.notfall === true) {
-    return true;
-  }
-  // Legacy
-  if ((lead.situation ?? "").trim() === "notfall") return true;
-  return fd?.melde_kategorie === "notfall";
 }
 
 export function formatPreisspanneDisplay(

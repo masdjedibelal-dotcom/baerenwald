@@ -14,6 +14,3 @@ export function getSupabaseBrowserClient(): SupabaseClient {
   });
   return browserClient;
 }
-
-/** @deprecated Verwende getSupabaseBrowserClient */
-export const getSupabaseClient = getSupabaseBrowserClient;

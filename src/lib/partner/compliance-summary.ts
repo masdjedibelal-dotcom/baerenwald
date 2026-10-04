@@ -1,7 +1,3 @@
-import {
-  COMPLIANCE_EBENE_LABELS,
-  type ComplianceEbene,
-} from "@/lib/partner/compliance-partner-profile";
 import { mergeNachunternehmerComplianceItems } from "@/lib/partner/nachunternehmervertrag-compliance";
 import {
   EIGENES_STAMM_DOKUMENT_TYP,
@@ -19,24 +15,6 @@ export function filterProfilStammCompliance(
   return items.filter((i) => i.slug === HANDWERKSKARTE_TYP_SLUG);
 }
 
-/** Stamm-Unterlagen je Bauauftrag (ohne Handwerkskarte & Rahmenvertrag). */
-export function filterBauauftragStammCompliance(
-  items: PartnerComplianceItem[]
-): PartnerComplianceItem[] {
-  return items.filter(
-    (i) => i.slug !== HANDWERKSKARTE_TYP_SLUG && i.slug !== RAHMENVERTRAG_TYP_SLUG
-  );
-}
-
-/** Bauprojekt = mindestens ein Auftrags-Gewerk mit gewerke.ist_bauleistung = true. */
-export function isPartnerBauprojektAuftrag(input: {
-  ist_bauprojekt?: boolean | null;
-  compliance_projekt?: PartnerComplianceItem[] | null;
-}): boolean {
-  if (input.ist_bauprojekt != null) return input.ist_bauprojekt;
-  return (input.compliance_projekt?.length ?? 0) > 0;
-}
-
 /** Nachweise laut Projekt-Nachunternehmervertrag (Stamm + auftragsspezifisch). */
 export function buildBauauftragComplianceItems(
   stamm: PartnerComplianceItem[] | undefined,
@@ -45,69 +23,6 @@ export function buildBauauftragComplianceItems(
 ): PartnerComplianceItem[] {
   if (bauauftrag?.length) return [...bauauftrag];
   return mergeNachunternehmerComplianceItems(stamm, projekt);
-}
-
-export type ComplianceStammSummary = {
-  gesamt: number;
-  pflichtOffen: number;
-  inPruefung: number;
-  ablaufWarnung: number;
-  abgelaufen: number;
-  erledigt: number;
-};
-
-export function summarizeComplianceStamm(
-  items: PartnerComplianceItem[]
-): ComplianceStammSummary {
-  let pflichtOffen = 0;
-  let inPruefung = 0;
-  let ablaufWarnung = 0;
-  let abgelaufen = 0;
-  let erledigt = 0;
-
-  for (const item of items) {
-    if (item.status === "in_pruefung") inPruefung += 1;
-    else if (item.status === "ablauf_warnung") ablaufWarnung += 1;
-    else if (item.status === "abgelaufen") abgelaufen += 1;
-    else if (item.status === "erledigt") erledigt += 1;
-
-    if (
-      item.pflicht &&
-      item.status !== "erledigt" &&
-      item.status !== "in_pruefung" &&
-      item.status !== "ablauf_warnung"
-    ) {
-      pflichtOffen += 1;
-    }
-  }
-
-  return {
-    gesamt: items.length,
-    pflichtOffen,
-    inPruefung,
-    ablaufWarnung,
-    abgelaufen,
-    erledigt,
-  };
-}
-
-export function gruppeComplianceItems(
-  items: PartnerComplianceItem[]
-): Array<{ kategorie: string; items: PartnerComplianceItem[] }> {
-  const map = new Map<string, PartnerComplianceItem[]>();
-  for (const item of items) {
-    const key =
-      item.kategorie?.trim() ||
-      COMPLIANCE_EBENE_LABELS[item.ebene as ComplianceEbene] ||
-      "Weitere";
-    const list = map.get(key) ?? [];
-    list.push(item);
-    map.set(key, list);
-  }
-  return Array.from(map.entries()).map(([kategorie, grouped]) => ({
-    kategorie,
-    items: grouped,
-  }));
 }
 
 export type PartnerRahmenvertrag = {

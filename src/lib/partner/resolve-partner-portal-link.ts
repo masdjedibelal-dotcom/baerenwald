@@ -4,8 +4,7 @@ import {
 } from "@/lib/partner/partner-portal-phase";
 import {
   partnerAuftragAnfragePortalUrl,
-  partnerDashboardUrl,
-  partnerOffenPortalPath,
+  partnerDashboardUrl
 } from "@/lib/partner/partner-site-url";
 
 const HW_BEANTWORTET = new Set(["akzeptiert", "abgelehnt"]);
@@ -43,8 +42,4 @@ export function resolveZuweisungPortalUrl(input: ZuweisungPortalLinkInput): stri
   }
 
   return `${partnerDashboardUrl()}?section=vorgaenge&id=${encodeURIComponent(input.auftragId)}`;
-}
-
-export function resolveAngebotHandwerkerPortalUrl(anfrageId: string): string {
-  return partnerOffenPortalPath(anfrageId);
 }

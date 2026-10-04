@@ -1,7 +1,6 @@
-import { logDbError } from '@/lib/errors/log-db-error'
-import { isPortalAuthEmailRegistered } from "@/lib/funnel/funnel-portal-otp";
+import { logDbError } from '@/lib/errors/log-db-error';
 import { normalizeKundenEmail } from "@/lib/kunden/kunde-email";
-import { isSupabaseConfigured, supabaseAdmin } from "@/lib/supabase";
+import { isSupabaseConfigured,supabaseAdmin } from "@/lib/supabase";
 
 export type MeldeBestaetigungContact = {
   name: string;
@@ -40,11 +39,4 @@ export async function loadMeldeContactByToken(
     telefon: String(data.melder_telefon ?? data.kontakt_telefon ?? "").trim() || null,
     leadId: data.id ? String(data.id) : null,
   };
-}
-
-export async function meldePortalAccountExists(
-  email: string | null | undefined
-): Promise<boolean> {
-  if (!email?.trim()) return false;
-  return isPortalAuthEmailRegistered(email);
 }

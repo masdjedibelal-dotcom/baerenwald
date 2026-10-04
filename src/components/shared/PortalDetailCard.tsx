@@ -2,14 +2,12 @@
 
 import type { ReactNode } from "react";
 
-import { PortalButton } from "@/components/portal/PortalButton";
 import { PortalSectionAddButton } from "@/components/shared/PortalEinstellungenUi";
 import {
   portalDetailSectionBorderStyle,
   portalDetailSectionClass,
   type PortalDetailChrome,
 } from "@/lib/portal2/layout-chrome";
-import { PORTAL_VAR } from "@/lib/portal2/tokens";
 import { cn } from "@/lib/utils";
 
 /** Weiße Detail-Card — `responsive` / `card` = immer Section-Card; `flat` = ohne Rahmen. */
@@ -64,54 +62,5 @@ export function PortalDetailCard({
       ) : null}
       <div className={bodyClassName}>{children}</div>
     </section>
-  );
-}
-
-/** Caption über Wert (Mock Einsatz-Card). */
-export function PortalDetailMetaField({
-  label,
-  children,
-  className,
-}: {
-  label: string;
-  children: ReactNode;
-  className?: string;
-}) {
-  return (
-    <div
-      className={cn("border-b py-2.5 last:border-b-0", className)}
-      style={{ borderColor: PORTAL_VAR.line2 }}
-    >
-      <p className="portal-text-label" style={{ color: PORTAL_VAR.faint }}>
-        {label}
-      </p>
-      <div className="portal-text-body mt-0.5 font-semibold" style={{ color: PORTAL_VAR.ink }}>
-        {children}
-      </div>
-    </div>
-  );
-}
-
-export function PortalDetailPrimaryButton({
-  label,
-  onClick,
-  disabled,
-  className,
-}: {
-  label: string;
-  onClick: () => void;
-  disabled?: boolean;
-  className?: string;
-}) {
-  return (
-    <PortalButton
-      variant="primary"
-      block
-      disabled={disabled}
-      onClick={onClick}
-      className={className}
-    >
-      {label}
-    </PortalButton>
   );
 }

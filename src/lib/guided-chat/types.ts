@@ -1,9 +1,7 @@
 import type { KiParsedBekannt } from "@/lib/ki-rechner/types";
-import type { Situation, Zeitraum } from "@/lib/funnel/types";
+import type { Situation,Zeitraum } from "@/lib/funnel/types";
 import type { BwCalculatePriceResult } from "@/lib/funnel/price-calc";
 import type { GptVizPrepareQuestion } from "@/lib/gpt-viz/types";
-
-export type GuidedJourney = "beraten" | "viz" | "preis" | "anfrage";
 
 export type GuidedField =
   | "situation"

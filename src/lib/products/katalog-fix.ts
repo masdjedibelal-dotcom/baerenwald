@@ -1,7 +1,5 @@
 import type { Produkt } from "./types";
 
-export const FIX_FAMILIE_LABEL = "Sanieren & Notfall";
-
 export type FixGewerkId = "sanitaer" | "elektro" | "heizung";
 
 export const FIX_GEWERKE: { id: FixGewerkId; label: string }[] = [
@@ -185,8 +183,4 @@ export function getFixGewerk(produkt: Produkt): FixGewerkId {
 
 export function getFixProdukteByGewerk(gewerk: FixGewerkId): Produkt[] {
   return FIX_PRODUKTE.filter((p) => getFixGewerk(p) === gewerk);
-}
-
-export function getDefaultFixSlugForGewerk(gewerk: FixGewerkId): string {
-  return getFixProdukteByGewerk(gewerk)[0]?.slug ?? FIX_DEFAULT_PRODUKT_SLUG;
 }

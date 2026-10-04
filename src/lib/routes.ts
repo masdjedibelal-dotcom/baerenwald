@@ -231,6 +231,3 @@ export function leistungHref(slug: string): string {
 export function ratgeberHref(slug: string): string {
   return `/ratgeber/${slug}`;
 }
-
-/** Erste sechs Ratgeber für Footer-Highlight */
-export const RATGEBER_FOOTER_HIGHLIGHTS = RATGEBER.slice(0, 6);

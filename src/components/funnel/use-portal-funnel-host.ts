@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback,useEffect,useMemo,useState } from "react";
 import { useRouter } from "next/navigation";
 
 import {
@@ -18,14 +18,10 @@ import type {
   HvMieterOption,
   PortalFunnelHostProps,
   PortalFunnelObjekt,
-  PortalFunnelStepId,
-  SummaryRow,
+  PortalFunnelStepId
 } from "@/components/funnel/portal-funnel-types";
 import {
-  BW_FUNNEL_STEP_BAD_AUSSTATTUNG,
-  BW_FUNNEL_STEP_ZUGAENGLICHKEIT,
-  buildZustandStepForBereiche,
-  SITUATIONEN_CONFIG,
+  buildZustandStepForBereiche
 } from "@/lib/funnel/config";
 import {
   getActiveFachdetailQuestionIds,
@@ -44,7 +40,7 @@ import {
 } from "@/lib/funnel/melde-direktauftrag";
 import { ALL_AKUT_FALL_IDS } from "@/lib/org/sofortmassnahme-faelle";
 import { bewohnerInMieterZuordnung } from "@/lib/org/einheit-bewohner-regeln";
-import { calculatePrice, isBwZuKomplexErgebnis } from "@/lib/funnel/price-calc";
+import { calculatePrice,isBwZuKomplexErgebnis } from "@/lib/funnel/price-calc";
 import {
   applyGroesseStepCopy,
   getGroesseConfig,
@@ -57,7 +53,7 @@ import {
   portalProjektStepAnswered,
   shouldUseWebsiteMidSteps,
 } from "@/lib/funnel/portal-funnel-mid-steps";
-import { mapMeldeToPrice, compactFachdetailAnswers } from "@/lib/org/map-melde-to-price";
+import { mapMeldeToPrice,compactFachdetailAnswers } from "@/lib/org/map-melde-to-price";
 import { BW_FUNNEL_STEP1_OPTIONS } from "@/lib/funnel/situation-options";
 import type {
   FachdetailsState,
@@ -67,8 +63,8 @@ import type {
 import { BW_FUNNEL_INITIAL_STATE } from "@/hooks/funnel/useFunnelState";
 import { track } from "@/lib/analytics";
 import { useFormZwischenstand } from "@/lib/portal2/form-zwischenstand";
-import { portalToastError, portalToastSuccess } from "@/lib/shared/portal-toast";
-import { TOAST } from '@/lib/portal-copy'
+import { portalToastError,portalToastSuccess } from "@/lib/shared/portal-toast";
+import { TOAST } from '@/lib/portal-copy';
 
 type MeldeFunnelDraft = {
   step: PortalFunnelStepId;
@@ -271,7 +267,7 @@ export function usePortalFunnelHost({
     kundentyp:
       channel === "portal_hv"
         ? "hausverwaltung"
-        : channel === "portal_mieter" || channel === "melde_anon"
+        : channel === "melde_anon"
           ? "mieter"
           : "eigentuemer",
   }));
@@ -294,9 +290,7 @@ export function usePortalFunnelHost({
   /** Melde / Mieter / HV / Privat / Eigentümer: keine Termin-/SLA-Infoboxen. */
   const stripTerminInfos =
     channel === "melde_anon" ||
-    channel === "portal_mieter" ||
     channel === "portal_privat" ||
-    channel === "portal_eigentuemer" ||
     isHvIntern;
 
   // Keine Mieterverwaltung mehr (04.10.2026) — Kontakt vor Ort wird in der Anfrage frei eingetragen
@@ -755,7 +749,6 @@ export function usePortalFunnelHost({
     if (step === "kontakt") {
       const needsAddress =
         channel === "melde_anon" ||
-        channel === "portal_mieter" ||
         (cfg.include.ortPlz && channel === "portal_privat") ||
         Boolean(melde?.needsAddress);
       if (needsAddress) {
@@ -780,10 +773,7 @@ export function usePortalFunnelHost({
     setNeuBusy(true);
     setError(null);
     try {
-      const endpoint =
-        channel === "portal_eigentuemer"
-          ? "/api/portal/eigentuemer/objekte"
-          : "/api/org/objekte";
+      const endpoint = "/api/org/objekte";
       const res = await fetch(endpoint, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -1019,7 +1009,7 @@ export function usePortalFunnelHost({
     let navigatedAway = false;
     try {
       // Aushang/QR und angemeldeter Mieter: Meldung geht an die HV (Freigabe dort)
-      if ((channel === "melde_anon" || channel === "portal_mieter") && melde) {
+      if (channel === "melde_anon" && melde) {
         const bereich = state.bereiche[0] ?? "sonstiges";
         const bereichId = kaputtBereichToMeldeId(bereich);
         const fachAnswers = compactFachdetailAnswers(
@@ -1093,13 +1083,6 @@ export function usePortalFunnelHost({
         };
         if (!res.ok) {
           setError(json.error ?? "Senden fehlgeschlagen.");
-          return;
-        }
-        if (channel === "portal_mieter") {
-          // Angemeldet: im Portal bleiben, Meldung erscheint in der Liste
-          clearMeldeZwischenstand();
-          portalToastSuccess(TOAST.anfrage_gesendet);
-          onDone();
           return;
         }
         if (!isErgaenzen) {
@@ -1282,81 +1265,6 @@ export function usePortalFunnelHost({
         return;
       }
 
-      if (channel === "portal_eigentuemer") {
-        if (!objektId) {
-          setError("Bitte ein Objekt wählen.");
-          return;
-        }
-        if (!state.situation) {
-          setError("Bitte ein Anliegen wählen.");
-          return;
-        }
-        const einheitTrim = einheit.trim();
-        const matchedEinheit =
-          objekt?.einheiten?.find(
-            (e) =>
-              e.id === einheitTrim ||
-              e.label.trim().toLowerCase() === einheitTrim.toLowerCase()
-          ) ?? null;
-        const res = await fetch("/api/portal/eigentuemer/anfrage", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            objektId,
-            einheitId: matchedEinheit?.id || undefined,
-            einheitLabel: matchedEinheit?.label || einheitTrim || undefined,
-            situation: state.situation,
-            bereiche: state.bereiche,
-            preis_min: reliablePrice && price ? price.min : null,
-            preis_max: reliablePrice && price ? price.max : null,
-            zeitraum: state.dringlichkeit || state.zeitraum || null,
-            name:
-              state.name.trim() ||
-              mieterVollname ||
-              prefill?.name ||
-              undefined,
-            email:
-              state.email.trim() ||
-              mieterEmail.trim() ||
-              prefill?.email ||
-              undefined,
-            telefon:
-              state.telefon.trim() ||
-              mieterTel.trim() ||
-              prefill?.telefon ||
-              undefined,
-            beschreibung: [
-              state.leadBeschreibung.trim(),
-              objekt ? `Objekt: ${objekt.titel}` : "",
-              einheitTrim ? `Einheit: ${einheitTrim}` : "",
-            ]
-              .filter(Boolean)
-              .join("\n"),
-            funnel_daten: {
-              channel,
-              fachdetails: state.fachdetails,
-              dringlichkeit: state.dringlichkeit,
-              fotos_count: state.photos.length,
-              ...(objekt?.ort ? { ort: objekt.ort } : {}),
-            },
-          }),
-        });
-        let json: { error?: string } = {};
-        try {
-          json = (await res.json()) as { error?: string };
-        } catch {
-          json = { error: "Antwort vom Server ungültig." };
-        }
-        if (!res.ok) {
-          const msg = json.error ?? "Absenden fehlgeschlagen.";
-          setError(msg);
-          portalToastError(TOAST.anfrage_nicht_erstellt, msg);
-          return;
-        }
-        portalToastSuccess(TOAST.anfrage_gesendet);
-        onDone();
-        return;
-      }
 
       /* privat / portal_mieter (registriert ohne melde) */
       const plz =
@@ -1435,7 +1343,7 @@ export function usePortalFunnelHost({
     /** Mieter / QR-Melde: nur Reparatur & Notfall (kein Umbau / Betreuung). */
     if (
       (o.id === "betreuung" || o.id === "erneuern") &&
-      (channel === "portal_mieter" || channel === "melde_anon")
+      ( channel === "melde_anon")
     ) {
       return false;
     }

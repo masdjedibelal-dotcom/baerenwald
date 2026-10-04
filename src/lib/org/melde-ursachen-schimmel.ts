@@ -14,11 +14,6 @@ export type SchimmelUrsacheId =
   | "graffiti"
   | "sonstiges";
 
-export type SchimmelUrsacheOption = {
-  id: SchimmelUrsacheId;
-  label: string;
-};
-
 export type MeldeUrsachenSchimmelState = {
   bereich: "schimmel";
   selectedUrsacheId: SchimmelUrsacheId | null;
@@ -26,17 +21,6 @@ export type MeldeUrsachenSchimmelState = {
   entscheidung: "hm_geloest" | "fachfirma" | null;
   material?: string[];
   updatedAt?: string | null;
-};
-
-const ALL: Record<SchimmelUrsacheId, string> = {
-  schimmel_sichtbar: "Feuchtigkeit / Schimmel sichtbar",
-  fenster_kondens: "Fensteranschluss / Kondens",
-  undicht_moeglich: "Undichtigkeit möglich (Leitung / Dach)",
-  putz_locker: "Putz locker / Abplatzung",
-  riss_putz: "Riss im Putz",
-  farbe_blaettert: "Farbe blättert",
-  graffiti: "Graffiti / Schmiererei",
-  sonstiges: "Sonstiges",
 };
 
 function ans(a: MeldeAnswers, id: string): string {
@@ -55,55 +39,6 @@ function normalizeProblem(raw: string): string {
   }
   return raw;
 }
-
-function orderIds(ids: SchimmelUrsacheId[]): SchimmelUrsacheOption[] {
-  const uniq = ids.filter((id, i) => ids.indexOf(id) === i);
-  if (!uniq.includes("sonstiges")) uniq.push("sonstiges");
-  return uniq.map((id) => ({ id, label: ALL[id] }));
-}
-
-export function schimmelUrsachenForAnswers(
-  answers: MeldeAnswers | undefined
-): SchimmelUrsacheOption[] {
-  const problem = normalizeProblem(ans(answers ?? {}, "melde_problem"));
-
-  switch (problem) {
-    case "schimmel_feucht":
-      return orderIds([
-        "schimmel_sichtbar",
-        "fenster_kondens",
-        "undicht_moeglich",
-        "sonstiges",
-      ]);
-    case "fassade":
-      return orderIds([
-        "putz_locker",
-        "riss_putz",
-        "farbe_blaettert",
-        "sonstiges",
-      ]);
-    case "graffiti":
-      return orderIds(["graffiti", "sonstiges"]);
-    default:
-      return orderIds([
-        "schimmel_sichtbar",
-        "putz_locker",
-        "graffiti",
-        "sonstiges",
-      ]);
-  }
-}
-
-export function schimmelUrsacheLabel(id: string | null | undefined): string {
-  if (!id) return "—";
-  return ALL[id as SchimmelUrsacheId] ?? id;
-}
-
-export const SCHIMMEL_MATERIAL_OPTIONS = [
-  { value: "gereinigt", label: "Gereinigt" },
-  { value: "markiert", label: "Markiert / dokumentiert" },
-  { value: "sonstiges", label: "Sonstiges" },
-] as const;
 
 export function schimmelSchadenKurz(answers: MeldeAnswers | undefined): string {
   const a = answers ?? {};

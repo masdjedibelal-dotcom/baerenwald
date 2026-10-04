@@ -57,7 +57,6 @@ export function hvKpiToListeFilter(
 
 export const HV_SECTION_MELDUNGEN = "Meldungen · Eingang" as const;
 export const HV_SECTION_ANGEBOTE = "Angebots-Freigabe" as const;
-export const HV_SECTION_EMPTY = "Nichts offen" as const;
 
 /** Gelbes Hinweisbanner (Mock screenListe Angebots-Freigabe). */
 export const HV_ANGEBOT_BANNER = "Angebote zur Freigabe" as const;
@@ -94,6 +93,3 @@ export const HV_ANGEBOT_ACTIONS = [
  */
 export const HV_BULK_DELETE_OFFENER_PUNKT =
   "Bulk-Löschen von Vorgängen ist im Live-Portal nicht erlaubt (Audit/Nachweis). Auswahl bleibt Demo-fähig; Persistenz-Löschen = OFFENE-PUNKTE." as const;
-
-export const HV_BULK_DELETE_DISABLED_HINT =
-  "Löschen ist für Vorgänge nicht freigeschaltet." as const;

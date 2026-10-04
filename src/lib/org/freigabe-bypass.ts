@@ -71,20 +71,6 @@ export function hvFreigabeEntfaellt(
   return null;
 }
 
-/** Keine Freigeben-/Ablehnen-CTAs. */
-export function hvMussNichtFreigeben(opts: HvFreigabeEntfaelltOpts): boolean {
-  return hvFreigabeEntfaellt(opts) != null;
-}
-
-/** @deprecated Nutze hvFreigabeEntfaellt */
-export function isFreigabeBypassInfo(opts: {
-  orgFreigabeStatus?: string | null;
-  bypassGrund?: FreigabeBypassGrund | null;
-  angebotZugestellt?: boolean | null;
-}): boolean {
-  return hvFreigabeEntfaellt(opts) != null;
-}
-
 export function freigabeBypassInfoCopy(opts: {
   bypassGrund: FreigabeBypassInfoKind;
   schwelleLabel?: string | null;

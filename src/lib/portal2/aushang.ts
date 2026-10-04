@@ -56,37 +56,10 @@ export const AUSHANG_HERO_LINE1 = "Schaden melden,";
 export const AUSHANG_HERO_LINE2 = "Status im Blick.";
 export const AUSHANG_HERO_BODY =
   "Kein Warten am Telefon. Melden Sie den Defekt digital — mit Foto, in wenigen Minuten. Sofort eine Bestätigung, und Sie behalten den Stand jederzeit im Blick.";
-
-/** @deprecated — nicht mehr auf dem Aushang */
-export const AUSHANG_BADGE = "MIETERSERVICE";
 export const AUSHANG_SCAN_LABEL = "Jetzt melden";
 export const AUSHANG_STEPS_TITLE = "Ihre Vorteile";
-/** @deprecated — Chips nicht mehr auf dem Aushang */
-export const AUSHANG_TRUST_CHIPS = [
-  "Ohne Warteschleife",
-  "Mit Foto",
-  "Status live",
-] as const;
-export const AUSHANG_PHOTO_HINT =
-  "Foto einfügen (Gebäude oder Objekt)";
-/** @deprecated — nicht mehr auf dem Aushang */
-export const AUSHANG_TAGLINE = "IHR ZUHAUSE IN GUTEN HÄNDEN";
-export const AUSHANG_FOOTER_NO_PHONE = "LIEBER TELEFONISCH?";
-export const AUSHANG_FOOTER_CONTACT = "Wir sind erreichbar unter";
 /** Hinweis White-Label: klein im Fuß, nie an Mieter-Mails. */
 export const AUSHANG_FOOTER_PARTNER = "Ein Service von Bärenwald";
-/** @deprecated — Aushang zeigt klickbare Impressum-/Datenschutz-URLs der HV. */
-export const AUSHANG_FOOTER_DATENSCHUTZ =
-  "Datenschutz & Impressum: nach dem Scan im Formular";
-
-/** @deprecated — Konzept ohne separaten Objekt-Kasten */
-export const AUSHANG_OBJEKT_LABEL = "Für dieses Gebäude";
-/** @deprecated */
-export const AUSHANG_PILL_HINT = "ohne App · direkt im Browser";
-/** @deprecated — siehe AUSHANG_FOOTER_PARTNER */
-export const AUSHANG_FOOTER_OPERATOR = "Bearbeitet durch";
-/** @deprecated */
-export const AUSHANG_PROCESSED_BY = "Bärenwald Bau & Sanierung GmbH";
 
 /** PDF-Aushang im Browser (Drucken / Speichern über PDF-Viewer). */
 export function meldeAushangPdfPath(objektId?: string): string {
@@ -98,32 +71,4 @@ export function meldeAushangPdfPath(objektId?: string): string {
 export function meldeQrPngPath(objektId?: string): string {
   if (!objektId?.trim()) return "/api/org/melde-qr";
   return `/api/org/melde-qr?objektId=${encodeURIComponent(objektId.trim())}`;
-}
-
-/** @deprecated Alias — siehe meldeAushangPdfPath */
-export function aushangPrintPath(objektId: string): string {
-  return meldeAushangPdfPath(objektId);
-}
-
-export type AushangBrand = {
-  name: string;
-  sub?: string | null;
-  logoKuerzel?: string | null;
-  primary: string;
-  primaryDk?: string | null;
-  soft?: string | null;
-  telefon?: string | null;
-  email?: string | null;
-};
-
-export type AushangObjektView = {
-  id: string;
-  titel: string;
-  adresse: string;
-  melde_slug?: string | null;
-};
-
-/** @deprecated Alias — siehe meldeAushangPdfPath */
-export function aushangPdfPath(objektId: string): string {
-  return meldeAushangPdfPath(objektId);
 }

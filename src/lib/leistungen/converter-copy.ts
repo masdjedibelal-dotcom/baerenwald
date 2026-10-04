@@ -108,10 +108,3 @@ export const HAUSSERVICE_STUFE_TAGLINES: Record<HausserviceStufe, string> = {
 };
 
 export const HAUSSERVICE_EMPFOHLEN_STUFE: HausserviceStufe = "komfort";
-
-/** Kurzlabels für Vergleichsspalten unter den Paket-Cards */
-export const HAUSSERVICE_STUFE_SHORT_LABELS: Record<HausserviceStufe, string> = {
-  basis: "S",
-  komfort: "M",
-  premium: "L",
-};

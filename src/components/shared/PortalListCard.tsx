@@ -28,9 +28,6 @@ export type PortalListCardMeta = {
   text: string;
 };
 
-/** @deprecated Prefer PortalListVariant from layout-chrome */
-export type PortalListCardVariant = PortalListVariant;
-
 export type PortalListCardProps = {
   selected?: boolean;
   onClick: () => void;

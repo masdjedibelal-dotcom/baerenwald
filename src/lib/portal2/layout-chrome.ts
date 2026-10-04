@@ -6,7 +6,6 @@
 
 import type { CSSProperties } from "react";
 
-import { PORTAL_VAR } from "@/lib/portal2/tokens";
 import { cn } from "@/lib/utils";
 
 /** Listen-Darstellung: mobile Karte, ab lg flache Zeile. */
@@ -18,9 +17,6 @@ export type PortalListVariant = "row" | "card" | "responsive";
  * - `flat` = ohne Border (seltene Ausnahmen)
  */
 export type PortalDetailChrome = "card" | "flat" | "responsive";
-
-export const PORTAL_LIST_VARIANT_DEFAULT: PortalListVariant = "responsive";
-export const PORTAL_DETAIL_CHROME_DEFAULT: PortalDetailChrome = "responsive";
 
 /** Wrapper um Vorgangslisten — gestapelte weiße Karten mit Abstand (wie Dashboard „Zuletzt“). */
 export function portalListStackClass(variant: PortalListVariant = "responsive"): string {

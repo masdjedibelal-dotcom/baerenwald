@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { PortalButton } from "@/components/portal/PortalButton";
 
-import { PortalCheckbox, PortalInput, PortalSelect } from "@/components/shared/PortalFormControls";
+import { PortalInput } from "@/components/shared/PortalFormControls";
 import {
   EinstellungenCard,
   EinstellungenEuroSlider,
@@ -16,7 +16,6 @@ import {
   formatEinstellungenSchwelle,
   snapEinstellungenSchwelle,
 } from "@/lib/portal2/einstellungen";
-import { PORTAL_VAR } from "@/lib/portal2/tokens";
 import {
   formatObjRegelnReview,
   OBJ_SCHWELLE_WIZARD_TITLE,
@@ -118,8 +117,6 @@ export function OrganisationObjektWizard({
     setErr("");
   };
 
-  const we =
-    draft.we === undefined || draft.we === "" ? 1 : Number(draft.we) || 1;
   const schwelle =
     draft.schwelle === undefined ||
     draft.schwelle === null ||

@@ -13,10 +13,7 @@ import {
   FACHDETAIL_TO_LEISTUNG,
   labelBadAusstattung,
   labelBereich,
-  labelDringlichkeit,
-  labelSituation,
-  labelZeitraum,
-  labelZugaenglichkeit,
+  labelDringlichkeit,labelZugaenglichkeit
 } from "@/lib/lead-funnel-labels";
 import { buildInternSubject } from "@/lib/shared-domain/build-subject";
 

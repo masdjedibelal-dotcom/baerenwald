@@ -1,9 +1,8 @@
 "use server";
 
-import { logDbError } from '@/lib/errors/log-db-error'
+import { logDbError } from '@/lib/errors/log-db-error';
 import { revalidatePath } from "next/cache";
 
-import { assertOrgLead } from "@/lib/org/assert-org-objekt";
 import { insertLeadBefundIfMissing } from "@/lib/org/lead-befund-create";
 import type { BefundVorlageKey } from "@/lib/org/lead-befund-vorlagen";
 import {
@@ -12,7 +11,6 @@ import {
   requireBefundActor,
   requireBefundWrite,
 } from "@/lib/org/require-befund-actor";
-import { requireOrganisationSession } from "@/lib/org/require-org-session";
 import { supabaseAdmin } from "@/lib/supabase";
 
 export type LeadBefundErgebnis =
@@ -774,38 +772,6 @@ export async function deleteLeadBefundPunktAction(input: {
 
   revalidatePath("/portal");
   return { ok: true };
-}
-
-/** Ob am Lead-Objekt ein Hausmeister-Kontakt hinterlegt ist. */
-export async function getLeadHausmeisterMetaAction(input: {
-  leadId: string;
-}): Promise<
-  ActionResult<{ kundeObjektId: string | null; hasHausmeister: boolean }>
-> {
-  const session = await requireOrganisationSession();
-  if (!session.ok) return { ok: false, error: session.error };
-
-  const leadId = String(input.leadId ?? "").trim();
-  if (!leadId) return { ok: false, error: "Lead fehlt." };
-
-  const lead = await assertOrgLead(session.kunde.id, leadId);
-  if (!lead) return { ok: false, error: "Vorgang nicht gefunden." };
-
-  const oid =
-    lead.kunde_objekt_id != null ? String(lead.kunde_objekt_id).trim() : null;
-  if (!oid) {
-    return { ok: true, kundeObjektId: null, hasHausmeister: false };
-  }
-
-  const { loadObjektHausmeisterKontakt } = await import(
-    "@/lib/org/objekt-hausmeister"
-  );
-  const hm = await loadObjektHausmeisterKontakt(oid);
-  return {
-    ok: true,
-    kundeObjektId: oid,
-    hasHausmeister: hm != null,
-  };
 }
 
 /** Foto an einen Befund-Punkt anhängen. */

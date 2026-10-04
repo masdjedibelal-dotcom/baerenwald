@@ -100,7 +100,3 @@ export function MockIcon({
     />
   );
 }
-
-export function mockMenuIcon(n: MockIconName, ctx: MockIconCtx = "row", size = 15) {
-  return <MockIcon n={n} ctx={ctx} size={size} />;
-}

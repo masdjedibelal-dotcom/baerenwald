@@ -8,16 +8,6 @@
 
 export type BewohnerRolleLike = "mieter" | "eigentuemer" | string | null | undefined;
 
-export function isEigentuemerSelbstbewohnt(b: {
-  rolle?: BewohnerRolleLike;
-  selbstbewohnt?: boolean | null;
-}): boolean {
-  return (
-    String(b.rolle ?? "").toLowerCase() === "eigentuemer" &&
-    Boolean(b.selbstbewohnt)
-  );
-}
-
 /** Person zählt für Belegung (belegt vs. leer). */
 export function bewohnerBelegtEinheit(b: {
   rolle?: BewohnerRolleLike;
@@ -34,11 +24,4 @@ export function bewohnerInMieterZuordnung(b: {
   selbstbewohnt?: boolean | null;
 }): boolean {
   return bewohnerBelegtEinheit(b);
-}
-
-/** Einheit hat selbstbewohnenden Eigentümer → kein zusätzlicher Mieter. */
-export function einheitMieterAddGesperrt(
-  people: Array<{ rolle?: BewohnerRolleLike; selbstbewohnt?: boolean | null }>
-): boolean {
-  return people.some((p) => isEigentuemerSelbstbewohnt(p));
 }

@@ -1,12 +1,11 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useEffect, useRef, useState } from "react";
+import { useEffect,useRef,useState } from "react";
 
 import { PortalCheckbox } from "@/components/shared/PortalFormControls";
-import { updatePartnerProfil, uploadPartnerProfilLogo } from "@/app/actions/partner-profil";
+import { updatePartnerProfil,uploadPartnerProfilLogo } from "@/app/actions/partner-profil";
 import { retryPendingPartnerAutoAngebote } from "@/app/actions/partner-auto-dokumente";
-import { PartnerDetailInfoBox } from "@/components/partner/PartnerDetailUi";
 import { PartnerRahmenvertragCard } from "@/components/partner/PartnerRahmenvertragCard";
 import { PortalKontoSicherheitPanel } from "@/components/shared/PortalKontoSicherheitPanel";
 import { PortalEinstellungenShell } from "@/components/shared/PortalEinstellungenShell";
@@ -28,8 +27,8 @@ import type {
 } from "@/lib/partner/get-partner-data";
 import { resolveHandwerkerAnschrift } from "@/lib/partner/handwerker-anschrift";
 import { HW_FIRMEN_SECTIONS } from "@/lib/portal2/einstellungen-ui";
-import { partnerPortalToast, portalToastError } from "@/lib/shared/portal-toast";
-import { TOAST } from '@/lib/portal-copy'
+import { partnerPortalToast,portalToastError } from "@/lib/shared/portal-toast";
+import { TOAST } from '@/lib/portal-copy';
 
 type Draft = {
   firma: string;

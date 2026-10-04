@@ -751,16 +751,6 @@ export const DACH_Q1_KAPUTT: FachdetailQuestionDef = {
   ],
 };
 
-/** Legacy-Default: Projektvariante (Erneuern). */
-export const DACH_Q1: FachdetailQuestionDef = DACH_Q1_ERNEUERN;
-
-export function getDachQ1ForSituation(
-  situation: Situation | null
-): FachdetailQuestionDef {
-  if (situation === "kaputt") return DACH_Q1_KAPUTT;
-  return DACH_Q1_ERNEUERN;
-}
-
 export const DACH_FOLLOWUPS: Record<string, FachdetailQuestionDef> = {
   dach_folge_alter: {
     id: "dach_folge_alter",

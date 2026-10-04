@@ -3,7 +3,7 @@ import type {
   PortalListCardAccent,
   PortalListCardMeta,
 } from "@/components/shared/PortalListCard";
-import { fmtPortalDate, fmtPortalOrt } from "@/lib/shared/portal-detail-format";
+import { fmtPortalDate,fmtPortalOrt } from "@/lib/shared/portal-detail-format";
 import type { KundePortalDetailItem } from "@/lib/portal/portal-detail-item";
 import {
   compareVorgangListOrder,
@@ -105,15 +105,6 @@ export function mapKundeDetailToCard(
     bautagebuch: item.bautagebuch,
     leadId: item.leadId ?? item.id,
   };
-}
-
-export function buildKundeCardRows(
-  items: KundePortalDetailItem[],
-  accent: PortalListCardAccent
-): PortalCardRow[] {
-  return items
-    .map((item) => mapKundeDetailToCard(item, accent))
-    .sort(compareVorgangListOrder);
 }
 
 export function kundeVorgangAccent(item: KundePortalDetailItem): PortalListCardAccent {

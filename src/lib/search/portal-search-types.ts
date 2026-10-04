@@ -24,10 +24,6 @@ export type PortalSearchHit = {
   href: string;
 };
 
-export type PortalSearchResponse = {
-  hits: PortalSearchHit[];
-};
-
 /** Escape für PostgREST `ilike` / `.or()`-Filter. */
 export function portalSearchPattern(q: string): string {
   const safe = q.trim().replace(/[%_,]/g, " ").replace(/\s+/g, " ").trim();

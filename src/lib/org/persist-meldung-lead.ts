@@ -1,5 +1,5 @@
 import { buildMeldeVorgangTitel } from "@/lib/org/melde-vorgang-titel";
-import { logDbError } from '@/lib/errors/log-db-error'
+import { logDbError } from '@/lib/errors/log-db-error';
 import { createHash } from "crypto";
 
 import { persistLead } from "@/lib/lead/persist-lead";
@@ -504,28 +504,6 @@ export async function persistMeldungLead(input: PersistMeldungLeadInput) {
     );
   }
 
-  // Eigentümer am Objekt → Glocke „neu“ (Status-only, keine Freigabe)
-  void import("@/lib/portal/notify-portal-eigentuemer").then(
-    async ({ notifyPortalEigentuemer }) => {
-      const { formatMeldeNotifTitel, MELDE_NOTIF_COPY } = await import(
-        "@/lib/org/melde-vorgang-titel"
-      );
-      const titel =
-        String(situation ?? "").trim() ||
-        String(bereiche?.[0] ?? "").trim() ||
-        "Vorgang";
-      await notifyPortalEigentuemer({
-        leadId: result.id,
-        kind: "neu",
-        titel: formatMeldeNotifTitel(MELDE_NOTIF_COPY.neueMeldung, { titel }),
-        text: `Neuer Vorgang „${titel}“ an Ihrem Objekt.`,
-        deepLinkTab: "uebersicht",
-        kundeObjektId: input.kunde_objekt_id ?? null,
-      }).catch((e) =>
-        console.error("[persistMeldungLead] eigentuemer notify:", e)
-      );
-    }
-  );
 
   return { ...result, meldeTrackingToken: token };
 }
