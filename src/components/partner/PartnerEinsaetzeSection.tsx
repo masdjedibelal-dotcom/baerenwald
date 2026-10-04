@@ -131,9 +131,6 @@ export function PartnerEinsaetzeSection({ rechnungHinweis }: { rechnungHinweis?:
   const [grund, setGrund] = useState("");
   const [text, setText] = useState("");
   const [dateien, setDateien] = useState<File[]>([]);
-  const [positionen, setPositionen] = useState<{ text: string; betrag: string }[]>([
-    { text: "", betrag: "" },
-  ]);
   const [stunden, setStunden] = useState("");
   const [rechnungPdf, setRechnungPdf] = useState<File | null>(null);
 
@@ -155,7 +152,6 @@ export function PartnerEinsaetzeSection({ rechnungHinweis }: { rechnungHinweis?:
     setGrund("");
     setText("");
     setDateien([]);
-    setPositionen([{ text: "", betrag: "" }]);
     setStunden("");
     setRechnungPdf(null);
     setDialog(d);
@@ -192,13 +188,9 @@ export function PartnerEinsaetzeSection({ rechnungHinweis }: { rechnungHinweis?:
       for (const f of dateien) fd.append("dateien", f);
       // Rechnung gleich mit (freiwillig — sonst später „Rechnung hochladen“)
       if (rechnungPdf) fd.set("rechnungPdf", rechnungPdf);
-      const pos = positionen
-        .map((p) => ({ text: p.text.trim(), betrag: Number(p.betrag.replace(",", ".")) || 0 }))
-        .filter((p) => p.text && p.betrag > 0);
-      fd.set("positionen", JSON.stringify(pos));
       ausfuehren(
         einsatzFertigMelden(fd),
-        rechnungPdf || pos.length ? "Erledigt gemeldet, Rechnung eingereicht" : "Als erledigt gemeldet"
+        rechnungPdf ? "Erledigt gemeldet, Rechnung hochgeladen" : "Als erledigt gemeldet"
       );
       return;
     }
@@ -212,14 +204,6 @@ export function PartnerEinsaetzeSection({ rechnungHinweis }: { rechnungHinweis?:
       return;
     }
     if (dateien[0]) fd.set("pdf", dateien[0]);
-    fd.set(
-      "positionen",
-      JSON.stringify(
-        positionen
-          .map((p) => ({ text: p.text.trim(), betrag: Number(p.betrag.replace(",", ".")) || 0 }))
-          .filter((p) => p.text && p.betrag > 0)
-      )
-    );
     ausfuehren(einsatzRechnungSenden(fd), "Rechnung hochgeladen");
   }
 
@@ -246,7 +230,7 @@ export function PartnerEinsaetzeSection({ rechnungHinweis }: { rechnungHinweis?:
       <PortalDetailCard title="Ihre Einsätze">
         <div className="flex flex-col gap-4">
           {einsaetze.map((e) => {
-            const st = STATUS[e.status];
+            const st = e.vorgang_erledigt ? STATUS.fertig : STATUS[e.status];
             const wann = [datum(e.termin_von), datum(e.termin_bis)].filter(Boolean).join(" bis ");
             return (
               <div key={e.id} className="flex flex-col gap-2 border-b border-[var(--p2-line)] pb-4 last:border-b-0">
@@ -284,7 +268,7 @@ export function PartnerEinsaetzeSection({ rechnungHinweis }: { rechnungHinweis?:
                       </PortalButton>
                     </>
                   ) : null}
-                  {e.status === "angenommen" ? (
+                  {e.status === "angenommen" && !e.vorgang_erledigt ? (
                     <>
                       <PortalButton variant="secondary" disabled={busy} onClick={() => oeffne({ art: "update", einsatz: e })}>
                         Update
@@ -303,7 +287,9 @@ export function PartnerEinsaetzeSection({ rechnungHinweis }: { rechnungHinweis?:
                     </PortalButton>
                   ) : null}
                   {e.rechnung_eingereicht_at ? (
-                    <span className="text-fs-meta text-[var(--p2-sub)]">Rechnung eingereicht</span>
+                    <span className="text-fs-meta text-[var(--p2-sub)]">
+                      {e.rechnung_bezahlt_at ? `Rechnung bezahlt am ${datum(e.rechnung_bezahlt_at)}` : "Rechnung hochgeladen"}
+                    </span>
                   ) : null}
                 </div>
               </div>
@@ -343,25 +329,6 @@ export function PartnerEinsaetzeSection({ rechnungHinweis }: { rechnungHinweis?:
                 selectedFile={rechnungPdf}
                 onChange={(files) => setRechnungPdf(files[0] ?? null)}
               />
-              {positionen.map((p, i) => (
-                <div key={i} className="grid grid-cols-[minmax(0,1fr)_7.5rem] gap-2">
-                  <PortalInput
-                    placeholder="Leistung"
-                    value={p.text}
-                    onChange={(ev) =>
-                      setPositionen((l) => l.map((x, j) => (j === i ? { ...x, text: ev.target.value } : x)))
-                    }
-                  />
-                  <PortalInput
-                    placeholder="Betrag €"
-                    inputMode="decimal"
-                    value={p.betrag}
-                    onChange={(ev) =>
-                      setPositionen((l) => l.map((x, j) => (j === i ? { ...x, betrag: ev.target.value } : x)))
-                    }
-                  />
-                </div>
-              ))}
             </>
           ) : null}
           {dialog.art === "update" ? (
@@ -393,31 +360,6 @@ export function PartnerEinsaetzeSection({ rechnungHinweis }: { rechnungHinweis?:
                 selectedFile={dateien[0] ?? null}
                 onChange={(files) => setDateien(files.slice(0, 1))}
               />
-              {positionen.map((p, i) => (
-                <div key={i} className="grid grid-cols-[minmax(0,1fr)_7.5rem] gap-2">
-                  <PortalInput
-                    placeholder="Leistung"
-                    value={p.text}
-                    onChange={(ev) =>
-                      setPositionen((l) => l.map((x, j) => (j === i ? { ...x, text: ev.target.value } : x)))
-                    }
-                  />
-                  <PortalInput
-                    placeholder="Betrag €"
-                    inputMode="decimal"
-                    value={p.betrag}
-                    onChange={(ev) =>
-                      setPositionen((l) => l.map((x, j) => (j === i ? { ...x, betrag: ev.target.value } : x)))
-                    }
-                  />
-                </div>
-              ))}
-              <PortalButton
-                variant="ghost"
-                onClick={() => setPositionen((l) => [...l, { text: "", betrag: "" }])}
-              >
-                Position hinzufügen
-              </PortalButton>
             </>
           ) : null}
         </PortalModalShell>

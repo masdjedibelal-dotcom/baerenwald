@@ -2905,6 +2905,7 @@ export type Database = {
           kontakt_vor_ort: string | null
           ort: string | null
           rechnung_betrag: number | null
+          rechnung_bezahlt_at: string | null
           rechnung_eingereicht_at: string | null
           rechnung_pdf_url: string | null
           rechnung_positionen: Json | null
@@ -2936,6 +2937,7 @@ export type Database = {
           kontakt_vor_ort?: string | null
           ort?: string | null
           rechnung_betrag?: number | null
+          rechnung_bezahlt_at?: string | null
           rechnung_eingereicht_at?: string | null
           rechnung_pdf_url?: string | null
           rechnung_positionen?: Json | null
@@ -2967,6 +2969,7 @@ export type Database = {
           kontakt_vor_ort?: string | null
           ort?: string | null
           rechnung_betrag?: number | null
+          rechnung_bezahlt_at?: string | null
           rechnung_eingereicht_at?: string | null
           rechnung_pdf_url?: string | null
           rechnung_positionen?: Json | null

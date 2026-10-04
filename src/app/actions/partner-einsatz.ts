@@ -33,6 +33,10 @@ export type PartnerEinsatz = {
   status: "gesendet" | "angenommen" | "abgelehnt" | "fertig";
   fertig_at: string | null;
   rechnung_eingereicht_at: string | null;
+  /** Bärenwald hat die Rechnung bezahlt (im CRM markiert). */
+  rechnung_bezahlt_at: string | null;
+  /** Vorgang im CRM abgeschlossen → im Portal als erledigt, keine Schritte mehr. */
+  vorgang_erledigt: boolean;
   /** Datum des letzten eigenen Updates. */
   letztes_update_at: string | null;
   /** Gemeldete Regie mit Rückmeldung von Bärenwald. */
@@ -60,7 +64,7 @@ async function partnerAuth() {
 }
 
 const SELECT =
-  "id, titel, anweisung, termin_von, termin_bis, ort, kontakt_vor_ort, ek_betrag, ek_art, status, fertig_at, rechnung_eingereicht_at";
+  "id, titel, anweisung, termin_von, termin_bis, ort, kontakt_vor_ort, ek_betrag, ek_art, status, fertig_at, rechnung_eingereicht_at, rechnung_bezahlt_at";
 
 /**
  * Datenschutz: Der Partner sieht nur, was ihn noch betrifft. Abgelehnte Einsätze, gelöschte
@@ -68,7 +72,8 @@ const SELECT =
  * Fertige Einsätze bleiben als Erledigt sichtbar.
  */
 async function sichtbareEinsatzIds(
-  rows: { id: string; auftrag_id: string; status: string }[]
+  rows: { id: string; auftrag_id: string; status: string }[],
+  erledigteAuftraege?: Set<string>
 ): Promise<Set<string>> {
   const offen = rows.filter((r) => r.status !== "abgelehnt");
   const auftragIds = Array.from(new Set(offen.map((r) => r.auftrag_id)));
@@ -86,6 +91,7 @@ async function sichtbareEinsatzIds(
     const leadId = String(a.lead_id ?? "");
     if (leadId && !aktiveLeads.has(leadId)) continue;
     auftragOk.set(String(a.id), { storniert: a.status === "storniert" });
+    if (a.status === "abgeschlossen") erledigteAuftraege?.add(String(a.id));
   }
   return new Set(
     offen
@@ -112,16 +118,18 @@ export async function listPartnerEinsaetze(): Promise<
     logDbError("app/actions/partner-einsatz:list", error);
     return { ok: false, error: "Einsätze konnten nicht geladen werden." };
   }
+  const erledigt = new Set<string>();
   const sichtbar = await sichtbareEinsatzIds(
     (alle ?? []).map((r) => ({
       id: r.id as string,
       auftrag_id: r.auftrag_id as string,
       status: r.status as string,
-    }))
+    })),
+    erledigt
   );
   const data = (alle ?? [])
     .filter((r) => sichtbar.has(r.id as string))
-    .map(({ auftrag_id: _a, ...r }) => r);
+    .map(({ auftrag_id, ...r }) => ({ ...r, vorgang_erledigt: erledigt.has(String(auftrag_id)) }));
   const ids = data.map((r) => r.id as string);
   const letzte = new Map<string, string>();
   const regie = new Map<string, PartnerEinsatz["regie"]>();
@@ -149,7 +157,8 @@ export async function listPartnerEinsaetze(): Promise<
   return {
     ok: true,
     einsaetze: data.map((r) => ({
-      ...(r as Omit<PartnerEinsatz, "ek_betrag" | "ek_art" | "letztes_update_at" | "regie">),
+      ...(r as Omit<PartnerEinsatz, "ek_betrag" | "ek_art" | "letztes_update_at" | "regie" | "rechnung_bezahlt_at">),
+      rechnung_bezahlt_at: (r.rechnung_bezahlt_at as string | null) ?? null,
       ek_betrag: r.ek_betrag == null ? null : Number(r.ek_betrag),
       ek_art: r.ek_art === "brutto" ? "brutto" : "netto",
       letztes_update_at: letzte.get(r.id as string) ?? null,
@@ -245,47 +254,27 @@ async function rechnungAusFormData(
   formData: FormData,
   pdfFeld: string
 ): Promise<{ ok: true; patch: Record<string, unknown> | null } | { ok: false; error: string }> {
+  // Rechnung = nur PDF-Upload (04.10.2026) — kein Rechnungsformular mehr
   const pdf = formData.get(pdfFeld);
-  const hatPdf = pdf instanceof File && pdf.size > 0;
-  let positionen: { text: string; betrag: number }[] = [];
-  try {
-    const raw = JSON.parse(String(formData.get("positionen") ?? "[]")) as unknown;
-    if (Array.isArray(raw)) {
-      positionen = raw
-        .map((p) => ({
-          text: String((p as { text?: unknown }).text ?? "").trim(),
-          betrag: Number(String((p as { betrag?: unknown }).betrag ?? "").replace(",", ".")) || 0,
-        }))
-        .filter((p) => p.text && p.betrag > 0);
-    }
-  } catch {
-    positionen = [];
-  }
-  if (!hatPdf && !positionen.length) return { ok: true, patch: null };
-  let pdfPath: string | null = null;
-  if (hatPdf) {
-    const err = validatePartnerPdfFile(pdf as File);
-    if (err) return { ok: false, error: err };
-    const up = await uploadDateien(handwerkerId, einsatzId, [pdf as File], "rechnung");
-    if (!up.ok) return up;
-    pdfPath = up.dateien[0]?.path ?? null;
-  }
-  const betrag = positionen.length
-    ? Math.round(positionen.reduce((sum, p) => sum + p.betrag, 0) * 100) / 100
-    : null;
+  if (!(pdf instanceof File) || pdf.size === 0) return { ok: true, patch: null };
+  const err = validatePartnerPdfFile(pdf);
+  if (err) return { ok: false, error: err };
+  const up = await uploadDateien(handwerkerId, einsatzId, [pdf], "rechnung");
+  if (!up.ok) return up;
   return {
     ok: true,
     patch: {
-      rechnung_pdf_url: pdfPath,
-      rechnung_positionen: positionen.length ? positionen : null,
-      rechnung_betrag: betrag,
+      rechnung_pdf_url: up.dateien[0]?.path ?? null,
+      rechnung_positionen: null,
+      rechnung_betrag: null,
       rechnung_eingereicht_at: new Date().toISOString(),
+      rechnung_bezahlt_at: null,
       rechnung_von: "partner",
     },
   };
 }
 
-/** Erledigt melden in einem Schritt: Text, Fotos und Rechnung (PDF oder Positionen) sind freiwillig. */
+/** Erledigt melden in einem Schritt: Text, Fotos und Rechnung (PDF) sind freiwillig. */
 export async function einsatzFertigMelden(formData: FormData): Promise<Result> {
   const auth = await partnerAuth();
   if (!auth.ok) return auth;
@@ -321,55 +310,21 @@ export async function einsatzFertigMelden(formData: FormData): Promise<Result> {
   return done();
 }
 
-/** Rechnung nach der Fertigmeldung: PDF oder Freitext-Positionen [{ text, betrag }]. */
+/** Rechnung hochladen (nur PDF), nach der Fertigmeldung. */
 export async function einsatzRechnungSenden(formData: FormData): Promise<Result> {
   const auth = await partnerAuth();
   if (!auth.ok) return auth;
   const einsatzId = String(formData.get("einsatzId") ?? "").trim();
-  const pdf = formData.get("pdf");
-  const hatPdf = pdf instanceof File && pdf.size > 0;
-  let positionen: { text: string; betrag: number }[] = [];
-  try {
-    const raw = JSON.parse(String(formData.get("positionen") ?? "[]")) as unknown;
-    if (Array.isArray(raw)) {
-      positionen = raw
-        .map((p) => ({
-          text: String((p as { text?: unknown }).text ?? "").trim(),
-          betrag: Number((p as { betrag?: unknown }).betrag) || 0,
-        }))
-        .filter((p) => p.text && p.betrag > 0);
-    }
-  } catch {
-    positionen = [];
-  }
   const e = await eigenerEinsatz(auth.handwerkerId, einsatzId);
   if (!e) return { ok: false, error: "Einsatz nicht gefunden." };
   if (e.status !== "fertig") return { ok: false, error: "Die Rechnung ist nach der Fertigmeldung möglich." };
-  if (e.rechnung_eingereicht_at) return { ok: false, error: "Die Rechnung ist bereits eingereicht." };
-  if (!hatPdf && !positionen.length) {
-    return { ok: false, error: "Bitte ein PDF hochladen oder Positionen mit Betrag angeben." };
-  }
-  let pdfPath: string | null = null;
-  if (hatPdf) {
-    const err = validatePartnerPdfFile(pdf as File);
-    if (err) return { ok: false, error: err };
-    const up = await uploadDateien(auth.handwerkerId, einsatzId, [pdf as File], "rechnung");
-    if (!up.ok) return up;
-    pdfPath = up.dateien[0]?.path ?? null;
-  }
-  const betrag = positionen.length
-    ? Math.round(positionen.reduce((s, p) => s + p.betrag, 0) * 100) / 100
-    : null;
-  const now = new Date().toISOString();
+  if (e.rechnung_eingereicht_at) return { ok: false, error: "Die Rechnung ist bereits hochgeladen." };
+  const re = await rechnungAusFormData(auth.handwerkerId, einsatzId, formData, "pdf");
+  if (!re.ok) return re;
+  if (!re.patch) return { ok: false, error: "Bitte die Rechnung als PDF hochladen." };
   const { error } = await supabaseAdmin
     .from("einsaetze")
-    .update({
-      rechnung_pdf_url: pdfPath,
-      rechnung_positionen: positionen.length ? positionen : null,
-      rechnung_betrag: betrag,
-      rechnung_eingereicht_at: now,
-      updated_at: now,
-    })
+    .update({ ...re.patch, updated_at: new Date().toISOString() })
     .eq("id", einsatzId)
     .eq("handwerker_id", auth.handwerkerId);
   if (error) {
