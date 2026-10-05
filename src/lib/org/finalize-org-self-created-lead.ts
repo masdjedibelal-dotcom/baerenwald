@@ -46,14 +46,16 @@ export async function finalizeOrgSelfCreatedLead(
       .maybeSingle();
     if (__dbErr301_2) logDbError('lib/org/finalize-org-self-created-lead:kunden', __dbErr301_2)
     let objektRule: { notfall_direkt: boolean | null } | null = null;
+    let objektFaelle: unknown = null;
     if (objektId) {
       const {data: obj, error: __dbErr302_3} = await supabaseAdmin
         .from("kunden_objekte")
-        .select("notfall_direkt")
+        .select("notfall_direkt, akut_fall_ids")
         .eq("id", objektId)
         .maybeSingle();
       if (__dbErr302_3) logDbError('lib/org/finalize-org-self-created-lead:kunden_objekte', __dbErr302_3)
       if (obj) {
+        objektFaelle = (obj as { akut_fall_ids?: unknown }).akut_fall_ids ?? null;
         objektRule = {
           notfall_direkt:
             obj.notfall_direkt == null ? null : Boolean(obj.notfall_direkt),
@@ -64,8 +66,9 @@ export async function finalizeOrgSelfCreatedLead(
       { notfall_direkt: org?.notfall_direkt !== false },
       objektRule
     );
+    // Eigene Sofortmaßnahme-Fälle des Objekts gehen vor (null = von der HV)
     const allowed = normalizeAkutFallIds(
-      (org as { akut_fall_ids?: unknown } | null)?.akut_fall_ids
+      objektFaelle ?? (org as { akut_fall_ids?: unknown } | null)?.akut_fall_ids
     );
     if (!allowed.length) {
       notfallDirektAktiv = false;

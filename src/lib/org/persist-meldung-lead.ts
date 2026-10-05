@@ -193,13 +193,16 @@ export async function persistMeldungLead(input: PersistMeldungLeadInput) {
     if (input.kunde_objekt_id) {
       const {data: obj, error: __dbErr354_2} = await supabaseAdmin
         .from("kunden_objekte")
-        .select("notfall_direkt")
+        .select("notfall_direkt, akut_fall_ids")
         .eq("id", input.kunde_objekt_id)
         .maybeSingle();
       if (__dbErr354_2) logDbError('lib/org/persist-meldung-lead:kunden_objekte', __dbErr354_2)
       if (obj?.notfall_direkt != null) {
         notfallDirektAktiv = Boolean(obj.notfall_direkt);
       }
+      // Eigene Sofortmaßnahme-Fälle des Objekts gehen vor (null = von der HV)
+      const objFaelle = (obj as { akut_fall_ids?: unknown } | null)?.akut_fall_ids
+      if (objFaelle != null) akutFallIds = normalizeAkutFallIds(objFaelle);
     }
   }
 

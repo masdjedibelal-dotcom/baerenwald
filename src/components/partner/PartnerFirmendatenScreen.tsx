@@ -3,7 +3,6 @@
 import { useRouter } from "next/navigation";
 import { useEffect,useRef,useState } from "react";
 
-import { PortalCheckbox } from "@/components/shared/PortalFormControls";
 import { updatePartnerProfil,uploadPartnerProfilLogo } from "@/app/actions/partner-profil";
 import { retryPendingPartnerAutoAngebote } from "@/app/actions/partner-auto-dokumente";
 import { PartnerRahmenvertragCard } from "@/components/partner/PartnerRahmenvertragCard";
@@ -89,7 +88,7 @@ function dash(v: string) {
 }
 
 /**
- * Handwerker — Tab „Daten“: Anschrift, Steuer, Bank in einem Bearbeiten/Speichern.
+ * Handwerker — Tab „Daten“: Anschrift und Kontakt (Steuer/Bank entfallen — Rechnungen nur noch als Upload).
  */
 export function PartnerFirmendatenScreen({
   handwerker,
@@ -285,35 +284,6 @@ export function PartnerFirmendatenScreen({
                 </EinstellungenPfList>
               </EinstellungenSectionCard>
 
-              <EinstellungenSectionCard title={HW_FIRMEN_SECTIONS.steuer}>
-                <EinstellungenPfList>
-                  <EinstellungenPfRow
-                    label="USt-IdNr."
-                    value={dash(saved.ustid)}
-                  />
-                  <EinstellungenPfRow
-                    label="Steuernummer"
-                    value={dash(saved.steuernr)}
-                  />
-                  <EinstellungenPfRow
-                    label="Handelsregister"
-                    value={dash(saved.hrb)}
-                  />
-                  <EinstellungenPfRow
-                    label="Kleinunternehmer §19 UStG"
-                    value={saved.kleinunternehmer ? "Ja" : "Nein"}
-                  />
-                </EinstellungenPfList>
-              </EinstellungenSectionCard>
-
-              <EinstellungenSectionCard title={HW_FIRMEN_SECTIONS.bank}>
-                <EinstellungenPfList>
-                  <EinstellungenPfRow label="IBAN" value={dash(saved.iban)} />
-                  <EinstellungenPfRow label="BIC" value={dash(saved.bic)} />
-                  <EinstellungenPfRow label="Bank" value={dash(saved.bank)} />
-                </EinstellungenPfList>
-              </EinstellungenSectionCard>
-
               <PortalKontoSicherheitPanel signOutHref="/partner/login" />
             </>
           );
@@ -324,7 +294,7 @@ export function PartnerFirmendatenScreen({
         <EinstellungenEditModal
           open
           title="Daten bearbeiten"
-          subtitle="Anschrift, Steuer und Bank — Speichern über den Button unten."
+          subtitle="Anschrift und Kontakt — Speichern über den Button unten."
           onClose={closeEdit}
           onSave={() => void onSaveEdit()}
           saving={saving}
@@ -386,65 +356,6 @@ export function PartnerFirmendatenScreen({
             E-Mail-Änderung nur über Support.
           </p>
 
-          <p className="portal-liste-eyebrow !mb-0 pt-2">
-            {HW_FIRMEN_SECTIONS.steuer}
-          </p>
-          <EinstellungenGrid2>
-            <EinstellungenEdField
-              label="USt-IdNr."
-              value={edit.ustid}
-              onChange={(v) => setEdit({ ...edit, ustid: v })}
-            />
-            <EinstellungenEdField
-              label="Steuernummer"
-              value={edit.steuernr}
-              onChange={(v) => setEdit({ ...edit, steuernr: v })}
-            />
-          </EinstellungenGrid2>
-          <EinstellungenEdField
-            label="Handelsregister"
-            value={edit.hrb}
-            onChange={(v) => setEdit({ ...edit, hrb: v })}
-          />
-          <label className="flex cursor-pointer items-start gap-2.5 rounded-field border border-border-default px-3 py-2.5">
-            <PortalCheckbox
-              className="mt-0.5"
-              checked={edit.kleinunternehmer}
-              onChange={(e) =>
-                setEdit({ ...edit, kleinunternehmer: e.target.checked })
-              }
-            />
-            <span className="portal-text-body leading-snug text-text-secondary">
-              <span className="font-semibold text-text-primary">
-                Kleinunternehmer §19 UStG
-              </span>
-              <span className="portal-text-meta mt-0.5 block">
-                Rechnungen ohne MwSt-Ausweis, mit gesetzlichem Hinweis.
-              </span>
-            </span>
-          </label>
-
-          <p className="portal-liste-eyebrow !mb-0 pt-2">
-            {HW_FIRMEN_SECTIONS.bank}
-          </p>
-          <EinstellungenEdField
-            label="IBAN"
-            value={edit.iban}
-            onChange={(v) => setEdit({ ...edit, iban: v })}
-            autoComplete="off"
-          />
-          <EinstellungenGrid2>
-            <EinstellungenEdField
-              label="BIC"
-              value={edit.bic}
-              onChange={(v) => setEdit({ ...edit, bic: v })}
-            />
-            <EinstellungenEdField
-              label="Bank"
-              value={edit.bank}
-              onChange={(v) => setEdit({ ...edit, bank: v })}
-            />
-          </EinstellungenGrid2>
         </EinstellungenEditModal>
       ) : null}
     </>

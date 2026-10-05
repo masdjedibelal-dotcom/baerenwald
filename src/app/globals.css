@@ -6995,3 +6995,37 @@ select {
   align-items: center;
   box-sizing: border-box;
 }
+
+/* Partner-Startseite (05.10.2026): Kennzahlen + Reiter, auch ohne Einsätze */
+.partner-kpis {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  margin-bottom: 12px;
+}
+.partner-kpi {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 14px 16px;
+  border: 1px solid var(--p2-line);
+  border-radius: 14px;
+  background: var(--p2-surface-card);
+}
+.partner-kpi__wert { font-size: 22px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.partner-kpi__label { font-size: 13px; color: var(--p2-sub); }
+.partner-ansicht { display: flex; gap: 6px; margin-bottom: 14px; }
+.partner-ansicht__tab {
+  padding: 6px 12px;
+  border-radius: 999px;
+  border: 1px solid var(--p2-line);
+  background: transparent;
+  font-size: 13px;
+  color: var(--p2-sub);
+  cursor: pointer;
+}
+.partner-ansicht__tab.is-on {
+  border-color: var(--p2-primary);
+  color: var(--p2-primary);
+  font-weight: 600;
+}

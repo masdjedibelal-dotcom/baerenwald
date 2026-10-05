@@ -128,6 +128,7 @@ function FotoAuswahl({
  */
 export function PartnerEinsaetzeSection({ rechnungHinweis }: { rechnungHinweis?: ReactNode } = {}) {
   const [einsaetze, setEinsaetze] = useState<PartnerEinsatz[] | null>(null);
+  const [ansicht, setAnsicht] = useState<"aktuell" | "erledigt">("aktuell");
   const [dialog, setDialog] = useState<Dialog>(null);
   const [busy, setBusy] = useState(false);
   const [grund, setGrund] = useState("");
@@ -216,7 +217,15 @@ export function PartnerEinsaetzeSection({ rechnungHinweis }: { rechnungHinweis?:
     ausfuehren(einsatzRechnungSenden(fd), "Rechnung hochgeladen");
   }
 
-  if (!einsaetze || einsaetze.length === 0) return null;
+  // Startseite nie leer: Kennzahlen und Hinweis auch ohne Einsätze
+  const alle = einsaetze ?? [];
+  const istErledigt = (e: PartnerEinsatz) => e.vorgang_erledigt || e.status === "fertig";
+  const kpi = {
+    neu: alle.filter((e) => e.status === "gesendet").length,
+    inArbeit: alle.filter((e) => e.status === "angenommen" && !istErledigt(e)).length,
+    erledigt: alle.filter(istErledigt).length,
+  };
+  const sichtbar = alle.filter((e) => (ansicht === "erledigt" ? istErledigt(e) : !istErledigt(e)));
 
   const titel =
     dialog?.art === "ablehnen"
@@ -238,9 +247,46 @@ export function PartnerEinsaetzeSection({ rechnungHinweis }: { rechnungHinweis?:
 
   return (
     <>
+      <div className="partner-kpis" role="list" aria-label="Ihre Einsätze in Zahlen">
+        {[
+          { label: "Neu", wert: kpi.neu },
+          { label: "In Arbeit", wert: kpi.inArbeit },
+          { label: "Erledigt", wert: kpi.erledigt },
+        ].map((k) => (
+          <div key={k.label} className="partner-kpi" role="listitem">
+            <span className="partner-kpi__wert">{einsaetze == null ? "–" : k.wert}</span>
+            <span className="partner-kpi__label">{k.label}</span>
+          </div>
+        ))}
+      </div>
       <PortalDetailCard title="Ihre Einsätze">
+        <div className="partner-ansicht" role="tablist" aria-label="Ansicht">
+          {(["aktuell", "erledigt"] as const).map((a) => (
+            <button
+              key={a}
+              type="button"
+              role="tab"
+              aria-selected={ansicht === a}
+              className={`partner-ansicht__tab${ansicht === a ? " is-on" : ""}`}
+              onClick={() => setAnsicht(a)}
+            >
+              {a === "aktuell" ? `Aktuell (${kpi.neu + kpi.inArbeit})` : `Erledigt (${kpi.erledigt})`}
+            </button>
+          ))}
+        </div>
+        {einsaetze == null ? (
+          <p className="m-0 text-[var(--p2-sub)]">Wird geladen …</p>
+        ) : sichtbar.length === 0 ? (
+          <p className="m-0 text-[var(--p2-sub)]">
+            {ansicht === "aktuell"
+              ? kpi.erledigt > 0
+                ? "Keine aktuellen Einsätze. Neue Einsätze von Bärenwald erscheinen hier."
+                : "Noch keine Einsätze. Sobald Bärenwald Ihnen einen Einsatz schickt, erscheint er hier."
+              : "Noch keine erledigten Einsätze."}
+          </p>
+        ) : null}
         <div className="flex flex-col gap-4">
-          {einsaetze.map((e) => {
+          {sichtbar.map((e) => {
             const st = e.vorgang_erledigt ? STATUS.fertig : STATUS[e.status];
             const wann = [datum(e.termin_von), datum(e.termin_bis)].filter(Boolean).join(" bis ");
             return (

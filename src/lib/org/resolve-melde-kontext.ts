@@ -37,6 +37,8 @@ export type MeldeKontext = {
     ort: string | null;
     melde_slug: string;
     einheiten_hinweis: string | null;
+    /** Eigene Sofortmaßnahme-Fälle des Objekts; null = von der HV übernehmen. */
+    akut_fall_ids: string[] | null;
     /** Portal 2.0 Anzeigeform (Mock MELDE_OBJEKTE). */
     display: MeldeObjektDisplay;
   } | null;
@@ -90,6 +92,7 @@ type ObjektRow = {
   melde_slug: string | null;
   melde_aktiv: boolean | null;
   einheiten_hinweis: string | null;
+  akut_fall_ids?: unknown;
 };
 
 function formatAdresse(
@@ -126,6 +129,7 @@ function mapObjekt(row: ObjektRow): NonNullable<MeldeKontext["objekt"]> {
     ort: row.ort,
     melde_slug: effectiveMeldeSlug(row),
     einheiten_hinweis: row.einheiten_hinweis,
+    akut_fall_ids: row.akut_fall_ids == null ? null : normalizeAkutFallIds(row.akut_fall_ids),
     display,
   };
 }
@@ -207,7 +211,7 @@ export async function resolveMeldeKontext(
   const {data: objekteRowsRaw, error: __dbErr367_1} = await supabaseAdmin
     .from("kunden_objekte")
     .select(
-      "id, titel, strasse, hausnummer, plz, ort, melde_slug, melde_aktiv, einheiten_hinweis"
+      "id, titel, strasse, hausnummer, plz, ort, melde_slug, melde_aktiv, einheiten_hinweis, akut_fall_ids"
     )
     .eq("kunde_id", org.id)
     .order("titel", { ascending: true });
@@ -218,7 +222,7 @@ export async function resolveMeldeKontext(
   const {data: objekteRowsReloaded, error: __dbErr368_2} = await supabaseAdmin
     .from("kunden_objekte")
     .select(
-      "id, titel, strasse, hausnummer, plz, ort, melde_slug, melde_aktiv, einheiten_hinweis"
+      "id, titel, strasse, hausnummer, plz, ort, melde_slug, melde_aktiv, einheiten_hinweis, akut_fall_ids"
     )
     .eq("kunde_id", org.id)
     .order("titel", { ascending: true });
