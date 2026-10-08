@@ -9,6 +9,8 @@ import {
   isBautagebuchPdfUrl,
 } from "@/lib/partner/bautagebuch-anhang";
 import { cn } from "@/lib/utils";
+import { FormatText } from "@/components/shared/FormatText";
+import { stripHtmlToPlainText } from "@/lib/portal/portal-display";
 
 export type BautagebuchCardEintrag = {
   id: string;
@@ -154,7 +156,7 @@ export function BautagebuchCardFeed({
                     {desc ? (
                       open ? null : (
                         <p className="portal-text-body mt-1 line-clamp-2 text-text-secondary">
-                          {desc}
+                          {stripHtmlToPlainText(desc)}
                         </p>
                       )
                     ) : null}
@@ -163,9 +165,7 @@ export function BautagebuchCardFeed({
                   {open ? (
                     <div className="space-y-3 border-t border-border-light px-3.5 pb-3.5 pt-3">
                       {desc ? (
-                        <p className="portal-text-body whitespace-pre-wrap text-text-secondary">
-                          {desc}
-                        </p>
+                        <FormatText text={desc} className="portal-text-body text-text-secondary" />
                       ) : (
                         <p className="portal-text-meta text-text-tertiary">
                           Kein Text

@@ -1,6 +1,7 @@
 "use client";
 
 import { cn } from "@/lib/utils";
+import { FormatText } from "@/components/shared/FormatText";
 import { moneyEur } from "@/lib/portal2/hv-detail";
 import type {
   LeistungenMode,
@@ -80,9 +81,7 @@ export function VorgangLeistungenListe({
                   </p>
                 ) : null}
                 {p.beschreibung ? (
-                  <p className="portal-text-meta mt-0.5 text-text-secondary">
-                    {p.beschreibung}
-                  </p>
+                  <FormatText text={p.beschreibung} className="portal-text-meta mt-0.5 text-text-secondary" />
                 ) : null}
                 {p.aenderungBadge && p.aenderungBadge !== "entfernt" ? (
                   <p className="portal-text-meta mt-1 text-warning-text">
