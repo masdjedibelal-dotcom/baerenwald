@@ -7,6 +7,7 @@ import {
 } from "@/lib/portal/portal-anfrage-display";
 import type { PortalDetailSection } from "@/lib/portal/portal-display";
 import { stripHtmlToPlainText } from "@/lib/portal/portal-display";
+import { gesamtrabattAbzugFromModus, gesamtrabattMetaAusZeile } from "@/lib/shared-domain/gesamtrabatt";
 import type { PortalObjekt } from "@/lib/portal/portal-objekt";
 import { portalObjektSection } from "@/lib/portal/portal-objekt";
 import { fmtPortalDate } from "@/lib/shared/portal-detail-format";
@@ -29,6 +30,8 @@ export type PortalAngebotPositionDisplay = {
   preisBrutto: number;
   /** Zeilensumme netto (wie CRM Leistungen-Tab) */
   preisNetto?: number;
+  /** Gesamtnachlass-Zeile (negativer Betrag) */
+  nachlass?: boolean;
 };
 
 const SKIP_POSITION_SLUGS = new Set(["__freitext__", "__gesamtrabatt__"]);
@@ -164,9 +167,14 @@ export function parseAngebotPositionenMitPreis(
   if (!Array.isArray(data)) return [];
 
   const out: PortalAngebotPositionDisplay[] = [];
+  let nachlass: Record<string, unknown> | null = null;
   for (const item of data) {
     if (!item || typeof item !== "object") continue;
     const row = item as Record<string, unknown>;
+    if (String(row.gewerk_slug ?? "").trim() === "__gesamtrabatt__") {
+      nachlass = row;
+      continue;
+    }
     if (!isKundenLeistungPosition(row)) continue;
 
     const title = positionTitle(row);
@@ -189,6 +197,23 @@ export function parseAngebotPositionenMitPreis(
       preisNetto: preisNetto > 0 ? preisNetto : undefined,
     });
   }
+
+  // Gesamtnachlass wie im CRM: aus Modus + Wert (z. B. prozent:7) vom Artikel-Netto
+  if (nachlass) {
+    const artikelNetto = out.reduce((s, p) => s + (p.preisNetto ?? 0), 0);
+    const artikelBrutto = out.reduce((s, p) => s + p.preisBrutto, 0);
+    const { modus, wert } = gesamtrabattMetaAusZeile(nachlass);
+    const abzug = gesamtrabattAbzugFromModus(modus, wert, artikelNetto, artikelBrutto);
+    if (abzug > 0) {
+      out.push({
+        id: String(nachlass.id ?? "nachlass"),
+        title: stripHtmlToPlainText(String(nachlass.leistung ?? "")).trim() || "Nachlass",
+        preisBrutto: -Math.round(abzug * (1 + defaultMwst / 100) * 100) / 100,
+        preisNetto: -abzug,
+        nachlass: true,
+      });
+    }
+  }
   return out;
 }
 
@@ -201,8 +226,8 @@ export function resolveAngebotGesamtBrutto(opts: {
 }): number | undefined {
   const defaultMwst = opts.defaultMwst ?? 19;
   const parsed = parseAngebotPositionenMitPreis(opts.positionen, defaultMwst);
-  const withPrice = parsed.filter((p) => p.preisBrutto > 0);
-  if (withPrice.length) {
+  const withPrice = parsed.filter((p) => p.preisBrutto > 0 || p.nachlass);
+  if (withPrice.some((p) => p.preisBrutto > 0)) {
     const sum = withPrice.reduce((s, p) => s + p.preisBrutto, 0);
     return Math.round(sum * 100) / 100;
   }

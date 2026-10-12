@@ -18,10 +18,14 @@ export type PortalPartnerDokuEntry = {
 /** Welche Quellen in den Portal-Feed. */
 export type PortalDokuSources = "crm" | "partner" | "all";
 
+/**
+ * CRM-Tagebuch-Einträge (`crm_intern`) nicht von hier: das CRM legt für jeden Eintrag
+ * eine Kunden-Kopie in `auftrag_timeline` (typ bautagebuch) an — sonst stünde er doppelt im Feed.
+ */
 const SOURCE_ERFASST: Record<PortalDokuSources, string[]> = {
-  crm: ["crm_intern"],
+  crm: [],
   partner: ["partner_app", "eigenbetrieb_app"],
-  all: ["partner_app", "eigenbetrieb_app", "crm_intern"],
+  all: ["partner_app", "eigenbetrieb_app"],
 };
 
 /**
@@ -42,6 +46,7 @@ export async function loadPartnerDokumentationByAuftragIds(
 
   const sources = opts?.sources ?? "crm";
   const erfasstVon = SOURCE_ERFASST[sources];
+  if (!erfasstVon.length) return out;
 
   const { data: positionen, error: posErr } = await supabaseAdmin
     .from("auftrag_positionen")

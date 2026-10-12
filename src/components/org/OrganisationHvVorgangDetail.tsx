@@ -816,7 +816,7 @@ export function OrganisationHvVorgangDetail({
       p: PortalAngebotPositionDisplay | PortalAuftragPositionDisplay
     ): HvDetailPosition => {
       const netto =
-        typeof p.preisNetto === "number" && p.preisNetto > 0
+        typeof p.preisNetto === "number" && (p.preisNetto > 0 || p.nachlass)
           ? p.preisNetto
           : p.preisBrutto > 0
             ? p.preisBrutto / 1.19

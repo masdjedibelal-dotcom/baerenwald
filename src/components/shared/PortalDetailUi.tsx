@@ -312,7 +312,7 @@ export function PortalDetailLeistungenPreisListe({
           const isEntfernt = Boolean(p.entfernt || p.aenderungBadge === "entfernt");
           const geaendert = p.aenderungBadge === "geaendert";
           const preisLabel =
-            typeof p.preisBrutto === "number" && p.preisBrutto >= 0
+            typeof p.preisBrutto === "number" && Number.isFinite(p.preisBrutto)
               ? formatEuro(p.preisBrutto)
               : "Preis folgt";
           const ampel = resolvePortalLeistungStatusAmpel({

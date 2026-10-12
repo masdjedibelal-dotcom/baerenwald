@@ -1,13 +1,19 @@
 import type { PortalAngebotPositionDisplay } from "@/lib/portal/portal-angebot-display";
+import { gesamtrabattAbzugFromModus, gesamtrabattMetaAusZeile } from "@/lib/shared-domain/gesamtrabatt";
 import { positionBetrag } from "@/lib/shared-domain/regie-betrag";
 import { stripHtmlToPlainText } from "@/lib/portal/portal-display";
 import { resolveStundensatz } from "@/lib/portal/stundensatz-ansicht";
 
 export type KundeAuftragAenderungTyp = "neu" | "geaendert" | "entfernt";
 
+const ZEILE_SLUG_FREITEXT = "__freitext__";
+const ZEILE_SLUG_GESAMTRABATT = "__gesamtrabatt__";
+
 export type KundeAuftragPositionInput = {
   id: string;
   gewerk_name?: string | null;
+  /** `__gesamtrabatt__` = Gesamtnachlass, `__freitext__` = Textzeile */
+  gewerk_slug?: string | null;
   leistung_name?: string | null;
   beschreibung?: string | null;
   menge?: number | null;
@@ -161,8 +167,15 @@ export function buildKundeAuftragPositionenDisplay(
 ): PortalAuftragPositionDisplay[] {
   const angebotById = parseAngebotPositionenById(angebotPositionenRaw);
   const out: PortalAuftragPositionDisplay[] = [];
+  let nachlass: KundeAuftragPositionInput | Record<string, unknown> | null = null;
 
   for (const pos of positionen) {
+    const slug = (pos.gewerk_slug ?? "").trim();
+    if (slug === ZEILE_SLUG_FREITEXT) continue;
+    if (slug === ZEILE_SLUG_GESAMTRABATT) {
+      nachlass = pos;
+      continue;
+    }
     if (!positionSichtbarFuerKunde(pos)) continue;
     const typ = mapAenderungTyp(pos.aenderung_typ ?? null);
     const title = positionTitle(pos);
@@ -208,14 +221,46 @@ export function buildKundeAuftragPositionenDisplay(
     });
   }
 
+  // Gesamtnachlass wie im CRM: aus Modus + Wert (z. B. prozent:7) vom Artikel-Netto
+  if (!nachlass) {
+    nachlass =
+      Array.from(angebotById.values()).find(
+        (r) => String(r.gewerk_slug ?? "").trim() === ZEILE_SLUG_GESAMTRABATT
+      ) ?? null;
+  }
+  if (nachlass) {
+    const aktiv = out.filter((p) => !p.entfernt);
+    const artikelNetto = round2(aktiv.reduce((s, p) => s + (p.preisNetto ?? 0), 0));
+    const artikelBrutto = round2(aktiv.reduce((s, p) => s + p.preisBrutto, 0));
+    const { modus, wert } = gesamtrabattMetaAusZeile(nachlass);
+    const abzug = gesamtrabattAbzugFromModus(modus, wert, artikelNetto, artikelBrutto);
+    if (abzug > 0) {
+      const titel =
+        stripHtmlToPlainText(
+          String(
+            (nachlass as { leistung_name?: unknown; leistung?: unknown }).leistung_name ??
+              (nachlass as { leistung?: unknown }).leistung ??
+              ""
+          )
+        ) || "Nachlass";
+      out.push({
+        id: String(nachlass.id ?? "nachlass"),
+        title: titel,
+        preisBrutto: -round2(abzug * 1.19),
+        preisNetto: -abzug,
+        nachlass: true,
+      });
+    }
+  }
+
   return out;
 }
 
 export function resolveKundeAuftragGesamtBrutto(
   items: PortalAuftragPositionDisplay[]
 ): number | undefined {
-  const active = items.filter((p) => !p.entfernt && p.preisBrutto > 0);
-  if (!active.length) return undefined;
+  const active = items.filter((p) => !p.entfernt && (p.preisBrutto > 0 || p.nachlass));
+  if (!active.some((p) => p.preisBrutto > 0)) return undefined;
   return round2(active.reduce((s, p) => s + p.preisBrutto, 0));
 }
 
@@ -225,6 +270,7 @@ export function mapPortalAuftragPositionRow(
   return {
     id: String(raw.id),
     gewerk_name: (raw.gewerk_name as string | null) ?? null,
+    gewerk_slug: (raw.gewerk_slug as string | null) ?? null,
     leistung_name: (raw.leistung_name as string | null) ?? null,
     beschreibung: (raw.beschreibung as string | null) ?? null,
     menge: raw.menge != null ? Number(raw.menge) : null,
