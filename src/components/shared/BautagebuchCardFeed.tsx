@@ -171,39 +171,41 @@ export function BautagebuchCardFeed({
                           Kein Text
                         </p>
                       )}
-                      {imageFotos.length > 0 || pdfFotos.length > 0 ? (
-                        <div className="flex flex-wrap gap-2">
-                          {imageFotos.map((url, i) => (
-                            <PortalButton
-                              variant="ghost"
-                              action={false}
-                              key={`${e.id}-foto-${i}`}
-                              type="button"
-                              className="portal-bt-card-foto block h-[4.5rem] w-[4.5rem] overflow-hidden rounded-sheet border border-border-light bg-muted/20 p-0 sm:h-24 sm:w-24"
-                              onClick={() => openLightbox(imageFotos, i)}
-                              aria-label={`${bautagebuchAnhangLabel(url, i)} vergrößern`}
-                            >
-                              {/* eslint-disable-next-line @next/next/no-img-element */}
-                              <img
-                                src={url}
-                                alt={bautagebuchAnhangLabel(url, i)}
-                                className="h-full w-full object-cover"
-                              />
-                            </PortalButton>
-                          ))}
-                          {pdfFotos.map((url, i) => (
-                            <a
-                              key={`${e.id}-pdf-${i}`}
-                              href={url}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="portal-text-body inline-flex min-h-[44px] items-center gap-1.5 rounded-card border border-border-light bg-surface-card px-3 py-2 font-medium text-brand-primary hover:bg-muted/30"
-                            >
-                              {bautagebuchAnhangLabel(url, i)}
-                            </a>
-                          ))}
-                        </div>
-                      ) : null}
+                    </div>
+                  ) : null}
+
+                  {/* Fotos immer sichtbar (nicht erst nach dem Aufklappen) — Tipp öffnet groß */}
+                  {imageFotos.length > 0 || pdfFotos.length > 0 ? (
+                    <div className="flex flex-wrap gap-2 px-3.5 pb-3.5">
+                      {imageFotos.map((url, i) => (
+                        <PortalButton
+                          variant="ghost"
+                          action={false}
+                          key={`${e.id}-foto-${i}`}
+                          type="button"
+                          className="portal-bt-card-foto block h-[4.5rem] w-[4.5rem] overflow-hidden rounded-sheet border border-border-light bg-muted/20 p-0 sm:h-24 sm:w-24"
+                          onClick={() => openLightbox(imageFotos, i)}
+                          aria-label={`${bautagebuchAnhangLabel(url, i)} vergrößern`}
+                        >
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img
+                            src={url}
+                            alt={bautagebuchAnhangLabel(url, i)}
+                            className="h-full w-full object-cover"
+                          />
+                        </PortalButton>
+                      ))}
+                      {pdfFotos.map((url, i) => (
+                        <a
+                          key={`${e.id}-pdf-${i}`}
+                          href={url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="portal-text-body inline-flex min-h-[44px] items-center gap-1.5 rounded-card border border-border-light bg-surface-card px-3 py-2 font-medium text-brand-primary hover:bg-muted/30"
+                        >
+                          {bautagebuchAnhangLabel(url, i)}
+                        </a>
+                      ))}
                     </div>
                   ) : null}
                 </div>
