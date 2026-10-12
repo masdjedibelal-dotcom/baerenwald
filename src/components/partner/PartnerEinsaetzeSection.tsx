@@ -11,10 +11,12 @@ import {
   einsatzRechnungSenden,
   listPartnerEinsaetze,
   type EinsatzMeldungTyp,
+  type EinsatzUploadOrdner,
   type PartnerEinsatz,
 } from "@/app/actions/partner-einsatz";
 import { PortalButton } from "@/components/portal/PortalButton";
 import { FileUploadField } from "@/components/shared/FileUploadField";
+import { ladeEinsatzDateienHoch } from "@/lib/partner/einsatz-upload";
 import { PortalDetailCard } from "@/components/shared/PortalDetailCard";
 import { PortalField } from "@/components/shared/PortalField";
 import { PortalInput, PortalSelect, PortalTextarea } from "@/components/shared/PortalFormControls";
@@ -87,6 +89,9 @@ function FotoAuswahl({
       {dateien.length < max ? (
         <FileUploadField
           label={label}
+          hint="PDF oder Foto · max. 10 MB je Datei"
+          maxBytes={10 * 1024 * 1024}
+          bilderVerkleinern
           accept={FOTO_ACCEPT}
           multiple
           size="compact"
@@ -178,43 +183,60 @@ export function PartnerEinsaetzeSection({ rechnungHinweis }: { rechnungHinweis?:
     ausfuehren(einsatzAnnehmen(e.id), "Einsatz angenommen");
   }
 
-  function bestaetigen() {
+  /** Dateien direkt in den Speicher laden; bei Fehler Meldung und null. */
+  async function hochladen(einsatzId: string, ordner: EinsatzUploadOrdner, files: File[]) {
+    const r = await ladeEinsatzDateienHoch(einsatzId, ordner, files).catch(() => ({
+      ok: false as const,
+      error: "Hochladen fehlgeschlagen. Bitte Verbindung prüfen und erneut versuchen.",
+    }));
+    if (!r.ok) {
+      portalToastError(r.error);
+      return null;
+    }
+    return r.dateien;
+  }
+
+  async function bestaetigen() {
     if (!dialog) return;
     const id = dialog.einsatz.id;
     if (dialog.art === "ablehnen") {
-      ausfuehren(einsatzAblehnen(id, grund), "Einsatz abgelehnt");
+      await ausfuehren(einsatzAblehnen(id, grund), "Einsatz abgelehnt");
       return;
     }
-    const fd = new FormData();
-    fd.set("einsatzId", id);
+    // Erst die Dateien hochladen (direkt in den Speicher), dann den Schritt speichern
+    setBusy(true);
     if (dialog.art === "fertig") {
-      fd.set("text", text);
-      for (const f of dateien) fd.append("dateien", f);
-      // Rechnung gleich mit (freiwillig — sonst später „Rechnung hochladen“)
-      if (rechnungPdf) fd.set("rechnungPdf", rechnungPdf);
-      ausfuehren(
-        einsatzFertigMelden(fd),
+      const fotos = await hochladen(id, "fertig", dateien);
+      const rechnung = fotos && rechnungPdf ? await hochladen(id, "rechnung", [rechnungPdf]) : [];
+      if (!fotos || !rechnung) return setBusy(false);
+      await ausfuehren(
+        einsatzFertigMelden({ einsatzId: id, text, dateien: fotos, rechnung: rechnung[0] ?? null }),
         rechnungPdf ? "Erledigt gemeldet, Rechnung hochgeladen" : "Als erledigt gemeldet"
       );
       return;
     }
     if (dialog.art === "update" || dialog.art === "regie") {
       const typ: EinsatzMeldungTyp = dialog.art;
-      fd.set("typ", typ);
-      fd.set("text", text);
-      if (typ === "regie") fd.set("stunden", stunden);
-      for (const f of dateien) fd.append("dateien", f);
-      ausfuehren(einsatzMitteilungSenden(fd), typ === "regie" ? "Regie gemeldet" : "Update gesendet");
+      const hoch = await hochladen(id, "mitteilung", dateien);
+      if (!hoch) return setBusy(false);
+      await ausfuehren(
+        einsatzMitteilungSenden({ einsatzId: id, typ, text, stunden, dateien: hoch }),
+        typ === "regie" ? "Regie gemeldet" : "Update gesendet"
+      );
       return;
     }
     if (dialog.art === "dokument") {
-      if (dateien[0]) fd.set("datei", dateien[0]);
-      fd.set("art", dokArt);
-      ausfuehren(einsatzDokumentHochladen(fd), "Dokument hochgeladen");
+      const hoch = await hochladen(id, dokArt === "rechnung" ? "rechnung" : "dokument", dateien.slice(0, 1));
+      if (!hoch) return setBusy(false);
+      await ausfuehren(
+        einsatzDokumentHochladen({ einsatzId: id, art: dokArt, datei: hoch[0] ?? null }),
+        "Dokument hochgeladen"
+      );
       return;
     }
-    if (dateien[0]) fd.set("pdf", dateien[0]);
-    ausfuehren(einsatzRechnungSenden(fd), "Rechnung hochgeladen");
+    const hoch = await hochladen(id, "rechnung", dateien.slice(0, 1));
+    if (!hoch) return setBusy(false);
+    await ausfuehren(einsatzRechnungSenden({ einsatzId: id, rechnung: hoch[0] ?? null }), "Rechnung hochgeladen");
   }
 
   // Startseite nie leer: Kennzahlen und Hinweis auch ohne Einsätze
@@ -394,6 +416,8 @@ export function PartnerEinsaetzeSection({ rechnungHinweis }: { rechnungHinweis?:
               <FileUploadField
                 label="Rechnung als PDF"
                 accept="application/pdf"
+                hint="PDF · max. 10 MB"
+                maxBytes={10 * 1024 * 1024}
                 size="compact"
                 selectedFile={rechnungPdf}
                 onChange={(files) => setRechnungPdf(files[0] ?? null)}
@@ -435,6 +459,9 @@ export function PartnerEinsaetzeSection({ rechnungHinweis }: { rechnungHinweis?:
               <FileUploadField
                 label={dokArt === "rechnung" ? "Rechnung als PDF" : "Datei"}
                 accept={dokArt === "rechnung" ? "application/pdf" : "application/pdf,image/*"}
+                hint={dokArt === "rechnung" ? "PDF · max. 10 MB" : "PDF oder Foto · max. 10 MB"}
+                maxBytes={10 * 1024 * 1024}
+                bilderVerkleinern
                 size="compact"
                 selectedFile={dateien[0] ?? null}
                 onChange={(files) => setDateien(files.slice(0, 1))}
@@ -447,6 +474,8 @@ export function PartnerEinsaetzeSection({ rechnungHinweis }: { rechnungHinweis?:
               <FileUploadField
                 label="Rechnung als PDF"
                 accept="application/pdf"
+                hint="PDF · max. 10 MB"
+                maxBytes={10 * 1024 * 1024}
                 size="compact"
                 selectedFile={dateien[0] ?? null}
                 onChange={(files) => setDateien(files.slice(0, 1))}

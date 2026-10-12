@@ -1,4 +1,5 @@
 "use client";
+import { optimizeImageForUpload } from "@/lib/media/optimize-image-for-upload";
 import { safeAction } from "@/lib/actions/safe-action";
 
 import type { ReactNode } from "react";
@@ -253,7 +254,20 @@ export function PartnerStammDokumenteListe({
     if (draft.beschreibung.trim()) {
       fd.set("beschreibung", draft.beschreibung.trim());
     }
-    fd.set("file", draft.file);
+    // Fotos verkleinern — Uploads laufen über den Server (Netlify: ~4,5 MB je Anfrage)
+    let datei = draft.file;
+    if (datei.type.startsWith("image/")) {
+      try {
+        datei = await optimizeImageForUpload(datei, { maxEdge: 2400 });
+      } catch {
+        /* Original behalten */
+      }
+    }
+    if (datei.size > 4 * 1024 * 1024) {
+      setFormError(`Die Datei ist zu groß (${(datei.size / 1024 / 1024).toFixed(1).replace(".", ",")} MB) — höchstens 4 MB.`);
+      return;
+    }
+    fd.set("file", datei);
     await runUpload(async () => {
       const res = await uploadPartnerComplianceDokument(fd);
       if (!res.ok) {
@@ -352,7 +366,9 @@ export function PartnerStammDokumenteListe({
         </label>
         <FileUploadField
           label="Datei"
-          hint="PDF oder Foto"
+          hint="PDF oder Foto · max. 4 MB"
+          maxBytes={4 * 1024 * 1024}
+          bilderVerkleinern
           accept="application/pdf,image/jpeg,image/png,image/webp"
           size="compact"
           disabled={saving}

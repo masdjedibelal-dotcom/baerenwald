@@ -23,7 +23,16 @@ type FileUploadFieldProps = {
   className?: string;
   /** Kompakte Dropzone (z. B. Logo, Inline-Slots). Default = globale Foto-/Datei-Zone. */
   size?: "default" | "compact";
+  /** Größte erlaubte Datei — zu große werden sofort mit Meldung abgelehnt. */
+  maxBytes?: number;
+  /** Fotos werden vor dem Upload verkleinert → für Fotos gilt die Grenze nicht. */
+  bilderVerkleinern?: boolean;
 };
+
+function mbText(bytes: number): string {
+  const wert = bytes / 1024 / 1024;
+  return `${Number.isInteger(wert) ? wert : wert.toFixed(1).replace(".", ",")} MB`;
+}
 
 function isImageFile(file: File | null | undefined): boolean {
   if (!file) return false;
@@ -44,6 +53,8 @@ export function FileUploadField({
   onChange,
   className,
   size = "default",
+  maxBytes,
+  bilderVerkleinern = false,
 }: FileUploadFieldProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const isMobile = useIsPortalMobile();
@@ -71,6 +82,15 @@ export function FileUploadField({
     if (!files.length) {
       setPickError(TOAST.foto_auswahl_fehlgeschlagen_bitte_erneut_versuchen);
       return;
+    }
+    if (maxBytes) {
+      const zuGross = files.find((f) => f.size > maxBytes && !(bilderVerkleinern && isImageFile(f)));
+      if (zuGross) {
+        setPickError(
+          `„${zuGross.name}“ ist ${mbText(zuGross.size)} groß — erlaubt sind höchstens ${mbText(maxBytes)} pro Datei.`
+        );
+        return;
+      }
     }
     setPickError(null);
     onChange(files);
@@ -169,7 +189,7 @@ export function FileUploadField({
         )}
       </PortalButton>
       {pickError ? (
-        <p className="mt-1 text-xs text-text-secondary">{pickError}</p>
+        <p className="mt-1 text-xs text-p2-danger" role="alert">{pickError}</p>
       ) : null}
     </div>
   );

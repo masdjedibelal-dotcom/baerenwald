@@ -1,16 +1,11 @@
 "use server";
 
-import { randomUUID } from "crypto";
 import { revalidatePath } from "next/cache";
 
 import { logDbError } from "@/lib/errors/log-db-error";
 import { linkPortalHandwerkerToAuthUser } from "@/lib/partner/link-portal-handwerker";
 import { filterActiveLeadIds } from "@/lib/portal/lead-not-deleted";
 import { PARTNER_UPLOAD_BUCKET } from "@/lib/partner/partner-storage";
-import {
-  validatePartnerAngebotFiles,
-  validatePartnerPdfFile,
-} from "@/lib/partner/partner-upload-limits";
 import { writeEinsatzStatus } from "@/lib/status/write-einsatz-status";
 import { createClient } from "@/lib/supabase/server";
 import { isSupabaseConfigured, supabaseAdmin } from "@/lib/supabase";
@@ -223,76 +218,81 @@ export async function einsatzAblehnen(einsatzId: string, grund: string): Promise
   return done();
 }
 
-async function uploadDateien(
-  handwerkerId: string,
+/**
+ * Dateien lädt das Portal direkt in den Speicher (Netlify nimmt nur ~4,5 MB je Anfrage an).
+ * Der Server nennt den Zielordner und prüft später, dass jeder Pfad darin liegt.
+ */
+export type EinsatzUploadOrdner = "mitteilung" | "fertig" | "rechnung" | "dokument";
+
+export type HochgeladeneDatei = { name: string; path: string; mime: string; size: number };
+
+/** Max. Größe je Datei (Ablage „Dokumente“ erlaubt 10 MB). */
+const MAX_DATEI_BYTES = 10 * 1024 * 1024;
+const ERLAUBTE_TYPEN = ["application/pdf", "image/jpeg", "image/png", "image/webp"];
+
+export async function einsatzUploadZiel(
   einsatzId: string,
-  files: File[],
-  ordner: string
-): Promise<{ ok: true; dateien: { name: string; path: string }[] } | { ok: false; error: string }> {
-  const out: { name: string; path: string }[] = [];
-  for (const file of files) {
-    const mime =
-      file.type || (file.name.toLowerCase().endsWith(".pdf") ? "application/pdf" : "image/jpeg");
-    const ext = mime === "application/pdf" ? "pdf" : mime.split("/")[1] || "jpg";
-    const path = `${handwerkerId}/einsatz/${einsatzId}/${ordner}/${randomUUID()}.${ext}`;
-    const { error } = await supabaseAdmin.storage
-      .from(PARTNER_UPLOAD_BUCKET)
-      .upload(path, Buffer.from(await file.arrayBuffer()), { contentType: mime, upsert: false });
-    if (error) {
-      logDbError("app/actions/partner-einsatz:upload", error);
-      return { ok: false, error: "Datei konnte nicht hochgeladen werden." };
-    }
-    out.push({ name: file.name || "Datei", path });
-  }
-  return { ok: true, dateien: out };
+  ordner: EinsatzUploadOrdner
+): Promise<{ ok: true; prefix: string } | { ok: false; error: string }> {
+  const auth = await partnerAuth();
+  if (!auth.ok) return auth;
+  const e = await eigenerEinsatz(auth.handwerkerId, einsatzId);
+  if (!e) return { ok: false, error: "Einsatz nicht gefunden." };
+  return { ok: true, prefix: `${auth.handwerkerId}/einsatz/${einsatzId}/${ordner}/` };
 }
 
-/** Rechnung aus Formular (PDF und/oder Positionen) → Felder am Einsatz; null = keine Rechnung angegeben. */
-async function rechnungAusFormData(
+/** Nur Dateien aus dem eigenen Ordner dieses Einsatzes, erlaubte Typen und Größe. */
+function pruefeDateien(
+  dateien: HochgeladeneDatei[] | null | undefined,
   handwerkerId: string,
   einsatzId: string,
-  formData: FormData,
-  pdfFeld: string
-): Promise<{ ok: true; patch: Record<string, unknown> | null } | { ok: false; error: string }> {
-  // Rechnung = nur PDF-Upload (04.10.2026) — kein Rechnungsformular mehr
-  const pdf = formData.get(pdfFeld);
-  if (!(pdf instanceof File) || pdf.size === 0) return { ok: true, patch: null };
-  const err = validatePartnerPdfFile(pdf);
-  if (err) return { ok: false, error: err };
-  const up = await uploadDateien(handwerkerId, einsatzId, [pdf], "rechnung");
-  if (!up.ok) return up;
+  ordner: EinsatzUploadOrdner
+): { ok: true; dateien: { name: string; path: string }[] } | { ok: false; error: string } {
+  const prefix = `${handwerkerId}/einsatz/${einsatzId}/${ordner}/`;
+  const liste = (dateien ?? []).filter(Boolean);
+  if (liste.length > 10) return { ok: false, error: "Maximal 10 Dateien auf einmal." };
+  for (const d of liste) {
+    const pfad = String(d.path ?? "");
+    if (!pfad.startsWith(prefix) || pfad.includes("..")) return { ok: false, error: "Ungültige Datei." };
+    if (!ERLAUBTE_TYPEN.includes(String(d.mime))) return { ok: false, error: "Bitte nur PDF oder Fotos (JPG, PNG, WebP)." };
+    if (Number(d.size) > MAX_DATEI_BYTES) return { ok: false, error: "Eine Datei ist größer als 10 MB." };
+  }
+  return { ok: true, dateien: liste.map((d) => ({ name: String(d.name || "Datei").slice(0, 120), path: d.path })) };
+}
+
+function rechnungPatch(pfad: string): Record<string, unknown> {
   return {
-    ok: true,
-    patch: {
-      rechnung_pdf_url: up.dateien[0]?.path ?? null,
-      rechnung_positionen: null,
-      rechnung_betrag: null,
-      rechnung_eingereicht_at: new Date().toISOString(),
-      rechnung_bezahlt_at: null,
-      rechnung_von: "partner",
-    },
+    rechnung_pdf_url: pfad,
+    rechnung_positionen: null,
+    rechnung_betrag: null,
+    rechnung_eingereicht_at: new Date().toISOString(),
+    rechnung_bezahlt_at: null,
+    rechnung_von: "partner",
   };
 }
 
 /** Erledigt melden in einem Schritt: Text, Fotos und Rechnung (PDF) sind freiwillig. */
-export async function einsatzFertigMelden(formData: FormData): Promise<Result> {
+export async function einsatzFertigMelden(input: {
+  einsatzId: string;
+  text?: string | null;
+  dateien?: HochgeladeneDatei[];
+  rechnung?: HochgeladeneDatei | null;
+}): Promise<Result> {
   const auth = await partnerAuth();
   if (!auth.ok) return auth;
-  const einsatzId = String(formData.get("einsatzId") ?? "").trim();
-  const text = String(formData.get("text") ?? "").trim() || null;
-  const files = formData.getAll("dateien").filter((f): f is File => f instanceof File && f.size > 0);
+  const einsatzId = input.einsatzId.trim();
   const e = await eigenerEinsatz(auth.handwerkerId, einsatzId);
   if (!e) return { ok: false, error: "Einsatz nicht gefunden." };
   if (e.status !== "angenommen") return { ok: false, error: "Bitte den Einsatz zuerst annehmen." };
-  if (files.length) {
-    const err = validatePartnerAngebotFiles(files, { required: false });
-    if (err) return { ok: false, error: err };
+  const fotos = pruefeDateien(input.dateien, auth.handwerkerId, einsatzId, "fertig");
+  if (!fotos.ok) return fotos;
+  let patch: Record<string, unknown> = {};
+  if (input.rechnung) {
+    const re = pruefeDateien([input.rechnung], auth.handwerkerId, einsatzId, "rechnung");
+    if (!re.ok) return re;
+    if (input.rechnung.mime !== "application/pdf") return { ok: false, error: "Die Rechnung bitte als PDF hochladen." };
+    patch = rechnungPatch(input.rechnung.path);
   }
-  const up = await uploadDateien(auth.handwerkerId, einsatzId, files, "fertig");
-  if (!up.ok) return up;
-  // Rechnung gleich mitschicken (oder später nachreichen)
-  const re = await rechnungAusFormData(auth.handwerkerId, einsatzId, formData, "rechnungPdf");
-  if (!re.ok) return re;
   const w = await writeEinsatzStatus(supabaseAdmin, {
     einsatzId,
     handwerkerId: auth.handwerkerId,
@@ -300,10 +300,10 @@ export async function einsatzFertigMelden(formData: FormData): Promise<Result> {
     nach: "fertig",
     extra: {
       fertig_at: new Date().toISOString(),
-      fertig_text: text,
-      fertig_dateien: up.dateien,
+      fertig_text: input.text?.trim() || null,
+      fertig_dateien: fotos.dateien,
       fertig_von: "partner",
-      ...(re.patch ?? {}),
+      ...patch,
     },
   });
   if (!w.ok) return w;
@@ -311,20 +311,22 @@ export async function einsatzFertigMelden(formData: FormData): Promise<Result> {
 }
 
 /** Rechnung hochladen (nur PDF), nach der Fertigmeldung. */
-export async function einsatzRechnungSenden(formData: FormData): Promise<Result> {
+export async function einsatzRechnungSenden(input: { einsatzId: string; rechnung: HochgeladeneDatei | null }): Promise<Result> {
   const auth = await partnerAuth();
   if (!auth.ok) return auth;
-  const einsatzId = String(formData.get("einsatzId") ?? "").trim();
+  const einsatzId = input.einsatzId.trim();
   const e = await eigenerEinsatz(auth.handwerkerId, einsatzId);
   if (!e) return { ok: false, error: "Einsatz nicht gefunden." };
   if (e.status !== "fertig") return { ok: false, error: "Die Rechnung ist nach der Fertigmeldung möglich." };
   if (e.rechnung_eingereicht_at) return { ok: false, error: "Die Rechnung ist bereits hochgeladen." };
-  const re = await rechnungAusFormData(auth.handwerkerId, einsatzId, formData, "pdf");
+  if (!input.rechnung || input.rechnung.mime !== "application/pdf") {
+    return { ok: false, error: "Bitte die Rechnung als PDF hochladen." };
+  }
+  const re = pruefeDateien([input.rechnung], auth.handwerkerId, einsatzId, "rechnung");
   if (!re.ok) return re;
-  if (!re.patch) return { ok: false, error: "Bitte die Rechnung als PDF hochladen." };
   const { error } = await supabaseAdmin
     .from("einsaetze")
-    .update({ ...re.patch, updated_at: new Date().toISOString() })
+    .update({ ...rechnungPatch(input.rechnung.path), updated_at: new Date().toISOString() })
     .eq("id", einsatzId)
     .eq("handwerker_id", auth.handwerkerId);
   if (error) {
@@ -336,36 +338,34 @@ export async function einsatzRechnungSenden(formData: FormData): Promise<Result>
 
 /**
  * Mitteilung an Bärenwald während des Einsatzes (Umbau P13):
- * Regie (Stunden + Beschreibung, optional Foto) oder Behinderung (Beschreibung).
- * Bärenwald übernimmt Regie in den Auftrag; der Partner rechnet sie mit seiner Rechnung ab.
+ * Update (Text/Fotos) oder Regie (Stunden + Beschreibung, optional Foto).
  */
-export async function einsatzMitteilungSenden(formData: FormData): Promise<Result> {
+export async function einsatzMitteilungSenden(input: {
+  einsatzId: string;
+  typ: EinsatzMeldungTyp;
+  text: string;
+  stunden?: string | number | null;
+  dateien?: HochgeladeneDatei[];
+}): Promise<Result> {
   const auth = await partnerAuth();
   if (!auth.ok) return auth;
-  const einsatzId = String(formData.get("einsatzId") ?? "").trim();
-  const typRaw = String(formData.get("typ") ?? "");
-  const typ: EinsatzMeldungTyp = typRaw === "regie" ? "regie" : "update";
-  const text = String(formData.get("text") ?? "").trim();
-  const stundenRaw = Number(String(formData.get("stunden") ?? "").replace(",", "."));
+  const einsatzId = input.einsatzId.trim();
+  const typ: EinsatzMeldungTyp = input.typ === "regie" ? "regie" : "update";
+  const text = input.text.trim();
+  const stundenRaw = Number(String(input.stunden ?? "").replace(",", "."));
   const stunden = Number.isFinite(stundenRaw) && stundenRaw > 0 ? Math.round(stundenRaw * 100) / 100 : null;
-  const files = formData.getAll("dateien").filter((f): f is File => f instanceof File && f.size > 0);
-
   const e = await eigenerEinsatz(auth.handwerkerId, einsatzId);
   if (!e) return { ok: false, error: "Einsatz nicht gefunden." };
   if (e.status !== "angenommen") return { ok: false, error: "Updates sind möglich, solange der Einsatz läuft." };
-  if (typ === "update" ? !text && files.length === 0 : !text) {
+  const dateien = pruefeDateien(input.dateien, auth.handwerkerId, einsatzId, "mitteilung");
+  if (!dateien.ok) return dateien;
+  if (typ === "update" ? !text && dateien.dateien.length === 0 : !text) {
     return {
       ok: false,
       error: typ === "update" ? "Bitte einen Text oder ein Foto hinzufügen." : "Bitte kurz beschreiben, was gemacht wurde.",
     };
   }
   if (typ === "regie" && !stunden) return { ok: false, error: "Bitte die Stunden für die Regie angeben." };
-  if (files.length) {
-    const err = validatePartnerAngebotFiles(files, { required: false });
-    if (err) return { ok: false, error: err };
-  }
-  const up = await uploadDateien(auth.handwerkerId, einsatzId, files, "mitteilung");
-  if (!up.ok) return up;
 
   const { error } = await supabaseAdmin.from("einsatz_mitteilungen").insert({
     einsatz_id: einsatzId,
@@ -374,7 +374,7 @@ export async function einsatzMitteilungSenden(formData: FormData): Promise<Resul
     typ,
     text,
     stunden: typ === "regie" ? stunden : null,
-    dateien: up.dateien,
+    dateien: dateien.dateien,
   });
   if (error) {
     logDbError("app/actions/partner-einsatz:mitteilung", error);
@@ -387,17 +387,20 @@ const DOKUMENT_ARTEN = ["angebot", "rechnung", "protokoll", "sonstiges"] as cons
 type DokumentArt = (typeof DOKUMENT_ARTEN)[number];
 
 /**
- * Dokument zum Einsatz hochladen (04.10.2026): Art Angebot / Rechnung / Protokoll / Sonstiges.
- * Rechnung → Partner-Rechnung am Einsatz (CRM markiert bezahlt); alles andere → Dokumente des Vorgangs.
+ * Dokument zum Einsatz (04.10.2026): Art Angebot / Rechnung / Protokoll / Sonstiges.
+ * Rechnung → Partner-Rechnung am Einsatz (CRM markiert bezahlt); alles andere → Dokumente des Vorgangs
+ * (der Server kopiert die Datei dorthin — ohne Umweg über Netlify).
  */
-export async function einsatzDokumentHochladen(formData: FormData): Promise<Result> {
+export async function einsatzDokumentHochladen(input: {
+  einsatzId: string;
+  art: string;
+  datei: HochgeladeneDatei | null;
+}): Promise<Result> {
   const auth = await partnerAuth();
   if (!auth.ok) return auth;
-  const einsatzId = String(formData.get("einsatzId") ?? "").trim();
-  const artRaw = String(formData.get("art") ?? "sonstiges").trim() as DokumentArt;
-  const art: DokumentArt = DOKUMENT_ARTEN.includes(artRaw) ? artRaw : "sonstiges";
-  const file = formData.get("datei");
-  if (!(file instanceof File) || file.size === 0) return { ok: false, error: "Bitte eine Datei wählen." };
+  const einsatzId = input.einsatzId.trim();
+  const art: DokumentArt = DOKUMENT_ARTEN.includes(input.art as DokumentArt) ? (input.art as DokumentArt) : "sonstiges";
+  if (!input.datei) return { ok: false, error: "Bitte eine Datei wählen." };
   const e = await eigenerEinsatz(auth.handwerkerId, einsatzId);
   if (!e) return { ok: false, error: "Einsatz nicht gefunden." };
   if (e.status !== "angenommen" && e.status !== "fertig") {
@@ -406,14 +409,12 @@ export async function einsatzDokumentHochladen(formData: FormData): Promise<Resu
 
   if (art === "rechnung") {
     if (e.rechnung_eingereicht_at) return { ok: false, error: "Die Rechnung ist bereits hochgeladen." };
-    const fd = new FormData();
-    fd.set("pdf", file);
-    const re = await rechnungAusFormData(auth.handwerkerId, einsatzId, fd, "pdf");
+    if (input.datei.mime !== "application/pdf") return { ok: false, error: "Bitte die Rechnung als PDF hochladen." };
+    const re = pruefeDateien([input.datei], auth.handwerkerId, einsatzId, "rechnung");
     if (!re.ok) return re;
-    if (!re.patch) return { ok: false, error: "Bitte die Rechnung als PDF hochladen." };
     const { error } = await supabaseAdmin
       .from("einsaetze")
-      .update({ ...re.patch, updated_at: new Date().toISOString() })
+      .update({ ...rechnungPatch(input.datei.path), updated_at: new Date().toISOString() })
       .eq("id", einsatzId)
       .eq("handwerker_id", auth.handwerkerId);
     if (error) {
@@ -423,8 +424,8 @@ export async function einsatzDokumentHochladen(formData: FormData): Promise<Resu
     return done();
   }
 
-  const err = validatePartnerAngebotFiles([file]);
-  if (err) return { ok: false, error: err };
+  const geprueft = pruefeDateien([input.datei], auth.handwerkerId, einsatzId, "dokument");
+  if (!geprueft.ok) return geprueft;
   const { data: auf, error: aufErr } = await supabaseAdmin
     .from("auftraege")
     .select("lead_id")
@@ -433,24 +434,27 @@ export async function einsatzDokumentHochladen(formData: FormData): Promise<Resu
   if (aufErr) logDbError("app/actions/partner-einsatz:dokument-auftrag", aufErr);
   const leadId = String(auf?.lead_id ?? "").trim();
   if (!leadId) return { ok: false, error: "Vorgang nicht gefunden." };
-  const safe = (file.name || "dokument").replace(/[^a-zA-Z0-9._-]+/g, "_").slice(-80);
+  // Aus dem Partner-Ordner in die Dokumente des Vorgangs kopieren
+  const { data: blob, error: dlErr } = await supabaseAdmin.storage.from(PARTNER_UPLOAD_BUCKET).download(input.datei.path);
+  if (dlErr || !blob) {
+    logDbError("app/actions/partner-einsatz:dokument-download", dlErr);
+    return { ok: false, error: "Datei konnte nicht gelesen werden. Bitte erneut hochladen." };
+  }
+  const safe = (input.datei.name || "dokument").replace(/[^a-zA-Z0-9._-]+/g, "_").slice(-80);
   const path = `${leadId}/partner-${auth.handwerkerId.slice(0, 8)}-${Date.now()}-${safe}`;
   const { error: upErr } = await supabaseAdmin.storage
     .from("lead-dokumente")
-    .upload(path, Buffer.from(await file.arrayBuffer()), {
-      contentType: file.type || "application/octet-stream",
-      upsert: false,
-    });
+    .upload(path, Buffer.from(await blob.arrayBuffer()), { contentType: input.datei.mime, upsert: false });
   if (upErr) {
     logDbError("app/actions/partner-einsatz:dokument-upload", upErr);
-    return { ok: false, error: "Datei konnte nicht hochgeladen werden." };
+    return { ok: false, error: "Datei konnte nicht gespeichert werden." };
   }
   const { data: pub } = supabaseAdmin.storage.from("lead-dokumente").getPublicUrl(path);
   const { error: insErr } = await supabaseAdmin.from("lead_dokumente").insert({
     lead_id: leadId,
-    name: file.name || "Dokument",
+    name: input.datei.name || "Dokument",
     datei_url: pub.publicUrl,
-    groesse_bytes: file.size,
+    groesse_bytes: input.datei.size,
     art,
     von: "partner",
     handwerker_id: auth.handwerkerId,
