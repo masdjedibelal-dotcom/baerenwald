@@ -2884,6 +2884,7 @@ export type Database = {
       }
       einsaetze: {
         Row: {
+          anweisung_fotos: Json
           antwort_token: string | null
           abgelehnt_at: string | null
           ablehnung_grund: string | null
@@ -2917,6 +2918,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          anweisung_fotos?: Json
           antwort_token?: string | null
           abgelehnt_at?: string | null
           ablehnung_grund?: string | null
@@ -2950,6 +2952,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          anweisung_fotos?: Json
           antwort_token?: string | null
           abgelehnt_at?: string | null
           ablehnung_grund?: string | null

@@ -1,5 +1,6 @@
 "use client";
 
+import { FotoGalerie } from "@/components/shared/FotoGalerie";
 import { useCallback, useEffect, useState, type ReactNode } from "react";
 
 import {
@@ -318,6 +319,7 @@ export function PartnerEinsaetzeSection({ rechnungHinweis }: { rechnungHinweis?:
                   <PortalStatusPill label={st.label} tone={st.tone} />
                 </div>
                 {e.anweisung ? <p className="m-0 whitespace-pre-wrap">{e.anweisung}</p> : null}
+                <FotoGalerie urls={e.anweisung_fotos} />
                 <div className="text-fs-meta text-[var(--p2-sub)]">
                   {[wann ? `Wann: ${wann}` : "", e.ort ? `Wo: ${e.ort}` : "", e.kontakt_vor_ort ? `Kontakt: ${e.kontakt_vor_ort}` : ""]
                     .filter(Boolean)

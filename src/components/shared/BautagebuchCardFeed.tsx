@@ -1,7 +1,7 @@
 "use client";
 
 import { PortalIcon } from "@/components/portal/PortalIcon";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { PortalButton } from "@/components/portal/PortalButton";
 
 import {
@@ -10,6 +10,7 @@ import {
 } from "@/lib/partner/bautagebuch-anhang";
 import { cn } from "@/lib/utils";
 import { FormatText } from "@/components/shared/FormatText";
+import { FotoLightbox } from "@/components/shared/FotoGalerie";
 import { stripHtmlToPlainText } from "@/lib/portal/portal-display";
 
 export type BautagebuchCardEintrag = {
@@ -67,34 +68,6 @@ export function BautagebuchCardFeed({
     return tb.localeCompare(ta);
   });
 
-  useEffect(() => {
-    if (!lightbox) return;
-    function onKey(e: KeyboardEvent) {
-      if (e.key === "Escape") {
-        setLightbox(null);
-        return;
-      }
-      if (e.key === "ArrowRight") {
-        setLightbox((cur) =>
-          cur && cur.urls.length > 1
-            ? { ...cur, index: (cur.index + 1) % cur.urls.length }
-            : cur
-        );
-      }
-      if (e.key === "ArrowLeft") {
-        setLightbox((cur) =>
-          cur && cur.urls.length > 1
-            ? {
-                ...cur,
-                index: (cur.index - 1 + cur.urls.length) % cur.urls.length,
-              }
-            : cur
-        );
-      }
-    }
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [lightbox]);
 
   function openLightbox(urls: string[], index: number) {
     const images = urls.filter((u) => u && !isBautagebuchPdfUrl(u));
@@ -216,35 +189,12 @@ export function BautagebuchCardFeed({
       )}
 
       {lightbox ? (
-        <div
-          className="fixed inset-0 z-[80] flex items-center justify-center bg-black/80 p-4"
-          role="dialog"
-          aria-modal="true"
-          aria-label="Foto-Ansicht"
-          onClick={() => setLightbox(null)}
-        >
-          <PortalButton
-            variant="ghost"
-            type="button"
-            className="absolute right-4 top-4 rounded-pill bg-white/15 p-2 text-white"
-            aria-label="Schließen"
-            onClick={() => setLightbox(null)}
-          >
-            <PortalIcon n="x" ctx="default" className="h-5 w-5" aria-hidden />
-          </PortalButton>
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src={lightbox.urls[lightbox.index]}
-            alt=""
-            className="max-h-[90vh] max-w-[min(96vw,1100px)] rounded-card object-contain"
-            onClick={(ev) => ev.stopPropagation()}
-          />
-          {lightbox.urls.length > 1 ? (
-            <p className="absolute bottom-5 left-1/2 -translate-x-1/2 rounded-pill bg-black/55 px-3 py-1 text-fs-meta font-semibold text-white">
-              {lightbox.index + 1} / {lightbox.urls.length}
-            </p>
-          ) : null}
-        </div>
+        <FotoLightbox
+          urls={lightbox.urls}
+          index={lightbox.index}
+          onIndex={(index) => setLightbox((cur) => (cur ? { ...cur, index } : cur))}
+          onClose={() => setLightbox(null)}
+        />
       ) : null}
     </section>
   );

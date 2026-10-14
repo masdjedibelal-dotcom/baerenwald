@@ -19,6 +19,8 @@ export type PartnerEinsatz = {
   id: string;
   titel: string;
   anweisung: string | null;
+  /** Fotos von Bärenwald zur Anweisung (öffentliche URLs) */
+  anweisung_fotos: string[];
   termin_von: string | null;
   termin_bis: string | null;
   ort: string | null;
@@ -59,7 +61,7 @@ async function partnerAuth() {
 }
 
 const SELECT =
-  "id, titel, anweisung, termin_von, termin_bis, ort, kontakt_vor_ort, ek_betrag, ek_art, status, fertig_at, rechnung_eingereicht_at, rechnung_bezahlt_at";
+  "id, titel, anweisung, anweisung_fotos, termin_von, termin_bis, ort, kontakt_vor_ort, ek_betrag, ek_art, status, fertig_at, rechnung_eingereicht_at, rechnung_bezahlt_at";
 
 /**
  * Datenschutz: Der Partner sieht nur, was ihn noch betrifft. Abgelehnte Einsätze, gelöschte
@@ -152,7 +154,10 @@ export async function listPartnerEinsaetze(): Promise<
   return {
     ok: true,
     einsaetze: data.map((r) => ({
-      ...(r as Omit<PartnerEinsatz, "ek_betrag" | "ek_art" | "letztes_update_at" | "regie" | "rechnung_bezahlt_at">),
+      ...(r as Omit<PartnerEinsatz, "ek_betrag" | "ek_art" | "letztes_update_at" | "regie" | "rechnung_bezahlt_at" | "anweisung_fotos">),
+      anweisung_fotos: Array.isArray(r.anweisung_fotos)
+        ? (r.anweisung_fotos as unknown[]).map((u) => String(u ?? "")).filter((u) => /^https:\/\//i.test(u))
+        : [],
       rechnung_bezahlt_at: (r.rechnung_bezahlt_at as string | null) ?? null,
       ek_betrag: r.ek_betrag == null ? null : Number(r.ek_betrag),
       ek_art: r.ek_art === "brutto" ? "brutto" : "netto",
