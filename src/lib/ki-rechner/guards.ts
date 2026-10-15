@@ -4,7 +4,7 @@ export const KI_MAX_USER_MESSAGES = 50;
 /** Max. Einträge im messages-Array pro API-Request (Missbrauch / Payload-Größe). */
 export const KI_MAX_MESSAGES_PER_REQUEST = 62;
 
-/** Max. Claude-Aufrufe pro IP und Stunde (öffentlicher Endpoint). */
+/** Max. KI-Aufrufe pro IP und Stunde (öffentlicher Endpoint). */
 export const KI_RATE_LIMIT_PER_HOUR = 30;
 
 /** Textarea wächst bis zu dieser Zeilenzahl, danach Scroll im Feld. */

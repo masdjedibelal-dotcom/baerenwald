@@ -1,8 +1,4 @@
-import {
-  getClaudeModel,
-  KI_CLAUDE_MODEL_FALLBACKS,
-} from "@/lib/ki-rechner/claude-config";
-import { createKiClient, getKiApiKey } from "@/lib/ki/ki-client";
+import { createKiClient, getKiApiKey, getKiModell } from "@/lib/ki/ki-client";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { getClientIp } from "@/lib/request-ip";
 
@@ -52,7 +48,7 @@ export async function POST(req: Request) {
   ].join(" ");
 
   const client = createKiClient(apiKey);
-  const models = [getClaudeModel(), ...KI_CLAUDE_MODEL_FALLBACKS];
+  const models = [getKiModell()];
   let lastError: unknown;
 
   for (const model of models) {

@@ -1,17 +1,6 @@
 import { logDbError } from '@/lib/errors/log-db-error'
-import {
-  getClaudeApiKeyDiagnostics,
-  getClaudeApiKeySource,
-  getClaudeModel,
-  isNetlifyAiGatewayBaseUrl,
-  isPlausibleClaudeApiKey,
-  KI_CLAUDE_MODEL_FALLBACKS,
-} from "@/lib/ki-rechner/claude-config";
-import { createKiClient, getKiApiKey, getKiModellAnzeige, kiAnbieter } from "@/lib/ki/ki-client";
-import {
-  logKiClaudeError,
-  mapKiClaudeErrorToResponse,
-} from "@/lib/ki-rechner/claude-errors";
+import { createKiClient, getKiApiKey, getKiModell } from "@/lib/ki/ki-client";
+import { logKiFehler, mapKiFehlerZuAntwort } from "@/lib/ki/ki-fehler";
 import {
   countUserMessages,
   isObviousOffTopic,
@@ -31,7 +20,7 @@ import { getClientIp } from "@/lib/request-ip";
 import { isSupabaseConfigured, supabaseAdmin } from "@/lib/supabase";
 
 export const runtime = "nodejs";
-/** Netlify/Serverless: Claude-Antwort braucht oft 5–15 s. */
+/** Netlify/Serverless: KI-Antwort braucht oft 5–15 s. */
 export const maxDuration = 60;
 
 let cachedSystemPrompt: string | null = null;
@@ -43,7 +32,7 @@ function getSystemPrompt(): string {
   return cachedSystemPrompt;
 }
 
-async function createClaudeMessage(
+async function createKiMessage(
   client: ReturnType<typeof createKiClient>,
   model: string,
   messages: { role: "user" | "assistant"; content: string }[]
@@ -59,29 +48,12 @@ async function createClaudeMessage(
 /** GET: Nur Konfigurations-Check (kein API-Aufruf, kein Key-Leak). */
 export async function GET() {
   const key = getKiApiKey();
-  const source = getClaudeApiKeySource();
-  const diag = getClaudeApiKeyDiagnostics(key);
   return Response.json({
     configured: Boolean(key),
-    keyFormatOk: diag.keyFormatOk,
-    keyLength: diag.keyLength,
-    likelyTruncated: diag.likelyTruncated,
-    envVarUsed: source,
-    anbieter: kiAnbieter(),
-    envVarRecommended: kiAnbieter() === "openai" ? "OPENAI_API_KEY" : "CLAUDE_API_KEY",
-    model: getKiModellAnzeige(getClaudeModel()),
-    anthropicBaseUrlEnv: process.env.ANTHROPIC_BASE_URL ? "set" : "unset",
-    netlifyAiGatewayEnv: isNetlifyAiGatewayBaseUrl(),
-    usesDirectAnthropicApi: true,
-    hint: !key
-      ? "Kein Key gefunden. In Netlify OPENAI_API_KEY (oder CLAUDE_API_KEY) setzen, Scopes: All, dann Deploy."
-      : kiAnbieter() === "openai"
-        ? "OpenAI-Key ist gesetzt."
-      : diag.likelyTruncated
-        ? `Key wirkt abgeschnitten (${diag.keyLength} Zeichen, erwartet oft ~100+). In Netlify komplett neu einfügen.`
-        : diag.keyFormatOk
-          ? "Key ist gesetzt. Bei 401 in Logs: Key in Anthropic neu erzeugen und in Netlify ersetzen (muss identisch mit lokalem .env.local sein)."
-          : "Key-Format ungültig (muss mit sk-ant- beginnen).",
+    anbieter: "openai",
+    envVarRecommended: "OPENAI_API_KEY",
+    model: getKiModell(),
+    hint: key ? "OpenAI-Key ist gesetzt." : "Kein Key gefunden. In Netlify OPENAI_API_KEY setzen, dann Deploy.",
   });
 }
 
@@ -95,19 +67,6 @@ export async function POST(req: Request) {
         error:
           "KI-Rechner ist nicht konfiguriert (kein KI-Schlüssel auf dem Server).",
         code: "missing_key",
-      },
-      { status: 503 }
-    );
-  }
-
-  // Format nur bei Claude prüfen (OpenAI-Schlüssel sehen anders aus)
-  if (kiAnbieter() === "claude" && !isPlausibleClaudeApiKey(apiKey)) {
-    console.error("[ki-rechner] CLAUDE_API_KEY hat unerwartetes Format");
-    return Response.json(
-      {
-        error:
-          "KI-Rechner: API-Schlüssel auf dem Server ist ungültig formatiert.",
-        code: "invalid_key_format",
       },
       { status: 503 }
     );
@@ -207,23 +166,22 @@ export async function POST(req: Request) {
 
   const client = createKiClient(apiKey);
   const modelsToTry = [
-    getClaudeModel(),
-    ...KI_CLAUDE_MODEL_FALLBACKS,
+    getKiModell(),
   ].filter((m, i, arr) => arr.indexOf(m) === i);
 
   try {
-    let response: Awaited<ReturnType<typeof createClaudeMessage>> | null = null;
+    let response: Awaited<ReturnType<typeof createKiMessage>> | null = null;
     let lastErr: unknown;
 
     for (const model of modelsToTry) {
       try {
-        response = await createClaudeMessage(client, model, sanitized);
+        response = await createKiMessage(client, model, sanitized);
         break;
       } catch (err) {
         lastErr = err;
         const status = (err as { status?: number }).status;
         const type = (err as { error?: { type?: string } }).error?.type;
-        logKiClaudeError(err, `model=${model}`, { keyLength: apiKey.length });
+        logKiFehler(err, `model=${model}`, { keyLength: apiKey.length });
         if (status === 404 || type === "not_found_error") {
           continue;
         }
@@ -232,7 +190,7 @@ export async function POST(req: Request) {
     }
 
     if (!response) {
-      throw lastErr ?? new Error("Kein Claude-Modell verfügbar");
+      throw lastErr ?? new Error("Kein KI-Modell verfügbar");
     }
 
     const block = response.content[0];
@@ -285,8 +243,8 @@ export async function POST(req: Request) {
       displayText,
     });
   } catch (err) {
-    logKiClaudeError(err, "POST", { keyLength: apiKey.length });
-    const mapped = mapKiClaudeErrorToResponse(err);
+    logKiFehler(err, "POST", { keyLength: apiKey.length });
+    const mapped = mapKiFehlerZuAntwort(err);
     return Response.json(
       { error: mapped.error, code: mapped.code },
       { status: mapped.status }

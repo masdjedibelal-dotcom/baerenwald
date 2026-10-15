@@ -1,8 +1,4 @@
-import {
-  getClaudeModel,
-  KI_CLAUDE_MODEL_FALLBACKS,
-} from "@/lib/ki-rechner/claude-config";
-import { createKiClient, getKiApiKey } from "@/lib/ki/ki-client";
+import { createKiClient, getKiApiKey, getKiModell } from "@/lib/ki/ki-client";
 import { isObviousOffTopic } from "@/lib/ki-rechner/guards";
 import { parseKiResponseContent } from "@/lib/ki-rechner/parse-response";
 import { getKiRechnerSystemPrompt } from "@/lib/ki-rechner/system-prompt";
@@ -37,7 +33,7 @@ export async function classifyKiConversation(
   }
 
   const client = createKiClient(apiKey);
-  const models = [getClaudeModel(), ...KI_CLAUDE_MODEL_FALLBACKS].filter(
+  const models = [getKiModell()].filter(
     (m, i, arr) => arr.indexOf(m) === i
   );
 
@@ -61,7 +57,7 @@ export async function classifyKiConversation(
     }
   }
 
-  if (!response) throw lastErr ?? new Error("Kein Claude-Modell verfügbar");
+  if (!response) throw lastErr ?? new Error("Kein KI-Modell verfügbar");
 
   const content =
     response.content[0]?.type === "text" ? response.content[0].text : "";

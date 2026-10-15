@@ -278,8 +278,8 @@ export default function DatenschutzPage() {
               </p>
               <p>
                 <strong>Ablauf der Verarbeitung:</strong> Deine Nachrichten werden über unsere
-                Server an den KI-Dienst <strong>OpenAI</strong> (ersatzweise <strong>Anthropic</strong>,
-                Modell Claude) übermittelt, damit eine Antwort erzeugt werden kann. Antworten und Anfragen können in unserer
+                Server an den KI-Dienst <strong>OpenAI</strong> übermittelt, damit eine Antwort erzeugt
+                werden kann. Antworten und Anfragen können in unserer
                 Datenbank (Supabase, EU) protokolliert werden.
               </p>
               <p>
@@ -287,16 +287,13 @@ export default function DatenschutzPage() {
                 <br />
                 OpenAI Ireland Ltd., 1st Floor, The Liffey Trust Centre, 117–126 Sheriff Street Upper,
                 Dublin 1, D01 YC43, Irland (für Nutzer im EWR)
-                <br />
-                ersatzweise: Anthropic, PBC, San Francisco, USA
               </p>
               <p>
-                Die Übermittlung kann in die USA erfolgen. Die Anbieter stellen hierfür geeignete
-                Garantien bereit (z. B. Standardvertragsklauseln der EU-Kommission). Wir haben mit
-                den Anbietern bzw. über die Nutzung der API die jeweils geltenden Vertrags- und
-                Datenschutzbedingungen als Auftragsverarbeitung berücksichtigt. Über die API
-                übermittelte Inhalte werden nach Angaben der Anbieter nicht zum Training ihrer
-                Modelle verwendet.
+                Die Übermittlung kann in die USA erfolgen. OpenAI stellt hierfür geeignete Garantien
+                bereit (z. B. Standardvertragsklauseln der EU-Kommission). Wir haben mit OpenAI bzw.
+                über die Nutzung der API die jeweils geltenden Vertrags- und Datenschutzbedingungen
+                als Auftragsverarbeitung berücksichtigt. Über die API übermittelte Inhalte werden nach
+                Angaben von OpenAI nicht zum Training der Modelle verwendet.
                 <br />
                 Datenschutz OpenAI:{" "}
                 <a
@@ -306,15 +303,7 @@ export default function DatenschutzPage() {
                 >
                   https://openai.com/policies/privacy-policy
                 </a>
-                <br />
-                Datenschutz Anthropic:{" "}
-                <a
-                  href="https://www.anthropic.com/legal/privacy"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
-                  https://www.anthropic.com/legal/privacy
-                </a>
+
               </p>
               <p>
                 <strong>Freiwilligkeit und Hinweise zur Eingabe:</strong> Die Nutzung ist

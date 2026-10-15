@@ -1,10 +1,6 @@
 import { NextResponse } from "next/server";
 
-import {
-  getClaudeModel,
-  KI_CLAUDE_MODEL_FALLBACKS,
-} from "@/lib/ki-rechner/claude-config";
-import { createKiClient, getKiApiKey } from "@/lib/ki/ki-client";
+import { createKiClient, getKiApiKey, getKiModell } from "@/lib/ki/ki-client";
 import {
   buildPortalKiAssistSystemPrompt,
   isPortalKiAssistScope,
@@ -158,9 +154,9 @@ export async function POST(request: Request) {
   });
 
   const client = createKiClient(apiKey);
-  const models = [getClaudeModel(), ...KI_CLAUDE_MODEL_FALLBACKS];
+  const models = [getKiModell()];
 
-  const claudeMessages = [
+  const kiMessages = [
     ...trimmedHistory.map((m) => ({
       role: m.role as "user" | "assistant",
       content: m.content,
@@ -175,7 +171,7 @@ export async function POST(request: Request) {
         model,
         max_tokens: 1500,
         system,
-        messages: claudeMessages,
+        messages: kiMessages,
       });
       const block = res.content.find((c) => c.type === "text");
       const reply =

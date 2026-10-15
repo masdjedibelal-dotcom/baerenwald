@@ -1,5 +1,5 @@
 import { logDbError } from '@/lib/errors/log-db-error';
-import { createKiClient, getKiApiKey } from "@/lib/ki/ki-client";
+import { createKiClient, getKiApiKey, getKiModell } from "@/lib/ki/ki-client";
 import {
   buildVertriebsAnalyseUserPrompt,
   hasVertriebsAnalyseGrundlage,
@@ -10,7 +10,6 @@ import type { KundenVertriebsKontext } from "@/lib/lead/kunden-vertrieb-status";
 import type { MarketingJourney } from "@/lib/marketing/journey-types";
 import { isSupabaseConfigured,supabaseAdmin } from "@/lib/supabase";
 
-const KI_ZUSAMMENFASSUNG_MODEL = "claude-sonnet-4-20250514";
 
 const KI_ZUSAMMENFASSUNG_SYSTEM = `
 Du bist ein erfahrener Vertriebs-Analyst für Bärenwald München —
@@ -86,7 +85,7 @@ export async function generateLeadVertriebsAnalyse(
   const userContent = buildVertriebsAnalyseUserPrompt(input);
 
   const response = await client.messages.create({
-    model: KI_ZUSAMMENFASSUNG_MODEL,
+    model: getKiModell(),
     max_tokens: 650,
     system: KI_ZUSAMMENFASSUNG_SYSTEM,
     messages: [{ role: "user", content: userContent }],

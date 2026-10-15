@@ -1,43 +1,18 @@
-import { createAnthropicClient, getClaudeApiKey } from "@/lib/ki-rechner/claude-config";
-import { getOpenAiApiKey, getOpenAiModel, kiAnbieter, openAiAlsClaudeClient } from "@/lib/shared-domain/ki-openai";
+import { getOpenAiApiKey, getOpenAiModel, openAiTextClient } from "@/lib/shared-domain/ki-openai";
 
-export { kiAnbieter };
+/** Text rein, Textblöcke raus (`messages.create` → `{ content: [{ type: "text", text }] }`). */
+export type KiClient = ReturnType<typeof openAiTextClient>;
 
-/** Gleiche Form für beide Anbieter: Text rein, Textblöcke raus (wie Anthropic `messages.create`). */
-export type KiClient = {
-  messages: {
-    create(p: {
-      model: string;
-      max_tokens: number;
-      system?: string;
-      messages: { role: "user" | "assistant"; content: string }[];
-    }): Promise<{ content: { type: "text"; text: string }[]; stop_reason: string | null }>;
-  };
-};
-
-/** Schlüssel des aktiven Anbieters — OpenAI, sobald OPENAI_API_KEY gesetzt ist, sonst Claude. */
+/** OPENAI_API_KEY (ohne Schlüssel ist die KI aus). */
 export function getKiApiKey(): string | undefined {
-  if (kiAnbieter() === "openai") return getOpenAiApiKey() || undefined;
-  return getClaudeApiKey();
+  return getOpenAiApiKey() || undefined;
 }
 
-/** Modellname zur Anzeige/Diagnose. */
-export function getKiModellAnzeige(claudeModel: string): string {
-  return kiAnbieter() === "openai" ? getOpenAiModel() : claudeModel;
+/** Aktives OpenAI-Modell (OPENAI_MODEL, sonst Standard). */
+export function getKiModell(): string {
+  return getOpenAiModel();
 }
 
 export function createKiClient(apiKey: string): KiClient {
-  if (kiAnbieter() === "openai") return openAiAlsClaudeClient(apiKey);
-  const anthropic = createAnthropicClient(apiKey);
-  return {
-    messages: {
-      async create(p) {
-        const r = await anthropic.messages.create(p);
-        return {
-          content: r.content.flatMap((b) => (b.type === "text" ? [{ type: "text" as const, text: b.text }] : [])),
-          stop_reason: r.stop_reason,
-        };
-      },
-    },
-  };
+  return openAiTextClient(apiKey);
 }

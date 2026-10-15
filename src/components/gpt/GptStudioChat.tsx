@@ -10,7 +10,7 @@ import { GptChatBubble } from "@/components/gpt/GptChatBubble";
 import { GptChatVoiceRecorder } from "@/components/gpt/GptChatVoiceRecorder";
 import { GptRegistrationGate } from "@/components/gpt/GptRegistrationGate";
 import {
-  messagesForClaude,
+  messagesForKi,
   newChatId,
   textMessagesForSync,
   type GptChatMessage,
@@ -164,7 +164,7 @@ export function GptStudioChat({
   const priceHandoffStateRef = useRef<"none" | "preis" | "beratung">("none");
 
   const userMessageCount = countUserMessages(
-    messagesForClaude(messages).map((m) => ({ role: m.role, content: m.content }))
+    messagesForKi(messages).map((m) => ({ role: m.role, content: m.content }))
   );
   const limitReached = userMessageCount >= KI_MAX_USER_MESSAGES;
 
@@ -228,7 +228,7 @@ export function GptStudioChat({
       const parsed = draftToKiParsed(draft);
       if (!parsed || priceHandoffStateRef.current === "preis") return;
       priceHandoffStateRef.current = "preis";
-      const verlauf = messagesForClaude(history).map((m) => ({
+      const verlauf = messagesForKi(history).map((m) => ({
         role: m.role,
         content: m.content,
       }));
@@ -346,7 +346,7 @@ export function GptStudioChat({
         return;
       }
 
-      const verlauf = messagesForClaude(history).map((m) => ({
+      const verlauf = messagesForKi(history).map((m) => ({
         role: m.role,
         content: m.content,
       }));
@@ -419,7 +419,7 @@ export function GptStudioChat({
     [guidedDraft, messages, appendAssistant, syncPreisHandoff]
   );
 
-  const askClaude = useCallback(
+  const askKi = useCallback(
     async (
       history: GptChatMessage[],
       sid: string | null,
@@ -432,7 +432,7 @@ export function GptStudioChat({
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          messages: messagesForClaude(history),
+          messages: messagesForKi(history),
           gpt_session_id: sid,
           wunsch_text: wunschOverride?.trim() || undefined,
           lead_active: Boolean(lead),
@@ -556,15 +556,15 @@ export function GptStudioChat({
       setLoading(true);
       setError(null);
       try {
-        const claude = await askClaude(history, sid, undefined, { draft, nextField: next });
-        appendAssistant(claude.displayText ?? buildLeadQuestion(next));
+        const ki = await askKi(history, sid, undefined, { draft, nextField: next });
+        appendAssistant(ki.displayText ?? buildLeadQuestion(next));
       } catch {
         appendAssistant(buildLeadQuestion(next));
       } finally {
         setLoading(false);
       }
     },
-    [askClaude, appendAssistant, postLeadToApi, refreshBrief]
+    [askKi, appendAssistant, postLeadToApi, refreshBrief]
   );
 
   const showVizQuestion = useCallback(
@@ -654,7 +654,7 @@ export function GptStudioChat({
       );
 
       const history = [...messages];
-      const claude = await askClaude(history, sid);
+      const ki = await askKi(history, sid);
       const limits = data.limits ?? brief?.limits;
       const maxRenders =
         data.max_renders ?? limits?.max_renders ?? GPT_VIZ_LIMITS.guest.maxRenders;
@@ -665,7 +665,7 @@ export function GptStudioChat({
         leadUnlocked
       );
       const canRenderAgain = postActions.some((a) => a.id === "render_again");
-      appendAssistant(claude.displayText ?? "Fragen Sie mich gern, was das für Ihr Projekt bedeutet.", {
+      appendAssistant(ki.displayText ?? "Fragen Sie mich gern, was das für Ihr Projekt bedeutet.", {
         blocks: guidedHybrid
           ? [
               ...(!leadUnlocked
@@ -715,7 +715,7 @@ export function GptStudioChat({
     appendAssistant,
     appendVizLimitMessage,
     messages,
-    askClaude,
+    askKi,
     renderCount,
     refreshBrief,
     guidedHybrid,
@@ -863,8 +863,8 @@ export function GptStudioChat({
         const nextHistory = [...messages, userMsg];
         setMessages(nextHistory);
 
-        const claude = await askClaude(nextHistory, sid, undefined, undefined, true);
-        appendAssistant(claude.displayText ?? "Danke für das Foto!", {
+        const ki = await askKi(nextHistory, sid, undefined, undefined, true);
+        appendAssistant(ki.displayText ?? "Danke für das Foto!", {
           blocks: guidedHybrid
             ? kind === "raum"
               ? [
@@ -908,7 +908,7 @@ export function GptStudioChat({
       sessionId,
       ensureSession,
       messages,
-      askClaude,
+      askKi,
       appendAssistant,
       refreshBrief,
       guidedHybrid,
@@ -989,10 +989,10 @@ export function GptStudioChat({
         setLoading(true);
         try {
           const checkPrice = shouldCheckPriceHandoff();
-          const claude = await askClaude(next, sessionId, undefined, undefined, false, checkPrice);
-          const reply = claude.displayText ?? "Erzählen Sie mir von Ihrem Vorhaben — ich bin da.";
+          const ki = await askKi(next, sessionId, undefined, undefined, false, checkPrice);
+          const reply = ki.displayText ?? "Erzählen Sie mir von Ihrem Vorhaben — ich bin da.";
           appendAssistant(reply);
-          applyPriceHandoff([...next, { id: newChatId(), role: "assistant", text: reply }], claude);
+          applyPriceHandoff([...next, { id: newChatId(), role: "assistant", text: reply }], ki);
         } finally {
           setLoading(false);
         }
@@ -1063,7 +1063,7 @@ export function GptStudioChat({
       showLeadForm,
       messages,
       sessionId,
-      askClaude,
+      askKi,
       requestRender,
       answerVizQuestion,
       shouldCheckPriceHandoff,
@@ -1116,7 +1116,7 @@ export function GptStudioChat({
     setError(null);
     try {
       const checkPrice = shouldCheckPriceHandoff();
-      const data = await askClaude(nextHistory, sid, nextWunsch, undefined, undefined, checkPrice);
+      const data = await askKi(nextHistory, sid, nextWunsch, undefined, undefined, checkPrice);
       const hasRenderResult = Boolean(brief?.ergebnis_bild_url) || vizPhase === "result" || vizPhase === "lead";
 
       if (data.intent === "suggest_viz") {
@@ -1179,7 +1179,7 @@ export function GptStudioChat({
     leadDraft,
     continueLeadAfterAnswer,
     wunschText,
-    askClaude,
+    askKi,
     appendAssistant,
     requestRender,
     syncTextareaHeight,
@@ -1350,7 +1350,7 @@ export function GptStudioChat({
           )}
         </div>
         <p className="ki-rechner-chat-privacy">
-          KI-Assistent · Anthropic ·{' '}
+          KI-Assistent · OpenAI ·{' '}
           <Link href="/datenschutz#ki-beratung">Datenschutz</Link>
         </p>
       </div>

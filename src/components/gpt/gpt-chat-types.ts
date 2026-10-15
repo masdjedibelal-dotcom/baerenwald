@@ -43,8 +43,8 @@ export type GptVizPhase =
 
 export type PendingUpload = "raum" | "inspiration" | null;
 
-/** Vollständiger Verlauf für Claude (inkl. Bild-/Render-Kontext als Text). */
-export function messagesForClaude(
+/** Vollständiger Verlauf für die KI (inkl. Bild-/Render-Kontext als Text). */
+export function messagesForKi(
   messages: GptChatMessage[]
 ): Array<{ role: "user" | "assistant"; content: string }> {
   const out: Array<{ role: "user" | "assistant"; content: string }> = [];
@@ -74,7 +74,7 @@ export function messagesForClaude(
 export function textMessagesForSync(
   messages: GptChatMessage[]
 ): Array<{ role: "user" | "assistant"; content: string }> {
-  return messagesForClaude(messages);
+  return messagesForKi(messages);
 }
 
 export function newChatId(): string {

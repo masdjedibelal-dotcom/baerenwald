@@ -461,7 +461,7 @@ export function KiRechnerChat({
           </button>
         </div>
         <p className="ki-rechner-chat-privacy">
-          KI-Assistent · Anthropic ·{" "}
+          KI-Assistent · OpenAI ·{" "}
           <Link href="/datenschutz#ki-beratung">Datenschutz</Link>
         </p>
       </div>

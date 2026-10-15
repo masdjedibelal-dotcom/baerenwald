@@ -54,7 +54,7 @@ export function getKiAssistantDisplayText(
   return stripped || "Was möchten Sie am Haus oder in der Wohnung machen?";
 }
 
-/** JSON aus Claude-Antwort extrahieren (auch in Markdown-Codeblöcken). */
+/** JSON aus der KI-Antwort extrahieren (auch in Markdown-Codeblöcken). */
 export function parseKiResponseContent(content: string): {
   parsed: KiParsedPayload | null;
   typ: string;

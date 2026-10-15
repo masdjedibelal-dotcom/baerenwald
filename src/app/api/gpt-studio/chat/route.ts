@@ -1,9 +1,5 @@
-import {
-  getClaudeModel,
-  KI_CLAUDE_MODEL_FALLBACKS,
-} from "@/lib/ki-rechner/claude-config";
-import { createKiClient, getKiApiKey } from "@/lib/ki/ki-client";
-import { mapKiClaudeErrorToResponse } from "@/lib/ki-rechner/claude-errors";
+import { createKiClient, getKiApiKey, getKiModell } from "@/lib/ki/ki-client";
+import { mapKiFehlerZuAntwort } from "@/lib/ki/ki-fehler";
 import {
   countUserMessages,
   isObviousOffTopic,
@@ -140,7 +136,7 @@ export async function POST(req: Request) {
     : buildGptStudioSystemPrompt(session, portalKundeId);
 
   const client = createKiClient(apiKey);
-  const models = [getClaudeModel(), ...KI_CLAUDE_MODEL_FALLBACKS].filter(
+  const models = [getKiModell()].filter(
     (m, i, arr) => arr.indexOf(m) === i
   );
 
@@ -189,7 +185,7 @@ export async function POST(req: Request) {
       ...(await buildPriceHandoffFields(body, sanitized)),
     });
   } catch (err) {
-    const mapped = mapKiClaudeErrorToResponse(err);
+    const mapped = mapKiFehlerZuAntwort(err);
     return Response.json({ error: mapped.error }, { status: mapped.status });
   }
 }

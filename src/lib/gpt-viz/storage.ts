@@ -7,7 +7,7 @@ import { isSupabaseConfigured,supabaseAdmin } from "@/lib/supabase";
 const MAX_IMAGE_BYTES = 12 * 1024 * 1024;
 const ALLOWED_MIME = new Set(["image/jpeg", "image/png", "image/webp"]);
 
-type ClaudeMediaType = "image/jpeg" | "image/png" | "image/webp" | "image/gif";
+type KiMediaType = "image/jpeg" | "image/png" | "image/webp" | "image/gif";
 
 export function isPublicUrl(url: string): boolean {
   return /^https?:\/\//i.test(url.trim());
@@ -32,7 +32,7 @@ function extractStoragePath(publicUrl: string, bucket: string): string | null {
   return decodeURIComponent(publicUrl.slice(idx + marker.length));
 }
 
-function normalizeMediaType(contentType: string): ClaudeMediaType {
+function normalizeMediaType(contentType: string): KiMediaType {
   const t = contentType.split(";")[0]?.trim().toLowerCase();
   if (t === "image/png") return "image/png";
   if (t === "image/webp") return "image/webp";
@@ -40,9 +40,9 @@ function normalizeMediaType(contentType: string): ClaudeMediaType {
   return "image/jpeg";
 }
 
-export async function loadImageBase64ForClaude(
+export async function loadImageBase64ForKi(
   stored: string
-): Promise<{ mediaType: ClaudeMediaType; data: string }> {
+): Promise<{ mediaType: KiMediaType; data: string }> {
   if (!isSupabaseConfigured()) {
     throw new Error("Storage nicht konfiguriert.");
   }

@@ -68,7 +68,6 @@
     "test:e2e:hv": "E2E_MUSTER=true TEST_AUTH_BYPASS=true playwright test --project=hv-spec"
   },
   "dependencies": {
-    "@anthropic-ai/sdk": "^0.100.1",
     "@napi-rs/canvas": "^1.0.0",
     "@sentry/nextjs": "^10.75.0",
     "@supabase/ssr": "^0.6.1",
