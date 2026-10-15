@@ -8,25 +8,9 @@ type ActionContext = {
   hasRenderResult: boolean;
 };
 
-/** CTAs nur für die aktuelle Nachricht — nicht dauerhaft im Chat mitschleppen. */
-export function actionsForIntent(ctx: ActionContext): GptChatAction[] | undefined {
-  const { intent, istUrl, wunschText, hasRenderResult } = ctx;
-  const actions: GptChatAction[] = [];
-
-  if (intent === "suggest_viz") {
-    actions.push({ id: "start_viz", label: "Raum visualisieren" });
-  }
-
-  if (
-    (intent === "suggest_render" || intent === "render") &&
-    istUrl &&
-    wunschText.trim() &&
-    !hasRenderResult
-  ) {
-    actions.push({ id: "render", label: "So visualisieren" });
-  }
-
-  return actions.length ? actions : undefined;
+/** CTAs nur für die aktuelle Nachricht. Raum-Visualisierung entfällt (15.10.) — keine Visualisieren-Knöpfe mehr. */
+export function actionsForIntent(_ctx: ActionContext): GptChatAction[] | undefined {
+  return undefined;
 }
 
 export function postRenderActions(

@@ -29,12 +29,6 @@ const JOURNEY_ENTRY = [
     icon: "message",
   },
   {
-    id: "journey_viz",
-    label: "Raum visualisieren",
-    hint: "Foto hochladen, Wunschraum sehen.",
-    icon: "sparkles",
-  },
-  {
     id: "journey_preis",
     label: "Preis berechnen",
     hint: "Unverbindlicher Rahmen.",

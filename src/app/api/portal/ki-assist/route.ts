@@ -1,11 +1,10 @@
 import { NextResponse } from "next/server";
 
 import {
-  createAnthropicClient,
-  getClaudeApiKey,
   getClaudeModel,
   KI_CLAUDE_MODEL_FALLBACKS,
 } from "@/lib/ki-rechner/claude-config";
+import { createKiClient, getKiApiKey } from "@/lib/ki/ki-client";
 import {
   buildPortalKiAssistSystemPrompt,
   isPortalKiAssistScope,
@@ -37,7 +36,7 @@ type Body = {
  * Kontextbezogener Feld-Chat (Funnel / Bautagebuch / Abnahme) mit bw-apply Draft.
  */
 export async function POST(request: Request) {
-  const apiKey = getClaudeApiKey();
+  const apiKey = getKiApiKey();
   if (!apiKey) {
     return NextResponse.json(
       { ok: false, error: "KI nicht konfiguriert." },
@@ -158,7 +157,7 @@ export async function POST(request: Request) {
     contextHint,
   });
 
-  const client = createAnthropicClient(apiKey);
+  const client = createKiClient(apiKey);
   const models = [getClaudeModel(), ...KI_CLAUDE_MODEL_FALLBACKS];
 
   const claudeMessages = [

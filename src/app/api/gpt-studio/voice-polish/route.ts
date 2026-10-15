@@ -1,9 +1,8 @@
 import {
-  createAnthropicClient,
-  getClaudeApiKey,
   getClaudeModel,
   KI_CLAUDE_MODEL_FALLBACKS,
 } from "@/lib/ki-rechner/claude-config";
+import { createKiClient, getKiApiKey } from "@/lib/ki/ki-client";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { getClientIp } from "@/lib/request-ip";
 
@@ -15,7 +14,7 @@ export const maxDuration = 20;
  * Body: { text } → { text } — Sprachnotiz → schlankes Deutsch.
  */
 export async function POST(req: Request) {
-  const apiKey = getClaudeApiKey();
+  const apiKey = getKiApiKey();
   if (!apiKey) {
     return Response.json({ error: "KI nicht konfiguriert." }, { status: 503 });
   }
@@ -52,7 +51,7 @@ export async function POST(req: Request) {
     "Maximal 2–4 kurze Sätze, sofern der Inhalt nicht länger ist.",
   ].join(" ");
 
-  const client = createAnthropicClient(apiKey);
+  const client = createKiClient(apiKey);
   const models = [getClaudeModel(), ...KI_CLAUDE_MODEL_FALLBACKS];
   let lastError: unknown;
 

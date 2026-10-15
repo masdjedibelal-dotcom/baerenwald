@@ -69,11 +69,11 @@ import "./gpt-viz.css";
 
 const INITIAL_TEXT_DU = `Hi! Ich bin ein KI-Assistent von Bärenwald — für Renovierung, Reparatur und Umbau in München.
 
-Schreib einfach los — oder wähl unten, womit wir starten sollen. Beraten, visualisieren, Preisrahmen oder direkt anfragen: alles hier im Chat.`;
+Schreib einfach los — oder wähl unten, womit wir starten sollen. Beraten, Preisrahmen oder direkt anfragen: alles hier im Chat.`;
 
 const INITIAL_TEXT_SIE = `Hallo! Ich bin ein KI-Assistent von Bärenwald — für Renovierung, Reparatur und Umbau in München.
 
-Schreiben Sie einfach los — oder wählen Sie unten, womit wir starten sollen. Beraten, visualisieren, Preisrahmen oder direkt anfragen: alles hier im Chat.`;
+Schreiben Sie einfach los — oder wählen Sie unten, womit wir starten sollen. Beraten, Preisrahmen oder direkt anfragen: alles hier im Chat.`;
 
 type GptStudioChatProps = {
   onPreisBereit: (data: KiRechnerFunnelData) => void;
@@ -109,7 +109,7 @@ export function GptStudioChat({
   onBeratungBereit,
   locked = false,
   priceHandoff = false,
-  showPhotoUpload = true,
+  showPhotoUpload = false,
   anrede = "du",
 }: GptStudioChatProps) {
 
@@ -138,10 +138,7 @@ export function GptStudioChat({
       blocks: guidedHybrid ? [{ type: "journey_entry" }] : undefined,
       actions: guidedHybrid
         ? undefined
-        : [
-            { id: "start_viz", label: "Raum visualisieren" },
-            { id: "start_beratung", label: "Erst beraten" },
-          ],
+        : [{ id: "start_beratung", label: "Erst beraten" }],
     },
   ]);
   const [vizPhase, setVizPhase] = useState<GptVizPhase>("idle");
@@ -1142,16 +1139,6 @@ export function GptStudioChat({
             [...nextHistory, { id: newChatId(), role: "assistant", text: reply }],
             { ...data, displayText: reply }
           );
-        } else if (guidedHybrid && data.intent === "suggest_viz") {
-          appendAssistant(reply, {
-            blocks: [
-              {
-                type: "primary_cta",
-                actionId: "journey_viz",
-                label: "Raum visualisieren",
-              },
-            ],
-          });
         } else {
           appendAssistant(reply, {
             actions: vizActions,

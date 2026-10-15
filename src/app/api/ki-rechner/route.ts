@@ -1,7 +1,5 @@
 import { logDbError } from '@/lib/errors/log-db-error'
 import {
-  createAnthropicClient,
-  getClaudeApiKey,
   getClaudeApiKeyDiagnostics,
   getClaudeApiKeySource,
   getClaudeModel,
@@ -9,6 +7,7 @@ import {
   isPlausibleClaudeApiKey,
   KI_CLAUDE_MODEL_FALLBACKS,
 } from "@/lib/ki-rechner/claude-config";
+import { createKiClient, getKiApiKey, getKiModellAnzeige, kiAnbieter } from "@/lib/ki/ki-client";
 import {
   logKiClaudeError,
   mapKiClaudeErrorToResponse,
@@ -45,7 +44,7 @@ function getSystemPrompt(): string {
 }
 
 async function createClaudeMessage(
-  client: ReturnType<typeof createAnthropicClient>,
+  client: ReturnType<typeof createKiClient>,
   model: string,
   messages: { role: "user" | "assistant"; content: string }[]
 ) {
@@ -59,7 +58,7 @@ async function createClaudeMessage(
 
 /** GET: Nur Konfigurations-Check (kein API-Aufruf, kein Key-Leak). */
 export async function GET() {
-  const key = getClaudeApiKey();
+  const key = getKiApiKey();
   const source = getClaudeApiKeySource();
   const diag = getClaudeApiKeyDiagnostics(key);
   return Response.json({
@@ -68,13 +67,16 @@ export async function GET() {
     keyLength: diag.keyLength,
     likelyTruncated: diag.likelyTruncated,
     envVarUsed: source,
-    envVarRecommended: "CLAUDE_API_KEY",
-    model: getClaudeModel(),
+    anbieter: kiAnbieter(),
+    envVarRecommended: kiAnbieter() === "openai" ? "OPENAI_API_KEY" : "CLAUDE_API_KEY",
+    model: getKiModellAnzeige(getClaudeModel()),
     anthropicBaseUrlEnv: process.env.ANTHROPIC_BASE_URL ? "set" : "unset",
     netlifyAiGatewayEnv: isNetlifyAiGatewayBaseUrl(),
     usesDirectAnthropicApi: true,
     hint: !key
-      ? "Kein Key gefunden. In Netlify CLAUDE_API_KEY setzen, Scopes: All, dann Deploy."
+      ? "Kein Key gefunden. In Netlify OPENAI_API_KEY (oder CLAUDE_API_KEY) setzen, Scopes: All, dann Deploy."
+      : kiAnbieter() === "openai"
+        ? "OpenAI-Key ist gesetzt."
       : diag.likelyTruncated
         ? `Key wirkt abgeschnitten (${diag.keyLength} Zeichen, erwartet oft ~100+). In Netlify komplett neu einfügen.`
         : diag.keyFormatOk
@@ -86,19 +88,20 @@ export async function GET() {
 type ChatMessage = { role: "user" | "assistant"; content: string };
 
 export async function POST(req: Request) {
-  const apiKey = getClaudeApiKey();
+  const apiKey = getKiApiKey();
   if (!apiKey) {
     return Response.json(
       {
         error:
-          "KI-Rechner ist nicht konfiguriert (CLAUDE_API_KEY fehlt auf dem Server).",
+          "KI-Rechner ist nicht konfiguriert (kein KI-Schlüssel auf dem Server).",
         code: "missing_key",
       },
       { status: 503 }
     );
   }
 
-  if (!isPlausibleClaudeApiKey(apiKey)) {
+  // Format nur bei Claude prüfen (OpenAI-Schlüssel sehen anders aus)
+  if (kiAnbieter() === "claude" && !isPlausibleClaudeApiKey(apiKey)) {
     console.error("[ki-rechner] CLAUDE_API_KEY hat unerwartetes Format");
     return Response.json(
       {
@@ -202,7 +205,7 @@ export async function POST(req: Request) {
     });
   }
 
-  const client = createAnthropicClient(apiKey);
+  const client = createKiClient(apiKey);
   const modelsToTry = [
     getClaudeModel(),
     ...KI_CLAUDE_MODEL_FALLBACKS,

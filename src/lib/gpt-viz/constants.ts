@@ -27,9 +27,6 @@ export const GPT_VIZ_LIMITS = {
 export const GPT_VIZ_STORAGE_BUCKET =
   process.env.GPT_VIZ_STORAGE_BUCKET?.trim() || "gpt-visualisierungen";
 
-export const REPLICATE_INTERIOR_MODEL =
-  "adirik/interior-design:76604baddc85b1b4616e1c6475eca080da339c8875bd4996705440484a6eac38";
-
 export const VIZ_NACHPROMPT_TAGS = [
   "Fliesen heller",
   "Mehr Licht",

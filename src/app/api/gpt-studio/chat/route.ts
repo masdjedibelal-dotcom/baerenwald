@@ -1,9 +1,8 @@
 import {
-  createAnthropicClient,
-  getClaudeApiKey,
   getClaudeModel,
   KI_CLAUDE_MODEL_FALLBACKS,
 } from "@/lib/ki-rechner/claude-config";
+import { createKiClient, getKiApiKey } from "@/lib/ki/ki-client";
 import { mapKiClaudeErrorToResponse } from "@/lib/ki-rechner/claude-errors";
 import {
   countUserMessages,
@@ -63,9 +62,9 @@ async function buildPriceHandoffFields(
 }
 
 export async function POST(req: Request) {
-  const apiKey = getClaudeApiKey();
+  const apiKey = getKiApiKey();
   if (!apiKey) {
-    return Response.json({ error: "Claude API nicht konfiguriert." }, { status: 503 });
+    return Response.json({ error: "KI nicht konfiguriert." }, { status: 503 });
   }
 
   const ip = getClientIp(req);
@@ -140,7 +139,7 @@ export async function POST(req: Request) {
     ? `${buildGptStudioSystemPrompt(session, portalKundeId)}\n\n${buildGptStudioLeadPrompt(leadDraft, leadNextField ?? null)}`
     : buildGptStudioSystemPrompt(session, portalKundeId);
 
-  const client = createAnthropicClient(apiKey);
+  const client = createKiClient(apiKey);
   const models = [getClaudeModel(), ...KI_CLAUDE_MODEL_FALLBACKS].filter(
     (m, i, arr) => arr.indexOf(m) === i
   );

@@ -45,9 +45,7 @@ export function detectGptStudioIntent(ctx: IntentContext): GptStudioIntent {
     return "suggest_render";
   }
 
-  if (!vizFlowActive && !hasPhoto && VIZ_TOPIC.test(lower) && VIZ_INTENT_WORDS.test(lower)) {
-    return "suggest_viz";
-  }
+  // Raum-Visualisierung entfällt (15.10.) — kein „suggest_viz“ mehr
 
   if (vizFlowActive && canRender && EXPLICIT_RENDER.test(lower)) return "render";
 

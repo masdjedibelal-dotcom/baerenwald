@@ -1,8 +1,5 @@
 import { logDbError } from '@/lib/errors/log-db-error';
-import {
-  createAnthropicClient,
-  getClaudeApiKey,
-} from "@/lib/ki-rechner/claude-config";
+import { createKiClient, getKiApiKey } from "@/lib/ki/ki-client";
 import {
   buildVertriebsAnalyseUserPrompt,
   hasVertriebsAnalyseGrundlage,
@@ -72,7 +69,7 @@ export type GenerateLeadVertriebsAnalyseOpts = {
 export async function generateLeadVertriebsAnalyse(
   opts: GenerateLeadVertriebsAnalyseOpts
 ): Promise<void> {
-  const apiKey = getClaudeApiKey();
+  const apiKey = getKiApiKey();
   if (!apiKey || !isSupabaseConfigured()) return;
 
   const input: VertriebsAnalyseInput = {
@@ -85,7 +82,7 @@ export async function generateLeadVertriebsAnalyse(
 
   if (!hasVertriebsAnalyseGrundlage(input)) return;
 
-  const client = createAnthropicClient(apiKey);
+  const client = createKiClient(apiKey);
   const userContent = buildVertriebsAnalyseUserPrompt(input);
 
   const response = await client.messages.create({

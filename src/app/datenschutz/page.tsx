@@ -198,7 +198,7 @@ export default function DatenschutzPage() {
                 <li>An beteiligte Handwerksbetriebe zur Auftragsdurchführung</li>
                 <li>
                   An Auftragsverarbeiter (Hosting, Datenbank, E-Mail, Analyse, KI- und
-                  Zusatzdienste) — siehe die Abschnitte 5 bis 15
+                  Zusatzdienste) — siehe die Abschnitte 5 bis 14
                 </li>
                 <li>Bei gesetzlicher Verpflichtung</li>
               </ul>
@@ -278,22 +278,34 @@ export default function DatenschutzPage() {
               </p>
               <p>
                 <strong>Ablauf der Verarbeitung:</strong> Deine Nachrichten werden über unsere
-                Server an den KI-Dienst <strong>Anthropic, PBC</strong> (Modell Claude) übermittelt,
-                damit eine Antwort erzeugt werden kann. Antworten und Anfragen können in unserer
+                Server an den KI-Dienst <strong>OpenAI</strong> (ersatzweise <strong>Anthropic</strong>,
+                Modell Claude) übermittelt, damit eine Antwort erzeugt werden kann. Antworten und Anfragen können in unserer
                 Datenbank (Supabase, EU) protokolliert werden.
               </p>
               <p>
                 <strong>Anbieter KI-Dienst:</strong>
                 <br />
-                Anthropic, PBC
+                OpenAI Ireland Ltd., 1st Floor, The Liffey Trust Centre, 117–126 Sheriff Street Upper,
+                Dublin 1, D01 YC43, Irland (für Nutzer im EWR)
                 <br />
-                San Francisco, USA
+                ersatzweise: Anthropic, PBC, San Francisco, USA
               </p>
               <p>
-                Die Übermittlung kann in die USA erfolgen. Anthropic stellt hierfür geeignete
+                Die Übermittlung kann in die USA erfolgen. Die Anbieter stellen hierfür geeignete
                 Garantien bereit (z. B. Standardvertragsklauseln der EU-Kommission). Wir haben mit
-                Anthropic bzw. über die Nutzung der API die jeweils geltenden Vertrags- und
-                Datenschutzbedingungen als Auftragsverarbeitung berücksichtigt.
+                den Anbietern bzw. über die Nutzung der API die jeweils geltenden Vertrags- und
+                Datenschutzbedingungen als Auftragsverarbeitung berücksichtigt. Über die API
+                übermittelte Inhalte werden nach Angaben der Anbieter nicht zum Training ihrer
+                Modelle verwendet.
+                <br />
+                Datenschutz OpenAI:{" "}
+                <a
+                  href="https://openai.com/policies/privacy-policy"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  https://openai.com/policies/privacy-policy
+                </a>
                 <br />
                 Datenschutz Anthropic:{" "}
                 <a
@@ -359,28 +371,7 @@ export default function DatenschutzPage() {
                 </a>
               </p>
 
-              <strong id="replicate">10. Bild-/KI-Visualisierung (Replicate)</strong>
-              <p>
-                Für optionale Raum- oder Visualisierungsfunktionen (z.&nbsp;B. GPT-Viz) nutzen wir
-                den Dienst Replicate, Inc. (USA). Dabei können hochgeladene Bilder und Prompt-Daten
-                an Replicate übermittelt und dort verarbeitet werden, soweit dies für die
-                Generierung erforderlich ist.
-              </p>
-              <p>
-                Rechtsgrundlage: Art. 6 Abs. 1 lit. a DSGVO (Einwilligung) bzw. Art. 6 Abs. 1
-                lit. b DSGVO, soweit die Funktion Vertragsbestandteil einer Anfrage ist.
-                <br />
-                Datenschutzerklärung Replicate:{' '}
-                <a
-                  href="https://replicate.com/privacy"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
-                  https://replicate.com/privacy
-                </a>
-              </p>
-
-              <strong id="web-push">11. Web-Push-Benachrichtigungen (VAPID)</strong>
+              <strong id="web-push">10. Web-Push-Benachrichtigungen (VAPID)</strong>
               <p>
                 Im Kunden- und Partner-Portal sowie im CRM können optionale Browser-Push-Nachrichten
                 (Web Push) angeboten werden. Dazu speichern wir eine Push-Subscription (Endpunkt
@@ -392,7 +383,7 @@ export default function DatenschutzPage() {
                 jederzeit in den Browser- oder Portal-Einstellungen widerrufen werden.
               </p>
 
-              <strong id="telegram">12. Telegram-Bot</strong>
+              <strong id="telegram">11. Telegram-Bot</strong>
               <p>
                 Für interne Betriebsbenachrichtigungen (z.&nbsp;B. neue Meldungen) kann ein
                 Telegram-Bot eingesetzt werden. Dabei werden Vorgangs-Metadaten und ggf.
@@ -404,7 +395,7 @@ export default function DatenschutzPage() {
                 betrieblicher Information). Telegram-Nutzung ist für Endkunden nicht erforderlich.
               </p>
 
-              <strong id="maps-distance">13. Entfernungsberechnung (Google Maps Distance Matrix)</strong>
+              <strong id="maps-distance">12. Entfernungsberechnung (Google Maps Distance Matrix)</strong>
               <p>
                 Zur Plausibilisierung von Anfahrten und Entfernungen können wir die Google Maps
                 Distance Matrix API (Google Ireland Limited / Google LLC) nutzen. Dabei werden
@@ -424,7 +415,7 @@ export default function DatenschutzPage() {
                 </a>
               </p>
 
-              <strong id="openweather">14. Wetterdaten (OpenWeatherMap)</strong>
+              <strong id="openweather">13. Wetterdaten (OpenWeatherMap)</strong>
               <p>
                 Für wetterabhängige Hinweise (z.&nbsp;B. Außentermine) können wir OpenWeatherMap
                 (OpenWeather Ltd.) mit Standortbezug (z.&nbsp;B. PLZ/Koordinaten) abfragen. Es
@@ -443,7 +434,7 @@ export default function DatenschutzPage() {
                 </a>
               </p>
 
-              <strong id="search-console">15. Google Search Console</strong>
+              <strong id="search-console">14. Google Search Console</strong>
               <p>
                 Zur Überwachung der Sichtbarkeit unserer Website in der Google-Suche nutzen wir
                 Google Search Console. Dabei können aggregierte Such- und Indexierungsdaten

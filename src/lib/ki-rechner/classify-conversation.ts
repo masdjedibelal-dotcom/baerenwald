@@ -1,9 +1,8 @@
 import {
-  createAnthropicClient,
-  getClaudeApiKey,
   getClaudeModel,
   KI_CLAUDE_MODEL_FALLBACKS,
 } from "@/lib/ki-rechner/claude-config";
+import { createKiClient, getKiApiKey } from "@/lib/ki/ki-client";
 import { isObviousOffTopic } from "@/lib/ki-rechner/guards";
 import { parseKiResponseContent } from "@/lib/ki-rechner/parse-response";
 import { getKiRechnerSystemPrompt } from "@/lib/ki-rechner/system-prompt";
@@ -29,7 +28,7 @@ export type KiConversationClassification = {
 export async function classifyKiConversation(
   messages: ChatMessage[]
 ): Promise<KiConversationClassification | null> {
-  const apiKey = getClaudeApiKey();
+  const apiKey = getKiApiKey();
   if (!apiKey || messages.length === 0) return null;
 
   const lastUser = [...messages].reverse().find((m) => m.role === "user")?.content ?? "";
@@ -37,7 +36,7 @@ export async function classifyKiConversation(
     return { typ: "off_topic", parsed: null };
   }
 
-  const client = createAnthropicClient(apiKey);
+  const client = createKiClient(apiKey);
   const models = [getClaudeModel(), ...KI_CLAUDE_MODEL_FALLBACKS].filter(
     (m, i, arr) => arr.indexOf(m) === i
   );
