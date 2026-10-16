@@ -1,4 +1,5 @@
 import { logDbError } from '@/lib/errors/log-db-error';
+import type { PortalDokument } from "@/lib/portal/portal-dokumente";
 import {
   parseAngebotPositionenMitPreis,
   resolveAngebotGesamtBrutto,
@@ -291,6 +292,32 @@ export async function getPortalDataForKunde(
         });
 
   const leadIds = (leads ?? []).map((l) => l.id);
+
+  // Im CRM hochgeladene Dokumente, die als „Kunde“ markiert sind (lead_dokumente.fuer_kunde)
+  const kundenUploadsByLead = new Map<string, PortalDokument[]>();
+  // Auch in der Vorgangs-Ansicht (schlanker Modus mit leadIds)
+  if ((!listMode || onlyLeadIds.length > 0) && leadIds.length) {
+    const { data: ups, error: upErr } = await supabaseAdmin
+      .from("lead_dokumente")
+      .select("id, lead_id, name, datei_url, created_at, art")
+      .in("lead_id", leadIds)
+      .eq("fuer_kunde", true);
+    if (upErr) logDbError("lib/portal/get-portal-data:lead_dokumente", upErr);
+    for (const d of ups ?? []) {
+      const href = String(d.datei_url ?? "").trim();
+      if (!href) continue;
+      const liste = kundenUploadsByLead.get(String(d.lead_id)) ?? [];
+      liste.push({
+        id: `lead-dok-${d.id}`,
+        name: String(d.name ?? "Dokument"),
+        subtitle: "Dokument",
+        datum: (d.created_at as string | null) ?? undefined,
+        href,
+        art: "dokument",
+      });
+      kundenUploadsByLead.set(String(d.lead_id), liste);
+    }
+  }
 
   const leadObjektIdByLeadId = new Map<string, string | null>();
   const leadPlzByLeadId = new Map<string, string | null>();
@@ -1148,7 +1175,7 @@ export async function getPortalDataForKunde(
       return {
         ...lead,
         objekt: resolveObj(raw.kunde_objekt_id, raw.plz),
-        dokumente: versDoc ? [versDoc, ...baseDocs] : baseDocs,
+        dokumente: [...(versDoc ? [versDoc] : []), ...baseDocs, ...(kundenUploadsByLead.get(leadId) ?? [])],
       };
     });
 

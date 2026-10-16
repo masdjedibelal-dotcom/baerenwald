@@ -1,5 +1,6 @@
 "use client";
 
+import { PortalUnterlagenKarte } from "@/components/portal/PortalUnterlagenKarte";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 
@@ -139,6 +140,8 @@ export function PortalEinstellungenPrivat({
                   E-Mail-Änderung nur über Support (Verifizierung).
                 </p>
               </EinstellungenSectionCard>
+
+              <PortalUnterlagenKarte />
 
               <PortalKontoSicherheitPanel signOutHref="/portal/login" />
             </>

@@ -5244,6 +5244,7 @@ export type Database = {
       }
       kunden_dokumente: {
         Row: {
+          fuer_kunde: boolean
           created_at: string | null
           datei_url: string | null
           erstellt_von: string | null
@@ -5254,6 +5255,7 @@ export type Database = {
           typ: string
         }
         Insert: {
+          fuer_kunde?: boolean
           created_at?: string | null
           datei_url?: string | null
           erstellt_von?: string | null
@@ -5264,6 +5266,7 @@ export type Database = {
           typ: string
         }
         Update: {
+          fuer_kunde?: boolean
           created_at?: string | null
           datei_url?: string | null
           erstellt_von?: string | null
