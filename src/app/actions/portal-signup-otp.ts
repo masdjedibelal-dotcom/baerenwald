@@ -218,8 +218,10 @@ export async function registerPartnerWithOtp(input: {
 
   const check = await verifyPartnerRegistrationEmail(email);
   if (!check.ok) return check;
+  // Mitarbeiter eines Partners: kein Rahmenvertrag (den hat der Inhaber), eigene Rolle
+  const istMitarbeiter = check.art === "mitarbeiter";
 
-  if (!input.rahmenAkzeptiert) {
+  if (!istMitarbeiter && !input.rahmenAkzeptiert) {
     return {
       ok: false,
       error: "Bitte bestätige die Geschäftsbedingungen inkl. der Anlagen.",
@@ -233,11 +235,13 @@ export async function registerPartnerWithOtp(input: {
       email,
       password: input.password,
       email_confirm: false,
-      user_metadata: {
-        portal_role: "handwerker",
-        rv_akzeptiert_at: rvAkzeptiertAt,
-        rv_akzeptiert_pending: true,
-      },
+      user_metadata: istMitarbeiter
+        ? { portal_role: "handwerker_mitarbeiter" }
+        : {
+            portal_role: "handwerker",
+            rv_akzeptiert_at: rvAkzeptiertAt,
+            rv_akzeptiert_pending: true,
+          },
     });
 
   if (createErr || !created.user) {

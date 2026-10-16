@@ -34,6 +34,7 @@ type RechnungDokumentInput = {
 
 type TimelineDokumentInput = {
   id: string;
+  typ?: string | null;
   auftrag_id?: string | null;
   titel?: string | null;
   beschreibung?: string | null;
@@ -113,6 +114,9 @@ export function dokumenteFromTimeline(
   const rows: PortalDokument[] = [];
   for (const ev of events) {
     if (!ev.fuer_kunde_freigegeben) continue;
+    // Tagebuch-Fotos bleiben im Tagebuch (Download dort) — nicht als Einzel-Dokumente
+    const typ = String(ev.typ ?? "").toLowerCase();
+    if (typ === "bautagebuch" || typ === "handwerker_update") continue;
     const fotos = Array.isArray(ev.foto_urls) ? ev.foto_urls : [];
     if (fotos.length === 0) continue;
     fotos.forEach((href, index) => {

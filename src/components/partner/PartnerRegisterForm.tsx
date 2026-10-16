@@ -36,6 +36,8 @@ export function PartnerRegisterForm() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [awaitingOtp, setAwaitingOtp] = useState(false);
+  /** Zugang als Mitarbeiter eines Partners (ohne Rahmenvertrag) — Firma des Partners */
+  const [mitarbeiterVon, setMitarbeiterVon] = useState<string | null>(null);
 
   const loadPreview = useCallback(async (value: string) => {
     const trimmed = value.trim();
@@ -68,6 +70,14 @@ export function PartnerRegisterForm() {
       setError(check.error);
       return;
     }
+    if (check.art === "mitarbeiter") {
+      // Mitarbeiter: Bedingungen hat der Inhaber bestätigt → direkt zum Passwort
+      setPreviewLoading(false);
+      setMitarbeiterVon(check.firma ?? "Ihr Betrieb");
+      setStep(3);
+      return;
+    }
+    setMitarbeiterVon(null);
     await loadPreview(trimmed);
     setPreviewLoading(false);
     setStep(2);
@@ -236,6 +246,12 @@ export function PartnerRegisterForm() {
 
       {step === 3 ? (
         <form onSubmit={onSubmit} className="space-y-4">
+          {mitarbeiterVon ? (
+            <p className="portal-text-body text-text-secondary">
+              Zugang als Mitarbeiter von <strong className="text-text-primary">{mitarbeiterVon}</strong> — Sie sehen die
+              Einsätze, für die Sie eingeteilt sind.
+            </p>
+          ) : null}
           <label className="block space-y-1.5">
             <span className="portal-form-label">Passwort (min. 8 Zeichen)</span>
             <PortalInput
@@ -280,7 +296,7 @@ export function PartnerRegisterForm() {
             <PortalButton
               variant="secondary"
               type="button"
-              onClick={() => setStep(2)}
+              onClick={() => setStep(mitarbeiterVon ? 1 : 2)}
               className="flex-1 !py-2.5"
             >
               Zurück

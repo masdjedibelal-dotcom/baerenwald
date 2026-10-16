@@ -1,5 +1,7 @@
 "use server";
 
+import { linkPortalMitarbeiter } from "@/lib/partner/mitarbeiter-portal";
+import { crmMitarbeiterInformieren } from "@/lib/partner/partner-crm-api";
 import { revalidatePath } from "next/cache";
 
 import { logDbError } from "@/lib/errors/log-db-error";
@@ -21,6 +23,9 @@ export type PartnerEinsatz = {
   anweisung: string | null;
   /** Fotos von Bärenwald zur Anweisung (öffentliche URLs) */
   anweisung_fotos: string[];
+  /** Eingeteilter Mitarbeiter (Vorschlag von Bärenwald bzw. Wahl des Inhabers) */
+  mitarbeiter_id: string | null;
+  mitarbeiter_name: string | null;
   termin_von: string | null;
   termin_bis: string | null;
   ort: string | null;
@@ -60,8 +65,37 @@ async function partnerAuth() {
   return { ok: true as const, handwerkerId: link.handwerkerId };
 }
 
+/**
+ * Zugriff für Einsatz-Aktionen: Inhaber (voller Zugriff auf eigene Einsätze) oder Mitarbeiter
+ * (nur ihm zugeordnete, angenommene/fertige Einsätze; nur Updates, Fotos, Fertigmeldung).
+ */
+type Zugriff = { ok: true; handwerkerId: string; mitarbeiterId: string | null } | { ok: false; error: string };
+
+async function einsatzZugriff(): Promise<Zugriff> {
+  if (!isSupabaseConfigured()) return { ok: false, error: "Portal ist nicht konfiguriert." };
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user?.id || !user.email) return { ok: false, error: "Bitte melden Sie sich an." };
+  const ma = await linkPortalMitarbeiter({ userId: user.id, email: user.email });
+  if (ma) return { ok: true, handwerkerId: ma.handwerkerId, mitarbeiterId: ma.mitarbeiterId };
+  const auth = await partnerAuth();
+  return auth.ok ? { ok: true, handwerkerId: auth.handwerkerId, mitarbeiterId: null } : auth;
+}
+
+async function einsatzFuerZugriff(z: Extract<Zugriff, { ok: true }>, einsatzId: string) {
+  const e = await eigenerEinsatz(z.handwerkerId, einsatzId);
+  if (!e) return null;
+  if (z.mitarbeiterId) {
+    if (e.mitarbeiter_id !== z.mitarbeiterId) return null;
+    if (e.status !== "angenommen" && e.status !== "fertig") return null;
+  }
+  return e;
+}
+
 const SELECT =
-  "id, titel, anweisung, anweisung_fotos, termin_von, termin_bis, ort, kontakt_vor_ort, ek_betrag, ek_art, status, fertig_at, rechnung_eingereicht_at, rechnung_bezahlt_at";
+  "id, titel, anweisung, anweisung_fotos, mitarbeiter_id, handwerker_mitarbeiter(name), termin_von, termin_bis, ort, kontakt_vor_ort, ek_betrag, ek_art, status, fertig_at, rechnung_eingereicht_at, rechnung_bezahlt_at";
 
 /**
  * Datenschutz: Der Partner sieht nur, was ihn noch betrifft. Abgelehnte Einsätze, gelöschte
@@ -154,7 +188,12 @@ export async function listPartnerEinsaetze(): Promise<
   return {
     ok: true,
     einsaetze: data.map((r) => ({
-      ...(r as Omit<PartnerEinsatz, "ek_betrag" | "ek_art" | "letztes_update_at" | "regie" | "rechnung_bezahlt_at" | "anweisung_fotos">),
+      ...(r as Omit<PartnerEinsatz, "ek_betrag" | "ek_art" | "letztes_update_at" | "regie" | "rechnung_bezahlt_at" | "anweisung_fotos" | "mitarbeiter_name">),
+      mitarbeiter_id: (r.mitarbeiter_id as string | null) ?? null,
+      mitarbeiter_name: (() => {
+        const m = (r as { handwerker_mitarbeiter?: unknown }).handwerker_mitarbeiter as { name?: string | null } | { name?: string | null }[] | null;
+        return (Array.isArray(m) ? m[0] : m)?.name ?? null;
+      })(),
       anweisung_fotos: Array.isArray(r.anweisung_fotos)
         ? (r.anweisung_fotos as unknown[]).map((u) => String(u ?? "")).filter((u) => /^https:\/\//i.test(u))
         : [],
@@ -170,7 +209,7 @@ export async function listPartnerEinsaetze(): Promise<
 async function eigenerEinsatz(handwerkerId: string, einsatzId: string) {
   const { data, error } = await supabaseAdmin
     .from("einsaetze")
-    .select("id, auftrag_id, status, rechnung_eingereicht_at")
+    .select("id, auftrag_id, status, rechnung_eingereicht_at, mitarbeiter_id")
     .eq("id", einsatzId)
     .eq("handwerker_id", handwerkerId)
     .maybeSingle();
@@ -187,12 +226,27 @@ function done(): Result {
   return { ok: true };
 }
 
-export async function einsatzAnnehmen(einsatzId: string): Promise<Result> {
+export async function einsatzAnnehmen(einsatzId: string, mitarbeiterId?: string | null): Promise<Result> {
   const auth = await partnerAuth();
   if (!auth.ok) return auth;
   const e = await eigenerEinsatz(auth.handwerkerId, einsatzId);
   if (!e) return { ok: false, error: "Einsatz nicht gefunden." };
   if (e.status !== "gesendet") return { ok: false, error: "Dieser Einsatz ist nicht mehr offen." };
+  // Inhaber teilt beim Annehmen ein (undefined = Vorschlag von Bärenwald behalten)
+  if (mitarbeiterId !== undefined) {
+    if (mitarbeiterId) {
+      const { data: m } = await supabaseAdmin
+        .from("handwerker_mitarbeiter")
+        .select("id")
+        .eq("id", mitarbeiterId)
+        .eq("handwerker_id", auth.handwerkerId)
+        .eq("aktiv", true)
+        .maybeSingle();
+      if (!m) return { ok: false, error: "Mitarbeiter nicht gefunden." };
+    }
+    const { error: mErr } = await supabaseAdmin.from("einsaetze").update({ mitarbeiter_id: mitarbeiterId }).eq("id", einsatzId);
+    if (mErr) logDbError("app/actions/partner-einsatz:mitarbeiter", mErr);
+  }
   const w = await writeEinsatzStatus(supabaseAdmin, {
     einsatzId,
     handwerkerId: auth.handwerkerId,
@@ -201,6 +255,8 @@ export async function einsatzAnnehmen(einsatzId: string): Promise<Result> {
     extra: { angenommen_at: new Date().toISOString() },
   });
   if (!w.ok) return w;
+  // Ab jetzt läuft der Einsatz beim Mitarbeiter: Info mit Anweisung und Fotos (CRM verschickt)
+  await crmMitarbeiterInformieren(einsatzId);
   return done();
 }
 
@@ -239,9 +295,12 @@ export async function einsatzUploadZiel(
   einsatzId: string,
   ordner: EinsatzUploadOrdner
 ): Promise<{ ok: true; prefix: string } | { ok: false; error: string }> {
-  const auth = await partnerAuth();
+  const auth = await einsatzZugriff();
   if (!auth.ok) return auth;
-  const e = await eigenerEinsatz(auth.handwerkerId, einsatzId);
+  if (auth.mitarbeiterId && ordner !== "mitteilung" && ordner !== "fertig") {
+    return { ok: false, error: "Das macht der Inhaber Ihres Betriebs." };
+  }
+  const e = await einsatzFuerZugriff(auth, einsatzId);
   if (!e) return { ok: false, error: "Einsatz nicht gefunden." };
   return { ok: true, prefix: `${auth.handwerkerId}/einsatz/${einsatzId}/${ordner}/` };
 }
@@ -283,10 +342,11 @@ export async function einsatzFertigMelden(input: {
   dateien?: HochgeladeneDatei[];
   rechnung?: HochgeladeneDatei | null;
 }): Promise<Result> {
-  const auth = await partnerAuth();
+  const auth = await einsatzZugriff();
   if (!auth.ok) return auth;
+  if (auth.mitarbeiterId && input.rechnung) return { ok: false, error: "Die Rechnung schickt der Inhaber Ihres Betriebs." };
   const einsatzId = input.einsatzId.trim();
-  const e = await eigenerEinsatz(auth.handwerkerId, einsatzId);
+  const e = await einsatzFuerZugriff(auth, einsatzId);
   if (!e) return { ok: false, error: "Einsatz nicht gefunden." };
   if (e.status !== "angenommen") return { ok: false, error: "Bitte den Einsatz zuerst annehmen." };
   const fotos = pruefeDateien(input.dateien, auth.handwerkerId, einsatzId, "fertig");
@@ -352,14 +412,15 @@ export async function einsatzMitteilungSenden(input: {
   stunden?: string | number | null;
   dateien?: HochgeladeneDatei[];
 }): Promise<Result> {
-  const auth = await partnerAuth();
+  const auth = await einsatzZugriff();
   if (!auth.ok) return auth;
   const einsatzId = input.einsatzId.trim();
   const typ: EinsatzMeldungTyp = input.typ === "regie" ? "regie" : "update";
+  if (auth.mitarbeiterId && typ === "regie") return { ok: false, error: "Regie meldet der Inhaber Ihres Betriebs." };
   const text = input.text.trim();
   const stundenRaw = Number(String(input.stunden ?? "").replace(",", "."));
   const stunden = Number.isFinite(stundenRaw) && stundenRaw > 0 ? Math.round(stundenRaw * 100) / 100 : null;
-  const e = await eigenerEinsatz(auth.handwerkerId, einsatzId);
+  const e = await einsatzFuerZugriff(auth, einsatzId);
   if (!e) return { ok: false, error: "Einsatz nicht gefunden." };
   if (e.status !== "angenommen") return { ok: false, error: "Updates sind möglich, solange der Einsatz läuft." };
   const dateien = pruefeDateien(input.dateien, auth.handwerkerId, einsatzId, "mitteilung");
@@ -469,4 +530,61 @@ export async function einsatzDokumentHochladen(input: {
     return { ok: false, error: "Dokument konnte nicht gespeichert werden." };
   }
   return done();
+}
+
+/** Einsatz aus Sicht des Mitarbeiters — ohne EK, ohne Rechnung. */
+export type MitarbeiterEinsatz = {
+  id: string;
+  titel: string;
+  anweisung: string | null;
+  anweisung_fotos: string[];
+  termin_von: string | null;
+  termin_bis: string | null;
+  ort: string | null;
+  kontakt_vor_ort: string | null;
+  status: "angenommen" | "fertig";
+  fertig_at: string | null;
+};
+
+/** Nur für eingeloggte Mitarbeiter: ihnen zugeordnete, angenommene oder erledigte Einsätze. */
+export async function listMitarbeiterEinsaetze(): Promise<
+  { ok: true; einsaetze: MitarbeiterEinsatz[] } | { ok: false; error: string }
+> {
+  const auth = await einsatzZugriff();
+  if (!auth.ok) return auth;
+  if (!auth.mitarbeiterId) return { ok: false, error: "Nur für Mitarbeiter." };
+  const { data, error } = await supabaseAdmin
+    .from("einsaetze")
+    .select("id, auftrag_id, titel, anweisung, anweisung_fotos, termin_von, termin_bis, ort, kontakt_vor_ort, status, fertig_at")
+    .eq("handwerker_id", auth.handwerkerId)
+    .eq("mitarbeiter_id", auth.mitarbeiterId)
+    .in("status", ["angenommen", "fertig"])
+    .order("termin_von", { ascending: true, nullsFirst: false })
+    .limit(100);
+  if (error) {
+    logDbError("app/actions/partner-einsatz:mitarbeiter-liste", error);
+    return { ok: false, error: "Einsätze konnten nicht geladen werden." };
+  }
+  const sichtbar = await sichtbareEinsatzIds(
+    (data ?? []).map((r) => ({ id: String(r.id), auftrag_id: String(r.auftrag_id), status: String(r.status) }))
+  );
+  return {
+    ok: true,
+    einsaetze: (data ?? [])
+      .filter((r) => sichtbar.has(String(r.id)))
+      .map((r) => ({
+        id: String(r.id),
+        titel: String(r.titel ?? ""),
+        anweisung: (r.anweisung as string | null) ?? null,
+        anweisung_fotos: Array.isArray(r.anweisung_fotos)
+          ? (r.anweisung_fotos as unknown[]).map((u) => String(u ?? "")).filter((u) => /^https:\/\//i.test(u))
+          : [],
+        termin_von: (r.termin_von as string | null) ?? null,
+        termin_bis: (r.termin_bis as string | null) ?? null,
+        ort: (r.ort as string | null) ?? null,
+        kontakt_vor_ort: (r.kontakt_vor_ort as string | null) ?? null,
+        status: r.status === "fertig" ? "fertig" : "angenommen",
+        fertig_at: (r.fertig_at as string | null) ?? null,
+      })),
+  };
 }

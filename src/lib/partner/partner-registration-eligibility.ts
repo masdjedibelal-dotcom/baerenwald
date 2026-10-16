@@ -1,9 +1,11 @@
 import { PARTNER_AUTH_COPY } from "@/lib/partner/partner-auth-copy";
 import { canonicalBaerenwaldPrimaryStaffEmail } from "@/lib/auth/baerenwald-primary-staff";
 import { isSupabaseConfigured, supabaseAdmin } from "@/lib/supabase";
+import { findMitarbeiterForRegistration } from "@/lib/partner/mitarbeiter-portal";
 
 export type PartnerRegistrationCheckResult =
-  | { ok: true }
+  /** art „mitarbeiter“: Zugang als Mitarbeiter eines Partners (ohne Rahmenvertrag) */
+  | { ok: true; art?: "inhaber" | "mitarbeiter"; firma?: string }
   | { ok: false; error: string };
 
 function normalizePartnerEmail(email: string): string {
@@ -65,6 +67,12 @@ export async function verifyPartnerRegistrationEmail(
 ): Promise<PartnerRegistrationCheckResult> {
   const hw = await findHandwerkerForRegistration(email);
   if (!hw) {
+    // Mitarbeiter eines Partners (im CRM oder vom Inhaber angelegt)
+    const m = await findMitarbeiterForRegistration(email);
+    if (m) {
+      if (m.registriert) return { ok: false, error: PARTNER_AUTH_COPY.errors.bereitsRegistriert };
+      return { ok: true, art: "mitarbeiter", firma: m.firma };
+    }
     return {
       ok: false,
       error: PARTNER_AUTH_COPY.errors.betriebNichtAngelegt,
@@ -85,5 +93,5 @@ export async function verifyPartnerRegistrationEmail(
     };
   }
 
-  return { ok: true };
+  return { ok: true, art: "inhaber" };
 }

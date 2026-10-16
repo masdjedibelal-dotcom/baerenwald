@@ -5,7 +5,13 @@ import { useEffect, useState } from "react";
 import { PortalButton } from "@/components/portal/PortalButton";
 import { PortalIcon } from "@/components/portal/PortalIcon";
 
-/** Foto groß ansehen: ✕ / Tipp daneben / Esc schließt, Pfeiltasten blättern. */
+/** Supabase-Storage liefert mit ?download= die Datei als Download (sonst nur Anzeige im Browser). */
+function downloadHref(url: string, index: number): string {
+  if (!/\/storage\/v1\/object\//.test(url)) return url;
+  return `${url}${url.includes("?") ? "&" : "?"}download=${encodeURIComponent(`Foto-${index + 1}.jpg`)}`;
+}
+
+/** Foto groß ansehen: ✕ / Tipp daneben / Esc schließt, Pfeiltasten blättern, Herunterladen. */
 export function FotoLightbox({
   urls,
   index,
@@ -36,15 +42,28 @@ export function FotoLightbox({
       aria-label="Foto-Ansicht"
       onClick={onClose}
     >
-      <PortalButton
-        variant="ghost"
-        type="button"
-        className="absolute right-4 top-4 rounded-pill bg-white/15 p-2 text-white"
-        aria-label="Schließen"
-        onClick={onClose}
-      >
-        <PortalIcon n="x" ctx="default" className="h-5 w-5" aria-hidden />
-      </PortalButton>
+      <div className="absolute right-4 top-4 flex gap-2" onClick={(ev) => ev.stopPropagation()}>
+        <a
+          href={downloadHref(urls[index] ?? "", index)}
+          target="_blank"
+          rel="noopener noreferrer"
+          download
+          className="rounded-pill bg-white/15 p-2 text-white"
+          aria-label="Foto herunterladen"
+          title="Herunterladen"
+        >
+          <PortalIcon n="download" ctx="default" className="h-5 w-5" aria-hidden />
+        </a>
+        <PortalButton
+          variant="ghost"
+          type="button"
+          className="rounded-pill bg-white/15 p-2 text-white"
+          aria-label="Schließen"
+          onClick={onClose}
+        >
+          <PortalIcon n="x" ctx="default" className="h-5 w-5" aria-hidden />
+        </PortalButton>
+      </div>
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
         src={urls[index]}

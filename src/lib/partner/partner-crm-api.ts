@@ -140,3 +140,23 @@ export async function acceptCrmRahmenvertragLoggedIn(): Promise<
     return { ok: false, error: "Bärenwald nicht erreichbar." };
   }
 }
+
+/** Nach „Annehmen“: CRM informiert den eingeteilten Mitarbeiter (Mail/WhatsApp). Fehler nur loggen. */
+export async function crmMitarbeiterInformieren(einsatzId: string): Promise<void> {
+  const base = dashboardBase();
+  const headers = await partnerAuthHeaders();
+  if (!base || !headers) {
+    console.warn("[crmMitarbeiterInformieren]", crmMissingConfigError(base, headers));
+    return;
+  }
+  try {
+    const res = await fetch(`${base}/api/portal/einsaetze/${encodeURIComponent(einsatzId)}/mitarbeiter-info`, {
+      method: "POST",
+      headers,
+      cache: "no-store",
+    });
+    if (!res.ok) console.warn("[crmMitarbeiterInformieren]", res.status, await res.text().catch(() => ""));
+  } catch (e) {
+    console.warn("[crmMitarbeiterInformieren]", e);
+  }
+}

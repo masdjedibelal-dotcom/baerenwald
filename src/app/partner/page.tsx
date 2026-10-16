@@ -9,6 +9,8 @@ import { PortalContentBusy } from "@/components/shared/PortalContentBusy";
 import { PARTNER_AUTH_COPY } from "@/lib/partner/partner-auth-copy";
 import { getPartnerDataForHandwerker } from "@/lib/partner/get-partner-data";
 import { linkPortalHandwerkerToAuthUser } from "@/lib/partner/link-portal-handwerker";
+import { linkPortalMitarbeiter } from "@/lib/partner/mitarbeiter-portal";
+import { PartnerMitarbeiterAnsicht } from "@/components/partner/PartnerMitarbeiterAnsicht";
 import { clearAdminViewCookie } from "@/lib/auth/crm-impersonation-session";
 import { SITE_CONFIG } from "@/lib/config";
 import { createClient } from "@/lib/supabase/server";
@@ -66,6 +68,12 @@ export default async function PartnerDashboardPage({
   const emailConfirmed = Boolean(user.email_confirmed_at ?? user.confirmed_at);
   if (!emailConfirmed) {
     redirect(partnerLoginRedirect(searchParams, "confirm"));
+  }
+
+  // Mitarbeiter eines Partners: eigene, eingeschränkte Ansicht (nur zugeordnete Einsätze, ohne Preise)
+  const mitarbeiter = await linkPortalMitarbeiter({ userId: user.id, email: user.email });
+  if (mitarbeiter) {
+    return <PartnerMitarbeiterAnsicht name={mitarbeiter.name} firma={mitarbeiter.firma} />;
   }
 
   const link = await linkPortalHandwerkerToAuthUser({

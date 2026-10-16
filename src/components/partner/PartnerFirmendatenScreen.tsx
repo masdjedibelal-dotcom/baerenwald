@@ -1,5 +1,6 @@
 "use client";
 
+import { PartnerMitarbeiterVerwaltung } from "@/components/partner/PartnerMitarbeiterVerwaltung";
 import { useRouter } from "next/navigation";
 import { useEffect,useRef,useState } from "react";
 
@@ -283,6 +284,8 @@ export function PartnerFirmendatenScreen({
                   />
                 </EinstellungenPfList>
               </EinstellungenSectionCard>
+
+              <PartnerMitarbeiterVerwaltung />
 
               <PortalKontoSicherheitPanel signOutHref="/partner/login" />
             </>

@@ -1,5 +1,6 @@
 "use client";
 
+import { listMeineMitarbeiter, type MeinMitarbeiter } from "@/app/actions/partner-mitarbeiter";
 import { FotoGalerie } from "@/components/shared/FotoGalerie";
 import { useCallback, useEffect, useState, type ReactNode } from "react";
 
@@ -54,6 +55,7 @@ function euro(n: number): string {
 }
 
 type Dialog =
+  | { art: "annehmen"; einsatz: PartnerEinsatz }
   | { art: "ablehnen"; einsatz: PartnerEinsatz }
   | { art: "fertig"; einsatz: PartnerEinsatz }
   | { art: "rechnung"; einsatz: PartnerEinsatz }
@@ -68,7 +70,7 @@ type Dialog =
  * Updates und Regie sind intern (nur Bärenwald), getrennt vom Bautagebuch für den Kunden.
  */
 /** Mehrere Fotos wählen: gestaltete Upload-Zone + Vorschau mit × zum Entfernen (statt nacktem Browser-Feld). */
-function FotoAuswahl({
+export function FotoAuswahl({
   label,
   dateien,
   onChange,
@@ -143,6 +145,14 @@ export function PartnerEinsaetzeSection({ rechnungHinweis }: { rechnungHinweis?:
   const [stunden, setStunden] = useState("");
   const [dokArt, setDokArt] = useState<"angebot" | "rechnung" | "protokoll" | "sonstiges">("sonstiges");
   const [rechnungPdf, setRechnungPdf] = useState<File | null>(null);
+  /** Eigene Mitarbeiter (für „Wer macht den Einsatz?“ beim Annehmen) */
+  const [mitarbeiter, setMitarbeiter] = useState<MeinMitarbeiter[]>([]);
+  const [maWahl, setMaWahl] = useState("");
+  useEffect(() => {
+    safeAction(listMeineMitarbeiter())
+      .then((r) => setMitarbeiter(r.ok ? r.liste : []))
+      .catch(() => setMitarbeiter([]));
+  }, []);
 
   const laden = useCallback(async () => {
     try {
@@ -181,7 +191,13 @@ export function PartnerEinsaetzeSection({ rechnungHinweis }: { rechnungHinweis?:
   }
 
   function annehmen(e: PartnerEinsatz) {
-    ausfuehren(einsatzAnnehmen(e.id), "Einsatz angenommen");
+    if (!mitarbeiter.length) {
+      ausfuehren(einsatzAnnehmen(e.id), "Einsatz angenommen");
+      return;
+    }
+    // Mit Mitarbeitern: erst fragen, wer den Einsatz macht (Vorschlag von Bärenwald vorausgewählt)
+    setMaWahl(e.mitarbeiter_id ?? "");
+    oeffne({ art: "annehmen", einsatz: e });
   }
 
   /** Dateien direkt in den Speicher laden; bei Fehler Meldung und null. */
@@ -200,6 +216,13 @@ export function PartnerEinsaetzeSection({ rechnungHinweis }: { rechnungHinweis?:
   async function bestaetigen() {
     if (!dialog) return;
     const id = dialog.einsatz.id;
+    if (dialog.art === "annehmen") {
+      await ausfuehren(
+        einsatzAnnehmen(id, maWahl || null),
+        maWahl ? "Angenommen — Ihr Mitarbeiter wird informiert" : "Einsatz angenommen"
+      );
+      return;
+    }
     if (dialog.art === "ablehnen") {
       await ausfuehren(einsatzAblehnen(id, grund), "Einsatz abgelehnt");
       return;
@@ -251,7 +274,9 @@ export function PartnerEinsaetzeSection({ rechnungHinweis }: { rechnungHinweis?:
   const sichtbar = alle.filter((e) => (ansicht === "erledigt" ? istErledigt(e) : !istErledigt(e)));
 
   const titel =
-    dialog?.art === "ablehnen"
+    dialog?.art === "annehmen"
+      ? "Einsatz annehmen"
+      : dialog?.art === "ablehnen"
       ? "Einsatz ablehnen"
       : dialog?.art === "fertig"
         ? "Als erledigt melden"
@@ -263,7 +288,7 @@ export function PartnerEinsaetzeSection({ rechnungHinweis }: { rechnungHinweis?:
               ? "Dokument hochladen"
               : "Rechnung hochladen";
   const confirmLabel =
-    dialog?.art === "ablehnen" ? "Ablehnen" : dialog?.art === "fertig" ? "Erledigt" : dialog?.art === "rechnung" || dialog?.art === "dokument" ? "Hochladen" : "Senden";
+    dialog?.art === "annehmen" ? "Annehmen" : dialog?.art === "ablehnen" ? "Ablehnen" : dialog?.art === "fertig" ? "Erledigt" : dialog?.art === "rechnung" || dialog?.art === "dokument" ? "Hochladen" : "Senden";
   const updateUnvollstaendig =
     (dialog?.art === "update" && !text.trim() && dateien.length === 0) ||
     (dialog?.art === "regie" && (!text.trim() || !stunden.trim()));
@@ -318,6 +343,9 @@ export function PartnerEinsaetzeSection({ rechnungHinweis }: { rechnungHinweis?:
                   <div className="min-w-0 font-semibold">{e.titel}</div>
                   <PortalStatusPill label={st.label} tone={st.tone} />
                 </div>
+                {e.mitarbeiter_name ? (
+                  <div className="text-fs-meta text-[var(--p2-sub)]">Vor Ort: {e.mitarbeiter_name}</div>
+                ) : null}
                 {e.anweisung ? <p className="m-0 whitespace-pre-wrap">{e.anweisung}</p> : null}
                 <FotoGalerie urls={e.anweisung_fotos} />
                 <div className="text-fs-meta text-[var(--p2-sub)]">
@@ -402,6 +430,19 @@ export function PartnerEinsaetzeSection({ rechnungHinweis }: { rechnungHinweis?:
           confirmDisabled={busy || (dialog.art === "ablehnen" && !grund.trim()) || updateUnvollstaendig}
           busy={busy}
         >
+          {dialog.art === "annehmen" ? (
+            <PortalField label="Wer macht den Einsatz?" hint="Der Mitarbeiter bekommt danach Anweisung und Fotos — ohne Preise.">
+              <PortalSelect value={maWahl} onChange={(ev) => setMaWahl(ev.target.value)}>
+                <option value="">Ich selbst / noch offen</option>
+                {mitarbeiter.map((m) => (
+                  <option key={m.id} value={m.id}>
+                    {m.name}
+                    {m.rolle ? ` · ${m.rolle}` : ""}
+                  </option>
+                ))}
+              </PortalSelect>
+            </PortalField>
+          ) : null}
           {dialog.art === "ablehnen" ? (
             <PortalField label="Grund" hint="Zum Beispiel: kein Termin frei.">
               <PortalTextarea rows={3} value={grund} onChange={(ev) => setGrund(ev.target.value)} />
