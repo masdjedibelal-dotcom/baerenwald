@@ -167,6 +167,15 @@
   --r-pill: 999px;
   --funnel-hero-bg: #1a3d2b;
   --funnel-hero-inner: #1a3d2b;
+  /* Rundungen auch außerhalb .portal-ui (Website, Rechner) — Tailwind rounded-* zeigt auf diese Tokens */
+  --p2-radius-sm: 12px;
+  --p2-radius-md: 18px;
+  --p2-radius-lg: 22px;
+  --p2-radius-sheet: 28px;
+  --p2-radius-card: var(--p2-radius-md);
+  --p2-radius-button: var(--p2-radius-sm);
+  --p2-radius-field: var(--p2-radius-sm);
+  --p2-radius-pill: 999px;
 }
 
 /**

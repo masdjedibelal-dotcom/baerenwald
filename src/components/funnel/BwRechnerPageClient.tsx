@@ -274,12 +274,9 @@ function FunnelRechnerInner({ resetPath }: { resetPath: string }) {
     )
   );
   const kiHandoffRef = useRef<KiRechnerFunnelData | null>(null);
-  const [einstiegModus, setEinstiegModus] = useState<EinstiegModus>(() =>
-    isKiBeratungModusParam(searchParams.get("modus")) ? "ki" : "trust"
-  );
-  const [wahlAuswahl, setWahlAuswahl] = useState<EinstiegWahl | null>(() =>
-    isKiBeratungModusParam(searchParams.get("modus")) ? "ki" : null
-  );
+  // Website ohne BärenwaldGPT: Einstieg immer Trust-Intro → direkt Rechner (keine Auswahl-Weiche).
+  const [einstiegModus, setEinstiegModus] = useState<EinstiegModus>("trust");
+  const [wahlAuswahl, setWahlAuswahl] = useState<EinstiegWahl | null>(null);
   /** Funnel-Screen (Preis, Komplex, Beratung) aus KI → Zurück zur Auswahl-Weiche. */
   const [preisVonKiModus, setPreisVonKiModus] = useState(false);
   /** KI-Chat gesperrt, sobald Preis berechnet werden kann. */
@@ -723,11 +720,7 @@ function FunnelRechnerInner({ resetPath }: { resetPath: string }) {
   useEffect(() => {
     if (!isKiBeratungModusParam(getKiModusFromSearch(searchParams))) return;
 
-    resetKiFlowState();
-    setWahlAuswahl("ki");
-    setEinstiegModus("ki");
-    kiDirectEntryRef.current = true;
-
+    // Alte Links mit ?modus=ki landen im normalen Rechner.
     if (typeof window === "undefined") return;
     const next = new URL(window.location.href);
     if (!next.searchParams.has("modus")) return;
@@ -1142,8 +1135,9 @@ function FunnelRechnerInner({ resetPath }: { resetPath: string }) {
 
     if (isBwTrustScreenId(screen)) {
       if (einstiegModus === "trust" && screen === "trust_intro") {
-        setWahlAuswahl(null);
-        setEinstiegModus("wahl");
+        funnelFromWahlRef.current = true;
+        setEinstiegModus("funnel");
+        setScreen("situation");
         return;
       }
       const nextTrust = getNextBwRechnerScreen(state, screen);
@@ -3065,7 +3059,8 @@ function FunnelRechnerInner({ resetPath }: { resetPath: string }) {
                     return;
                   }
                   if (screen === "situation" && funnelFromWahlRef.current) {
-                    setEinstiegModus("wahl");
+                    setEinstiegModus("trust");
+                    setScreen("trust_intro");
                     window.scrollTo({
                       top: 0,
                       left: 0,
