@@ -1438,6 +1438,9 @@ h3 {
   }
 
   .portal-objekt-create .mock-icon,
+  .portal-ui .portal-action-btn--primary .mock-icon,
+  .portal-ui .btn-pill-primary .mock-icon,
+  .portal-ui .btn-pill-filled .mock-icon,
   .portal-ui .portal-mehr-tile-icon .mock-icon,
   .portal-neue-anfrage-icon .mock-icon {
     color: #fff;

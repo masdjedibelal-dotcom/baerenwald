@@ -271,7 +271,8 @@ export function PortalActionMenuList({
             <div className="my-1.5 border-t border-border-default" />
           ) : null}
           <PortalButton
-            variant="danger"
+            variant="ghost"
+            action={false}
             type="button"
             role="menuitem"
             disabled={item.disabled}

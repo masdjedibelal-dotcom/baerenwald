@@ -75,11 +75,9 @@ export function OrganisationObjektDokumentePanel({
         dokumente: docs,
       });
     }
-    rows.sort((a, b) => {
-      const da = a.dokumente[0]?.datum ?? "";
-      const db = b.dokumente[0]?.datum ?? "";
-      return db.localeCompare(da);
-    });
+    const neuestes = (g: VorgangDokGruppe) =>
+      Math.max(0, ...g.dokumente.map((d) => Date.parse(d.datum ?? "") || 0));
+    rows.sort((a, b) => neuestes(b) - neuestes(a));
     return rows;
   }, [leads, dokumenteByLeadId, objekt.titel]);
 
@@ -141,6 +139,7 @@ export function OrganisationObjektDokumentePanel({
               <div className="flex items-stretch gap-1">
                 <PortalButton
                   variant="ghost"
+                  action={false}
                   type="button"
                   onClick={() =>
                     setOpenId((prev) => (prev === g.leadId ? null : g.leadId))
@@ -170,6 +169,7 @@ export function OrganisationObjektDokumentePanel({
                 {onOpenVorgang ? (
                   <PortalButton
                     variant="ghost"
+                    action={false}
                     type="button"
                     onClick={() => onOpenVorgang(g.leadId)}
                     className="shrink-0 self-center px-3 text-fs-caption font-semibold text-accent hover:underline"

@@ -491,7 +491,8 @@ export function OrganisationObjektePanel({
           <PortalListeTitle>Objekte</PortalListeTitle>
         </div>
         <PortalButton
-          variant="ghost"
+          variant="primary"
+          action={false}
           type="button"
           className="portal-objekt-create"
           onClick={() =>

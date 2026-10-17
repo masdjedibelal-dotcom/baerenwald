@@ -110,6 +110,11 @@ export function DokumenteTabelle({
   onDeleteDoc?: (doc: DokumentZeile) => void;
 }) {
   const docViewer = useOptionalPortalDocViewer();
+  // Immer neueste zuerst; ohne Datum ans Ende (Reihenfolge sonst unverändert).
+  const sortiert = dokumente
+    .map((doc, i) => ({ doc, i, t: Date.parse(doc.datum ?? "") || 0 }))
+    .sort((a, b) => b.t - a.t || a.i - b.i)
+    .map((x) => x.doc);
 
   function openOrFallback(doc: DokumentZeile) {
     const href = doc.href?.trim();
@@ -190,7 +195,7 @@ export function DokumenteTabelle({
         )
       ) : (
         <div className="space-y-2.5">
-          {dokumente.map((doc) => {
+          {sortiert.map((doc) => {
             const datum = fmtDatum(doc.datum);
             const description = doc.beschreibung?.trim() || null;
 
