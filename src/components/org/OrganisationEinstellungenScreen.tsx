@@ -1,5 +1,6 @@
 "use client";
 
+import { OrganisationAnsprechpartnerVerwaltung } from "@/components/org/OrganisationAnsprechpartnerVerwaltung";
 import { OrganisationFreigabeRegelnPanel } from "@/components/org/OrganisationFreigabeRegelnPanel";
 import { OrganisationMeldeMaterial } from "@/components/org/OrganisationMeldeMaterial";
 import { OrganisationMieterLegalLinksPanel } from "@/components/org/OrganisationMieterLegalLinksPanel";
@@ -59,6 +60,8 @@ export function OrganisationEinstellungenScreen({
                   <EinstellungenPfRow label="Telefon" value={tel} />
                 </EinstellungenPfList>
               </EinstellungenSectionCard>
+
+              <OrganisationAnsprechpartnerVerwaltung readOnly={!isAdmin} />
 
               <OrganisationMieterLegalLinksPanel
                 kunde={kunde}
