@@ -23,8 +23,8 @@
 # Temp-Notizen unter docs/ (Markdown sonst versionieren — O1)
 /docs/tmp/
 
-# Marketing-Assets oft zu groß für Git-UI — bewusst lokal / CDN
-/public/images/
+# Bilder unter public/images/ gehören ins Repo (Netlify baut aus Git — sonst fehlen sie live)
+public/images/**/.DS_Store
 
 # macOS Finder-Duplikate (z. B. „e2e 2“) — würden sonst Next typecheck killen
 /e2e 2/
