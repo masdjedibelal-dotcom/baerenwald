@@ -40,6 +40,7 @@ import type { StepOption } from "@/lib/types";
 import { formatCurrencyEUR } from "@/lib/price-calc";
 import { CONFIRM } from "@/lib/portal-copy";
 import { cn } from "@/lib/utils";
+import { MARKE } from "@/lib/marke";
 
 export function PortalFunnelHostView(m: PortalFunnelHostModel) {
   const {
@@ -1250,7 +1251,7 @@ export function PortalFunnelHostView(m: PortalFunnelHostModel) {
                     </p>
                     <p className="text-sm text-text-secondary">
                       Für dieses Vorhaben gibt es keinen Sofort-Preisrahmen —
-                      Bärenwald meldet sich mit einer Einschätzung nach Prüfung.
+                      {MARKE.name} meldet sich mit einer Einschätzung nach Prüfung.
                     </p>
                   </div>
                 )}

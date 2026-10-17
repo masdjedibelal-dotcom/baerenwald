@@ -10,6 +10,8 @@ import {
   type AuthPortalRole,
 } from "@/lib/portal2/auth";
 import { cn } from "@/lib/utils";
+import { MARKE } from "@/lib/marke";
+import { MARKE_ASSETS } from "@/lib/marke-assets";
 
 type Props = {
   role: AuthPortalRole;
@@ -58,8 +60,8 @@ export function PortalAuthBrandPanel({
           </div>
         ) : (
           <Image
-            src="/logo-mark-white.png"
-            alt="Bärenwald"
+            src={MARKE_ASSETS.logoWeiss}
+            alt={`${MARKE.name}`}
             width={40}
             height={40}
             priority

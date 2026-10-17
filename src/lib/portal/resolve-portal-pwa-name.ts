@@ -3,9 +3,10 @@ import { createClient } from "@/lib/supabase/server";
 import { isSupabaseConfigured, supabaseAdmin } from "@/lib/supabase";
 import { loadMieterHvBrand } from "@/lib/portal/load-mieter-hv-brand";
 import { resolvePortalKundeTyp } from "@/lib/portal2/kunde-typ";
+import { MARKE } from "@/lib/marke";
 
 const NEUTRAL = "Portal";
-const PRIVAT = "MeinBärenwald";
+const PRIVAT = `${MARKE.portalName}`;
 
 /**
  * PWA applicationName — Whitelabel: Org-Name; sonst Portal / MeinBärenwald.

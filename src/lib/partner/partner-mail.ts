@@ -17,6 +17,7 @@ import {
   buildInternSubject,
   buildPartnerSubject,
 } from "@/lib/shared-domain/build-subject";
+import { MARKE } from "@/lib/marke";
 
 function fmtEuro(n: number | null | undefined): string {
   if (n == null || !Number.isFinite(n)) return "—";
@@ -35,7 +36,7 @@ function resendClient(): Resend | null {
 function systemFrom(): string {
   return (
     process.env.RESEND_FROM_SYSTEM?.trim() ??
-    "Bärenwald System <system@baerenwaldmuenchen.de>"
+    `${MARKE.name} System <system@${MARKE.websiteHost}>`
   );
 }
 
@@ -79,7 +80,7 @@ function mailShell(title: string, bodyHtml: string, preheader?: string): string 
       <p style="margin:24px 0 0;font-size:15px;color:${MAIL_COLORS.gray700};line-height:1.6;">${mailTeamGrussHtml("sie")}</p>`,
     disclaimer:
       "Sie erhalten diese Mail, weil Ihnen im Partner-Portal ein Vorgang zugewiesen wurde.",
-    footerNote: "Bärenwald München · Partner-Portal",
+    footerNote: `${MARKE.nameLang} · Partner-Portal`,
   });
 }
 
@@ -137,7 +138,7 @@ export async function sendHandwerkerNewAnfrageMail(opts: {
     : "";
 
   const html = mailShell(
-    "Neue Anfrage von Bärenwald",
+    `Neue Anfrage von ${MARKE.name}`,
     `<p style="margin:0 0 12px;font-size:15px;line-height:1.6;">Hallo ${escapeHtml(opts.handwerkerName)},</p>
 <p style="margin:0 0 12px;font-size:15px;line-height:1.6;">Sie haben eine neue Anfrage für <strong>${escapeHtml(opts.gewerkName)}</strong> (PLZ ${escapeHtml(opts.plz)}).</p>
 ${zeitraumBlock}
@@ -360,7 +361,7 @@ export async function sendHandwerkerAngebotAntwortMail(opts: {
   });
 
   const notizBlock = mailGreenBox(`
-    <p style="margin:0 0 6px;font-size:15px;color:${MAIL_COLORS.gray700};font-weight:600;">Nachricht von Bärenwald</p>
+    <p style="margin:0 0 6px;font-size:15px;color:${MAIL_COLORS.gray700};font-weight:600;">Nachricht von ${MARKE.name}</p>
     <p style="margin:0;font-size:15px;line-height:1.6;white-space:pre-wrap;">${escapeHtml(opts.crmNotiz.trim())}</p>
   `);
 

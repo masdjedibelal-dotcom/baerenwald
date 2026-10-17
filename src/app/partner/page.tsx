@@ -15,9 +15,10 @@ import { clearAdminViewCookie } from "@/lib/auth/crm-impersonation-session";
 import { SITE_CONFIG } from "@/lib/config";
 import { createClient } from "@/lib/supabase/server";
 import { isSupabaseConfigured } from "@/lib/supabase";
+import { MARKE } from "@/lib/marke";
 
 export const metadata = {
-  title: "Partner — Bärenwald",
+  title: `Partner — ${MARKE.name}`,
   robots: { index: false, follow: false },
 };
 
@@ -99,7 +100,7 @@ export default async function PartnerDashboardPage({
                 href={`mailto:${SITE_CONFIG.email}`}
                 className="btn-pill-primary text-center !py-2.5 block"
               >
-                Bärenwald kontaktieren
+                {MARKE.name} kontaktieren
               </a>
               <form action="/partner/auth/signout" method="post">
                 <button type="submit" className="btn-pill-outline w-full !py-2.5">
@@ -129,7 +130,7 @@ export default async function PartnerDashboardPage({
               href={`mailto:${SITE_CONFIG.email}`}
               className="btn-pill-outline text-center !py-2.5"
             >
-              Bärenwald kontaktieren
+              {MARKE.name} kontaktieren
             </a>
           </div>
           <form action="/partner/auth/signout" method="post">

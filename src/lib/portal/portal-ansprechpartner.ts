@@ -1,4 +1,5 @@
 import { SITE_CONFIG } from "@/lib/config";
+import { MARKE } from "@/lib/marke";
 
 export type PortalAnsprechpartner = {
   name: string;
@@ -36,7 +37,7 @@ export function portalAnsprechpartnerFallback(): PortalAnsprechpartner {
     name: SITE_CONFIG.companyName,
     telefon: formatTelefonAnzeige(SITE_CONFIG.phone),
     telefonHref: SITE_CONFIG.phoneHref,
-    rolleLabel: "Bärenwald",
+    rolleLabel: `${MARKE.name}`,
     intro: "",
     isFallback: true,
   };

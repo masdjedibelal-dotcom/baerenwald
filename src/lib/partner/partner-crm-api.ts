@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { MARKE } from "@/lib/marke";
 
 function dashboardBase(): string | null {
   const raw =
@@ -30,12 +31,12 @@ async function partnerAuthHeaders(): Promise<HeadersInit | null> {
 
 function crmMissingConfigError(base: string | null, headers: HeadersInit | null): string {
   if (!base) {
-    return "Bärenwald-Verbindung fehlt (NEXT_PUBLIC_DASHBOARD_URL).";
+    return `${MARKE.name}-Verbindung fehlt (NEXT_PUBLIC_DASHBOARD_URL).`;
   }
   if (!headers) {
     return "Sitzung abgelaufen — bitte neu anmelden und erneut abschließen.";
   }
-  return "Bärenwald nicht konfiguriert.";
+  return `${MARKE.name} nicht konfiguriert.`;
 }
 
 export type CrmProjektvertragPreview = {
@@ -87,7 +88,7 @@ export async function acceptCrmRahmenvertragForEmail(
   const base = dashboardBase();
   const headers = internalSecretHeaders();
   if (!base || !headers) {
-    return { ok: false, error: "Bärenwald-Verbindung nicht konfiguriert." };
+    return { ok: false, error: `${MARKE.name}-Verbindung nicht konfiguriert.` };
   }
 
   try {
@@ -107,7 +108,7 @@ export async function acceptCrmRahmenvertragForEmail(
     }
     return { ok: true, vertrags_nr: body.vertrags_nr, pdf_url: body.pdf_url ?? null };
   } catch {
-    return { ok: false, error: "Bärenwald nicht erreichbar." };
+    return { ok: false, error: `${MARKE.name} nicht erreichbar.` };
   }
 }
 
@@ -137,7 +138,7 @@ export async function acceptCrmRahmenvertragLoggedIn(): Promise<
     }
     return { ok: true, vertrags_nr: body.vertrags_nr, pdf_url: body.pdf_url ?? null };
   } catch {
-    return { ok: false, error: "Bärenwald nicht erreichbar." };
+    return { ok: false, error: `${MARKE.name} nicht erreichbar.` };
   }
 }
 

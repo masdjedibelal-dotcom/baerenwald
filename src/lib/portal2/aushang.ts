@@ -4,6 +4,7 @@
 
 import { buildMeldeUrl } from "@/lib/org/melde-url";
 import { normalizeOrgSlug } from "@/lib/org/slug";
+import { MARKE } from "@/lib/marke";
 
 /** Mock `aushangSlug(o)` — Live bevorzugt `melde_slug`. */
 export function aushangSlug(input: {
@@ -59,7 +60,7 @@ export const AUSHANG_HERO_BODY =
 export const AUSHANG_SCAN_LABEL = "Jetzt melden";
 export const AUSHANG_STEPS_TITLE = "Ihre Vorteile";
 /** Hinweis White-Label: klein im Fuß, nie an Mieter-Mails. */
-export const AUSHANG_FOOTER_PARTNER = "Ein Service von Bärenwald";
+export const AUSHANG_FOOTER_PARTNER = `Ein Service von ${MARKE.name}`;
 
 /** PDF-Aushang im Browser (Drucken / Speichern über PDF-Viewer). */
 export function meldeAushangPdfPath(objektId?: string): string {

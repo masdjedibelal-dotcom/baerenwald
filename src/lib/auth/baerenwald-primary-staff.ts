@@ -1,13 +1,13 @@
 /** Primary Team-Login (CRM + Partner + optional Hausmeister). */
 
-export const BAERENWALD_PRIMARY_STAFF_EMAIL = "info@baerenwald-muenchen.de";
+import { istTeo, MARKE } from "@/lib/marke";
+export const BAERENWALD_PRIMARY_STAFF_EMAIL = MARKE.infoEmail;
 
 /** Häufige Tippfehler / Alt-Adressen → kanonisch baerenwald-muenchen.de */
 export const BAERENWALD_PRIMARY_STAFF_EMAIL_ALIASES = [
   BAERENWALD_PRIMARY_STAFF_EMAIL,
-  "info@baerenwaldmuenchen.de",
-  "info@baerenwald.de",
-] as const;
+  ...(istTeo ? [] : ["info@baerenwaldmuenchen.de", "info@baerenwald.de"]),
+];
 
 export function isBaerenwaldPrimaryStaffEmail(
   email: string | null | undefined

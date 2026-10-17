@@ -120,6 +120,7 @@ import {
 } from "@/lib/analytics";
 import { SITE_CONFIG } from "@/lib/config";
 import { cn } from "@/lib/utils";
+import { MARKE } from "@/lib/marke";
 
 const LEAD_FORM_ID = "bw-funnel-lead";
 const BERATUNG_LEAD_FORM_ID = "bw-beratung-lead";
@@ -2718,7 +2719,7 @@ function FunnelRechnerInner({ resetPath }: { resetPath: string }) {
             question={
               portalAuthReady
                 ? "Kontaktdaten prüfen"
-                : "MeinBärenwald Konto"
+                : `${MARKE.portalName} Konto`
             }
             subtext={
               portalAuthReady

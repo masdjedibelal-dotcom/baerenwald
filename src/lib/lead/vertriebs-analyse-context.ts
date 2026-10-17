@@ -1,5 +1,6 @@
 import type { KundenVertriebsKontext } from "@/lib/lead/kunden-vertrieb-status";
 import type { MarketingJourney } from "@/lib/marketing/journey-types";
+import { MARKE } from "@/lib/marke";
 
 export type KiChatVerlaufEntry = {
   role: string;
@@ -61,7 +62,7 @@ function formatJourney(j: MarketingJourney): string {
 function formatKunden(k: KundenVertriebsKontext): string {
   return [
     `Kundenart: ${k.kundenart === "neukunde" ? "Neukunde (erstmalig in DB)" : "Bestandskunde (bereits im System)"}`,
-    `MeinBärenwald-Portal: ${k.portal_registriert ? "ja (auth verknüpft)" : "nein"}`,
+    `${MARKE.portalName}-Portal: ${k.portal_registriert ? "ja (auth verknüpft)" : "nein"}`,
     `Leads gesamt (inkl. diese Anfrage): ${k.anzahl_leads_gesamt}`,
     `Frühere Leads: ${k.anzahl_leads_bisher}`,
     k.kunde_seit ? `Kundenstamm seit: ${k.kunde_seit.slice(0, 10)}` : "",

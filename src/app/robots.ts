@@ -1,10 +1,11 @@
 import type { MetadataRoute } from "next";
 
 import { publicSiteOrigin } from "@/lib/staging";
+import { MARKE } from "@/lib/marke";
 
 export default function robots(): MetadataRoute.Robots {
   const origin = publicSiteOrigin();
-  if (origin.includes("staging--")) {
+  if (origin.includes("staging--") || !MARKE.marketingSeite) {
     return {
       rules: [{ userAgent: "*", disallow: "/" }],
     };

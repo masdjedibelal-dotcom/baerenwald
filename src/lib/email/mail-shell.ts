@@ -5,6 +5,7 @@ import { MAIL_COLORS } from "@/lib/tokens/mail-colors";
  */
 import { SITE_CONFIG } from "@/lib/config";
 import { MAIL_LOGO_URL_GREEN } from "@/lib/email/mail-logo-inline";
+import { MARKE } from "@/lib/marke";
 
 function esc(s: string): string {
   return s
@@ -28,14 +29,14 @@ function phoneDisplay(): string {
 
 /** Immer Prod-Host — nicht SITE_CONFIG.url (Staging/Preview). */
 const LOGO_MARK_URL = MAIL_LOGO_URL_GREEN;
-const FOOTER_DOMAIN = "baerenwaldmuenchen.de";
+const FOOTER_DOMAIN = MARKE.websiteHost;
 
 export type StandardMailAnrede = "du" | "sie";
 
 export function mailTeamGrussHtml(anrede: StandardMailAnrede = "sie"): string {
   return anrede === "du"
-    ? "Viele Grüße<br/><strong>Dein Bärenwald Team</strong>"
-    : "Mit freundlichen Grüßen<br/><strong>Ihr Bärenwald Team</strong>";
+    ? `Viele Grüße<br/><strong>Dein ${MARKE.name} Team</strong>`
+    : `Mit freundlichen Grüßen<br/><strong>Ihr ${MARKE.name} Team</strong>`;
 }
 
 export function mailBegruessungHtml(
@@ -78,7 +79,7 @@ export function buildStandardMailHtml(opts: BuildStandardMailOpts): string {
   const footerMain = opts.footerNote?.trim()
     ? `<p style="margin:0;font-size:12px;color:${MAIL_COLORS.gray400};line-height:1.6;">${esc(opts.footerNote.trim())}</p>`
     : `<p style="margin:0;font-size:12px;color:${MAIL_COLORS.gray400};line-height:1.6;">
-      Bärenwald München ·
+      ${MARKE.nameLang} ·
       <a href="${siteUrl}" style="color:${MAIL_COLORS.gray400};text-decoration:none;">${esc(FOOTER_DOMAIN)}</a>
       · ${phoneTxt}
     </p>`;
@@ -102,10 +103,10 @@ ${pre}
     <table cellpadding="0" cellspacing="0" role="presentation">
     <tr>
       <td style="padding-right:10px;vertical-align:middle;">
-        <img src="${escAttr(LOGO_MARK_URL)}" width="36" height="36" alt="Bärenwald" style="display:block;width:36px;height:36px;border:0;"/>
+        <img src="${escAttr(LOGO_MARK_URL)}" width="36" height="36" alt="${MARKE.name}" style="display:block;width:36px;height:36px;border:0;"/>
       </td>
       <td style="vertical-align:middle;font-size:20px;font-weight:700;color:${MAIL_COLORS.primaryDk};letter-spacing:-0.02em;line-height:1;">
-        Bärenwald
+        ${MARKE.name}
       </td>
     </tr>
     </table>

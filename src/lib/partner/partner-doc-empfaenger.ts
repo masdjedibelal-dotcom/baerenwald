@@ -1,8 +1,9 @@
 import { logDbError } from "@/lib/errors/log-db-error";
 import { supabaseAdmin } from "@/lib/supabase";
+import { MARKE } from "@/lib/marke";
 
 /**
- * Empfänger für Partner-Angebote & -Rechnungen (Bärenwald Plattform).
+ * Empfänger für Partner-Angebote & -Rechnungen (Plattform der Marke).
  * Quelle: CRM-Firmendaten (`einstellungen`); Env-Variablen überschreiben explizit.
  */
 
@@ -15,12 +16,12 @@ export type PartnerDocEmpfaenger = {
 
 /** Entspricht CRM `defaultFirmenEinstellungen` — nur falls `einstellungen` nicht lesbar ist. */
 const CRM_FIRMA_FALLBACK = {
-  firmenname: "Bärenwald München",
-  strasse: "Bärenwaldstraße",
-  hausnummer: "20",
-  plz: "81737",
-  ort: "München",
-  email: "info@baerenwald-muenchen.de",
+  firmenname: MARKE.firma.firmenname,
+  strasse: MARKE.firma.strasse,
+  hausnummer: MARKE.firma.hausnummer,
+  plz: MARKE.firma.plz,
+  ort: MARKE.firma.ort,
+  email: MARKE.firma.email,
 };
 
 async function loadFirmenEinstellungen(): Promise<typeof CRM_FIRMA_FALLBACK> {

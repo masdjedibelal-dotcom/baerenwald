@@ -6,6 +6,7 @@ import { SITE_CONFIG } from "@/lib/config";
 import { normalizeKundenEmail } from "@/lib/kunden/kunde-email";
 import { htmlToPlainText } from "@/lib/shared-domain/html-to-plain-text";
 import { isSupabaseConfigured, supabaseAdmin } from "@/lib/supabase";
+import { MARKE } from "@/lib/marke";
 
 export const FUNNEL_OTP_TTL_MS = 15 * 60 * 1000;
 export const FUNNEL_OTP_MAX_ATTEMPTS = 5;
@@ -181,10 +182,10 @@ export async function sendFunnelOtpEmail(opts: {
 
   const brand = opts.brand ?? "meinbaerenwald";
   const productLabel =
-    brand === "partner" ? "Partner-Portal" : "MeinBärenwald";
+    brand === "partner" ? "Partner-Portal" : `${MARKE.portalName}`;
   const from =
     process.env.RESEND_FROM_SYSTEM ??
-    "MeinBärenwald <system@baerenwaldmuenchen.de>";
+    `${MARKE.portalName} <system@${MARKE.websiteHost}>`;
   const vorname = (opts.vorname ?? "").trim();
   const greeting =
     brand === "partner"

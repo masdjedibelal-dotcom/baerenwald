@@ -100,6 +100,7 @@ import {
 } from "@/lib/portal2/nav-items";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { PortalButton } from "@/components/portal/PortalButton";
+import { MARKE } from "@/lib/marke";
 
 type OrgSection =
   | "uebersicht"
@@ -605,7 +606,7 @@ export function OrganisationPortalClient({
       ) : null}
       <PortalShell
         variant="org"
-        brandTitle="MeinBärenwald"
+        brandTitle={`${MARKE.portalName}`}
         brandSubtitle={resolveOrgSubLabel(kunde.org_sub)}
         brandLogoUrl={kunde.org_logo_url}
         brandKuerzel={kunde.org_logo_kuerzel}

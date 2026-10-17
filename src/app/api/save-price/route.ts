@@ -14,6 +14,7 @@ import { getClientIp } from "@/lib/request-ip";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { buildInternSubject } from "@/lib/shared-domain/build-subject";
 import { isValidEmail, isValidPlz } from "@/lib/validation";
+import { MARKE } from "@/lib/marke";
 
 export type SavePriceBody = {
   email?: string;
@@ -85,7 +86,7 @@ export async function POST(request: Request) {
 
     const resend = new Resend(apiKey);
     const from =
-      process.env.RESEND_FROM ?? "Bärenwald <onboarding@resend.dev>";
+      process.env.RESEND_FROM ?? `${MARKE.name} <onboarding@resend.dev>`;
 
     const customerHtml = buildSavePriceCustomerHtml({
       situation,

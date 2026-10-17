@@ -4,10 +4,13 @@
  */
 
 /** Stabile Produktions-URL — unabhängig von Staging/Preview-Hosts. */
-export const MAIL_LOGO_HOST = "https://baerenwaldmuenchen.de";
+import { istTeo, MARKE } from "@/lib/marke";
+export const MAIL_LOGO_HOST = MARKE.portalUrl;
 
-export const MAIL_LOGO_URL_GREEN = `${MAIL_LOGO_HOST}/mail-logo-green.png`;
-export const MAIL_LOGO_URL_WHITE = `${MAIL_LOGO_HOST}/mail-logo-white.png`;
+/** Servus TEO: eigene Logos unter /brand/teo/ */
+const MAIL_LOGO_DIR = istTeo ? "/brand/teo" : "";
+export const MAIL_LOGO_URL_GREEN = `${MAIL_LOGO_HOST}${MAIL_LOGO_DIR}/mail-logo-green.png`;
+export const MAIL_LOGO_URL_WHITE = `${MAIL_LOGO_HOST}${MAIL_LOGO_DIR}/mail-logo-white.png`;
 
 /**
  * Alle Logo-src (http, relativ, cid) → stabile HTTPS-URLs auf der Website.

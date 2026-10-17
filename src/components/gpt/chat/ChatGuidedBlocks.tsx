@@ -20,6 +20,7 @@ import { cn } from "@/lib/utils";
 
 import { ChatLeadForm } from "./ChatLeadForm";
 import { ChatPriceCard } from "./ChatPriceCard";
+import { MARKE } from "@/lib/marke";
 
 const JOURNEY_ENTRY = [
   {
@@ -37,7 +38,7 @@ const JOURNEY_ENTRY = [
   {
     id: "journey_anfrage",
     label: "Anfrage senden",
-    hint: "Direkt an Bärenwald.",
+    hint: `Direkt an ${MARKE.name}.`,
     icon: "send",
   },
 ] as const;

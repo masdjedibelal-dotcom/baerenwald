@@ -5,6 +5,7 @@
 import type { KundePortalDetailItem } from "@/lib/portal/portal-detail-item";
 import type { PortalMockStatusId } from "@/lib/portal2/status";
 import type { HvOfferCard, HvVerlaufEntry } from "@/lib/portal2/hv-detail";
+import { MARKE } from "@/lib/marke";
 
 export function inferFlowFromKundeItem(
   item: KundePortalDetailItem,
@@ -97,7 +98,7 @@ export function buildHvVerlaufSeed(input: {
   if (input.freigabeStatus === "freigegeben") {
     entries.unshift({
       t: "Gerade eben",
-      txt: "Freigegeben – Bärenwald fragt Partner an",
+      txt: `Freigegeben – ${MARKE.name} fragt Partner an`,
       who: "Verwaltung",
     });
   }

@@ -1,10 +1,11 @@
 import type { Metadata, Viewport } from "next";
 import type { CSSProperties } from "react";
-import { Lora, Plus_Jakarta_Sans } from "next/font/google";
+import { Literata, Lora, Manrope, Plus_Jakarta_Sans } from "next/font/google";
 import "./globals.css";
 import { JsonLdLocalBusiness } from "@/components/JsonLd";
 import { PortalToaster } from "@/components/shared/PortalToaster";
 import { OG_IMAGE, SITE_CONFIG } from "@/lib/config";
+import { istTeo, MARKE, MARKE_ID } from "@/lib/marke";
 import { isStagingDeploy, publicSiteOrigin } from "@/lib/staging";
 import { PHProvider } from "./providers";
 
@@ -21,6 +22,14 @@ const lora = Lora({
   variable: "--font-display",
 });
 
+/* Servus TEO: Manrope + Literata (nur bei NEXT_PUBLIC_MARKE=teo eingebunden) */
+const teoSans = Manrope({ subsets: ["latin"], variable: "--font-sans" });
+const teoDisplay = Literata({ subsets: ["latin"], weight: ["400", "600", "700"], variable: "--font-display" });
+const SCHRIFT_KLASSEN = istTeo
+  ? `${teoSans.variable} ${teoDisplay.variable}`
+  : `${plusJakarta.variable} ${lora.variable}`;
+const ICON_DIR = istTeo ? "/brand/teo" : "/icons";
+
 const BASE_URL = publicSiteOrigin();
 const staging = isStagingDeploy();
 
@@ -28,18 +37,18 @@ export const metadata: Metadata = {
   metadataBase: new URL(BASE_URL),
 
   title: {
-    default: "Bärenwald München — Partner aus einer Hand",
-    template: "%s — Bärenwald München",
+    default: istTeo ? MARKE.nameLang : `${MARKE.nameLang} — Partner aus einer Hand`,
+    template: `%s — ${MARKE.nameLang}`,
   },
 
   description:
     "Partner München — ein Ansprechpartner für alle Gewerke. Preisrahmen online berechnen. Malerarbeiten, Bad, Elektro, Heizung. Unverbindlich.",
 
   authors: [{ name: "Beran Cakmak" }],
-  creator: "Bärenwald München",
-  publisher: "Bärenwald München",
+  creator: MARKE.nameLang,
+  publisher: MARKE.nameLang,
 
-  robots: staging
+  robots: staging || !MARKE.marketingSeite
     ? {
         index: false,
         follow: false,
@@ -58,8 +67,8 @@ export const metadata: Metadata = {
     type: "website",
     locale: "de_DE",
     url: BASE_URL,
-    siteName: "Bärenwald München",
-    title: "Bärenwald München — Partner aus einer Hand",
+    siteName: MARKE.nameLang,
+    title: `${MARKE.nameLang} — Partner aus einer Hand`,
     description:
       "Partner München — ein Ansprechpartner für alle Gewerke. Preisrahmen online berechnen. Malerarbeiten, Bad, Elektro, Heizung. Unverbindlich.",
     images: [
@@ -74,7 +83,7 @@ export const metadata: Metadata = {
 
   twitter: {
     card: "summary_large_image",
-    title: "Bärenwald München — Partner aus einer Hand",
+    title: `${MARKE.nameLang} — Partner aus einer Hand`,
     description:
       "Partner München — ein Ansprechpartner für alle Gewerke. Preisrahmen online berechnen. Malerarbeiten, Bad, Elektro, Heizung.",
     images: [OG_IMAGE.url],
@@ -82,13 +91,15 @@ export const metadata: Metadata = {
 
   icons: {
     icon: [
-      { url: "/favicon.ico?v=20260816", sizes: "any" },
-      { url: "/icons/pwa-192.png", sizes: "192x192", type: "image/png" },
-      { url: "/icons/pwa-512.png", sizes: "512x512", type: "image/png" },
+      ...(istTeo
+        ? [{ url: "/brand/teo/favicon.png", type: "image/png" }]
+        : [{ url: "/favicon.ico?v=20260816", sizes: "any" }]),
+      { url: `${ICON_DIR}/pwa-192.png`, sizes: "192x192", type: "image/png" },
+      { url: `${ICON_DIR}/pwa-512.png`, sizes: "512x512", type: "image/png" },
     ],
-    shortcut: "/favicon.ico?v=20260816",
+    shortcut: istTeo ? "/brand/teo/favicon.png" : "/favicon.ico?v=20260816",
     apple: [
-      { url: "/icons/apple-touch-icon.png", sizes: "180x180", type: "image/png" },
+      { url: `${ICON_DIR}/apple-touch-icon.png`, sizes: "180x180", type: "image/png" },
     ],
   },
 
@@ -98,7 +109,7 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: SITE_CONFIG.accentColor,
+  themeColor: istTeo ? MARKE.themeColor : SITE_CONFIG.accentColor,
   width: "device-width",
   initialScale: 1,
   /** Pflicht für env(safe-area-inset-*) — Home-Screen-PWA / Notch. */
@@ -115,7 +126,8 @@ export default function RootLayout({
   return (
     <html
       lang="de"
-      className={`${plusJakarta.variable} ${lora.variable}`}
+      data-marke={MARKE_ID}
+      className={SCHRIFT_KLASSEN}
       style={
         {
           "--acc": SITE_CONFIG.accentColor,
@@ -136,7 +148,7 @@ requestAnimationFrame(function () {
           }}
         />
         <PHProvider>
-          <JsonLdLocalBusiness />
+          {MARKE.marketingSeite ? <JsonLdLocalBusiness /> : null}
           <PortalToaster />
           {children}
         </PHProvider>

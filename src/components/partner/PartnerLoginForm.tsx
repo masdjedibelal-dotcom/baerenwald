@@ -14,6 +14,7 @@ import { PartnerAuthFlowHint } from "@/components/partner/PartnerAuthFlowHint";
 import { PARTNER_AUTH_COPY } from "@/lib/partner/partner-auth-copy";
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
 import { PortalButton } from "@/components/portal/PortalButton";
+import { MARKE } from "@/lib/marke";
 
 export function PartnerLoginForm() {
   const router = useRouter();
@@ -201,7 +202,7 @@ export function PartnerLoginForm() {
           Jetzt registrieren
         </Link>
         <span className="block mt-1 portal-text-meta text-text-tertiary">
-          Nur möglich, nachdem Bärenwald Ihren Betrieb angelegt hat.
+          Nur möglich, nachdem {MARKE.name} Ihren Betrieb angelegt hat.
         </span>
       </p>
     </form>

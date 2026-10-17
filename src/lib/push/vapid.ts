@@ -1,3 +1,4 @@
+import { MARKE } from "@/lib/marke";
 /** Öffentlicher VAPID-Key (Browser-Subscribe). */
 export function getVapidPublicKey(): string | null {
   const k =
@@ -15,7 +16,7 @@ export function getVapidPrivateKey(): string | null {
 export function getVapidSubject(): string {
   return (
     process.env.VAPID_SUBJECT?.trim() ||
-    "mailto:system@baerenwaldmuenchen.de"
+    `mailto:system@${MARKE.websiteHost}`
   );
 }
 

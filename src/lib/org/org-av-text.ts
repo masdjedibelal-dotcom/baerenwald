@@ -1,4 +1,5 @@
 import { ORG_AV_VERSION_CURRENT } from "@/lib/org/org-mieter-kontakt";
+import { MARKE } from "@/lib/marke";
 
 /** Volltext des Org-AVV zum Archivieren bei digitaler Akzeptanz (Entwurf — Anwalt prüft). */
 const ORG_AV_TEXT_BY_VERSION: Record<string, string> = {
@@ -7,7 +8,7 @@ Version 2026-07 — Entwurf
 
 1. Parteien
 Verantwortlicher (Auftraggeber): jeweilige Verwaltung (Kundin)
-Auftragsverarbeiter: Bärenwald München, Beran Cakmak, Bärenwaldstraße 20, 81737 München
+Auftragsverarbeiter: ${MARKE.firma.firmenname}, ${MARKE.firma.inhaber}, ${MARKE.firma.strasse} ${MARKE.firma.hausnummer}, ${MARKE.firma.plz} ${MARKE.firma.ort}
 
 2. Gegenstand und Dauer
 Verarbeitung personenbezogener Daten im Rahmen des Auftraggeber-Portals und der Mieter-Schadenmeldungen über /melden.
@@ -27,7 +28,7 @@ Mieter/Melder, Ansprechpartner der Verwaltung, ggf. Eigentümer (Objektbezug).
 Name, E-Mail, Telefon, Wohnung/Einheit, Schadensbeschreibung, Kategorie, Fotos, Objektadresse, technische Protokolldaten (IP, Zeitstempel), Portal-Login der HV-Mitarbeiter.
 
 6. Weisungsrecht
-Die Verwaltung erteilt Weisungen schriftlich oder über das Portal. Bärenwald verarbeitet nur im Rahmen dieser Weisungen und des Vertrags.
+Die Verwaltung erteilt Weisungen schriftlich oder über das Portal. ${MARKE.name} verarbeitet nur im Rahmen dieser Weisungen und des Vertrags.
 
 7. Pflichten Auftragsverarbeiter
 Verarbeitung nur auf dokumentierte Weisung; Vertraulichkeit; technische und organisatorische Maßnahmen (TOM); Unterstützung bei Betroffenenrechten; Meldung von Datenschutzvorfällen unverzüglich; Löschung/Rückgabe nach Vertragsende.

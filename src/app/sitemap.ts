@@ -2,10 +2,13 @@ import type { MetadataRoute } from "next";
 import handwerkerContent from "@/data/handwerker-content.json";
 import { LEISTUNGEN, RATGEBER, leistungHref, ratgeberHref } from "@/lib/routes";
 import type { HandwerkerContentItem } from "@/lib/handwerker-types";
+import { MARKE } from "@/lib/marke";
 
-const BASE = "https://baerenwaldmuenchen.de";
+const BASE = MARKE.portalUrl;
 
 export default function sitemap(): MetadataRoute.Sitemap {
+  // Servus TEO: keine Marketing-Seiten → keine Sitemap-Einträge
+  if (!MARKE.marketingSeite) return [];
   return [
     // Startseite
     {

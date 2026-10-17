@@ -1,5 +1,6 @@
 import type { GptLeadDraft, GptLeadField } from "@/lib/gpt-viz/lead-collect";
 import { formatLeadDraftSummary, leadFieldLabel } from "@/lib/gpt-viz/lead-collect";
+import { MARKE } from "@/lib/marke";
 
 export function buildGptStudioLeadPrompt(
   draft: GptLeadDraft,
@@ -16,7 +17,7 @@ ${
   nextField
     ? `Als Nächstes brauchst du: **${leadFieldLabel(nextField)}**.
 Bestätige kurz freundlich, was du aus der letzten Nutzer-Nachricht verstanden hast (falls sinnvoll), und stelle GENAU EINE klare Frage für dieses Feld.`
-    : `Alle Pflichtangaben sind da. Fasse kurz zusammen und sage, dass du die Anfrage jetzt an Bärenwald sendest — freundlich und knapp.`
+    : `Alle Pflichtangaben sind da. Fasse kurz zusammen und sage, dass du die Anfrage jetzt an ${MARKE.name} sendest — freundlich und knapp.`
 }
 
 REGELN:

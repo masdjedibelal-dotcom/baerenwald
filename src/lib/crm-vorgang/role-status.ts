@@ -1,4 +1,5 @@
 import type { PortalRole, ResolvedVorgang } from "@/lib/crm-vorgang/types";
+import { MARKE } from "@/lib/marke";
 
 /**
  * D1 (leicht): CRM-Resolver-Labels für Rollen.
@@ -122,7 +123,7 @@ function actionHint(resolved: ResolvedVorgang, role: PortalRole): string | null 
     if (resolved.actor === "freigabe") return "Freigabe ausstehend";
     if (resolved.actor === "handwerker") return "Partner";
     if (resolved.actor === "kunde") return "Angebot liegt vor";
-    if (resolved.actor === "bw") return "Bärenwald";
+    if (resolved.actor === "bw") return `${MARKE.name}`;
   }
   return null;
 }

@@ -1,4 +1,5 @@
 import type { OrganisationKunde } from "@/lib/org/types";
+import { MARKE } from "@/lib/marke";
 
 export type HvMeldungStatus =
   | "neu"
@@ -42,10 +43,10 @@ export function formatPreisspanneDisplay(
   preisUnsicher?: boolean | null
 ): string {
   if (preisUnsicher || preisMin == null || preisMax == null) {
-    return "Preis nach Prüfung durch Bärenwald";
+    return `Preis nach Prüfung durch ${MARKE.name}`;
   }
   if (preisMin <= 0 && preisMax <= 0) {
-    return "Preis nach Prüfung durch Bärenwald";
+    return `Preis nach Prüfung durch ${MARKE.name}`;
   }
   if (Math.abs(preisMin - preisMax) < 1) {
     return `ca. ${preisMin.toLocaleString("de-DE")} € netto`;

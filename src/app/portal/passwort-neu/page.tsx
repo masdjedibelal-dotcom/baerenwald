@@ -2,11 +2,12 @@ import { Suspense } from "react";
 
 import { PortalAuthShell } from "@/components/portal/PortalAuthShell";
 import { PortalSetPasswordForm } from "@/components/portal/PortalSetPasswordForm";
+import { MARKE } from "@/lib/marke";
 
 export const dynamic = "force-dynamic";
 
 export const metadata = {
-  title: "Neues Passwort — MeinBärenwald",
+  title: `Neues Passwort — ${MARKE.portalName}`,
   robots: { index: false, follow: false },
 };
 

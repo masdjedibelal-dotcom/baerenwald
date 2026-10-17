@@ -3,9 +3,10 @@ import { Suspense } from "react";
 import { PortalAuthShell } from "@/components/portal/PortalAuthShell";
 import { PortalRegisterForm } from "@/components/portal/PortalRegisterForm";
 import { loadMeldeContactByToken } from "@/lib/melde/melde-bestaetigung";
+import { MARKE } from "@/lib/marke";
 
 export const metadata = {
-  title: "Registrieren — MeinBärenwald",
+  title: `Registrieren — ${MARKE.portalName}`,
   robots: { index: false, follow: false },
 };
 

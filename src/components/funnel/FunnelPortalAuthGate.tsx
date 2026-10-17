@@ -14,6 +14,7 @@ import { PortalAuthBusy } from "@/components/portal/auth/PortalAuthBusy";
 import type { PortalContactPrefill } from "@/lib/portal/portal-contact-prefill";
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
 import { cn } from "@/lib/utils";
+import { MARKE } from "@/lib/marke";
 
 export type FunnelAuthCompletePayload = {
   prefill: PortalContactPrefill;
@@ -26,7 +27,7 @@ type Phase = "boot" | "auth" | "verify";
 
 const MEIN_BAERENWALD_VORTEILE = [
   "Preisrahmen berechnen und Angebot speichern",
-  "Vorgang jederzeit in Mein Bärenwald nachverfolgen",
+  `Vorgang jederzeit in ${MARKE.portalName} nachverfolgen`,
   "Angebote annehmen und Termine koordinieren",
 ] as const;
 
@@ -237,7 +238,7 @@ export function FunnelPortalAuthGate({
     <div className={cn("space-y-5", className)}>
       <div className="space-y-2">
         <p className="text-sm leading-relaxed text-text-secondary">
-          Melden Sie sich bei <strong className="text-text-primary">Mein Bärenwald</strong>{" "}
+          Melden Sie sich bei <strong className="text-text-primary">{MARKE.portalName}</strong>{" "}
           an, um Ihren Preis zu berechnen und das Angebot zu versenden.
         </p>
         <ul className="space-y-2 pt-1">

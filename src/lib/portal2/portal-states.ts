@@ -1,4 +1,5 @@
 import { PALETTE } from "@/lib/tokens/palette";
+import { MARKE } from "@/lib/marke";
 /**
  * Portal 2.0 Fehler-/Leer-Zustände — Mock `screenState` Texte 1:1
  * Quelle: Baerenwald Portale (5).html
@@ -101,7 +102,7 @@ export function resolvePortalStateCopy(
         iconFg: "var(--p2-sand-text)",
         title: "Kein Zugriff",
         subtitle:
-          "Für diesen Bereich fehlt Ihnen die Berechtigung. Wenden Sie sich an Ihre Verwaltung oder Bärenwald.",
+          `Für diesen Bereich fehlt Ihnen die Berechtigung. Wenden Sie sich an Ihre Verwaltung oder ${MARKE.name}.`,
         primaryLabel: BTN.overview,
         secondaryLabel: BTN.support,
       };

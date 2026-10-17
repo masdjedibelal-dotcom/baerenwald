@@ -24,6 +24,7 @@ import {
   leadSortTs,
   sortDashboardActionSlides,
 } from "@/lib/portal2/dashboard-actions/sort";
+import { MARKE } from "@/lib/marke";
 
 function itemForLead(
   items: KundePortalDetailItem[],
@@ -72,7 +73,7 @@ function resolveHvMeldungSlide(input: {
   ];
   buttons.push({
     id: "direkt_baerenwald",
-    label: "Direkt Bärenwald",
+    label: `Direkt ${MARKE.name}`,
     variant: "primary",
     mode: "inline",
   });

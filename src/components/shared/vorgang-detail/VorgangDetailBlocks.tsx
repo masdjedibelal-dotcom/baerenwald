@@ -10,6 +10,7 @@ import {
   type VorgangDetailSight,
   type VorgangDetailVM,
 } from "@/lib/vorgang/vorgang-detail-vm";
+import { MARKE } from "@/lib/marke";
 
 function BlockShell({
   title,
@@ -403,7 +404,7 @@ export function VorgangDetailBlocks({
           {plainExec && !C.terminLabel && vm.leistungen.length === 0 ? (
             <p className="portal-text-meta text-text-secondary">
               {isHausmeister
-                ? "Prüfen Sie die Checkliste — danach selbst erledigen oder an Bärenwald weitergeben."
+                ? `Prüfen Sie die Checkliste — danach selbst erledigen oder an ${MARKE.name} weitergeben.`
                 : "Sobald Termine oder Arbeiten feststehen, erscheinen sie hier."}
             </p>
           ) : null}

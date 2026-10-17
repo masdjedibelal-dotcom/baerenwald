@@ -2,6 +2,7 @@
  * Zentrale Betriebs-Konfiguration — Akzent entspricht Design-Token --acc.
  */
 import { publicSiteOrigin } from "@/lib/staging";
+import { MARKE } from "@/lib/marke";
 
 const accentFromEnv =
   typeof process !== "undefined" && process.env.NEXT_PUBLIC_ACCENT_COLOR
@@ -11,8 +12,8 @@ const accentFromEnv =
 const siteUrl = publicSiteOrigin();
 
 export const SITE_CONFIG = {
-  companyName: "Bärenwald",
-  logoInitials: "BW",
+  companyName: MARKE.name,
+  logoInitials: MARKE.kurz,
   accentColor: accentFromEnv,
   /** Kanonische Site-URL für Schema & Open Graph */
   url: siteUrl,
@@ -25,13 +26,13 @@ export const SITE_CONFIG = {
   /** Nur intern / Impressum & Pflichtangaben — nicht im allgemeinen UI */
   phoneMobil: "+49 163 7316161",
   phoneMobilHref: "tel:+491637316161",
-  email: "info@baerenwald-muenchen.de",
+  email: MARKE.firma.email,
   /** Geschäftsanschrift (Impressum, Schema, Kontakt). */
-  addressStreet: "Bärenwaldstraße",
-  addressHouseNumber: "20",
-  addressPostalCode: "81737",
-  addressCity: "München",
-  addressLine: "Bärenwaldstraße 20, 81737 München",
+  addressStreet: MARKE.firma.strasse,
+  addressHouseNumber: MARKE.firma.hausnummer,
+  addressPostalCode: MARKE.firma.plz,
+  addressCity: MARKE.firma.ort,
+  addressLine: `${MARKE.firma.strasse} ${MARKE.firma.hausnummer}, ${MARKE.firma.plz} ${MARKE.firma.ort}`,
   region: "München & Umgebung",
   plzRadius: ["80", "81", "82", "83", "84", "85", "86"],
   calendlyUrl: "",
@@ -45,7 +46,7 @@ export const SITE_CONFIG = {
     "innerhalb von 24–48 Stunden (Mo–Sa; an Sonntagen am folgenden Werktag)",
 } as const;
 
-const ogImageAlt = "Bärenwald München — Partner aus einer Hand";
+const ogImageAlt = `${MARKE.nameLang} — Partner aus einer Hand`;
 
 /** Open Graph / Twitter — einheitlich für alle Seiten */
 export const OG_IMAGE = {

@@ -1,0 +1,32 @@
+{
+  "name": "TEO Partner",
+  "short_name": "TEO Partner",
+  "description": "Partner-Portal — Aufträge und Termine",
+  "start_url": "/partner",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#ffffff",
+  "theme_color": "#0b1f3a",
+  "lang": "de-DE",
+  "icons": [
+    {
+      "src": "/brand/teo/pwa-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/brand/teo/pwa-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/brand/teo/pwa-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}

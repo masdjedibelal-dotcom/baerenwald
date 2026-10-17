@@ -10,6 +10,8 @@ import { RefreshIcon18 } from "@/components/funnel/NeueAnfrageResetLink";
 import { SITE_CONFIG } from "@/lib/config";
 import { WHATSAPP_ICON_PATH, WHATSAPP_URL_ANFRAGE } from "@/lib/whatsapp";
 import { cn } from "@/lib/utils";
+import { MARKE } from "@/lib/marke";
+import { MARKE_ASSETS } from "@/lib/marke-assets";
 
 export interface FunnelHeaderProps {
   className?: string;
@@ -92,8 +94,8 @@ export function FunnelHeader({
 
         <div className="flex min-w-0 flex-col items-center justify-center gap-0.5 text-center">
           <Image
-            src="/logo-mark-green.png"
-            alt="Bärenwald"
+            src={MARKE_ASSETS.logoGruen}
+            alt={`${MARKE.name}`}
             width={40}
             height={40}
             className="shrink-0"

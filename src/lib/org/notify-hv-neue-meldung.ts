@@ -12,6 +12,7 @@ import { buildSubject } from "@/lib/shared-domain/build-subject";
 import { supabaseAdmin } from "@/lib/supabase";
 import { isValidEmail } from "@/lib/validation";
 import { Resend } from "resend";
+import { MARKE } from "@/lib/marke";
 
 /**
  * HV-Glocke (+ optional E-Mail): neue Meldung vom Mieter/Melder-Link.
@@ -133,7 +134,7 @@ export async function notifyHvNeueMeldung(input: {
     await sendBrandedMail(resend, {
       from:
         process.env.RESEND_FROM_SYSTEM ??
-        "System <system@baerenwaldmuenchen.de>",
+        `System <system@${MARKE.websiteHost}>`,
       to: orgEmail,
       subject: buildSubject({
         objekt: objektTitel,

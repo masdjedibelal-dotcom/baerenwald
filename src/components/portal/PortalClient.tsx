@@ -105,6 +105,7 @@ import {
 import type { MieterHvBrand } from "@/lib/portal/load-mieter-hv-brand";
 import { cn } from "@/lib/utils";
 import { PortalButton } from "@/components/portal/PortalButton";
+import { MARKE } from "@/lib/marke";
 
 const PortalBaerenwaldGpt = dynamic(
   () =>
@@ -1453,7 +1454,7 @@ export function PortalClient({
   const whiteLabelPortal = Boolean(hvBrand);
   const brandTitle = whiteLabelPortal
     ? hvBrand!.name.trim() || "Verwaltung"
-    : "MeinBärenwald";
+    : `${MARKE.portalName}`;
   const brandSubtitle = whiteLabelPortal
     ? hvBrand!.sub?.trim() || "Verwaltung"
     : kunde.name?.trim() || "Kundenportal";
@@ -1472,7 +1473,7 @@ export function PortalClient({
         sidebarOwner={
           whiteLabelPortal
             ? brandTitle
-            : kunde.name?.trim() || "MeinBärenwald"
+            : kunde.name?.trim() || `${MARKE.portalName}`
         }
         hideMobileChrome={section === "gpt"}
         contentFullBleed={
@@ -1570,7 +1571,7 @@ export function PortalClient({
           {section === "uebersicht" && isPrivatLike ? (
             <PortalKundePrivatDashboard
               hello={portalKundeDashboardHello(kundeTyp, kunde.name)}
-              profileName={kunde.name?.trim() || "MeinBärenwald"}
+              profileName={kunde.name?.trim() || `${MARKE.portalName}`}
               kundeTyp={kundeTyp === "gewerbe" ? "gewerbe" : "privat"}
               focusRole={whiteLabelPortal ? "mieter" : "privat"}
               actionSlides={kundeActionSlides}
@@ -1603,7 +1604,7 @@ export function PortalClient({
           {section === "uebersicht" && !isPrivatLike ? (
             <PortalKundePrivatDashboard
               hello={portalKundeDashboardHello(kundeTyp, kunde.name)}
-              profileName={kunde.name?.trim() || "MeinBärenwald"}
+              profileName={kunde.name?.trim() || `${MARKE.portalName}`}
               kundeTyp="privat"
               focusRole="privat"
               actionSlides={kundeActionSlides}

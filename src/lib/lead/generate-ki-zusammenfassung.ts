@@ -9,10 +9,11 @@ import {
 import type { KundenVertriebsKontext } from "@/lib/lead/kunden-vertrieb-status";
 import type { MarketingJourney } from "@/lib/marketing/journey-types";
 import { isSupabaseConfigured,supabaseAdmin } from "@/lib/supabase";
+import { MARKE } from "@/lib/marke";
 
 
 const KI_ZUSAMMENFASSUNG_SYSTEM = `
-Du bist ein erfahrener Vertriebs-Analyst für Bärenwald München —
+Du bist ein erfahrener Vertriebs-Analyst für ${MARKE.nameLang} —
 ein digitaler Generalunternehmer für Handwerk in München.
 
 Du erhältst KUNDENSTATUS, HERKUNFT/AKTIVITÄT auf der Website, Funnel-Daten und optional einen KI-Chat.

@@ -16,6 +16,7 @@ import {
   type PartnerNotificationTyp,
 } from "@/lib/partner/partner-notifications";
 import { isSupabaseConfigured, supabaseAdmin } from "@/lib/supabase";
+import { MARKE } from "@/lib/marke";
 
 function escapeHtml(s: string): string {
   return s
@@ -34,7 +35,7 @@ function resendClient(): Resend | null {
 function systemFrom(): string {
   return (
     process.env.RESEND_FROM_SYSTEM?.trim() ??
-    "Bärenwald System <system@baerenwaldmuenchen.de>"
+    `${MARKE.name} System <system@${MARKE.websiteHost}>`
   );
 }
 
@@ -95,7 +96,7 @@ function partnerNotifyBodyHtml(opts: {
   rechnungUeberwiesen?: boolean;
 }): string {
   const ctaHint = opts.rechnungUeberwiesen
-    ? "Ihre eingereichte Rechnung wurde von Bärenwald überwiesen."
+    ? `Ihre eingereichte Rechnung wurde von ${MARKE.name} überwiesen.`
     : opts.bautagebuch
       ? "Bitte im Partner-Portal einen Bautagebuch-Eintrag erstellen — am Auftrag hat sich nichts geändert."
       : "Bitte im Partner-Portal prüfen und bestätigen.";
@@ -238,7 +239,7 @@ export async function createPartnerNotification(
       }),
       disclaimer:
         "Sie erhalten diese Mail, weil Ihnen im Partner-Portal ein Vorgang zugewiesen wurde.",
-      footerNote: "Bärenwald München · Partner-Portal",
+      footerNote: `${MARKE.nameLang} · Partner-Portal`,
     });
 
     await sendBrandedMail(resend, {

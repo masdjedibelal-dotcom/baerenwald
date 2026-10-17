@@ -71,6 +71,7 @@ import {
 } from "@/lib/portal/portal-dokumente";
 import { cn } from "@/lib/utils";
 import { EMPTY } from '@/lib/portal-copy';
+import { MARKE } from "@/lib/marke";
 
 export type OrganisationHvVorgangDetailProps = {
   idLabel: string;
@@ -1139,7 +1140,7 @@ export function OrganisationHvVorgangDetail({
           Vom Hausmeister erledigt
         </p>
         <p className="portal-text-body mt-1 text-warning-text/90">
-          Die Vor-Ort-Prüfung ist abgeschlossen — Bärenwald muss hier nichts
+          Die Vor-Ort-Prüfung ist abgeschlossen — {MARKE.name} muss hier nichts
           mehr tun. Dokumentierte Prüfpunkte finden Sie unter Tab „Checkliste“.
         </p>
         {showHmTab ? (
@@ -1175,9 +1176,9 @@ export function OrganisationHvVorgangDetail({
           onClick={() => void meldungAct("ablehnen")}
         />
         <ActionBtn
-          label="Direkt Bärenwald"
+          label={`Direkt ${MARKE.name}`}
           variant="primary"
-          mobileLabel="Bärenwald"
+          mobileLabel={`${MARKE.name}`}
           disabled={busy}
           loading={busyAktion === "direkt_baerenwald"}
           onClick={() => void meldungAct("direkt_baerenwald")}

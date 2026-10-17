@@ -27,6 +27,7 @@ import type { MarketingJourney } from "@/lib/marketing/journey-types";
 import { GPT_VIZ_SKIP_INTERN_MAIL_QUELLEN } from "@/lib/gpt-viz/constants";
 import { isSupabaseConfigured, supabaseAdmin } from "@/lib/supabase";
 import { buildSubject } from "@/lib/shared-domain/build-subject";
+import { MARKE } from "@/lib/marke";
 
 /** CRM-Eingabe — kompatibel mit externem POST /api/lead und internem Funnel. */
 export type PersistLeadInput = {
@@ -682,10 +683,10 @@ async function persistLeadInner(
     process.env.INTERN_EMAIL?.trim() || SITE_CONFIG.email?.trim();
   const resendFromCustomer =
     process.env.RESEND_FROM_CUSTOMER ??
-    "Bärenwald München <anfragen@baerenwaldmuenchen.de>";
+    `${MARKE.nameLang} <anfragen@${MARKE.websiteHost}>`;
   const resendFromSystem =
     process.env.RESEND_FROM_SYSTEM ??
-    "System <system@baerenwaldmuenchen.de>";
+    `System <system@${MARKE.websiteHost}>`;
 
   if (resendKey) {
     const resend = new Resend(resendKey);

@@ -1,3 +1,4 @@
+import { MARKE } from "@/lib/marke";
 /**
  * Portal 2.0 TEIL F — Auth-Copy & Helpers (`authWL`, `authBrandName`, `authConfirm`).
  * Demo-Rollen-Pills aus dem Mock entfallen; Rolle kommt aus Route/Kontext.
@@ -20,7 +21,7 @@ export function authBrandName(
   if (authWL(role)) {
     return orgName?.trim() || "Verwaltung";
   }
-  return "Bärenwald";
+  return `${MARKE.name}`;
 }
 
 export const AUTH_BRAND_BULLETS = [
@@ -57,7 +58,7 @@ export function authBrandCopy(role: AuthPortalRole): {
   };
 }
 
-export const AUTH_BRAND_POWERED = "Betrieben mit Bärenwald";
+export const AUTH_BRAND_POWERED = `Betrieben mit ${MARKE.name}`;
 
 export const AUTH_LOGIN = {
   title: "Willkommen zurück",

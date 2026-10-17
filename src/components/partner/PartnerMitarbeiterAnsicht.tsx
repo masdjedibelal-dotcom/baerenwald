@@ -19,6 +19,7 @@ import { PortalStatusPill } from "@/components/shared/PortalStatusPill";
 import { safeAction } from "@/lib/actions/safe-action";
 import { ladeEinsatzDateienHoch } from "@/lib/partner/einsatz-upload";
 import { portalToastError, portalToastSuccess } from "@/lib/shared/portal-toast";
+import { MARKE } from "@/lib/marke";
 
 function datum(iso: string | null | undefined): string {
   const d = String(iso ?? "").slice(0, 10);
@@ -160,7 +161,7 @@ export function PartnerMitarbeiterAnsicht({ name, firma }: { name: string; firma
           confirmDisabled={busy || (dialog.art === "update" && !text.trim() && dateien.length === 0)}
           busy={busy}
         >
-          <PortalField label={dialog.art === "fertig" ? "Notiz (freiwillig)" : "Text"} hint="Geht an Bärenwald und Ihren Betrieb.">
+          <PortalField label={dialog.art === "fertig" ? "Notiz (freiwillig)" : "Text"} hint={`Geht an ${MARKE.name} und Ihren Betrieb.`}>
             <PortalTextarea rows={4} value={text} onChange={(ev) => setText(ev.target.value)} />
           </PortalField>
           <FotoAuswahl label={dialog.art === "fertig" ? "Fotos (freiwillig)" : "Fotos"} dateien={dateien} onChange={setDateien} />

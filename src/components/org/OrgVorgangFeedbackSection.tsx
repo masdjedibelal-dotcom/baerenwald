@@ -7,6 +7,7 @@ import { PortalTextarea } from "@/components/shared/PortalFormControls";
 import { usePortalBusy } from "@/components/shared/PortalBusyContext";
 import { orgPortalToast } from "@/lib/shared/portal-toast";
 import { cn } from "@/lib/utils";
+import { MARKE } from "@/lib/marke";
 
 type HvFeedbackState = {
   bewertung?: { sterne: number; freitext?: string | null } | null;
@@ -87,7 +88,7 @@ export function OrgVorgangFeedbackSection({
         </p>
       ) : null}
 
-      <p className="text-sm font-semibold">Rückmeldung an Bärenwald</p>
+      <p className="text-sm font-semibold">Rückmeldung an {MARKE.name}</p>
 
       {hatBewertung && hvFeedback?.bewertung ? (
         <p className="text-sm text-text-secondary">
@@ -195,7 +196,7 @@ export function OrgVorgangFeedbackSection({
               {busy
                 ? "Wird gesendet…"
                 : mode === "maengel"
-                  ? "Mängel an Bärenwald melden"
+                  ? `Mängel an ${MARKE.name} melden`
                   : "Feedback senden"}
             </PortalButton>
           </form>

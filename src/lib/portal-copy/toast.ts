@@ -1,12 +1,13 @@
+import { MARKE } from "@/lib/marke";
 /**
  * Portal-Toast-Texte — Sie-Form, ≤ 8 Wörter wo möglich.
  */
 export const TOAST = {
   ablehnung_gesendet: "Ablehnung gesendet",
   aktuelles_passwort_falsch: "Aktuelles Passwort falsch.",
-  akut_an_baerenwald: "Akut an Bärenwald",
+  akut_an_baerenwald: `Akut an ${MARKE.name}`,
   als_erledigt_gemeldet: "Als erledigt gemeldet",
-  an_baerenwald_uebergeben: "An Bärenwald übergeben",
+  an_baerenwald_uebergeben: `An ${MARKE.name} übergeben`,
   an_die_verwaltung_zurueckgegeben: "An die Verwaltung zurückgegeben",
   aenderungen_angenommen: "Änderungen angenommen",
   aenderungen_bestaetigt: "Änderungen bestätigt",
@@ -82,7 +83,7 @@ export const TOAST = {
   meldung_erfasst: "Meldung erfasst",
   mieter_angelegt: "Mieter angelegt",
   mindestens_eine_leistung_auswaehlen: "Mindestens eine Leistung auswählen.",
-  nachtrag_eingereicht_noch_zur_pruefung_durch_bae: "Nachtrag eingereicht — noch zur Prüfung durch Bärenwald.",
+  nachtrag_eingereicht_noch_zur_pruefung_durch_bae: `Nachtrag eingereicht — noch zur Prüfung durch ${MARKE.name}.`,
   name_fehlt: "Name fehlt",
   neues_passwort_mindestens_8_zeichen: "Neues Passwort mindestens 8 Zeichen.",
   nicht_angemeldet: "Nicht angemeldet.",

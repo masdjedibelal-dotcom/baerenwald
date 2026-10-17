@@ -16,6 +16,7 @@ import {
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
 import { cn } from "@/lib/utils";
 import { PortalButton } from "@/components/portal/PortalButton";
+import { MARKE } from "@/lib/marke";
 
 export type PortalRegisterPrefill = {
   name?: string;
@@ -508,7 +509,7 @@ export function PortalRegisterForm({
               >
                 Datenschutzerklärung
               </a>{" "}
-              gelesen und stimme der Verarbeitung meiner Daten in MeinBärenwald
+              gelesen und stimme der Verarbeitung meiner Daten in {MARKE.portalName}
               zu.
             </span>
           </label>
@@ -538,7 +539,7 @@ export function PortalRegisterForm({
                 Allgemeinen Geschäftsbedingungen
               </a>{" "}
               gelesen und akzeptiere sie für die Nutzung des Kundenportals sowie
-              für künftige Beauftragungen über Bärenwald.
+              für künftige Beauftragungen über {MARKE.name}.
             </span>
           </label>
           {agbError ? (
@@ -558,7 +559,7 @@ export function PortalRegisterForm({
           >
             Datenschutzerklärung
           </a>{" "}
-          für Ihr Login bei MeinBärenwald. Die Nutzung erfolgt im Auftrag Ihrer
+          für Ihr Login bei {MARKE.portalName}. Die Nutzung erfolgt im Auftrag Ihrer
           Verwaltung — keine Kunden-AGB.
         </p>
       )}

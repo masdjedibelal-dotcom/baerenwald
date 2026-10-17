@@ -66,12 +66,14 @@ import { cn } from "@/lib/utils";
 
 import "./guided-chat.css";
 import "./gpt-viz.css";
+import { MARKE_ASSETS } from "@/lib/marke-assets";
+import { MARKE } from "@/lib/marke";
 
-const INITIAL_TEXT_DU = `Hi! Ich bin ein KI-Assistent von Bärenwald — für Renovierung, Reparatur und Umbau in München.
+const INITIAL_TEXT_DU = `Hi! Ich bin ein KI-Assistent von ${MARKE.name} — für Renovierung, Reparatur und Umbau in München.
 
 Schreib einfach los — oder wähl unten, womit wir starten sollen. Beraten, Preisrahmen oder direkt anfragen: alles hier im Chat.`;
 
-const INITIAL_TEXT_SIE = `Hallo! Ich bin ein KI-Assistent von Bärenwald — für Renovierung, Reparatur und Umbau in München.
+const INITIAL_TEXT_SIE = `Hallo! Ich bin ein KI-Assistent von ${MARKE.name} — für Renovierung, Reparatur und Umbau in München.
 
 Schreiben Sie einfach los — oder wählen Sie unten, womit wir starten sollen. Beraten, Preisrahmen oder direkt anfragen: alles hier im Chat.`;
 
@@ -490,7 +492,7 @@ export function GptStudioChat({
       setAwaitingLeadField(null);
       if (guidedHybrid) {
         appendAssistant(
-          "Perfekt — füllen Sie kurz die Felder aus, dann geht Ihre Anfrage direkt an **Bärenwald**.",
+          `Perfekt — füllen Sie kurz die Felder aus, dann geht Ihre Anfrage direkt an **${MARKE.name}**.`,
           { blocks: [buildLeadFormBlock(guidedDraft)] }
         );
       } else {
@@ -539,7 +541,7 @@ export function GptStudioChat({
           setAwaitingLeadField(null);
           setVizPhase("done");
           appendAssistant(
-            "Perfekt — ich habe Ihre Anfrage an **Bärenwald** gesendet. Wir melden uns bei Ihnen. Sie können jetzt noch **zweimal** an Ihrer Visualisierung feilen.",
+            `Perfekt — ich habe Ihre Anfrage an **${MARKE.name}** gesendet. Wir melden uns bei Ihnen. Sie können jetzt noch **zweimal** an Ihrer Visualisierung feilen.`,
             {
               actions: [{ id: "render_again", label: "Noch anpassen" }],
             }
@@ -1204,12 +1206,12 @@ export function GptStudioChat({
       <div className="gpt-chat-sticky-top">
         <div className="ki-rechner-chat-header">
           <div className="ki-rechner-chat-avatar">
-            <Image src="/logo-mark-green.png" alt="" width={32} height={32} className="ki-rechner-chat-logo" />
+            <Image src={MARKE_ASSETS.logoGruen} alt="" width={32} height={32} className="ki-rechner-chat-logo" />
           </div>
           <div className="min-w-0 flex-1">
             <div className="ki-rechner-chat-title">
-              Bärenwald{" "}
-              <span className="ki-rechner-mode-label ki-rechner-mode-label--chat">BärenwaldGPT</span>
+              {MARKE.name}{" "}
+              <span className="ki-rechner-mode-label ki-rechner-mode-label--chat">{MARKE.kiName}</span>
             </div>
             {!guidedHybrid || buildDraftSummaryItems(guidedDraft).length === 0 ? (
               <div className="ki-rechner-chat-sub">

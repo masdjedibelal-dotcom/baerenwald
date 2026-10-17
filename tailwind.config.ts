@@ -1,5 +1,10 @@
 import type { Config } from "tailwindcss";
 
+/** Farbe aus Marken-Token mit Rückfall; Opazität (z. B. bg-accent/10) über Tailwinds <alpha-value>. */
+function tok(cssVar: string, fallback: string): string {
+  return `color-mix(in srgb, var(${cssVar}, ${fallback}) calc(<alpha-value> * 100%), transparent)`;
+}
+
 const config: Config = {
   darkMode: ["class"],
   content: [
@@ -16,18 +21,19 @@ const config: Config = {
         "p2-body": ["var(--p2-font-body)"],
       },
       colors: {
+        /* Marke: über Tokens (Servus TEO überschreibt --p2-primary*), Rückfall = Bärenwald-Grün */
         accent: {
-          DEFAULT: "#2E7D52",
-          dark: "#1A3D2B",
-          light: "#E7F1E9",
-          hover: "#2a724b",
+          DEFAULT: tok("--p2-primary", "#2E7D52"),
+          dark: tok("--p2-primary-dk", "#1A3D2B"),
+          light: tok("--p2-accent-light", "#E7F1E9"),
+          hover: tok("--p2-accent-hover", "#2a724b"),
           foreground: "#FFFFFF",
         },
         surface: {
           page: "#e6e8e6",
           card: "#ffffff",
           muted: "#EDEAE4",
-          dark: "#1A3D2B",
+          dark: tok("--p2-primary-dk", "#1A3D2B"),
         },
         text: {
           primary: "#16201B",
@@ -88,7 +94,7 @@ const config: Config = {
           DEFAULT: "var(--card)",
           foreground: "var(--card-foreground)",
         },
-        "funnel-accent": "#2E7D52",
+        "funnel-accent": tok("--p2-primary", "#2E7D52"),
         "funnel-accent-bg": "rgba(46, 125, 82, 0.06)",
         "funnel-accent-hover": "rgba(46, 125, 82, 0.03)",
         info: {

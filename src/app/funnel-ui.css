@@ -59,7 +59,7 @@
 }
 
 .funnel-tile:hover:not(.selected) {
-  border-color: rgba(46, 125, 82, 0.28);
+  border-color: color-mix(in srgb, var(--p2-primary) 28%, transparent);
   background: #fff;
   box-shadow:
     0 2px 4px rgba(22, 32, 27, 0.05),
@@ -70,10 +70,10 @@
 .funnel-tile.selected {
   border-color: var(--fl-accent);
   border-width: 1.5px;
-  background: rgba(46, 125, 82, 0.04);
+  background: color-mix(in srgb, var(--p2-primary) 4%, transparent);
   box-shadow:
-    0 1px 2px rgba(46, 125, 82, 0.08),
-    0 6px 16px rgba(46, 125, 82, 0.12);
+    0 1px 2px color-mix(in srgb, var(--p2-primary) 8%, transparent),
+    0 6px 16px color-mix(in srgb, var(--p2-primary) 12%, transparent);
 }
 
 .funnel-tile-emoji {
@@ -167,7 +167,7 @@
 
 .funnel-input:focus {
   border-color: var(--fl-accent);
-  box-shadow: 0 0 0 3px rgba(46, 125, 82, 0.12);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--p2-primary) 12%, transparent);
 }
 
 .funnel-textarea {
@@ -220,7 +220,7 @@
   border-radius: 9999px;
   background: var(--org-primary, var(--p2-primary, #2e7d52));
   color: #fff;
-  box-shadow: 0 6px 18px rgba(46, 125, 82, 0.4);
+  box-shadow: 0 6px 18px color-mix(in srgb, var(--p2-primary) 40%, transparent);
   cursor: pointer;
   transition: transform 0.15s ease;
 }
@@ -248,7 +248,7 @@
 
 .portal-funnel-host--modal .funnel-input:focus,
 .portal-funnel-host--modal .funnel-textarea:focus {
-  border-color: #2e7d52;
+  border-color: var(--p2-primary);
   background: #fff;
   outline: none;
 }

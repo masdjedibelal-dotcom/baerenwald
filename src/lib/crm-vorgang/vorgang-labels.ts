@@ -5,6 +5,7 @@ import {
   statusLabel,
   type VorgangPhaseKey,
 } from '@/lib/shared-domain/status-map'
+import { MARKE } from '@/lib/marke'
 
 export function unterstatusLabel(phase: VorgangPhase, unterstatus: string): string {
   return statusLabel(phase as VorgangPhaseKey, unterstatus)
@@ -36,7 +37,7 @@ export const ACTOR_LABELS: Record<string, string> = {
   freigabe: 'Kunde',
   handwerker: 'Partner',
   kunde: 'Kunde',
-  bw: 'Bärenwald',
+  bw: MARKE.name,
 }
 
 export const PHASE_LABELS: Record<VorgangPhase, string> = {

@@ -6,6 +6,7 @@ import { PortalButton } from "@/components/portal/PortalButton";
 
 import { GptStudioChat } from "@/components/gpt/GptStudioChat";
 import { cn } from "@/lib/utils";
+import { MARKE } from "@/lib/marke";
 
 export function PortalBaerenwaldGpt({
   variant = "overlay",
@@ -44,7 +45,7 @@ export function PortalBaerenwaldGpt({
             >
               <PortalIcon n="x" ctx="default" className="h-5 w-5" />
             </PortalButton>
-            <p className="portal-gpt-shell-title">KI-Assistent · BärenwaldGPT</p>
+            <p className="portal-gpt-shell-title">KI-Assistent · {MARKE.kiName}</p>
           </div>
         ) : null}
         <div className="portal-gpt-body portal-gpt-chat-active">{chat}</div>
@@ -76,7 +77,7 @@ export function PortalBaerenwaldGpt({
           >
             <PortalIcon n="x" ctx="default" className="h-5 w-5" />
           </PortalButton>
-          <p className="portal-gpt-shell-title">KI-Assistent · BärenwaldGPT</p>
+          <p className="portal-gpt-shell-title">KI-Assistent · {MARKE.kiName}</p>
         </div>
         <div className="portal-gpt-body portal-gpt-chat-active min-h-0 flex-1 overflow-hidden">
           {chat}

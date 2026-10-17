@@ -1,7 +1,11 @@
 /** Staging-Website (Netlify-Branch `staging`). Nur wirksam mit Staging-Supabase. */
 
-export const STAGING_WEBSITE_ORIGIN = "https://staging--baerenwald.netlify.app";
-export const PROD_WEBSITE_ORIGIN = "https://baerenwaldmuenchen.de";
+/** Staging-Origin je Marke: NEXT_PUBLIC_STAGING_SITE_URL (TEO), sonst Bärenwald-Staging. */
+import { MARKE } from "@/lib/marke";
+export const STAGING_WEBSITE_ORIGIN =
+  process.env.NEXT_PUBLIC_STAGING_SITE_URL?.trim().replace(/\/$/, "") ||
+  "https://staging--baerenwald.netlify.app";
+export const PROD_WEBSITE_ORIGIN = MARKE.portalUrl;
 
 export const STAGING_PORTAL_PASSWORD = "StagingTest!2026";
 export const STAGING_KUNDE_EMAIL = "familie.berger@example.test";
@@ -37,7 +41,7 @@ export function isStagingSupabase(): boolean {
 
 export function isStagingHostName(host: string | null | undefined): boolean {
   const h = (host ?? "").trim().toLowerCase();
-  return h.includes("staging--baerenwald");
+  return h.includes("staging--");
 }
 
 export function isStagingDeploy(): boolean {
@@ -51,7 +55,7 @@ export function isStagingDeploy(): boolean {
   ]
     .filter(Boolean)
     .join(" ");
-  return blob.includes("staging--baerenwald");
+  return blob.includes("staging--");
 }
 
 /** Öffentliche Site-Origin — Staging niemals auf die Live-Domain fallen lassen. */

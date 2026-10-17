@@ -14,6 +14,7 @@ import {
   isStagingSupabase,
   STAGING_WEBSITE_ORIGIN,
 } from "@/lib/staging";
+import { MARKE } from "@/lib/marke";
 
 type ImpersonationPayload = {
   email: string;
@@ -98,7 +99,7 @@ function redirectOrigin(request: Request): string {
     /* fall through */
   }
 
-  return "https://baerenwaldmuenchen.de";
+  return MARKE.portalUrl;
 }
 
 function serviceClient() {

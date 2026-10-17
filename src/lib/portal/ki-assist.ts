@@ -1,6 +1,7 @@
 /** Portal-KI-Assist: Scopes + bw-apply Parsing (CRM-kompatibel). */
 
 import { PORTAL_COPY } from '@/lib/copy/portal-copy'
+import { MARKE } from "@/lib/marke";
 
 export type PortalKiAssistScope =
   | "funnel_beschreibung"
@@ -27,7 +28,7 @@ Wenn der Nutzer Inhalt für das Formular will, antworte kurz menschlich UND am E
 \`\`\`
 
 "text" enthält NUR den fertigen Feldwert — keine Anführungszeichen um den gesamten Text, keine Meta-Sätze.
-Nur ein bw-apply-Block. Ton: Bärenwald Handwerk, klar, freundlich, ohne Marketing-Floskeln.
+Nur ein bw-apply-Block. Ton: ${MARKE.name} Handwerk, klar, freundlich, ohne Marketing-Floskeln.
 `.trim();
 
 export type PortalKiAssistScopeConfig = {
@@ -52,7 +53,7 @@ export const PORTAL_KI_ASSIST_SCOPES: Record<
       "Ich helfe Ihnen, Ihr Anliegen klar zu beschreiben — sagen Sie mir, was passiert ist oder was Sie ändern möchten.",
     placeholder: "z. B. „Kürzer und klarer“ oder „Wasser tropft unter der Spüle“…",
     systemHint: `Modus: Schaden-/Anliegen-Beschreibung im Melde-Funnel (Mieter oder Kunde).
-Schreib einen verständlichen, sachlichen Freitext für die Hausverwaltung / Bärenwald.
+Schreib einen verständlichen, sachlichen Freitext für die Hausverwaltung / ${MARKE.name}.
 Keine erfundenen Fakten. Immer höfliche Sie-Form.
 ${BW_APPLY_HINT}`,
     quickPrompts: [

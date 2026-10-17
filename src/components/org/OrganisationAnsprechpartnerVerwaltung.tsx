@@ -15,6 +15,7 @@ import { PortalCheckbox, PortalInput, PortalSelect } from "@/components/shared/P
 import { PortalModalShell } from "@/components/shared/PortalModalShell";
 import { safeAction } from "@/lib/actions/safe-action";
 import { portalToastError, portalToastSuccess } from "@/lib/shared/portal-toast";
+import { MARKE } from "@/lib/marke";
 
 /** Gleiche Rollen wie im CRM (Kunde → Ansprechpartner). */
 const ROLLEN = [
@@ -90,7 +91,7 @@ export function OrganisationAnsprechpartnerVerwaltung({ readOnly = false }: { re
       addLabel="Ansprechpartner hinzufügen"
     >
       <p className="portal-text-meta text-text-tertiary">
-        Ihre Ansprechpartner für Bärenwald — z. B. für Angebote, Rechnungen und Rückfragen zu Vorgängen. Der
+        Ihre Ansprechpartner für {MARKE.name} — z. B. für Angebote, Rechnungen und Rückfragen zu Vorgängen. Der
         Haupt-Ansprechpartner steht an erster Stelle.
       </p>
       {liste == null ? (

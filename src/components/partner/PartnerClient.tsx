@@ -13,6 +13,7 @@ import { PortalShell } from "@/components/shared/PortalShell";
 import type { PartnerHandwerkerProfil, PartnerProfilKontext } from "@/lib/partner/get-partner-data";
 import { buildPortalShellNav } from "@/lib/portal2/nav-items";
 import { portalHeaderHeroSrc } from "@/lib/portal2/portal-media";
+import { MARKE } from "@/lib/marke";
 
 /**
  * Partner-Portal (04.10.2026): nur noch Einsätze (Übersicht) und Einstellungen (Firmendaten,
@@ -49,7 +50,7 @@ export function PartnerClient({
   return (
     <PortalShell
       variant="partner"
-      brandTitle="MeinBärenwald"
+      brandTitle={`${MARKE.portalName}`}
       brandSubtitle="Partner-Portal"
       // Kürzel des Betriebs (der Name steht daneben) statt „B“ für Bärenwald
       brandKuerzel={firma.charAt(0).toUpperCase() || "B"}

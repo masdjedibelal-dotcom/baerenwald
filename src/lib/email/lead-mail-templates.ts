@@ -22,6 +22,7 @@ import {
   normalizeFunnelDaten,
 } from "@/lib/lead-funnel-daten";
 import { buildSubject } from "@/lib/shared-domain/build-subject";
+import { MARKE } from "@/lib/marke";
 
 function esc(s: string): string {
   return s
@@ -316,10 +317,10 @@ export function buildInternNotification(data: InternLeadMailData): string {
       : "";
 
   return buildStandardMailHtml({
-    preheader: "Bärenwald — Neue Anfrage",
+    preheader: `${MARKE.name} — Neue Anfrage`,
     bodyHtml: `
       <p style="margin:0 0 16px;font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:${MAIL_COLORS.c2};">
-        Bärenwald — Neue Anfrage
+        ${MARKE.name} — Neue Anfrage
       </p>
       <table width="100%" cellpadding="0" cellspacing="0" style="font-size:14px;color:${MAIL_COLORS.c4};">
         ${kontaktRows}
@@ -331,7 +332,7 @@ export function buildInternNotification(data: InternLeadMailData): string {
       </table>
       ${cta}
     `,
-    footerNote: "Bärenwald München · Interne Benachrichtigung",
+    footerNote: `${MARKE.nameLang} · Interne Benachrichtigung`,
   });
 }
 
@@ -420,6 +421,6 @@ export function buildSavePriceInternalHtml(
         <tr><td style="padding:6px 0;color:${MAIL_COLORS.muted};">Preisindikation</td><td style="padding:6px 0;font-weight:700;color:${MAIL_COLORS.primary};">${esc(preis)}</td></tr>
       </table>
     `,
-    footerNote: "Bärenwald München · Interne Benachrichtigung",
+    footerNote: `${MARKE.nameLang} · Interne Benachrichtigung`,
   });
 }

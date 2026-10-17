@@ -1,6 +1,7 @@
 import { toast, Toaster } from "sonner";
 import { TOAST } from '@/lib/portal-copy'
 import { isLikelyOfflineError, systemErrorMessage } from '@/lib/portal-copy/errors'
+import { MARKE } from "@/lib/marke";
 
 /** Einziger erlaubter Sonner-Toaster-Export — Consumer: `PortalToaster`. */
 export { Toaster as PortalSonnerToaster };
@@ -84,7 +85,7 @@ export const partnerPortalToast = {
   },
   abgelehnt() {
     portalToastWarning(TOAST.ablehnung_gesendet,
-      "Bärenwald wurde informiert und meldet sich bei Rückfragen."
+      `${MARKE.name} wurde informiert und meldet sich bei Rückfragen.`
     );
   },
   bautagebuchGespeichert(neu: boolean) {
@@ -102,12 +103,12 @@ export const partnerPortalToast = {
   },
   unterlagenHochgeladen() {
     portalToastSuccess(TOAST.unterlagen_hochgeladen,
-      "Bärenwald prüft die Dokumente. Sie finden sie unter Unterlagen im Vorgang."
+      `${MARKE.name} prüft die Dokumente. Sie finden sie unter Unterlagen im Vorgang.`
     );
   },
   rechnungEingereicht() {
     portalToastSuccess(TOAST.rechnung_gesendet,
-      "Bärenwald hat Ihre Rechnung erhalten."
+      `${MARKE.name} hat Ihre Rechnung erhalten.`
     );
   },
   rahmenvertragAkzeptiert() {
@@ -117,7 +118,7 @@ export const partnerPortalToast = {
   },
   complianceHochgeladen(bezeichnung: string) {
     portalToastSuccess(TOAST.dokument_hochgeladen,
-      `„${bezeichnung}“ wurde eingereicht und wird von Bärenwald geprüft.`
+      `„${bezeichnung}“ wurde eingereicht und wird von ${MARKE.name} geprüft.`
     );
   },
   complianceGeloescht(bezeichnung: string) {
@@ -137,12 +138,12 @@ export const partnerPortalToast = {
   },
   erledigtGemeldet() {
     portalToastSuccess(TOAST.als_erledigt_gemeldet,
-      "Bärenwald und die Verwaltung wurden informiert."
+      `${MARKE.name} und die Verwaltung wurden informiert.`
     );
   },
   hwAngebotEingereicht() {
     portalToastSuccess(TOAST.angebot_eingereicht,
-      "Positionen und Summe sind bei Bärenwald und der Verwaltung als empfohlenes Angebot sichtbar."
+      `Positionen und Summe sind bei ${MARKE.name} und der Verwaltung als empfohlenes Angebot sichtbar.`
     );
   },
   abschlussSigniert() {
@@ -167,7 +168,7 @@ export const kundePortalToast = {
   },
   feedbackGesendet() {
     portalToastSuccess(TOAST.feedback_gesendet,
-      "Danke für Ihre Rückmeldung — Bärenwald wurde informiert."
+      `Danke für Ihre Rückmeldung — ${MARKE.name} wurde informiert.`
     );
   },
 };
@@ -186,7 +187,7 @@ export const orgPortalToast = {
   },
   angebotEingefordert() {
     portalToastSuccess(TOAST.angebot_angefordert,
-      "Bärenwald erstellt ein Angebot. Sie werden informiert, sobald es zur Freigabe bereit ist."
+      `${MARKE.name} erstellt ein Angebot. Sie werden informiert, sobald es zur Freigabe bereit ist.`
     );
   },
   hmBegutachten() {
@@ -196,7 +197,7 @@ export const orgPortalToast = {
   },
   hmErledigt() {
     portalToastSuccess(TOAST.vom_hausmeister_erledigt,
-      "Der Vorgang ist abgeschlossen — ohne Beauftragung an Bärenwald."
+      `Der Vorgang ist abgeschlossen — ohne Beauftragung an ${MARKE.name}.`
     );
   },
   hmZurueckAnHv() {
@@ -206,7 +207,7 @@ export const orgPortalToast = {
   },
   hmFachfirmaAngebot() {
     portalToastSuccess(TOAST.an_baerenwald_uebergeben,
-      "Vorbefund liegt vor. Bärenwald erstellt ein Angebot."
+      `Vorbefund liegt vor. ${MARKE.name} erstellt ein Angebot.`
     );
   },
   hmFachfirmaAkut() {
@@ -226,12 +227,12 @@ export const orgPortalToast = {
   },
   freigegeben() {
     portalToastSuccess(TOAST.angebot_freigegeben,
-      "Bärenwald startet die Beauftragung der Partner."
+      `${MARKE.name} startet die Beauftragung der Partner.`
     );
   },
   freigabeAbgelehnt() {
     portalToastWarning(TOAST.freigabe_abgelehnt,
-      "Bärenwald wurde informiert und meldet sich bei Rückfragen."
+      `${MARKE.name} wurde informiert und meldet sich bei Rückfragen.`
     );
   },
   einladungErneutGesendet() {
@@ -280,7 +281,7 @@ export const orgPortalToast = {
   },
   projektAnfrageGesendet() {
     portalToastSuccess(TOAST.anfrage_eingereicht,
-      "Bärenwald prüft Ihr Vorhaben und meldet sich mit einem Angebot."
+      `${MARKE.name} prüft Ihr Vorhaben und meldet sich mit einem Angebot.`
     );
   },
   feedbackGesendet() {
@@ -288,12 +289,12 @@ export const orgPortalToast = {
   },
   maengelGemeldet() {
     portalToastWarning(TOAST.maengel_gemeldet,
-      "Bärenwald wurde informiert und kümmert sich um die Nachbearbeitung."
+      `${MARKE.name} wurde informiert und kümmert sich um die Nachbearbeitung.`
     );
   },
   servicepaketAnfrageGesendet() {
     portalToastSuccess(TOAST.anfrage_eingereicht,
-      "Bärenwald meldet sich mit den nächsten Schritten zur Betreuung."
+      `${MARKE.name} meldet sich mit den nächsten Schritten zur Betreuung.`
     );
   },
   saved() {

@@ -3,11 +3,12 @@ import { Suspense } from "react";
 import { PortalAuthShell } from "@/components/portal/PortalAuthShell";
 import { PortalLoginForm } from "@/components/portal/PortalLoginForm";
 import { AUTH_LOGIN,authBrandName } from "@/lib/portal2/auth";
+import { MARKE } from "@/lib/marke";
 
 export const dynamic = "force-dynamic";
 
 export const metadata = {
-  title: "Anmelden — MeinBärenwald",
+  title: `Anmelden — ${MARKE.portalName}`,
   robots: { index: false, follow: false },
 };
 

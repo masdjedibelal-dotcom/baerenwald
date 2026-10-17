@@ -3,11 +3,12 @@ import QRCode from "qrcode";
 
 import { SITE_CONFIG } from "@/lib/config";
 import { isStagingDeploy,publicSiteOrigin } from "@/lib/staging";
+import { MARKE } from "@/lib/marke";
 
 /** Slug für Meldungen ohne zugeordnetes Objekt (Org-Einstieg ohne Gebäude). */
 export const MELDE_ALLGEMEIN_SLUG = "allgemein";
 
-const CANONICAL_PUBLIC_ORIGIN = "https://baerenwaldmuenchen.de";
+const CANONICAL_PUBLIC_ORIGIN = MARKE.portalUrl;
 
 /**
  * Öffentliche Origin für Melde-Links.

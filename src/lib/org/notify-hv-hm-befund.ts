@@ -9,6 +9,7 @@ import { htmlToPlainText } from "@/lib/shared-domain/html-to-plain-text";
 import { supabaseAdmin } from "@/lib/supabase";
 import { isValidEmail } from "@/lib/validation";
 import { Resend } from "resend";
+import { MARKE } from "@/lib/marke";
 
 export async function notifyHvHausmeisterBefundFertig(input: {
   leadId: string;
@@ -94,7 +95,7 @@ export async function notifyHvHausmeisterBefundFertig(input: {
     await resend.emails.send({
       from:
         process.env.RESEND_FROM_EMAIL?.trim() ||
-        "Bärenwald <noreply@baerenwald.de>",
+        `${MARKE.name} <noreply@${MARKE.websiteHost}>`,
       to,
       subject: titel,
       html,
@@ -161,7 +162,7 @@ export async function notifyHvHausmeisterBefundZurueck(input: {
     await resend.emails.send({
       from:
         process.env.RESEND_FROM_EMAIL?.trim() ||
-        "Bärenwald <noreply@baerenwald.de>",
+        `${MARKE.name} <noreply@${MARKE.websiteHost}>`,
       to,
       subject: titel,
       html,

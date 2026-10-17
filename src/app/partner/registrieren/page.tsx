@@ -1,11 +1,12 @@
 import { PartnerAuthShell } from "@/components/partner/PartnerAuthShell";
 import { PartnerRegisterForm } from "@/components/partner/PartnerRegisterForm";
 import { PARTNER_AUTH_COPY } from "@/lib/partner/partner-auth-copy";
+import { MARKE } from "@/lib/marke";
 
 export const dynamic = "force-dynamic";
 
 export const metadata = {
-  title: "Partner-Registrierung — Bärenwald",
+  title: `Partner-Registrierung — ${MARKE.name}`,
   robots: { index: false, follow: false },
 };
 

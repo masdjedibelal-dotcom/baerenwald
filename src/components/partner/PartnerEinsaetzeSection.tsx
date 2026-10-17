@@ -27,6 +27,7 @@ import { PortalStatusPill } from "@/components/shared/PortalStatusPill";
 import { safeAction } from "@/lib/actions/safe-action";
 import type { PortalStatusTone } from "@/lib/shared/portal-status-pill";
 import { portalToastError, portalToastSuccess } from "@/lib/shared/portal-toast";
+import { MARKE } from "@/lib/marke";
 
 const STATUS: Record<PartnerEinsatz["status"], { label: string; tone: PortalStatusTone }> = {
   gesendet: { label: "Neu", tone: "neu" },
@@ -36,7 +37,7 @@ const STATUS: Record<PartnerEinsatz["status"], { label: string; tone: PortalStat
 };
 
 const REGIE_STAND: Record<PartnerEinsatz["regie"][number]["stand"], string> = {
-  offen: "wartet auf Bärenwald",
+  offen: `wartet auf ${MARKE.name}`,
   angenommen: "angenommen",
   abgelehnt: "abgelehnt",
 };
@@ -328,8 +329,8 @@ export function PartnerEinsaetzeSection({ rechnungHinweis }: { rechnungHinweis?:
           <p className="m-0 text-[var(--p2-sub)]">
             {ansicht === "aktuell"
               ? kpi.erledigt > 0
-                ? "Keine aktuellen Einsätze. Neue Einsätze von Bärenwald erscheinen hier."
-                : "Noch keine Einsätze. Sobald Bärenwald Ihnen einen Einsatz schickt, erscheint er hier."
+                ? `Keine aktuellen Einsätze. Neue Einsätze von ${MARKE.name} erscheinen hier.`
+                : `Noch keine Einsätze. Sobald ${MARKE.name} Ihnen einen Einsatz schickt, erscheint er hier.`
               : "Noch keine erledigten Einsätze."}
           </p>
         ) : null}
@@ -469,7 +470,7 @@ export function PartnerEinsaetzeSection({ rechnungHinweis }: { rechnungHinweis?:
           ) : null}
           {dialog.art === "update" ? (
             <>
-              <PortalField label="Text" hint="Nur für Bärenwald, der Kunde sieht das nicht.">
+              <PortalField label="Text" hint={`Nur für ${MARKE.name}, der Kunde sieht das nicht.`}>
                 <PortalTextarea rows={4} value={text} onChange={(ev) => setText(ev.target.value)} />
               </PortalField>
               <FotoAuswahl label="Fotos oder Dokumente" dateien={dateien} onChange={setDateien} />
@@ -480,7 +481,7 @@ export function PartnerEinsaetzeSection({ rechnungHinweis }: { rechnungHinweis?:
               <PortalField label="Stunden">
                 <PortalInput inputMode="decimal" value={stunden} onChange={(ev) => setStunden(ev.target.value)} />
               </PortalField>
-              <PortalField label="Was wurde gemacht?" hint="Bärenwald nimmt die Regie an oder lehnt sie ab. Sie sehen das hier.">
+              <PortalField label="Was wurde gemacht?" hint={`${MARKE.name} nimmt die Regie an oder lehnt sie ab. Sie sehen das hier.`}>
                 <PortalTextarea rows={4} value={text} onChange={(ev) => setText(ev.target.value)} />
               </PortalField>
               <FotoAuswahl label="Fotos oder Dokumente (freiwillig)" dateien={dateien} onChange={setDateien} />

@@ -11,6 +11,7 @@ import { htmlToPlainText } from "@/lib/shared-domain/html-to-plain-text";
 import { supabaseAdmin } from "@/lib/supabase";
 import { isValidEmail } from "@/lib/validation";
 import { Resend } from "resend";
+import { MARKE } from "@/lib/marke";
 
 export const runtime = "nodejs";
 
@@ -258,7 +259,7 @@ export async function POST(req: Request) {
       await resend.emails.send({
         from:
           process.env.RESEND_FROM_SYSTEM ??
-          "System <system@baerenwaldmuenchen.de>",
+          `System <system@${MARKE.websiteHost}>`,
         to: orgEmail,
         subject: buildSubject({
           objekt: objektTitel,

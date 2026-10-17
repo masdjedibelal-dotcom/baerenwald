@@ -47,6 +47,7 @@ import {
 } from "@/lib/org/lead-befund-vorlagen";
 import { PORTAL_VAR } from "@/lib/portal2/tokens";
 import { orgPortalToast,portalToastSaved } from "@/lib/shared/portal-toast";
+import { MARKE } from "@/lib/marke";
 
 const STATUS_OPTS: Array<{
   id: LeadBefundPunktStatus;
@@ -982,15 +983,15 @@ export function OrgHmBefundPanel({
             <PortalSheetStack>
               <PortalSheetOption
                 title="Selbst erledigt"
-                subtitle="Kein Auftrag an Bärenwald — Vorgang wird geschlossen."
+                subtitle={`Kein Auftrag an ${MARKE.name} — Vorgang wird geschlossen.`}
                 onClick={() => {
                   setPendingErgebnis("selbst_erledigt");
                   setSheetStep("bestaetigen");
                 }}
               />
               <PortalSheetOption
-                title="An Bärenwald weitergeben"
-                subtitle="Fachfirma nötig — Bärenwald übernimmt."
+                title={`An ${MARKE.name} weitergeben`}
+                subtitle={`Fachfirma nötig — ${MARKE.name} übernimmt.`}
                 onClick={() => setSheetStep("fachfirma")}
               />
             </PortalSheetStack>
@@ -1032,8 +1033,8 @@ export function OrgHmBefundPanel({
               {pendingErgebnis === "selbst_erledigt"
                 ? "Vorgang als vom Hausmeister erledigt abschließen?"
                 : pendingErgebnis === "fachfirma_akut"
-                  ? "Als Akut an Bärenwald übergeben (Soforteinsatz)?"
-                  : "An Bärenwald übergeben — Angebot wird erstellt?"}
+                  ? `Als Akut an ${MARKE.name} übergeben (Soforteinsatz)?`
+                  : `An ${MARKE.name} übergeben — Angebot wird erstellt?`}
             </p>
             <div className="portal-action-row">
               <PortalButton

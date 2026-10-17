@@ -1,4 +1,4 @@
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import type { Metadata } from "next";
 
 import { HandwerkerSeoPage } from "@/components/handwerker/HandwerkerSeoPage";
@@ -6,12 +6,15 @@ import { PageLayout } from "@/components/layout/PageLayout";
 import handwerkerContent from "@/data/handwerker-content.json";
 import { OG_IMAGE, SITE_CONFIG } from "@/lib/config";
 import type { HandwerkerContentItem } from "@/lib/handwerker-types";
+import { MARKE } from "@/lib/marke";
 import { hubDetailBreadcrumbSchema } from "@/lib/schema";
 
 const entries = handwerkerContent as HandwerkerContentItem[];
 const bySlug = new Map(entries.map((e) => [e.slug, e]));
 
 export function generateStaticParams() {
+  // Servus TEO: keine SEO-Handwerkerseiten
+  if (!MARKE.marketingSeite) return [];
   return entries.map((c) => ({ slug: c.slug }));
 }
 
@@ -45,6 +48,7 @@ export async function generateMetadata({
 }
 
 export default function PartnerSeoSlugPage({ params }: PageProps) {
+  if (!MARKE.marketingSeite) redirect("/portal");
   const data = bySlug.get(params.slug);
   if (!data) notFound();
 

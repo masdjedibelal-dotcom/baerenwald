@@ -6,11 +6,12 @@ import { PartnerLoginForm } from "@/components/partner/PartnerLoginForm";
 import { AUTH_LOGIN, authBrandName } from "@/lib/portal2/auth";
 import { createClient } from "@/lib/supabase/server";
 import { isSupabaseConfigured } from "@/lib/supabase";
+import { MARKE } from "@/lib/marke";
 
 export const dynamic = "force-dynamic";
 
 export const metadata = {
-  title: "Partner-Anmeldung — Bärenwald",
+  title: `Partner-Anmeldung — ${MARKE.name}`,
   robots: { index: false, follow: false },
 };
 

@@ -19,11 +19,12 @@ import { resolvePortalKundeTyp } from "@/lib/portal2/kunde-typ";
 import { clearAdminViewCookie } from "@/lib/auth/crm-impersonation-session";
 import { createClient } from "@/lib/supabase/server";
 import { isSupabaseConfigured,supabaseAdmin } from "@/lib/supabase";
+import { MARKE } from "@/lib/marke";
 
 export const dynamic = "force-dynamic";
 
 export const metadata = {
-  title: "MeinBärenwald",
+  title: `${MARKE.portalName}`,
   robots: { index: false, follow: false },
 };
 
@@ -98,7 +99,7 @@ export default async function PortalDashboardPage({
         </p>
         <div className="mt-4 flex flex-col gap-2">
           <a
-            href={`mailto:${SITE_CONFIG.email}?subject=${encodeURIComponent("MeinBärenwald – Konto verknüpfen")}`}
+            href={`mailto:${SITE_CONFIG.email}?subject=${encodeURIComponent(`${MARKE.portalName} – Konto verknüpfen`)}`}
             className="btn-pill-primary w-full text-center !py-2.5"
           >
             Support kontaktieren

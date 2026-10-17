@@ -53,7 +53,7 @@ async function logWebsiteMailResult(input: {
 }
 
 /**
- * Sendet HTML-Mails mit Logo als HTTPS-URL (baerenwaldmuenchen.de) —
+ * Sendet HTML-Mails mit Logo als HTTPS-URL (Portal-Host der Marke) —
  * kein CID-Anhang (sonst Büroklammer in Apple Mail).
  * Staging: nur loggen, kein Resend-Versand.
  * P4-3: Erfolg und Fehler landen in email_log (sichtbar im CRM-E-Mail-Log).

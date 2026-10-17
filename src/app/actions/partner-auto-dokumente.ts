@@ -35,6 +35,7 @@ import {
 } from "@/lib/partner/partner-storage";
 import { createClient } from "@/lib/supabase/server";
 import { isSupabaseConfigured,supabaseAdmin } from "@/lib/supabase";
+import { MARKE } from "@/lib/marke";
 
 export type PartnerAutoDocPreview = {
   anfrageId: string;
@@ -644,7 +645,7 @@ export async function submitPartnerAutoRechnung(input: {
     if (!crmOk) {
       return {
         ok: false,
-        error: "Rechnung erst nach Freigabe/Annahme durch Bärenwald möglich.",
+        error: `Rechnung erst nach Freigabe/Annahme durch ${MARKE.name} möglich.`,
       };
     }
   }
