@@ -53,14 +53,14 @@ export interface KiRechnerChatProps {
   onRaumVisualisieren?: () => void;
 }
 
-const INITIAL_MESSAGE = `Hi! Ich bin ein KI-Assistent von Bärenwald — für Renovierung, Reparatur und Umbau in München.
+const INITIAL_MESSAGE = `Hallo! Ich bin ein KI-Assistent von Bärenwald — für Renovierung, Reparatur und Umbau in München.
 
-Ob erste Idee oder konkretes Projekt: Hier klären wir alles Handwerkliche. Ich helfe dir z. B.:
-• zu verstehen, **was du wirklich brauchst** (Gewerke, Ablauf, Stolpersteine)
-• bei **Fragen zu deinem Vorhaben** — auch wenn noch vieles offen ist
+Ob erste Idee oder konkretes Projekt: Hier klären wir alles Handwerkliche. Ich helfe Ihnen z. B.:
+• zu verstehen, **was Sie wirklich brauchen** (Gewerke, Ablauf, Stolpersteine)
+• bei **Fragen zu Ihrem Vorhaben** — auch wenn noch vieles offen ist
 • zu sehen, **was als Nächstes Sinn macht**
 
-Sind die wichtigsten Punkte da, tippe unten auf **Zum Preis** für einen unverbindlichen Rahmen. Nicht alles musst du sofort wissen.
+Sind die wichtigsten Punkte da, tippen Sie unten auf **Zum Preis** für einen unverbindlichen Rahmen. Nicht alles müssen Sie sofort wissen.
 
 Womit sollen wir starten?`;
 

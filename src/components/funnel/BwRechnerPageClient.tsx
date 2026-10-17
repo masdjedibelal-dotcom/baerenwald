@@ -19,7 +19,7 @@ import { FachdetailsStep } from "@/components/funnel/FachdetailsStep";
 import { FunnelErrorBoundary } from "@/components/funnel/FunnelErrorBoundary";
 import { FunnelPortalAuthGate } from "@/components/funnel/FunnelPortalAuthGate";
 import { HWLeadForm } from "@/components/funnel/HWLeadForm";
-import { IndividuellAnfrageForm } from "@/components/funnel/IndividuellAnfrageForm";
+import { AnfrageWeg } from "@/components/funnel/AnfrageWeg";
 import type { PortalContactPrefill } from "@/lib/portal/portal-contact-prefill";
 import {
   buildBwLeadPayload,
@@ -736,6 +736,15 @@ function FunnelRechnerInner({ resetPath }: { resetPath: string }) {
     if (isKiBeratungModusParam(getKiModusFromSearch(searchParams))) return;
 
     const modus = searchParams.get("modus");
+    // „Anfrage stellen“ (Startseite): direkt in den Anfrage-Weg, ohne Preisrechner.
+    if (modus === "anfrage") {
+      urlInit.current = true;
+      funnelFromWahlRef.current = true;
+      setEinstiegModus("funnel");
+      setScreen("situation");
+      setIndividuellOffen(true);
+      return;
+    }
     const produktParam = searchParams.get("produkt")?.trim();
     if (modus === "katalog" && produktParam) {
       const preis = produktPreis(produktParam);
@@ -1718,12 +1727,13 @@ function FunnelRechnerInner({ resetPath }: { resetPath: string }) {
   ]);
 
   const showFooterNav =
-    einstiegModus === "wahl" ||
+    !(einstiegModus === "funnel" && screen === "situation" && individuellOffen) &&
+    (einstiegModus === "wahl" ||
     einstiegModus === "ki" ||
     einstiegModus === "trust" ||
     (einstiegModus === "funnel" &&
       screen !== "danke" &&
-      screen !== "ausserhalb");
+      screen !== "ausserhalb"));
 
   const handleLeadSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -2030,23 +2040,13 @@ function FunnelRechnerInner({ resetPath }: { resetPath: string }) {
         return <TrustScreen variant="qualitaet" />;
       case "situation":
         if (individuellOffen) {
-          return (
-            <StepWrapper
-              stepLabel="Individuell"
-              question="Erzählen Sie uns von Ihrem Vorhaben"
-              subtext="Kurz beschreiben reicht — wir melden uns persönlich."
-              animateKey="individuell"
-              tilesCard
-            >
-              <IndividuellAnfrageForm onZurueck={() => setIndividuellOffen(false)} />
-            </StepWrapper>
-          );
+          return <AnfrageWeg onAbbrechen={() => setIndividuellOffen(false)} />;
         }
         return (
           <StepWrapper
             stepLabel="Vorhaben"
             question="Was planen Sie?"
-            subtext="Beantworte unsere Fragen, um eine erste Preisindikation zu erhalten."
+            subtext="Beantworten Sie unsere Fragen, um eine erste Preisindikation zu erhalten."
             animateKey={screen}
             tilesCard
           >
@@ -2068,7 +2068,7 @@ function FunnelRechnerInner({ resetPath }: { resetPath: string }) {
                   </button>
                 );
               })}
-              {/* Individuell: freie Anfrage ohne Rechner (wie „Frei“ im CRM) */}
+              {/* Allgemeine Anfrage ohne Rechner (Anfrage-Weg) */}
               <button
                 type="button"
                 onClick={() => setIndividuellOffen(true)}
@@ -2077,9 +2077,9 @@ function FunnelRechnerInner({ resetPath }: { resetPath: string }) {
                 <span className="funnel-tile-icon-wrap" aria-hidden>
                   <PortalIcon asset="23-chat" />
                 </span>
-                <span className="funnel-tile-label">Individuell</span>
+                <span className="funnel-tile-label">Etwas anderes? Anfrage stellen</span>
                 <span className="funnel-tile-hint">
-                  Eigenes Vorhaben — kurz beschreiben, wir melden uns persönlich
+                  Ohne Preisrechner — Sie beschreiben Ihr Vorhaben, wir melden uns persönlich
                 </span>
               </button>
             </div>
@@ -2999,7 +2999,7 @@ function FunnelRechnerInner({ resetPath }: { resetPath: string }) {
         </div>
       ) : null}
       <FunnelHeader onFunnelReset={handleReset} />
-      {einstiegModus === "funnel" ? (
+      {einstiegModus === "funnel" && !(screen === "situation" && individuellOffen) ? (
         <FunnelProgressBar
           currentStep={progressStep}
           situation={state.situation}

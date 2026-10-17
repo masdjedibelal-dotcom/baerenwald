@@ -481,7 +481,7 @@ export function LeistungenCarousel() {
               <div className="leistung-card-body">
                 <div className="leistung-card-name">Kontakt aufnehmen</div>
                 <p className="leistung-card-hint">
-                  Beschreib einfach kurz dein Vorhaben
+                  Beschreiben Sie einfach kurz Ihr Vorhaben
                 </p>
               </div>
             </Link>

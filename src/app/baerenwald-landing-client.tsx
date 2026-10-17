@@ -31,7 +31,7 @@ import { SITE_CONFIG } from "@/lib/config";
 import { CTA } from "@/lib/cta-config";
 import { HOME_FAQ_ITEMS } from "@/lib/home-content";
 import { capturePostHogEvent } from "@/lib/consent/posthog-client";
-import { RECHNER_HREF } from "@/lib/rechner-links";
+import { ANFRAGE_HREF, RECHNER_HREF } from "@/lib/rechner-links";
 
 const TESTIMONIALS = [
   {
@@ -499,17 +499,30 @@ export default function BaerenwaldLandingClient({
                 Handwerk und Umsetzung.
               </p>
               <div className="hero-actions-row au d5" style={{ marginTop: 28 }}>
-                <CTAButton
-                  bare
-                  tone="hero"
-                  href={RECHNER_HREF}
-                  label={CTA.hero}
-                  onClick={() =>
-                    capturePostHogEvent("cta_rechner_clicked", {
-                      location: "hero",
-                    })
-                  }
-                />
+                <div className="hero-cta-paar">
+                  <CTAButton
+                    bare
+                    tone="hero"
+                    href={RECHNER_HREF}
+                    label={CTA.hero}
+                    onClick={() =>
+                      capturePostHogEvent("cta_rechner_clicked", {
+                        location: "hero",
+                      })
+                    }
+                  />
+                  <CTAButton
+                    bare
+                    tone="hero-secondary"
+                    href={ANFRAGE_HREF}
+                    label={CTA.anfrage}
+                    onClick={() =>
+                      capturePostHogEvent("cta_anfrage_clicked", {
+                        location: "hero",
+                      })
+                    }
+                  />
+                </div>
                 <p
                   className="hero-actions-sub"
                   style={{
@@ -589,7 +602,7 @@ export default function BaerenwaldLandingClient({
       >
         <div className="final-cta-inner">
           <h2 id="landing-final-cta-h2" className="final-cta-h2">
-            Bereit für dein Projekt?
+            Bereit für Ihr Projekt?
           </h2>
           <p className="final-cta-sub">
             Preisrahmen in wenigen Minuten — ein Ansprechpartner für die
@@ -647,7 +660,7 @@ export default function BaerenwaldLandingClient({
               </a>
             </p>
             <p className="how-tl-sub" style={{ marginTop: 28 }}>
-              Nicht dabei? Ruf uns an — wir helfen persönlich weiter.
+              Nicht dabei? Rufen Sie uns an — wir helfen persönlich weiter.
             </p>
             <div style={{ marginTop: 20, display: "flex", flexWrap: "wrap", gap: 10, alignItems: "center" }}>
               <a

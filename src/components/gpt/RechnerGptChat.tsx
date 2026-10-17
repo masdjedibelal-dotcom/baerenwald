@@ -23,7 +23,7 @@ export function RechnerGptChat({
         <GptStudioChat
           priceHandoff
           locked={locked}
-          anrede="du"
+          anrede="sie"
           onPreisBereit={onPreisBereit}
           onBeratungBereit={onBeratungBereit}
         />

@@ -106,7 +106,7 @@ export const LEISTUNGEN_DATA: Record<string, LeistungsData> = {
     faq: [
       {
         q: "Wie lange dauert eine Badsanierung?",
-        a: "Eine Komplettsanierung dauert 2–3 Wochen. Teilsanierungen (nur Fliesen, nur Wasserinstallation) 3–7 Tage. Wir planen so dass Sie nicht zu lange ohne Bad bist.",
+        a: "Eine Komplettsanierung dauert 2–3 Wochen. Teilsanierungen (nur Fliesen, nur Wasserinstallation) 3–7 Tage. Wir planen so, dass Sie nicht zu lange ohne Bad sind.",
       },
       {
         q: "Können wir während der Sanierung in der Wohnung bleiben?",
@@ -260,7 +260,7 @@ export const LEISTUNGEN_DATA: Record<string, LeistungsData> = {
     subline:
       "Mähen, Schneiden, Aufräumen. Wir kümmern uns regelmäßig damit Ihr Garten immer gut aussieht.",
     beschreibung:
-      "Regelmäßige Pflege hält den Garten in Schuss — ohne dass Sie jeden Samstag selbst mähen musst. Wir kommen wöchentlich, zweiwöchentlich oder monatlich und halten alles ordentlich.",
+      "Regelmäßige Pflege hält den Garten in Schuss — ohne dass Sie jeden Samstag selbst mähen müssen. Wir kommen wöchentlich, zweiwöchentlich oder monatlich und halten alles ordentlich.",
     wasWirMachen: [
       "Rasen mähen und Kanten schneiden",
       "Hecken und Sträucher in Form halten",

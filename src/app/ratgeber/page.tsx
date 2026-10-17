@@ -22,10 +22,10 @@ export default function RatgeberIndexPage() {
             </nav>
             <div className="ratgeber-tag">Ratgeber & Kosten</div>
             <h1 className="page-hero-h1">
-              Ratgeber für dein Projekt in München
+              Ratgeber für Ihr Projekt in München
             </h1>
             <p className="page-hero-sub">
-              Planung, Budget und Ablauf — kompakt aufbereitet. Wähle ein
+              Planung, Budget und Ablauf — kompakt aufbereitet. Wählen Sie ein
               Thema.
             </p>
           </div>

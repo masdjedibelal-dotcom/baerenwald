@@ -1,6 +1,9 @@
 /** Klassischer Preisrechner (Website-Funnel). */
 export const RECHNER_HREF = "/rechner";
 
+/** Allgemeine Anfrage ohne Preisrechner (Anfrage-Weg im Rechner). */
+export const ANFRAGE_HREF = "/rechner?modus=anfrage";
+
 export function isKiBeratungModusParam(
   value: string | null | undefined
 ): boolean {

@@ -12,7 +12,7 @@ export default function NotFound() {
             <h1 className="page-hero-h1">Diese Seite gibt es nicht.</h1>
             <p className="page-hero-sub" style={{ margin: "0 auto" }}>
               Der Link ist veraltet oder die Adresse wurde falsch eingegeben.
-              Starte neu — wir helfen dir beim nächsten Schritt.
+              Starten Sie neu — wir helfen Ihnen beim nächsten Schritt.
             </p>
             <div
               style={{

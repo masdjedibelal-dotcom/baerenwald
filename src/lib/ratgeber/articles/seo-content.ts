@@ -77,7 +77,7 @@ export const WOHNUNG_RENOVIEREN_SEO: RatgeberSeoBlock = {
   metaTitle:
     "Wohnung renovieren München 2026 — Gesamtkosten, Reihenfolge & Budget",
   metaDescription:
-    "Was kostet eine Wohnungsrenovierung in München 2026? Kosten je Gewerk, Reihenfolge der Arbeiten und wie du Budget sinnvoll planst — von Bärenwald München.",
+    "Was kostet eine Wohnungsrenovierung in München 2026? Kosten je Gewerk, Reihenfolge der Arbeiten und wie Sie Ihr Budget sinnvoll planen — von Bärenwald München.",
   kurzeAntwort:
     "Eine komplette Wohnungsrenovierung kostet in München je nach Umfang 200 bis 800 Euro pro m² Wohnfläche. Für eine 70 m² Wohnung mit neuem Boden, Malerarbeiten und Bad sind 15.000–40.000 Euro realistisch. Bärenwald München übernimmt die gesamte Koordination aller Gewerke mit einem Ansprechpartner und festem Preisrahmen.",
   sectionH2: {

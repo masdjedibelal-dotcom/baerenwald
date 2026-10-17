@@ -149,7 +149,7 @@ export default async function PartnerDashboardPage({
     return (
       <PartnerAuthShell title="Keine Partnerdaten">
         <p className="portal-text-body text-text-secondary">
-          Dein Konto ist aktiv, aber es wurden keine Daten gefunden.
+          Ihr Konto ist aktiv, aber es wurden keine Daten gefunden.
         </p>
       </PartnerAuthShell>
     );

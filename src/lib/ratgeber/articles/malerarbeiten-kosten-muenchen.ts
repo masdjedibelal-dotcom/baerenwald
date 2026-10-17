@@ -9,7 +9,7 @@ export const malerarbeitenKostenMuenchen: RatgeberData = {
     headline:
       "Was kostet es die Wohnung streichen zu lassen? München 2025",
     subline:
-      "Alles was du wissen musst — echte Preise, wie lange es dauert und worauf du achten solltest.",
+      "Alles, was Sie wissen müssen — echte Preise, wie lange es dauert und worauf Sie achten sollten.",
   },
   wannBrauche: {
     title: "Wann macht ein Profi Sinn?",
@@ -29,7 +29,7 @@ export const malerarbeitenKostenMuenchen: RatgeberData = {
     },
     {
       schritt: "Angebot",
-      text: "Du erhältst ein Festpreisangebot mit allen Positionen — kein böses Erwachen nachher.",
+      text: "Sie erhalten ein Festpreisangebot mit allen Positionen — kein böses Erwachen nachher.",
     },
     {
       schritt: "Vorbereitung",
@@ -41,7 +41,7 @@ export const malerarbeitenKostenMuenchen: RatgeberData = {
     },
     {
       schritt: "Gemeinsame Kontrolle am Ende",
-      text: "Wir gehen alles mit dir durch, offene Punkte werden sofort behoben.",
+      text: "Wir gehen alles mit Ihnen durch, offene Punkte werden sofort behoben.",
     },
     {
       schritt: "Fertigstellung",
@@ -115,12 +115,12 @@ export const malerarbeitenKostenMuenchen: RatgeberData = {
   koordinationUsps: [
     "Reihenfolge mit allen Beteiligten abstimmen",
     "Festpreis nach Vor-Ort-Termin",
-    "Gemeinsame Kontrolle am Ende mit dir",
+    "Gemeinsame Kontrolle am Ende mit Ihnen",
   ],
   faq: [
     {
       q: "Kann ich die Farbe selbst kaufen um Geld zu sparen?",
-      a: "Grundsätzlich ja — aber Profi-Maler kaufen zu Einkaufskonditionen. Der Unterschied ist oft kleiner als gedacht. Wir beraten dich was sich lohnt.",
+      a: "Grundsätzlich ja — aber Profi-Maler kaufen zu Einkaufskonditionen. Der Unterschied ist oft kleiner als gedacht. Wir beraten Sie, was sich lohnt.",
     },
     {
       q: "Wie viele Lagen Farbe brauche ich?",

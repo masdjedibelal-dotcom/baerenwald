@@ -63,7 +63,7 @@ export default function DatenschutzPage() {
                 <strong>Über BärenwaldGPT (KI-Beratung im Rechner):</strong>
               </p>
               <ul>
-                <li>Inhalte deiner Chat-Nachrichten (z. B. Vorhaben, PLZ, Fragen)</li>
+                <li>Inhalte Ihrer Chat-Nachrichten (z. B. Vorhaben, PLZ, Fragen)</li>
                 <li>Antworten des KI-Dienstes</li>
                 <li>Eine technische Session-Kennung (Session-ID)</li>
                 <li>
@@ -81,8 +81,8 @@ export default function DatenschutzPage() {
               <strong id="meinbaerenwald">3. MeinBärenwald (Kundenportal)</strong>
               <p>
                 Unter{" "}
-                <a href="/portal/login">MeinBärenwald</a> kannst du dich mit E-Mail und Passwort
-                registrieren bzw. anmelden, um deine Anfragen, Angebote, Aufträge und freigegebene
+                <a href="/portal/login">MeinBärenwald</a> können Sie sich mit E-Mail und Passwort
+                registrieren bzw. anmelden, um Ihre Anfragen, Angebote, Aufträge und freigegebene
                 Dokumente einzusehen (kein öffentlicher Link mehr mit Einmal-Token).
               </p>
               <p>
@@ -95,13 +95,13 @@ export default function DatenschutzPage() {
                 <li>Technische Session-Daten (Cookies bzw. vergleichbare Speicher im Browser für die Anmeldung)</li>
               </ul>
               <p>
-                <strong>Im Portal sichtbar:</strong> Daten zu deinen bei uns geführten Anfragen,
+                <strong>Im Portal sichtbar:</strong> Daten zu Ihren bei uns geführten Anfragen,
                 Angeboten und Aufträgen (z. B. Status, Termine, freigegebene PDFs und Fotos), soweit
-                sie dir zur Verfügung gestellt wurden.
+                sie Ihnen zur Verfügung gestellt wurden.
               </p>
               <p>
-                <strong>Verknüpfung mit deinem Kundenstamm:</strong> Wenn du dieselbe E-Mail wie in
-                unserer Kundenverwaltung nutzt, wird dein Konto mit dem bestehenden Kundenprofil
+                <strong>Verknüpfung mit Ihrem Kundenstamm:</strong> Wenn Sie dieselbe E-Mail wie in
+                unserer Kundenverwaltung nutzen, wird Ihr Konto mit dem bestehenden Kundenprofil
                 verknüpft (<em>auth_user_id</em> in unserer Datenbank).
               </p>
               <p>
@@ -191,8 +191,8 @@ export default function DatenschutzPage() {
 
               <strong>4. Weitergabe von Daten</strong>
               <p>
-                Deine Daten werden nicht verkauft. Eine Weitergabe an Dritte erfolgt nur, soweit
-                dies für den Betrieb der Website und deine Anfrage erforderlich ist:
+                Ihre Daten werden nicht verkauft. Eine Weitergabe an Dritte erfolgt nur, soweit
+                dies für den Betrieb der Website und Ihre Anfrage erforderlich ist:
               </p>
               <ul>
                 <li>An beteiligte Handwerksbetriebe zur Auftragsdurchführung</li>
@@ -270,14 +270,14 @@ export default function DatenschutzPage() {
 
               <strong id="ki-beratung">8. BärenwaldGPT (KI-Beratung im Rechner)</strong>
               <p>
-                Auf unserer Website kannst du im Rechner den Chat-Dienst{" "}
+                Auf unserer Website können Sie im Rechner den Chat-Dienst{" "}
                 <strong>BärenwaldGPT</strong> nutzen. Er dient der unverbindlichen Orientierung zu
                 Handwerks- und Renovierungsthemen in München und Umgebung (z. B. Gewerke, Ablauf,
                 Vorbereitung eines Preisrahmens). Es handelt sich nicht um verbindliche
                 Beratung, kein Angebot und keine Rechts-, Steuer- oder Medizinberatung.
               </p>
               <p>
-                <strong>Ablauf der Verarbeitung:</strong> Deine Nachrichten werden über unsere
+                <strong>Ablauf der Verarbeitung:</strong> Ihre Nachrichten werden über unsere
                 Server an den KI-Dienst <strong>OpenAI</strong> übermittelt, damit eine Antwort erzeugt
                 werden kann. Antworten und Anfragen können in unserer
                 Datenbank (Supabase, EU) protokolliert werden.
@@ -307,9 +307,9 @@ export default function DatenschutzPage() {
               </p>
               <p>
                 <strong>Freiwilligkeit und Hinweise zur Eingabe:</strong> Die Nutzung ist
-                freiwillig. Bitte gib keine besonderen Kategorien personenbezogener Daten an (z.
-                B. Gesundheitsdaten, vollständige Adressen, Ausweisdaten, Daten Dritter). Nenne
-                nur Informationen, die für dein Handwerksvorhaben nötig sind.
+                freiwillig. Bitte geben Sie keine besonderen Kategorien personenbezogener Daten an (z.
+                B. Gesundheitsdaten, vollständige Adressen, Ausweisdaten, Daten Dritter). Nennen Sie
+                nur Informationen, die für Ihr Handwerksvorhaben nötig sind.
               </p>
               <p>
                 <strong>Automatisierte Entscheidungen:</strong> Es findet keine automatisierte
@@ -324,7 +324,7 @@ export default function DatenschutzPage() {
 
               <strong id="cookies-tracking">9. Cookies, Einwilligung &amp; Tracking</strong>
               <p>
-                Beim ersten Besuch kann ein Hinweis zu Cookies und Statistik erscheinen. Deine
+                Beim ersten Besuch kann ein Hinweis zu Cookies und Statistik erscheinen. Ihre
                 Wahl speichern wir lokal im Browser (<em>bw_cookie_consent_v1</em>), damit der
                 Hinweis nicht erneut erscheint.
               </p>
@@ -334,7 +334,7 @@ export default function DatenschutzPage() {
                 sessionbezogene Daten für den Rechner-Ablauf.
               </p>
               <p>
-                <strong>Statistik (PostHog)</strong> — nur nach deiner Einwilligung über
+                <strong>Statistik (PostHog)</strong> — nur nach Ihrer Einwilligung über
                 „Akzeptieren“ im Cookie-Hinweis:
               </p>
               <p>
@@ -350,7 +350,7 @@ export default function DatenschutzPage() {
                 Nutzungsdaten (z. B. Geräte-/Browserinformationen, Ereignisse) verarbeitet werden;
                 dabei kann auch der lokale Speicher des Browsers genutzt werden.
                 <br />
-                Rechtsgrundlage bei Einwilligung: Art. 6 Abs. 1 lit. a DSGVO. Du kannst die
+                Rechtsgrundlage bei Einwilligung: Art. 6 Abs. 1 lit. a DSGVO. Sie können die
                 Einwilligung jederzeit mit Wirkung für die Zukunft widerrufen (z. B. durch Löschen
                 der Website-Daten im Browser).
                 <br />
@@ -462,14 +462,14 @@ export default function DatenschutzPage() {
                   R. 10 Jahre)
                 </li>
                 <li>
-                  <strong>MeinBärenwald-Konto:</strong> bis zur Löschung deines Kontos bzw. auf
+                  <strong>MeinBärenwald-Konto:</strong> bis zur Löschung Ihres Kontos bzw. auf
                   Anfrage; die Verknüpfung zum Kundenstamm entfällt dann. Gesetzliche
                   Aufbewahrung von Rechnungs- und Vertragsdaten bleibt unberührt.
                 </li>
               </ul>
 
-              <strong>17. Deine Rechte</strong>
-              <p>Du hast das Recht auf:</p>
+              <strong>17. Ihre Rechte</strong>
+              <p>Sie haben das Recht auf:</p>
               <ul>
                 <li>Auskunft (Art. 15 DSGVO)</li>
                 <li>Berichtigung (Art. 16 DSGVO)</li>
@@ -481,13 +481,13 @@ export default function DatenschutzPage() {
                 Anfragen an:{" "}
                 <a href="mailto:info@baerenwald-muenchen.de">info@baerenwald-muenchen.de</a>
                 <br />
-                Bitte gib bei Auskunft oder Löschung zum BärenwaldGPT-Chat möglichst Datum und
-                Inhalt deiner Nachricht an, damit wir den Eintrag zuordnen können. Für MeinBärenwald
-                nenne bitte die E-Mail-Adresse deines Kontos.
+                Bitte geben Sie bei Auskunft oder Löschung zum BärenwaldGPT-Chat möglichst Datum und
+                Inhalt Ihrer Nachricht an, damit wir den Eintrag zuordnen können. Für MeinBärenwald
+                nennen Sie bitte die E-Mail-Adresse Ihres Kontos.
               </p>
 
               <strong>18. Beschwerderecht</strong>
-              <p>Du hast das Recht, dich bei der zuständigen Aufsichtsbehörde zu beschweren:</p>
+              <p>Sie haben das Recht, sich bei der zuständigen Aufsichtsbehörde zu beschweren:</p>
               <p>
                 Bayerisches Landesamt für Datenschutzaufsicht (BayLDA)
                 <br />

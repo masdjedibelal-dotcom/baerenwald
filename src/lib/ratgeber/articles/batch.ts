@@ -36,7 +36,7 @@ export const badSanierungKostenMuenchen: RatgeberData = {
     ],
   },
   ablauf: [
-    { schritt: "Ist-Analyse & Wünsche", text: "Wir erfassen Bestand, Leitungen, statische Vorgaben und deine Must-haves." },
+    { schritt: "Ist-Analyse & Wünsche", text: "Wir erfassen Bestand, Leitungen, statische Vorgaben und Ihre Must-haves." },
     { schritt: "3D/Grundriss & Angebot", text: "Material und Handwerker werden festgelegt — transparentes Festpreisangebot." },
     { schritt: "Freigaben & Bestellung", text: "Hausverwaltung oder Eigentümerversammlung, Lieferzeiten für Keramik und Armaturen." },
     { schritt: "Rohbau & Leitungen", text: "Demontage, Estrich, Elektro, Wasserleitungen, Dämmung nach DIN." },
@@ -83,14 +83,14 @@ export const badSanierungKostenMuenchen: RatgeberData = {
     ],
   },
   koordination:
-    "Bärenwald plant alle Handwerker, synchronisiert Wasser und Heizung, Fliesen, Elektro und neue Wände (Trockenbau) und hält einen Festpreisrahmen — du hast nur einen Ansprechpartner.",
+    "Bärenwald plant alle Handwerker, synchronisiert Wasser und Heizung, Fliesen, Elektro und neue Wände (Trockenbau) und hält einen Festpreisrahmen — Sie haben nur einen Ansprechpartner.",
   koordinationUsps: [
     "Ein Projektleiter für alle Handwerker",
     "Festpreis nach detailliertem Ausmessen vor Ort",
     "Reklamation & Nachbesserung zentral",
   ],
   faq: [
-    { q: "Kann ich während der Sanierung im Objekt bleiben?", a: "Bei Komplettsanierung oft nur eingeschränkt — wir planen Wasser- und WC-Engpässe mit dir." },
+    { q: "Kann ich während der Sanierung im Objekt bleiben?", a: "Bei Komplettsanierung oft nur eingeschränkt — wir planen Wasser- und WC-Engpässe mit Ihnen." },
     { q: "Was kostet nur neue Armaturen und Fugen?", a: "Teilsanierungen starten oft bei 2.500–5.500 €, abhängig von Zugänglichkeit und Material." },
     { q: "Gibt es Förderungen?", a: "KfW unterstützt u. a. barrierefreie Umbauten — wir prüfen Förderfähigkeit und Anträge." },
     { q: "Wer entsorgt den Bauschutt?", a: "Entsorgung ist im Angebot enthalten und wird dokumentiert — wichtig in Münchner Wohnanlagen." },
@@ -128,10 +128,10 @@ export const bodenbelagKostenMuenchen: RatgeberData = {
   hero: {
     headline: "Was kostet neuer Boden? Laminat, Parkett, Fliesen in München",
     subline:
-      "Welches Material passt zu dir, was kostet Verlegen und worauf du beim Kauf achten solltest.",
+      "Welches Material passt zu Ihnen, was kostet Verlegen und worauf Sie beim Kauf achten sollten.",
   },
   wannBrauche: {
-    title: "Wann solltest du neu verlegen?",
+    title: "Wann sollten Sie neu verlegen?",
     punkte: [
       "Der Boden quietscht, ist wellig oder beschädigt",
       "Feuchteschäden oder Verformung nach Leckage",
@@ -326,10 +326,10 @@ export const wohnungRenovierenKostenMuenchen: RatgeberData = {
   hero: {
     headline: "Was kostet es eine Wohnung renovieren zu lassen? München 2025",
     subline:
-      "Komplette Übersicht — was einzelne Bereiche kosten, wie lange es dauert und wie du günstig aber gut renovierst.",
+      "Komplette Übersicht — was einzelne Bereiche kosten, wie lange es dauert und wie Sie günstig, aber gut renovieren.",
   },
   wannBrauche: {
-    title: "Wann solltest du planen?",
+    title: "Wann sollten Sie planen?",
     punkte: [
       "Einzug in gebrauchte Wohnung mit veralteter Ausstattung",
       "Verkaufsvorbereitung (neutral, hell, gepflegt)",
@@ -537,13 +537,13 @@ export const winterdienstKostenMuenchen: RatgeberData = {
       "Streupflicht, Haftung und Preise — alles was Münchner Hausbesitzer wissen müssen.",
   },
   wannBrauche: {
-    title: "Wann brauchst du einen Dienst?",
+    title: "Wann brauchen Sie einen Dienst?",
     punkte: [
-      "Du bist streupflichtig (Eigentümer / Mieter laut Vertrag)",
+      "Sie sind streupflichtig (Eigentümer / Mieter laut Vertrag)",
       "Gewerbliche Fläche mit Kundenverkehr",
       "WEG ohne Hausmeister",
       "Mehrfamilienhaus mit langem Gehweg",
-      "Du willst Haftungsnachweis durch Dokumentation",
+      "Sie wollen einen Haftungsnachweis durch Dokumentation",
       "Umweltzone Innenstadt: spezielles Streugut",
     ],
   },
@@ -633,17 +633,17 @@ export const waermepumpeFoerderung2025: RatgeberData = {
   hero: {
     headline: "Wärmepumpe 2025 — wie viel Förderung bekomme ich wirklich?",
     subline:
-      "BAFA, KfW, Energieberatung — was gefördert wird, wie viel, und wie du den Antrag stellst.",
+      "BAFA, KfW, Energieberatung — was gefördert wird, wie viel, und wie Sie den Antrag stellen.",
   },
   wannBrauche: {
-    title: "Wann solltest du antragen?",
+    title: "Wann sollten Sie den Antrag stellen?",
     punkte: [
       "Vor Beginn der Maßnahme (Fachbetrieb registrieren)",
       "Wenn Heizlast und Dämmung geklärt sind",
       "Bei Kombi mit erneuerbarer Warmwasserbereitung",
       "Wenn Eigentümerstruktur geklärt (WEG/ETW)",
       "Wenn Elektroanschluss ausreichend dimensioniert ist",
-      "Wenn du langfristige Heizkosten senken willst",
+      "Wenn Sie langfristig Heizkosten senken wollen",
     ],
   },
   ablauf: [
@@ -693,7 +693,7 @@ export const waermepumpeFoerderung2025: RatgeberData = {
     ],
   },
   koordination:
-    "Wir verzahnen SHK, Elektro und Antragsstrecke — du bekommst Checklisten und Fristen, damit keine Förderung verfällt.",
+    "Wir verzahnen SHK, Elektro und Antragsstrecke — Sie bekommen Checklisten und Fristen, damit keine Förderung verfällt.",
   koordinationUsps: [
     "Antrags-Checkliste",
     "Fotodokumentation standardisiert",
@@ -733,10 +733,10 @@ export const badRenovierenAblauf: RatgeberData = {
   hero: {
     headline: "Bad renovieren — wie läuft das ab und wie lange dauert es?",
     subline:
-      "Schritt für Schritt erklärt — vom ersten Termin bis zum fertigen Bad, damit du weißt was auf dich zukommt.",
+      "Schritt für Schritt erklärt — vom ersten Termin bis zum fertigen Bad, damit Sie wissen, was auf Sie zukommt.",
   },
   wannBrauche: {
-    title: "Wann brauchst du einen klaren Fahrplan?",
+    title: "Wann brauchen Sie einen klaren Fahrplan?",
     punkte: [
       "Komplettsanierung mit Leitungswechsel",
       "Nur ein Bad im Objekt",
@@ -832,7 +832,7 @@ export const fensterTauschenKosten: RatgeberData = {
   hero: {
     headline: "Neue Fenster — was kostet das und lohnt es sich wirklich?",
     subline:
-      "Preise, Förderung und wie viel Heizkosten du wirklich sparst — ehrlich erklärt.",
+      "Preise, Förderung und wie viel Heizkosten Sie wirklich sparen — ehrlich erklärt.",
   },
   wannBrauche: {
     title: "Wann lohnt sich ein Tausch?",
@@ -1030,10 +1030,10 @@ export const dacharbeitenKostenMuenchen: RatgeberData = {
   hero: {
     headline: "Dach reparieren oder sanieren — was kostet das in München?",
     subline:
-      "Von der kleinen Reparatur bis zur Komplettsanierung — echte Preise und wann du handeln musst.",
+      "Von der kleinen Reparatur bis zur Komplettsanierung — echte Preise und wann Sie handeln müssen.",
   },
   wannBrauche: {
-    title: "Wann musst du handeln?",
+    title: "Wann müssen Sie handeln?",
     punkte: [
       "Ziegel locker oder First beschädigt",
       "Feuchteflecken im Dachgeschoss",

@@ -9167,3 +9167,115 @@ html.js .hero-picker-chips-wrap {
   line-height: 1.6;
 }
 
+
+/* Startseite: „Preis berechnen“ + „Anfrage stellen“ nebeneinander */
+.hero-cta-paar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+
+/* Rechner: Anfrage-Formular (Aktionen, Danke) */
+.individuell-form__aktionen {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding-top: 4px;
+}
+.individuell-form__aktionen .komplex-submit-btn {
+  width: auto;
+  flex: 1 1 auto;
+  max-width: 280px;
+}
+.individuell-form__zurueck {
+  background: none;
+  border: none;
+  padding: 8px 0;
+  font-size: 14px;
+  color: var(--bw-text-muted, #6b7280);
+  cursor: pointer;
+}
+.individuell-danke {
+  text-align: center;
+  padding: 24px 8px;
+}
+.individuell-danke__titel {
+  margin: 0 0 6px;
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--bw-green-dark, #1f4d34);
+}
+.individuell-danke__text {
+  margin: 0;
+  font-size: 15px;
+  color: var(--bw-text-muted, #6b7280);
+}
+
+/* Anfrage-Weg (allgemeine Anfrage ohne Preisrahmen) */
+.anfrage-feld {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+  flex: 1 1 0;
+}
+.anfrage-feld--plz {
+  flex: 0 0 7.5rem;
+}
+.anfrage-feld__label {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--fl-text);
+}
+.anfrage-zeile {
+  display: flex;
+  gap: 12px;
+}
+.anfrage-wahl {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.anfrage-wahl__opt {
+  border: 1.5px solid var(--fl-border);
+  border-radius: 999px;
+  background: var(--fl-bg-card);
+  padding: 8px 14px;
+  font-size: 14px;
+  font-family: var(--fl-font-sans);
+  color: var(--fl-text);
+  cursor: pointer;
+  transition:
+    border-color 0.15s,
+    background 0.15s;
+}
+.anfrage-wahl__opt.selected {
+  border-color: var(--fl-accent);
+  background: rgba(46, 125, 82, 0.08);
+  color: var(--fl-accent);
+  font-weight: 600;
+}
+.anfrage-bau {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 14px;
+  border-radius: 16px;
+  background: rgba(46, 125, 82, 0.04);
+}
+.anfrage-bau__titel {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--fl-accent);
+}
+.anfrage-hinweis {
+  margin: 0;
+  font-size: 13px;
+  color: var(--bw-text-muted, #6b7280);
+}

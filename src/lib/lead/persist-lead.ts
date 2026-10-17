@@ -71,6 +71,10 @@ export type PersistLeadInput = {
   /** Keine interne Lead-Mail */
   skipInternMail?: boolean;
   funnel_daten?: unknown;
+  /** Kundentyp für einen neu angelegten Kunden (Website-Anfrage); sonst aus `situation`. */
+  kunde_typ?: "privat" | "gewerbe" | "hausverwaltung" | null;
+  /** Firma / Hausverwaltung: neuer Kunde heißt wie die Firma, die Person wird Haupt-Ansprechpartner. */
+  firma?: string | null;
   /** Unterscheidung Rechner-Haupt / Beratung / Außerhalb / Komplex */
   funnel_quelle?:
     | "rechner_haupt"
@@ -468,7 +472,8 @@ async function persistLeadInner(
     console.error("[persistLead] Spam-Check fehlgeschlagen:", e);
   }
 
-  const typ = situation === "gewerbe" ? "gewerbe" : "privat";
+  const typ = raw.kunde_typ ?? (situation === "gewerbe" ? "gewerbe" : "privat");
+  const firma = (raw.firma ?? "").trim() || null;
 
   const emailForKunde = hasEmail
     ? emailRaw.trim().toLowerCase()
@@ -508,7 +513,8 @@ async function persistLeadInner(
     const { data: neuerKunde, error: kundeError } = await supabaseAdmin
       .from("kunden")
       .insert({
-        name,
+        name: firma ?? name,
+        ...(firma && name ? { ansprechpartner: name } : {}),
         email: emailForKunde,
         telefon: telefon || null,
         plz: plz || null,
@@ -527,6 +533,17 @@ async function persistLeadInner(
     } else {
       kunde_id = neuerKunde.id as string;
       kundeWarNeuAngelegt = true;
+      if (firma && name) {
+        const { error: apErr } = await supabaseAdmin.from("kunden_ansprechpartner").insert({
+          kunde_id,
+          name,
+          email: hasEmail ? emailRaw.trim() : null,
+          telefon: telefon || null,
+          ist_primaer: true,
+          sort_order: 0,
+        });
+        if (apErr) logDbError("lib/lead/persist-lead:kunden_ansprechpartner", apErr);
+      }
     }
   } else if (kundeAdresse && kunde_id) {
     const {data: kundeRow, error: __dbErr263_1} = await supabaseAdmin

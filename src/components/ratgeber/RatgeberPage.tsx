@@ -25,12 +25,12 @@ const telHref = `tel:${SITE_CONFIG.phone.replace(/\s/g, "")}`;
 
 const DEFAULT_SECTION_H2 = {
   ablauf: "So läuft das ab",
-  voraussetzungen: "Was du vorher wissen solltest",
+  voraussetzungen: "Was Sie vorher wissen sollten",
   optionen: "Welche Optionen gibt es?",
   kosten: "Was kostet das wirklich?",
   zeit: "Wie lange dauert das?",
   faq: "Was Kunden fragen",
-  qualitaet: "Woran erkennst du gute Arbeit?",
+  qualitaet: "Woran erkennen Sie gute Arbeit?",
   muenchen: "Besonderheiten in München",
 } as const;
 
@@ -498,9 +498,9 @@ export function RatgeberPage({ data }: RatgeberPageProps) {
       <div className="final-cta-section">
         <div className="final-cta-bg">BW</div>
         <div className="final-cta-inner">
-          <h2 className="final-cta-h2">Bereit für dein Projekt?</h2>
+          <h2 className="final-cta-h2">Bereit für Ihr Projekt?</h2>
           <p className="final-cta-sub">
-            Melde dich direkt bei uns — wir besprechen die beste Lösung.
+            Melden Sie sich direkt bei uns — wir besprechen die beste Lösung.
           </p>
           <div className="final-cta-actions">
             {data.finalCtaPhoneFirst ? (

@@ -19,11 +19,11 @@ export const GU_VS_EINZEL_SEO: GuideSeoBlock = {
 
 export const BESTE_GU_SEO: GuideSeoBlock = {
   metaTitle:
-    "Beste Generalunternehmer München 2026 — Vergleich & worauf du achtest",
+    "Beste Generalunternehmer München 2026 — Vergleich & worauf Sie achten",
   metaDescription:
-    "Welche Generalunternehmer in München sind empfehlenswert? Kriterien, Vergleich und worauf du bei der Auswahl achten solltest — von Bärenwald München.",
+    "Welche Generalunternehmer in München sind empfehlenswert? Kriterien, Vergleich und worauf Sie bei der Auswahl achten sollten — von Bärenwald München.",
   kurzeAntwort:
-    "Einen guten Generalunternehmer in München erkennst du an: Festpreisangebot nach Vor-Ort-Besichtigung, nachweisbarem Netzwerk aus Meisterbetrieben, klarer Projektdokumentation und einem festen Ansprechpartner von Anfang bis Abnahme. Bärenwald München erfüllt alle vier Kriterien und bietet zusätzlich einen online Preisrechner für eine erste unverbindliche Einschätzung.",
+    "Einen guten Generalunternehmer in München erkennen Sie an: Festpreisangebot nach Vor-Ort-Besichtigung, nachweisbarem Netzwerk aus Meisterbetrieben, klarer Projektdokumentation und einem festen Ansprechpartner von Anfang bis Abnahme. Bärenwald München erfüllt alle vier Kriterien und bietet zusätzlich einen online Preisrechner für eine erste unverbindliche Einschätzung.",
   sectionH2: { faq: "Häufige Fragen" },
 };
 
@@ -33,7 +33,7 @@ export const HANDWERKER_FINDEN_SEO: GuideSeoBlock = {
   metaDescription:
     "Wie finde ich einen zuverlässigen Handwerker in München? Checkliste mit 7 Kriterien, typische Fehler und warum viele auf Generalunternehmer umsteigen — von Bärenwald.",
   kurzeAntwort:
-    "Einen zuverlässigen Handwerker in München erkennst du an: schriftlichem Kostenvoranschlag, nachweisbarem Meisterbrief oder Zertifizierung, klaren Aussagen zu Zeitplan und Haftung, sowie Referenzen oder nachprüfbaren Bewertungen. In München sind Wartezeiten von 4–12 Wochen normal — wer sofort verfügbar ist und keinen Vor-Ort-Termin macht, ist ein Warnsignal.",
+    "Einen zuverlässigen Handwerker in München erkennen Sie an: schriftlichem Kostenvoranschlag, nachweisbarem Meisterbrief oder Zertifizierung, klaren Aussagen zu Zeitplan und Haftung, sowie Referenzen oder nachprüfbaren Bewertungen. In München sind Wartezeiten von 4–12 Wochen normal — wer sofort verfügbar ist und keinen Vor-Ort-Termin macht, ist ein Warnsignal.",
   sectionH2: { faq: "Häufige Fragen" },
 };
 
@@ -41,7 +41,7 @@ export const NOTFALL_HANDWERKER_SEO: GuideSeoBlock = {
   metaTitle:
     "Notfall Handwerker München 2026 — wer kommt schnell bei Heizung, Rohrbruch & Co.",
   metaDescription:
-    "Notfall-Handwerker in München: wer kommt bei Heizungsausfall, Rohrbruch, Stromausfall oder Sturmschaden schnell? Ablauf, Kosten und was du sofort tun kannst.",
+    "Notfall-Handwerker in München: wer kommt bei Heizungsausfall, Rohrbruch, Stromausfall oder Sturmschaden schnell? Ablauf, Kosten und was Sie sofort tun können.",
   kurzeAntwort:
     "Bei einem Handwerker-Notfall in München (Heizungsausfall, Rohrbruch, Stromausfall, Sturmschaden) koordiniert Bärenwald München zertifizierte Meisterbetriebe meist innerhalb von 2–4 Stunden. Notdienst-Einsätze kosten je nach Aufwand 300–2.500 Euro. Wichtig: zuerst absichern (Wasser abstellen, Sicherung raus), dann anrufen — nicht zuerst googeln.",
   sectionH2: { faq: "Häufige Fragen" },
@@ -49,11 +49,11 @@ export const NOTFALL_HANDWERKER_SEO: GuideSeoBlock = {
 
 export const RENOVIERUNG_CHECKLISTE_SEO: GuideSeoBlock = {
   metaTitle:
-    "Renovierung München 2026 — Checkliste: was du vorher wissen musst",
+    "Renovierung München 2026 — Checkliste: was Sie vorher wissen müssen",
   metaDescription:
-    "Checkliste für Renovierungen in München: 10 Punkte die du vor dem Start klären musst — von Genehmigungen über Handwerker bis zum Budget. Von Bärenwald München.",
+    "Checkliste für Renovierungen in München: 10 Punkte, die Sie vor dem Start klären müssen — von Genehmigungen über Handwerker bis zum Budget. Von Bärenwald München.",
   kurzeAntwort:
-    "Vor einer Renovierung in München musst du klären: Genehmigungen (bei tragenden Eingriffen), schriftliche Zustimmung des Vermieters (bei Mietwohnung), Ruhezeiten der Hausverwaltung, Budget mit 15 % Puffer, Reihenfolge der Gewerke und ob du selbst koordinierst oder einen Generalunternehmer beauftragst. In München kommen Besonderheiten wie enge Treppenhäuser, knappe Parkplätze und strenge WEG-Regeln dazu.",
+    "Vor einer Renovierung in München müssen Sie klären: Genehmigungen (bei tragenden Eingriffen), schriftliche Zustimmung des Vermieters (bei Mietwohnung), Ruhezeiten der Hausverwaltung, Budget mit 15 % Puffer, Reihenfolge der Gewerke und ob Sie selbst koordinieren oder einen Generalunternehmer beauftragen. In München kommen Besonderheiten wie enge Treppenhäuser, knappe Parkplätze und strenge WEG-Regeln dazu.",
   sectionH2: { faq: "Häufige Fragen" },
 };
 

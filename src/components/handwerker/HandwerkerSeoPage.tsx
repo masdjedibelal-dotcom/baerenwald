@@ -181,7 +181,7 @@ export function HandwerkerSeoPage({ data }: { data: HandwerkerContentItem }) {
         <div className="final-cta-section">
           <div className="final-cta-bg">BW</div>
           <div className="final-cta-inner">
-            <h2 className="final-cta-h2">Bereit für dein Projekt?</h2>
+            <h2 className="final-cta-h2">Bereit für Ihr Projekt?</h2>
             <p className="final-cta-sub">{data.ctaText}</p>
             <div className="final-cta-actions">
               <CTAButton bare tone="final" href={kontaktHref} label="Kontakt aufnehmen →" />

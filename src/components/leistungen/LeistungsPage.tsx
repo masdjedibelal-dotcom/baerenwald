@@ -94,7 +94,7 @@ export function LeistungsPage({ slug, data }: LeistungsPageProps) {
         className="article-section article-section--lg content-section content-section--white fade-up d1"
       >
         <div className="article-section-inner">
-          <span className="chapter-label">Was wir für dich tun</span>
+          <span className="chapter-label">Was wir für Sie tun</span>
 
           <div className="article-body">
             <p>{data.beschreibung}</p>
@@ -212,8 +212,8 @@ export function LeistungsPage({ slug, data }: LeistungsPageProps) {
                   lineHeight: 1.6,
                 }}
               >
-                In unserem Ratgeber erklären wir alles was du vorher wissen
-                solltest — Kosten, Ablauf und Zeitaufwand.
+                In unserem Ratgeber erklären wir alles, was Sie vorher wissen
+                sollten — Kosten, Ablauf und Zeitaufwand.
               </p>
             </div>
             <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
@@ -241,9 +241,9 @@ export function LeistungsPage({ slug, data }: LeistungsPageProps) {
       <div className="final-cta-section">
         <div className="final-cta-bg">BW</div>
         <div className="final-cta-inner">
-          <h2 className="final-cta-h2">Bereit für dein Projekt?</h2>
+          <h2 className="final-cta-h2">Bereit für Ihr Projekt?</h2>
           <p className="final-cta-sub">
-            Lass uns dein Projekt gemeinsam einordnen — schnell und direkt.
+            Lassen Sie uns Ihr Projekt gemeinsam einordnen — schnell und direkt.
           </p>
           <div className="final-cta-actions">
             <CTAButton bare tone="final" href={kontaktHref} label="Kontakt aufnehmen →" />

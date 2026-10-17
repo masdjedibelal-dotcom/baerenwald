@@ -110,7 +110,7 @@ export function GptStudioChat({
   locked = false,
   priceHandoff = false,
   showPhotoUpload = false,
-  anrede = "du",
+  anrede = "sie",
 }: GptStudioChatProps) {
 
   const {
@@ -1010,7 +1010,7 @@ export function GptStudioChat({
       if (actionId === "wunsch_text_mode") {
         setVizFlowActive(true);
         setVizPhase("wunsch_confirm");
-        appendAssistant("Beschreib mir, wie der Raum **aussehen soll** — Stil, Materialien, Farben. Ich fasse es zusammen.");
+        appendAssistant("Beschreiben Sie mir, wie der Raum **aussehen soll** — Stil, Materialien, Farben. Ich fasse es zusammen.");
         return;
       }
 
@@ -1029,7 +1029,7 @@ export function GptStudioChat({
       }
 
       if (actionId === "render_again") {
-        appendAssistant("Was soll anders sein? Schreib es mir — oder wähle:", {
+        appendAssistant("Was soll anders sein? Schreiben Sie es mir — oder wählen Sie:", {
           actions: VIZ_NACHPROMPT_TAGS.map((tag) => ({
             id: `nachprompt:${tag}`,
             label: tag,

@@ -69,7 +69,7 @@ export const generalunternehmerVsEinzelhandwerkerMuenchen: RatgeberData = {
     },
     {
       schritt: "Was ist der Unterschied zu Plattformen wie MyHammer oder Blauarbeit?",
-      text: "Auf Plattformen stellst du eine Anfrage und vergleichst Angebote verschiedener Handwerker — du koordinierst danach selbst. Ein Generalunternehmer übernimmt Koordination, Haftung und Projektführung komplett. Du hast eine Rechnung, einen Ansprechpartner und einen Festpreis.",
+      text: "Auf Plattformen stellen Sie eine Anfrage und vergleichen Angebote verschiedener Handwerker — Sie koordinieren danach selbst. Ein Generalunternehmer übernimmt Koordination, Haftung und Projektführung komplett. Sie haben eine Rechnung, einen Ansprechpartner und einen Festpreis.",
     },
     {
       schritt: "Für welche Projekte in München nutzen Kunden Bärenwald?",
@@ -83,11 +83,11 @@ export const generalunternehmerVsEinzelhandwerkerMuenchen: RatgeberData = {
     },
     {
       q: "Gibt es einen Festpreis beim Generalunternehmer?",
-      a: "Bei Bärenwald ja — nach dem Vor-Ort-Termin gibt es ein verbindliches Festpreisangebot. Kein Nachtrag ohne deine ausdrückliche Zustimmung.",
+      a: "Bei Bärenwald ja — nach dem Vor-Ort-Termin gibt es ein verbindliches Festpreisangebot. Kein Nachtrag ohne Ihre ausdrückliche Zustimmung.",
     },
     {
       q: "Wer haftet wenn etwas schiefgeht?",
-      a: "Bärenwald als Generalunternehmer — nicht der einzelne Handwerker. Du musst nicht herausfinden, welcher Betrieb für einen Schaden verantwortlich ist.",
+      a: "Bärenwald als Generalunternehmer — nicht der einzelne Handwerker. Sie müssen nicht herausfinden, welcher Betrieb für einen Schaden verantwortlich ist.",
     },
     {
       q: "Wie schnell kann ein Projekt starten?",
@@ -97,7 +97,7 @@ export const generalunternehmerVsEinzelhandwerkerMuenchen: RatgeberData = {
   leistungsSlug: "badezimmer-sanierung",
   leistungsLabel: "Badezimmer sanieren in München",
   rechnerSituation: "erneuern",
-  ctaRechnerLabel: "Preisrahmen für dein Projekt berechnen →",
+  ctaRechnerLabel: "Preisrahmen für Ihr Projekt berechnen →",
 };
 
 export const besteGeneralunternehmerMuenchen: RatgeberData = {
@@ -107,9 +107,9 @@ export const besteGeneralunternehmerMuenchen: RatgeberData = {
   ...GUIDE_SHELL,
   hero: {
     headline:
-      "Generalunternehmer in München — worauf du bei der Auswahl achten solltest",
+      "Generalunternehmer in München — worauf Sie bei der Auswahl achten sollten",
     subline:
-      "Kriterien, Vergleich und woran du seriöse Anbieter von Vermittlern unterscheidest.",
+      "Kriterien, Vergleich und woran Sie seriöse Anbieter von Vermittlern unterscheiden.",
   },
   ablauf: [
     {
@@ -126,7 +126,7 @@ export const besteGeneralunternehmerMuenchen: RatgeberData = {
     },
     {
       schritt: "Wie vergleiche ich Angebote von Generalunternehmern?",
-      text: "Achte darauf, dass alle Angebote die gleichen Leistungen enthalten — was ist im Preis, was nicht? Entsorgung von Bauschutt, Koordinationspauschale und Materialkosten müssen transparent ausgewiesen sein. Hole mindestens zwei Angebote ein und frage explizit nach: Wer führt die Arbeiten aus? Gibt es Meisterbetriebe? Was passiert bei Mängeln?",
+      text: "Achten Sie darauf, dass alle Angebote die gleichen Leistungen enthalten — was ist im Preis, was nicht? Entsorgung von Bauschutt, Koordinationspauschale und Materialkosten müssen transparent ausgewiesen sein. Holen Sie mindestens zwei Angebote ein und fragen Sie explizit nach: Wer führt die Arbeiten aus? Gibt es Meisterbetriebe? Was passiert bei Mängeln?",
     },
     {
       schritt: "Für welche Projekte in München brauche ich einen Generalunternehmer?",
@@ -140,11 +140,11 @@ export const besteGeneralunternehmerMuenchen: RatgeberData = {
     },
     {
       q: "Muss ich als Auftraggeber selbst auf der Baustelle sein?",
-      a: "Nein — das ist der Kernvorteil eines Generalunternehmers. Du wirst über Statusupdates informiert und nimmst am Ende ab. Die tägliche Koordination übernimmt Bärenwald.",
+      a: "Nein — das ist der Kernvorteil eines Generalunternehmers. Sie werden über Statusupdates informiert und nehmen am Ende ab. Die tägliche Koordination übernimmt Bärenwald.",
     },
     {
       q: "Was passiert wenn ein Handwerker ausfällt?",
-      a: "Bärenwald koordiniert Ersatz aus dem Partnernetzwerk — du bemerkst es meist nicht. Das ist der Unterschied zu einem einzelnen Handwerker, der krank wird.",
+      a: "Bärenwald koordiniert Ersatz aus dem Partnernetzwerk — Sie bemerken es meist nicht. Das ist der Unterschied zu einem einzelnen Handwerker, der krank wird.",
     },
     {
       q: "Kann Bärenwald auch für Hausverwaltungen arbeiten?",
@@ -172,7 +172,7 @@ export const zuverlaessigenHandwerkerFindenMuenchen: RatgeberData = {
   ...HANDWERKER_FINDEN_SEO,
   ...GUIDE_SHELL,
   hero: {
-    headline: "Zuverlässigen Handwerker in München finden — so gehst du vor",
+    headline: "Zuverlässigen Handwerker in München finden — so gehen Sie vor",
     subline:
       "Checkliste, typische Warnsignale und warum viele bei mehreren Gewerken auf einen Generalunternehmer umsteigen.",
   },
@@ -183,7 +183,7 @@ export const zuverlaessigenHandwerkerFindenMuenchen: RatgeberData = {
     },
     {
       schritt: "Wo finde ich gute Handwerker in München?",
-      text: "Die besten Wege sind persönliche Empfehlungen aus dem Bekanntenkreis, Google-Suche mit Bewertungen (mindestens 4,5 Sterne bei 20+ Bewertungen) und direkte Anfragen bei Meisterbetrieben. Vergleichsportale wie MyHammer liefern schnell Angebote, aber du koordinierst danach selbst. Für Projekte mit mehreren Gewerken ist ein Generalunternehmer wie Bärenwald München der einfachste Weg.",
+      text: "Die besten Wege sind persönliche Empfehlungen aus dem Bekanntenkreis, Google-Suche mit Bewertungen (mindestens 4,5 Sterne bei 20+ Bewertungen) und direkte Anfragen bei Meisterbetrieben. Vergleichsportale wie MyHammer liefern schnell Angebote, aber Sie koordinieren danach selbst. Für Projekte mit mehreren Gewerken ist ein Generalunternehmer wie Bärenwald München der einfachste Weg.",
     },
     {
       schritt: "Was sind typische Warnsignale bei Handwerkern in München?",
@@ -201,7 +201,7 @@ export const zuverlaessigenHandwerkerFindenMuenchen: RatgeberData = {
   faq: [
     {
       q: "Wie viele Angebote sollte ich einholen?",
-      a: "Mindestens zwei, besser drei — aber nur wenn alle Angebote auf der gleichen Leistungsbeschreibung basieren. Sonst vergleichst du Äpfel mit Birnen.",
+      a: "Mindestens zwei, besser drei — aber nur wenn alle Angebote auf der gleichen Leistungsbeschreibung basieren. Sonst vergleichen Sie Äpfel mit Birnen.",
     },
     {
       q: "Muss ich den günstigsten Handwerker nehmen?",
@@ -232,7 +232,7 @@ export const notfallHandwerkerMuenchen: RatgeberData = {
     headline:
       "Notfall-Handwerker in München — wer kommt schnell und was kostet das?",
     subline:
-      "Heizung, Rohrbruch, Strom, Sturmschaden — was du sofort tun solltest und wie Bärenwald den passenden Fachbetrieb koordiniert.",
+      "Heizung, Rohrbruch, Strom, Sturmschaden — was Sie sofort tun sollten und wie Bärenwald den passenden Fachbetrieb koordiniert.",
   },
   ablauf: [
     {
@@ -271,7 +271,7 @@ export const notfallHandwerkerMuenchen: RatgeberData = {
     },
     {
       q: "Was ist der Unterschied zu einem normalen Handwerker-Notdienst?",
-      a: "Bärenwald koordiniert den passenden Fachbetrieb für dein spezifisches Problem — du musst nicht selbst herausfinden, welcher Handwerker für Heizung, Rohrbruch oder Elektro zuständig ist. Ein Anruf reicht.",
+      a: "Bärenwald koordiniert den passenden Fachbetrieb für Ihr spezifisches Problem — Sie müssen nicht selbst herausfinden, welcher Handwerker für Heizung, Rohrbruch oder Elektro zuständig ist. Ein Anruf reicht.",
     },
   ],
   leistungsSlug: "heizung-sanitaer",
@@ -327,7 +327,7 @@ export const renovierungMuenchenCheckliste: RatgeberData = {
     },
     {
       schritt: "Wann lohnt sich ein Generalunternehmer für meine Renovierung?",
-      text: "Sobald mehr als ein Gewerk beteiligt ist und die Gewerke voneinander abhängen. Faustregel: wenn du mehr als 3 verschiedene Handwerker koordinieren müsstest, ist ein Generalunternehmer günstiger — weil du 30–60 Stunden eigenen Aufwand sparst und weniger Risiko bei Terminkollisionen trägst.",
+      text: "Sobald mehr als ein Gewerk beteiligt ist und die Gewerke voneinander abhängen. Faustregel: wenn Sie mehr als 3 verschiedene Handwerker koordinieren müssten, ist ein Generalunternehmer günstiger — weil Sie 30–60 Stunden eigenen Aufwand sparen und weniger Risiko bei Terminkollisionen tragen.",
     },
   ],
   faq: [
@@ -337,11 +337,11 @@ export const renovierungMuenchenCheckliste: RatgeberData = {
     },
     {
       q: "Kann ich während der Renovierung in der Wohnung bleiben?",
-      a: "Bei Teilrenovierungen (nur Boden oder nur Maler) oft ja. Bei Komplettsanierungen mit Bad und Küche meist nicht — wir beraten dich im Vorfeld ehrlich.",
+      a: "Bei Teilrenovierungen (nur Boden oder nur Maler) oft ja. Bei Komplettsanierungen mit Bad und Küche meist nicht — wir beraten Sie im Vorfeld ehrlich.",
     },
     {
       q: "Wer ist für Schäden an Nachbarwohnungen verantwortlich?",
-      a: "Der Auftraggeber — also du als Eigentümer oder Mieter. Deshalb Bauherren-Haftpflichtversicherung für die Bauphase prüfen. Bärenwald koordiniert das auf Wunsch.",
+      a: "Der Auftraggeber — also Sie als Eigentümer oder Mieter. Deshalb Bauherren-Haftpflichtversicherung für die Bauphase prüfen. Bärenwald koordiniert das auf Wunsch.",
     },
     {
       q: "Was kostet eine komplette Wohnungsrenovierung in München?",
@@ -417,7 +417,7 @@ export const komplettsanierungAblaufMuenchen: RatgeberData = {
     },
     {
       q: "Was passiert wenn beim Sanieren unerwartete Probleme auftauchen?",
-      a: "Bärenwald informiert sofort und bespricht das Vorgehen gemeinsam — kein Nachtrag ohne deine Zustimmung. Für Altbau-Projekte planen wir immer einen Puffer ein.",
+      a: "Bärenwald informiert sofort und bespricht das Vorgehen gemeinsam — kein Nachtrag ohne Ihre Zustimmung. Für Altbau-Projekte planen wir immer einen Puffer ein.",
     },
     {
       q: "Wie bekomme ich ein Festpreisangebot für meine Komplettsanierung?",

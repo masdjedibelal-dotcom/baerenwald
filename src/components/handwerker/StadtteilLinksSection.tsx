@@ -15,10 +15,10 @@ export function StadtteilLinksSection({
     <section className="stadtteil-links-section">
       <div className="article-section-inner">
         <h2 className="stadtteil-links-title">
-          {leistungLabel} in deinem Stadtteil
+          {leistungLabel} in Ihrem Stadtteil
         </h2>
         <p className="stadtteil-links-sub">
-          Wir sind in ganz München und Umgebung für dich da.
+          Wir sind in ganz München und Umgebung für Sie da.
         </p>
         <div className="stadtteil-links-grid">
           {links.map((c) => (
