@@ -50,7 +50,7 @@ export default function DatenschutzPage() {
                 Stabilität der Website)
               </p>
               <p>
-                <strong>Über den Preisrechner und Kontaktformular:</strong>
+                <strong>Über den Preisrechner und das Anfrageformular:</strong>
               </p>
               <ul>
                 <li>Vor- und Nachname</li>
@@ -58,9 +58,11 @@ export default function DatenschutzPage() {
                 <li>E-Mail-Adresse (optional)</li>
                 <li>PLZ und Standort</li>
                 <li>Projektdetails</li>
+                <li>Bei Geschäftskunden und Hausverwaltungen: Firmenname</li>
+                <li>Optional hochgeladene Fotos zum Vorhaben</li>
               </ul>
               <p>
-                <strong>Über BärenwaldGPT (KI-Beratung im Rechner):</strong>
+                <strong>Über BärenwaldGPT (KI-Assistent in MeinBärenwald):</strong>
               </p>
               <ul>
                 <li>Inhalte Ihrer Chat-Nachrichten (z. B. Vorhaben, PLZ, Fragen)</li>
@@ -72,7 +74,7 @@ export default function DatenschutzPage() {
                 </li>
               </ul>
               <p>
-                Rechtsgrundlage Preisrechner/Kontakt: Art. 6 Abs. 1 lit. b DSGVO
+                Rechtsgrundlage Preisrechner/Anfrageformular: Art. 6 Abs. 1 lit. b DSGVO
                 (Vertragsanbahnung). Rechtsgrundlage BärenwaldGPT: Art. 6 Abs. 1 lit. b DSGVO
                 (Vertragsanbahnung) und Art. 6 Abs. 1 lit. f DSGVO (berechtigtes Interesse an
                 einer funktionsfähigen, missbrauchssicheren Beratung).
@@ -232,8 +234,8 @@ export default function DatenschutzPage() {
               </p>
               <p>
                 Supabase verarbeitet Daten auf Servern in der EU (Frankfurt, AWS eu-central-1).
-                Darüber speichern wir u. a. Leads aus dem Rechner, Protokolle der
-                BärenwaldGPT-Chat-Nutzung (Tabelle <em>ki_anfragen_log</em>) sowie — für
+                Darüber speichern wir u. a. Anfragen aus Rechner und Anfrageformular, Verläufe des
+                BärenwaldGPT-Chats in MeinBärenwald sowie — für
                 MeinBärenwald — Authentifizierungsdaten (Supabase Auth) und die Verknüpfung zum
                 Kundenstamm.
                 <br />
@@ -268,9 +270,9 @@ export default function DatenschutzPage() {
                 (siehe Abschnitt 6).
               </p>
 
-              <strong id="ki-beratung">8. BärenwaldGPT (KI-Beratung im Rechner)</strong>
+              <strong id="ki-beratung">8. BärenwaldGPT (KI-Assistent in MeinBärenwald)</strong>
               <p>
-                Auf unserer Website können Sie im Rechner den Chat-Dienst{" "}
+                Nach der Anmeldung in MeinBärenwald können Sie den Chat-Dienst{" "}
                 <strong>BärenwaldGPT</strong> nutzen. Er dient der unverbindlichen Orientierung zu
                 Handwerks- und Renovierungsthemen in München und Umgebung (z. B. Gewerke, Ablauf,
                 Vorbereitung eines Preisrahmens). Es handelt sich nicht um verbindliche
@@ -279,8 +281,8 @@ export default function DatenschutzPage() {
               <p>
                 <strong>Ablauf der Verarbeitung:</strong> Ihre Nachrichten werden über unsere
                 Server an den KI-Dienst <strong>OpenAI</strong> übermittelt, damit eine Antwort erzeugt
-                werden kann. Antworten und Anfragen können in unserer
-                Datenbank (Supabase, EU) protokolliert werden.
+                werden kann. Der Chat-Verlauf und eine Zusammenfassung Ihres Vorhabens werden zu Ihrem
+                Kundenkonto in unserer Datenbank (Supabase, EU) gespeichert.
               </p>
               <p>
                 <strong>Anbieter KI-Dienst:</strong>
@@ -446,7 +448,7 @@ export default function DatenschutzPage() {
                   letzten Nachricht in der jeweiligen Session, spätestens nach 12 Monaten
                 </li>
                 <li>
-                  <strong>Leads und Anfragen aus dem Rechner:</strong> bis zur Erledigung der
+                  <strong>Anfragen aus Rechner und Anfrageformular:</strong> bis zur Erledigung der
                   Anfrage, danach gemäß gesetzlichen Fristen
                 </li>
                 <li>
