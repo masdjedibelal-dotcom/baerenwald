@@ -2,11 +2,11 @@
  * HV-Portal: Sofortmaßnahme / Direktauftrag — Info statt Freigabe-CTAs.
  */
 
-import { leadIstMeldeDirektauftrag } from "@/lib/funnel/melde-direktauftrag";
+import { leadIstMeldeDirektauftrag } from "@/teo/hv/melde-direktauftrag";
 import {
   funnelDirektauftragFromDaten,
   hvFreigabeEntfaellt,
-} from "@/lib/org/freigabe-bypass";
+} from "@/teo/hv/freigabe-bypass";
 import type { OrganisationKunde, OrganisationLead, OrganisationObjekt } from "@/lib/org/types";
 
 export function effektiveNotfallDirekt(

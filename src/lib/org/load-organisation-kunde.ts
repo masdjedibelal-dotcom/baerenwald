@@ -1,7 +1,7 @@
 import { logDbError } from '@/lib/errors/log-db-error'
 import { ensureOrgKennung } from "@/lib/org/ensure-org-kennung";
 import { orgMeldeLegalUrlsReady } from "@/lib/org/melde-legal-urls";
-import { normalizeAkutFallIds } from "@/lib/org/sofortmassnahme-faelle";
+import { normalizeAkutFallIds } from "@/teo/hv/sofortmassnahme-faelle";
 import type { OrganisationKunde } from "@/lib/org/types";
 import { supabaseAdmin } from "@/lib/supabase";
 

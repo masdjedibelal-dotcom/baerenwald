@@ -2,7 +2,7 @@ import { logDbError } from '@/lib/errors/log-db-error';
 import { NextResponse } from "next/server";
 
 import { persistLead } from "@/lib/lead/persist-lead";
-import { initialHvMeldungState } from "@/lib/org/hv-meldung-workflow";
+import { initialHvMeldungState } from "@/teo/hv/hv-meldung-workflow";
 import { requireOrganisationSession } from "@/lib/org/require-org-session";
 import { supabaseAdmin } from "@/lib/supabase";
 

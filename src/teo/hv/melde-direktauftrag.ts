@@ -10,7 +10,7 @@ import {
   normalizeMeldeStromProblem,
   normalizeMeldeWasserProblem,
 } from "@/lib/funnel/melde-dynamic-questions";
-import type { AkutFallId } from "@/lib/org/sofortmassnahme-faelle";
+import type { AkutFallId } from "@/teo/hv/sofortmassnahme-faelle";
 import type { MeldeBereichId } from "@/lib/org/melde-bereiche";
 import type { MeldeKategorie } from "@/lib/org/types";
 

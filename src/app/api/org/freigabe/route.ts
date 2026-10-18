@@ -58,7 +58,7 @@ async function assertFreigabeAllowed(lead: {
   hv_meldung_status?: string | null;
   funnel_daten?: unknown;
 }) {
-  const { hvFreigabeEntfaellt } = await import("@/lib/org/freigabe-bypass");
+  const { hvFreigabeEntfaellt } = await import("@/teo/hv/freigabe-bypass");
   const funnelDa =
     lead.funnel_daten &&
     typeof lead.funnel_daten === "object" &&

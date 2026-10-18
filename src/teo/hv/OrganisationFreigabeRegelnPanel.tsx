@@ -9,7 +9,7 @@ import {
   EinstellungenSheetCard
 } from "@/components/shared/PortalEinstellungenUi";
 import { PortalButton } from "@/components/portal/PortalButton";
-import { ALL_AKUT_FALL_IDS,normalizeAkutFallIds } from "@/lib/org/sofortmassnahme-faelle";
+import { ALL_AKUT_FALL_IDS,normalizeAkutFallIds } from "@/teo/hv/sofortmassnahme-faelle";
 import type { OrganisationKunde,OrganisationObjekt } from "@/lib/org/types";
 import {
   EINSTELLUNGEN_SCHWELLE_BETRAG_TITLE,

@@ -10,7 +10,7 @@ import {
   meldeKategorieToSituation,
   meldeKategorieToZeitraum,
 } from "@/lib/org/melde-kategorien";
-import { initialHvMeldungState } from "@/lib/org/hv-meldung-workflow";
+import { initialHvMeldungState } from "@/teo/hv/hv-meldung-workflow";
 import { funktionAn } from "@/lib/marke";
 import {
   isMeldeBereichId,
@@ -18,8 +18,8 @@ import {
   type MeldeBereichId,
 } from "@/lib/org/melde-bereiche";
 import { mapMeldeToPrice } from "@/lib/org/map-melde-to-price";
-import { isMeldeDirektauftrag } from "@/lib/funnel/melde-direktauftrag";
-import { normalizeAkutFallIds } from "@/lib/org/sofortmassnahme-faelle";
+import { isMeldeDirektauftrag } from "@/teo/hv/melde-direktauftrag";
+import { normalizeAkutFallIds } from "@/teo/hv/sofortmassnahme-faelle";
 import type { MeldeKategorie } from "@/lib/org/types";
 
 /** Kurzer Text-Hash für Idempotenz (Doppel-Submit innerhalb 60s). */
@@ -227,9 +227,7 @@ export async function persistMeldungLead(input: PersistMeldungLeadInput) {
   const hvAblauf = funktionAn("hvWorkflow");
   const direktauftrag = hvAblauf && (matchedWhitelist || hvManuellAkut);
 
-  const initial = hvAblauf
-    ? initialHvMeldungState()
-    : { hv_meldung_status: null, org_freigabe_status: "nicht_noetig" as const };
+  const initial = initialHvMeldungState();
   let zeitraum = meldeKategorieToZeitraum(input.kategorie);
   if (direktauftrag) zeitraum = "sofort";
   else if (input.dringlichkeit) zeitraum = input.dringlichkeit;

@@ -73,7 +73,7 @@ export async function POST(req: Request) {
     }
 
     if (hvStatus === "neu") {
-      const { hvFreigabeEntfaellt } = await import("@/lib/org/freigabe-bypass");
+      const { hvFreigabeEntfaellt } = await import("@/teo/hv/freigabe-bypass");
       const funnelDa =
         lead.funnel_daten &&
         typeof lead.funnel_daten === "object" &&
@@ -137,7 +137,7 @@ export async function POST(req: Request) {
     );
   }
 
-  const { hvFreigabeEntfaellt } = await import("@/lib/org/freigabe-bypass");
+  const { hvFreigabeEntfaellt } = await import("@/teo/hv/freigabe-bypass");
   const funnelDa =
     lead.funnel_daten &&
     typeof lead.funnel_daten === "object" &&

@@ -6,7 +6,7 @@ import { ensureMeldeSlugsForKunde } from "@/lib/org/ensure-melde-slug";
 import { MELDE_ALLGEMEIN_SLUG } from "@/lib/org/melde-url";
 import { toMeldeObjektDisplay } from "@/lib/portal2/melde-objekte";
 import type { MeldeObjektDisplay } from "@/lib/portal2/basisdaten-types";
-import { normalizeAkutFallIds } from "@/lib/org/sofortmassnahme-faelle";
+import { normalizeAkutFallIds } from "@/teo/hv/sofortmassnahme-faelle";
 
 export type MeldeKontext = {
   org: {

@@ -3,7 +3,7 @@ import { NextResponse } from "next/server";
 
 import { writeAuditEvent } from "@/lib/audit/write-audit-event";
 import { requireOrgAdminSession } from "@/lib/org/require-org-session";
-import { normalizeAkutFallIds } from "@/lib/org/sofortmassnahme-faelle";
+import { normalizeAkutFallIds } from "@/teo/hv/sofortmassnahme-faelle";
 import type { FreigabeModus } from "@/lib/org/types";
 import { supabaseAdmin } from "@/lib/supabase";
 

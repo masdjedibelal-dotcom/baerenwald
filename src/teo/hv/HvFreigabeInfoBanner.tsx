@@ -6,7 +6,7 @@ import Link from "next/link";
 import {
   freigabeBypassInfoCopy,
   type FreigabeBypassInfoKind,
-} from "@/lib/org/freigabe-bypass";
+} from "@/teo/hv/freigabe-bypass";
 import { einstellungenNavStorageKey } from "@/lib/portal2/einstellungen-nav";
 
 const EINSTELLUNGEN_HREF = "/portal?section=profil&tab=freigabe";

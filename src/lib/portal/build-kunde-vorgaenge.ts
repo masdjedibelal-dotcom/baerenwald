@@ -64,7 +64,7 @@ import {
   resolvePortalKundeVorgangStatus,
 } from "@/lib/crm-vorgang/portal-resolve";
 import { resolveHvWartetAufHw } from "@/lib/portal2/hv-wartet-auf-hw";
-import { formatPreisspanneDisplay } from "@/lib/org/hv-meldung-workflow";
+import { formatPreisspanneDisplay } from "@/lib/portal/preisspanne-anzeige";
 import {
   buildMeldeVorgangTitel,
   leadIstMeldeTitelQuelle,

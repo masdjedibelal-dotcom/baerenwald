@@ -26,7 +26,7 @@ import {
   extractPartnerLeadGateFromAngebotHandwerkerRow,
   extractPartnerLeadGateFromAuftragRow,
   isPartnerBlockedByOrgFreigabe,
-} from "@/lib/partner/partner-org-freigabe";
+} from "@/teo/hv/partner-org-freigabe";
 import type { PortalAnfrageLeadSource } from "@/lib/portal/portal-anfrage-display";
 import {
   isPrivatPortalKontext,

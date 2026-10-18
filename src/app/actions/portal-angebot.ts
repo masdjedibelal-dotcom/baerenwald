@@ -5,8 +5,8 @@ import { revalidatePath } from "next/cache";
 
 import { linkPortalKundeToAuthUser } from "@/lib/portal/link-portal-kunde";
 import { notifyCrmOrgPortal } from "@/lib/org/notify-crm-org";
-import { funnelDirektauftragFromDaten } from "@/lib/org/freigabe-bypass";
-import { orgFreigabeBlockiertPartner } from "@/lib/org/org-freigabe-status";
+import { funnelDirektauftragFromDaten } from "@/teo/hv/freigabe-bypass";
+import { orgFreigabeBlockiertPartner } from "@/teo/hv/org-freigabe-status";
 import { angebotPositionenJsonToAuftragRows } from "@/lib/portal/copy-angebot-positionen-to-auftrag";
 import { auftragAusAngebotViaCrm } from "@/lib/crm/auftrag-aus-angebot";
 import { isAngebotPortalAnnehmbar } from "@/lib/portal/portal-angebot-sichtbarkeit";

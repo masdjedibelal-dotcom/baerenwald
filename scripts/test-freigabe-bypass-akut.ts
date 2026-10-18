@@ -7,9 +7,9 @@ import assert from "node:assert/strict";
 import {
   hvFreigabeEntfaellt,
   resolveAngebotZugestelltForHvFreigabe,
-} from "../src/lib/org/freigabe-bypass";
-import { isMeldeDirektauftrag } from "../src/lib/funnel/melde-direktauftrag";
-import { ALL_AKUT_FALL_IDS } from "../src/lib/org/sofortmassnahme-faelle";
+} from "../src/teo/hv/freigabe-bypass";
+import { isMeldeDirektauftrag } from "../src/teo/hv/melde-direktauftrag";
+import { ALL_AKUT_FALL_IDS } from "../src/teo/hv/sofortmassnahme-faelle";
 
 function check(name: string, actual: unknown, expected: unknown): void {
   assert.equal(actual, expected, name);

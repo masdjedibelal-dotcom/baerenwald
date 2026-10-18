@@ -8,9 +8,9 @@
  */
 
 import { logDbError } from '@/lib/errors/log-db-error'
-import { leadIstMeldeDirektauftrag } from "@/lib/funnel/melde-direktauftrag";
-import { effektiveNotfallDirekt } from "@/lib/org/org-direktauftrag";
-import { normalizeAkutFallIds } from "@/lib/org/sofortmassnahme-faelle";
+import { leadIstMeldeDirektauftrag } from "@/teo/hv/melde-direktauftrag";
+import { effektiveNotfallDirekt } from "@/teo/hv/org-direktauftrag";
+import { normalizeAkutFallIds } from "@/teo/hv/sofortmassnahme-faelle";
 import { supabaseAdmin } from "@/lib/supabase";
 
 export async function finalizeOrgSelfCreatedLead(

@@ -1,4 +1,4 @@
-import { hvFreigabeEntfaellt,funnelDirektauftragFromDaten,resolveAngebotZugestelltForHvFreigabe } from "@/lib/org/freigabe-bypass";
+import { hvFreigabeEntfaellt,funnelDirektauftragFromDaten,resolveAngebotZugestelltForHvFreigabe } from "@/teo/hv/freigabe-bypass";
 import type { OrganisationLead } from "@/lib/org/types";
 
 type FreigabeLead = Pick<

@@ -1,14 +1,14 @@
 import type { KundePortalDetailItem } from "@/lib/portal/portal-detail-item";
-import { isHvDirektauftragInfoOnly } from "@/lib/org/org-direktauftrag";
+import { isHvDirektauftragInfoOnly } from "@/teo/hv/org-direktauftrag";
 import {
   hvFreigabeEntfaellt,
   resolveAngebotZugestelltForHvFreigabe,
-} from "@/lib/org/freigabe-bypass";
+} from "@/teo/hv/freigabe-bypass";
 import {
   isInOrgFreigabeQueue,
   leadHasOrgAuftrag,
-} from "@/lib/org/org-freigabe-queue";
-import { isOrgFreigabeOffen } from "@/lib/org/org-freigabe-status";
+} from "@/teo/hv/org-freigabe-queue";
+import { isOrgFreigabeOffen } from "@/teo/hv/org-freigabe-status";
 import type {
   OrganisationKunde,
   OrganisationLead,

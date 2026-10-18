@@ -1,27 +1,6 @@
 import { MARKE } from "@/lib/marke";
 
-export type HvMeldungStatus =
-  | "neu"
-  | "notmassnahme"
-  | "angebot_eingefordert"
-  | "abgelehnt"
-  | "abgeschlossen";
-
-/**
- * Neue Meldung: wartet auf HV.
- * `nicht_noetig` = noch keine Angebots-Freigabe fällig (nicht automatisch Akut).
- * Echter Akut setzt zusätzlich `freigabe_bypass_grund = "akut"`.
- */
-export function initialHvMeldungState(): {
-  hv_meldung_status: HvMeldungStatus;
-  org_freigabe_status: "nicht_noetig";
-} {
-  return {
-    hv_meldung_status: "neu",
-    org_freigabe_status: "nicht_noetig",
-  };
-}
-
+/** Preisspanne einer Meldung/Anfrage für die Anzeige im Portal. */
 export function formatPreisspanneDisplay(
   preisMin: number | null | undefined,
   preisMax: number | null | undefined,

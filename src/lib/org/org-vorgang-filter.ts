@@ -11,7 +11,7 @@ import type { buildKundeVorgaenge } from "@/lib/portal/build-kunde-vorgaenge";
 /** Alle · Offen · In Arbeit · Erledigt (Flow-Chips). */
 export type OrgVorgangFilter = "alle" | "offen" | "in_arbeit" | "erledigt";
 
-export { buildAuftragByLeadId, isInOrgFreigabeQueue } from "@/lib/org/org-freigabe-queue";
+export { buildAuftragByLeadId, isInOrgFreigabeQueue } from "@/teo/hv/org-freigabe-queue";
 
 export function buildOrgVorgangFilterCountsFromFlow(
   flow: HvFlowCountMap,

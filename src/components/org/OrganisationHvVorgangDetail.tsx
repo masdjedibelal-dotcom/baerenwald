@@ -19,12 +19,12 @@ import {
   PortalDetailStickyActions,
 } from "@/components/shared/PortalDetailUi";
 import { VorgangDetailSectionNav } from "@/components/shared/VorgangDetailSectionNav";
-import { HvFreigabeInfoBanner } from "@/components/org/HvFreigabeInfoBanner";
+import { HvFreigabeInfoBanner } from "@/teo/hv/HvFreigabeInfoBanner";
 import { PortalButton } from "@/components/portal/PortalButton";
 import {
   hvFreigabeEntfaellt,
   resolveAngebotZugestelltForHvFreigabe,
-} from "@/lib/org/freigabe-bypass";
+} from "@/teo/hv/freigabe-bypass";
 import { acceptKundeAngebot,rejectKundeAngebot } from "@/app/actions/portal-angebot";
 import {
   PortalAngebotAblehnenModal,

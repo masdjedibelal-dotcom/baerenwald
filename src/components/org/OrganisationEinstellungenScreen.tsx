@@ -2,7 +2,7 @@
 
 import { OrganisationMieterLegalLinksPanel } from "@/components/org/OrganisationMieterLegalLinksPanel";
 import { OrganisationAnsprechpartnerVerwaltung } from "@/components/org/OrganisationAnsprechpartnerVerwaltung";
-import { OrganisationFreigabeRegelnPanel } from "@/components/org/OrganisationFreigabeRegelnPanel";
+import { OrganisationFreigabeRegelnPanel } from "@/teo/hv/OrganisationFreigabeRegelnPanel";
 import { OrganisationMeldeMaterial } from "@/components/org/OrganisationMeldeMaterial";
 import { PortalKontoSicherheitPanel } from "@/components/shared/PortalKontoSicherheitPanel";
 import { PortalEinstellungenShell } from "@/components/shared/PortalEinstellungenShell";

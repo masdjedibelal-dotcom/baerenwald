@@ -37,8 +37,8 @@ import {
 import {
   isMeldeDirektauftrag,
   meldeKategorieForDirektauftragFlow,
-} from "@/lib/funnel/melde-direktauftrag";
-import { ALL_AKUT_FALL_IDS } from "@/lib/org/sofortmassnahme-faelle";
+} from "@/teo/hv/melde-direktauftrag";
+import { ALL_AKUT_FALL_IDS } from "@/teo/hv/sofortmassnahme-faelle";
 import { bewohnerInMieterZuordnung } from "@/lib/org/einheit-bewohner-regeln";
 import { calculatePrice,isBwZuKomplexErgebnis } from "@/lib/funnel/price-calc";
 import {

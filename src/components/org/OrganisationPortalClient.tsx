@@ -74,7 +74,7 @@ import type {
 } from "@/lib/org/types";
 import type { OrgMitgliedRolle } from "@/lib/org/org-rbac";
 import { buildKundeVorgaenge } from "@/lib/portal/build-kunde-vorgaenge";
-import { leadIstMeldeDirektauftrag } from "@/lib/funnel/melde-direktauftrag";
+import { leadIstMeldeDirektauftrag } from "@/teo/hv/melde-direktauftrag";
 import {
   buildHvDashboardKpis,
   countLeadsByPortalFlow,
