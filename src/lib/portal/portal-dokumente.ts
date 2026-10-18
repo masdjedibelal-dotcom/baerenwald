@@ -137,23 +137,6 @@ export function dokumenteFromTimeline(
   return rows;
 }
 
-export function dokumentFromVersicherungsakte(input: {
-  leadId: string;
-  url?: string | null;
-  datum?: string | null;
-}): PortalDokument | null {
-  const href = input.url?.trim();
-  if (!href) return null;
-  return {
-    id: `versicherungsakte-lead-${input.leadId}`,
-    name: "Schadenakte Versicherung",
-    subtitle: "Versicherung",
-    datum: input.datum ?? undefined,
-    href,
-    art: "protokoll",
-  };
-}
-
 export function dokumenteFromAuftrag(
   auftrag: AuftragDokumentInput,
   opts: {
@@ -164,19 +147,6 @@ export function dokumenteFromAuftrag(
   }
 ): PortalDokument[] {
   const rows: PortalDokument[] = [];
-
-  const versAkte = auftrag.versicherungsakte_pdf_url?.trim();
-  if (versAkte) {
-    rows.push({
-      id: `versicherungsakte-${auftrag.id}`,
-      name: "Schadenakte Versicherung",
-      subtitle: "Versicherung",
-      datum:
-        auftrag.updated_at ?? auftrag.created_at ?? undefined,
-      href: versAkte,
-      art: "protokoll",
-    });
-  }
 
   if (opts.angebot) {
     rows.push(...dokumenteFromAngebot(opts.angebot));

@@ -82,7 +82,6 @@ export const PORTAL_DETAIL_SECTION_IDS = [
   "angebot",
   "hm_pruefung",
   "bautagebuch",
-  "versicherung",
   "dokumente",
   "verlauf",
 ] as const;
@@ -98,7 +97,6 @@ export const PORTAL_DETAIL_SECTION_LABELS: Record<
   angebot: "Angebot",
   hm_pruefung: "Checkliste",
   bautagebuch: "Updates",
-  versicherung: "Versicherungsakte",
   dokumente: "Dokumente",
   verlauf: "Verlauf",
 };

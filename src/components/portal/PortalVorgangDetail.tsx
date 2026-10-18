@@ -292,11 +292,7 @@ export function PortalVorgangDetail({
         kostentraegerVorgeschlagen={item.kostentraegerVorgeschlagen}
         versicherungsNr={item.versicherungsNr}
         schadenNr={item.schadenNr}
-        versicherungsaktePdfUrl={item.versicherungsaktePdfUrl}
-        versicherungsakteErstelltAm={item.versicherungsakteErstelltAm}
         schadenNrGeaendertAm={item.schadenNrGeaendertAm}
-        versicherungsNrGeaendertAm={item.versicherungsNrGeaendertAm}
-        objektPolicenNr={item.objektVersicherungsNr}
         meldeFotos={item.meldeFotos}
         meldeStrasse={item.meldeStrasse}
         meldePlz={item.meldePlz}
@@ -316,7 +312,6 @@ export function PortalVorgangDetail({
           null
         }
         funnelDirektauftrag={item.funnelDirektauftrag ?? null}
-        versicherungsakteEligible={item.versicherungsakteEligible !== false}
         hvMeldungStatus={hvMeldungStatus ?? item.hvMeldungStatus}
         kundeObjektId={item.kundeObjektId ?? null}
         angebotId={item.isAngebotDetail ? item.id : null}

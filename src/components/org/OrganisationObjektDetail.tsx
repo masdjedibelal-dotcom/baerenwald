@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect,useMemo,useState } from "react";
+import { useMemo,useState } from "react";
 
 import { OrganisationObjektDokumentePanel } from "@/components/org/OrganisationObjektDokumentePanel";
 import { OrganisationObjektKontaktePanel } from "@/components/org/OrganisationObjektKontaktePanel";
@@ -15,10 +15,9 @@ import {
 import { PortalEntityDetailLayout } from "@/components/shared/PortalEntityDetailLayout";
 import { PortalInboxEmpty } from "@/components/shared/PortalEmptyState";
 import {
-  EinstellungenEdField,
-  EinstellungenEditModal,EinstellungenPfList,
+  EinstellungenPfList,
   EinstellungenPfRow,
-  EinstellungenSectionCard,EinstellungenToggle
+  EinstellungenSectionCard,
 } from "@/components/shared/PortalEinstellungenUi";
 import { PortalListCard } from "@/components/shared/PortalListCard";
 import { leadBelongsToObjekt } from "@/lib/org/match-lead-objekt";
@@ -33,13 +32,11 @@ import {
   OBJ_DETAIL_TABS,type ObjDetailTabId
 } from "@/lib/portal2/objekte";
 import type { PortalDetailTab } from "@/components/shared/PortalDetailTabs";
-import { orgPortalToast,portalToastError } from "@/lib/shared/portal-toast";
 import {
   plattformStatusLabel,
   plattformStatusPillClass,
   resolvePlattformStatus,
 } from "@/lib/vorgang/plattform-status";
-import { TOAST } from '@/lib/portal-copy';
 
 type Props = {
   objekt: OrganisationObjekt;
@@ -85,28 +82,6 @@ export function OrganisationObjektDetail({
     return OBJ_DETAIL_TABS.map((t) => ({ ...t }));
   }, []);
 
-  const [versicherer, setVersicherer] = useState(objekt.versicherer ?? "");
-  const [objVersNr, setObjVersNr] = useState(objekt.versicherungs_nr ?? "");
-  const [autoSchadenakte, setAutoSchadenakte] = useState(
-    Boolean(objekt.automatische_schadenakte)
-  );
-  const [versEditOpen, setVersEditOpen] = useState(false);
-  const [editVersicherer, setEditVersicherer] = useState("");
-  const [editVersNr, setEditVersNr] = useState("");
-  const [editAutoSchadenakte, setEditAutoSchadenakte] = useState(false);
-  const [versSaving, setVersSaving] = useState(false);
-
-  useEffect(() => {
-    setVersicherer(objekt.versicherer ?? "");
-    setObjVersNr(objekt.versicherungs_nr ?? "");
-    setAutoSchadenakte(Boolean(objekt.automatische_schadenakte));
-  }, [
-    objekt.versicherer,
-    objekt.versicherungs_nr,
-    objekt.automatische_schadenakte,
-    objekt.id,
-  ]);
-
   const typLine = formatObjektTypLine(objekt);
   const plzOrt = formatObjektPlzOrt(objekt) || "—";
   const strasse = formatObjektStrasse(objekt) || "—";
@@ -119,49 +94,6 @@ export function OrganisationObjektDetail({
     [leads, objekt]
   );
 
-
-  function openVersEdit() {
-    setEditVersicherer(versicherer);
-    setEditVersNr(objVersNr);
-    setEditAutoSchadenakte(autoSchadenakte);
-    setVersEditOpen(true);
-  }
-
-  function closeVersEdit() {
-    if (versSaving) return;
-    setVersEditOpen(false);
-  }
-
-  async function saveVersEdit() {
-    setVersSaving(true);
-    try {
-      const res = await fetch("/api/org/objekte", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          id: objekt.id,
-          versicherer: editVersicherer.trim() || null,
-          versicherungs_nr: editVersNr.trim() || null,
-          automatische_schadenakte: editAutoSchadenakte,
-        }),
-      });
-      const json = (await res.json()) as { error?: string };
-      if (!res.ok) {
-        portalToastError(TOAST.versicherung_nicht_gespeichert, json.error);
-        return;
-      }
-      setVersicherer(editVersicherer.trim());
-      setObjVersNr(editVersNr.trim());
-      setAutoSchadenakte(editAutoSchadenakte);
-      setVersEditOpen(false);
-      orgPortalToast.objektAktualisiert();
-      onRefresh();
-    } catch {
-      portalToastError(TOAST.versicherung_nicht_gespeichert);
-    } finally {
-      setVersSaving(false);
-    }
-  }
 
   let body: React.ReactNode = null;
 
@@ -185,49 +117,6 @@ export function OrganisationObjektDetail({
           objektId={objekt.id}
         />
 
-        <EinstellungenSectionCard
-          title="Gebäudeversicherung"
-          onEdit={openVersEdit}
-        >
-          <EinstellungenPfList>
-            <EinstellungenPfRow label="Versicherer" value={dash(versicherer)} />
-            <EinstellungenPfRow label="Policen-Nr." value={dash(objVersNr)} />
-            <EinstellungenPfRow
-              label="Automatische Schadenakte"
-              value={autoSchadenakte ? "Ein" : "Aus"}
-            />
-          </EinstellungenPfList>
-          <EinstellungenEditModal
-            open={versEditOpen}
-            title="Gebäudeversicherung bearbeiten"
-            onClose={closeVersEdit}
-            onSave={() => void saveVersEdit()}
-            saving={versSaving}
-          >
-            <EinstellungenEdField
-              label="Versicherer"
-              value={editVersicherer}
-              onChange={setEditVersicherer}
-              placeholder="z. B. Allianz"
-            />
-            <EinstellungenEdField
-              label="Policen-Nr."
-              value={editVersNr}
-              onChange={setEditVersNr}
-              placeholder="Police / Vertragsnummer"
-            />
-            <EinstellungenToggle
-              checked={editAutoSchadenakte}
-              onChange={setEditAutoSchadenakte}
-              title="Automatische Schadenakte"
-              description={
-                editAutoSchadenakte
-                  ? "Ein: Bei Schadenmeldung wird der Kostenträger Versicherung gesetzt und die Schadenmeldung-PDF erzeugt."
-                  : "Aus: Keine automatische Schadenmeldung-PDF."
-              }
-            />
-          </EinstellungenEditModal>
-        </EinstellungenSectionCard>
       </div>
     );
   } else if (tab === "vorgaenge") {

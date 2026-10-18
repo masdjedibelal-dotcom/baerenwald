@@ -13,16 +13,6 @@ export function isCrmDirektAngebotLead(lead: { funnel_daten?: unknown }): boolea
   return leadFunnelQuelle(lead.funnel_daten) === "crm_direkt_angebot";
 }
 
-/**
- * Schadenakte / Versicherungsakte-Tab nur bei Melde-/Anfrage-Vorgängen.
- * CRM-Direkt-Angebot (und Direkt-Rechnung ohne Lead) haben keinen Hergang.
- */
-export function isVersicherungsakteEligibleLead(lead: {
-  funnel_daten?: unknown;
-}): boolean {
-  return !isCrmDirektAngebotLead(lead);
-}
-
 export type PortalLeadListbarAngebot = {
   lead_id?: string | null;
   status?: string | null;

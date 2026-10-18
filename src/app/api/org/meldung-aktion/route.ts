@@ -114,13 +114,6 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: updErr.message }, { status: 500 });
     }
 
-    // HM übersprungen → Schadenakte ohne Befund (wie Direktweg ohne HM)
-    void import("@/lib/org/ensure-versicherungsakte").then(
-      ({ applyAutomatischeSchadenakteIfEnabled }) =>
-        applyAutomatischeSchadenakteIfEnabled(leadId).catch((e) =>
-          console.warn("[meldung-aktion] schadenakte:", e)
-        )
-    );
 
     const crmNotify = await notifyCrmOrgPortal({ leadId, typ: "meldung" });
     if (!crmNotify.ok) {

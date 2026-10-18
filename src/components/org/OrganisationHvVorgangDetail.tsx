@@ -21,7 +21,6 @@ import {
 } from "@/components/shared/PortalDetailUi";
 import { VorgangDetailSectionNav } from "@/components/shared/VorgangDetailSectionNav";
 import { HvFreigabeInfoBanner } from "@/components/org/HvFreigabeInfoBanner";
-import { OrganisationVersicherungsakteTab } from "@/components/org/OrganisationVersicherungsakteTab";
 import { OrgHmBefundPanel } from "@/components/org/OrgHmBefundPanel";
 import { PortalButton } from "@/components/portal/PortalButton";
 import {
@@ -125,8 +124,6 @@ export type OrganisationHvVorgangDetailProps = {
   freigabeBypassGrund?: "schwelle" | "akut" | null;
   /** Funnel Sofortmaßnahme — unabhängig von org_freigabe_status */
   funnelDirektauftrag?: boolean | null;
-  /** false = CRM-Direkt-Angebot → Tab Versicherungsakte ausblenden */
-  versicherungsakteEligible?: boolean;
   hvMeldungStatus?: string | null;
   /** Für HM-CTA: Objekt-Kontakt rolle=hausmeister */
   kundeObjektId?: string | null;
@@ -141,11 +138,7 @@ export type OrganisationHvVorgangDetailProps = {
   kostentraegerVorgeschlagen?: boolean;
   versicherungsNr?: string | null;
   schadenNr?: string | null;
-  versicherungsaktePdfUrl?: string | null;
-  versicherungsakteErstelltAm?: string | null;
   schadenNrGeaendertAm?: string | null;
-  versicherungsNrGeaendertAm?: string | null;
-  objektPolicenNr?: string | null;
   meldeFotos?: string[];
   meldeStrasse?: string | null;
   meldePlz?: string | null;
@@ -349,7 +342,6 @@ export function OrganisationHvVorgangDetail({
   orgFreigabeStatus,
   freigabeBypassGrund = null,
   funnelDirektauftrag = null,
-  versicherungsakteEligible = true,
   hvMeldungStatus,
   kundeObjektId = null,
   angebotId,
@@ -361,11 +353,7 @@ export function OrganisationHvVorgangDetail({
   kostentraegerVorgeschlagen,
   versicherungsNr,
   schadenNr,
-  versicherungsaktePdfUrl,
-  versicherungsakteErstelltAm,
   schadenNrGeaendertAm,
-  versicherungsNrGeaendertAm,
-  objektPolicenNr,
   meldeFotos,
   meldeStrasse,
   meldePlz,
@@ -523,11 +511,6 @@ export function OrganisationHvVorgangDetail({
     actionKindRaw === "freigabe" &&
     hvStatusNorm !== "hm_pruefung" &&
     hvStatusNorm !== "hm_erledigt";
-  const showVersicherungsakteTab =
-    detailRole === "hv" &&
-    !mieterStatusMode &&
-    Boolean(leadId) &&
-    versicherungsakteEligible !== false;
   const empfohlen = pickEmpfohlenesAngebot(offers);
   const statusLabel =
     statusLabelOverride?.trim() || PORTAL_STATUS[displayFlowStatus].label;
@@ -1105,17 +1088,12 @@ export function OrganisationHvVorgangDetail({
         hidden: !showBautagebuch,
         badge: btUnread > 0 ? btUnread : null,
       },
-      {
-        id: "versicherung" as const,
-        hidden: !showVersicherungsakteTab,
-      },
       { id: "dokumente" as const },
     ],
     [
       showAngebotSection,
       showBautagebuch,
       showHmTab,
-      showVersicherungsakteTab,
       btUnread,
       angebotSectionLabel,
     ]
@@ -1252,22 +1230,6 @@ export function OrganisationHvVorgangDetail({
                 actionKind === "bezahlt")
                 ? abschlussCard
                 : null}
-            </section>
-          ) : null}
-
-          {activeSection === "versicherung" && showVersicherungsakteTab ? (
-            <section
-              id="vorgang-panel-versicherung"
-              role="tabpanel"
-              className="space-y-3.5"
-            >
-              <OrganisationVersicherungsakteTab
-                leadId={leadId}
-                kostentraeger={kostentraeger}
-                versicherungsNr={versicherungsNr}
-                objektPolicenNr={objektPolicenNr}
-                onSaved={onUpdated}
-              />
             </section>
           ) : null}
 

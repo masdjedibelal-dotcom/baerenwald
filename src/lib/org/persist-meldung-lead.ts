@@ -386,15 +386,6 @@ export async function persistMeldungLead(input: PersistMeldungLeadInput) {
 
   const { error: __dbErr361_9 } = await supabaseAdmin.from("leads").update(patch).eq("id", result.id);
   if (__dbErr361_9) logDbError('lib/org/persist-meldung-lead:leads', __dbErr361_9)
-  // Hausmeister nur noch per Knopf der HV (keine Automatik mehr, 03.10.)
-  // Ohne HM: Schadenakte sofort aus der Meldung.
-  // Mit HM (hm_pruefung): nur Kostenträger vormerken, PDF nach Befund-Abschluss.
-  void import("@/lib/org/ensure-versicherungsakte").then(
-    ({ applyAutomatischeSchadenakteIfEnabled }) =>
-      applyAutomatischeSchadenakteIfEnabled(result.id).catch((e) =>
-        console.warn("[persistMeldungLead] schadenakte:", e)
-      )
-  );
 
   // Mieter am Objekt (einheit_bewohner) — erscheint in CRM-Objektakte „Mieter“
   if (input.kunde_objekt_id?.trim() && input.name.trim()) {

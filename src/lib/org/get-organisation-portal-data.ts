@@ -580,32 +580,6 @@ export async function getOrganisationPortalData(
       );
     }
   }
-  // Schadenakte am Lead (auch ohne Auftrag)
-  {
-    const { dokumentFromVersicherungsakte } = await import(
-      "@/lib/portal/portal-dokumente"
-    );
-    const { isVersicherungsakteEligibleLead } = await import(
-      "@/lib/portal/portal-lead-sichtbarkeit"
-    );
-    for (const lead of [...eingang, ...orgLeads]) {
-      const leadId = String(lead.id ?? "");
-      if (!leadId) continue;
-      if (!isVersicherungsakteEligibleLead(lead)) continue;
-      const versDoc = dokumentFromVersicherungsakte({
-        leadId,
-        url: (lead as { versicherungsakte_pdf_url?: string | null })
-          .versicherungsakte_pdf_url,
-        datum: lead.created_at,
-      });
-      if (versDoc) {
-        dokumenteByLeadId[leadId] = mergeDokumente(
-          dokumenteByLeadId[leadId] ?? [],
-          [versDoc]
-        );
-      }
-    }
-  }
   if (!listMode) {
     for (const lead of base.leads) {
       const leadId = String((lead as { id: string }).id);

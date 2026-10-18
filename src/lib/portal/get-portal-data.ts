@@ -9,13 +9,11 @@ import { buildAngebotPortalDisplay } from "@/lib/portal/portal-display";
 import { resolvePrivatPortalTitel } from "@/lib/portal/portal-titel";
 import { splitKundePortalPipeline } from "@/lib/portal/portal-pipeline";
 import {
-  dokumentFromVersicherungsakte,
   dokumenteFromAngebot,
   dokumenteFromAuftrag,
   dokumenteFromUrls,
 } from "@/lib/portal/portal-dokumente";
 import { isAngebotPortalSichtbar } from "@/lib/portal/portal-angebot-sichtbarkeit";
-import { isVersicherungsakteEligibleLead } from "@/lib/portal/portal-lead-sichtbarkeit";
 import { mapPortalRechnungForResolver } from "@/lib/crm-vorgang/portal-resolve";
 import {
   resolvePortalObjekt,
@@ -1162,20 +1160,10 @@ export async function getPortalDataForKunde(
               kontakt_nachricht: raw.kontakt_nachricht,
             })
           );
-      const versDoc =
-        !listMode &&
-        leadId &&
-        isVersicherungsakteEligibleLead(raw)
-          ? dokumentFromVersicherungsakte({
-              leadId,
-              url: raw.versicherungsakte_pdf_url,
-              datum: raw.created_at,
-            })
-          : null;
       return {
         ...lead,
         objekt: resolveObj(raw.kunde_objekt_id, raw.plz),
-        dokumente: [...(versDoc ? [versDoc] : []), ...baseDocs, ...(kundenUploadsByLead.get(leadId) ?? [])],
+        dokumente: [...baseDocs, ...(kundenUploadsByLead.get(leadId) ?? [])],
       };
     });
 

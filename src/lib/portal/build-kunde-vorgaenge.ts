@@ -39,7 +39,6 @@ import {
   isAngebotPortalAnnehmbar,
   isAngebotPortalSichtbar,
 } from "@/lib/portal/portal-angebot-sichtbarkeit";
-import { isVersicherungsakteEligibleLead } from "@/lib/portal/portal-lead-sichtbarkeit";
 import { isLeadPortalListbar } from "@/lib/portal/portal-lead-sichtbarkeit";
 import {
   collectVorgangDokumente,
@@ -495,13 +494,7 @@ function buildItemFromLead(
     kostentraegerVorgeschlagen: Boolean(lead.kostentraeger_vorgeschlagen),
     versicherungsNr: lead.versicherungs_nr ?? null,
     schadenNr: lead.schaden_nr ?? null,
-    versicherungsaktePdfUrl: lead.versicherungsakte_pdf_url ?? null,
-    versicherungsakteErstelltAm: lead.versicherungsakte_erstellt_am ?? null,
     schadenNrGeaendertAm: lead.schaden_nr_geaendert_am ?? null,
-    versicherungsNrGeaendertAm: lead.versicherungs_nr_geaendert_am ?? null,
-    objektVersicherungsNr:
-      (lead.objekt as { versicherungs_nr?: string | null } | null | undefined)
-        ?.versicherungs_nr ?? null,
     meldeFotos,
     meldeBeschreibung:
       lead.kontakt_nachricht?.trim() ||
@@ -517,7 +510,6 @@ function buildItemFromLead(
       (lead.funnel_daten as { direktauftrag?: unknown }).direktauftrag === true
         ? true
         : false,
-    versicherungsakteEligible: isVersicherungsakteEligibleLead(lead),
     hvMeldungStatus: lead.hv_meldung_status ?? null,
     kundeObjektId:
       (lead.kunde_objekt_id != null

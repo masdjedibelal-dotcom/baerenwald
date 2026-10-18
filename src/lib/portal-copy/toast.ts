@@ -117,7 +117,6 @@ export const TOAST = {
   unterlagen_hochgeladen: "Unterlagen hochgeladen",
   update_gespeichert: "Update gespeichert.",
   upload_fehlgeschlagen: "Upload fehlgeschlagen",
-  versicherung_nicht_gespeichert: "Versicherung nicht gespeichert",
   versicherungsnummer_gespeichert: "Versicherungsnummer gespeichert.",
   vom_hausmeister_erledigt: "Vom Hausmeister erledigt",
   vorgang_erstellt: "Vorgang erstellt",

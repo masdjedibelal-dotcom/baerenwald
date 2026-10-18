@@ -460,12 +460,6 @@ export async function completeLeadBefundAction(input: {
   const befund = await loadBefundWithPunkte(befundId);
   if (!befund) return { ok: false, error: "Befund laden fehlgeschlagen." };
 
-  void import("@/lib/org/ensure-versicherungsakte").then(
-    ({ applyAutomatischeSchadenakteIfEnabled }) =>
-      applyAutomatischeSchadenakteIfEnabled(owned.leadId).catch((e) =>
-        console.warn("[completeLeadBefund] schadenakte:", e)
-      )
-  );
 
   try {
     const { notifyHvHausmeisterBefundFertig } = await import(
