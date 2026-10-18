@@ -12,7 +12,7 @@ import { buildSubject } from "@/lib/shared-domain/build-subject";
 import { supabaseAdmin } from "@/lib/supabase";
 import { isValidEmail } from "@/lib/validation";
 import { Resend } from "resend";
-import { MARKE } from "@/lib/marke";
+import { funktionAn, MARKE } from "@/lib/marke";
 
 /**
  * HV-Glocke (+ optional E-Mail): neue Meldung vom Mieter/Melder-Link.
@@ -75,9 +75,11 @@ export async function notifyHvNeueMeldung(input: {
     .filter(Boolean)
     .join(" · ");
 
+  // Ohne HV-Ablauf (Bärenwald) ist das nur eine Info — die Meldung liegt schon als Anfrage beim Team
+  const naechster = funktionAn("hvWorkflow") ? "bitte prüfen." : `${MARKE.name} kümmert sich darum.`;
   const body = wer
-    ? `${wer} hat eine neue Meldung eingereicht — bitte prüfen.`
-    : "Eine neue Meldung wurde eingereicht — bitte prüfen.";
+    ? `${wer} hat eine neue Meldung eingereicht — ${naechster}`
+    : `Eine neue Meldung wurde eingereicht — ${naechster}`;
 
   const link = withPortalDetailDeepLink(
     `/portal?section=vorgaenge&id=${encodeURIComponent(input.leadId)}`,

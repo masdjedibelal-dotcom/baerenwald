@@ -11,6 +11,7 @@ import {
   meldeKategorieToZeitraum,
 } from "@/lib/org/melde-kategorien";
 import { initialHvMeldungState } from "@/lib/org/hv-meldung-workflow";
+import { funktionAn } from "@/lib/marke";
 import {
   isMeldeBereichId,
   meldeBereichToFunnelBereiche,
@@ -222,9 +223,13 @@ export async function persistMeldungLead(input: PersistMeldungLeadInput) {
       input.kategorie === "notfall") &&
     akutFallIds.length > 0;
 
-  const direktauftrag = matchedWhitelist || hvManuellAkut;
+  // Ohne HV-Ablauf (Bärenwald): keine Sofortmaßnahme, kein eigener HV-Status — Meldung ist sofort eine Anfrage
+  const hvAblauf = funktionAn("hvWorkflow");
+  const direktauftrag = hvAblauf && (matchedWhitelist || hvManuellAkut);
 
-  const initial = initialHvMeldungState();
+  const initial = hvAblauf
+    ? initialHvMeldungState()
+    : { hv_meldung_status: null, org_freigabe_status: "nicht_noetig" as const };
   let zeitraum = meldeKategorieToZeitraum(input.kategorie);
   if (direktauftrag) zeitraum = "sofort";
   else if (input.dringlichkeit) zeitraum = input.dringlichkeit;
@@ -458,7 +463,7 @@ export async function persistMeldungLead(input: PersistMeldungLeadInput) {
         }
       }
     );
-    if (bypassAktiv) {
+    if (bypassAktiv || !hvAblauf) {
       void import("@/lib/org/notify-crm-org").then(
         async ({ notifyCrmOrgPortal }) => {
           try {

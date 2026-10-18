@@ -12,6 +12,8 @@ export type MarkeId = 'baerenwald' | 'teo'
 export type MarkeFunktion =
   /** HV-Paket (später nur TEO): Hausmeister, Mieter-/Eigentümer-Portale */
   | 'hvRollen'
+  /** HV-Ablauf: Freigabe/Schwelle, Akut/Sofortmaßnahme, eigener HV-Meldungsstatus (Mieter-Meldung wartet auf HV) */
+  | 'hvWorkflow'
 
 type Marke = {
   id: MarkeId
@@ -84,7 +86,7 @@ const MARKEN: Record<MarkeId, Marke> = {
     themeColor: '#1a3d2b',
     marketingSeite: true,
     recht: { impressum: '/impressum', datenschutz: '/datenschutz', agb: '/agb' },
-    funktionen: { hvRollen: false },
+    funktionen: { hvRollen: false, hvWorkflow: false },
   },
   teo: {
     id: 'teo',
@@ -112,7 +114,7 @@ const MARKEN: Record<MarkeId, Marke> = {
     themeColor: '#0b1f3a',
     marketingSeite: false,
     recht: { impressum: '/impressum', datenschutz: '/datenschutz', agb: '/agb' },
-    funktionen: { hvRollen: false },
+    funktionen: { hvRollen: false, hvWorkflow: true },
   },
 }
 

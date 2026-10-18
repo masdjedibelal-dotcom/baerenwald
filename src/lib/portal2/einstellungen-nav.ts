@@ -1,3 +1,4 @@
+import { funktionAn } from "@/lib/marke";
 /**
  * Portal 2.0 — Einstellungen-Subnav (Mock-Annotation: settingsTab).
  * Desktop: Seitenliste · Mobile: horizontale Tabs.
@@ -24,7 +25,8 @@ export type EinstellungenNavItem = {
 /** HV: kein Branding-/Farben-Tab — Logo & Portal-Angaben liegen unter Profil. */
 export const EINSTELLUNGEN_NAV_HV: EinstellungenNavItem[] = [
   { id: "profil", label: "Profil" },
-  { id: "freigabe", label: "Freigabe-Regeln" },
+  // Freigabe-Regeln (Schwelle, Sofortmaßnahme) nur mit HV-Ablauf (TEO)
+  ...(funktionAn("hvWorkflow") ? [{ id: "freigabe" as const, label: "Freigabe-Regeln" }] : []),
   { id: "benachrichtigungen", label: "Benachrichtigungen" },
 ];
 

@@ -3,6 +3,7 @@ import { formatEuro } from '@/lib/shared-domain/geld-datum'
 /**
  * Anfrage: Akut-Erkennung + Schwellen-/Freigabe-Hinweise (client-sicher).
  */
+import { funktionAn } from '@/lib/marke'
 import { leadIstHavarie } from '@/lib/crm-vorgang/hv-lead-helpers'
 import type { Lead, OrgFreigabeStatus } from '@/lib/crm-vorgang/crm-types-bridge'
 
@@ -33,6 +34,8 @@ export function leadIstMieterMeldung(lead: {
  * Akut-Direktauftrag: kein Gate — BW kann sofort disponieren.
  */
 export function leadWartetAufHvStartFreigabe(lead: AkutSchwelleLeadSlice): boolean {
+  // Ohne HV-Ablauf (Bärenwald): Mieter-Meldung ist sofort eine normale Anfrage
+  if (!funktionAn('hvWorkflow')) return false
   if (!leadIstMieterMeldung(lead)) return false
   if (leadIstAkut(lead)) return false
   const st = (lead.hv_meldung_status ?? 'neu').trim().toLowerCase()
@@ -54,6 +57,9 @@ export function resolveAnfrageFreigabeRegeln(input: {
   schwelleEur: number | null
   notfallDirekt: boolean
 } {
+  if (!funktionAn('hvWorkflow')) {
+    return { portalModus: (input.portalModus ?? '').trim() || null, freigabeModus: null, schwelleEur: null, notfallDirekt: false }
+  }
   const schwelleRaw =
     input.objektSchwelleEur != null ? Number(input.objektSchwelleEur) : input.orgSchwelleEur
   const schwelle =
@@ -300,6 +306,7 @@ export function angebotDarfDirektAuftragOhneHvFreigabe(input: {
   betragEur: number
   hatAuftraggeber: boolean
 }): boolean {
+  if (!funktionAn('hvWorkflow')) return false
   if (!input.hatAuftraggeber) return false
   if ((input.portalModus ?? '').trim() !== 'organisation') return false
   const modus = (input.freigabeModus ?? '').trim()

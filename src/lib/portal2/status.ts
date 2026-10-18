@@ -1,3 +1,4 @@
+import { funktionAn } from "@/lib/marke";
 import { PORTAL_STATUS_COLORS } from "@/lib/tokens/portal-status-colors";
 /**
  * Portal 2.0 Status-Modell — Mock `STATUS` + `FLOW`
@@ -123,9 +124,10 @@ export type PortalFlowTimelineVariant =
   | "mieter"
   | "hausmeister";
 
+// Ohne HV-Ablauf (Bärenwald) gibt es keinen Freigabe-Schritt — Meldung geht direkt in Bearbeitung
 const FLOW_LABELS_HV_DESKTOP = [
   "Gemeldet",
-  "Freigegeben",
+  funktionAn("hvWorkflow") ? "Freigegeben" : "In Bearbeitung",
   "Angebot",
   "Auftrag",
   "Rechnung",
@@ -133,7 +135,7 @@ const FLOW_LABELS_HV_DESKTOP = [
 
 const FLOW_LABELS_HV_MOBILE = [
   "Neu",
-  "Freigabe",
+  funktionAn("hvWorkflow") ? "Freigabe" : "Aktiv",
   "Angebot",
   "Auftrag",
   "Rechnung",

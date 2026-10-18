@@ -1,3 +1,4 @@
+import { funktionAn } from "@/lib/marke";
 /**
  * Portal 2.0 D3 — HV Vorgang-Detail (`screenDetail` / `roleActionPanel` / Summen).
  */
@@ -239,7 +240,9 @@ export function hvRoleActionKind(
   opts?: { privatkunde?: boolean; angebotVorgelegt?: boolean }
 ): HvRoleActionKind {
   if (flow === "gemeldet") {
-    return opts?.privatkunde ? "privat_auto" : "freigabe";
+    if (opts?.privatkunde) return "privat_auto";
+    // Ohne HV-Ablauf (Bärenwald): Meldung liegt schon beim Team — die HV muss nichts entscheiden
+    return funktionAn("hvWorkflow") ? "freigabe" : "none";
   }
   if (flow === "angebot" || flow === "angefragt" || flow === "freigegeben") {
     return opts?.angebotVorgelegt ? "angebot" : "none";
