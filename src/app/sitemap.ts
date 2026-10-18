@@ -7,8 +7,10 @@ import { MARKE } from "@/lib/marke";
 const BASE = MARKE.portalUrl;
 
 export default function sitemap(): MetadataRoute.Sitemap {
-  // Servus TEO: keine Marketing-Seiten → keine Sitemap-Einträge
-  if (!MARKE.marketingSeite) return [];
+  // Servus TEO: nur die Startseite (keine Leistungs-/Ratgeber-Seiten)
+  if (!MARKE.marketingSeite) {
+    return [{ url: BASE, lastModified: new Date(), changeFrequency: "monthly", priority: 1.0 }];
+  }
   return [
     // Startseite
     {

@@ -41,8 +41,9 @@ export const metadata: Metadata = {
     template: `%s — ${MARKE.nameLang}`,
   },
 
-  description:
-    "Partner München — ein Ansprechpartner für alle Gewerke. Preisrahmen online berechnen. Malerarbeiten, Bad, Elektro, Heizung. Unverbindlich.",
+  description: istTeo
+    ? "Instandhaltung für Haus- und WEG-Verwaltungen in München — ein Ansprechpartner für alle Gewerke, jeder Stand im Portal."
+    : "Partner München — ein Ansprechpartner für alle Gewerke. Preisrahmen online berechnen. Malerarbeiten, Bad, Elektro, Heizung. Unverbindlich.",
 
   authors: [{ name: "Beran Cakmak" }],
   creator: MARKE.nameLang,

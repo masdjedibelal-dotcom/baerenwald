@@ -3,13 +3,14 @@
 import Image from "next/image";
 import { useState } from "react";
 
+import { istTeo, MARKE } from "@/lib/marke";
 import { cn } from "@/lib/utils";
 
 const TRUST_CONTENT = {
   intro: {
     image: "/images/trust-koordination.jpg",
     imageAlt:
-      "Bärenwald Projektleiter koordiniert Partner in einer Münchner Wohnung",
+      `${MARKE.name} Projektleiter koordiniert Partner in einer Münchner Wohnung`,
     eyebrow: "Unsere Vision",
     headline: "Handwerk neu gedacht.",
     text: "Ein Ansprechpartner der alles koordiniert. Volle Preistransparenz von Anfang an. Statusupdates während des Projekts und digitales Abnahmeprotokoll am Ende — so wie es sein sollte.",
@@ -31,6 +32,25 @@ const TRUST_CONTENT = {
   },
 } as const;
 
+/** Servus TEO: gleiche Bilder, Texte für Hausverwaltungen. */
+const TRUST_CONTENT_TEO: Record<keyof typeof TRUST_CONTENT, { eyebrow: string; headline: string; text: string }> = {
+  intro: {
+    eyebrow: "Für Verwaltungen",
+    headline: "Ein Ansprechpartner.\nAlle Gewerke.",
+    text: "teo koordiniert Betriebe, Termine und Abnahme. Den Stand jedes Vorgangs sehen Sie im Portal — Protokoll, Fotos und Rechnung inklusive.",
+  },
+  preis: {
+    eyebrow: "Keine Überraschungen",
+    headline: "Der Preis steht\nbevor wir anfangen.",
+    text: "Der Rechner zeigt einen unverbindlichen Preisrahmen auf Basis unserer Projekterfahrung in München. Nach der Prüfung vor Ort erhalten Sie ein verbindliches Angebot — als Entscheidungsgrundlage für Verwaltung und Beirat.",
+  },
+  qualitaet: {
+    eyebrow: "Unser Versprechen",
+    headline: "Sauber übergeben.\nDigital dokumentiert.",
+    text: "Jeder Vorgang endet mit einem digitalen Abnahmeprotokoll. Fotos und Rechnung liegen im Portal — nachvollziehbar für Verwaltung, Eigentümer und Beirat.",
+  },
+};
+
 export type TrustScreenVariant = keyof typeof TRUST_CONTENT;
 
 export interface TrustScreenProps {
@@ -38,7 +58,7 @@ export interface TrustScreenProps {
 }
 
 export function TrustScreen({ variant }: TrustScreenProps) {
-  const content = TRUST_CONTENT[variant];
+  const content = istTeo ? { ...TRUST_CONTENT[variant], ...TRUST_CONTENT_TEO[variant] } : TRUST_CONTENT[variant];
   const [imgFailed, setImgFailed] = useState(false);
 
   return (

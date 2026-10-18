@@ -77,22 +77,14 @@ const nextConfig = {
         ? "https://staging--baerenwald-backend.netlify.app"
         : "https://crm.baerenwaldmuenchen.de")
     ).replace(/\/$/, "");
-    // Servus TEO (NEXT_PUBLIC_MARKE=teo): keine Marketing-Seiten — Start = Portal, Rechtstexte auf der TEO-Website
+    // Servus TEO (NEXT_PUBLIC_MARKE=teo): eigene Startseite, Rechner (+ Anfrage) und Rechtstexte —
+    // die übrigen Bärenwald-Marketing-Seiten gibt es nicht, sie führen ins Portal
     const teo = (process.env.NEXT_PUBLIC_MARKE || "").trim().toLowerCase() === "teo";
-    const teoWebsite = "https://servus-teo.de";
     const teoRedirects = teo
-      ? [
-          { source: "/", destination: "/portal", permanent: false },
-          ...["/leistungen", "/ratgeber", "/rechner", "/handwerker-muenchen", "/kontakt", "/ueber-uns", "/gpt", "/galerie"].flatMap(
-            (p) => [
-              { source: p, destination: "/portal", permanent: false },
-              { source: `${p}/:path*`, destination: "/portal", permanent: false },
-            ]
-          ),
-          { source: "/impressum", destination: `${teoWebsite}/impressum`, permanent: false },
-          { source: "/datenschutz", destination: `${teoWebsite}/datenschutz`, permanent: false },
-          { source: "/agb", destination: `${teoWebsite}/agb`, permanent: false },
-        ]
+      ? ["/leistungen", "/ratgeber", "/handwerker-muenchen", "/kontakt", "/ueber-uns", "/gpt", "/galerie"].flatMap((p) => [
+          { source: p, destination: "/portal", permanent: false },
+          { source: `${p}/:path*`, destination: "/portal", permanent: false },
+        ])
       : [];
     return [
       ...teoRedirects,

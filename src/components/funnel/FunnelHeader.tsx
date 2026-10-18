@@ -8,9 +8,9 @@ import { useCallback, useEffect, useId, useState } from "react";
 
 import { RefreshIcon18 } from "@/components/funnel/NeueAnfrageResetLink";
 import { SITE_CONFIG } from "@/lib/config";
-import { WHATSAPP_ICON_PATH, WHATSAPP_URL_ANFRAGE } from "@/lib/whatsapp";
+import { WHATSAPP_AKTIV, WHATSAPP_ICON_PATH, WHATSAPP_URL_ANFRAGE } from "@/lib/whatsapp";
 import { cn } from "@/lib/utils";
-import { MARKE } from "@/lib/marke";
+import { istTeo, MARKE } from "@/lib/marke";
 import { MARKE_ASSETS } from "@/lib/marke-assets";
 
 export interface FunnelHeaderProps {
@@ -136,33 +136,38 @@ export function FunnelHeader({
               <RefreshIcon18 className="size-[18px]" />
             </Link>
           )}
-          <a
-            href={WHATSAPP_URL_ANFRAGE}
-            target="_blank"
-            rel="noopener noreferrer"
-            className={cn(
-              "flex size-10 shrink-0 items-center justify-center rounded-pill border border-border-default",
-              "text-text-tertiary transition hover:border-text-tertiary hover:text-text-primary"
-            )}
-            aria-label="WhatsApp schreiben"
-            title="WhatsApp"
-          >
-            <MockIconSvg
-              className="size-[18px] shrink-0"
-              viewBox="0 0 24 24"
-              fill="currentColor"
-              aria-hidden
+          {WHATSAPP_AKTIV ? (
+            <a
+              href={WHATSAPP_URL_ANFRAGE}
+              target="_blank"
+              rel="noopener noreferrer"
+              className={cn(
+                "flex size-10 shrink-0 items-center justify-center rounded-pill border border-border-default",
+                "text-text-tertiary transition hover:border-text-tertiary hover:text-text-primary"
+              )}
+              aria-label="WhatsApp schreiben"
+              title="WhatsApp"
             >
-              <path d={WHATSAPP_ICON_PATH} />
-            </MockIconSvg>
-          </a>
-          <a
-            href={SITE_CONFIG.phoneHref}
-            className="flex shrink-0 items-center gap-1.5 text-sm text-text-tertiary transition hover:text-text-primary"
-          >
-            <PhoneIcon className="shrink-0 text-text-tertiary" />
-            <span className="hidden sm:inline">{SITE_CONFIG.phone}</span>
-          </a>
+              <MockIconSvg
+                className="size-[18px] shrink-0"
+                viewBox="0 0 24 24"
+                fill="currentColor"
+                aria-hidden
+              >
+                <path d={WHATSAPP_ICON_PATH} />
+              </MockIconSvg>
+            </a>
+          ) : null}
+          {/* Servus TEO: eigene Telefonnummer steht noch aus */}
+          {istTeo ? null : (
+            <a
+              href={SITE_CONFIG.phoneHref}
+              className="flex shrink-0 items-center gap-1.5 text-sm text-text-tertiary transition hover:text-text-primary"
+            >
+              <PhoneIcon className="shrink-0 text-text-tertiary" />
+              <span className="hidden sm:inline">{SITE_CONFIG.phone}</span>
+            </a>
+          )}
         </div>
       </header>
 

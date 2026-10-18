@@ -7,7 +7,7 @@ import { PortalIcon } from "@/components/portal/PortalIcon";
 import { MockIconSvgWhatsApp } from "@/components/shared/mock-icon-svgs";
 import { SITE_CONFIG } from "@/lib/config";
 import { cn } from "@/lib/utils";
-import { WHATSAPP_URL_ANFRAGE } from "@/lib/whatsapp";
+import { WHATSAPP_AKTIV, WHATSAPP_URL_ANFRAGE } from "@/lib/whatsapp";
 
 const TIMELINE_STEPS = [
   {
@@ -107,20 +107,22 @@ export function ThankYou({
           : followUpSubline}
       </p>
 
-      <div className="mt-6 w-full max-w-sm text-center">
-        <p className="mb-3 text-sm text-text-secondary">
-          Oder schreiben Sie uns direkt auf WhatsApp — wir antworten schnell.
-        </p>
-        <a
-          href={WHATSAPP_URL_ANFRAGE}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="inline-flex items-center gap-2 text-fs-title font-semibold text-[var(--fl-whatsapp)] no-underline transition-opacity hover:opacity-90"
-        >
-          <MockIconSvgWhatsApp size={18} fill="currentColor" />
-          WhatsApp öffnen →
-        </a>
-      </div>
+      {WHATSAPP_AKTIV ? (
+        <div className="mt-6 w-full max-w-sm text-center">
+          <p className="mb-3 text-sm text-text-secondary">
+            Oder schreiben Sie uns direkt auf WhatsApp — wir antworten schnell.
+          </p>
+          <a
+            href={WHATSAPP_URL_ANFRAGE}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-2 text-fs-title font-semibold text-[var(--fl-whatsapp)] no-underline transition-opacity hover:opacity-90"
+          >
+            <MockIconSvgWhatsApp size={18} fill="currentColor" />
+            WhatsApp öffnen →
+          </a>
+        </div>
+      ) : null}
 
       {showWunschterminSummary ? (
         <div className="mt-6 w-full text-left">

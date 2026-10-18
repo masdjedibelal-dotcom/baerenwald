@@ -1,0 +1,711 @@
+/*
+ * Servus TEO — Website (Startseite + Rechtstexte), nur bei NEXT_PUBLIC_MARKE=teo gerendert.
+ * Mobil zuerst, alles linksbündig, große Schrift, ruhige Abschnitte.
+ */
+.teo-site {
+  --teo-navy: #0b1f3a;
+  --teo-blau: #1e5fa8;
+  --teo-blau-dunkel: #184f8c;
+  --teo-gold: #e8a317;
+  --teo-grau: #f5f7fa;
+  --teo-linie: #dce4ee;
+  --teo-text: #0b1f3a;
+  --teo-text-2: #4a5d75;
+  --teo-hell-2: #9fb2c8;
+  --teo-weiss: #ffffff;
+  --teo-gruen: #2f7d4f;
+  --teo-gruen-bg: #e6f2ea;
+  --teo-gelb-bg: #fdf3dc;
+  --teo-gelb-tx: #8a5a00;
+  --teo-blau-bg: #eaf0f8;
+
+  min-height: 100vh;
+  background: var(--teo-weiss);
+  color: var(--teo-text);
+  font-family: var(--font-sans), system-ui, sans-serif;
+  font-size: 17px;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+}
+
+.teo-site h1,
+.teo-site h2,
+.teo-site h3 {
+  margin: 0;
+  color: inherit;
+  text-wrap: balance;
+  letter-spacing: -0.025em;
+}
+.teo-site p {
+  margin: 0;
+}
+.teo-site a {
+  color: inherit;
+}
+
+.teo-innen {
+  width: 100%;
+  max-width: 1160px;
+  margin: 0 auto;
+  padding-inline: 20px;
+}
+@media (min-width: 768px) {
+  .teo-innen {
+    padding-inline: 40px;
+  }
+}
+
+/* ── Logo ── */
+.teo-logo {
+  position: relative;
+  display: inline-block;
+  width: 64px;
+  height: 27px;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+.teo-logo img {
+  position: absolute;
+  width: 90px;
+  height: 90px;
+  max-width: none;
+  left: -12px;
+  top: -33px;
+}
+
+/* ── Kopf ── */
+.teo-kopf {
+  position: sticky;
+  top: env(safe-area-inset-top, 0px);
+  z-index: 40;
+  background: rgba(255, 255, 255, 0.92);
+  backdrop-filter: saturate(1.4) blur(10px);
+  border-bottom: 1px solid var(--teo-linie);
+}
+.teo-kopf__innen {
+  max-width: 1160px;
+  margin: 0 auto;
+  padding: 12px 20px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+.teo-kopf__marke {
+  display: inline-flex;
+  align-items: center;
+  margin-right: auto;
+}
+.teo-kopf__nav {
+  display: none;
+  gap: 28px;
+  font-size: 15px;
+  font-weight: 600;
+}
+.teo-kopf__nav a {
+  text-decoration: none;
+  color: var(--teo-text-2);
+}
+.teo-kopf__nav a:hover {
+  color: var(--teo-navy);
+}
+.teo-kopf__aktionen {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+.teo-kopf__login {
+  font-size: 15px;
+  font-weight: 600;
+  text-decoration: none;
+  color: var(--teo-text-2);
+}
+@media (min-width: 900px) {
+  .teo-kopf__innen {
+    padding: 14px 40px;
+  }
+  .teo-kopf__nav {
+    display: flex;
+    margin-right: 12px;
+  }
+  .teo-kopf__marke {
+    margin-right: auto;
+  }
+}
+
+/* ── Buttons ── */
+.teo-aktionen {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+.teo-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 52px;
+  padding: 0 26px;
+  border-radius: 999px;
+  border: 1.5px solid var(--teo-navy);
+  background: var(--teo-navy);
+  color: var(--teo-weiss) !important;
+  font-size: 16px;
+  font-weight: 700;
+  text-decoration: none;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+.teo-btn:hover {
+  background: var(--teo-blau);
+  border-color: var(--teo-blau);
+}
+.teo-btn--klein {
+  min-height: 40px;
+  padding: 0 16px;
+  font-size: 14px;
+}
+.teo-btn--rand {
+  background: transparent;
+  color: var(--teo-navy) !important;
+}
+.teo-btn--rand:hover {
+  background: var(--teo-blau-bg);
+  border-color: var(--teo-navy);
+}
+.teo-btn--hell {
+  background: var(--teo-weiss);
+  border-color: var(--teo-weiss);
+  color: var(--teo-navy) !important;
+}
+.teo-btn--hell:hover {
+  background: var(--teo-linie);
+  border-color: var(--teo-linie);
+}
+.teo-btn--rand-hell {
+  background: transparent;
+  border-color: rgba(255, 255, 255, 0.5);
+}
+.teo-btn--rand-hell:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: var(--teo-weiss);
+}
+@media (max-width: 479px) {
+  .teo-aktionen .teo-btn {
+    flex: 1 1 100%;
+  }
+}
+
+/* ── Typo-Bausteine ── */
+.teo-eyebrow {
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--teo-blau);
+  margin-bottom: 14px !important;
+}
+.teo-site h2 {
+  font-size: clamp(30px, 6.4vw, 48px);
+  line-height: 1.12;
+  font-weight: 800;
+  max-width: 22ch;
+}
+.teo-gross {
+  font-size: clamp(19px, 2.4vw, 22px);
+  line-height: 1.55;
+  color: var(--teo-text-2);
+  max-width: 62ch;
+}
+.teo-hinweis {
+  margin-top: 16px !important;
+  font-size: 14px;
+  color: var(--teo-text-2);
+}
+.teo-hinweis--hell {
+  color: var(--teo-hell-2);
+}
+.teo-hinweis--hell a {
+  color: var(--teo-weiss);
+}
+
+/* ── Hero ── */
+.teo-hero {
+  padding-block: 48px 64px;
+  background: linear-gradient(180deg, var(--teo-grau) 0%, var(--teo-weiss) 100%);
+}
+.teo-hero__raster {
+  display: grid;
+  gap: 48px;
+  align-items: center;
+}
+.teo-hero__text {
+  min-width: 0;
+}
+.teo-hero h1 {
+  font-size: clamp(44px, 11vw, 80px);
+  line-height: 1.02;
+  font-weight: 800;
+  letter-spacing: -0.04em;
+}
+.teo-hero .teo-lead {
+  margin-top: 20px;
+  font-size: clamp(19px, 2.4vw, 22px);
+  line-height: 1.55;
+  color: var(--teo-text-2);
+  max-width: 34em;
+}
+.teo-hero .teo-aktionen {
+  margin-top: 32px;
+}
+@media (min-width: 960px) {
+  .teo-hero {
+    padding-block: 88px 104px;
+  }
+  .teo-hero__raster {
+    grid-template-columns: 1.15fr 1fr;
+    gap: 64px;
+  }
+}
+
+/* Portal-Vorschau */
+.teo-vorschau {
+  background: var(--teo-weiss);
+  border: 1px solid var(--teo-linie);
+  border-radius: 18px;
+  box-shadow: 0 24px 60px -24px rgba(11, 31, 58, 0.25);
+  overflow: hidden;
+  font-size: 15px;
+}
+.teo-vorschau__kopf {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 18px;
+  background: var(--teo-navy);
+  color: var(--teo-weiss);
+  font-weight: 700;
+}
+.teo-vorschau__kopf em {
+  font-style: normal;
+  font-weight: 500;
+  color: var(--teo-hell-2);
+}
+.teo-vorschau__objekt {
+  font-weight: 500;
+  color: var(--teo-hell-2);
+}
+.teo-vorschau ul {
+  list-style: none;
+  margin: 0;
+  padding: 6px 0;
+}
+.teo-vorschau li {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 18px;
+  border-bottom: 1px solid var(--teo-grau);
+}
+.teo-vorschau li:last-child {
+  border-bottom: 0;
+}
+.teo-vorschau__nr {
+  font-variant-numeric: tabular-nums;
+  color: var(--teo-text-2);
+  font-size: 13px;
+}
+.teo-vorschau__titel {
+  font-weight: 600;
+  min-width: 0;
+}
+.teo-vorschau__status {
+  font-size: 12px;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+.teo-vorschau__status--blau {
+  background: var(--teo-blau-bg);
+  color: var(--teo-blau);
+}
+.teo-vorschau__status--gelb {
+  background: var(--teo-gelb-bg);
+  color: var(--teo-gelb-tx);
+}
+.teo-vorschau__status--gruen {
+  background: var(--teo-gruen-bg);
+  color: var(--teo-gruen);
+}
+
+/* ── Abschnitte ── */
+.teo-abschnitt {
+  padding-block: 72px;
+}
+@media (min-width: 960px) {
+  .teo-abschnitt {
+    padding-block: 112px;
+  }
+}
+.teo-abschnitt--grau {
+  background: var(--teo-grau);
+}
+.teo-abschnitt--dunkel {
+  background: var(--teo-navy);
+  color: var(--teo-weiss);
+}
+.teo-abschnitt--dunkel .teo-gross {
+  color: var(--teo-hell-2);
+}
+.teo-abschnitt h2 + .teo-gross,
+.teo-abschnitt h2 + * {
+  margin-top: 20px;
+}
+.teo-zweispaltig {
+  display: grid;
+  gap: 20px;
+}
+.teo-zweispaltig > * {
+  min-width: 0;
+}
+@media (min-width: 960px) {
+  .teo-zweispaltig {
+    grid-template-columns: 1fr 1.25fr;
+    gap: 64px;
+    align-items: start;
+  }
+  .teo-zweispaltig h2 + * {
+    margin-top: 0;
+  }
+}
+
+/* Ablauf */
+.teo-schritte {
+  list-style: none;
+  margin: 40px 0 0;
+  padding: 0;
+  display: grid;
+  gap: 16px;
+}
+.teo-schritte li {
+  background: var(--teo-weiss);
+  border-radius: 16px;
+  padding: 24px;
+  border: 1px solid var(--teo-linie);
+}
+.teo-schritte__nr {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 999px;
+  background: var(--teo-navy);
+  color: var(--teo-weiss);
+  font-weight: 800;
+  font-size: 16px;
+}
+.teo-schritte h3 {
+  margin-top: 16px;
+  font-size: 22px;
+  font-weight: 800;
+}
+.teo-schritte p {
+  margin-top: 8px;
+  color: var(--teo-text-2);
+}
+@media (min-width: 720px) {
+  .teo-schritte {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+@media (min-width: 1100px) {
+  .teo-schritte {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+/* Leistungen */
+.teo-liste {
+  margin-top: 40px;
+  border-top: 1px solid var(--teo-linie);
+}
+.teo-liste article {
+  display: grid;
+  grid-template-columns: 44px 1fr;
+  gap: 12px;
+  padding-block: 28px;
+  border-bottom: 1px solid var(--teo-linie);
+}
+.teo-liste__nr {
+  font-weight: 800;
+  color: var(--teo-gold);
+  font-variant-numeric: tabular-nums;
+  font-size: 18px;
+  line-height: 1.5;
+}
+.teo-liste h3 {
+  font-size: clamp(21px, 3vw, 26px);
+  font-weight: 800;
+}
+.teo-liste p {
+  margin-top: 8px;
+  color: var(--teo-text-2);
+  font-size: 18px;
+  max-width: 62ch;
+}
+@media (min-width: 960px) {
+  .teo-liste article {
+    grid-template-columns: 80px 1fr 1.3fr;
+    gap: 32px;
+  }
+  .teo-liste article > div {
+    display: contents;
+  }
+  .teo-liste p {
+    margin-top: 0;
+  }
+}
+
+/* Vergleich */
+.teo-vergleich {
+  margin-top: 40px;
+  display: grid;
+  gap: 16px;
+}
+.teo-vergleich > div {
+  border-radius: 16px;
+  padding: 24px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+}
+.teo-vergleich h3 {
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--teo-hell-2);
+}
+.teo-vergleich ul {
+  list-style: none;
+  margin: 16px 0 0;
+  padding: 0;
+  display: grid;
+  gap: 12px;
+  font-size: 18px;
+}
+.teo-vergleich li {
+  position: relative;
+  padding-left: 26px;
+  color: var(--teo-hell-2);
+}
+.teo-vergleich li::before {
+  content: "–";
+  position: absolute;
+  left: 0;
+}
+.teo-vergleich__mit {
+  background: var(--teo-weiss);
+  border-color: var(--teo-weiss) !important;
+}
+.teo-vergleich__mit h3 {
+  color: var(--teo-blau);
+}
+.teo-vergleich__mit li {
+  color: var(--teo-navy);
+}
+.teo-vergleich__mit li::before {
+  content: "✓";
+  color: var(--teo-blau);
+  font-weight: 800;
+}
+@media (min-width: 840px) {
+  .teo-vergleich {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+/* Rollen */
+.teo-karten {
+  margin-top: 40px;
+  display: grid;
+  gap: 16px;
+}
+.teo-karten article {
+  border-top: 3px solid var(--teo-navy);
+  padding-top: 20px;
+}
+.teo-karten h3 {
+  font-size: 22px;
+  font-weight: 800;
+}
+.teo-karten p {
+  margin-top: 8px;
+  color: var(--teo-text-2);
+  font-size: 18px;
+}
+@media (min-width: 840px) {
+  .teo-karten {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 40px;
+  }
+}
+
+/* Stimmen */
+.teo-stimmen {
+  display: grid;
+  gap: 32px;
+}
+.teo-stimmen figure {
+  margin: 0;
+}
+.teo-stimmen blockquote {
+  margin: 0;
+  font-family: var(--font-display), Georgia, serif;
+  font-size: clamp(22px, 3vw, 26px);
+  line-height: 1.4;
+  color: var(--teo-navy);
+}
+.teo-stimmen figcaption {
+  margin-top: 12px;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--teo-text-2);
+}
+@media (min-width: 960px) {
+  .teo-stimmen {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 48px;
+  }
+}
+
+/* Abschluss */
+.teo-abschluss .teo-aktionen {
+  margin-top: 32px;
+}
+
+/* FAQ */
+.teo-faq {
+  border-top: 1px solid var(--teo-linie);
+}
+.teo-faq details {
+  border-bottom: 1px solid var(--teo-linie);
+}
+.teo-faq summary {
+  list-style: none;
+  cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  padding-block: 20px;
+  font-size: 19px;
+  font-weight: 700;
+}
+.teo-faq summary::-webkit-details-marker {
+  display: none;
+}
+.teo-faq summary::after {
+  content: "+";
+  font-size: 24px;
+  line-height: 1;
+  color: var(--teo-blau);
+  flex-shrink: 0;
+}
+.teo-faq details[open] summary::after {
+  content: "–";
+}
+.teo-faq details p {
+  padding-bottom: 20px;
+  color: var(--teo-text-2);
+  font-size: 18px;
+}
+
+/* ── Fuß ── */
+.teo-fuss {
+  background: var(--teo-navy);
+  color: var(--teo-hell-2);
+  padding-block: 56px 32px;
+  font-size: 15px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+.teo-fuss__innen {
+  max-width: 1160px;
+  margin: 0 auto;
+  padding-inline: 20px;
+  display: grid;
+  gap: 32px;
+}
+.teo-fuss__marke p {
+  margin-top: 12px;
+}
+.teo-fuss__adresse a {
+  color: var(--teo-weiss);
+}
+.teo-fuss__links {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  align-items: flex-start;
+}
+.teo-fuss__links a,
+.teo-fuss__links .cookie-settings-link {
+  color: var(--teo-hell-2);
+  text-decoration: none;
+  background: none;
+  border: 0;
+  padding: 0;
+  font: inherit;
+  cursor: pointer;
+}
+.teo-fuss__links a:hover,
+.teo-fuss__links .cookie-settings-link:hover {
+  color: var(--teo-weiss);
+}
+.teo-fuss__copy {
+  max-width: 1160px;
+  margin: 40px auto 0 !important;
+  padding-inline: 20px;
+  font-size: 13px;
+}
+@media (min-width: 840px) {
+  .teo-fuss__innen,
+  .teo-fuss__copy {
+    padding-inline: 40px;
+  }
+  .teo-fuss__innen {
+    grid-template-columns: 2fr 1fr 1fr;
+  }
+}
+
+/* ── Rechtstexte im TEO-Rahmen ── */
+.teo-recht {
+  padding-block: 48px 80px;
+}
+.teo-recht h1 {
+  font-size: clamp(34px, 7vw, 52px);
+  font-weight: 800;
+  line-height: 1.1;
+}
+.teo-recht__stand {
+  margin-top: 8px !important;
+  color: var(--teo-text-2);
+}
+.teo-recht__text {
+  margin-top: 40px;
+  max-width: 72ch;
+  display: grid;
+  gap: 14px;
+  color: var(--teo-text-2);
+  overflow-wrap: anywhere;
+}
+.teo-recht__text strong {
+  display: block;
+  margin-top: 18px;
+  color: var(--teo-navy);
+  font-size: 19px;
+}
+.teo-recht__text a {
+  color: var(--teo-blau);
+}
+.teo-recht__text ul {
+  margin: 0;
+  padding-left: 20px;
+}

@@ -15,6 +15,7 @@ import {
   type AnfrageDaten,
   anfrageBudgetOptionen,
 } from "@/lib/funnel/anfrage-weg";
+import { istTeo } from "@/lib/marke";
 import { cn } from "@/lib/utils";
 
 const SCHRITTE = [
@@ -56,7 +57,8 @@ function Wahl({
 export function AnfrageWeg({ onAbbrechen }: { onAbbrechen: () => void }) {
   const [schritt, setSchritt] = useState(0);
   const [d, setD] = useState<AnfrageDaten>(() => ({
-    kundentyp: "",
+    // Servus TEO richtet sich an Hausverwaltungen — vorausgewählt, aber änderbar
+    kundentyp: istTeo ? "hausverwaltung" : "",
     anliegen: [],
     plz: "",
     ort: "",

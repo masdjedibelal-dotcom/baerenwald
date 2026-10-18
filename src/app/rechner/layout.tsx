@@ -1,8 +1,10 @@
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
 
+import { MARKE } from "@/lib/marke";
+
 export const metadata: Metadata = {
-  title: "Preisrechner — Bärenwald München",
+  title: `Preisrechner — ${MARKE.nameLang}`,
   robots: {
     index: false,
     follow: false,

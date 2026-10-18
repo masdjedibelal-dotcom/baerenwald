@@ -1,9 +1,31 @@
+/* Farben je Marke (Bärenwald-Werte als Standard, Servus TEO überschreibt) */
+:root {
+  --cc-ink: #1a3d2b;
+  --cc-ink-rgb: 26, 61, 43;
+  --cc-acc-rgb: 46, 125, 82;
+  --cc-link: #2e7d52;
+  --cc-primary: #2e7d52;
+  --cc-text2: #4a5c52;
+  --cc-hover: #f4f6f5;
+  --cc-bg-soft: #f8faf8;
+}
+:root[data-marke="teo"] {
+  --cc-ink: #0b1f3a;
+  --cc-ink-rgb: 11, 31, 58;
+  --cc-acc-rgb: 30, 95, 168;
+  --cc-link: #1e5fa8;
+  --cc-primary: #0b1f3a;
+  --cc-text2: #4a5d75;
+  --cc-hover: #eaf0f8;
+  --cc-bg-soft: #f5f7fa;
+}
+
 .cookie-consent-backdrop {
   position: fixed;
   inset: 0;
   z-index: 199;
   border: none;
-  background: rgba(26, 61, 43, 0.35);
+  background: rgba(var(--cc-ink-rgb), 0.35);
   cursor: pointer;
 }
 
@@ -12,10 +34,10 @@
   inset-inline: 0;
   bottom: 0;
   z-index: 200;
-  border-top: 1px solid rgba(26, 61, 43, 0.12);
+  border-top: 1px solid rgba(var(--cc-ink-rgb), 0.12);
   background: rgba(255, 255, 255, 0.97);
   backdrop-filter: blur(10px);
-  box-shadow: 0 -8px 32px rgba(26, 61, 43, 0.08);
+  box-shadow: 0 -8px 32px rgba(var(--cc-ink-rgb), 0.08);
   padding: 1rem 1rem calc(1rem + env(safe-area-inset-bottom, 0px));
 }
 
@@ -48,14 +70,14 @@
 .cookie-consent-title {
   font-size: 0.9375rem;
   font-weight: 700;
-  color: #1a3d2b;
+  color: var(--cc-ink);
 }
 
 .cookie-consent-text {
   margin-top: 0.35rem;
   font-size: 0.8125rem;
   line-height: 1.5;
-  color: #4a5c52;
+  color: var(--cc-text2);
 }
 
 .cookie-consent-links {
@@ -68,7 +90,7 @@
 }
 
 .cookie-consent-links a {
-  color: #2e7d52;
+  color: var(--cc-link);
   font-weight: 600;
   text-decoration: underline;
   text-underline-offset: 2px;
@@ -93,39 +115,39 @@
 .cookie-consent-btn--ghost {
   border: none;
   background: transparent;
-  color: #4a5c52;
+  color: var(--cc-text2);
 }
 
 .cookie-consent-btn--ghost:hover {
-  color: #1a3d2b;
+  color: var(--cc-ink);
 }
 
 .cookie-consent-btn--outline {
-  border: 1px solid rgba(26, 61, 43, 0.2);
+  border: 1px solid rgba(var(--cc-ink-rgb), 0.2);
   background: #fff;
-  color: #1a3d2b;
+  color: var(--cc-ink);
 }
 
 .cookie-consent-btn--outline:hover {
-  border-color: rgba(46, 125, 82, 0.45);
+  border-color: rgba(var(--cc-acc-rgb), 0.45);
 }
 
 /* Ablehnen = gleiche Größe/Gewicht wie Akzeptieren (gleichrangig) */
 .cookie-consent-btn--equal {
   min-width: 8.5rem;
-  border: 1px solid #1a3d2b;
+  border: 1px solid var(--cc-ink);
   background: #fff;
-  color: #1a3d2b;
+  color: var(--cc-ink);
 }
 
 .cookie-consent-btn--equal:hover {
-  background: #f4f6f5;
+  background: var(--cc-hover);
 }
 
 .cookie-consent-btn--primary {
   min-width: 8.5rem;
   border: none;
-  background: #2e7d52;
+  background: var(--cc-primary);
   color: #fff;
 }
 
@@ -138,9 +160,9 @@
   margin-inline: auto;
   inset-inline: 1rem;
   bottom: 1rem;
-  border: 1px solid rgba(26, 61, 43, 0.12);
+  border: 1px solid rgba(var(--cc-ink-rgb), 0.12);
   border-radius: 1rem;
-  box-shadow: 0 16px 48px rgba(26, 61, 43, 0.18);
+  box-shadow: 0 16px 48px rgba(var(--cc-ink-rgb), 0.18);
 }
 
 .cookie-consent-toggles {
@@ -156,11 +178,11 @@
   align-items: flex-start;
   gap: 0.65rem;
   border-radius: 0.75rem;
-  border: 1px solid rgba(26, 61, 43, 0.1);
-  background: #f8faf8;
+  border: 1px solid rgba(var(--cc-ink-rgb), 0.1);
+  background: var(--cc-bg-soft);
   padding: 0.65rem 0.75rem;
   font-size: 0.8125rem;
-  color: #1a3d2b;
+  color: var(--cc-ink);
 }
 
 .cookie-consent-toggle--disabled {
@@ -170,14 +192,14 @@
 
 .cookie-consent-toggle input {
   margin-top: 0.15rem;
-  accent-color: #2e7d52;
+  accent-color: var(--cc-primary);
 }
 
 .cookie-consent-toggle-hint {
   display: block;
   margin-top: 0.15rem;
   font-size: 0.75rem;
-  color: #4a5c52;
+  color: var(--cc-text2);
 }
 
 .cookie-settings-link {
