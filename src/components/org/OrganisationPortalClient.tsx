@@ -15,7 +15,6 @@ import { ensurePortalVorgangNotificationHref } from "@/lib/portal2/portal-detail
 import { HvNotificationBell } from "@/components/org/HvNotificationBell";
 import { OrganisationSuche } from "@/components/org/OrganisationSuche";
 import { OrganisationMehrScreen } from "@/components/org/OrganisationMehrScreen";
-import { OrganisationWhitelabelGate } from "@/components/org/OrganisationWhitelabelGate";
 import { OrganisationVorgaengeSection } from "@/components/org/OrganisationVorgaengeSection";
 import { PortalGlobalShortcuts } from "@/components/shared/PortalGlobalShortcuts";
 import {
@@ -61,10 +60,6 @@ const OrganisationEinstellungenScreen = dynamic(
 import { PortalLegalFooter } from "@/components/shared/PortalLegalFooter";
 import { PortalShell } from "@/components/shared/PortalShell";
 import { resolveOrgSubLabel } from "@/lib/portal2/brand-presets";
-import {
-  orgWhitelabelGateCanComplete,
-  orgWhitelabelGateVisible,
-} from "@/lib/org/org-whitelabel-gate";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
   buildOrgVorgangFilterCounts,
@@ -592,28 +587,12 @@ export function OrganisationPortalClient({
     ]
   );
 
-  const showWlGate = orgWhitelabelGateVisible(kunde, mitgliedRolle);
-  const canCompleteWlGate = orgWhitelabelGateCanComplete(mitgliedRolle);
-
   return (
     <>
-      {showWlGate ? (
-        <OrganisationWhitelabelGate
-          kunde={kunde}
-          canComplete={canCompleteWlGate}
-          onComplete={refresh}
-        />
-      ) : null}
       <PortalShell
         variant="org"
         brandTitle={`${MARKE.portalName}`}
         brandSubtitle={resolveOrgSubLabel(kunde.org_sub)}
-        brandLogoUrl={kunde.org_logo_url}
-        brandKuerzel={kunde.org_logo_kuerzel}
-        orgPrimaryColor={kunde.org_primary_color}
-        brandPrimary={kunde.org_primary_color}
-        brandPrimaryDk={kunde.org_primary_color_dk}
-        brandSoft={kunde.org_primary_color_soft}
         hideMobileChrome={false}
         contentFullBleed={
           section === "uebersicht" ||

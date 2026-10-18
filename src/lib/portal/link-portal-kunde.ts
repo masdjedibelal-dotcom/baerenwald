@@ -96,7 +96,7 @@ async function findKundenByLoginEmail(
 
 /**
  * Führender Kundenstamm für die Login-E-Mail:
- * Organisation/HV vor Hausmeister-Stub; sonst die meisten Portal-Daten.
+ * Organisation/HV zuerst; sonst die meisten Portal-Daten.
  */
 async function pickCanonicalKundeForLoginEmail(
   email: string
@@ -115,10 +115,6 @@ async function pickCanonicalKundeForLoginEmail(
     const aOrg = isOrganisationKunde(a) ? 1 : 0;
     const bOrg = isOrganisationKunde(b) ? 1 : 0;
     if (aOrg !== bOrg) return bOrg - aOrg;
-    const aHm = String(a.portal_modus ?? "").toLowerCase() === "hausmeister" ? 1 : 0;
-    const bHm = String(b.portal_modus ?? "").toLowerCase() === "hausmeister" ? 1 : 0;
-    // HM-Stub nur wählen, wenn kein Org-Konto — unter Org sortieren wir schon oben
-    if (aHm !== bHm) return aHm - bHm;
     if (b.datenAnzahl !== a.datenAnzahl) return b.datenAnzahl - a.datenAnzahl;
     const ta = new Date(a.created_at ?? 0).getTime();
     const tb = new Date(b.created_at ?? 0).getTime();
@@ -141,34 +137,16 @@ async function detachAuthFromKunde(
 }
 
 type HvPortalRolleMatch = {
-  portalModus: "hausmeister" | "eigentuemer" | "mieter";
+  portalModus: "eigentuemer" | "mieter";
   name: string | null;
   telefon: string | null;
-  hausmeisterId?: string;
   bewohnerIds?: string[];
 };
 
-/** E-Mail gehört zu HV-Objektakte (HM / Eigentümer / Mieter) — kein CRM-Privatkunde. */
+/** E-Mail gehört zu HV-Objektakte (Eigentümer / Mieter) — kein CRM-Privatkunde. */
 async function resolveHvPortalRolleByEmail(
   email: string
 ): Promise<HvPortalRolleMatch | null> {
-  const {data: hm, error: __dbErr442_1} = await supabaseAdmin
-    .from("org_hausmeister")
-    .select("id, name, email")
-    .ilike("email", email)
-    .limit(1)
-    .maybeSingle();
-  if (__dbErr442_1) logDbError('lib/portal/link-portal-kunde:org_hausmeister', __dbErr442_1)
-
-  if (hm?.id) {
-    return {
-      portalModus: "hausmeister",
-      name: (hm.name as string | null)?.trim() || null,
-      telefon: null,
-      hausmeisterId: String(hm.id),
-    };
-  }
-
   const {data: bewohner, error: __dbErr443_2} = await supabaseAdmin
     .from("einheit_bewohner")
     .select("id, name, telefon, rolle")
@@ -197,18 +175,6 @@ async function linkHvPortalRolleToKunde(
   portalKundeId: string,
   role: HvPortalRolleMatch
 ): Promise<void> {
-  if (role.portalModus === "hausmeister" && role.hausmeisterId) {
-    const { error: __dbErr452_11 } = await supabaseAdmin
-      .from("org_hausmeister")
-      .update({
-        portal_kunde_id: portalKundeId,
-        portal_zugang: true,
-        updated_at: new Date().toISOString(),
-      })
-      .eq("id", role.hausmeisterId);
-    if (__dbErr452_11) logDbError('lib/portal/link-portal-kunde:org_hausmeister', __dbErr452_11)
-    return;
-  }
   if (role.bewohnerIds?.length) {
     const { error: __dbErr453_12 } = await supabaseAdmin
       .from("einheit_bewohner")
@@ -381,27 +347,7 @@ export async function linkPortalKundeToAuthUser(opts: {
     if (upErr) logDbError('lib/portal/link-portal-kunde:kunden', upErr)
 
     if (upErr) return fail(upErr);
-    if (hvRole?.portalModus === "hausmeister" && hvRole.hausmeisterId) {
-      if (keepOrgModus) {
-        const { ensureHausmeisterPortalActivation } = await import(
-          "@/lib/org/ensure-hausmeister-portal"
-        );
-        const {data: hmRow, error: __dbErr447_6} = await supabaseAdmin
-          .from("org_hausmeister")
-          .select("org_kunde_id")
-          .eq("id", hvRole.hausmeisterId)
-          .maybeSingle();
-        if (__dbErr447_6) logDbError('lib/portal/link-portal-kunde:org_hausmeister', __dbErr447_6)
-        if (hmRow?.org_kunde_id) {
-          await ensureHausmeisterPortalActivation({
-            orgHausmeisterId: hvRole.hausmeisterId,
-            orgKundeId: String(hmRow.org_kunde_id),
-          });
-        }
-      } else {
-        await linkHvPortalRolleToKunde(String(canonical.id), hvRole);
-      }
-    } else if (hvRole) {
+    if (hvRole) {
       await linkHvPortalRolleToKunde(String(canonical.id), hvRole);
     }
     return { ok: true, kundeId: String(canonical.id) };

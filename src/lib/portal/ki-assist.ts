@@ -1,13 +1,11 @@
 /** Portal-KI-Assist: Scopes + bw-apply Parsing (CRM-kompatibel). */
 
-import { PORTAL_COPY } from '@/lib/copy/portal-copy'
 import { MARKE } from "@/lib/marke";
 
 export type PortalKiAssistScope =
   | "funnel_beschreibung"
   | "bautagebuch"
-  | "abnahmeprotokoll"
-  | "hm_befund_notiz";
+  | "abnahmeprotokoll";
 
 export type PortalKiAssistMessage = {
   role: "user" | "assistant";
@@ -122,33 +120,6 @@ ${BW_APPLY_HINT}`,
       },
     ],
     requiresPartnerAuth: true,
-  },
-  hm_befund_notiz: {
-    id: "hm_befund_notiz",
-    label: "Befund-Notiz",
-    intro:
-      "Ich formuliere die Prüfpunkt-Notiz. Stichworte reichen — danach übernehmen.",
-    placeholder: "z. B. „Klarer und kürzer“ oder Stichworte zum Befund…",
-    systemHint: `Modus: Notiz zu einem Hausmeister-Prüfpunkt (Vorbefund).
-Klar, sachlich, deutsch, kurz. Für Verwaltung und ggf. ${PORTAL_COPY.partner} lesbar.
-Keine erfundenen Befunde. Du-Form vermeiden — neutral oder Sie.
-${BW_APPLY_HINT}`,
-    quickPrompts: [
-      {
-        label: "Ausformulieren",
-        prompt:
-          "Formuliere meine Stichworte als klare Befund-Notiz zum Übernehmen.",
-      },
-      {
-        label: "Kürzer",
-        prompt: "Kürze die Notiz, behalte die Kernaussage.",
-      },
-      {
-        label: "Sachlicher",
-        prompt: "Formuliere die Notiz sachlicher und prüfbar.",
-      },
-    ],
-    requiresPartnerAuth: false,
   },
 };
 

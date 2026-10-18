@@ -25,7 +25,7 @@ export type ObjektKontaktVorOrt = {
   notiz?: string | null;
 };
 
-/** Funktionen einer Person am Objekt. „Hausmeister“ läuft über die Hausmeister-Zuordnung (Portal-Zugang). */
+/** Funktionen einer Person am Objekt. */
 const ROLLEN = [
   { id: "ansprechpartner", label: "Ansprechpartner" },
   { id: "beirat", label: "Beirat" },
@@ -47,18 +47,12 @@ function rolleLabel(rolle: string): string {
 
 type Props = {
   objektId: string;
-  /** Hausmeister des Objekts als erste Zeile derselben Liste (vom Objekt geliefert) */
-  hausmeisterRow?: PortalEntityRowLike | null;
-  /** Funktion „Hausmeister“ gewählt → Hausmeister-Zuordnung öffnen */
-  onAddHausmeister?: () => void;
 };
-
-type PortalEntityRowLike = Parameters<typeof PortalEntityList>[0]["rows"][number];
 
 /**
  * Kontakte vor Ort — Desktop-Tabelle / Mobile-Cards (CRM-Parität).
  */
-export function OrganisationObjektKontaktePanel({ objektId, hausmeisterRow, onAddHausmeister }: Props) {
+export function OrganisationObjektKontaktePanel({ objektId }: Props) {
   const [items, setItems] = useState<ObjektKontaktVorOrt[]>([]);
   const [loading, setLoading] = useState(true);
   const [editOpen, setEditOpen] = useState(false);
@@ -275,25 +269,21 @@ export function OrganisationObjektKontaktePanel({ objektId, hausmeisterRow, onAd
 
   return (
     <>
-      {/* Eine Liste „Personen“: Hausmeister und Ansprechpartner zusammen, Funktion je Person */}
+      {/* Eine Liste „Personen“, Funktion je Person */}
       <EinstellungenSectionCard
-        title={
-          items.length + (hausmeisterRow ? 1 : 0)
-            ? `Personen · ${items.length + (hausmeisterRow ? 1 : 0)}`
-            : "Personen"
-        }
+        title={items.length ? `Personen · ${items.length}` : "Personen"}
         onAdd={openNeu}
         addLabel="Person hinzufügen"
       >
         {loading ? (
           <PortalInlineLoading label="Personen werden geladen" />
-        ) : items.length === 0 && !hausmeisterRow ? (
+        ) : items.length === 0 ? (
           <PortalInboxEmpty title="Noch keine Personen" compact />
         ) : (
           <PortalEntityList
             nested
             columns={[...LIST_COLS]}
-            rows={hausmeisterRow ? [hausmeisterRow, ...rows] : rows}
+            rows={rows}
             ariaLabel="Personen"
           />
         )}
@@ -313,19 +303,8 @@ export function OrganisationObjektKontaktePanel({ objektId, hausmeisterRow, onAd
           <PortalSelect
             className="portal-field w-full"
             value={rolle}
-            onChange={(e) => {
-              // Hausmeister bekommt Portal-Zugang und Meldungen → eigene Zuordnung öffnen
-              if (e.target.value === "hausmeister" && onAddHausmeister) {
-                setEditOpen(false);
-                onAddHausmeister();
-                return;
-              }
-              setRolle(e.target.value);
-            }}
+            onChange={(e) => setRolle(e.target.value)}
           >
-            {!edit && onAddHausmeister && !hausmeisterRow ? (
-              <option value="hausmeister">Hausmeister</option>
-            ) : null}
             {ROLLEN.map((r) => (
               <option key={r.id} value={r.id}>
                 {r.label}

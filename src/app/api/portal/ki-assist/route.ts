@@ -10,7 +10,6 @@ import {
   type PortalKiAssistScope,
 } from "@/lib/portal/ki-assist";
 import { linkPortalHandwerkerToAuthUser } from "@/lib/partner/link-portal-handwerker";
-import { requireBefundActor } from "@/lib/org/require-befund-actor";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { getClientIp } from "@/lib/request-ip";
 import { createClient } from "@/lib/supabase/server";
@@ -55,7 +54,7 @@ export async function POST(request: Request) {
     return NextResponse.json(
       {
         ok: false,
-        error: "scope ungültig (funnel_beschreibung|bautagebuch|abnahmeprotokoll|hm_befund_notiz).",
+        error: "scope ungültig (funnel_beschreibung|bautagebuch|abnahmeprotokoll).",
       },
       { status: 400 }
     );
@@ -84,24 +83,11 @@ export async function POST(request: Request) {
         { status: 403 }
       );
     }
-  } else if (scope === "hm_befund_notiz") {
-    const actor = await requireBefundActor();
-    if (!actor.ok) {
-      return NextResponse.json(
-        { ok: false, error: actor.error },
-        { status: 403 }
-      );
-    }
   }
 
   const ip = getClientIp(request);
-  const bucket =
-    cfg.requiresPartnerAuth
-      ? "portal-ki-assist-partner"
-      : scope === "hm_befund_notiz"
-        ? "portal-ki-assist-befund"
-        : "portal-ki-assist-funnel";
-  const limit = cfg.requiresPartnerAuth || scope === "hm_befund_notiz" ? 60 : 30;
+  const bucket = cfg.requiresPartnerAuth ? "portal-ki-assist-partner" : "portal-ki-assist-funnel";
+  const limit = cfg.requiresPartnerAuth ? 60 : 30;
   const { allowed } = checkRateLimit(ip, limit, 60 * 60 * 1000, bucket);
   if (!allowed) {
     return NextResponse.json(

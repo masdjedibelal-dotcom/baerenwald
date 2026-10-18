@@ -15,13 +15,11 @@ import { PortalDetailCard } from "@/components/shared/PortalDetailCard";
 import { PortalFlowTimeline } from "@/components/shared/PortalFlowTimeline";
 import {
   PortalDetailHead,
-  PortalDetailInfoBox,
   PortalDetailLayout,
   PortalDetailStickyActions,
 } from "@/components/shared/PortalDetailUi";
 import { VorgangDetailSectionNav } from "@/components/shared/VorgangDetailSectionNav";
 import { HvFreigabeInfoBanner } from "@/components/org/HvFreigabeInfoBanner";
-import { OrgHmBefundPanel } from "@/components/org/OrgHmBefundPanel";
 import { PortalButton } from "@/components/portal/PortalButton";
 import {
   hvFreigabeEntfaellt,
@@ -382,7 +380,6 @@ export function OrganisationHvVorgangDetail({
   const [rejected, setRejected] = useState(false);
   const [rejectOpen, setRejectOpen] = useState(false);
   const [btUnread, setBtUnread] = useState(0);
-  const [hasBefund, setHasBefund] = useState(false);
   /** Nach HM-Delegation sofort Tab/UI, bevor Refresh ankommt. */
   const [hvStatusOptimistic, setHvStatusOptimistic] = useState<string | null>(
     null
@@ -397,33 +394,12 @@ export function OrganisationHvVorgangDetail({
   )
     .trim()
     .toLowerCase();
-  const showHmTab =
-    !mieterStatusMode &&
-    (hvStatusNorm === "hm_pruefung" ||
-      hvStatusNorm === "hm_erledigt" ||
-      hasBefund);
 
 
   useEffect(() => {
     setHvStatusOptimistic(null);
   }, [leadId, hvMeldungStatus]);
 
-  useEffect(() => {
-    if (mieterStatusMode) {
-      setHasBefund(false);
-      return;
-    }
-    let cancelled = false;
-    void (async () => {
-      const { getLeadBefundAction } = await import("@/app/actions/lead-befund");
-      const res = await getLeadBefundAction({ leadId });
-      if (cancelled) return;
-      setHasBefund(Boolean(res.ok && res.befund?.id));
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [leadId, mieterStatusMode, hvMeldungStatus]);
 
 
   const angebotVorgelegt = Boolean(
@@ -943,7 +919,6 @@ export function OrganisationHvVorgangDetail({
     setRejectOpen(true);
   }, [searchParams, showAcceptCta]);
 
-  const hmSelbstErledigt = hvStatusNorm === "hm_erledigt";
 
   /** Angebot-Tab: Leistungen & Preise — in allen Phasen sichtbar, sobald Angebotsdaten da sind. */
   const angebotTabPanel = angebotVorgelegt ? (
@@ -1080,10 +1055,6 @@ export function OrganisationHvVorgangDetail({
         label: angebotSectionLabel,
       },
       {
-        id: "hm_pruefung" as const,
-        hidden: !showHmTab,
-      },
-      {
         id: "bautagebuch" as const,
         hidden: !showBautagebuch,
         badge: btUnread > 0 ? btUnread : null,
@@ -1093,7 +1064,6 @@ export function OrganisationHvVorgangDetail({
     [
       showAngebotSection,
       showBautagebuch,
-      showHmTab,
       btUnread,
       angebotSectionLabel,
     ]
@@ -1111,27 +1081,6 @@ export function OrganisationHvVorgangDetail({
     if (id === "bautagebuch") onBautagebuchViewed();
   }
 
-  const hmErledigtBanner =
-    hmSelbstErledigt && !mieterStatusMode ? (
-      <PortalDetailInfoBox variant="warning">
-        <p className="font-semibold text-warning-text">
-          Vom Hausmeister erledigt
-        </p>
-        <p className="portal-text-body mt-1 text-warning-text/90">
-          Die Vor-Ort-Prüfung ist abgeschlossen — {MARKE.name} muss hier nichts
-          mehr tun. Dokumentierte Prüfpunkte finden Sie unter Tab „Checkliste“.
-        </p>
-        {showHmTab ? (
-          <PortalButton
-            variant="secondary"
-            className="mt-3"
-            onClick={() => setActiveSection("hm_pruefung")}
-          >
-            Zur Checkliste
-          </PortalButton>
-        ) : null}
-      </PortalDetailInfoBox>
-    ) : null;
 
   const actionFooter =
     actionKind === "angebot" && showAcceptCta ? (
@@ -1202,9 +1151,6 @@ export function OrganisationHvVorgangDetail({
           </div>
         ) : null}
 
-        {hmErledigtBanner ? (
-          <div className="mt-3">{hmErledigtBanner}</div>
-        ) : null}
 
       </div>
 
@@ -1248,23 +1194,6 @@ export function OrganisationHvVorgangDetail({
             </div>
           ) : null}
 
-          {activeSection === "hm_pruefung" && showHmTab ? (
-            <section
-              id="vorgang-panel-hm"
-              role="tabpanel"
-              className="space-y-3.5"
-            >
-              <OrgHmBefundPanel
-                leadId={leadId}
-                hvMeldungStatus={hvStatusOptimistic ?? hvMeldungStatus}
-                viewerRole="hv"
-                readOnly
-                onBefundPresence={setHasBefund}
-                onUpdated={onUpdated}
-                hideInlineActions
-              />
-            </section>
-          ) : null}
 
           {activeSection !== "angebot" && error ? (
             <p className="portal-text-meta font-semibold text-p2-danger" role="alert">

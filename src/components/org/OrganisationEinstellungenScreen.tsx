@@ -3,8 +3,6 @@
 import { OrganisationAnsprechpartnerVerwaltung } from "@/components/org/OrganisationAnsprechpartnerVerwaltung";
 import { OrganisationFreigabeRegelnPanel } from "@/components/org/OrganisationFreigabeRegelnPanel";
 import { OrganisationMeldeMaterial } from "@/components/org/OrganisationMeldeMaterial";
-import { OrganisationMieterLegalLinksPanel } from "@/components/org/OrganisationMieterLegalLinksPanel";
-import { OrganisationPortalAngabenPanel } from "@/components/org/OrganisationPortalAngabenPanel";
 import { PortalKontoSicherheitPanel } from "@/components/shared/PortalKontoSicherheitPanel";
 import { PortalEinstellungenShell } from "@/components/shared/PortalEinstellungenShell";
 import { PortalPushSettingsPanel } from "@/components/shared/PortalPushSettingsPanel";
@@ -44,12 +42,6 @@ export function OrganisationEinstellungenScreen({
         if (tab === "profil") {
           return (
             <>
-              <OrganisationPortalAngabenPanel
-                kunde={kunde}
-                readOnly={!isAdmin}
-                onSaved={onSaved}
-              />
-
               <EinstellungenSectionCard title="Profil">
                 <EinstellungenPfList>
                   <EinstellungenPfRow label="Name" value={displayName} />
@@ -62,12 +54,6 @@ export function OrganisationEinstellungenScreen({
               </EinstellungenSectionCard>
 
               <OrganisationAnsprechpartnerVerwaltung readOnly={!isAdmin} />
-
-              <OrganisationMieterLegalLinksPanel
-                kunde={kunde}
-                readOnly={!isAdmin}
-                onSaved={onSaved}
-              />
 
               <OrganisationMeldeMaterial kunde={kunde} />
 
