@@ -1,0 +1,17 @@
+{
+  "name": "handwerks-plattform",
+  "install": "npm ci",
+  "terminals": [
+    {
+      "name": "next-dev",
+      "command": "npm run dev",
+      "description": "Next.js 14 development server on http://localhost:3000. Serves the public marketing site and the Supabase-gated portal/partner areas (portal renders without Supabase secrets via placeholder client)."
+    }
+  ],
+  "ports": [
+    {
+      "name": "next-dev",
+      "port": 3000
+    }
+  ]
+}
