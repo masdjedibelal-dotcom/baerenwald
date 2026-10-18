@@ -12,8 +12,6 @@ type Body = {
   freigabe_schwelle_eur?: number | null;
   notfall_direkt?: boolean;
   akut_fall_ids?: unknown;
-  kleinreparatur_aktiv?: boolean;
-  hm_auto_zuweisen?: boolean;
 };
 
 export async function PATCH(req: Request) {
@@ -40,20 +38,6 @@ export async function PATCH(req: Request) {
   if (body.akut_fall_ids !== undefined) {
     patch.akut_fall_ids = normalizeAkutFallIds(body.akut_fall_ids);
   }
-  if (body.hm_auto_zuweisen !== undefined) {
-    patch.hm_auto_zuweisen = Boolean(body.hm_auto_zuweisen);
-  }
-  // Kleinreparatur-Pfad entfernt — Flag immer aus
-  if (
-    body.kleinreparatur_aktiv !== undefined ||
-    body.freigabe_schwelle_eur !== undefined ||
-    body.freigabe_modus !== undefined ||
-    body.notfall_direkt !== undefined ||
-    body.akut_fall_ids !== undefined ||
-    body.hm_auto_zuweisen !== undefined
-  ) {
-    patch.kleinreparatur_aktiv = false;
-  }
 
   if (!Object.keys(patch).length) {
     return NextResponse.json({ error: "Keine Änderungen." }, { status: 400 });
@@ -64,7 +48,7 @@ export async function PATCH(req: Request) {
     .update(patch)
     .eq("id", session.kunde.id)
     .select(
-      "freigabe_modus, freigabe_schwelle_eur, notfall_direkt, akut_fall_ids, kleinreparatur_aktiv, hm_auto_zuweisen"
+      "freigabe_modus, freigabe_schwelle_eur, notfall_direkt, akut_fall_ids"
     )
     .single();
   if (error) logDbError('app/api/org/einstellungen/route:kunden', error)

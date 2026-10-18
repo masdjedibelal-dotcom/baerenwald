@@ -97,7 +97,6 @@ export function OrganisationFreigabeRegelnPanel({
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             freigabe_modus: "freigabe",
-            kleinreparatur_aktiv: false,
           }),
         });
         if (res.ok) onSaved();
@@ -106,24 +105,6 @@ export function OrganisationFreigabeRegelnPanel({
       }
     })();
   }, [isAdmin, kunde.freigabe_modus, migratedModus, onSaved]);
-
-  /** Einmalig: Legacy-Flag abschalten, falls noch true. */
-  useEffect(() => {
-    if (!isAdmin) return;
-    if (kunde.kleinreparatur_aktiv !== true) return;
-    void (async () => {
-      try {
-        await fetch("/api/org/einstellungen", {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ kleinreparatur_aktiv: false }),
-        });
-        onSaved();
-      } catch {
-        /* ignore */
-      }
-    })();
-  }, [isAdmin, kunde.kleinreparatur_aktiv, onSaved]);
 
   function openEdit() {
     setEditSchwelle(schwelle);
@@ -141,7 +122,6 @@ export function OrganisationFreigabeRegelnPanel({
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         freigabe_modus: "freigabe",
-        kleinreparatur_aktiv: false,
         ...body,
       }),
     });

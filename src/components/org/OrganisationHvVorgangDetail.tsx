@@ -381,24 +381,11 @@ export function OrganisationHvVorgangDetail({
   const [rejectOpen, setRejectOpen] = useState(false);
   const [btUnread, setBtUnread] = useState(0);
   /** Nach HM-Delegation sofort Tab/UI, bevor Refresh ankommt. */
-  const [hvStatusOptimistic, setHvStatusOptimistic] = useState<string | null>(
-    null
-  );
   const [activeSection, setActiveSection] =
     useState<PortalDetailSectionId>("uebersicht");
 
-  const hvStatusNorm = (
-    hvStatusOptimistic ??
-    hvMeldungStatus ??
-    ""
-  )
-    .trim()
-    .toLowerCase();
 
 
-  useEffect(() => {
-    setHvStatusOptimistic(null);
-  }, [leadId, hvMeldungStatus]);
 
 
 
@@ -484,9 +471,7 @@ export function OrganisationHvVorgangDetail({
   /** Nie Freigeben/Ablehnen (Kostenfreigabe), wenn Bypass greift — auch bei Angebots-Tab. */
   const showFreigabeButtons =
     !freigabeNichtNoetig &&
-    actionKindRaw === "freigabe" &&
-    hvStatusNorm !== "hm_pruefung" &&
-    hvStatusNorm !== "hm_erledigt";
+    actionKindRaw === "freigabe";
   const empfohlen = pickEmpfohlenesAngebot(offers);
   const statusLabel =
     statusLabelOverride?.trim() || PORTAL_STATUS[displayFlowStatus].label;

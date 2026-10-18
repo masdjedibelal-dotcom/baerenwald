@@ -13,7 +13,6 @@ export type PortalDashboardActionKind =
   | "kunde_angebot"
   | "kunde_auftrag_aenderung"
   | "kunde_termin"
-  | "hm_pruefung"
   | "partner_offen";
 
 export type PortalDashboardActionSlide = {

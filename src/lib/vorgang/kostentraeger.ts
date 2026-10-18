@@ -20,15 +20,12 @@ export function isKostentraeger(value: string | null | undefined): value is Kost
   return !!value && (KOSTENTRAEGER as readonly string[]).includes(value);
 }
 
-/** Kleinreparatur → Vorschlag Mieter als Kostenträger. */
+/** Melde-Kategorie Kleinreparatur → Vorschlag Mieter als Kostenträger. */
 export function vorgeschlagenerKostentraeger(lead: {
   hv_meldung_status?: string | null;
   anlass?: string | null;
   funnel_daten?: unknown;
 }): Kostentraeger | null {
-  if ((lead.hv_meldung_status ?? "").trim() === "kleinreparatur") {
-    return "mieter";
-  }
   const fd = lead.funnel_daten;
   if (fd && typeof fd === "object") {
     const kat = (fd as { melde_kategorie?: string }).melde_kategorie;

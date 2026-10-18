@@ -207,12 +207,7 @@ export function VorgangDetailBlocks({
     (hasMeldeTextDetails ||
       Boolean(B.fotos && B.fotos.length > 0));
 
-  const showAusfuehrungBlock =
-    showAusfuehrung &&
-    !(
-      isHausmeister &&
-      String(A.hvMeldungStatus ?? "").trim().toLowerCase() === "hm_pruefung"
-    );
+  const showAusfuehrungBlock = showAusfuehrung;
 
   return (
     <div className={cn("space-y-3.5", className)}>

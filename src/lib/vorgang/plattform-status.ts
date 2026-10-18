@@ -60,7 +60,6 @@ export function resolvePlattformStatus(
 
   if (
     hv === "notmassnahme" ||
-    hv === "kleinreparatur" ||
     hv === "angebot_eingefordert" ||
     phase === "in_bearbeitung" ||
     phase === "beauftragt" ||

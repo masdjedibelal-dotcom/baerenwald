@@ -1,25 +1,18 @@
 import { logDbError } from '@/lib/errors/log-db-error'
 import { NextResponse } from "next/server";
 
-import { canOfferKleinreparatur } from "@/lib/org/hv-meldung-workflow";
 import { notifyCrmOrgPortal } from "@/lib/org/notify-crm-org";
 import { notifyHvMieterEvent } from "@/lib/org/notify-hv-mieter-event";
 import { requireOrganisationSession } from "@/lib/org/require-org-session";
 import { requireOrgWrite } from "@/lib/org/assert-org-objekt";
-import { buildSubject } from "@/lib/shared-domain/build-subject";
-import { htmlToPlainText } from "@/lib/shared-domain/html-to-plain-text";
 import { supabaseAdmin } from "@/lib/supabase";
-import { isValidEmail } from "@/lib/validation";
-import { Resend } from "resend";
-import { MARKE } from "@/lib/marke";
 
 export const runtime = "nodejs";
 
 type Aktion =
   | "angebot_einfordern"
   | "direkt_baerenwald"
-  | "ablehnen"
-  | "kleinreparatur_freigeben";
+  | "ablehnen";
 
 type Body = {
   leadId: string;
@@ -28,8 +21,8 @@ type Body = {
 
 /**
  * HV-Aktion auf Meldung:
- * - direkt_baerenwald / angebot_einfordern (neu|hm_pruefung → angebot_eingefordert)
- * - ablehnen / kleinreparatur (Legacy)
+ * - direkt_baerenwald / angebot_einfordern (neu → angebot_eingefordert)
+ * - ablehnen (nur aus neu)
  */
 export async function POST(req: Request) {
   const session = await requireOrganisationSession();
@@ -48,7 +41,6 @@ export async function POST(req: Request) {
     "angebot_einfordern",
     "direkt_baerenwald",
     "ablehnen",
-    "kleinreparatur_freigeben",
   ];
   if (!leadId || !allowed.includes(aktion)) {
     return NextResponse.json({ error: "Ungültige Anfrage." }, { status: 400 });
@@ -73,7 +65,7 @@ export async function POST(req: Request) {
   const hvStatus = (lead.hv_meldung_status ?? "neu").trim().toLowerCase();
 
   if (aktion === "direkt_baerenwald" || aktion === "angebot_einfordern") {
-    if (hvStatus !== "neu" && hvStatus !== "hm_pruefung") {
+    if (hvStatus !== "neu") {
       return NextResponse.json(
         { error: "Für diese Meldung ist die Aktion nicht mehr möglich." },
         { status: 409 }
@@ -137,7 +129,7 @@ export async function POST(req: Request) {
     return NextResponse.json({ ok: true, status: "angebot_eingefordert" });
   }
 
-  // --- ablehnen / kleinreparatur (nur aus neu) ------------------------------
+  // --- ablehnen (nur aus neu) ------------------------------
   if (hvStatus !== "neu") {
     return NextResponse.json(
       { error: "Für diese Meldung ist die Aktion nicht mehr möglich." },
@@ -167,25 +159,12 @@ export async function POST(req: Request) {
     );
   }
 
-  if (
-    aktion === "kleinreparatur_freigeben" &&
-    !canOfferKleinreparatur(session.kunde, lead.preis_max)
-  ) {
-    return NextResponse.json(
-      {
-        error:
-          "Kleinreparatur ist nicht verfügbar (Einstellung aus oder Betrag über Schwelle).",
-      },
-      { status: 400 }
-    );
-  }
-
-  const status = aktion === "ablehnen" ? "abgelehnt" : "kleinreparatur";
-  const patch: Record<string, string> = { hv_meldung_status: status };
-  if (aktion === "ablehnen") {
-    patch.org_freigabe_status = "abgelehnt";
-    patch.vorgang_phase = "abgelehnt";
-  }
+  const status = "abgelehnt";
+  const patch: Record<string, string> = {
+    hv_meldung_status: status,
+    org_freigabe_status: "abgelehnt",
+    vorgang_phase: "abgelehnt",
+  };
 
   const { error: updErr } = await supabaseAdmin
     .from("leads")
@@ -196,7 +175,7 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: updErr.message }, { status: 500 });
   }
 
-  if (aktion === "ablehnen") {
+  {
     try {
       const melder = lead.melder_name ? String(lead.melder_name) : "Mieter";
       await notifyHvMieterEvent({
@@ -215,54 +194,6 @@ export async function POST(req: Request) {
         leadId,
         skipped: crmNotify.skipped === true,
       });
-    }
-  }
-
-  let objektTitel = "Objekt";
-  if (lead.kunde_objekt_id) {
-    const {data: obj, error: __dbErr193_2} = await supabaseAdmin
-      .from("kunden_objekte")
-      .select("titel")
-      .eq("id", lead.kunde_objekt_id)
-      .maybeSingle();
-    if (__dbErr193_2) logDbError('app/api/org/meldung-aktion/route:kunden_objekte', __dbErr193_2)
-    objektTitel = String(obj?.titel ?? "Objekt");
-  }
-
-  if (aktion === "kleinreparatur_freigeben") {
-    const crmNotify = await notifyCrmOrgPortal({ leadId, typ: "meldung" });
-    if (!crmNotify.ok) {
-      console.warn("[meldung-aktion] CRM-Notify:", crmNotify.error);
-    }
-  }
-
-  const resendKey = process.env.RESEND_API_KEY;
-  const orgEmail = session.kunde.email?.trim() ?? "";
-  if (
-    aktion === "kleinreparatur_freigeben" &&
-    resendKey &&
-    isValidEmail(orgEmail)
-  ) {
-    const portalPath = `/portal?section=vorgaenge&id=${encodeURIComponent(leadId)}`;
-    try {
-      const resend = new Resend(resendKey);
-      const html = `<p>Kleinreparatur für <strong>${objektTitel}</strong>${
-        lead.melder_name ? ` (${lead.melder_name})` : ""
-      } freigegeben.</p><p><a href="${portalPath}">Zum Vorgang</a></p>`;
-      await resend.emails.send({
-        from:
-          process.env.RESEND_FROM_SYSTEM ??
-          `System <system@${MARKE.websiteHost}>`,
-        to: orgEmail,
-        subject: buildSubject({
-          objekt: objektTitel,
-          ereignis: "Kleinreparatur freigegeben",
-        }),
-        html,
-        text: htmlToPlainText(html),
-      });
-    } catch (e) {
-      console.error("[meldung-aktion] org mail:", e);
     }
   }
 

@@ -78,7 +78,7 @@ function hvStatusForEvent(
   /* Wiedereröffnung: HV-Abschluss zurücknehmen */
   if (
     (event === "auftrag_beauftragt" || event === "auftrag_abnahme") &&
-    (current === "abgeschlossen" || current === "hm_erledigt")
+    current === "abgeschlossen"
   ) {
     return { clear: true, value: null };
   }

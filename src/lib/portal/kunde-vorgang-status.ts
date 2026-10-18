@@ -120,11 +120,7 @@ function isHvMieterInBearbeitung(input: {
   if (isAngebotBereit(input.angebotStatus)) return true;
   if (phase === "in_bearbeitung") return true;
   if (freigabe === "freigegeben") return true;
-  if (
-    hv === "notmassnahme" ||
-    hv === "kleinreparatur" ||
-    hv === "angebot_eingefordert"
-  ) {
+  if (hv === "notmassnahme" || hv === "angebot_eingefordert") {
     return true;
   }
   return false;

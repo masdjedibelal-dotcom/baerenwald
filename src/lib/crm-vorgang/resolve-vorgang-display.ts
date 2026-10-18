@@ -25,10 +25,7 @@ const HV_PHASE: Record<string, string> = {
 
 function pillKind(resolved: ResolvedVorgang): VorgangDisplayStatus['pillKind'] {
   if (resolved.unterstatus === 'storniert' || resolved.unterstatus === 'abgebrochen') return 'storniert'
-  if (
-    resolved.unterstatus === 'hm_erledigt' ||
-    resolved.unterstatus === 'abgeschlossen'
-  ) {
+  if (resolved.unterstatus === 'abgeschlossen') {
     return 'fertig'
   }
   if (resolved.phase === 'anfrage') return 'neu'
@@ -62,10 +59,7 @@ export function resolveVorgangDisplay(resolved: ResolvedVorgang, role: PortalRol
   if (role === 'hv') phaseLabel = HV_PHASE[resolved.phase] ?? phaseLabel
 
   // Terminal ohne Rechnung: nicht „Neu“ / „In Bearbeitung“
-  if (
-    resolved.unterstatus === "abgeschlossen" ||
-    resolved.unterstatus === "hm_erledigt"
-  ) {
+  if (resolved.unterstatus === "abgeschlossen") {
     phaseLabel = "Erledigt";
   }
 

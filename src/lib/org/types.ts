@@ -51,9 +51,6 @@ export type OrganisationKunde = {
   notfall_direkt: boolean;
   /** Whitelist Sofortmaßnahme-Fall-IDs; leer = nichts geht direkt. */
   akut_fall_ids?: string[] | null;
-  kleinreparatur_aktiv: boolean;
-  /** Neue Meldungen automatisch an Objekt-Hausmeister (hm_pruefung). */
-  hm_auto_zuweisen?: boolean;
   org_primary_color?: string | null;
   org_primary_color_dk?: string | null;
   org_primary_color_soft?: string | null;
@@ -85,7 +82,6 @@ export type HvMeldungStatus =
   | "neu"
   | "notmassnahme"
   | "angebot_eingefordert"
-  | "kleinreparatur"
   | "abgelehnt"
   | "abgeschlossen";
 

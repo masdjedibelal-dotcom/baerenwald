@@ -1,15 +1,11 @@
-import type { OrganisationKunde } from "@/lib/org/types";
 import { MARKE } from "@/lib/marke";
 
 export type HvMeldungStatus =
   | "neu"
   | "notmassnahme"
   | "angebot_eingefordert"
-  | "kleinreparatur"
   | "abgelehnt"
-  | "abgeschlossen"
-  | "hm_pruefung"
-  | "hm_erledigt";
+  | "abgeschlossen";
 
 /**
  * Neue Meldung: wartet auf HV.
@@ -24,17 +20,6 @@ export function initialHvMeldungState(): {
     hv_meldung_status: "neu",
     org_freigabe_status: "nicht_noetig",
   };
-}
-
-export function canOfferKleinreparatur(
-  _kunde: Pick<
-    OrganisationKunde,
-    "kleinreparatur_aktiv" | "freigabe_schwelle_eur"
-  >,
-  _preisMax: number | null | undefined
-): boolean {
-  // Kanon: kein Kleinreparatur-Sonderpfad mehr
-  return false;
 }
 
 export function formatPreisspanneDisplay(

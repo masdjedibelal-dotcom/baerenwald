@@ -5,8 +5,6 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 
 export const HV_MELDUNG_WRITE_STATUSES = [
   'neu',
-  'hm_pruefung',
-  'hm_erledigt',
   'in_bearbeitung',
   'freigegeben',
   'abgelehnt',

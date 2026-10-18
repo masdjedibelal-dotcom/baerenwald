@@ -167,12 +167,6 @@ export function resolvePortalFlowStatus(
   if (hv === "abgelehnt" || u === "abgebrochen" || u === "storniert") {
     return "abgelehnt";
   }
-  if (hv === "hm_erledigt") {
-    return "abschluss";
-  }
-  if (hv === "hm_pruefung") {
-    return "gemeldet";
-  }
 
   if (resolved.phase === "rechnung" && u === "bezahlt") {
     return "bezahlt";

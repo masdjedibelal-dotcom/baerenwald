@@ -76,7 +76,6 @@ export function resolveMieterStatusStufe(
     (leadStatus === "abgeschlossen" ||
       phase === "abgeschlossen" ||
       hv === "abgeschlossen" ||
-      hv === "hm_erledigt" ||
       auftragStatus === "abgeschlossen" ||
       auftragStatus === "abnahme")
   ) {
@@ -132,9 +131,7 @@ export function resolveMieterStatusStufe(
     leadStatus === "angebot" ||
     freigabe === "freigegeben" ||
     hv === "notmassnahme" ||
-    hv === "kleinreparatur" ||
     hv === "angebot_eingefordert" ||
-    hv === "hm_pruefung" ||
     phase === "in_bearbeitung"
   ) {
     return "in_bearbeitung";
