@@ -1,7 +1,8 @@
-import { SITE_CONFIG } from "./config";
-
-/** Ziffern für wa.me — aus `SITE_CONFIG.phoneMobilHref` (z. B. 0163/163 → +49 163 …). */
-const WHATSAPP_WA_ME_ID = SITE_CONFIG.phoneMobilHref.replace(/\D/g, "");
+/**
+ * Ziffern für wa.me — WhatsApp-Business-Nummer (360dialog), damit Website-Chats im CRM-Postfach landen.
+ * Überschreibbar per NEXT_PUBLIC_WHATSAPP_NUMMER (z. B. eigene Nummer für Servus TEO).
+ */
+const WHATSAPP_WA_ME_ID = (process.env.NEXT_PUBLIC_WHATSAPP_NUMMER?.trim() || "491636828276").replace(/\D/g, "");
 
 /** Vorgefüllter Chat-Text: allgemeine Anfrage (Float, Footer, Rechner-Danke, …). */
 export const WHATSAPP_URL_ANFRAGE = `https://wa.me/${WHATSAPP_WA_ME_ID}?text=Hallo%20B%C3%A4renwald%2C%20ich%20h%C3%A4tte%20eine%20Anfrage.`;
