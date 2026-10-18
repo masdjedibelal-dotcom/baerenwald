@@ -2,7 +2,6 @@
 
 import { headers } from "next/headers";
 
-import { logDbError } from "@/lib/errors/log-db-error";
 import {
   ANFRAGE_ANLIEGEN,
   ANFRAGE_KUNDENTYPEN,
@@ -12,7 +11,6 @@ import {
 } from "@/lib/funnel/anfrage-weg";
 import { persistLead } from "@/lib/lead/persist-lead";
 import { checkRateLimit } from "@/lib/rate-limit";
-import { supabaseAdmin } from "@/lib/supabase";
 
 /** Nur Fotos, die über /api/meldung/upload für diese Anfrage hochgeladen wurden. */
 function erlaubteFotos(fotos: string[], sitzung: string): string[] {
@@ -87,15 +85,5 @@ export async function submitAnfrageAction(
   });
   if (!res.ok) return { ok: false, error: res.error };
 
-  if (fotos.length) {
-    const { error } = await supabaseAdmin.from("lead_notizen").insert({
-      lead_id: res.id,
-      titel: "Fotos vom Kunden",
-      inhalt: "Mit der Website-Anfrage hochgeladen.",
-      datei_url: fotos[0],
-      datei_urls: fotos,
-    });
-    if (error) logDbError("app/actions/submit-anfrage:fotos", error);
-  }
   return { ok: true, id: res.id };
 }

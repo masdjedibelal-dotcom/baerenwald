@@ -20,6 +20,7 @@ import { FunnelErrorBoundary } from "@/components/funnel/FunnelErrorBoundary";
 import { FunnelPortalAuthGate } from "@/components/funnel/FunnelPortalAuthGate";
 import { HWLeadForm } from "@/components/funnel/HWLeadForm";
 import { AnfrageWeg } from "@/components/funnel/AnfrageWeg";
+import { ladeAnfrageFotosHoch, neueFotoSitzung } from "@/lib/funnel/fotos-hochladen";
 import type { PortalContactPrefill } from "@/lib/portal/portal-contact-prefill";
 import {
   buildBwLeadPayload,
@@ -1765,6 +1766,18 @@ function FunnelRechnerInner({ resetPath }: { resetPath: string }) {
     setLeadSubmitting(true);
     const notizen = buildFullLeadNotizen(state);
     try {
+      // Fotos vorher hochladen → funnel_daten.fotos → im CRM unter „Meldungsdetails“
+      let fotoUrls: string[] = [];
+      if (state.photos.length) {
+        try {
+          fotoUrls = (await ladeAnfrageFotosHoch(state.photos, neueFotoSitzung())).urls;
+        } catch (err) {
+          setLeadSubmitError(
+            `${err instanceof Error ? err.message : "Fotos konnten nicht hochgeladen werden."} Bitte Fotos prüfen oder ohne Fotos senden.`
+          );
+          return;
+        }
+      }
       const emailTrim = state.email.trim();
       const result = await submitBwLead(
         buildBwLeadPayload({
@@ -1789,13 +1802,14 @@ function FunnelRechnerInner({ resetPath }: { resetPath: string }) {
             nachname: state.nachname.trim(),
             ort: state.ort.trim(),
             photoCount: state.photos.length,
+            fotos: fotoUrls,
           },
         })
       );
       if (!result.ok) {
         setLeadSubmitError(
           result.error ||
-            "Etwas ist schiefgelaufen. Bitte versuch es nochmal oder ruf uns an."
+            "Etwas ist schiefgelaufen. Bitte versuchen Sie es erneut oder rufen Sie uns an."
         );
         return;
       }
@@ -1806,7 +1820,7 @@ function FunnelRechnerInner({ resetPath }: { resetPath: string }) {
       setScreen("danke");
     } catch {
       setLeadSubmitError(
-        "Etwas ist schiefgelaufen. Bitte versuch es nochmal oder ruf uns an."
+        "Etwas ist schiefgelaufen. Bitte versuchen Sie es erneut oder rufen Sie uns an."
       );
     } finally {
       setLeadSubmitting(false);
@@ -1825,6 +1839,12 @@ function FunnelRechnerInner({ resetPath }: { resetPath: string }) {
       state,
       state.leadBeschreibung.trim() || undefined
     );
+    let fotoUrls: string[] = [];
+    if (state.photos.length) {
+      fotoUrls = await ladeAnfrageFotosHoch(state.photos, neueFotoSitzung())
+        .then((r) => r.urls)
+        .catch(() => []);
+    }
     const fd = serializeFunnelStateForLead(state) as Record<string, unknown>;
     const result = await submitBwLead(
       buildBwLeadPayload({
@@ -1845,6 +1865,7 @@ function FunnelRechnerInner({ resetPath }: { resetPath: string }) {
           vorname: state.vorname.trim(),
           nachname: state.nachname.trim(),
           photoCount: state.photos.length,
+            fotos: fotoUrls,
           umfang: state.umfang,
         },
         funnel_quelle: "beratung",

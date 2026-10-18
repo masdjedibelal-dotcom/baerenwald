@@ -6,6 +6,7 @@ import { submitAnfrageAction } from "@/app/actions/submit-anfrage";
 import { DatenschutzCheckbox } from "@/components/funnel/DatenschutzCheckbox";
 import { PhotoUpload } from "@/components/funnel/PhotoUpload";
 import { StepWrapper } from "@/components/funnel/StepWrapper";
+import { ladeAnfrageFotosHoch, neueFotoSitzung } from "@/lib/funnel/fotos-hochladen";
 import {
   ANFRAGE_ANLIEGEN,
   ANFRAGE_KUNDENTYPEN,
@@ -22,14 +23,6 @@ const SCHRITTE = [
   { label: "Eckdaten", frage: "Die Eckdaten", sub: "Je genauer, desto besser können wir uns vorbereiten." },
   { label: "Kontakt", frage: "Wie erreichen wir Sie?", sub: "Wir melden uns persönlich, meist noch am selben Werktag." },
 ] as const;
-
-function neueSitzung(): string {
-  const r =
-    typeof crypto !== "undefined" && "randomUUID" in crypto
-      ? crypto.randomUUID()
-      : `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
-  return `anfrage-${r.toLowerCase()}`;
-}
 
 function Wahl({
   optionen,
@@ -79,7 +72,7 @@ export function AnfrageWeg({ onAbbrechen }: { onAbbrechen: () => void }) {
     email: "",
     telefon: "",
     datenschutz: false,
-    sitzung: neueSitzung(),
+    sitzung: neueFotoSitzung(),
     fotos: [],
   }));
   const [dateien, setDateien] = useState<File[]>([]);
@@ -124,16 +117,7 @@ export function AnfrageWeg({ onAbbrechen }: { onAbbrechen: () => void }) {
   }
 
   async function fotosHochladen(): Promise<string[]> {
-    const urls: string[] = [];
-    for (const f of dateien.slice(0, 5)) {
-      const fd = new FormData();
-      fd.set("session_key", d.sitzung);
-      fd.set("file", f);
-      const res = await fetch("/api/meldung/upload", { method: "POST", body: fd });
-      const json = (await res.json().catch(() => ({}))) as { url?: string; error?: string };
-      if (!res.ok || !json.url) throw new Error(json.error ?? "Foto konnte nicht hochgeladen werden.");
-      urls.push(json.url);
-    }
+    const { urls } = await ladeAnfrageFotosHoch(dateien, d.sitzung);
     return urls;
   }
 
