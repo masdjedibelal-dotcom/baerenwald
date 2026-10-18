@@ -609,3 +609,45 @@
   letter-spacing: 0.5px;
   margin-top: 2px;
 }
+
+/* Bärenwald: einfache Schadenmeldung (eine Seite) */
+.melde-einfach {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  width: 100%;
+  max-width: 560px;
+  margin: 0 auto;
+  padding: 24px 16px 40px;
+}
+.melde-einfach__titel {
+  margin: 0;
+  font-size: 26px;
+  font-weight: 800;
+  color: var(--p2-ink, #1a2b22);
+}
+.melde-einfach__objekt,
+.melde-einfach__hinweis {
+  margin: 0;
+  color: var(--p2-sub, #404a45);
+  font-size: 15px;
+}
+.melde-einfach__reihe {
+  display: grid;
+  grid-template-columns: 1fr 90px;
+  gap: 10px;
+}
+.melde-einfach__zustimmung {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  font-size: 14px;
+  color: var(--p2-ink, #1a2b22);
+  cursor: pointer;
+}
+.melde-einfach__fehler {
+  margin: 0;
+  color: var(--p2-danger, #b42318);
+  font-weight: 600;
+  font-size: 14px;
+}

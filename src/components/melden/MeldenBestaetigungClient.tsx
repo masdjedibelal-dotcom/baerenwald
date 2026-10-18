@@ -1,5 +1,6 @@
 "use client";
 
+import { funktionAn, MARKE } from "@/lib/marke";
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import { PortalButton } from "@/components/portal/PortalButton";
@@ -86,6 +87,9 @@ export function MeldenBestaetigungClient({
     }
   }
 
+  // Bärenwald (ohne HV-Ablauf): nur Eingangsbestätigung — kein Konto, kein Status-Link
+  const einfach = !funktionAn("hvWorkflow");
+
   return (
     <MieterWlFrame brand={brand}>
       <div className="mieter-wl-center">
@@ -94,13 +98,13 @@ export function MeldenBestaetigungClient({
         </div>
         <h1 className="mieter-wl-center-title inline-flex items-center justify-center gap-1.5">
           <span>{t.title_de}</span>
-          {t.register_hint_de ? (
+          {t.register_hint_de && !einfach ? (
             <InfoTip tip={t.register_hint_de} label="Konto-Hinweis" />
           ) : null}
         </h1>
         <p className="mieter-wl-center-body">
           {brand.name}
-          {t.body_suffix_de}
+          {einfach ? ` hat Ihre Meldung erhalten — ${MARKE.name} kümmert sich darum.` : t.body_suffix_de}
         </p>
 
         {referenz?.trim() ? (
@@ -110,6 +114,7 @@ export function MeldenBestaetigungClient({
           </p>
         ) : null}
 
+        {einfach ? null : (
         <div className="mieter-wl-bestaetigung-actions w-full max-w-[340px] mt-4">
           <MieterWlBtn href={registerHref} className="mieter-wl-btn--lg">
             {t.register_de}
@@ -152,6 +157,7 @@ export function MeldenBestaetigungClient({
             </Link>
           ) : null}
         </div>
+        )}
       </div>
     </MieterWlFrame>
   );

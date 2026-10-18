@@ -5,8 +5,10 @@ import { useRouter } from "next/navigation";
 
 import { useCookieConsent } from "@/components/consent/CookieConsentContext";
 import { PortalFunnelHost } from "@/components/funnel/PortalFunnelHost";
+import { MeldeEinfachFormular } from "@/components/melden/MeldeEinfachFormular";
 import { MeldeHinweisBanner } from "@/components/melden/MeldeHinweisBanner";
 import { MieterWlFrame } from "@/components/melden/MieterWlFrame";
+import { funktionAn } from "@/lib/marke";
 import { MELDE_ALLGEMEIN_SLUG } from "@/lib/org/melde-url";
 import type { MieterWlBrand } from "@/lib/portal2/mieter-wl";
 
@@ -158,6 +160,26 @@ export function MeldeFormular({
     objektAdresse,
     objektPlzOrt,
   ]);
+
+  // Bärenwald (ohne HV-Ablauf): eine einfache Seite statt Ursachen-Baum
+  if (!funktionAn("hvWorkflow") && mode === "melden") {
+    return (
+      <MieterWlFrame brand={brand} variant="funnel" hideFooter>
+        {hinweis?.trim() ? <MeldeHinweisBanner text={hinweis.trim()} /> : null}
+        <MeldeEinfachFormular
+          orgName={orgName}
+          orgKennung={orgKennung}
+          objektSlug={objektSlug}
+          objektTitel={isAllgemein ? null : objektTitel}
+          objektAdresse={isAllgemein ? null : [objektAdresse, objektPlzOrt].filter(Boolean).join(" · ") || null}
+          adresse={addressPrefill}
+          adresseNoetig={isAllgemein || !addressPrefill.strasse || !addressPrefill.plz}
+          datenschutzHref={datenschutzHref}
+          impressumHref={impressumHref}
+        />
+      </MieterWlFrame>
+    );
+  }
 
   return (
     <MieterWlFrame brand={brand} variant="funnel" hideFooter>

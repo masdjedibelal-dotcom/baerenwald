@@ -1,5 +1,6 @@
 "use client";
 
+import { funktionAn } from "@/lib/marke";
 import { PortalIcon } from "@/components/portal/PortalIcon";
 import { useState } from "react";
 import { PortalButton } from "@/components/portal/PortalButton";
@@ -88,6 +89,8 @@ export function OrganisationMeldeMaterial({ kunde }: Props) {
             </div>
           </div>
 
+          {/* QR-Code und Aushang nur mit HV-Ablauf (TEO) — Bärenwald: nur der Link */}
+          {funktionAn("hvWorkflow") ? (
           <div className="flex flex-wrap gap-2">
             <PortalButton
               variant="primary"
@@ -108,6 +111,7 @@ export function OrganisationMeldeMaterial({ kunde }: Props) {
               QR-Code
             </PortalButton>
           </div>
+          ) : null}
         </>
       )}
 
