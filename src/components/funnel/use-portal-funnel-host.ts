@@ -39,7 +39,6 @@ import {
   meldeKategorieForDirektauftragFlow,
 } from "@/teo/hv/melde-direktauftrag";
 import { ALL_AKUT_FALL_IDS } from "@/teo/hv/sofortmassnahme-faelle";
-import { bewohnerInMieterZuordnung } from "@/lib/org/einheit-bewohner-regeln";
 import { calculatePrice,isBwZuKomplexErgebnis } from "@/lib/funnel/price-calc";
 import {
   applyGroesseStepCopy,
@@ -155,7 +154,8 @@ export function usePortalFunnelHost({
   const [mieterPlz, setMieterPlz] = useState(prefill?.plz ?? "");
   const [mieterOrt, setMieterOrt] = useState("");
   const [einheit, setEinheit] = useState(prefill?.einheit ?? "");
-  const [hvMieterListe, setHvMieterListe] = useState<HvMieterOption[]>([]);
+  // Mieter-Liste am Objekt gibt es nicht mehr (Kontakt vor Ort nur in der Anfrage) — bleibt leer
+  const hvMieterListe: HvMieterOption[] = [];
   const [selectedMieterId, setSelectedMieterId] = useState<string | null>(null);
   /** HV-Melde: Akut/Sofortmaßnahme — Vorschlag aus Fachfragen, am Ende überschreibbar. */
   const [hvAkut, setHvAkut] = useState(false);
@@ -183,40 +183,6 @@ export function usePortalFunnelHost({
     },
     []
   );
-
-  const loadHvMieterListe = useCallback(async (oid: string) => {
-    const res = await fetch(
-      `/api/org/einheit-bewohner?objektId=${encodeURIComponent(oid)}`
-    );
-    const json = (await res.json()) as {
-      bewohner?: Array<{
-        id: string;
-        name: string;
-        email?: string | null;
-        telefon?: string | null;
-        rolle?: string | null;
-        selbstbewohnt?: boolean | null;
-        objekt_einheiten?: { bezeichnung?: string | null } | null;
-      }>;
-    };
-    return (json.bewohner ?? [])
-      .filter((b) => bewohnerInMieterZuordnung(b))
-      .map((b) => {
-        const selbst =
-          String(b.rolle ?? "").toLowerCase() === "eigentuemer" &&
-          Boolean(b.selbstbewohnt);
-        const einheit = b.objekt_einheiten?.bezeichnung ?? null;
-        return {
-          id: b.id,
-          name: b.name,
-          email: b.email,
-          telefon: b.telefon,
-          einheitLabel: selbst
-            ? [einheit, "Eigentümer selbstbewohnt"].filter(Boolean).join(" · ")
-            : einheit,
-        };
-      }) satisfies HvMieterOption[];
-  }, []);
 
   const mieterKontaktOk = useCallback(() => {
     const nameOk =
@@ -815,52 +781,6 @@ export function usePortalFunnelHost({
     }
   };
 
-  const createMieter = async () => {
-    const oid = objektId.trim();
-    const name = [mieterVorname, mieterNachname]
-      .map((s) => s.trim())
-      .filter(Boolean)
-      .join(" ");
-    if (!oid || !name) {
-      setError("Bitte Vor- und Nachname angeben.");
-      return;
-    }
-    setNeuBusy(true);
-    setError(null);
-    try {
-      const res = await fetch("/api/org/einheit-bewohner", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          objektId: oid,
-          name,
-          wohnung: einheit.trim() || undefined,
-          etage: einheit.trim() || undefined,
-          email: mieterEmail.trim() || undefined,
-          telefon: mieterTel.trim() || undefined,
-        }),
-      });
-      const json = (await res.json()) as { error?: string; id?: string };
-      if (!res.ok || !json.id) {
-        setError(json.error ?? "Mieter nicht angelegt.");
-        return;
-      }
-      const list = await loadHvMieterListe(oid);
-      setHvMieterListe(list);
-      const createdId = String(json.id);
-      setSelectedMieterId(createdId);
-      setMieterMode("liste");
-      setOhneMieter(false);
-      setMieterName(name);
-      const created = list.find((m) => m.id === createdId);
-      if (created?.einheitLabel) setEinheit(created.einheitLabel);
-      setStep("mieter");
-      portalToastSuccess(TOAST.mieter_angelegt);
-    } finally {
-      setNeuBusy(false);
-    }
-  };
-
   const meldeZwischenstandKey = melde
     ? `bw:melde-draft:${melde.orgKennung}:${melde.objektSlug}:${melde.ergaenzenToken ?? "neu"}`
     : "";
@@ -1452,7 +1372,6 @@ export function usePortalFunnelHost({
     goBack,
     goNext,
     createObjekt,
-    createMieter,
     submit,
     canNext,
     neuBusy,

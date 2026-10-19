@@ -390,54 +390,6 @@ export async function persistMeldungLead(input: PersistMeldungLeadInput) {
   const { error: __dbErr361_9 } = await supabaseAdmin.from("leads").update(patch).eq("id", result.id);
   if (__dbErr361_9) logDbError('lib/org/persist-meldung-lead:leads', __dbErr361_9)
 
-  // Mieter am Objekt (einheit_bewohner) — erscheint in CRM-Objektakte „Mieter“
-  if (input.kunde_objekt_id?.trim() && input.name.trim()) {
-    try {
-      const { ensureObjektBewohner } = await import(
-        "@/lib/org/ensure-objekt-bewohner"
-      );
-      const emailNorm = (input.email ?? "").trim().toLowerCase();
-      let already = false;
-      if (emailNorm) {
-        const {data: units, error: __dbErr358_6} = await supabaseAdmin
-          .from("objekt_einheiten")
-          .select("id")
-          .eq("kunde_objekt_id", input.kunde_objekt_id)
-          .eq("aktiv", true);
-        if (__dbErr358_6) logDbError('lib/org/persist-meldung-lead:objekt_einheiten', __dbErr358_6)
-        const unitIds = (units ?? []).map((u) => u.id as string);
-        if (unitIds.length) {
-          const {data: existing, error: __dbErr359_7} = await supabaseAdmin
-            .from("einheit_bewohner")
-            .select("id, email")
-            .eq("kunde_id", input.auftraggeber_kunde_id)
-            .in("objekt_einheit_id", unitIds)
-            .eq("aktiv", true)
-            .is("anonymisiert_am", null);
-          if (__dbErr359_7) logDbError('lib/org/persist-meldung-lead:einheit_bewohner', __dbErr359_7)
-          already = (existing ?? []).some(
-            (b) => (b.email ?? "").trim().toLowerCase() === emailNorm
-          );
-        }
-      }
-      if (!already) {
-        const bew = await ensureObjektBewohner({
-          kundeId: input.auftraggeber_kunde_id,
-          objektId: input.kunde_objekt_id,
-          name: input.name,
-          wohnung: input.einheit || null,
-          email: input.email || null,
-          telefon: input.telefon || null,
-        });
-        if (!bew.ok) {
-          console.warn("[persistMeldungLead] ensureObjektBewohner:", bew.error);
-        }
-      }
-    } catch (e) {
-      console.warn("[persistMeldungLead] ensureObjektBewohner:", e);
-    }
-  }
-
   if (duplikatHinweis) {
     const { writeAuditEvent } = await import("@/lib/audit/write-audit-event");
     await writeAuditEvent({

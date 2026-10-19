@@ -120,7 +120,6 @@ export function PortalFunnelHostView(m: PortalFunnelHostModel) {
     goBack,
     goNext,
     createObjekt,
-    createMieter,
     submit,
     canNext,
     neuBusy,
@@ -1346,11 +1345,9 @@ export function PortalFunnelHostView(m: PortalFunnelHostModel) {
         onNext={
           step === "objekt_neu"
             ? () => void createObjekt()
-            : step === "mieter_neu"
-              ? () => void createMieter()
-              : step === "result"
-                ? () => void submit()
-                : goNext
+            : step === "result"
+              ? () => void submit()
+              : goNext
         }
         nextDisabled={
           step === "objekt_neu" || step === "mieter_neu"

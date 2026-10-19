@@ -136,54 +136,6 @@ async function detachAuthFromKunde(
   if (__dbErr451_10) logDbError('lib/portal/link-portal-kunde:kunden', __dbErr451_10)
 }
 
-type HvPortalRolleMatch = {
-  portalModus: "eigentuemer" | "mieter";
-  name: string | null;
-  telefon: string | null;
-  bewohnerIds?: string[];
-};
-
-/** E-Mail gehört zu HV-Objektakte (Eigentümer / Mieter) — kein CRM-Privatkunde. */
-async function resolveHvPortalRolleByEmail(
-  email: string
-): Promise<HvPortalRolleMatch | null> {
-  const {data: bewohner, error: __dbErr443_2} = await supabaseAdmin
-    .from("einheit_bewohner")
-    .select("id, name, telefon, rolle")
-    .ilike("email", email)
-    .eq("aktiv", true)
-    .is("anonymisiert_am", null)
-    .limit(20);
-  if (__dbErr443_2) logDbError('lib/portal/link-portal-kunde:einheit_bewohner', __dbErr443_2)
-
-  const rows = bewohner ?? [];
-  if (!rows.length) return null;
-
-  const isEigentuemer = rows.some(
-    (r) => String(r.rolle ?? "").toLowerCase() === "eigentuemer"
-  );
-  const first = rows[0];
-  return {
-    portalModus: isEigentuemer ? "eigentuemer" : "mieter",
-    name: (first?.name as string | null)?.trim() || null,
-    telefon: (first?.telefon as string | null)?.trim() || null,
-    bewohnerIds: rows.map((r) => String(r.id)).filter(Boolean),
-  };
-}
-
-async function linkHvPortalRolleToKunde(
-  portalKundeId: string,
-  role: HvPortalRolleMatch
-): Promise<void> {
-  if (role.bewohnerIds?.length) {
-    const { error: __dbErr453_12 } = await supabaseAdmin
-      .from("einheit_bewohner")
-      .update({ portal_kunde_id: portalKundeId })
-      .in("id", role.bewohnerIds);
-    if (__dbErr453_12) logDbError('lib/portal/link-portal-kunde:einheit_bewohner', __dbErr453_12)
-  }
-}
-
 function trimStamm(v: string | null | undefined): string | null {
   const t = (v ?? "").trim();
   return t || null;
@@ -322,34 +274,17 @@ export async function linkPortalKundeToAuthUser(opts: {
       await detachAuthFromKunde(String(linkedByAuth.id), opts.userId);
     }
 
-    const hvRole = await resolveHvPortalRolleByEmail(email);
-    const {data: before, error: __dbErr446_5} = await supabaseAdmin
-      .from("kunden")
-      .select("portal_modus")
-      .eq("id", canonical.id)
-      .maybeSingle();
-    if (__dbErr446_5) logDbError('lib/portal/link-portal-kunde:kunden', __dbErr446_5)
-    const keepOrgModus =
-      (before?.portal_modus ?? "") === "organisation" &&
-      (await import("@/lib/auth/baerenwald-primary-staff")).isBaerenwaldPrimaryStaffEmail(
-        email
-      );
-
     const { error: upErr } = await supabaseAdmin
       .from("kunden")
       .update({
         auth_user_id: opts.userId,
         email,
         ...stammPatch,
-        ...(hvRole && !keepOrgModus ? { portal_modus: hvRole.portalModus } : {}),
       })
       .eq("id", canonical.id);
     if (upErr) logDbError('lib/portal/link-portal-kunde:kunden', upErr)
 
     if (upErr) return fail(upErr);
-    if (hvRole) {
-      await linkHvPortalRolleToKunde(String(canonical.id), hvRole);
-    }
     return { ok: true, kundeId: String(canonical.id) };
   }
 
@@ -363,23 +298,17 @@ export async function linkPortalKundeToAuthUser(opts: {
     email.split("@")[0]?.replace(/[._]/g, " ") ||
     "Kunde";
 
-  // HV-Objektakte: E-Mail gehört zu Bewohner/Hausmeister → Portal-Stub, kein CRM-Stammtyp
-  const hvRole = await resolveHvPortalRolleByEmail(email);
-  const crmTyp: PortalRegisterKundeTyp = hvRole
-    ? "privat"
-    : registerTyp ?? "privat";
-  const portalModus =
-    hvRole?.portalModus ?? portalModusForRegisterKundeTyp(crmTyp);
+  const crmTyp: PortalRegisterKundeTyp = registerTyp ?? "privat";
+  const portalModus = portalModusForRegisterKundeTyp(crmTyp);
 
   const { data: neu, error: insErr } = await supabaseAdmin
     .from("kunden")
     .insert({
-      name: hvRole?.name || name,
+      name,
       email,
       telefon:
         stammPatch.telefon ||
         opts.telefon?.trim() ||
-        hvRole?.telefon ||
         null,
       typ: crmTyp,
       portal_modus: portalModus,
@@ -422,14 +351,10 @@ export async function linkPortalKundeToAuthUser(opts: {
             auth_user_id: opts.userId,
             email,
             ...stammPatch,
-            ...(hvRole ? { portal_modus: hvRole.portalModus } : {}),
           })
           .eq("id", existingId);
         if (upErr) logDbError('lib/portal/link-portal-kunde:kunden', upErr)
         if (upErr) return fail(upErr);
-        if (hvRole) {
-          await linkHvPortalRolleToKunde(existingId, hvRole);
-        }
         return { ok: true, kundeId: existingId };
       }
       if (isKundenEmailUniqueViolation(insErr)) {
@@ -444,9 +369,6 @@ export async function linkPortalKundeToAuthUser(opts: {
   }
 
   const newId = String(neu.id);
-  if (hvRole) {
-    await linkHvPortalRolleToKunde(newId, hvRole);
-  }
 
   return { ok: true, kundeId: newId };
 }
