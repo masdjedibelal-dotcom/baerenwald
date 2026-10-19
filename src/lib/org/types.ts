@@ -44,8 +44,6 @@ export type OrganisationKunde = {
   org_kennung: string | null;
   org_anzeigename: string | null;
   org_logo_url: string | null;
-  /** Dashboard-Hero (optional). */
-  org_hero_url?: string | null;
   freigabe_modus: FreigabeModus;
   freigabe_schwelle_eur: number | null;
   notfall_direkt: boolean;
@@ -69,11 +67,6 @@ export type OrganisationKunde = {
   mieter_kontakt_telefon?: string | null;
   mieter_kontakt_email?: string | null;
   mieter_kontakt_hinweis?: string | null;
-  av_akzeptiert_am?: string | null;
-  av_version?: string | null;
-  av_akzeptiert_von?: string | null;
-  av_text_snapshot?: string | null;
-  wl_ansprache_am?: string | null;
   impressum_url?: string | null;
   datenschutz_url?: string | null;
 };
