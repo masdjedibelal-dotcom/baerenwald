@@ -58,3 +58,8 @@
 .ap-schmal { max-width: 720px; }
 .ap-datei { display: inline-flex; align-items: center; gap: 8px; padding: 10px 14px; border: 1px dashed var(--border-strong); border-radius: var(--r-sm, 8px); cursor: pointer; color: var(--text-2); }
 .ap-datei input { display: none; }
+
+/* Einstellungen */
+.ap-gruppe + .ap-gruppe { margin-top: 12px; }
+.ap-knopfzeile--fuss { align-items: center; }
+.ap-ok { color: var(--grn-tx); }

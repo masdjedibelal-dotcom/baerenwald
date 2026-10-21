@@ -19,7 +19,8 @@ import { resolvePortalKundeTyp } from "@/lib/portal2/kunde-typ";
 import { clearAdminViewCookie } from "@/lib/auth/crm-impersonation-session";
 import { createClient } from "@/lib/supabase/server";
 import { isSupabaseConfigured,supabaseAdmin } from "@/lib/supabase";
-import { MARKE } from "@/lib/marke";
+import { istTeo, MARKE } from "@/lib/marke";
+import { ladeApKontext } from "@/teo/arbeitsplatz/kontext";
 
 export const dynamic = "force-dynamic";
 
@@ -31,7 +32,7 @@ export const metadata = {
 export default async function PortalDashboardPage({
   searchParams,
 }: {
-  searchParams?: Promise<{ view?: string }>;
+  searchParams?: Promise<{ view?: string; section?: string; id?: string }>;
 }) {
   if (!isSupabaseConfigured()) {
     return (
@@ -43,7 +44,7 @@ export default async function PortalDashboardPage({
     );
   }
 
-  void searchParams;
+  const sp = (await searchParams) ?? {};
 
   const supabase = await createClient();
   const {
@@ -57,6 +58,23 @@ export default async function PortalDashboardPage({
   const emailConfirmed = Boolean(user.email_confirmed_at ?? user.confirmed_at);
   if (!emailConfirmed) {
     redirect("/portal/login?hint=confirm");
+  }
+
+  // Servus TEO: Verwaltung arbeitet im Arbeitsplatz (alte Portal-Links dorthin umleiten)
+  if (istTeo) {
+    const ap = await ladeApKontext();
+    if (ap?.person.rolle === "verwaltung") {
+      const id = sp.id?.trim();
+      redirect(
+        sp.section === "vorgaenge" && id && /^[0-9a-f-]{36}$/i.test(id)
+          ? `/arbeitsplatz/vorgaenge/${id}`
+          : sp.section === "vorgaenge"
+            ? "/arbeitsplatz/vorgaenge"
+            : sp.section === "objekte"
+              ? "/arbeitsplatz/objekte"
+              : "/arbeitsplatz"
+      );
+    }
   }
 
   const meta = user.user_metadata as {
