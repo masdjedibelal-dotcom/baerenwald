@@ -5,7 +5,7 @@ import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import { useMemo, useState } from 'react'
 
 import { formatDatum, formatEuro } from '@/lib/shared-domain/geld-datum'
-import { MockBadge, MockBtn, MockChip, MockEmpty, MockIcon, MockInput, MockSelect } from '@/teo/arbeitsplatz/kit'
+import { MockBadge, MockChip, MockEmpty, MockInput, MockSelect } from '@/teo/arbeitsplatz/kit'
 import type { ApVorgangZeile } from '@/teo/arbeitsplatz/daten/vorgaenge'
 import { AP_STATUS, AP_STATUS_FILTER, type ApStatus } from '@/teo/arbeitsplatz/vorgang-status'
 
@@ -16,12 +16,10 @@ export function VorgaengeListe({
   vorgaenge,
   objekte,
   zeigeBetrag,
-  darfAnlegen,
 }: {
   vorgaenge: ApVorgangZeile[]
   objekte: Array<{ id: string; name: string }>
   zeigeBetrag: boolean
-  darfAnlegen: boolean
 }) {
   const router = useRouter()
   const pfad = usePathname()
@@ -68,14 +66,6 @@ export function VorgaengeListe({
                 {AP_STATUS[s].label}
               </MockChip>
             ))}
-          </div>
-          <div className="listbar-actions">
-            {darfAnlegen ? (
-              <MockBtn kind="primary" sm type="button" onClick={() => router.push('/arbeitsplatz/vorgaenge/neu')}>
-                <MockIcon ctx="btn" n="plus" size={14} />
-                <span>Neuer Vorgang</span>
-              </MockBtn>
-            ) : null}
           </div>
         </div>
         <div className="ap-filterzeile">

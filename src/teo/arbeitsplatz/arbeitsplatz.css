@@ -53,3 +53,8 @@
 
 /* Häkchen-Zeilen in Formularen */
 .ap-check { display: flex; align-items: center; gap: 10px; padding: 6px 0; grid-column: 1 / -1; cursor: pointer; }
+
+/* Formularseiten */
+.ap-schmal { max-width: 720px; }
+.ap-datei { display: inline-flex; align-items: center; gap: 8px; padding: 10px 14px; border: 1px dashed var(--border-strong); border-radius: var(--r-sm, 8px); cursor: pointer; color: var(--text-2); }
+.ap-datei input { display: none; }

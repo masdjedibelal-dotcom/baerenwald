@@ -1,6 +1,7 @@
 'use client'
 
 import Link from 'next/link'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { useMemo, useState } from 'react'
 
 import { formatEuro } from '@/lib/shared-domain/geld-datum'
@@ -20,7 +21,10 @@ export function ObjekteListe({
   verwaltung: ApPersonKurz[]
 }) {
   const [suche, setSuche] = useState('')
-  const [neu, setNeu] = useState(false)
+  const router = useRouter()
+  const params = useSearchParams()
+  const neu = params.get('neu') === '1'
+  const setNeu = (an: boolean) => router.replace(an ? '/arbeitsplatz/objekte?neu=1' : '/arbeitsplatz/objekte', { scroll: false })
   const sichtbar = useMemo(() => {
     const s = suche.trim().toLowerCase()
     return s ? objekte.filter((o) => `${o.name} ${o.adresse}`.toLowerCase().includes(s)) : objekte
@@ -29,18 +33,8 @@ export function ObjekteListe({
   return (
     <div>
       <div className="listbar">
-        <div className="listbar-main">
-          <div className="ap-filterzeile ap-filterzeile--oben">
-            <MockInput type="search" placeholder="Suchen" value={suche} onChange={(e) => setSuche(e.target.value)} aria-label="Suchen" />
-          </div>
-          <div className="listbar-actions">
-            {darfBearbeiten ? (
-              <MockBtn kind="primary" sm type="button" onClick={() => setNeu(true)}>
-                <MockIcon ctx="btn" n="plus" size={14} />
-                <span>Objekt</span>
-              </MockBtn>
-            ) : null}
-          </div>
+        <div className="ap-filterzeile ap-filterzeile--oben">
+          <MockInput type="search" placeholder="Suchen" value={suche} onChange={(e) => setSuche(e.target.value)} aria-label="Suchen" />
         </div>
       </div>
 

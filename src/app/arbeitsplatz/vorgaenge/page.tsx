@@ -23,7 +23,6 @@ export default async function VorgaengeSeite() {
       vorgaenge={vorgaenge}
       objekte={objekte}
       zeigeBetrag={darf(k.person, 'kosten.sehen')}
-      darfAnlegen={darf(k.person, 'vorgang.anlegen')}
     />
   )
 }

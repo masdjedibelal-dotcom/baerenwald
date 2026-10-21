@@ -85,3 +85,76 @@ export async function nachrichtAnTeo(leadId: string, text: string): Promise<ApAk
   if (tlErr) logDbError('teo/arbeitsplatz/aktionen/vorgang:timeline', tlErr)
   return fertig(leadId)
 }
+
+export type NeuerVorgang = {
+  objektId: string
+  beschreibung: string
+  dringend: boolean
+  kontaktName?: string
+  kontaktTelefon?: string
+  fotos?: string[]
+}
+
+/** Vorgang von der Verwaltung anlegen — geht direkt an TEO (keine eigene Meldungs-Entscheidung). */
+export async function vorgangAnlegen(v: NeuerVorgang): Promise<ApAktionsErgebnis & { id?: string }> {
+  const k = await ladeApKontext()
+  if (!k) return { ok: false, fehler: 'Bitte melden Sie sich erneut an.' }
+  if (!darf(k.person, 'vorgang.anlegen')) return { ok: false, fehler: 'Dafür fehlt Ihnen die Berechtigung.' }
+  const beschreibung = v.beschreibung.trim()
+  if (beschreibung.length < 5) return { ok: false, fehler: 'Bitte kurz beschreiben, was zu tun ist.' }
+  if (k.person.objektIds !== null && !k.person.objektIds.includes(v.objektId)) return { ok: false, fehler: 'Objekt nicht gefunden.' }
+
+  const { data: objekt, error: oErr } = await supabaseAdmin
+    .from('kunden_objekte')
+    .select('id, plz, strasse, hausnummer, ort')
+    .eq('id', v.objektId)
+    .eq('kunde_id', k.org.id)
+    .maybeSingle()
+  if (oErr) logDbError('teo/arbeitsplatz/aktionen/vorgang:objekt', oErr)
+  if (!objekt) return { ok: false, fehler: 'Objekt nicht gefunden.' }
+
+  const fotos = (v.fotos ?? []).filter((u) => /^https?:\/\//.test(u)).slice(0, 8)
+  const kontakt = { name: v.kontaktName?.trim() || null, telefon: v.kontaktTelefon?.trim() || null }
+  const { persistLead } = await import('@/lib/lead/persist-lead')
+  const r = await persistLead({
+    kunde_id: k.org.id,
+    auftraggeber_kunde_id: k.org.id,
+    name: k.person.name,
+    email: k.person.email,
+    plz: String(objekt.plz ?? ''),
+    strasse: String(objekt.strasse ?? ''),
+    hausnummer: String(objekt.hausnummer ?? ''),
+    ort: objekt.ort ? String(objekt.ort) : undefined,
+    situation: v.dringend ? 'notfall' : 'reparatur',
+    bereiche: [],
+    zeitraum: v.dringend ? 'sofort' : 'diese_woche',
+    kanal: 'hv_direkt',
+    anlass: 'meldung',
+    erfassung_von: 'organisation',
+    kunde_objekt_id: v.objektId,
+    kundentyp: 'hausverwaltung',
+    hv_meldung_status: 'angebot_eingefordert',
+    org_freigabe_status: 'nicht_noetig',
+    melder_name: k.person.name,
+    melder_email: k.person.email,
+    melder_telefon: kontakt.telefon,
+    skipKundeMail: true,
+    skipInternMail: true,
+    notizen: [beschreibung, kontakt.name || kontakt.telefon ? `Kontakt vor Ort: ${[kontakt.name, kontakt.telefon].filter(Boolean).join(', ')}` : null]
+      .filter(Boolean)
+      .join('\n\n'),
+    funnel_daten: { quelle: 'hv_direkt', beschreibung, fotos, kontakt_vor_ort: kontakt, ...(objekt.ort ? { ort: String(objekt.ort) } : {}) },
+    funnel_quelle: 'hv_direkt',
+  })
+  if (!r.ok) {
+    console.error('[arbeitsplatz/vorgang-anlegen] persistLead:', r.error)
+    return { ok: false, fehler: 'Vorgang konnte nicht angelegt werden.' }
+  }
+  const { finalizeOrgSelfCreatedLead } = await import('@/lib/org/finalize-org-self-created-lead')
+  await finalizeOrgSelfCreatedLead(r.id)
+  const { notifyCrmOrgPortal } = await import('@/lib/org/notify-crm-org')
+  const n = await notifyCrmOrgPortal({ leadId: r.id, typ: 'meldung' })
+  if (!n.ok) console.warn('[arbeitsplatz/vorgang-anlegen] CRM-Notify:', n.error)
+  revalidatePath('/arbeitsplatz', 'layout')
+  return { ok: true, id: r.id }
+}

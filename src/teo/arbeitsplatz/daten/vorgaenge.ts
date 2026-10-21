@@ -25,9 +25,18 @@ export type ApVorgangZeile = {
 }
 
 const LEAD_SPALTEN =
-  'id, status, situation, bereiche, funnel_daten, kanal, anlass, erfassung_von, org_freigabe_status, hv_meldung_status, freigabe_bypass_grund, kontakt_name, melder_name, plz, created_at, updated_at, kunde_objekt_id, kunde_id, auftraggeber_kunde_id'
+  'id, status, situation, bereiche, funnel_daten, kanal, anlass, erfassung_von, org_freigabe_status, hv_meldung_status, freigabe_bypass_grund, kontakt_name, melder_name, kontakt_nachricht, plz, created_at, updated_at, kunde_objekt_id, kunde_id, auftraggeber_kunde_id'
 
 type LeadRoh = Record<string, unknown> & { id: string; created_at: string; kunde_objekt_id: string | null }
+
+/** Technische Titel (nur Situation) durch den Anfang der Beschreibung ersetzen. */
+const ROH_TITEL = /^(reparatur|notfall|kaputt|erneuern|betreuung|sonstiges)(\s*·.*)?$/i
+function titelFuer(roh: string, lead: LeadRoh): string {
+  const text = String(lead.kontakt_nachricht ?? '').replace(/\s+/g, ' ').trim()
+  if (!text || (roh && !ROH_TITEL.test(roh.trim()))) return roh || text || 'Vorgang'
+  const satz = text.split(/(?<=[.!?])\s/)[0] ?? text
+  return satz.length > 80 ? `${satz.slice(0, 77)}…` : satz
+}
 
 function zahl(v: unknown): number | null {
   const n = typeof v === 'number' ? v : typeof v === 'string' ? Number(v) : NaN
@@ -116,7 +125,7 @@ export async function ladeVorgaenge(k: ApKontext, opts: { nurIds?: string[] } = 
     const objektId = lead.kunde_objekt_id ? String(lead.kunde_objekt_id) : null
     return {
       id: lead.id,
-      titel: v.titel || 'Vorgang',
+      titel: titelFuer(v.titel ?? '', lead),
       status,
       objektId,
       objektName: objektId ? objektName.get(objektId) ?? null : null,

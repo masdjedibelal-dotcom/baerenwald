@@ -1,18 +1,9 @@
 'use client'
 
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { useState, useTransition } from 'react'
 
-import {
-  MockBadge,
-  MockBtn,
-  MockCheckbox,
-  MockField,
-  MockFormSection,
-  MockIcon,
-  MockInput,
-  MockSegment,
-} from '@/teo/arbeitsplatz/kit'
+import { MockBadge, MockCheckbox, MockField, MockFormSection, MockInput, MockSegment } from '@/teo/arbeitsplatz/kit'
 import { personAendern, personEinladen, personEntfernen, type PersonFelder } from '@/teo/arbeitsplatz/aktionen/team'
 import type { ApTeamPerson } from '@/teo/arbeitsplatz/daten/team'
 import { ROLLEN_LABEL, type ApRolle } from '@/teo/arbeitsplatz/rechte'
@@ -21,22 +12,21 @@ import { ApSheet } from '@/teo/arbeitsplatz/shell/ApSheet'
 const SPALTEN = 'minmax(0, 1.6fr) minmax(0, 1.6fr) 120px minmax(0, 1.4fr)'
 
 export function TeamSeite({ personen, objekte }: { personen: ApTeamPerson[]; objekte: Array<{ id: string; name: string }> }) {
-  const [offen, setOffen] = useState<ApTeamPerson | 'neu' | null>(null)
+  const router = useRouter()
+  const params = useSearchParams()
+  const [person, setPerson] = useState<ApTeamPerson | null>(null)
+  const offen: ApTeamPerson | 'neu' | null = params.get('neu') === '1' ? 'neu' : person
+  const setOffen = (x: ApTeamPerson | 'neu' | null) => {
+    if (x === 'neu') router.replace('/arbeitsplatz/team?neu=1', { scroll: false })
+    else {
+      if (params.get('neu')) router.replace('/arbeitsplatz/team', { scroll: false })
+      setPerson(x)
+    }
+  }
   const objektName = new Map(objekte.map((o) => [o.id, o.name]))
 
   return (
     <div>
-      <div className="listbar">
-        <div className="listbar-main">
-          <div />
-          <div className="listbar-actions">
-            <MockBtn kind="primary" sm type="button" onClick={() => setOffen('neu')}>
-              <MockIcon ctx="btn" n="user-plus" size={14} />
-              <span>Einladen</span>
-            </MockBtn>
-          </div>
-        </div>
-      </div>
       <div className="listcard">
         <div className="list-row head" style={{ gridTemplateColumns: SPALTEN }} aria-hidden>
           <div>Name</div>

@@ -9,7 +9,7 @@ import '@/teo/arbeitsplatz/arbeitsplatz.css'
 import { istTeo } from '@/lib/marke'
 import { ladeApKontext } from '@/teo/arbeitsplatz/kontext'
 import { darf } from '@/teo/arbeitsplatz/rechte'
-import { ApShell, type ApNavPunkt } from '@/teo/arbeitsplatz/shell/ApShell'
+import { ApShell, type ApCta, type ApNavPunkt } from '@/teo/arbeitsplatz/shell/ApShell'
 
 export const dynamic = 'force-dynamic'
 
@@ -34,8 +34,18 @@ export default async function ArbeitsplatzLayout({ children }: { children: React
     ...(darf(person, 'team.verwalten') ? [{ href: '/arbeitsplatz/team', label: 'Team', icon: 'users' }] : []),
   ]
 
+  const neuerVorgang = { label: 'Neuer Vorgang', href: '/arbeitsplatz/vorgaenge/neu', icon: 'plus' }
+  const ctas: ApCta[] = [
+    ...(darf(person, 'vorgang.anlegen')
+      ? [{ bereich: '/arbeitsplatz', ...neuerVorgang }, { bereich: '/arbeitsplatz/vorgaenge', ...neuerVorgang }]
+      : []),
+    ...(darf(person, 'objekte.bearbeiten') ? [{ bereich: '/arbeitsplatz/objekte', label: 'Objekt', href: '/arbeitsplatz/objekte?neu=1', icon: 'plus' }] : []),
+    ...(darf(person, 'team.verwalten') ? [{ bereich: '/arbeitsplatz/team', label: 'Einladen', href: '/arbeitsplatz/team?neu=1', icon: 'user-plus' }] : []),
+  ]
+
   return (
     <ApShell
+      ctas={ctas}
       orgName={org.name}
       personName={person.name}
       personEmail={person.email}

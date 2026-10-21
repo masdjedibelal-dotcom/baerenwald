@@ -23,7 +23,7 @@ const PROTOKOLL_TEXT: Record<string, string> = {
   beschluss_ausstehend: 'Wartet auf Beschluss',
 }
 
-const KONTAKT_FELD = /^(vorname|nachname|name|stra(ß|ss)e|hausnummer|plz|ort|e-?mail|telefon|adresse|firma)/i
+const KONTAKT_FELD = /^(vorname|nachname|name|stra(ß|ss)e|hausnummer|plz|ort|e-?mail|telefon|adresse|firma|situation)/i
 
 type VerlaufPunkt = { id: string; wann: string; titel: string; text?: string | null; fotos?: string[] }
 

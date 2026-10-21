@@ -9,6 +9,9 @@ import { MockBtn, MockIcon, MockPopover } from '@/teo/arbeitsplatz/kit'
 
 export type ApNavPunkt = { href: string; label: string; icon: string; zaehler?: number }
 
+/** Hauptaktion oben rechts je Bereich (wie CRM topbar-cta) */
+export type ApCta = { bereich: string; label: string; href: string; icon: string }
+
 function aktiv(href: string, pfad: string): boolean {
   return href === '/arbeitsplatz' ? pfad === href : pfad === href || pfad.startsWith(`${href}/`)
 }
@@ -25,6 +28,7 @@ export function ApShell({
   personEmail,
   nav,
   zeigeEinstellungen,
+  ctas,
   children,
 }: {
   orgName: string
@@ -32,12 +36,14 @@ export function ApShell({
   personEmail: string
   nav: ApNavPunkt[]
   zeigeEinstellungen: boolean
+  ctas: ApCta[]
   children: ReactNode
 }) {
   const pfad = usePathname() ?? '/arbeitsplatz'
   const router = useRouter()
   const [menu, setMenu] = useState(false)
   const avatarRef = useRef<HTMLButtonElement>(null)
+  const cta = ctas.find((c) => pfad === c.bereich)
   const titel = nav.find((n) => aktiv(n.href, pfad))?.label ?? (pfad.startsWith('/arbeitsplatz/einstellungen') ? 'Einstellungen' : '')
 
 
@@ -89,6 +95,12 @@ export function ApShell({
             </div>
             <div className="ap-topbar-luecke" />
             <div className="topbar-actions">
+              {cta ? (
+                <MockBtn kind="primary" sm className="topbar-cta" type="button" onClick={() => router.push(cta.href)}>
+                  <MockIcon ctx="btn" n={cta.icon} size={14} />
+                  <span className="topbar-cta-label">{cta.label}</span>
+                </MockBtn>
+              ) : null}
               <MockBtn
                 className={cn('topbar-avatar', menu && 'is-open')}
                 ref={avatarRef}
