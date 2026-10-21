@@ -150,15 +150,6 @@ type Props = {
     }>
   >;
   auftragIdByLeadId?: Record<string, string>;
-  hvAbnahmeByLeadId?: Record<
-    string,
-    {
-      art: "ohne_vorbehalt" | "mit_anmerkung" | "zurueckgewiesen";
-      anmerkung?: string | null;
-      signiert_name: string;
-      signiert_am: string;
-    }
-  >;
   /** Server-seitig gebaute List-Items (schlank). */
   initialVorgaenge?: import("@/lib/portal/portal-detail-item").KundePortalDetailItem[];
 };
@@ -209,7 +200,6 @@ export function OrganisationPortalClient({
   auftragKontextByLeadId = {},
   dokumenteByLeadId = {},
   auftragIdByLeadId = {},
-  hvAbnahmeByLeadId = {},
   initialVorgaenge,
 }: Props) {
   const router = useRouter();
@@ -729,7 +719,6 @@ export function OrganisationPortalClient({
               feedbackBereitByLeadId={feedbackBereitByLeadId}
               hvFeedbackByLeadId={hvFeedbackByLeadId}
               auftragIdByLeadId={auftragIdByLeadId}
-              hvAbnahmeByLeadId={hvAbnahmeByLeadId}
               auftragKontextByLeadId={auftragKontextByLeadId}
               dokumenteByLeadId={dokumenteByLeadId}
             />

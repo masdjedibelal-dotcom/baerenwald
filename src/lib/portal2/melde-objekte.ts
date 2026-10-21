@@ -17,7 +17,7 @@ export function formatMeldeObjektAdr(src: {
 
 /**
  * Einheiten-Label für Anzeige.
- * Primär `einheiten_hinweis` (Objekte-Tabelle); sonst optional Count aus Teil E.
+ * Primär `einheiten_hinweis` (Objekte-Tabelle); sonst optionaler Count.
  */
 export function formatMeldeObjektWe(
   einheitenHinweis?: string | null,

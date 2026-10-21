@@ -237,7 +237,6 @@ export default async function PortalDashboardPage({
           feedbackBereitByLeadId={orgData.feedbackBereitByLeadId}
           hvFeedbackByLeadId={orgData.hvFeedbackByLeadId}
           auftragIdByLeadId={orgData.auftragIdByLeadId}
-          hvAbnahmeByLeadId={orgData.hvAbnahmeByLeadId}
           auftragKontextByLeadId={orgData.auftragKontextByLeadId}
           dokumenteByLeadId={orgData.dokumenteByLeadId}
         />
@@ -263,7 +262,6 @@ export default async function PortalDashboardPage({
     auftraege: data.auftraege as Array<Record<string, unknown> & { id: string }>,
     hvPortalMode: false,
     mieterStatusMode: true,
-    mieterFeedbackByLeadId: data.mieterFeedbackByLeadId,
   });
 
   return (
@@ -281,7 +279,6 @@ export default async function PortalDashboardPage({
         angebote={slim.angebote as typeof data.angebote}
         leads={slim.leads as typeof data.leads}
         initialVorgaenge={slim.initialVorgaenge}
-        mieterFeedbackByLeadId={data.mieterFeedbackByLeadId ?? {}}
         kundeTyp={kundeTyp === "gewerbe" ? "gewerbe" : "privat"}
       />
     </Suspense>

@@ -85,8 +85,6 @@ export type OrganisationObjekt = {
   melde_slug: string | null;
   melde_aktiv: boolean;
   einheiten_hinweis: string | null;
-  /** Count aus `objekt_einheiten` (E1 Badge / Melde). */
-  einheitenCount?: number | null;
   notizen_intern: string | null;
   kostenstelle_nr?: string | null;
   freigabe_schwelle_eur?: number | null;

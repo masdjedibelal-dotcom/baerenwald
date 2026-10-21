@@ -96,7 +96,6 @@ export async function getPortalVorgangDetail(opts: {
     >[0]["auftraege"],
     hvPortalMode: Boolean(opts.hvPortalMode),
     mieterStatusMode: !opts.hvPortalMode,
-    mieterFeedbackByLeadId: data.mieterFeedbackByLeadId,
   });
 
   const item =

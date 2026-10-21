@@ -445,10 +445,6 @@ function buildItemFromLead(
   auftrag: PortalAuftrag | null,
   vorgangStatus: ReturnType<typeof resolvePortalKundeVorgangStatus>,
   mieterStatusMode?: boolean,
-  mieterFeedbackByLeadId?: Map<
-    string,
-    { sterne: number; freitext?: string | null }
-  >,
 ): KundePortalDetailItem {
   const { anfrageVorhaben, anfrageGewerk } = anfrageTitleFromLead(lead);
   const title = resolveListCardTitle(lead, angebot, auftrag);
@@ -525,7 +521,6 @@ function buildItemFromLead(
     meldeUrsachenCheck: parseMeldeUrsachenCheck(lead.funnel_daten),
     meldePreisIndikation: meldePreisIndikationFromLead(lead, hvMieterView),
   };
-  const leadId = lead.id;
   const feedbackBereit = vorgangFeedbackBereit({
     leadVorgangPhase: lead.vorgang_phase,
     hv_meldung_status: lead.hv_meldung_status,
@@ -533,7 +528,6 @@ function buildItemFromLead(
     auftragFortschritt: auftrag?.fortschritt,
     positionen: auftrag?.positionen,
   });
-  const mieterFeedback = mieterFeedbackByLeadId?.get(leadId) ?? null;
   const cardSubtitle =
     formatMockVorgangListSubtitle(lead) ||
     formatAnfrageStrasseHausnummer(lead) ||
@@ -636,7 +630,6 @@ function buildItemFromLead(
       needsAction: vorgangStatus.needsAction,
       actionHint: vorgangStatus.resolverActionHint ?? undefined,
       feedbackBereit,
-      mieterFeedback,
       melderStatusUrl: hvMieterView ? undefined : melderStatusUrl,
       wartetAufHwLabel,
       ...detailKontext,
@@ -676,7 +669,6 @@ function buildItemFromLead(
       needsAction: vorgangStatus.needsAction,
       actionHint: vorgangStatus.resolverActionHint ?? undefined,
       feedbackBereit,
-      mieterFeedback,
       melderStatusUrl: hvMieterView ? undefined : melderStatusUrl,
       wartetAufHwLabel,
       ...detailKontext,
@@ -708,7 +700,6 @@ function buildItemFromLead(
     hidePreise,
     hvMieterView,
     feedbackBereit,
-    mieterFeedback,
     melderStatusUrl: hvMieterView ? undefined : melderStatusUrl,
     wartetAufHwLabel,
     ...detailKontext,
@@ -762,11 +753,6 @@ export function buildKundeVorgaenge(input: {
   hvPortalMode?: boolean;
   /** MeinBärenwald: HV-Mieter sehen vereinfachte Status (Offen / In Bearbeitung / Termin / Erledigt). */
   mieterStatusMode?: boolean;
-  /** Eigentümer: Dokumente ohne Rechnung. */
-  mieterFeedbackByLeadId?: Record<
-    string,
-    { sterne: number; freitext?: string | null }
-  >;
 }): KundePortalDetailItem[] {
   const angeboteByLeadId = new Map<string, PortalAngebot[]>();
   for (const a of input.angebote) {
@@ -797,9 +783,6 @@ export function buildKundeVorgaenge(input: {
   const usedAuftragIds = new Set<string>();
   const usedLeadIds = new Set<string>();
   const items: KundePortalDetailItem[] = [];
-  const feedbackMap = new Map(
-    Object.entries(input.mieterFeedbackByLeadId ?? {})
-  );
   for (const lead of input.leads) {
     const leadId = normPortalId(lead.id);
     if (!leadId) continue;
@@ -844,8 +827,7 @@ export function buildKundeVorgaenge(input: {
         angebot,
         auftrag,
         vorgangStatus,
-        input.mieterStatusMode,
-        feedbackMap
+        input.mieterStatusMode
       )
     );
   }
@@ -878,8 +860,7 @@ export function buildKundeVorgaenge(input: {
         angebot,
         null,
         vorgangStatus,
-        input.mieterStatusMode,
-        feedbackMap
+        input.mieterStatusMode
       )
     );
   }
@@ -918,8 +899,7 @@ export function buildKundeVorgaenge(input: {
         null,
         auftrag,
         vorgangStatus,
-        input.mieterStatusMode,
-        feedbackMap
+        input.mieterStatusMode
       )
     );
   }

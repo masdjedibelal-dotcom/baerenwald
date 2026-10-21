@@ -41,7 +41,7 @@ export type MeldeObjektSource = {
   /** Freitext aus `kunden_objekte.einheiten_hinweis` */
   einheiten_hinweis?: string | null;
   /**
-   * Optional: Anzahl aus `objekt_einheiten` (Teil E).
+   * Optional: Anzahl Wohneinheiten.
    * Nur wenn `einheiten_hinweis` leer → „{n} Wohneinheiten“.
    */
   einheitenCount?: number | null;

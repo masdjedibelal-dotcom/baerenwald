@@ -9,7 +9,6 @@ export type MusterContext = {
   schwelleEur: number;
   objektGH12: { id: string; slug: string; kostenstelle: string };
   objektLS7: { id: string; slug: string };
-  einheitGH12Id: string;
   wohnflaecheGH12: number;
   users: {
     adminEmail: string;

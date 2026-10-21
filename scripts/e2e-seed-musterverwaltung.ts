@@ -188,34 +188,6 @@ async function main() {
   const gh12Id = await upsertObjekt("GH12", "gh12-muster", "KS-GH12");
   const ls7Id = await upsertObjekt("LS7", "ls7-muster", null);
 
-  // Einheit GH12 mit 62 m²
-  const { data: einheit } = await admin
-    .from("objekt_einheiten")
-    .select("id")
-    .eq("kunde_objekt_id", gh12Id)
-    .eq("bezeichnung", "Whg 3.OG")
-    .maybeSingle();
-
-  let einheitId: string;
-  if (einheit?.id) {
-    einheitId = einheit.id;
-    await admin
-      .from("objekt_einheiten")
-      .update({ wohnflaeche_m2: 62, aktiv: true })
-      .eq("id", einheitId);
-  } else {
-    const { data: e } = await admin
-      .from("objekt_einheiten")
-      .insert({
-        kunde_objekt_id: gh12Id,
-        bezeichnung: "Whg 3.OG",
-        wohnflaeche_m2: 62,
-      })
-      .select("id")
-      .single();
-    einheitId = e!.id;
-  }
-
   // Partner SHK + Maler
   async function upsertPartner(email: string, name: string, uid: string) {
     const { data: ex } = await admin
@@ -319,7 +291,6 @@ async function main() {
     schwelleEur: SCHWELLE,
     objektGH12: { id: gh12Id, slug: "gh12-muster", kostenstelle: "KS-GH12" },
     objektLS7: { id: ls7Id, slug: "ls7-muster" },
-    einheitGH12Id: einheitId,
     wohnflaecheGH12: 62,
     users: { adminEmail: ADMIN_EMAIL, sachbearbeiterEmail: SB_EMAIL, password: PASSWORD },
     partners: { shkEmail: SHK_EMAIL, malerEmail: MALER_EMAIL, shkId, malerId },

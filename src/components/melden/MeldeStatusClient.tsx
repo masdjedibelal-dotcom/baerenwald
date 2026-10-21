@@ -3,7 +3,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { PortalButton } from "@/components/portal/PortalButton";
 
-import { PortalTextarea } from "@/components/shared/PortalFormControls";
 import { useCookieConsent } from "@/components/consent/CookieConsentContext";
 import { DokumenteTabelle } from "@/components/shared/DokumenteTabelle";
 import { PortalPhotoGallery } from "@/components/shared/PortalPhotoGallery";
@@ -20,7 +19,6 @@ import {
 } from "@/lib/portal2/mieter-wl";
 import { buildMeldeStatusVorgangDetailVm } from "@/lib/vorgang/build-org-lead-detail-vm";
 import type { MieterStatusStufe } from "@/lib/vorgang/vorgang-phase";
-import { cn } from "@/lib/utils";
 import "./melden.css";
 
 type Slot = {
@@ -101,9 +99,6 @@ export function MeldeStatusClient({
   const [statusLabel, setStatusLabel] = useState(initialStatusLabel);
   const [slots, setSlots] = useState<Slot[]>([]);
   const [bestaetigt, setBestaetigt] = useState<Slot | null>(null);
-  const [sterne, setSterne] = useState(0);
-  const [freitext, setFreitext] = useState("");
-  const [feedbackDone, setFeedbackDone] = useState(false);
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
 
@@ -256,29 +251,6 @@ export function MeldeStatusClient({
     }
   }
 
-  async function submitFeedback(e: React.FormEvent) {
-    e.preventDefault();
-    if (sterne < 1) return;
-    setBusy(true);
-    setMsg(null);
-    try {
-      const res = await fetch("/api/melden/feedback", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ token, sterne, freitext }),
-      });
-      const json = (await res.json()) as { error?: string };
-      if (!res.ok) {
-        setMsg(json.error ?? "Fehler");
-        return;
-      }
-      setFeedbackDone(true);
-      setMsg("Danke für Ihr Feedback!");
-    } finally {
-      setBusy(false);
-    }
-  }
-
   const vorgeschlagene = slots.filter((s) => s.status === "vorgeschlagen");
   const firstName = melderName.trim().split(/\s+/)[0] || melderName;
   const t = MIETER_WL_STATUS;
@@ -371,49 +343,6 @@ export function MeldeStatusClient({
 
         {erledigt && anhaenge.length > 0 ? (
           <DokumenteTabelle heading={"Anhänge"} dokumente={anhaenge} />
-        ) : null}
-
-        {erledigt && !feedbackDone ? (
-          <MieterWlCard>
-            <div className="p-4 space-y-3">
-              <p className="text-fs-title font-bold text-[var(--p2-ink)]">
-                {"Wie war der Service?"}
-              </p>
-              <form onSubmit={submitFeedback} className="space-y-3">
-                <div className="flex gap-1">
-                  {[1, 2, 3, 4, 5].map((n) => (
-                    <PortalButton
-                      variant="ghost"
-                      key={n}
-                      type="button"
-                      className={cn(
-                        "text-2xl",
-                        n <= sterne ? "text-warning-text" : "text-[var(--p2-star-empty)]"
-                      )}
-                      onClick={() => setSterne(n)}
-                      aria-label={`${n} Sterne`}
-                    >
-                      ★
-                    </PortalButton>
-                  ))}
-                </div>
-                <PortalTextarea
-                  className="input-field w-full min-h-[72px]"
-                  placeholder={"Optional: Anmerkung"}
-                  value={freitext}
-                  onChange={(e) => setFreitext(e.target.value)}
-                />
-                <PortalButton
-                  variant="primary"
-                  type="submit"
-                  className="mieter-wl-btn mieter-wl-btn--primary"
-                  disabled={busy || sterne < 1}
-                >
-                  {"Feedback senden"}
-                </PortalButton>
-              </form>
-            </div>
-          </MieterWlCard>
         ) : null}
 
         {msg ? (

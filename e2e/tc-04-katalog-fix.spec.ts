@@ -17,7 +17,6 @@ test.describe("TC-04 Katalog Fixprodukt unter Schwelle", () => {
       data: {
         produktSlug: ctx.fixProduktSlug,
         kundeObjektId: ctx.objektGH12.id,
-        einheitId: ctx.einheitGH12Id,
       },
     });
 

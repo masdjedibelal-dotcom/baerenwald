@@ -75,28 +75,7 @@ async function loadOrgObjekte(kundeId: string): Promise<OrganisationObjekt[]> {
     rawObjekte = [];
   }
 
-  const objektIds = rawObjekte.map((o) => o.id);
-  const einheitenCountById: Record<string, number> = {};
-  if (objektIds.length) {
-    const {data: ehRows, error: __dbErr306_3} = await supabaseAdmin
-      .from("objekt_einheiten")
-      .select("kunde_objekt_id, aktiv")
-      .in("kunde_objekt_id", objektIds);
-    if (__dbErr306_3) logDbError('lib/org/get-organisation-portal-data:objekt_einheiten', __dbErr306_3)
-    for (const row of ehRows ?? []) {
-      const oid = String(
-        (row as { kunde_objekt_id?: string }).kunde_objekt_id ?? ""
-      );
-      if (!oid) continue;
-      if ((row as { aktiv?: boolean }).aktiv === false) continue;
-      einheitenCountById[oid] = (einheitenCountById[oid] ?? 0) + 1;
-    }
-  }
-
-  return rawObjekte.map((o) => ({
-    ...o,
-    einheitenCount: einheitenCountById[o.id] ?? null,
-  }));
+  return rawObjekte;
 }
 
 async function loadEingangLeads(
@@ -583,35 +562,6 @@ export async function getOrganisationPortalData(
     if (leadId) auftragIdByLeadId[leadId] = aid;
   }
 
-  const hvAbnahmeByLeadId: Record<
-    string,
-    {
-      art: "ohne_vorbehalt" | "mit_anmerkung" | "zurueckgewiesen";
-      anmerkung?: string | null;
-      signiert_name: string;
-      signiert_am: string;
-    }
-  > = {};
-
-  const auftragIds = Object.values(auftragIdByLeadId);
-  if (auftragIds.length) {
-    const {data: abnahmeRows, error: __dbErr307_4} = await supabaseAdmin
-      .from("hv_portal_abnahmen")
-      .select("lead_id, art, anmerkung, signiert_name, signiert_am")
-      .in("auftrag_id", auftragIds);
-    if (__dbErr307_4) logDbError('lib/org/get-organisation-portal-data:hv_portal_abnahmen', __dbErr307_4)
-    for (const row of abnahmeRows ?? []) {
-      const lid = String((row as { lead_id?: string | null }).lead_id ?? "");
-      if (!lid) continue;
-      hvAbnahmeByLeadId[lid] = {
-        art: (row as { art: "ohne_vorbehalt" | "mit_anmerkung" | "zurueckgewiesen" }).art,
-        anmerkung: (row as { anmerkung?: string | null }).anmerkung ?? null,
-        signiert_name: String((row as { signiert_name: string }).signiert_name),
-        signiert_am: String((row as { signiert_am: string }).signiert_am),
-      };
-    }
-  }
-
   const portalListCtx = {
     angebote: base.angebote as Parameters<
       typeof filterPortalListableLeads
@@ -640,6 +590,5 @@ export async function getOrganisationPortalData(
     auftragKontextByLeadId,
     dokumenteByLeadId,
     auftragIdByLeadId,
-    hvAbnahmeByLeadId,
   };
 }

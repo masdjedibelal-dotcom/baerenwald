@@ -21,7 +21,6 @@ test.describe("TC-05 Katalog Bandprodukt + m²-Automatik", () => {
       data: {
         produktSlug: ctx.bandProduktSlug,
         kundeObjektId: ctx.objektGH12.id,
-        einheitId: ctx.einheitGH12Id,
       },
     });
     expect(res.ok()).toBeTruthy();

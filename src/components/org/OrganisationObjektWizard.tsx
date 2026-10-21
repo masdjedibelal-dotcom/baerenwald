@@ -41,11 +41,6 @@ type Props = {
   variant?: "page" | "modal";
   onCancel: () => void;
   onDone: (payload: ObjWizPayload & {
-    hmId?: string | null;
-    hmName?: string;
-    hmEmail?: string;
-    hmPortalZugang?: boolean;
-    hmMode?: "existing" | "new";
   }) => Promise<void>;
 };
 
@@ -149,14 +144,7 @@ export function OrganisationObjektWizard({
     setBusy(true);
     try {
       await runBusy(async () => {
-        await onDone({
-          ...result.payload,
-          hmId: draft.hmId,
-          hmName: draft.hmName ?? draft.kontakt,
-          hmEmail: draft.hmEmail ?? draft.email,
-          hmPortalZugang: draft.hmPortalZugang,
-          hmMode: draft.hmMode,
-        });
+        await onDone(result.payload);
       });
     } finally {
       setBusy(false);

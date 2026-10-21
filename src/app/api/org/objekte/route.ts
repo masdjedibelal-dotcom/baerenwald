@@ -7,7 +7,6 @@ import {
   suggestMeldeSlugFromAddress,
 } from "@/lib/org/slug";
 import { allocateMeldeSlug, ensureMeldeSlugsForKunde } from "@/lib/org/ensure-melde-slug";
-import { ensureDefaultObjektEinheitenFromHinweis } from "@/lib/org/seed-objekt-einheiten";
 import { supabaseAdmin } from "@/lib/supabase";
 
 export async function GET() {
@@ -189,13 +188,6 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
-  if (data?.id) {
-    await ensureDefaultObjektEinheitenFromHinweis(
-      data.id,
-      body.einheiten_hinweis
-    );
-  }
-
   return NextResponse.json({ ok: true, objekt: data });
 }
 
@@ -294,13 +286,6 @@ export async function PATCH(req: Request) {
     return NextResponse.json({ error: "Objekt nicht gefunden." }, { status: 404 });
   }
 
-  if (body.einheiten_hinweis !== undefined) {
-    await ensureDefaultObjektEinheitenFromHinweis(
-      id,
-      body.einheiten_hinweis
-    );
-  }
-
   return NextResponse.json({ ok: true, objekt: data });
 }
 
@@ -348,13 +333,6 @@ export async function DELETE(req: Request) {
     );
   }
 
-  const {
-    collectPortalKundeIdsForObjekt,
-    cleanupOrphanHvPortalKunden,
-  } = await import("@/lib/org/cleanup-orphan-portal-kunden");
-
-  const portalKundeIds = await collectPortalKundeIdsForObjekt(supabaseAdmin, id);
-
   const { error } = await supabaseAdmin
     .from("kunden_objekte")
     .delete()
@@ -365,8 +343,6 @@ export async function DELETE(req: Request) {
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
-
-  await cleanupOrphanHvPortalKunden(supabaseAdmin, portalKundeIds);
 
   return NextResponse.json({ ok: true, id });
 }

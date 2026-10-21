@@ -76,15 +76,6 @@ type Props = {
     }>
   >;
   auftragIdByLeadId?: Record<string, string>;
-  hvAbnahmeByLeadId?: Record<
-    string,
-    {
-      art: "ohne_vorbehalt" | "mit_anmerkung" | "zurueckgewiesen";
-      anmerkung?: string | null;
-      signiert_name: string;
-      signiert_am: string;
-    }
-  >;
 };
 
 function mergeOrgLeads(
@@ -170,7 +161,6 @@ export function OrganisationVorgaengeSection({
   auftragKontextByLeadId: _auftragKontextByLeadId = {},
   dokumenteByLeadId: _dokumenteByLeadId = {},
   auftragIdByLeadId = {},
-  hvAbnahmeByLeadId = {},
 }: Props) {
   const searchParams = useSearchParams();
   const [detailOpen, setDetailOpen] = useState(() =>
@@ -253,7 +243,6 @@ export function OrganisationVorgaengeSection({
         hwErledigtByLeadId={hwErledigtByLeadId}
         hvFeedbackByLeadId={hvFeedbackByLeadId}
         auftragIdByLeadId={auftragIdByLeadId}
-        hvAbnahmeByLeadId={hvAbnahmeByLeadId}
       />
     </div>
   );

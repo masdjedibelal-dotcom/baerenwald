@@ -201,11 +201,6 @@ export function OrganisationObjektePanel({
 
   const persistPayload = async (
     payload: ObjWizPayload & {
-      hmId?: string | null;
-      hmName?: string;
-      hmEmail?: string;
-      hmPortalZugang?: boolean;
-      hmMode?: "existing" | "new";
     },
     editId?: string
   ): Promise<string | null> => {

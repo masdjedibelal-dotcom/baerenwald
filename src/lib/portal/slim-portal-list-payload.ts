@@ -159,10 +159,6 @@ export function buildSlimPortalListPayload(opts: {
   auftraege: AuftragLike[];
   hvPortalMode?: boolean;
   mieterStatusMode?: boolean;
-  mieterFeedbackByLeadId?: Record<
-    string,
-    { sterne: number; freitext?: string | null }
-  >;
 }) {
   /**
    * Titel zuerst aus vollem Funnel (z. B. „Wasser am Heizkörper“),
@@ -178,7 +174,6 @@ export function buildSlimPortalListPayload(opts: {
     >[0]["auftraege"],
     hvPortalMode: opts.hvPortalMode,
     mieterStatusMode: opts.mieterStatusMode,
-    mieterFeedbackByLeadId: opts.mieterFeedbackByLeadId,
   }).map(slimVorgangListItem);
 
   const leads = opts.leads.map(slimLead);

@@ -1150,34 +1150,11 @@ export async function getPortalDataForKunde(
     })),
   });
 
-  const feedbackLeadIds = mappedLeads
-    .map((l) => String((l as { id: string }).id))
-    .filter(Boolean);
-  const mieterFeedbackByLeadId: Record<
-    string,
-    { sterne: number; freitext?: string | null }
-  > = {};
-  if (feedbackLeadIds.length) {
-    const {data: feedbackRows, error: __dbErr438_3} = await supabaseAdmin
-      .from("mieter_feedback")
-      .select("lead_id, sterne, freitext")
-      .in("lead_id", feedbackLeadIds);
-    if (__dbErr438_3) logDbError('lib/portal/get-portal-data:mieter_feedback', __dbErr438_3)
-    for (const row of feedbackRows ?? []) {
-      const lid = String((row as { lead_id: string }).lead_id);
-      mieterFeedbackByLeadId[lid] = {
-        sterne: Number((row as { sterne: number }).sterne),
-        freitext: (row as { freitext?: string | null }).freitext ?? null,
-      };
-    }
-  }
-
   return {
     kunde,
     leads: mappedLeads,
     angebote: mappedAngebote,
     auftraege: mappedAuftraege,
-    mieterFeedbackByLeadId,
     /** @deprecated Nur für Abwärtskompatibilität — Pipeline-Split clientseitig. */
     splitPipeline: split,
   };

@@ -9,7 +9,6 @@ import { OrgAnlassBadge } from "@/components/org/OrgAnlassBadge";
 import { OrganisationHvVorgangDetail } from "@/components/org/OrganisationHvVorgangDetail";
 import { OrgVorgangFeedbackSection } from "@/components/org/OrgVorgangFeedbackSection";
 import { OrgMelderStatusLinkPanel } from "@/components/org/OrgMelderStatusLinkPanel";
-import { PortalVorgangFeedbackSection } from "@/components/portal/PortalVorgangFeedbackSection";
 import { PartnerPortalDetailSections } from "@/components/partner/PartnerPortalDetailSections";
 import { BautagebuchCardFeed } from "@/components/shared/BautagebuchCardFeed";
 import { DokumenteTabelle } from "@/components/shared/DokumenteTabelle";
@@ -107,7 +106,6 @@ export function PortalVorgangDetail({
   hvFeedback,
   onHvFeedbackSubmitted,
   auftragId,
-  hvAbnahme,
   showHvAbnahme,
   orgFreigabeStatus,
   freigabeBypassGrund,
@@ -129,12 +127,6 @@ export function PortalVorgangDetail({
   };
   onHvFeedbackSubmitted?: () => void;
   auftragId?: string;
-  hvAbnahme?: {
-    art: "ohne_vorbehalt" | "mit_anmerkung" | "zurueckgewiesen";
-    anmerkung?: string | null;
-    signiert_name: string;
-    signiert_am: string;
-  } | null;
   showHvAbnahme?: boolean;
   /** Hausmeister-Portal: Befund im Tab bearbeitbar (nicht unter allen Menüpunkten). */
   /** D7: Privat/Gewerbe — kein Freigabe-Schritt, Hinweis „Automatisch freigegeben“ */
@@ -266,7 +258,6 @@ export function PortalVorgangDetail({
         flowStatus={flowStatus}
         leadId={item.leadId ?? item.id}
         auftragId={auftragId ?? item.terminAuftragId}
-        hvAbnahme={hvAbnahme}
         hwErledigt={hwErledigt}
         schwelleEur={schwelleEur}
         offers={buildHvOffersFromItem(item, item.handwerkerName)}
@@ -570,22 +561,14 @@ export function PortalVorgangDetail({
             })()
           ) : null}
 
-          {activeSection === "feedback" && item.leadId ? (
-            showAnlassBadge ? (
-              <OrgVorgangFeedbackSection
-                leadId={item.leadId}
-                feedbackBereit={item.feedbackBereit}
-                handwerkerErledigt={hwErledigt}
-                hvFeedback={hvFeedback}
-                onSubmitted={onHvFeedbackSubmitted}
-              />
-            ) : (
-              <PortalVorgangFeedbackSection
-                leadId={item.leadId}
-                feedbackBereit={item.feedbackBereit}
-                mieterFeedback={item.mieterFeedback}
-              />
-            )
+          {activeSection === "feedback" && item.leadId && showAnlassBadge ? (
+            <OrgVorgangFeedbackSection
+              leadId={item.leadId}
+              feedbackBereit={item.feedbackBereit}
+              handwerkerErledigt={hwErledigt}
+              hvFeedback={hvFeedback}
+              onSubmitted={onHvFeedbackSubmitted}
+            />
           ) : null}
         </PortalDetailTabs>
       </PortalDetailLayout>

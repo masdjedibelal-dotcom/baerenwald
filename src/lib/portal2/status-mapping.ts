@@ -30,7 +30,7 @@ export type PortalFlowExtraSignals = {
   hwAngefragt?: boolean;
   /** HW-Kalkulation eingereicht (quelle handwerker) oder Kunden-Angebot gesendet */
   angebotVorgelegt?: boolean;
-  /** Digitale Signatur / hv_portal_abnahmen / Partner-Signatur vorhanden */
+  /** Digitale Signatur / Partner-Signatur vorhanden */
   signaturVorhanden?: boolean;
   /** Auftrag in Abnahme, Signatur noch ausstehend */
   abnahmeOffen?: boolean;
@@ -111,13 +111,12 @@ export const PORTAL_FLOW_MAPPING: Record<
     label: PORTAL_STATUS.abschluss.label,
     realFields: [
       "auftraege.status = abnahme",
-      "ODER hv_portal_abnahmen (signiert_am, signatur_png)",
       "ODER Partner-/Kunden-Signatur (G4)",
       "extra.signaturVorhanden | extra.abnahmeOffen",
       "resolveVorgang.phase = auftrag, unterstatus = abnahme (oder abgeschlossen vor Rechnung)",
     ],
     notes:
-      "Signatur-Zustände: Tabelle hv_portal_abnahmen; Partner-Signatur separat. Beidseitige Gegenzeichnung = G4.",
+      "Signatur-Zustände: Partner-Signatur separat. Beidseitige Gegenzeichnung = G4.",
   },
   rechnung: {
     label: PORTAL_STATUS.rechnung.label,

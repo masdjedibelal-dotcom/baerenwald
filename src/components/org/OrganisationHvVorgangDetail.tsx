@@ -85,12 +85,6 @@ export type OrganisationHvVorgangDetailProps = {
   leadId: string;
   /** Für Abnahme */
   auftragId?: string;
-  hvAbnahme?: {
-    art: "ohne_vorbehalt" | "mit_anmerkung" | "zurueckgewiesen";
-    anmerkung?: string | null;
-    signiert_name: string;
-    signiert_am: string;
-  } | null;
   hwErledigt?: boolean;
   schwelleEur?: number;
   /** Mehrfachfähig; UI zeigt 1 empfohlen (ENTSCHEIDUNG 10). */
@@ -315,7 +309,6 @@ export function OrganisationHvVorgangDetail({
   handwerkerName,
   leadId,
   auftragId,
-  hvAbnahme: _hvAbnahme,
   hwErledigt: _hwErledigt,
   schwelleEur = HV_DEFAULT_SCHWELLE_EUR,
   offers = [],

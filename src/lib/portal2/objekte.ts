@@ -40,13 +40,6 @@ export type ObjWizDraft = {
   kontakt?: string;
   email?: string;
   tel?: string;
-  /** Bestehender org_hausmeister.id */
-  hmId?: string | null;
-  hmName?: string;
-  hmEmail?: string;
-  hmPortalZugang?: boolean;
-  /** existing = Select, new = Name eingeben */
-  hmMode?: "existing" | "new";
   schwelle?: number | string | null;
   /** UI only — Persistenz objektbezogen = OFFENE-PUNKTE (kein DB-Feld). */
   autopass?: boolean;
@@ -118,7 +111,7 @@ export function formatEinheitenHinweis(we: number): string {
 
 /**
  * E1 Karten-Badge / Melde: „6 Wohneinheiten“.
- * Primär `einheiten_hinweis`, sonst Count aus `objekt_einheiten`.
+ * Primär `einheiten_hinweis`, sonst optionaler Count.
  */
 export function formatObjCardEinheiten(
   einheitenHinweis?: string | null,

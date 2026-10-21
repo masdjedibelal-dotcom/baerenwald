@@ -114,7 +114,6 @@ export type KundePortalDetailItem = {
   terminSlots?: PortalTerminSlot[];
   /** Feedback nach HW-Abschluss oder CRM-Abschluss. */
   feedbackBereit?: boolean;
-  mieterFeedback?: { sterne: number; freitext?: string | null } | null;
   /** HV: Link zum Mieter-Status (kein Mieter-Mail). */
   melderStatusUrl?: string;
   /** Einheitliche Detail-Blöcke (Objekt/Melder/Freigabe). */

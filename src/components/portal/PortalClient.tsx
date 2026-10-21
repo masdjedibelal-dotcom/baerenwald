@@ -261,11 +261,9 @@ export function PortalClient({
   forceDetailId = null,
   hvPortalMode = false,
   kundeTyp: kundeTypProp,
-  mieterFeedbackByLeadId = {},
   hwErledigtByLeadId = {},
   hvFeedbackByLeadId = {},
   auftragIdByLeadId: auftragIdByLeadIdProp = {},
-  hvAbnahmeByLeadId = {},
   bautagebuchByLeadId = {},
   listLoadFailed = false,
 }: {
@@ -280,10 +278,6 @@ export function PortalClient({
    * (page.tsx zeigt bei Totalausfall oft AuthShell — Prop für Teilfehler/Refresh.)
    */
   listLoadFailed?: boolean;
-  mieterFeedbackByLeadId?: Record<
-    string,
-    { sterne: number; freitext?: string | null }
-  >;
   hwErledigtByLeadId?: Record<string, boolean>;
   hvFeedbackByLeadId?: Record<
     string,
@@ -293,15 +287,6 @@ export function PortalClient({
     }
   >;
   auftragIdByLeadId?: Record<string, string>;
-  hvAbnahmeByLeadId?: Record<
-    string,
-    {
-      art: "ohne_vorbehalt" | "mit_anmerkung" | "zurueckgewiesen";
-      anmerkung?: string | null;
-      signiert_name: string;
-      signiert_am: string;
-    }
-  >;
   /** HV: Partner-/HW-Updates je Lead (Listen-Payload strippt bautagebuch). */
   bautagebuchByLeadId?: Record<string, PortalBautagebuchEntry[]>;
   layout?: "default" | "embedded";
@@ -495,7 +480,6 @@ export function PortalClient({
           auftraege,
           hvPortalMode: hvPortalMode || isPrivatLike,
           mieterStatusMode: !hvPortalMode,
-          mieterFeedbackByLeadId,
         });
     if (!Object.keys(listTitleByKey).length) return base;
     return base.map((item) => {
@@ -512,7 +496,6 @@ export function PortalClient({
     auftraege,
     hvPortalMode,
     isPrivatLike,
-    mieterFeedbackByLeadId,
     listTitleByKey,
   ]);
 
@@ -1345,7 +1328,6 @@ export function PortalClient({
         hwErledigt={hwErledigtByLeadId[selectedLeadId]}
         hvFeedback={hvFeedbackByLeadId[selectedLeadId]}
         auftragId={auftragIdByLeadId[selectedLeadId]}
-        hvAbnahme={hvAbnahmeByLeadId[selectedLeadId] ?? null}
         showHvAbnahme={useHvMockDetail}
         privatkunde={isPrivatLike}
         flowStatusOverride={
