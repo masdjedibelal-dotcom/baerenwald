@@ -288,11 +288,6 @@ export function PortalVorgangDetail({
         melderEinheit={item.melderEinheit}
         melderTelefon={item.melderTelefon}
         melderEmail={item.melderEmail}
-        kostentraeger={item.kostentraeger}
-        kostentraegerVorgeschlagen={item.kostentraegerVorgeschlagen}
-        versicherungsNr={item.versicherungsNr}
-        schadenNr={item.schadenNr}
-        schadenNrGeaendertAm={item.schadenNrGeaendertAm}
         meldeFotos={item.meldeFotos}
         meldeStrasse={item.meldeStrasse}
         meldePlz={item.meldePlz}

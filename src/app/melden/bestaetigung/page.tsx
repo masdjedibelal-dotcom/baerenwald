@@ -1,7 +1,6 @@
 import { MeldenBestaetigungClient } from "@/components/melden/MeldenBestaetigungClient";
 import { meldeStatusPath, meldeStatusRelativePath } from "@/lib/melde/melde-tracking";
 import { resolveMeldeKontext } from "@/lib/org/resolve-melde-kontext";
-import { resolveOrgSubLabel } from "@/lib/portal2/brand-presets";
 
 export const metadata = {
   title: "Meldung eingegangen",
@@ -45,16 +44,11 @@ export default async function MeldenBestaetigungPage({ searchParams }: Props) {
     if (resolved.ok) {
       const org = resolved.kontext.org;
       brand = {
+        ...brand,
         name:
           org.org_anzeigename?.trim() ||
           org.name?.trim() ||
           orgNameFallback,
-        sub: resolveOrgSubLabel(org.org_sub),
-        logoUrl: org.org_logo_url ?? null,
-        logoKuerzel: org.org_logo_kuerzel ?? null,
-        primary: org.org_primary_color ?? null,
-        primaryDk: org.org_primary_color_dk ?? null,
-        soft: org.org_primary_color_soft ?? null,
         tel: org.mieter_kontakt_telefon ?? null,
         mail: org.mieter_kontakt_email ?? null,
       };

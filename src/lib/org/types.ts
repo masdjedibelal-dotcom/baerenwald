@@ -43,17 +43,11 @@ export type OrganisationKunde = {
   portal_modus: PortalModus;
   org_kennung: string | null;
   org_anzeigename: string | null;
-  org_logo_url: string | null;
   freigabe_modus: FreigabeModus;
   freigabe_schwelle_eur: number | null;
   notfall_direkt: boolean;
   /** Whitelist Sofortmaßnahme-Fall-IDs; leer = nichts geht direkt. */
   akut_fall_ids?: string[] | null;
-  org_primary_color?: string | null;
-  org_primary_color_dk?: string | null;
-  org_primary_color_soft?: string | null;
-  org_logo_kuerzel?: string | null;
-  org_sub?: string | null;
   org_telefon?: string | null;
   org_strasse?: string | null;
   org_hausnummer?: string | null;
@@ -98,13 +92,6 @@ export type OrganisationObjekt = {
   freigabe_schwelle_eur?: number | null;
   /** Override Org; null = erbt kunden.notfall_direkt */
   notfall_direkt?: boolean | null;
-  /** Gebäudeversicherer (Stammdaten). */
-  versicherer?: string | null;
-  /** Policen-Nr. am Objekt. */
-  versicherungs_nr?: string | null;
-  selbstbehalt_eur?: number | null;
-  /** Bei Meldungen: Kostenträger Versicherung + Schadenakte automatisch. */
-  automatische_schadenakte?: boolean | null;
   /** Dekoratives Gebäudefoto (öffentlich). */
   cover_url?: string | null;
   created_at?: string | null;
@@ -139,14 +126,6 @@ export type OrganisationLead = {
   kunde_objekt_id?: string | null;
   auftraggeber_kunde_id?: string | null;
   kunde_id?: string | null;
-  kostentraeger?: string | null;
-  kostentraeger_vorgeschlagen?: boolean | null;
-  versicherungs_nr?: string | null;
-  versicherungsakte_pdf_url?: string | null;
-  schaden_nr?: string | null;
-  schaden_nr_geaendert_am?: string | null;
-  versicherungs_nr_geaendert_am?: string | null;
-  versicherungsakte_erstellt_am?: string | null;
   vorgang_phase?: string | null;
   plz?: string | null;
   strasse?: string | null;
@@ -163,6 +142,5 @@ export type OrganisationLead = {
     ort?: string | null;
     plzOrt?: string;
     cover_url?: string | null;
-    versicherungs_nr?: string | null;
   } | null;
 };

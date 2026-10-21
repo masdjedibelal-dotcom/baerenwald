@@ -59,7 +59,7 @@ async function loadOrgBrand(
   const full = await supabaseAdmin
     .from("kunden")
     .select(
-      "name, org_anzeigename, org_sub, org_kennung, org_logo_url, org_logo_kuerzel, mieter_kontakt_telefon, mieter_kontakt_email, mieter_kontakt_hinweis, org_primary_color, org_primary_color_dk, org_primary_color_soft, datenschutz_url, impressum_url"
+      "name, org_anzeigename, org_kennung, mieter_kontakt_telefon, mieter_kontakt_email, mieter_kontakt_hinweis, datenschutz_url, impressum_url"
     )
     .eq("id", id)
     .maybeSingle();
@@ -67,7 +67,7 @@ async function loadOrgBrand(
     const legacy = await supabaseAdmin
       .from("kunden")
       .select(
-        "name, org_anzeigename, org_kennung, org_logo_url, mieter_kontakt_telefon, mieter_kontakt_email, mieter_kontakt_hinweis, org_primary_color, datenschutz_url, impressum_url"
+        "name, org_anzeigename, org_kennung, mieter_kontakt_telefon, mieter_kontakt_email, mieter_kontakt_hinweis, datenschutz_url, impressum_url"
       )
       .eq("id", id)
       .maybeSingle();
@@ -85,7 +85,6 @@ async function loadOrgBrand(
   return {
     name: mapped.name,
     sub: mapped.sub,
-    logoUrl: (org.org_logo_url as string | null) ?? null,
     logoKuerzel: mapped.logo,
     primary: mapped.primary,
     primaryDk: mapped.primaryDk,

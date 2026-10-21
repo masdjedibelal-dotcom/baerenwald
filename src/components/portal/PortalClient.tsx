@@ -102,7 +102,6 @@ import {
   portalMieterStatusLabel,
   type PortalMockStatusId,
 } from "@/lib/portal2/status";
-import type { MieterHvBrand } from "@/lib/portal/load-mieter-hv-brand";
 import { cn } from "@/lib/utils";
 import { PortalButton } from "@/components/portal/PortalButton";
 import { MARKE } from "@/lib/marke";
@@ -123,13 +122,6 @@ const PortalEinstellungenPrivat = dynamic(
   () =>
     import("@/components/portal/PortalEinstellungenPrivat").then(
       (m) => m.PortalEinstellungenPrivat
-    ),
-  { ssr: false, loading: () => null }
-);
-const PortalEinstellungenMieter = dynamic(
-  () =>
-    import("@/components/portal/PortalEinstellungenMieter").then(
-      (m) => m.PortalEinstellungenMieter
     ),
   { ssr: false, loading: () => null }
 );
@@ -269,7 +261,6 @@ export function PortalClient({
   forceDetailId = null,
   hvPortalMode = false,
   kundeTyp: kundeTypProp,
-  hausverwaltungBrand = null,
   mieterFeedbackByLeadId = {},
   hwErledigtByLeadId = {},
   hvFeedbackByLeadId = {},
@@ -334,8 +325,6 @@ export function PortalClient({
   hvPortalMode?: boolean;
   /** D7 / ENTSCHEIDUNG 2 — Kennung aus Stamm; Default aus portal_modus/typ. */
   kundeTyp?: PortalKundeTyp;
-  /** Mieter-Portal: White-Label der Hausverwaltung (Desktop-Topbar). */
-  hausverwaltungBrand?: MieterHvBrand | null;
   /** Mieter einer HV: Meldung über die HV statt Website-Anfrage. */
 }) {
   const router = useRouter();
@@ -1449,15 +1438,8 @@ export function PortalClient({
   }
 
   const navRole = portalNavRoleForKundeTyp(kundeTyp);
-  const hvBrand = !hvPortalMode ? hausverwaltungBrand : null;
-  /** White-Label (Mieter an HV): nie MeinBärenwald — nur direkte Kunden / HV / HW. */
-  const whiteLabelPortal = Boolean(hvBrand);
-  const brandTitle = whiteLabelPortal
-    ? hvBrand!.name.trim() || "Verwaltung"
-    : `${MARKE.portalName}`;
-  const brandSubtitle = whiteLabelPortal
-    ? hvBrand!.sub?.trim() || "Verwaltung"
-    : kunde.name?.trim() || "Kundenportal";
+  const brandTitle = `${MARKE.portalName}`;
+  const brandSubtitle = kunde.name?.trim() || "Kundenportal";
 
   return (
     <>
@@ -1465,16 +1447,8 @@ export function PortalClient({
         variant="kunde"
         brandTitle={brandTitle}
         brandSubtitle={brandSubtitle}
-        brandLogoUrl={hvBrand?.logoUrl}
-        brandKuerzel={hvBrand?.logoKuerzel ?? (whiteLabelPortal ? null : "B")}
-        brandPrimary={hvBrand?.primary}
-        brandPrimaryDk={hvBrand?.primaryDk}
-        brandSoft={hvBrand?.soft}
-        sidebarOwner={
-          whiteLabelPortal
-            ? brandTitle
-            : kunde.name?.trim() || `${MARKE.portalName}`
-        }
+        brandKuerzel="B"
+        sidebarOwner={kunde.name?.trim() || `${MARKE.portalName}`}
         hideMobileChrome={section === "gpt"}
         contentFullBleed={
           section === "uebersicht" || Boolean(selectedId)
@@ -1550,22 +1524,12 @@ export function PortalClient({
           ) : null}
 
           {section === "profil" ? (
-            hvBrand ? (
-              <PortalEinstellungenMieter
-                name={kunde.name}
-                email={kunde.email}
-                telefon={kunde.telefon}
-                orgName={hvBrand.name}
-                orgMail={hvBrand.mail}
-              />
-            ) : (
-              <PortalEinstellungenPrivat
-                name={kunde.name}
-                email={kunde.email}
-                telefon={kunde.telefon}
-                kundeTyp={kundeTyp === "gewerbe" ? "gewerbe" : "privat"}
-              />
-            )
+            <PortalEinstellungenPrivat
+              name={kunde.name}
+              email={kunde.email}
+              telefon={kunde.telefon}
+              kundeTyp={kundeTyp === "gewerbe" ? "gewerbe" : "privat"}
+            />
           ) : null}
 
           {section === "uebersicht" && isPrivatLike ? (
@@ -1573,15 +1537,12 @@ export function PortalClient({
               hello={portalKundeDashboardHello(kundeTyp, kunde.name)}
               profileName={kunde.name?.trim() || `${MARKE.portalName}`}
               kundeTyp={kundeTyp === "gewerbe" ? "gewerbe" : "privat"}
-              focusRole={whiteLabelPortal ? "mieter" : "privat"}
+              focusRole="privat"
               actionSlides={kundeActionSlides}
               onActionRefresh={() => refreshFlash()}
-              roleLabel={whiteLabelPortal ? "Mieter" : undefined}
               kpis={privatKpis}
               recent={recentItems}
-              heroImageUrl={portalHeaderHeroSrc(
-                whiteLabelPortal ? "mieter" : "privat"
-              )}
+              heroImageUrl={portalHeaderHeroSrc("privat")}
               onOpenAll={() => {
                 setPrivatChip("alle");
                 setVorgangFilter("alle");
@@ -1634,10 +1595,7 @@ export function PortalClient({
           {section === "vorgaenge" ? vorgaengeScreen : null}
 
           {section !== "gpt" ? (
-            <PortalLegalFooter
-              variant="kunde"
-              showServiceBy={whiteLabelPortal}
-            />
+            <PortalLegalFooter variant="kunde" />
           ) : null}
       </PortalShell>
 

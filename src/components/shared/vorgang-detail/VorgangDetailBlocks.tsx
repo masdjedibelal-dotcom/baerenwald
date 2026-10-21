@@ -304,19 +304,6 @@ export function VorgangDetailBlocks({
       {showAuftraggeber ? (
         <BlockShell title="Auftraggeber & Freigabe">
           <div className="space-y-0">
-            {A.kostentraeger ? (
-              <MetaRow
-                label="Kostenträger"
-                value={
-                  A.kostentraegerVorgeschlagen
-                    ? `${A.kostentraeger} (Vorschlag)`
-                    : A.kostentraeger
-                }
-              />
-            ) : null}
-            {A.versicherungsNr ? (
-              <MetaRow label="Versicherungs-Nr." value={A.versicherungsNr} />
-            ) : null}
             {A.freigabeStatus ? (
               <MetaRow label="Freigabe" value={A.freigabeStatus} />
             ) : null}

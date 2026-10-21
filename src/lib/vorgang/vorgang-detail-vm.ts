@@ -83,9 +83,6 @@ export type VorgangDetailKopf = {
 };
 
 export type VorgangDetailAuftraggeber = {
-  kostentraeger?: string | null;
-  kostentraegerVorgeschlagen?: boolean;
-  versicherungsNr?: string | null;
   freigabeStatus?: string | null;
   hvMeldungStatus?: string | null;
   summeBrutto?: number | null;
@@ -151,15 +148,3 @@ export function sightForRole(role: VorgangDetailRole): VorgangDetailSight {
   return VORGANG_DETAIL_SIGHT[role];
 }
 
-export function kostentraegerLabel(raw: string | null | undefined): string | null {
-  if (!raw?.trim()) return null;
-  const map: Record<string, string> = {
-    gemeinschaft: "Gemeinschaft",
-    sondereigentum: "Sondereigentum",
-    mieter: "Mieter",
-    versicherung: "Versicherung",
-    unklar: "Noch unklar",
-  };
-  const k = raw.trim().toLowerCase();
-  return map[k] ?? raw.trim();
-}

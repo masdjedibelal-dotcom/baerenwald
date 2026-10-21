@@ -48,12 +48,6 @@ export default async function MeldenObjektPage({ params }: Props) {
   return (
     <MeldeFormular
       orgName={orgName}
-      orgLogoUrl={kontext.org.org_logo_url}
-      orgLogoKuerzel={kontext.org.org_logo_kuerzel}
-      orgSub={kontext.org.org_sub}
-      orgPrimaryColor={kontext.org.org_primary_color}
-      orgPrimaryColorDk={kontext.org.org_primary_color_dk}
-      orgPrimaryColorSoft={kontext.org.org_primary_color_soft}
       mieterKontaktTelefon={kontext.org.mieter_kontakt_telefon}
       mieterKontaktEmail={kontext.org.mieter_kontakt_email}
       mieterKontaktHinweis={kontext.org.mieter_kontakt_hinweis}

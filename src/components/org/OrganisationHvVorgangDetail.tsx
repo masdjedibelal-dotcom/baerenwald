@@ -132,11 +132,6 @@ export type OrganisationHvVorgangDetailProps = {
   melderEinheit?: string | null;
   melderTelefon?: string | null;
   melderEmail?: string | null;
-  kostentraeger?: string | null;
-  kostentraegerVorgeschlagen?: boolean;
-  versicherungsNr?: string | null;
-  schadenNr?: string | null;
-  schadenNrGeaendertAm?: string | null;
   meldeFotos?: string[];
   meldeStrasse?: string | null;
   meldePlz?: string | null;
@@ -347,11 +342,6 @@ export function OrganisationHvVorgangDetail({
   melderEinheit,
   melderTelefon,
   melderEmail,
-  kostentraeger,
-  kostentraegerVorgeschlagen,
-  versicherungsNr,
-  schadenNr,
-  schadenNrGeaendertAm,
   meldeFotos,
   meldeStrasse,
   meldePlz,
@@ -700,9 +690,6 @@ export function OrganisationHvVorgangDetail({
           strasse: meldeStrasse,
           plz: meldePlz,
           ort: meldeOrt,
-          kostentraeger: kostentraeger,
-          kostentraeger_vorgeschlagen: kostentraegerVorgeschlagen,
-          versicherungs_nr: versicherungsNr,
           org_freigabe_status: orgFreigabeStatus,
           hv_meldung_status: hvMeldungStatus,
         },
@@ -737,9 +724,6 @@ export function OrganisationHvVorgangDetail({
       terminBis,
       melderTelefon,
       melderEmail,
-      kostentraeger,
-      kostentraegerVorgeschlagen,
-      versicherungsNr,
       orgFreigabeStatus,
       hvMeldungStatus,
       mieterStatusMode,

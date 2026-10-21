@@ -20,7 +20,6 @@ import {
   type PortalObjekt,
 } from "@/lib/portal/portal-objekt";
 import { isHvPortalLead } from "@/lib/portal/hv-portal-lead";
-import { loadMieterHvBrand } from "@/lib/portal/load-mieter-hv-brand";
 import { resolvePartnerFileUrl,resolvePartnerFileUrls } from "@/lib/partner/partner-storage";
 import {
   PORTAL_LIST_AUFTRAG_LIMIT,
@@ -228,7 +227,7 @@ export async function getPortalDataForKunde(
     });
 
   const leadSelectList =
-    "id, situation, bereiche, status, vorgang_phase, created_at, plz, strasse, hausnummer, zeitraum, kontakt_name, preis_min, preis_max, budget_ca, kontakt_nachricht, funnel_daten, kunde_objekt_id, anlass, kanal, kunde_id, auftraggeber_kunde_id, hv_meldung_status, org_freigabe_status, freigabe_bypass_grund, melde_tracking_token, melder_name, melder_einheit, melder_telefon, melder_email, kostentraeger, kostentraeger_vorgeschlagen, versicherungs_nr, versicherungsakte_pdf_url";
+    "id, situation, bereiche, status, vorgang_phase, created_at, plz, strasse, hausnummer, zeitraum, kontakt_name, preis_min, preis_max, budget_ca, kontakt_nachricht, funnel_daten, kunde_objekt_id, anlass, kanal, kunde_id, auftraggeber_kunde_id, hv_meldung_status, org_freigabe_status, freigabe_bypass_grund, melde_tracking_token, melder_name, melder_einheit, melder_telefon, melder_email";
 
   let leadsQuery = supabaseAdmin
     .from("leads")
@@ -257,37 +256,7 @@ export async function getPortalDataForKunde(
     leads = retry.data;
     leadsErr = retry.error;
   }
-  if (leadsErr && /versicherungsakte_pdf_url/i.test(leadsErr.message)) {
-    const leadSelectWithoutVers = leadSelectList.replace(
-      ", versicherungsakte_pdf_url",
-      ""
-    );
-    let fb = supabaseAdmin
-      .from("leads")
-      .select(leadSelectWithoutVers)
-      .is("geloescht_am", null)
-      .order("created_at", { ascending: false });
-    if (onlyLeadIds.length) fb = fb.in("id", onlyLeadIds);
-    else {
-      fb = fb.eq("kunde_id", kunde.id);
-      if (listMode) fb = fb.limit(PORTAL_LIST_LEAD_LIMIT);
-    }
-    const retry = await fb;
-    leads = retry.data as typeof leads;
-    leadsErr = retry.error;
-  }
   if (leadsErr) console.warn("[portal] leads:", leadsErr.message);
-
-  const hausverwaltungBrandPromise =
-    (kunde.portal_modus ?? "") === "organisation"
-      ? Promise.resolve(null)
-      : loadMieterHvBrand({
-          portalKundeId: kunde.id,
-          portalKundeEmail: kunde.email,
-          leads: (leads ?? []) as Array<{
-            auftraggeber_kunde_id?: string | null;
-          }>,
-        });
 
   const leadIds = (leads ?? []).map((l) => l.id);
 
@@ -335,7 +304,7 @@ export async function getPortalDataForKunde(
 
   /** Nur Spalten, die in Supabase existieren (kein budget/phasen — sonst leere Auftragsliste). */
   const auftragSelect =
-    "id, titel, status, fortschritt, start_datum, end_datum, abnahme_datum, abnahme_protokoll_url, abschlussdokumentation_url, abschlussdokumentation_gesendet_at, versicherungsakte_pdf_url, created_at, lead_id, kunde_id, angebot_id, betreuer_id, updated_at";
+    "id, titel, status, fortschritt, start_datum, end_datum, abnahme_datum, abnahme_protokoll_url, abschlussdokumentation_url, abschlussdokumentation_gesendet_at, created_at, lead_id, kunde_id, angebot_id, betreuer_id, updated_at";
 
   const mergeAuftraege = (
     rows: Array<Record<string, unknown>> | null | undefined
@@ -1020,10 +989,6 @@ export async function getPortalDataForKunde(
               typeof a.abschlussdokumentation_gesendet_at === "string"
                 ? a.abschlussdokumentation_gesendet_at
                 : null,
-            versicherungsakte_pdf_url:
-              typeof a.versicherungsakte_pdf_url === "string"
-                ? a.versicherungsakte_pdf_url
-                : null,
             updated_at:
               typeof a.updated_at === "string" ? a.updated_at : null,
             created_at:
@@ -1147,7 +1112,6 @@ export async function getPortalDataForKunde(
         kunde_objekt_id?: string | null;
         plz?: string | null;
         created_at?: string | null;
-        versicherungsakte_pdf_url?: string | null;
         funnel_daten?: unknown;
         kontakt_nachricht?: unknown;
       };
@@ -1208,15 +1172,12 @@ export async function getPortalDataForKunde(
     }
   }
 
-  const hausverwaltungBrand = await hausverwaltungBrandPromise;
-
   return {
     kunde,
     leads: mappedLeads,
     angebote: mappedAngebote,
     auftraege: mappedAuftraege,
     mieterFeedbackByLeadId,
-    hausverwaltungBrand,
     /** @deprecated Nur für Abwärtskompatibilität — Pipeline-Split clientseitig. */
     splitPipeline: split,
   };

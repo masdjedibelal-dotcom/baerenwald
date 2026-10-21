@@ -17,7 +17,7 @@ export async function GET() {
   }
 
   const selectCols =
-    "id, titel, strasse, hausnummer, plz, ort, melde_slug, melde_aktiv, einheiten_hinweis, notizen_intern, kostenstelle_nr, freigabe_schwelle_eur, notfall_direkt, versicherer, versicherungs_nr, selbstbehalt_eur, automatische_schadenakte, cover_url, created_at";
+    "id, titel, strasse, hausnummer, plz, ort, melde_slug, melde_aktiv, einheiten_hinweis, notizen_intern, kostenstelle_nr, freigabe_schwelle_eur, notfall_direkt, cover_url, created_at";
 
   const { data, error } = await supabaseAdmin
     .from("kunden_objekte")
@@ -28,7 +28,7 @@ export async function GET() {
 
   if (
     error &&
-    /cover_url|versicherer|versicherungs_nr|selbstbehalt|automatische_schadenakte/i.test(
+    /cover_url/i.test(
       error.message
     )
   ) {
@@ -88,10 +88,6 @@ type ObjektBody = {
   notizen_intern?: string | null;
   freigabe_schwelle_eur?: number | null;
   notfall_direkt?: boolean | null;
-  versicherer?: string | null;
-  versicherungs_nr?: string | null;
-  selbstbehalt_eur?: number | null;
-  automatische_schadenakte?: boolean | null;
 };
 
 /** Spec E2: aktive Vorgänge blockieren Löschen. */
@@ -253,20 +249,6 @@ export async function PATCH(req: Request) {
     patch.notfall_direkt =
       body.notfall_direkt == null ? null : Boolean(body.notfall_direkt);
   }
-  if (body.versicherer !== undefined) {
-    patch.versicherer = body.versicherer?.trim() || null;
-  }
-  if (body.versicherungs_nr !== undefined) {
-    patch.versicherungs_nr = body.versicherungs_nr?.trim() || null;
-  }
-  if (body.selbstbehalt_eur !== undefined) {
-    const n =
-      body.selbstbehalt_eur == null ? NaN : Number(body.selbstbehalt_eur);
-    patch.selbstbehalt_eur = Number.isFinite(n) ? n : null;
-  }
-  if (body.automatische_schadenakte !== undefined) {
-    patch.automatische_schadenakte = Boolean(body.automatische_schadenakte);
-  }
   if (body.typ !== undefined) {
     patch.typ = body.typ?.trim() || null;
   }
@@ -299,28 +281,6 @@ export async function PATCH(req: Request) {
     ({ data, error } = await supabaseAdmin
       .from("kunden_objekte")
       .update(withoutTyp)
-      .eq("id", id)
-      .eq("kunde_id", session.kunde.id)
-      .select("id, titel, melde_slug, melde_aktiv")
-      .maybeSingle());
-  }
-
-  if (
-    error &&
-    /versicherer|versicherungs_nr|selbstbehalt|automatische_schadenakte/i.test(
-      error.message
-    )
-  ) {
-    const {
-      versicherer: _v,
-      versicherungs_nr: _vn,
-      selbstbehalt_eur: _s,
-      automatische_schadenakte: _a,
-      ...withoutVers
-    } = patch;
-    ({ data, error } = await supabaseAdmin
-      .from("kunden_objekte")
-      .update(withoutVers)
       .eq("id", id)
       .eq("kunde_id", session.kunde.id)
       .select("id, titel, melde_slug, melde_aktiv")

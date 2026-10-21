@@ -592,7 +592,7 @@ export function OrganisationPortalClient({
       <PortalShell
         variant="org"
         brandTitle={`${MARKE.portalName}`}
-        brandSubtitle={resolveOrgSubLabel(kunde.org_sub)}
+        brandSubtitle={resolveOrgSubLabel(null)}
         hideMobileChrome={false}
         contentFullBleed={
           section === "uebersicht" ||

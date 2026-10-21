@@ -42,14 +42,6 @@ export default async function MeldenErgaenzenPage({ params }: Props) {
       mode="ergaenzen"
       einladungToken={params.token}
       orgName={orgName}
-      orgLogoUrl={(org.org_logo_url as string | null) ?? null}
-      orgLogoKuerzel={(org.org_logo_kuerzel as string | null) ?? null}
-      orgSub={(org.org_sub as string | null) ?? null}
-      orgPrimaryColor={(org.org_primary_color as string | null) ?? null}
-      orgPrimaryColorDk={(org.org_primary_color_dk as string | null) ?? null}
-      orgPrimaryColorSoft={
-        (org.org_primary_color_soft as string | null) ?? null
-      }
       mieterKontaktTelefon={
         (org.mieter_kontakt_telefon as string | null) ?? null
       }

@@ -108,7 +108,7 @@ async function handleMeldeAushangGet(req: Request) {
     brand.mail ||
     SITE_CONFIG.email;
 
-  const logoUrl = (org.org_logo_url ?? brand.logoUrl)?.trim() || null;
+  const logoUrl = brand.logoUrl?.trim() || null;
 
   const bytes = await renderPdfViaCrm("aushang", {
     orgName: brand.name,

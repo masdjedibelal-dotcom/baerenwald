@@ -103,14 +103,6 @@ type PortalLead = PortalAnfrageLeadSource & {
   melder_einheit?: string | null;
   melder_telefon?: string | null;
   melder_email?: string | null;
-  kostentraeger?: string | null;
-  kostentraeger_vorgeschlagen?: boolean | null;
-  versicherungs_nr?: string | null;
-  versicherungsakte_pdf_url?: string | null;
-  schaden_nr?: string | null;
-  schaden_nr_geaendert_am?: string | null;
-  versicherungs_nr_geaendert_am?: string | null;
-  versicherungsakte_erstellt_am?: string | null;
   erfassung_von?: string | null;
   funnel_daten?: unknown;
   kontakt_nachricht?: string | null;
@@ -490,11 +482,6 @@ function buildItemFromLead(
     melderEinheit: melder.einheit ?? null,
     melderTelefon: melder.telefon ?? null,
     melderEmail: melder.email ?? null,
-    kostentraeger: lead.kostentraeger ?? null,
-    kostentraegerVorgeschlagen: Boolean(lead.kostentraeger_vorgeschlagen),
-    versicherungsNr: lead.versicherungs_nr ?? null,
-    schadenNr: lead.schaden_nr ?? null,
-    schadenNrGeaendertAm: lead.schaden_nr_geaendert_am ?? null,
     meldeFotos,
     meldeBeschreibung:
       lead.kontakt_nachricht?.trim() ||

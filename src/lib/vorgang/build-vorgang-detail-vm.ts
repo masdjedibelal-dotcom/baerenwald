@@ -20,7 +20,6 @@ import {
 } from "@/lib/lead-funnel-daten";
 import { formatAuftragDatumSpan } from "@/lib/portal/portal-auftrag-display";
 import {
-  kostentraegerLabel,
   type VorgangDetailAusfuehrung,
   type VorgangDetailKopf,
   type VorgangDetailObjektMelder,
@@ -138,9 +137,6 @@ export type BuildKundeHvVmInput = {
   lead?: PortalAnfrageLeadSource & {
     melder_telefon?: string | null;
     melder_email?: string | null;
-    kostentraeger?: string | null;
-    kostentraeger_vorgeschlagen?: boolean | null;
-    versicherungs_nr?: string | null;
     hv_meldung_status?: string | null;
     org_freigabe_status?: string | null;
     einheiten_hinweis?: string | null;
@@ -302,9 +298,6 @@ export function buildKundeHvVorgangDetailVm(
     role: input.role,
     kopf,
     auftraggeber: {
-      kostentraeger: kostentraegerLabel(lead?.kostentraeger),
-      kostentraegerVorgeschlagen: Boolean(lead?.kostentraeger_vorgeschlagen),
-      versicherungsNr: lead?.versicherungs_nr ?? null,
       freigabeStatus: lead?.org_freigabe_status ?? null,
       hvMeldungStatus: lead?.hv_meldung_status ?? null,
       summeBrutto: input.gesamtBrutto ?? null,

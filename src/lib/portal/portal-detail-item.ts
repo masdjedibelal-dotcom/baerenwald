@@ -122,11 +122,6 @@ export type KundePortalDetailItem = {
   melderEinheit?: string | null;
   melderTelefon?: string | null;
   melderEmail?: string | null;
-  kostentraeger?: string | null;
-  kostentraegerVorgeschlagen?: boolean;
-  versicherungsNr?: string | null;
-  schadenNr?: string | null;
-  schadenNrGeaendertAm?: string | null;
   meldeFotos?: string[];
   orgFreigabeStatus?: string | null;
   /** CRM: schwelle | akut — Auto-Auftrag ohne HV-Annahme */

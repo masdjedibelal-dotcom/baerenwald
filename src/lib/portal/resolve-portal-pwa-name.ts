@@ -1,7 +1,6 @@
 import { logDbError } from '@/lib/errors/log-db-error'
 import { createClient } from "@/lib/supabase/server";
 import { isSupabaseConfigured, supabaseAdmin } from "@/lib/supabase";
-import { loadMieterHvBrand } from "@/lib/portal/load-mieter-hv-brand";
 import { resolvePortalKundeTyp } from "@/lib/portal2/kunde-typ";
 import { MARKE } from "@/lib/marke";
 
@@ -51,13 +50,6 @@ export async function resolvePortalPwaApplicationName(): Promise<string> {
       ).trim();
       return orgName || NEUTRAL;
     }
-
-    const brand = await loadMieterHvBrand({
-      portalKundeId: String((kunde as { id: string }).id),
-      portalKundeEmail: user.email,
-      leads: [],
-    });
-    if (brand?.name?.trim()) return brand.name.trim();
 
     if (typ === "privat" || portalModus === "privat" || !portalModus) {
       return PRIVAT;

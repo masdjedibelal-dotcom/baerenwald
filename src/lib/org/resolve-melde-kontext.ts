@@ -13,13 +13,7 @@ export type MeldeKontext = {
     id: string;
     org_kennung: string;
     org_anzeigename: string | null;
-    org_logo_url: string | null;
     name: string | null;
-    org_primary_color?: string | null;
-    org_primary_color_dk?: string | null;
-    org_primary_color_soft?: string | null;
-    org_logo_kuerzel?: string | null;
-    org_sub?: string | null;
     mieter_kontakt_telefon?: string | null;
     mieter_kontakt_email?: string | null;
     mieter_kontakt_hinweis?: string | null;
@@ -61,12 +55,6 @@ type OrgRow = {
   name: string | null;
   org_kennung: string;
   org_anzeigename: string | null;
-  org_logo_url: string | null;
-  org_primary_color?: string | null;
-  org_primary_color_dk?: string | null;
-  org_primary_color_soft?: string | null;
-  org_logo_kuerzel?: string | null;
-  org_sub?: string | null;
   mieter_kontakt_telefon?: string | null;
   mieter_kontakt_email?: string | null;
   mieter_kontakt_hinweis?: string | null;
@@ -76,11 +64,11 @@ type OrgRow = {
 };
 
 const ORG_SELECT_WL =
-  "id, name, org_kennung, org_anzeigename, org_logo_url, portal_modus, org_primary_color, org_primary_color_dk, org_primary_color_soft, org_logo_kuerzel, org_sub, mieter_kontakt_telefon, mieter_kontakt_email, mieter_kontakt_hinweis, impressum_url, datenschutz_url, akut_fall_ids";
+  "id, name, org_kennung, org_anzeigename, portal_modus, mieter_kontakt_telefon, mieter_kontakt_email, mieter_kontakt_hinweis, impressum_url, datenschutz_url, akut_fall_ids";
 const ORG_SELECT_WL_LEGACY =
-  "id, name, org_kennung, org_anzeigename, org_logo_url, portal_modus, org_primary_color, mieter_kontakt_telefon, mieter_kontakt_email, mieter_kontakt_hinweis, impressum_url, datenschutz_url";
+  "id, name, org_kennung, org_anzeigename, portal_modus, mieter_kontakt_telefon, mieter_kontakt_email, mieter_kontakt_hinweis, impressum_url, datenschutz_url";
 const ORG_SELECT_BASE =
-  "id, name, org_kennung, org_anzeigename, org_logo_url, portal_modus";
+  "id, name, org_kennung, org_anzeigename, portal_modus";
 
 type ObjektRow = {
   id: string;
@@ -266,13 +254,7 @@ export async function resolveMeldeKontext(
         id: org.id,
         org_kennung: org.org_kennung,
         org_anzeigename: org.org_anzeigename,
-        org_logo_url: org.org_logo_url,
         name: org.name,
-        org_primary_color: org.org_primary_color ?? null,
-        org_primary_color_dk: org.org_primary_color_dk ?? null,
-        org_primary_color_soft: org.org_primary_color_soft ?? null,
-        org_logo_kuerzel: org.org_logo_kuerzel ?? null,
-        org_sub: org.org_sub ?? null,
         mieter_kontakt_telefon: org.mieter_kontakt_telefon ?? null,
         mieter_kontakt_email: org.mieter_kontakt_email ?? null,
         mieter_kontakt_hinweis: org.mieter_kontakt_hinweis ?? null,
@@ -305,7 +287,7 @@ export async function resolveEinladungKontext(token: string) {
   const {data: org, error: __dbErr370_4} = await supabaseAdmin
     .from("kunden")
     .select(
-      "id, name, org_kennung, org_anzeigename, org_logo_url, org_logo_kuerzel, org_sub, org_primary_color, org_primary_color_dk, org_primary_color_soft, mieter_kontakt_telefon, mieter_kontakt_email, impressum_url, datenschutz_url"
+      "id, name, org_kennung, org_anzeigename, mieter_kontakt_telefon, mieter_kontakt_email, impressum_url, datenschutz_url"
     )
     .eq("id", auftraggeberId)
     .maybeSingle();

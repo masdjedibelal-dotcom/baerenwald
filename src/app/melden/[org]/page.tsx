@@ -32,12 +32,6 @@ export default async function MeldenOrgPage({ params, searchParams }: Props) {
 
   const brand = {
     name: orgName,
-    sub: kontext.org.org_sub,
-    logoUrl: kontext.org.org_logo_url,
-    logoKuerzel: kontext.org.org_logo_kuerzel,
-    primary: kontext.org.org_primary_color,
-    primaryDk: kontext.org.org_primary_color_dk,
-    soft: kontext.org.org_primary_color_soft,
     tel: kontext.org.mieter_kontakt_telefon,
     mail: kontext.org.mieter_kontakt_email,
   };
@@ -50,12 +44,6 @@ export default async function MeldenOrgPage({ params, searchParams }: Props) {
 
   const formProps = {
     orgName,
-    orgLogoUrl: kontext.org.org_logo_url,
-    orgLogoKuerzel: kontext.org.org_logo_kuerzel,
-    orgSub: kontext.org.org_sub,
-    orgPrimaryColor: kontext.org.org_primary_color,
-    orgPrimaryColorDk: kontext.org.org_primary_color_dk,
-    orgPrimaryColorSoft: kontext.org.org_primary_color_soft,
     mieterKontaktTelefon: kontext.org.mieter_kontakt_telefon,
     mieterKontaktEmail: kontext.org.mieter_kontakt_email,
     mieterKontaktHinweis: kontext.org.mieter_kontakt_hinweis,

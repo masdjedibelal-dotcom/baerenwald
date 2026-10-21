@@ -49,7 +49,6 @@ type AuftragDokumentInput = {
   abnahme_datum?: string | null;
   abschlussdokumentation_url?: string | null;
   abschlussdokumentation_gesendet_at?: string | null;
-  versicherungsakte_pdf_url?: string | null;
   updated_at?: string | null;
   created_at?: string | null;
 };

@@ -27,12 +27,6 @@ export default async function MeldenFehlerPage({ searchParams }: Props) {
         org.org_anzeigename?.trim() || org.name?.trim() || org.org_kennung;
       brand = {
         name,
-        sub: org.org_sub,
-        logoUrl: org.org_logo_url,
-        logoKuerzel: org.org_logo_kuerzel,
-        primary: org.org_primary_color,
-        primaryDk: org.org_primary_color_dk,
-        soft: org.org_primary_color_soft,
         tel: org.mieter_kontakt_telefon,
         mail: org.mieter_kontakt_email,
       };

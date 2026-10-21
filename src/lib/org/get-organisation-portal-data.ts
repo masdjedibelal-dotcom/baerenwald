@@ -29,14 +29,14 @@ import type {
 import { isSupabaseConfigured, supabaseAdmin } from "@/lib/supabase";
 
 const EINGANG_SELECT_FULL =
-  "id, situation, bereiche, status, created_at, plz, strasse, hausnummer, zeitraum, kontakt_name, preis_min, preis_max, preis_unsicher, kontakt_nachricht, funnel_daten, kunde_objekt_id, anlass, erfassung_von, melder_name, melder_einheit, melder_telefon, melder_email, melde_tracking_token, einladung_token, einladung_status, org_freigabe_status, beschluss_versammlung_am, beschluss_protokoll_url, freigabe_bypass_grund, hv_meldung_status, service_modus, auftraggeber_kunde_id, kunde_id, kostentraeger, kostentraeger_vorgeschlagen, versicherungs_nr, versicherungsakte_pdf_url, schaden_nr, schaden_nr_geaendert_am, versicherungs_nr_geaendert_am, versicherungsakte_erstellt_am, vorgang_phase, kanal";
+  "id, situation, bereiche, status, created_at, plz, strasse, hausnummer, zeitraum, kontakt_name, preis_min, preis_max, preis_unsicher, kontakt_nachricht, funnel_daten, kunde_objekt_id, anlass, erfassung_von, melder_name, melder_einheit, melder_telefon, melder_email, melde_tracking_token, einladung_token, einladung_status, org_freigabe_status, beschluss_versammlung_am, beschluss_protokoll_url, freigabe_bypass_grund, hv_meldung_status, service_modus, auftraggeber_kunde_id, kunde_id, vorgang_phase, kanal";
 
 const EINGANG_SELECT_BASE =
   "id, situation, bereiche, status, created_at, plz, strasse, hausnummer, zeitraum, kontakt_name, preis_min, preis_max, kontakt_nachricht, funnel_daten, kunde_objekt_id, anlass, erfassung_von, melder_name, melder_einheit, melder_telefon, melder_email, einladung_token, einladung_status, org_freigabe_status, service_modus, auftraggeber_kunde_id, kunde_id";
 
 async function loadOrgObjekte(kundeId: string): Promise<OrganisationObjekt[]> {
   const selectFull =
-    "id, kunde_id, titel, strasse, hausnummer, plz, ort, typ, melde_slug, melde_aktiv, einheiten_hinweis, notizen_intern, kostenstelle_nr, freigabe_schwelle_eur, notfall_direkt, versicherer, versicherungs_nr, selbstbehalt_eur, automatische_schadenakte, cover_url, created_at";
+    "id, kunde_id, titel, strasse, hausnummer, plz, ort, typ, melde_slug, melde_aktiv, einheiten_hinweis, notizen_intern, kostenstelle_nr, freigabe_schwelle_eur, notfall_direkt, cover_url, created_at";
   const { data: objekteRows, error: objErr } = await supabaseAdmin
     .from("kunden_objekte")
     .select(selectFull)
@@ -47,7 +47,7 @@ async function loadOrgObjekte(kundeId: string): Promise<OrganisationObjekt[]> {
   let rawObjekte = (objekteRows ?? []) as OrganisationObjekt[];
   if (
     objErr &&
-    /automatische_schadenakte|versicherer|versicherungs_nr|selbstbehalt|notfall_direkt|cover_url/i.test(
+    /notfall_direkt|cover_url/i.test(
       objErr.message
     )
   ) {
@@ -137,44 +137,6 @@ async function loadEingangLeads(
     }
   }
 
-  if (/schaden_nr|versicherungsakte_erstellt|versicherungs_nr_geaendert/i.test(eingangErr.message)) {
-    const withoutSchaden = EINGANG_SELECT_FULL.replace(
-      ", schaden_nr, schaden_nr_geaendert_am, versicherungs_nr_geaendert_am, versicherungsakte_erstellt_am",
-      ""
-    );
-    let qSch = supabaseAdmin
-      .from("leads")
-      .select(withoutSchaden)
-      .eq("auftraggeber_kunde_id", kundeId)
-      .eq("anlass", "meldung")
-      .is("geloescht_am", null)
-      .order("created_at", { ascending: false });
-    if (listMode) qSch = qSch.limit(PORTAL_LIST_LEAD_LIMIT);
-    const retrySch = await qSch;
-    if (!retrySch.error) {
-      return (retrySch.data ?? []) as unknown as Record<string, unknown>[];
-    }
-  }
-
-  if (/versicherungsakte_pdf_url/i.test(eingangErr.message)) {
-    const withoutVers = EINGANG_SELECT_FULL.replace(
-      ", versicherungsakte_pdf_url",
-      ""
-    );
-    let q2 = supabaseAdmin
-      .from("leads")
-      .select(withoutVers)
-      .eq("auftraggeber_kunde_id", kundeId)
-      .eq("anlass", "meldung")
-      .is("geloescht_am", null)
-      .order("created_at", { ascending: false });
-    if (listMode) q2 = q2.limit(PORTAL_LIST_LEAD_LIMIT);
-    const retry = await q2;
-    if (!retry.error) {
-      return (retry.data ?? []) as unknown as Record<string, unknown>[];
-    }
-  }
-
   const geloeschtMissing = /geloescht_am/i.test(eingangErr.message);
   console.warn("[org-portal] eingang (voll):", eingangErr.message);
   let fb = supabaseAdmin
@@ -241,7 +203,6 @@ export async function getOrganisationPortalData(
     return {
       ...portal,
       titel: portal.name,
-      versicherungs_nr: o.versicherungs_nr ?? null,
       adresseZeile: portal.strasse ?? undefined,
       plzOrt: [portal.plz, portal.ort].filter(Boolean).join(" ") || undefined,
     };

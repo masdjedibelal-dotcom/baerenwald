@@ -4,7 +4,6 @@ import { createHash } from "crypto";
 
 import { persistLead } from "@/lib/lead/persist-lead";
 import { generateMeldeTrackingToken } from "@/lib/melde/melde-tracking";
-import { vorgeschlagenerKostentraeger } from "@/lib/vorgang/kostentraeger";
 import { supabaseAdmin } from "@/lib/supabase";
 import {
   meldeKategorieToSituation,
@@ -349,14 +348,6 @@ export async function persistMeldungLead(input: PersistMeldungLeadInput) {
   }
 
   const token = generateMeldeTrackingToken();
-  const vorschlag = vorgeschlagenerKostentraeger({
-    hv_meldung_status: initial.hv_meldung_status,
-    anlass: "meldung",
-    funnel_daten: {
-      ...(vorhaben ? { vorhaben } : {}),
-      melde_kategorie: input.kategorie,
-    },
-  });
 
   let duplikatHinweis = false;
   if (input.einheit?.trim() && input.kunde_objekt_id) {
@@ -381,10 +372,6 @@ export async function persistMeldungLead(input: PersistMeldungLeadInput) {
   if (bypassAktiv) {
     patch.freigabe_bypass_grund = "akut";
     patch.org_freigabe_status = "nicht_noetig";
-  }
-  if (vorschlag) {
-    patch.kostentraeger = vorschlag;
-    patch.kostentraeger_vorgeschlagen = true;
   }
 
   const { error: __dbErr361_9 } = await supabaseAdmin.from("leads").update(patch).eq("id", result.id);
