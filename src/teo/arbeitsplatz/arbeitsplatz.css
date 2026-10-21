@@ -1,0 +1,37 @@
+/* TEO-Arbeitsplatz: nur Anpassungen an das Portal (Schrift). Alles andere kommt aus kit/ (CRM). */
+:root[data-marke='teo'] body {
+  font-family: var(--font-sans), -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+}
+
+/* Kopfzeile: Platz zwischen Titel und Konto (im CRM füllt das die Suche) */
+.ap-topbar-luecke { flex: 1 1 auto; }
+
+/* Konto-Kreis mit Initialen (CRM nutzt dort das Marken-Avatar) */
+.ap-avatar {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 28px; height: 28px; border-radius: 999px;
+  background: var(--green); color: #fff; font-size: 12px; font-weight: 600;
+}
+.ap-avatar--gross { width: 40px; height: 40px; font-size: 15px; }
+
+/* Listen: Suche + Objekt-Filter unter den Chips */
+.ap-filterzeile { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px; }
+.ap-filterzeile > .input { flex: 1 1 220px; max-width: 360px; }
+.ap-filterzeile > select.input { flex: 0 1 240px; }
+.ap-zelle-titel { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.ap-rechts { text-align: right; font-variant-numeric: tabular-nums; }
+.ap-gedimmt { color: var(--text-3); }
+
+/* Vorgang-Detail */
+.ap-knopfzeile { display: flex; justify-content: flex-end; gap: 8px; margin-top: 10px; }
+.ap-fehler { margin: 8px 0; padding: 10px 12px; border-radius: var(--r-sm, 8px); background: var(--red-bg); color: var(--red-tx); }
+.ap-verlauf, .ap-nachrichten { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 14px; }
+.ap-verlauf__kopf { display: flex; justify-content: space-between; gap: 12px; }
+.ap-verlauf__titel { font-weight: 600; color: var(--text); }
+.ap-verlauf__text { margin-top: 2px; color: var(--text-2); white-space: pre-wrap; overflow-wrap: anywhere; }
+.ap-nachricht { padding: 10px 12px; border-radius: var(--r-sm, 8px); background: var(--bg-soft); }
+.ap-nachricht--teo { background: var(--green-50); }
+.ap-schreiben { margin-top: 14px; }
+.ap-fotos { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+.ap-fotos img { width: 88px; height: 88px; object-fit: cover; border-radius: var(--r-sm, 8px); border: 1px solid var(--border); }
+.ap-summe { display: flex; justify-content: space-between; margin-top: 12px; padding-top: 10px; border-top: 1px solid var(--border); }

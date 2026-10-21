@@ -1,0 +1,116 @@
+/* SYNCED FROM CRM (Tailwind-Utilities der Kit-Bausteine) — do not edit */
+.relative {
+  position: relative
+}
+
+.ml-auto {
+  margin-left: auto
+}
+
+.flex {
+  display: flex
+}
+
+.inline-flex {
+  display: inline-flex
+}
+
+.table {
+  display: table
+}
+
+.hidden {
+  display: none
+}
+
+.h-4 {
+  height: 1rem
+}
+
+.w-4 {
+  width: 1rem
+}
+
+.w-full {
+  width: 100%
+}
+
+.min-w-0 {
+  min-width: 0px
+}
+
+.flex-1 {
+  flex: 1 1 0%
+}
+
+.shrink-0 {
+  flex-shrink: 0
+}
+
+.rotate-180 {
+  --tw-rotate: 180deg;
+  transform: translate(var(--tw-translate-x), var(--tw-translate-y)) rotate(var(--tw-rotate)) skewX(var(--tw-skew-x)) skewY(var(--tw-skew-y)) scaleX(var(--tw-scale-x)) scaleY(var(--tw-scale-y))
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg)
+  }
+}
+
+.animate-spin {
+  animation: spin 1s linear infinite
+}
+
+.resize {
+  resize: both
+}
+
+.items-center {
+  align-items: center
+}
+
+.gap-2 {
+  gap: 0.5rem
+}
+
+.p-0 {
+  padding: 0px
+}
+
+.pl-2 {
+  padding-left: 0.5rem
+}
+
+.text-left {
+  text-align: left
+}
+
+.text-fs-caption {
+  font-size: var(--fs-caption);
+  line-height: 1.35
+}
+
+.text-bw-text-muted {
+  --tw-text-opacity: 1;
+  color: color-mix(in srgb, var(--text-3) calc(var(--tw-text-opacity, 1) * 100%), transparent)
+}
+
+.text-muted {
+  --tw-text-opacity: 1;
+  color: color-mix(in srgb, var(--text-3) calc(var(--tw-text-opacity, 1) * 100%), transparent)
+}
+
+.opacity-50 {
+  opacity: 0.5
+}
+
+.filter {
+  filter: var(--tw-blur) var(--tw-brightness) var(--tw-contrast) var(--tw-grayscale) var(--tw-hue-rotate) var(--tw-invert) var(--tw-saturate) var(--tw-sepia) var(--tw-drop-shadow)
+}
+
+.transition-transform {
+  transition-property: transform;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  transition-duration: 150ms
+}
