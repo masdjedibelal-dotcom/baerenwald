@@ -50,3 +50,6 @@
 .ap-melde__url { display: block; padding: 8px 10px; border-radius: var(--r-sm, 8px); background: var(--bg-soft); color: var(--text-2); font-size: 13px; overflow-wrap: anywhere; }
 .ap-zeile-knopf { width: 100%; text-align: left; background: none; border: 0; font: inherit; cursor: pointer; }
 .ap-zeile-knopf:disabled { cursor: default; }
+
+/* Häkchen-Zeilen in Formularen */
+.ap-check { display: flex; align-items: center; gap: 10px; padding: 6px 0; grid-column: 1 / -1; cursor: pointer; }
