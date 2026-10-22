@@ -16,6 +16,7 @@ export default async function VorgangSeite({ params }: { params: Promise<{ id: s
   return (
     <VorgangDetail
       d={d}
+      weg={k.org.orgTyp === 'weg'}
       rechte={{
         anTeo: darf(k.person, 'vorgang.an_teo'),
         freigeben: darf(k.person, 'vorgang.freigeben'),

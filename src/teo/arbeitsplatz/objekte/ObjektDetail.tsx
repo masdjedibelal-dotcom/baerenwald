@@ -22,18 +22,35 @@ import {
 import { anlageEntfernen, anlageSpeichern } from '@/teo/arbeitsplatz/aktionen/anlagen'
 import { kontaktEntfernen, kontaktSpeichern, type KontaktFelder } from '@/teo/arbeitsplatz/aktionen/objekt'
 import { ANLAGE_ART_LABEL, ANLAGE_ARTEN, type AnlageArt, type AnlageFelder, type ApAnlage } from '@/teo/arbeitsplatz/anlagen'
+import type { ApDokument, ApMitteilung } from '@/teo/arbeitsplatz/daten/haus'
 import type { ApKontakt, ApObjektDetail } from '@/teo/arbeitsplatz/daten/objekte'
 import type { ApPlan } from '@/teo/arbeitsplatz/daten/plaene'
 import { KONTAKT_ROLLE_LABEL, KONTAKT_ROLLEN } from '@/teo/arbeitsplatz/objekt-felder'
+import { ObjektDokumente } from '@/teo/arbeitsplatz/objekte/ObjektDokumente'
 import { ObjektFormular } from '@/teo/arbeitsplatz/objekte/ObjektFormular'
+import { ObjektMitteilungen } from '@/teo/arbeitsplatz/objekte/ObjektMitteilungen'
 import { intervallText, PLAN_STAND, planStand } from '@/teo/arbeitsplatz/plaene/plan-logik'
 import { ROLLEN_LABEL, type ApRolle } from '@/teo/arbeitsplatz/rechte'
 import { ApSheet } from '@/teo/arbeitsplatz/shell/ApSheet'
 import { AP_STATUS } from '@/teo/arbeitsplatz/vorgang-status'
 
-type Rechte = { bearbeiten: boolean; kosten: boolean; vorgangAnlegen: boolean; plaene: boolean }
+type Rechte = { bearbeiten: boolean; kosten: boolean; vorgangAnlegen: boolean; plaene: boolean; dokumente: boolean }
 
-export function ObjektDetail({ d, plaene, anlagen, rechte }: { d: ApObjektDetail; plaene: ApPlan[]; anlagen: ApAnlage[]; rechte: Rechte }) {
+export function ObjektDetail({
+  d,
+  plaene,
+  anlagen,
+  mitteilungen,
+  dokumente,
+  rechte,
+}: {
+  d: ApObjektDetail
+  plaene: ApPlan[]
+  anlagen: ApAnlage[]
+  mitteilungen: ApMitteilung[]
+  dokumente: ApDokument[]
+  rechte: Rechte
+}) {
   const router = useRouter()
   const { objekt } = d
   const [tab, setTab] = useState('uebersicht')
@@ -53,8 +70,9 @@ export function ObjektDetail({ d, plaene, anlagen, rechte }: { d: ApObjektDetail
     { id: 'vorgaenge', label: 'Vorgänge', icon: 'clipboard-list', count: offen.length || undefined },
     { id: 'plaene', label: 'Pläne', icon: 'checklist', count: plaene.length || undefined },
     { id: 'anlagen', label: 'Anlagen', icon: 'tool', count: anlagen.length || undefined },
-    { id: 'kontakte', label: 'Kontakte', icon: 'phone', count: d.kontakte.length || undefined },
-    { id: 'personen', label: 'Personen', icon: 'users', count: d.zugeordnet.length || undefined },
+    { id: 'dokumente', label: 'Dokumente', icon: 'files', count: dokumente.length || undefined },
+    { id: 'mitteilungen', label: 'Mitteilungen', icon: 'messages', count: mitteilungen.length || undefined },
+    { id: 'kontakte', label: 'Kontakte', icon: 'phone', count: d.kontakte.length + d.zugeordnet.length || undefined },
   ]
 
   return (
@@ -292,8 +310,12 @@ export function ObjektDetail({ d, plaene, anlagen, rechte }: { d: ApObjektDetail
                 </MockCard>
               ) : null}
 
-              {tab === 'personen' ? (
-                d.zugeordnet.length ? (
+              {tab === 'dokumente' ? <ObjektDokumente objektId={objekt.id} dokumente={dokumente} darfHochladen={rechte.dokumente} /> : null}
+
+              {tab === 'mitteilungen' ? <ObjektMitteilungen objektId={objekt.id} mitteilungen={mitteilungen} darfBearbeiten={rechte.bearbeiten} /> : null}
+
+              {tab === 'kontakte' && d.zugeordnet.length ? (
+                <MockCard title="Personen" icon="users">
                   <div className="listcard">
                     {d.zugeordnet.map((p) => (
                       <div key={p.id} className="list-row" style={{ gridTemplateColumns: 'minmax(0, 1fr) 140px' }}>
@@ -304,9 +326,7 @@ export function ObjektDetail({ d, plaene, anlagen, rechte }: { d: ApObjektDetail
                       </div>
                     ))}
                   </div>
-                ) : (
-                  <MockEmpty icon="users" title="Noch niemand zugeordnet" />
-                )
+                </MockCard>
               ) : null}
             </div>
           </div>

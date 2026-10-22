@@ -1,9 +1,14 @@
+import type { ReactNode } from "react";
 import { redirect } from "next/navigation";
 
 import { MeldeFormular } from "@/components/melden/MeldeFormular";
 import { MELDE_ALLGEMEIN_SLUG } from "@/lib/org/melde-url";
 import { resolveMeldeLegalUrls } from "@/lib/org/melde-legal-urls";
+import { funktionAn } from "@/lib/marke";
 import { resolveMeldeKontext } from "@/lib/org/resolve-melde-kontext";
+import { ladeMitteilungen, ladeObjektDokumente } from "@/teo/arbeitsplatz/daten/haus";
+import { HausInfo } from "@/teo/mein/HausInfo";
+import { ladeHausPlaene } from "@/teo/mein/mein-daten";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -45,8 +50,20 @@ export default async function MeldenObjektPage({ params }: Props) {
     impressum_url: kontext.org.impressum_url,
   });
 
+  // Servus TEO: Bewohner sehen beim Scannen aktuelle Mitteilungen, Pläne und Dokumente
+  let hausInfo: ReactNode = null;
+  if (funktionAn("hvWorkflow") && obj?.id) {
+    const [mitteilungen, plaene, dokumente] = await Promise.all([
+      ladeMitteilungen([obj.id], { nurAktuell: true }),
+      ladeHausPlaene([obj.id]),
+      ladeObjektDokumente(kontext.org.id, [obj.id], { nurBewohner: true }),
+    ]);
+    hausInfo = <HausInfo mitteilungen={mitteilungen} plaene={plaene.get(obj.id) ?? []} dokumente={dokumente} />;
+  }
+
   return (
     <MeldeFormular
+      hausInfo={hausInfo}
       orgName={orgName}
       mieterKontaktTelefon={kontext.org.mieter_kontakt_telefon}
       mieterKontaktEmail={kontext.org.mieter_kontakt_email}

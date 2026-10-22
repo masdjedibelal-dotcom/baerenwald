@@ -21,6 +21,7 @@ import { createClient } from "@/lib/supabase/server";
 import { isSupabaseConfigured,supabaseAdmin } from "@/lib/supabase";
 import { istTeo, MARKE } from "@/lib/marke";
 import { ladeApKontext } from "@/teo/arbeitsplatz/kontext";
+import { nurMeldungenBeiVerwaltung } from "@/teo/mein/mein-daten";
 
 export const dynamic = "force-dynamic";
 
@@ -64,6 +65,8 @@ export default async function PortalDashboardPage({
   if (istTeo) {
     const ap = await ladeApKontext();
     if (ap?.person.rolle === "team") redirect("/team");
+    if (ap?.person.rolle === "eigentuemer") redirect("/mein");
+    if (!ap && (await nurMeldungenBeiVerwaltung(user.id, user.email))) redirect("/mein");
     if (ap?.person.rolle === "verwaltung") {
       const id = sp.id?.trim();
       redirect(
@@ -176,6 +179,8 @@ export default async function PortalDashboardPage({
 
   // Mieter melden per Link; Hausmeister- und Eigentümer-Rolle gibt es nicht mehr → kein Portal (04.10.2026)
   if (portalModus === "mieter" || portalModus === "hausmeister" || portalModus === "eigentuemer") {
+    // Servus TEO: Mieter/Eigentümer haben MeinTEO
+    if (istTeo) redirect("/mein");
     return (
       <PortalAuthShell title="Kein Zugang mehr nötig">
         <div className="space-y-4">

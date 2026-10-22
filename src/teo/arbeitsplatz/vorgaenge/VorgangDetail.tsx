@@ -4,7 +4,7 @@ import { useRouter } from 'next/navigation'
 import { useMemo, useState, useTransition } from 'react'
 
 import { formatDatum, formatDatumZeit, formatEuro } from '@/lib/shared-domain/geld-datum'
-import { MockBadge, MockBtn, MockCard, MockEmpty, MockIcon, MockProp, MockTabs, MockTextarea } from '@/teo/arbeitsplatz/kit'
+import { MockBadge, MockBtn, MockCard, MockCheckbox, MockEmpty, MockIcon, MockProp, MockTabs, MockTextarea } from '@/teo/arbeitsplatz/kit'
 import {
   anTeoGeben,
   angebotEntscheiden,
@@ -25,14 +25,17 @@ const PROTOKOLL_TEXT: Record<string, string> = {
 
 const KONTAKT_FELD = /^(vorname|nachname|name|stra(ß|ss)e|hausnummer|plz|ort|e-?mail|telefon|adresse|firma|situation)/i
 
-type VerlaufPunkt = { id: string; wann: string; titel: string; text?: string | null; fotos?: string[] }
+type VerlaufPunkt = { id: string; wann: string; titel: string; text?: string | null; fotos?: string[]; link?: { href: string; label: string } }
 
-export function VorgangDetail({ d, rechte }: { d: ApVorgangDetail; rechte: Rechte }) {
+export function VorgangDetail({ d, rechte, weg }: { d: ApVorgangDetail; rechte: Rechte; weg: boolean }) {
   const router = useRouter()
   const [laeuft, starten] = useTransition()
   const [fehler, setFehler] = useState<string | null>(null)
   const [ablehnen, setAblehnen] = useState(false)
   const [grund, setGrund] = useState('')
+  const [freigabeKarte, setFreigabeKarte] = useState(false)
+  const [beschluss, setBeschluss] = useState(false)
+  const [beschlussDatei, setBeschlussDatei] = useState<File | null>(null)
   const [nachricht, setNachricht] = useState('')
   const { zeile, item } = d
   const st = AP_STATUS[zeile.status]
@@ -61,7 +64,13 @@ export function VorgangDetail({ d, rechte }: { d: ApVorgangDetail; rechte: Recht
     }
     for (const p of d.protokoll) {
       const betrag = rechte.kosten && p.betrag != null ? ` · ${formatEuro(p.betrag)}` : ''
-      punkte.push({ id: `p-${p.id}`, wann: p.wann, titel: `${PROTOKOLL_TEXT[p.aktion] ?? p.aktion} von ${p.wer}${betrag}`, text: p.notiz })
+      punkte.push({
+        id: `p-${p.id}`,
+        wann: p.wann,
+        titel: `${PROTOKOLL_TEXT[p.aktion] ?? p.aktion} von ${p.wer}${betrag}`,
+        text: [p.beschluss ? 'Beschluss der Eigentümer liegt vor' : null, p.notiz].filter(Boolean).join('\n') || null,
+        link: p.beschlussUrl ? { href: p.beschlussUrl, label: 'Beschluss öffnen' } : undefined,
+      })
     }
     return punkte.sort((a, b) => Date.parse(b.wann) - Date.parse(a.wann))
   }, [d, item, zeile, rechte.kosten])
@@ -109,7 +118,9 @@ export function VorgangDetail({ d, rechte }: { d: ApVorgangDetail; rechte: Recht
               type="button"
               disabled={laeuft}
               onClick={() =>
-                ausfuehren(() => (istNeu ? anTeoGeben(zeile.id) : angebotEntscheiden(zeile.id, 'freigegeben', { betragEur: zeile.betrag })))
+                !istNeu && weg
+                  ? setFreigabeKarte((v) => !v)
+                  : ausfuehren(() => (istNeu ? anTeoGeben(zeile.id) : angebotEntscheiden(zeile.id, 'freigegeben', { betragEur: zeile.betrag })))
               }
             >
               {istNeu ? 'An TEO geben' : 'Freigeben'}
@@ -117,6 +128,50 @@ export function VorgangDetail({ d, rechte }: { d: ApVorgangDetail; rechte: Recht
           </div>
         ) : null}
       </header>
+
+      {freigabeKarte ? (
+        <MockCard title="Angebot freigeben" icon="circle-check-filled">
+          <label className="ap-check">
+            <MockCheckbox checked={beschluss} onChange={() => setBeschluss((v) => !v)} />
+            <span>Beschluss der Eigentümer liegt vor</span>
+          </label>
+          {beschluss ? (
+            <label className="ap-datei" style={{ marginTop: 10 }}>
+              <MockIcon ctx="default" n="paperclip" size={18} />
+              <span>{beschlussDatei ? beschlussDatei.name : 'Beschluss anhängen (optional)'}</span>
+              <input type="file" accept="application/pdf,image/jpeg,image/png,image/webp" onChange={(e) => setBeschlussDatei(e.target.files?.[0] ?? null)} />
+            </label>
+          ) : null}
+          <div className="ap-knopfzeile">
+            <MockBtn kind="ghost" sm type="button" onClick={() => setFreigabeKarte(false)}>
+              Abbrechen
+            </MockBtn>
+            <MockBtn
+              kind="primary"
+              sm
+              type="button"
+              disabled={laeuft}
+              onClick={() =>
+                ausfuehren(async () => {
+                  let beschlussUrl: string | null = null
+                  if (beschluss && beschlussDatei && zeile.objektId) {
+                    const fd = new FormData()
+                    fd.set('datei', beschlussDatei)
+                    fd.set('name', `Beschluss: ${zeile.titel}`.slice(0, 160))
+                    const res = await fetch(`/arbeitsplatz/objekte/${zeile.objektId}/dokumente`, { method: 'POST', body: fd })
+                    const j = (await res.json().catch(() => ({}))) as { ok?: boolean; url?: string; fehler?: string }
+                    if (!res.ok || !j.url) return { ok: false, fehler: j.fehler ?? 'Beschluss konnte nicht hochgeladen werden.' }
+                    beschlussUrl = j.url
+                  }
+                  return angebotEntscheiden(zeile.id, 'freigegeben', { betragEur: zeile.betrag, beschlussLiegtVor: beschluss, beschlussUrl })
+                }, () => setFreigabeKarte(false))
+              }
+            >
+              Freigeben
+            </MockBtn>
+          </div>
+        </MockCard>
+      ) : null}
 
       {ablehnen ? (
         <MockCard title={istNeu ? 'Meldung ablehnen' : 'Angebot ablehnen'} icon="circle-x">
@@ -180,6 +235,11 @@ export function VorgangDetail({ d, rechte }: { d: ApVorgangDetail; rechte: Recht
                             <span className="ap-gedimmt">{formatDatum(p.wann)}</span>
                           </div>
                           {p.text ? <div className="ap-verlauf__text">{p.text}</div> : null}
+                          {p.link ? (
+                            <a className="ap-link" href={p.link.href} target="_blank" rel="noreferrer">
+                              {p.link.label}
+                            </a>
+                          ) : null}
                           {p.fotos?.length ? <Fotos urls={p.fotos} /> : null}
                         </li>
                       ))}
