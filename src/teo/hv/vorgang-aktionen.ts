@@ -136,6 +136,9 @@ export async function freigabeEntscheiden(
     notiz?: string | null
     beschlussAm?: string | null
     protokollUrl?: string | null
+    /** WEG: Beschluss der Eigentümer liegt vor (optional mit Dokument) */
+    beschlussLiegtVor?: boolean
+    beschlussUrl?: string | null
   }
 ): Promise<AktionErgebnis> {
   const lead = await leadDerOrg(orgId, leadId)
@@ -172,6 +175,8 @@ export async function freigabeEntscheiden(
     betrag_eur: opts.betragEur ?? null,
     notiz,
     erstellt_von: opts.userId,
+    beschluss_liegt_vor: Boolean(opts.beschlussLiegtVor),
+    beschluss_url: opts.beschlussUrl && /^https?:\/\//.test(opts.beschlussUrl) ? opts.beschlussUrl : null,
   })
   if (logErr) logDbError('teo/hv/vorgang-aktionen:org_freigabe_log', logErr)
   await writeAuditEvent({

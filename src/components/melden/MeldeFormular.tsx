@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 
 import { useCookieConsent } from "@/components/consent/CookieConsentContext";
@@ -25,6 +25,8 @@ type Props = {
   mieterKontaktHinweis?: string | null;
   /** Hinweis über dem Funnel (z. B. objekt_nicht_gefunden). */
   hinweis?: string | null;
+  /** Servus TEO: Mitteilungen/Pläne des Hauses über dem Formular. */
+  hausInfo?: ReactNode;
   objektTitel: string;
   objektAdresse?: string;
   objektPlzOrt?: string;
@@ -85,6 +87,7 @@ export function MeldeFormular({
   akutFallIds = [],
   prefill,
   hinweis,
+  hausInfo,
 }: Props) {
   const router = useRouter();
   const { setLegalLinks } = useCookieConsent();
@@ -184,6 +187,7 @@ export function MeldeFormular({
   return (
     <MieterWlFrame brand={brand} variant="funnel" hideFooter>
       {hinweis?.trim() ? <MeldeHinweisBanner text={hinweis.trim()} /> : null}
+      {hausInfo ? <div className="px-4 pt-3 pb-1">{hausInfo}</div> : null}
       <PortalFunnelHost
         channel="melde_anon"
         layout="page"

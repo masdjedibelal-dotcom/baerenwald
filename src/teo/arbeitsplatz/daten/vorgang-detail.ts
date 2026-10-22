@@ -7,7 +7,16 @@ import { supabaseAdmin } from '@/lib/supabase'
 import { ladeVorgaenge, type ApVorgangZeile } from '@/teo/arbeitsplatz/daten/vorgaenge'
 import type { ApKontext } from '@/teo/arbeitsplatz/kontext'
 
-export type ApProtokollEintrag = { id: string; wann: string; aktion: string; wer: string; betrag: number | null; notiz: string | null }
+export type ApProtokollEintrag = {
+  id: string
+  wann: string
+  aktion: string
+  wer: string
+  betrag: number | null
+  notiz: string | null
+  beschluss: boolean
+  beschlussUrl: string | null
+}
 export type ApNachricht = { id: string; wann: string; von: string; vonTeo: boolean; text: string }
 export type ApTermin = { id: string; von: string; bis: string | null; titel: string }
 
@@ -44,7 +53,7 @@ export async function ladeVorgangDetail(k: ApKontext, leadId: string): Promise<A
     getPortalVorgangDetail({ sessionKundeId: k.org.id, vorgangId: leadId, hvPortalMode: true }),
     supabaseAdmin
       .from('org_freigabe_log')
-      .select('id, aktion, betrag_eur, notiz, erstellt_von, created_at')
+      .select('id, aktion, betrag_eur, notiz, erstellt_von, created_at, beschluss_liegt_vor, beschluss_url')
       .eq('lead_id', leadId)
       .eq('auftraggeber_kunde_id', k.org.id)
       .order('created_at', { ascending: true }),
@@ -84,6 +93,8 @@ export async function ladeVorgangDetail(k: ApKontext, leadId: string): Promise<A
       wer: namen.get(String(l.erstellt_von ?? '')) ?? 'Verwaltung',
       betrag: l.betrag_eur != null ? Number(l.betrag_eur) : null,
       notiz: l.notiz ?? null,
+      beschluss: Boolean(l.beschluss_liegt_vor),
+      beschlussUrl: (l.beschluss_url as string | null) ?? null,
     })),
     nachrichten: (kommRes.data ?? []).map((n) => ({
       id: String(n.id),

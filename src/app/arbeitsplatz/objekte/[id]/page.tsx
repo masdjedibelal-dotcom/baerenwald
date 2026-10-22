@@ -1,6 +1,7 @@
 import { notFound, redirect } from 'next/navigation'
 
 import { ladeAnlagen } from '@/teo/arbeitsplatz/daten/anlagen'
+import { ladeMitteilungen, ladeObjektDokumente } from '@/teo/arbeitsplatz/daten/haus'
 import { ladeObjekt } from '@/teo/arbeitsplatz/daten/objekte'
 import { ladePlaene } from '@/teo/arbeitsplatz/daten/plaene'
 import { ladeApKontext } from '@/teo/arbeitsplatz/kontext'
@@ -15,17 +16,25 @@ export default async function ObjektSeite({ params }: { params: Promise<{ id: st
   if (!k) redirect('/portal/login')
   const d = await ladeObjekt(k, id)
   if (!d) notFound()
-  const [plaene, anlagen] = await Promise.all([ladePlaene(k, { objektId: id }), ladeAnlagen(k, id)])
+  const [plaene, anlagen, mitteilungen, dokumente] = await Promise.all([
+    ladePlaene(k, { objektId: id }),
+    ladeAnlagen(k, id),
+    ladeMitteilungen([id]),
+    ladeObjektDokumente(k.org.id, [id]),
+  ])
   return (
     <ObjektDetail
       d={d}
       plaene={plaene}
       anlagen={anlagen}
+      mitteilungen={mitteilungen}
+      dokumente={dokumente}
       rechte={{
         bearbeiten: darf(k.person, 'objekte.bearbeiten'),
         kosten: darf(k.person, 'kosten.sehen'),
         vorgangAnlegen: darf(k.person, 'vorgang.anlegen'),
         plaene: darf(k.person, 'plaene.verwalten'),
+        dokumente: darf(k.person, 'dokumente.hochladen'),
       }}
     />
   )

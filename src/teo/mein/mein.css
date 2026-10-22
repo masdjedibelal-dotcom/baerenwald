@@ -1,0 +1,26 @@
+.mein-abschnitt { display: flex; flex-direction: column; gap: 10px; }
+.mein-abschnitt h2 { font-family: var(--font-display, system-ui); font-weight: 700; font-size: 17px; color: var(--p2-ink); margin: 6px 0 0; }
+.mein-pill { flex-shrink: 0; font-size: 12px; font-weight: 600; padding: 3px 9px; border-radius: 999px; background: var(--org-primary-soft, var(--p2-primary-soft)); color: var(--org-primary, var(--p2-primary)); white-space: nowrap; }
+.mein-pill--fertig { background: var(--p2-hover, #f1f3f2); color: var(--p2-sub); }
+.mein-objekt { padding: 16px; display: flex; flex-direction: column; gap: 12px; }
+.mein-objekt__kopf { display: flex; justify-content: space-between; gap: 12px; align-items: flex-start; }
+.mein-kosten { display: flex; gap: 18px; flex-wrap: wrap; font-size: 13.5px; color: var(--p2-sub); }
+.mein-kosten strong { display: block; font-size: 17px; color: var(--p2-ink); font-variant-numeric: tabular-nums; }
+.mein-zeilen { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
+.mein-zeilen li { display: flex; align-items: center; gap: 10px; padding: 10px 0; border-top: 1px solid var(--p2-line); }
+.mein-zeilen li:first-child { border-top: 0; }
+.mein-zeilen__text { flex: 1; min-width: 0; }
+.mein-zeilen__titel { font-weight: 600; color: var(--p2-ink); font-size: 14.5px; }
+.mein-zeilen__meta { font-size: 12.5px; color: var(--p2-sub); }
+.mein-leer { color: var(--p2-sub); font-size: 14px; }
+.mein-fuss { display: flex; justify-content: center; padding-top: 8px; }
+.mein-fuss button { font-size: 13.5px; color: var(--p2-sub); text-decoration: underline; }
+.mein-abschnitt__kopf { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.mein-melden.mieter-wl-btn { width: auto; flex-shrink: 0; padding: 8px 14px; font-size: 14px; min-height: 0; }
+.mein-haus { display: flex; flex-direction: column; gap: 10px; }
+.mein-mitteilung { padding: 14px 16px; border-left: 4px solid var(--org-primary, var(--p2-primary)); }
+.mein-mitteilung__datum { font-size: 12px; color: var(--p2-sub); }
+.mein-mitteilung__titel { font-family: var(--font-display, system-ui); font-weight: 700; font-size: 16px; color: var(--p2-ink); margin-top: 2px; }
+.mein-mitteilung__text { font-size: 14px; color: var(--p2-ink); line-height: 1.5; white-space: pre-wrap; margin-top: 6px; }
+.mein-melden.mieter-wl-btn { white-space: nowrap; }
+.mein-zeilen.mein-zeilen--innen { padding: 0 16px; }

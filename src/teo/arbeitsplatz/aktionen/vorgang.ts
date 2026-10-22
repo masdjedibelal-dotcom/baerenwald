@@ -45,7 +45,7 @@ export async function meldungAbweisen(leadId: string): Promise<ApAktionsErgebnis
 export async function angebotEntscheiden(
   leadId: string,
   aktion: 'freigegeben' | 'abgelehnt',
-  opts: { notiz?: string | null; betragEur?: number | null } = {}
+  opts: { notiz?: string | null; betragEur?: number | null; beschlussLiegtVor?: boolean; beschlussUrl?: string | null } = {}
 ): Promise<ApAktionsErgebnis> {
   const p = await pruefen(leadId, 'vorgang.freigeben')
   if (!p.ok) return p
@@ -54,6 +54,8 @@ export async function angebotEntscheiden(
     rolle: p.k.person.istAdmin ? 'admin' : 'verwaltung',
     notiz: opts.notiz ?? null,
     betragEur: opts.betragEur ?? null,
+    beschlussLiegtVor: aktion === 'freigegeben' && p.k.org.orgTyp === 'weg' ? Boolean(opts.beschlussLiegtVor) : false,
+    beschlussUrl: aktion === 'freigegeben' && p.k.org.orgTyp === 'weg' ? opts.beschlussUrl ?? null : null,
   })
   return r.ok ? fertig(leadId) : { ok: false, fehler: r.error }
 }

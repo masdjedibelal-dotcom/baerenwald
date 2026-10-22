@@ -102,3 +102,6 @@
 .tm-senden, .ap-abhaken__fertig { width: 100%; min-height: 50px; justify-content: center; font-size: 16px; }
 .tm-fertig { display: flex; flex-direction: column; align-items: center; gap: 12px; padding: 48px 16px; color: var(--grn-tx); }
 .tm-fertig__titel { font-size: 20px; font-weight: 650; color: var(--text); }
+.ap-link, .ap-verlauf .link { color: var(--green); font-weight: 500; background: none; border: 0; padding: 0; cursor: pointer; font-size: inherit; }
+.ap-link:hover, .ap-verlauf .link:hover { text-decoration: underline; }
+.ap-knopfzeile--links { justify-content: flex-start; align-items: center; gap: 14px; margin-top: 6px; }
