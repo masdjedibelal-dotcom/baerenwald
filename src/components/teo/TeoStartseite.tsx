@@ -1,160 +1,83 @@
 import Link from "next/link";
+import { Building2, CalendarCheck, FileSignature, Siren } from "lucide-react";
 
 import { TEO_LINK_ANFRAGE, TEO_LINK_RECHNER, TeoRahmen } from "@/components/teo/TeoRahmen";
+import { TeoRollen } from "@/components/teo/TeoRollen";
+import {
+  AblaufKarte,
+  BentoAushang,
+  BentoBudget,
+  BentoExport,
+  BentoFristen,
+  BentoGrenze,
+  BentoMelden,
+  BentoMitteilung,
+  HeroVisual,
+} from "@/components/teo/TeoVisuals";
 import { MARKE } from "@/lib/marke";
 
+import "@/app/teo-start.css";
+
 const ABLAUF = [
-  {
-    titel: "Melden",
-    text: "Schäden kommen digital an statt am Telefon — von Ihrem Team im Portal oder von Mietern per Link, mit Fotos und vollständig erfasst.",
-  },
-  {
-    titel: "Prüfen",
-    text: "Vor Ort wird der Schaden geprüft — durch Ihren Hausmeister oder durch teo. Ergebnis und Fotos stehen direkt im Vorgang.",
-  },
-  {
-    titel: "Entscheiden",
-    text: "Sie behalten die Steuerung. Akutfälle laufen bis zu Ihrer Wertgrenze direkt, darüber holt teo Vergleichsangebote ein.",
-  },
-  {
-    titel: "Erledigt",
-    text: "Termine, Nachfassen und Abnahme übernimmt teo. Protokoll, Fotos und Rechnung liegen im Portal. Die Gewährleistung trägt teo.",
-  },
+  { titel: "Gemeldet", text: "Mieter scannen den QR-Code im Treppenhaus, Ihr Hausmeister meldet per App. Mit Fotos, ohne Anruf." },
+  { titel: "Geprüft", text: "teo schaut sich den Schaden an und schickt den passenden Betrieb." },
+  { titel: "Freigegeben", text: "Unter Ihrer Wertgrenze geht es direkt los. Darüber kommt ein Angebot, Sie entscheiden." },
+  { titel: "Erledigt", text: "Abnahme, Fotos, Rechnung. Alles hängt am Vorgang, auch noch nach Jahren." },
 ] as const;
 
 const LEISTUNGEN = [
-  {
-    titel: "Akutfälle und Kleinreparaturen",
-    text: "Rohrbruch, Heizungsausfall, Sturmschaden: Über feste Partnerbetriebe ist Kapazität auch kurzfristig da — per Direktbeauftragung, ohne Zeitverlust.",
-  },
-  {
-    titel: "Instandhaltung und Sanierung",
-    text: "Maßnahmen am Gemeinschaftseigentum, auch über mehrere Gewerke. teo koordiniert alle Betriebe, hält Termine und Budget nach und bleibt Ihr einziger Ansprechpartner.",
-  },
-  {
-    titel: "Laufender Objektbetrieb",
-    text: "Hausmeisterdienst, Gartenpflege, Treppenhausreinigung, Winterdienst — wiederkehrende Leistungen, verlässlich organisiert und dokumentiert.",
-  },
-  {
-    titel: "Vergleichsangebote für Beschlüsse",
-    text: "Eigentümerversammlung und Beirat brauchen vergleichbare Angebote. teo liefert sie einheitlich aufbereitet — fertig für die Beschlussvorlage.",
-  },
-] as const;
-
-const OHNE_MIT = {
-  ohne: [
-    "Mieter rufen an, Rückfragen landen bei Ihnen",
-    "Handwerker nachtelefonieren, Termine nachhalten",
-    "Angebote fehlen für die Beschlussvorlage",
-    "Der Stand steckt in E-Mails und Notizen",
-  ],
-  mit: [
-    "Meldung mit Fotos direkt im Portal",
-    "teo koordiniert Betriebe, Termine und Abnahme",
-    "Vergleichsangebote kommen einheitlich aufbereitet",
-    "Verwaltung und Eigentümer sehen denselben Stand",
-  ],
-} as const;
-
-const ROLLEN = [
-  {
-    titel: "Verwaltungsleitung",
-    text: "Ihr Team gewinnt Kapazität für weitere Objekte. Auch kleinere Mandate bleiben wirtschaftlich, weil die Technik bei teo läuft.",
-  },
-  {
-    titel: "Objektbetreuung",
-    text: "Der Stand jedes Vorgangs steht im Portal. Rückfragen und Nachfassen entfallen weitgehend.",
-  },
-  {
-    titel: "Technik",
-    text: "Vollständige Unterlagen, vergleichbare Angebote, geregelte Abnahmen — lückenlos dokumentiert, wenn Beirat oder Versammlung Nachweise verlangen.",
-  },
-] as const;
-
-const STIMMEN = [
-  { text: "Ich hab am Anfang nicht geglaubt, dass die wirklich dranbleiben. Die bleiben dran.", wer: "Objektbetreuung, München" },
-  { text: "Die Mieteranrufe sind spürbar weniger geworden. Der Stand steht im Portal.", wer: "Hausverwaltung, München" },
-  {
-    text: "In der Eigentümerversammlung fragt keiner mehr nach dem Wasserschaden. Die haben alles selbst gesehen.",
-    wer: "Verwaltungsleitung",
-  },
+  { icon: Siren, titel: "Notfälle", text: "Rohrbruch am Freitagabend. Unsere Partnerbetriebe kommen auch kurzfristig." },
+  { icon: Building2, titel: "Reparatur und Instandhaltung", text: "Vom tropfenden Hahn bis zur Fassade. Auch wenn mehrere Gewerke nötig sind." },
+  { icon: CalendarCheck, titel: "Laufender Betrieb", text: "Treppenhaus, Garten, Winterdienst, Wartungen. Regelmäßig erledigt und abgehakt." },
+  { icon: FileSignature, titel: "Angebote für die Versammlung", text: "Vergleichbar aufbereitet, fertig für die Beschlussvorlage." },
 ] as const;
 
 export const TEO_FAQ = [
   {
     frage: "Was kostet teo?",
     antwort:
-      "Der Preis bleibt auf dem Niveau einer direkten Beauftragung. Gebündeltes Volumen und eingespielte Abläufe mit festen Partnern machen das möglich — ein Aufschlag auf Handwerkerleistungen fällt nicht an.",
+      "So viel wie eine direkte Beauftragung. Auf die Handwerkerleistung kommt kein Aufschlag. Wir rechnen über Volumen und feste Abläufe mit unseren Partnern.",
   },
   {
     frage: "Ist teo eine Software?",
     antwort:
-      "teo ist ein Dienstleister mit digitalen Abläufen. Im Portal sehen alle Beteiligten denselben Stand — Organisation und Ausführung übernimmt teo.",
+      "Nein, ein Dienstleister. Die Software bekommen Sie dazu: Darin sehen Sie, Ihr Team, Mieter und Eigentümer jeden Vorgang. Die Arbeit macht teo.",
   },
   {
     frage: "Was wird aus unserem Hausmeister?",
-    antwort: "Er bleibt Teil des Ablaufs: Er meldet und prüft vor Ort, teo übernimmt Organisation und Ausführung.",
+    antwort: "Er bleibt. Mit der App hakt er Rundgänge und Putzpläne ab und meldet, was ihm auffällt. Den Rest organisiert teo.",
   },
   {
     frage: "Wer haftet, wenn etwas schiefgeht?",
     antwort:
-      "teo. Mit der Übergabe eines Vorgangs übernimmt teo die Verantwortung für die fachgerechte Ausführung, einschließlich der Gewährleistung — bei einem wie bei mehreren Gewerken.",
+      "teo. Sobald Sie einen Vorgang übergeben, sind wir für die fachgerechte Ausführung verantwortlich, inklusive Gewährleistung.",
   },
   {
     frage: "Behalten wir die Kontrolle?",
     antwort:
-      "Ja. Sie entscheiden bei jedem Vorgang, ob Sie ihn selbst erledigen oder an teo übergeben. Wertgrenzen regeln die Direktbeauftragung bei Akutfällen, das Portal zeigt jederzeit den Stand.",
+      "Ja. Sie legen pro Haus fest, bis zu welchem Betrag teo direkt beauftragen darf. Alles darüber geben Sie frei. Jeder Schritt steht im Protokoll.",
   },
   {
     frage: "Liefert teo auch Angebote für die Eigentümerversammlung?",
-    antwort:
-      "Ja. Vergleichsangebote kommen einheitlich aufbereitet und fertig für die Beschlussvorlage — mit den Unterlagen, die Beirat und Eigentümer für die Entscheidung brauchen.",
+    antwort: "Ja. Vergleichbar aufbereitet und fertig für die Beschlussvorlage. Den Beschluss hängen Sie bei der Freigabe einfach an.",
   },
   {
-    frage: "Wie starten wir — und wo ist teo tätig?",
+    frage: "Wie starten wir, und wo ist teo tätig?",
     antwort:
-      "Stellen Sie eine Anfrage oder schildern Sie uns einen aktuellen Vorgang, alles Weitere klären wir in einem kurzen Gespräch. teo ist in München und Umgebung tätig.",
+      "Schicken Sie uns einen aktuellen Fall oder eine Anfrage. Danach richten wir Ihre Häuser ein, das dauert einen Termin. teo arbeitet in München und Umgebung.",
   },
 ] as const;
 
-function Aktionen({ hell = false }: { hell?: boolean }) {
+/** Hauptaktionen. `gold`: auf der goldenen Abschlussfläche (dunkle Knöpfe). */
+function Aktionen({ gold = false }: { gold?: boolean }) {
   return (
     <div className="teo-aktionen">
-      <Link href={TEO_LINK_ANFRAGE} className={hell ? "teo-btn teo-btn--hell" : "teo-btn"}>
+      <Link href={TEO_LINK_ANFRAGE} className={gold ? "teo-btn" : "teo-btn ts-btn-gold"}>
         Anfrage stellen
       </Link>
-      <Link href={TEO_LINK_RECHNER} className={hell ? "teo-btn teo-btn--rand-hell" : "teo-btn teo-btn--rand"}>
+      <Link href={TEO_LINK_RECHNER} className={gold ? "teo-btn teo-btn--rand" : "teo-btn teo-btn--rand-hell"}>
         Preis berechnen
       </Link>
-    </div>
-  );
-}
-
-/** Kleine Vorgangsliste wie im Verwalterportal (nur Anschauung). */
-function PortalVorschau() {
-  const zeilen = [
-    { nr: "#2481", titel: "Wasserschaden Bad", status: "In Ausführung", ton: "blau" },
-    { nr: "#2478", titel: "Klingelanlage defekt", status: "Angebot", ton: "gelb" },
-    { nr: "#2469", titel: "Heizung Whg. 7", status: "Termin steht", ton: "blau" },
-    { nr: "#2440", titel: "Dachrinne verstopft", status: "Abgenommen", ton: "gruen" },
-  ];
-  return (
-    <div className="teo-vorschau" aria-hidden="true">
-      <div className="teo-vorschau__kopf">
-        <span>
-          teo <em>· Verwalterportal</em>
-        </span>
-        <span className="teo-vorschau__objekt">Musterstraße 12</span>
-      </div>
-      <ul>
-        {zeilen.map((z) => (
-          <li key={z.nr}>
-            <span className="teo-vorschau__nr">{z.nr}</span>
-            <span className="teo-vorschau__titel">{z.titel}</span>
-            <span className={`teo-vorschau__status teo-vorschau__status--${z.ton}`}>{z.status}</span>
-          </li>
-        ))}
-      </ul>
     </div>
   );
 }
@@ -162,149 +85,135 @@ function PortalVorschau() {
 export function TeoStartseite() {
   return (
     <TeoRahmen>
-      <section className="teo-hero">
-        <div className="teo-innen teo-hero__raster">
-          <div className="teo-hero__text">
-            <p className="teo-eyebrow">Für Haus- und WEG-Verwaltungen in München</p>
+      <section className="ts-hero">
+        <div className="teo-innen ts-hero__raster">
+          <div className="ts-hero__text">
+            <p className="ts-eyebrow">Für Haus- und WEG-Verwaltungen in München</p>
             <h1>
               Sie melden.
               <br />
-              teo regelt.
+              <span className="ts-akzent">teo regelt.</span>
             </h1>
-            <p className="teo-lead">
-              teo übernimmt den technischen Ablauf Ihrer Objekte — von der Schadenmeldung bis zur Abnahme. Ein
-              Ansprechpartner für alle Gewerke, jeder Stand im Portal.
+            <p className="ts-lead">
+              Rohrbruch, Klingel, Prüffrist: teo nimmt den Fall auf, schickt den Handwerker und meldet sich, wenn es
+              erledigt ist. Sie sehen jeden Schritt und entscheiden, wo es Geld kostet.
             </p>
             <Aktionen />
-            <p className="teo-hinweis">Antwort innerhalb eines Werktags · kostenlos und unverbindlich</p>
+            <p className="ts-hinweis">Antwort innerhalb eines Werktags · kostenlos und unverbindlich</p>
           </div>
-          <PortalVorschau />
+          <HeroVisual />
         </div>
       </section>
 
-      <section className="teo-abschnitt">
-        <div className="teo-innen teo-zweispaltig">
-          <h2>Instandhaltung bindet Zeit, die der Verwaltung fehlt.</h2>
-          <p className="teo-gross">
-            Meldungen aufnehmen, Handwerker anfragen, Termine nachhalten, Rückfragen beantworten, dem Beirat den Stand
-            erklären: Technische Vorgänge binden oft mehr Kapazität als die eigentliche Verwaltung. teo bündelt
-            Meldung, Ausführung und Dokumentation in einem Ablauf — und übernimmt die Steuerung.
-          </p>
-        </div>
-      </section>
-
-      <section className="teo-abschnitt teo-abschnitt--grau" id="ablauf">
+      <section className="ts-abschnitt ts-abschnitt--blau" id="ablauf">
         <div className="teo-innen">
-          <p className="teo-eyebrow">Ablauf</p>
-          <h2>So läuft ein Vorgang mit teo.</h2>
-          <ol className="teo-schritte">
+          <p className="ts-eyebrow ts-eyebrow--dunkel">So läuft es</p>
+          <h2>Vom Wasserfleck bis zur Rechnung.</h2>
+          <ol className="ts-ablauf">
             {ABLAUF.map((s, i) => (
               <li key={s.titel}>
-                <span className="teo-schritte__nr">{i + 1}</span>
-                <h3>{s.titel}</h3>
-                <p>{s.text}</p>
+                <AblaufKarte schritt={(i + 1) as 1 | 2 | 3 | 4} />
+                <div className="ts-ablauf__text">
+                  <span className="ts-ablauf__nr">{i + 1}</span>
+                  <h3>{s.titel}</h3>
+                  <p>{s.text}</p>
+                </div>
               </li>
             ))}
           </ol>
         </div>
       </section>
 
-      <section className="teo-abschnitt" id="leistungen">
+      <section className="ts-abschnitt" id="rollen">
         <div className="teo-innen">
-          <p className="teo-eyebrow">Leistungen</p>
-          <h2>Was teo für Sie übernimmt.</h2>
-          <div className="teo-liste">
-            {LEISTUNGEN.map((l, i) => (
+          <p className="ts-eyebrow ts-eyebrow--dunkel">Für alle im Haus</p>
+          <h2>Jeder sieht, was er braucht.</h2>
+          <TeoRollen />
+        </div>
+      </section>
+
+      <section className="ts-abschnitt ts-abschnitt--dunkel" id="funktionen">
+        <div className="teo-innen">
+          <p className="ts-eyebrow">Funktionen</p>
+          <h2>Was sonst gern liegen bleibt.</h2>
+          <div className="ts-bento">
+            <article className="ts-bento__kachel ts-bento__kachel--breit">
+              <div>
+                <h3>Prüffristen und Wartungen</h3>
+                <p>Rauchmelder, Aufzug, Trinkwasser. teo beauftragt drei Wochen vor Fälligkeit, den Nachweis legen wir ab.</p>
+              </div>
+              <BentoFristen />
+            </article>
+            <article className="ts-bento__kachel ts-bento__kachel--hoch">
+              <div>
+                <h3>QR-Code im Treppenhaus</h3>
+                <p>Ein Aushang pro Haus. Meldungen kommen mit Foto und Wohnung an.</p>
+              </div>
+              <BentoAushang />
+              <BentoMelden />
+            </article>
+            <article className="ts-bento__kachel">
+              <div>
+                <h3>Ihre Wertgrenze</h3>
+                <p>Darunter läuft es direkt. Darüber entscheiden Sie.</p>
+              </div>
+              <BentoGrenze />
+            </article>
+            <article className="ts-bento__kachel">
+              <div>
+                <h3>Budget je Haus</h3>
+                <p>Ein Betrag pro Jahr, daneben der aktuelle Stand.</p>
+              </div>
+              <BentoBudget />
+            </article>
+            <article className="ts-bento__kachel">
+              <div>
+                <h3>Mitteilung ans Haus</h3>
+                <p>Einmal schreiben. Hängt als Aushang und steht beim QR-Code.</p>
+              </div>
+              <BentoMitteilung />
+            </article>
+            <article className="ts-bento__kachel ts-bento__kachel--breit">
+              <div>
+                <h3>Kosten zum Export</h3>
+                <p>Alle Ausgaben je Haus und Jahr als Datei, fertig für die Abrechnung.</p>
+              </div>
+              <BentoExport />
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <section className="ts-abschnitt" id="leistungen">
+        <div className="teo-innen">
+          <p className="ts-eyebrow ts-eyebrow--dunkel">Leistungen</p>
+          <h2>Was teo für Sie erledigt.</h2>
+          <div className="ts-leistungen">
+            {LEISTUNGEN.map((l) => (
               <article key={l.titel}>
-                <span className="teo-liste__nr">{String(i + 1).padStart(2, "0")}</span>
-                <div>
-                  <h3>{l.titel}</h3>
-                  <p>{l.text}</p>
-                </div>
+                <span className="ts-leistungen__icon">
+                  <l.icon size={22} />
+                </span>
+                <h3>{l.titel}</h3>
+                <p>{l.text}</p>
               </article>
             ))}
           </div>
         </div>
       </section>
 
-      <section className="teo-abschnitt teo-abschnitt--dunkel" id="warum">
-        <div className="teo-innen">
-          <h2>Ein Ablauf. Ein Ansprechpartner. Ein Stand.</h2>
-          <p className="teo-gross">
-            Verwaltung, Eigentümer und Handwerker arbeiten auf demselben Stand — die Entscheidungen bleiben bei Ihnen.
-          </p>
-          <div className="teo-vergleich">
-            <div>
-              <h3>Ohne teo</h3>
-              <ul>
-                {OHNE_MIT.ohne.map((t) => (
-                  <li key={t}>{t}</li>
-                ))}
-              </ul>
-            </div>
-            <div className="teo-vergleich__mit">
-              <h3>Mit teo</h3>
-              <ul>
-                {OHNE_MIT.mit.map((t) => (
-                  <li key={t}>{t}</li>
-                ))}
-              </ul>
-            </div>
+      <section className="ts-abschnitt ts-cta" id="kontakt">
+        <div className="teo-innen ts-cta__innen">
+          <div>
+            <h2>Schicken Sie uns Ihren nächsten Schaden.</h2>
+            <p>Wir zeigen Ihnen am echten Fall, wie es mit teo läuft. Oder rechnen Sie vorab einen Preis aus.</p>
           </div>
-        </div>
-      </section>
-
-      <section className="teo-abschnitt">
-        <div className="teo-innen">
-          <p className="teo-eyebrow">Für wen</p>
-          <h2>Für Verwaltungen jeder Größe.</h2>
-          <div className="teo-karten">
-            {ROLLEN.map((r) => (
-              <article key={r.titel}>
-                <h3>{r.titel}</h3>
-                <p>{r.text}</p>
-              </article>
-            ))}
+          <div>
+            <Aktionen gold />
+            <p className="ts-hinweis">
+              Oder per E-Mail: <a href={`mailto:${MARKE.firma.email}`}>{MARKE.firma.email}</a>
+            </p>
           </div>
-        </div>
-      </section>
-
-      <section className="teo-abschnitt teo-abschnitt--grau">
-        <div className="teo-innen">
-          <p className="teo-eyebrow">Aus der Praxis</p>
-          <div className="teo-stimmen">
-            {STIMMEN.map((s) => (
-              <figure key={s.text}>
-                <blockquote>„{s.text}“</blockquote>
-                <figcaption>{s.wer}</figcaption>
-              </figure>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      <section className="teo-abschnitt">
-        <div className="teo-innen teo-zweispaltig">
-          <h2>Feste Partner in München und Umgebung.</h2>
-          <p className="teo-gross">
-            teo arbeitet mit einem festen Netzwerk von Betrieben, das über Jahre gewachsen ist. Die Partner kennen die
-            Abläufe, die Kapazitäten reichen auch für größere Maßnahmen. Kommt es zu Verzögerungen, klärt teo sie — mit
-            den Betrieben, im laufenden Vorgang.
-          </p>
-        </div>
-      </section>
-
-      <section className="teo-abschnitt teo-abschnitt--dunkel" id="kontakt">
-        <div className="teo-innen teo-abschluss">
-          <h2>Sprechen wir über Ihre Objekte.</h2>
-          <p className="teo-gross">
-            Schildern Sie uns einen aktuellen Vorgang — eine offene Schadenmeldung oder eine anstehende Maßnahme. Wir
-            zeigen Ihnen, wie er mit teo laufen würde. Oder berechnen Sie vorab einen Preisrahmen.
-          </p>
-          <Aktionen hell />
-          <p className="teo-hinweis teo-hinweis--hell">
-            Lieber per E-Mail: <a href={`mailto:${MARKE.firma.email}`}>{MARKE.firma.email}</a>
-          </p>
         </div>
       </section>
 

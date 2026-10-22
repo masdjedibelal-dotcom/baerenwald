@@ -27,7 +27,8 @@ function TeoKopf() {
           <TeoLogo />
         </Link>
         <nav className="teo-kopf__nav" aria-label="Hauptnavigation">
-          <Link href="/#ablauf">Ablauf</Link>
+          <Link href="/#ablauf">So läuft es</Link>
+          <Link href="/#funktionen">Funktionen</Link>
           <Link href="/#leistungen">Leistungen</Link>
           <Link href="/#faq">Fragen</Link>
         </nav>
@@ -51,7 +52,7 @@ function TeoFuss() {
       <div className="teo-fuss__innen">
         <div className="teo-fuss__marke">
           <TeoLogo hell />
-          <p>Technik. Entlastung. Organisation.</p>
+          <p>Haustechnik für Verwaltungen in München.</p>
           <p className="teo-fuss__adresse">
             {f.firmenname} · {f.strasse} {f.hausnummer} · {f.plz} {f.ort}
             <br />
@@ -59,7 +60,7 @@ function TeoFuss() {
           </p>
         </div>
         <nav className="teo-fuss__links" aria-label="Fußzeile">
-          <Link href="/#ablauf">Ablauf</Link>
+          <Link href="/#ablauf">So läuft es</Link>
           <Link href="/#leistungen">Leistungen</Link>
           <Link href="/#faq">Fragen</Link>
           <Link href={TEO_LINK_ANFRAGE}>Anfrage stellen</Link>
