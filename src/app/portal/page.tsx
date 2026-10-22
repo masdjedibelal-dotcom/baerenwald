@@ -63,6 +63,7 @@ export default async function PortalDashboardPage({
   // Servus TEO: Verwaltung arbeitet im Arbeitsplatz (alte Portal-Links dorthin umleiten)
   if (istTeo) {
     const ap = await ladeApKontext();
+    if (ap?.person.rolle === "team") redirect("/team");
     if (ap?.person.rolle === "verwaltung") {
       const id = sp.id?.trim();
       redirect(

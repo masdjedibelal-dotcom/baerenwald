@@ -19,22 +19,27 @@ import {
   MockTabs,
   MockTextarea,
 } from '@/teo/arbeitsplatz/kit'
+import { anlageEntfernen, anlageSpeichern } from '@/teo/arbeitsplatz/aktionen/anlagen'
 import { kontaktEntfernen, kontaktSpeichern, type KontaktFelder } from '@/teo/arbeitsplatz/aktionen/objekt'
+import { ANLAGE_ART_LABEL, ANLAGE_ARTEN, type AnlageArt, type AnlageFelder, type ApAnlage } from '@/teo/arbeitsplatz/anlagen'
 import type { ApKontakt, ApObjektDetail } from '@/teo/arbeitsplatz/daten/objekte'
+import type { ApPlan } from '@/teo/arbeitsplatz/daten/plaene'
 import { KONTAKT_ROLLE_LABEL, KONTAKT_ROLLEN } from '@/teo/arbeitsplatz/objekt-felder'
 import { ObjektFormular } from '@/teo/arbeitsplatz/objekte/ObjektFormular'
+import { intervallText, PLAN_STAND, planStand } from '@/teo/arbeitsplatz/plaene/plan-logik'
 import { ROLLEN_LABEL, type ApRolle } from '@/teo/arbeitsplatz/rechte'
 import { ApSheet } from '@/teo/arbeitsplatz/shell/ApSheet'
 import { AP_STATUS } from '@/teo/arbeitsplatz/vorgang-status'
 
-type Rechte = { bearbeiten: boolean; kosten: boolean; vorgangAnlegen: boolean }
+type Rechte = { bearbeiten: boolean; kosten: boolean; vorgangAnlegen: boolean; plaene: boolean }
 
-export function ObjektDetail({ d, rechte }: { d: ApObjektDetail; rechte: Rechte }) {
+export function ObjektDetail({ d, plaene, anlagen, rechte }: { d: ApObjektDetail; plaene: ApPlan[]; anlagen: ApAnlage[]; rechte: Rechte }) {
   const router = useRouter()
   const { objekt } = d
   const [tab, setTab] = useState('uebersicht')
   const [bearbeiten, setBearbeiten] = useState(false)
   const [kontakt, setKontakt] = useState<ApKontakt | 'neu' | null>(null)
+  const [anlage, setAnlage] = useState<ApAnlage | 'neu' | null>(null)
   const [herkunft, setHerkunft] = useState('')
   const [kopiert, setKopiert] = useState(false)
   useEffect(() => setHerkunft(window.location.origin), [])
@@ -46,6 +51,8 @@ export function ObjektDetail({ d, rechte }: { d: ApObjektDetail; rechte: Rechte 
   const tabs = [
     { id: 'uebersicht', label: 'Übersicht', icon: 'layout' },
     { id: 'vorgaenge', label: 'Vorgänge', icon: 'clipboard-list', count: offen.length || undefined },
+    { id: 'plaene', label: 'Pläne', icon: 'checklist', count: plaene.length || undefined },
+    { id: 'anlagen', label: 'Anlagen', icon: 'tool', count: anlagen.length || undefined },
     { id: 'kontakte', label: 'Kontakte', icon: 'phone', count: d.kontakte.length || undefined },
     { id: 'personen', label: 'Personen', icon: 'users', count: d.zugeordnet.length || undefined },
   ]
@@ -165,6 +172,88 @@ export function ObjektDetail({ d, rechte }: { d: ApObjektDetail; rechte: Rechte 
                 )
               ) : null}
 
+              {tab === 'plaene' ? (
+                <MockCard
+                  title="Pläne"
+                  icon="checklist"
+                  actions={
+                    rechte.plaene ? (
+                      <MockBtn kind="ghost" sm type="button" onClick={() => router.push(`/arbeitsplatz/plaene?neu=1&objekt=${objekt.id}`)}>
+                        <MockIcon ctx="btn" n="plus" size={14} />
+                        <span>Plan</span>
+                      </MockBtn>
+                    ) : undefined
+                  }
+                >
+                  {plaene.length ? (
+                    <div className="listcard">
+                      {plaene.map((p) => {
+                        const stand = planStand(p.naechste)
+                        return (
+                          <Link key={p.id} href={`/arbeitsplatz/plaene/${p.id}`} className="list-row" style={{ gridTemplateColumns: 'minmax(0, 2fr) 130px 110px' }}>
+                            <div className="ap-zelle-titel">
+                              <div className="lc-title">{p.titel}</div>
+                              <div className="lc-pills">
+                                {stand !== 'geplant' ? <MockBadge kind={PLAN_STAND[stand].badge}>{PLAN_STAND[stand].label}</MockBadge> : null}
+                                <MockBadge kind="plain">{p.zustaendig === 'teo' ? 'TEO' : p.zustaendigName ?? 'Team'}</MockBadge>
+                              </div>
+                            </div>
+                            <div className="lc-desk ap-gedimmt">{intervallText(p.einheit, p.anzahl)}</div>
+                            <div className={stand === 'ueberfaellig' ? 'lc-desk ap-rot' : 'lc-desk'}>{formatDatum(p.naechste)}</div>
+                          </Link>
+                        )
+                      })}
+                    </div>
+                  ) : (
+                    <MockEmpty icon="checklist" title="Noch keine Pläne" />
+                  )}
+                </MockCard>
+              ) : null}
+
+              {tab === 'anlagen' ? (
+                <MockCard
+                  title="Anlagen"
+                  icon="tool"
+                  actions={
+                    rechte.bearbeiten ? (
+                      <MockBtn kind="ghost" sm type="button" onClick={() => setAnlage('neu')}>
+                        <MockIcon ctx="btn" n="plus" size={14} />
+                        <span>Anlage</span>
+                      </MockBtn>
+                    ) : undefined
+                  }
+                >
+                  {anlagen.length ? (
+                    <div className="listcard">
+                      {anlagen.map((a) => {
+                        const zu = plaene.filter((p) => p.anlageId === a.id)
+                        return (
+                          <button
+                            key={a.id}
+                            type="button"
+                            className="list-row ap-zeile-knopf"
+                            style={{ gridTemplateColumns: 'minmax(0, 1.4fr) 130px minmax(0, 1fr)' }}
+                            onClick={() => (rechte.bearbeiten ? setAnlage(a) : undefined)}
+                            disabled={!rechte.bearbeiten}
+                          >
+                            <div className="ap-zelle-titel">
+                              <div className="lc-title">{a.name}</div>
+                              <div className="lc-pills">
+                                <MockBadge kind="plain">{ANLAGE_ART_LABEL[a.art]}</MockBadge>
+                              </div>
+                            </div>
+                            <div className="lc-desk ap-gedimmt">{a.baujahr ? `Baujahr ${a.baujahr}` : '—'}</div>
+                            <div className="lc-sub">{zu.length ? zu.map((p) => `${p.titel} · ${formatDatum(p.naechste)}`).join(', ') : 'Kein Plan'}</div>
+                          </button>
+                        )
+                      })}
+                    </div>
+                  ) : (
+                    <MockEmpty icon="tool" title="Noch keine Anlagen" />
+                  )}
+                </MockCard>
+              ) : null}
+
               {tab === 'kontakte' ? (
                 <MockCard
                   title="Kontakte"
@@ -242,6 +331,7 @@ export function ObjektDetail({ d, rechte }: { d: ApObjektDetail; rechte: Rechte 
           }}
         />
       ) : null}
+      {anlage ? <AnlageSheet objektId={objekt.id} anlage={anlage === 'neu' ? null : anlage} onClose={() => setAnlage(null)} /> : null}
       {kontakt ? <KontaktSheet objektId={objekt.id} kontakt={kontakt === 'neu' ? null : kontakt} onClose={() => setKontakt(null)} /> : null}
     </div>
   )
@@ -303,6 +393,68 @@ function KontaktSheet({ objektId, kontakt, onClose }: { objektId: string; kontak
         </MockField>
         <MockField label="Notiz" full>
           <MockTextarea value={f.notiz ?? ''} onChange={feld('notiz')} rows={3} />
+        </MockField>
+      </MockFormSection>
+      {fehler ? (
+        <div className="ap-fehler" role="alert">
+          {fehler}
+        </div>
+      ) : null}
+    </ApSheet>
+  )
+}
+
+function AnlageSheet({ objektId, anlage, onClose }: { objektId: string; anlage: ApAnlage | null; onClose: () => void }) {
+  const router = useRouter()
+  const [f, setF] = useState<AnlageFelder>({
+    name: anlage?.name ?? '',
+    art: anlage?.art ?? 'heizung',
+    baujahr: anlage?.baujahr ? String(anlage.baujahr) : '',
+    notiz: anlage?.notiz ?? '',
+  })
+  const [fehler, setFehler] = useState<string | null>(null)
+  const [laeuft, starten] = useTransition()
+
+  function los(fn: () => ReturnType<typeof anlageEntfernen>) {
+    setFehler(null)
+    starten(async () => {
+      const r = await fn()
+      if (!r.ok) {
+        setFehler(r.fehler)
+        return
+      }
+      onClose()
+      router.refresh()
+    })
+  }
+
+  return (
+    <ApSheet
+      open
+      titel={anlage ? 'Anlage bearbeiten' : 'Neue Anlage'}
+      onClose={onClose}
+      onSpeichern={() => los(() => anlageSpeichern(objektId, anlage?.id ?? null, f))}
+      gefahr={anlage ? { label: 'Entfernen', onClick: () => los(() => anlageEntfernen(objektId, anlage.id)) } : undefined}
+      laeuft={laeuft}
+    >
+      <MockFormSection title="Anlage">
+        <MockField label="Name" required full>
+          <MockInput value={f.name} onChange={(e) => setF((x) => ({ ...x, name: e.target.value }))} autoFocus />
+        </MockField>
+        <MockField label="Art">
+          <MockSelect value={f.art} onChange={(e) => setF((x) => ({ ...x, art: e.target.value as AnlageArt }))}>
+            {ANLAGE_ARTEN.map((a) => (
+              <option key={a} value={a}>
+                {ANLAGE_ART_LABEL[a]}
+              </option>
+            ))}
+          </MockSelect>
+        </MockField>
+        <MockField label="Baujahr">
+          <MockInput value={f.baujahr} onChange={(e) => setF((x) => ({ ...x, baujahr: e.target.value.replace(/\D/g, '').slice(0, 4) }))} inputMode="numeric" />
+        </MockField>
+        <MockField label="Notiz" full>
+          <MockTextarea value={f.notiz} onChange={(e) => setF((x) => ({ ...x, notiz: e.target.value }))} rows={3} />
         </MockField>
       </MockFormSection>
       {fehler ? (

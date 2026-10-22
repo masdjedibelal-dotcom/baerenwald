@@ -55,8 +55,8 @@ export async function ladeVorgaenge(k: ApKontext, opts: { nurIds?: string[] } = 
     .is('geloescht_am', null)
     .order('created_at', { ascending: false })
     .limit(1000)
-  if (k.person.objektIds !== null) q = q.in('kunde_objekt_id', k.person.objektIds.length ? k.person.objektIds : ['-'])
-  if (opts.nurIds) q = q.in('id', opts.nurIds.length ? opts.nurIds : ['-'])
+  if (k.person.objektIds !== null) q = q.in('kunde_objekt_id', k.person.objektIds.length ? k.person.objektIds : ['00000000-0000-0000-0000-000000000000'])
+  if (opts.nurIds) q = q.in('id', opts.nurIds.length ? opts.nurIds : ['00000000-0000-0000-0000-000000000000'])
   const { data: leadsRoh, error } = await q
   if (error) {
     logDbError('teo/arbeitsplatz/daten/vorgaenge:leads', error)

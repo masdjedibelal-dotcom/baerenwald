@@ -76,3 +76,16 @@ export async function ladeTeam(k: ApKontext): Promise<ApTeamPerson[]> {
     })),
   ]
 }
+
+/** Team-Mitglieder (Rolle Team) — Auswahl „Person“ bei Plänen. */
+export async function ladeTeamPersonen(k: ApKontext): Promise<Array<{ id: string; name: string }>> {
+  const { data, error } = await supabaseAdmin
+    .from('kunden_mitglieder')
+    .select('id, name, email')
+    .eq('kunde_id', k.org.id)
+    .eq('rolle', 'team')
+    .eq('aktiv', true)
+    .order('name')
+  if (error) logDbError('teo/arbeitsplatz/daten/team:teampersonen', error)
+  return (data ?? []).map((m) => ({ id: String(m.id), name: (m.name as string | null)?.trim() || String(m.email ?? '') }))
+}

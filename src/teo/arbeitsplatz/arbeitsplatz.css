@@ -63,3 +63,42 @@
 .ap-gruppe + .ap-gruppe { margin-top: 12px; }
 .ap-knopfzeile--fuss { align-items: center; }
 .ap-ok { color: var(--grn-tx); }
+
+/* Plan abhaken (Arbeitsplatz + Team-App) */
+.ap-abhaken { display: flex; flex-direction: column; gap: 12px; }
+.ap-abhaken__liste { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.ap-abhaken__punkt { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 12px; border: 1px solid var(--border); border-radius: var(--r-sm, 8px); background: var(--card); }
+.ap-abhaken__punkt.is-mangel { border-color: var(--red-tx); background: var(--red-bg); }
+.ap-abhaken__text { flex: 1 1 auto; min-width: 0; }
+.ap-abhaken__wahl { display: flex; gap: 8px; flex-shrink: 0; }
+.ap-ja, .ap-nein { width: 44px; height: 44px; border-radius: 999px; border: 1px solid var(--border-strong); background: var(--card); color: var(--text-3); display: grid; place-items: center; cursor: pointer; }
+.ap-ja.is-an { background: var(--grn-bg); border-color: var(--grn-tx); color: var(--grn-tx); }
+.ap-nein.is-an { background: var(--red-bg); border-color: var(--red-tx); color: var(--red-tx); }
+.ap-abhaken__fertig { min-height: 44px; }
+.ap-liste-nummer { margin: 0; padding-left: 20px; display: flex; flex-direction: column; gap: 6px; color: var(--text-2); }
+
+/* Team-App */
+.tm-app { min-height: 100dvh; background: var(--bg); display: flex; flex-direction: column; }
+.tm-kopf { position: sticky; top: 0; z-index: 20; display: flex; align-items: center; gap: 10px; padding: calc(10px + env(safe-area-inset-top, 0px)) 16px 10px; background: var(--card); border-bottom: 1px solid var(--border); }
+.tm-kopf__marke { width: 30px; height: 30px; border-radius: 8px; background: var(--green-dark); display: grid; place-items: center; flex: none; }
+.tm-kopf__text { flex: 1; min-width: 0; }
+.tm-kopf__org { font-weight: 600; font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tm-kopf__name { font-size: 12px; color: var(--text-3); }
+.tm-kopf__ab { width: 40px; height: 40px; display: grid; place-items: center; border-radius: 10px; color: var(--text-2); }
+.tm-inhalt { flex: 1; width: 100%; max-width: 640px; margin: 0 auto; padding: 16px 16px calc(96px + env(safe-area-inset-bottom, 0px)); display: flex; flex-direction: column; gap: 14px; }
+.tm-titel { font-size: 22px; font-weight: 650; margin: 0; }
+.tm-nav { display: flex; position: fixed; left: 0; right: 0; bottom: 0; z-index: 90; box-sizing: content-box; height: 56px; background: var(--green-dark); padding-bottom: env(safe-area-inset-bottom, 0px); }
+.tm-nav__punkt { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; font-size: 11px; font-weight: 500; color: rgba(255,255,255,0.6); }
+.tm-nav__punkt.is-aktiv { color: #fff; }
+.tm-karten { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 10px; }
+.tm-karte { width: 100%; display: flex; align-items: center; gap: 10px; text-align: left; padding: 16px; min-height: 68px; background: var(--card); border: 1px solid var(--border); border-radius: 14px; color: var(--text); }
+.tm-karte.is-rot { border-color: var(--red-tx); }
+.tm-karte__text { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+.tm-karte__titel { font-weight: 600; font-size: 16px; }
+.tm-karte__sub { font-size: 13px; color: var(--text-3); }
+.tm-hinweis { padding: 12px 14px; border-radius: 12px; background: var(--grn-bg); color: var(--grn-tx); font-weight: 500; }
+.tm-formular { display: flex; flex-direction: column; gap: 14px; }
+.tm-foto { justify-content: center; padding: 18px; font-size: 15px; }
+.tm-senden, .ap-abhaken__fertig { width: 100%; min-height: 50px; justify-content: center; font-size: 16px; }
+.tm-fertig { display: flex; flex-direction: column; align-items: center; gap: 12px; padding: 48px 16px; color: var(--grn-tx); }
+.tm-fertig__titel { font-size: 20px; font-weight: 650; color: var(--text); }

@@ -40,6 +40,7 @@ export default async function ArbeitsplatzLayout({ children }: { children: React
       ? [{ bereich: '/arbeitsplatz', ...neuerVorgang }, { bereich: '/arbeitsplatz/vorgaenge', ...neuerVorgang }]
       : []),
     ...(darf(person, 'objekte.bearbeiten') ? [{ bereich: '/arbeitsplatz/objekte', label: 'Objekt', href: '/arbeitsplatz/objekte?neu=1', icon: 'plus' }] : []),
+    ...(darf(person, 'plaene.verwalten') ? [{ bereich: '/arbeitsplatz/plaene', label: 'Plan', href: '/arbeitsplatz/plaene?neu=1', icon: 'plus' }] : []),
     ...(darf(person, 'team.verwalten') ? [{ bereich: '/arbeitsplatz/team', label: 'Einladen', href: '/arbeitsplatz/team?neu=1', icon: 'user-plus' }] : []),
   ]
 
