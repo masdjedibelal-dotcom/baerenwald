@@ -12,8 +12,9 @@ const srcDir = path.join(root, 'src')
 const SERVICE_ROLE_IMPORT =
   /from\s+['"]@\/lib\/supabase['"]|supabaseAdmin\b|SUPABASE_SERVICE_ROLE_KEY|getServiceRole/
 
+/** ladeApKontext: TEO-Arbeitsplatz — Session (auth.getUser) + Rolle aus kunden_mitglieder */
 const GATE =
-  /requireOrganisationSession|requireOrgAdminSession|requireOrgFreigabeSession|requireOrgWrite|requireAccountSession|requireBefundActor|assertOrg|assertPartner|assertPortal|CRON_SECRET|INTERNAL_API_SECRET|PARTNER_INTERNAL_API_SECRET|GPT_VIZ_INTERNAL_API_SECRET|LEAD_API_SECRET|auth\.getUser\s*\(|\.auth\.getUser\s*\(|createServerClient|verifyToken|token_hash|getGptVizPortalKundeId|getGptVizSession|checkRateLimit/
+  /requireOrganisationSession|requireOrgAdminSession|requireOrgFreigabeSession|requireOrgWrite|requireAccountSession|requireBefundActor|assertOrg|assertPartner|assertPortal|CRON_SECRET|INTERNAL_API_SECRET|PARTNER_INTERNAL_API_SECRET|GPT_VIZ_INTERNAL_API_SECRET|LEAD_API_SECRET|auth\.getUser\s*\(|\.auth\.getUser\s*\(|createServerClient|verifyToken|token_hash|getGptVizPortalKundeId|getGptVizSession|checkRateLimit|ladeApKontext/
 
 const ALLOWLIST = new Set([
   'src/lib/supabase.ts',
