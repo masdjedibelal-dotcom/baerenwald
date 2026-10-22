@@ -9,10 +9,20 @@ import { vorgangAnlegen } from '@/teo/arbeitsplatz/aktionen/vorgang'
 
 const MAX_FOTOS = 8
 
-export function NeuerVorgang({ objekte, vorauswahl }: { objekte: Array<{ id: string; name: string }>; vorauswahl: string | null }) {
+export function NeuerVorgang({
+  objekte,
+  einheiten,
+  vorauswahl,
+}: {
+  objekte: Array<{ id: string; name: string }>
+  einheiten: Array<{ objektId: string; bezeichnung: string }>
+  vorauswahl: string | null
+}) {
   const router = useRouter()
   const [objektId, setObjektId] = useState(vorauswahl && objekte.some((o) => o.id === vorauswahl) ? vorauswahl : objekte[0]?.id ?? '')
   const [beschreibung, setBeschreibung] = useState('')
+  const [einheit, setEinheit] = useState('')
+  const einheitenHier = einheiten.filter((e) => e.objektId === objektId)
   const [dringend, setDringend] = useState(false)
   const [kontaktName, setKontaktName] = useState('')
   const [kontaktTelefon, setKontaktTelefon] = useState('')
@@ -32,7 +42,7 @@ export function NeuerVorgang({ objekte, vorauswahl }: { objekte: Array<{ id: str
           return
         }
       }
-      const r = await vorgangAnlegen({ objektId, beschreibung, dringend, kontaktName, kontaktTelefon, fotos })
+      const r = await vorgangAnlegen({ objektId, einheit, beschreibung, dringend, kontaktName, kontaktTelefon, fotos })
       if (!r.ok) {
         setFehler(r.fehler)
         return
@@ -46,7 +56,13 @@ export function NeuerVorgang({ objekte, vorauswahl }: { objekte: Array<{ id: str
       <MockCard title="Neuer Vorgang" icon="clipboard-list">
         <MockFormSection>
           <MockField label="Objekt" required full>
-            <MockSelect value={objektId} onChange={(e) => setObjektId(e.target.value)}>
+            <MockSelect
+              value={objektId}
+              onChange={(e) => {
+                setObjektId(e.target.value)
+                setEinheit('')
+              }}
+            >
               {objekte.map((o) => (
                 <option key={o.id} value={o.id}>
                   {o.name}
@@ -54,6 +70,18 @@ export function NeuerVorgang({ objekte, vorauswahl }: { objekte: Array<{ id: str
               ))}
             </MockSelect>
           </MockField>
+          {einheitenHier.length ? (
+            <MockField label="Einheit" full>
+              <MockSelect value={einheit} onChange={(e) => setEinheit(e.target.value)}>
+                <option value="">Allgemein / ganzes Haus</option>
+                {einheitenHier.map((e) => (
+                  <option key={e.bezeichnung} value={e.bezeichnung}>
+                    {e.bezeichnung}
+                  </option>
+                ))}
+              </MockSelect>
+            </MockField>
+          ) : null}
           <MockField label="Was ist zu tun?" required full>
             <MockTextarea value={beschreibung} onChange={(e) => setBeschreibung(e.target.value)} rows={5} autoFocus />
           </MockField>

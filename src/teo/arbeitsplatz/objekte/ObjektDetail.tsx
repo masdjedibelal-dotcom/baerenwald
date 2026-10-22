@@ -23,10 +23,12 @@ import { anlageEntfernen, anlageSpeichern } from '@/teo/arbeitsplatz/aktionen/an
 import { kontaktEntfernen, kontaktSpeichern, type KontaktFelder } from '@/teo/arbeitsplatz/aktionen/objekt'
 import { ANLAGE_ART_LABEL, ANLAGE_ARTEN, type AnlageArt, type AnlageFelder, type ApAnlage } from '@/teo/arbeitsplatz/anlagen'
 import type { ApDokument, ApMitteilung } from '@/teo/arbeitsplatz/daten/haus'
+import type { ApEinheit } from '@/teo/arbeitsplatz/daten/einheiten'
 import type { ApKontakt, ApObjektDetail } from '@/teo/arbeitsplatz/daten/objekte'
 import type { ApPlan } from '@/teo/arbeitsplatz/daten/plaene'
 import { KONTAKT_ROLLE_LABEL, KONTAKT_ROLLEN } from '@/teo/arbeitsplatz/objekt-felder'
 import { ObjektDokumente } from '@/teo/arbeitsplatz/objekte/ObjektDokumente'
+import { ObjektEinheiten } from '@/teo/arbeitsplatz/objekte/ObjektEinheiten'
 import { ObjektFormular } from '@/teo/arbeitsplatz/objekte/ObjektFormular'
 import { ObjektMitteilungen } from '@/teo/arbeitsplatz/objekte/ObjektMitteilungen'
 import { intervallText, PLAN_STAND, planStand } from '@/teo/arbeitsplatz/plaene/plan-logik'
@@ -42,6 +44,7 @@ export function ObjektDetail({
   anlagen,
   mitteilungen,
   dokumente,
+  einheiten,
   rechte,
 }: {
   d: ApObjektDetail
@@ -49,6 +52,7 @@ export function ObjektDetail({
   anlagen: ApAnlage[]
   mitteilungen: ApMitteilung[]
   dokumente: ApDokument[]
+  einheiten: ApEinheit[]
   rechte: Rechte
 }) {
   const router = useRouter()
@@ -116,6 +120,7 @@ export function ObjektDetail({
                       <MockProp label="Offene Vorgänge">{offen.length}</MockProp>
                     </div>
                   </MockCard>
+                  <ObjektEinheiten objektId={objekt.id} einheiten={einheiten} darfBearbeiten={rechte.bearbeiten} />
                   {rechte.kosten ? (
                     <MockCard
                       title={`Kosten ${d.jahr}`}

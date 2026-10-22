@@ -102,7 +102,7 @@ export function VorgangDetail({ d, rechte, weg }: { d: ApVorgangDetail; rechte: 
             {zeile.dringend ? <MockBadge kind="storniert">Dringend</MockBadge> : null}
             {rechte.kosten && zeile.betrag != null ? <span className="dh-amount">{formatEuro(zeile.betrag)}</span> : null}
             <span className="sep" aria-hidden>·</span>
-            <span>{zeile.objektName ?? '—'}</span>
+            <span>{[zeile.objektName ?? '—', zeile.einheit].filter(Boolean).join(' · ')}</span>
             <span className="sep" aria-hidden>·</span>
             <span>{formatDatum(zeile.erstellt)}</span>
           </div>
@@ -214,6 +214,7 @@ export function VorgangDetail({ d, rechte, weg }: { d: ApVorgangDetail; rechte: 
                   <MockCard title="Angaben" icon="info-circle">
                     <div className="props">
                       <MockProp label="Objekt">{zeile.objektName ?? '—'}</MockProp>
+                      {zeile.einheit ? <MockProp label="Einheit">{zeile.einheit}</MockProp> : null}
                       {item?.melderName ? <MockProp label="Gemeldet von">{item.melderName}</MockProp> : null}
                       {item?.melderEinheit ? <MockProp label="Einheit">{item.melderEinheit}</MockProp> : null}
                       {item?.melderTelefon ? <MockProp label="Telefon">{item.melderTelefon}</MockProp> : null}

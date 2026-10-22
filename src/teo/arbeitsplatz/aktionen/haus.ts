@@ -83,3 +83,34 @@ export async function dokumentEntfernen(objektId: string, id: string): Promise<A
   revalidatePath(`/arbeitsplatz/objekte/${objektId}`)
   return { ok: true }
 }
+
+export type EinheitFelder = { bezeichnung: string; lage: string; notiz: string }
+
+export async function einheitSpeichern(objektId: string, id: string | null, f: EinheitFelder): Promise<ApAktionsErgebnis> {
+  const p = await pruefen(objektId, 'objekte.bearbeiten')
+  if (!p.ok) return p
+  const bezeichnung = f.bezeichnung.trim().slice(0, 80)
+  if (!bezeichnung) return { ok: false, fehler: 'Bitte eine Bezeichnung eingeben.' }
+  const werte = { bezeichnung, lage: f.lage.trim().slice(0, 120) || null, notiz: f.notiz.trim().slice(0, 2000) || null }
+  const { error } = id
+    ? await supabaseAdmin.from('teo_einheiten').update(werte).eq('id', id).eq('kunde_id', p.k.org.id).eq('kunde_objekt_id', objektId)
+    : await supabaseAdmin.from('teo_einheiten').insert({ ...werte, kunde_id: p.k.org.id, kunde_objekt_id: objektId })
+  if (error) {
+    logDbError('teo/arbeitsplatz/aktionen/haus:einheit', error)
+    return { ok: false, fehler: 'Einheit konnte nicht gespeichert werden.' }
+  }
+  revalidatePath(`/arbeitsplatz/objekte/${objektId}`)
+  return { ok: true }
+}
+
+export async function einheitEntfernen(objektId: string, id: string): Promise<ApAktionsErgebnis> {
+  const p = await pruefen(objektId, 'objekte.bearbeiten')
+  if (!p.ok) return p
+  const { error } = await supabaseAdmin.from('teo_einheiten').update({ aktiv: false }).eq('id', id).eq('kunde_id', p.k.org.id)
+  if (error) {
+    logDbError('teo/arbeitsplatz/aktionen/haus:einheit-entfernen', error)
+    return { ok: false, fehler: 'Einheit konnte nicht entfernt werden.' }
+  }
+  revalidatePath(`/arbeitsplatz/objekte/${objektId}`)
+  return { ok: true }
+}

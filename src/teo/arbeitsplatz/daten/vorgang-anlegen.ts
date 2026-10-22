@@ -10,6 +10,8 @@ export type NeuerVorgang = {
   dringend: boolean
   kontaktName?: string
   kontaktTelefon?: string
+  /** Einheit (Bezeichnung) — optional */
+  einheit?: string
   fotos?: string[]
 }
 
@@ -58,6 +60,7 @@ export async function legeVorgangAn(k: ApKontext, v: NeuerVorgang): Promise<{ ok
     melder_name: k.person.name,
     melder_email: k.person.email,
     melder_telefon: kontakt.telefon,
+    melder_einheit: v.einheit?.trim().slice(0, 80) || null,
     skipKundeMail: true,
     skipInternMail: true,
     notizen: [beschreibung, kontakt.name || kontakt.telefon ? `Kontakt vor Ort: ${[kontakt.name, kontakt.telefon].filter(Boolean).join(', ')}` : null]

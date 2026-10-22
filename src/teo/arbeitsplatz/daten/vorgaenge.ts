@@ -15,6 +15,8 @@ export type ApVorgangZeile = {
   objektId: string | null
   objektName: string | null
   melder: string | null
+  /** Einheit (z. B. „WE 3“), falls angegeben */
+  einheit: string | null
   dringend: boolean
   erstellt: string
   aktualisiert: string
@@ -25,7 +27,7 @@ export type ApVorgangZeile = {
 }
 
 const LEAD_SPALTEN =
-  'id, status, situation, bereiche, funnel_daten, kanal, anlass, erfassung_von, org_freigabe_status, hv_meldung_status, freigabe_bypass_grund, kontakt_name, melder_name, kontakt_nachricht, plz, created_at, updated_at, kunde_objekt_id, kunde_id, auftraggeber_kunde_id'
+  'id, status, situation, bereiche, funnel_daten, kanal, anlass, erfassung_von, org_freigabe_status, hv_meldung_status, freigabe_bypass_grund, kontakt_name, melder_name, melder_einheit, kontakt_nachricht, plz, created_at, updated_at, kunde_objekt_id, kunde_id, auftraggeber_kunde_id'
 
 type LeadRoh = Record<string, unknown> & { id: string; created_at: string; kunde_objekt_id: string | null }
 
@@ -130,6 +132,7 @@ export async function ladeVorgaenge(k: ApKontext, opts: { nurIds?: string[] } = 
       objektId,
       objektName: objektId ? objektName.get(objektId) ?? null : null,
       melder: (lead.melder_name as string | null)?.trim() || (lead.kontakt_name as string | null)?.trim() || null,
+      einheit: (lead.melder_einheit as string | null)?.trim() || null,
       dringend: Boolean(v.badges.notfall),
       erstellt: lead.created_at,
       aktualisiert: v.updatedAt || (lead.updated_at as string | null) || lead.created_at,

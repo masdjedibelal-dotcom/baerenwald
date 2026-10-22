@@ -6,8 +6,16 @@ import { ladeAnfrageFotosHoch } from '@/lib/funnel/fotos-hochladen'
 import { MockBtn, MockCheckbox, MockField, MockIcon, MockSelect, MockTextarea } from '@/teo/arbeitsplatz/kit'
 import { vorgangAnlegen } from '@/teo/arbeitsplatz/aktionen/vorgang'
 
-export function TeamMelden({ objekte }: { objekte: Array<{ id: string; name: string }> }) {
+export function TeamMelden({
+  objekte,
+  einheiten,
+}: {
+  objekte: Array<{ id: string; name: string }>
+  einheiten: Array<{ objektId: string; bezeichnung: string }>
+}) {
   const [objektId, setObjektId] = useState(objekte[0]?.id ?? '')
+  const [einheit, setEinheit] = useState('')
+  const einheitenHier = einheiten.filter((e) => e.objektId === objektId)
   const [beschreibung, setBeschreibung] = useState('')
   const [dringend, setDringend] = useState(false)
   const [dateien, setDateien] = useState<File[]>([])
@@ -27,13 +35,14 @@ export function TeamMelden({ objekte }: { objekte: Array<{ id: string; name: str
           return
         }
       }
-      const r = await vorgangAnlegen({ objektId, beschreibung, dringend, fotos })
+      const r = await vorgangAnlegen({ objektId, einheit, beschreibung, dringend, fotos })
       if (!r.ok) {
         setFehler(r.fehler)
         return
       }
       setFertig(true)
       setBeschreibung('')
+      setEinheit('')
       setDringend(false)
       setDateien([])
     })
@@ -55,10 +64,28 @@ export function TeamMelden({ objekte }: { objekte: Array<{ id: string; name: str
     <div className="tm-formular">
       {objekte.length > 1 ? (
         <MockField label="Objekt" required full>
-          <MockSelect value={objektId} onChange={(e) => setObjektId(e.target.value)}>
+          <MockSelect
+            value={objektId}
+            onChange={(e) => {
+              setObjektId(e.target.value)
+              setEinheit('')
+            }}
+          >
             {objekte.map((o) => (
               <option key={o.id} value={o.id}>
                 {o.name}
+              </option>
+            ))}
+          </MockSelect>
+        </MockField>
+      ) : null}
+      {einheitenHier.length ? (
+        <MockField label="Wo genau?" full>
+          <MockSelect value={einheit} onChange={(e) => setEinheit(e.target.value)}>
+            <option value="">Allgemein / ganzes Haus</option>
+            {einheitenHier.map((e) => (
+              <option key={e.bezeichnung} value={e.bezeichnung}>
+                {e.bezeichnung}
               </option>
             ))}
           </MockSelect>

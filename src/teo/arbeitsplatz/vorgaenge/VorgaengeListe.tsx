@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
-import { useMemo, useState } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 
 import { formatDatum, formatEuro } from '@/lib/shared-domain/geld-datum'
 import { MockBadge, MockChip, MockEmpty, MockInput, MockSelect } from '@/teo/arbeitsplatz/kit'
@@ -15,10 +15,13 @@ const SPALTEN_OHNE_BETRAG = 'minmax(0, 2.4fr) minmax(0, 1.4fr) 110px'
 export function VorgaengeListe({
   vorgaenge,
   objekte,
+  meineObjektIds,
   zeigeBetrag,
 }: {
   vorgaenge: ApVorgangZeile[]
   objekte: Array<{ id: string; name: string }>
+  /** Objekte, für die diese Person zuständig ist (leer = kein „Meine“-Filter) */
+  meineObjektIds: string[]
   zeigeBetrag: boolean
 }) {
   const router = useRouter()
@@ -26,6 +29,11 @@ export function VorgaengeListe({
   const params = useSearchParams()
   const status = (params.get('status') as ApStatus | null) ?? null
   const objekt = params.get('objekt') ?? ''
+  const meine = params.get('meine') === '1' && meineObjektIds.length > 0
+  const passt = useCallback(
+    (v: ApVorgangZeile) => (!objekt || v.objektId === objekt) && (!meine || (v.objektId != null && meineObjektIds.includes(v.objektId))),
+    [objekt, meine, meineObjektIds]
+  )
   const [suche, setSuche] = useState('')
 
   function setzen(key: string, wert: string | null) {
@@ -37,19 +45,19 @@ export function VorgaengeListe({
 
   const zaehler = useMemo(() => {
     const z: Partial<Record<ApStatus, number>> = {}
-    for (const v of vorgaenge) if (!objekt || v.objektId === objekt) z[v.status] = (z[v.status] ?? 0) + 1
+    for (const v of vorgaenge) if (passt(v)) z[v.status] = (z[v.status] ?? 0) + 1
     return z
-  }, [vorgaenge, objekt])
+  }, [vorgaenge, passt])
 
   const sichtbar = useMemo(() => {
     const s = suche.trim().toLowerCase()
     return vorgaenge.filter(
       (v) =>
         (!status || v.status === status) &&
-        (!objekt || v.objektId === objekt) &&
+        passt(v) &&
         (!s || [v.titel, v.objektName, v.melder].some((t) => t?.toLowerCase().includes(s)))
     )
-  }, [vorgaenge, status, objekt, suche])
+  }, [vorgaenge, status, passt, suche])
 
   const spalten = zeigeBetrag ? SPALTEN : SPALTEN_OHNE_BETRAG
 
@@ -69,6 +77,11 @@ export function VorgaengeListe({
           </div>
         </div>
         <div className="ap-filterzeile">
+          {meineObjektIds.length ? (
+            <MockChip active={meine} onClick={() => setzen('meine', meine ? null : '1')}>
+              Meine Objekte
+            </MockChip>
+          ) : null}
           <MockInput type="search" placeholder="Suchen" value={suche} onChange={(e) => setSuche(e.target.value)} aria-label="Suchen" />
           {objekte.length > 1 ? (
             <MockSelect value={objekt} onChange={(e) => setzen('objekt', e.target.value || null)} aria-label="Objekt">
@@ -102,7 +115,7 @@ export function VorgaengeListe({
                   {v.dringend ? <MockBadge kind="storniert">Dringend</MockBadge> : null}
                 </div>
               </div>
-              <div className="lc-sub">{v.objektName ?? '—'}</div>
+              <div className="lc-sub">{[v.objektName ?? '—', v.einheit].filter(Boolean).join(' · ')}</div>
               <div className="lc-desk ap-gedimmt">{formatDatum(v.erstellt)}</div>
               {zeigeBetrag ? <div className="lc-desk ap-rechts">{v.betrag != null ? formatEuro(v.betrag) : '—'}</div> : null}
             </Link>

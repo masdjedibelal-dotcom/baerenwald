@@ -1,5 +1,6 @@
 import { redirect } from 'next/navigation'
 
+import { ladeEinheiten } from '@/teo/arbeitsplatz/daten/einheiten'
 import { ladeObjekte } from '@/teo/arbeitsplatz/daten/objekte'
 import { ladeApKontext } from '@/teo/arbeitsplatz/kontext'
 import { darf } from '@/teo/arbeitsplatz/rechte'
@@ -14,5 +15,12 @@ export default async function NeuerVorgangSeite({ searchParams }: { searchParams
   if (!darf(k.person, 'vorgang.anlegen')) redirect('/arbeitsplatz/vorgaenge')
   const objekte = await ladeObjekte(k)
   if (!objekte.length) redirect('/arbeitsplatz/objekte')
-  return <NeuerVorgang objekte={objekte.map((o) => ({ id: o.id, name: o.name }))} vorauswahl={objekt ?? null} />
+  const einheiten = await ladeEinheiten(k.org.id, objekte.map((o) => o.id))
+  return (
+    <NeuerVorgang
+      objekte={objekte.map((o) => ({ id: o.id, name: o.name }))}
+      einheiten={einheiten.map((e) => ({ objektId: e.objektId, bezeichnung: e.bezeichnung }))}
+      vorauswahl={objekt ?? null}
+    />
+  )
 }
