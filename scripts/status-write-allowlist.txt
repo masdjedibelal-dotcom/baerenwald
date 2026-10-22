@@ -18,7 +18,6 @@ src/app/api/meldung/ergaenzen/route.ts
 src/app/api/org/abos/kuendigen/route.ts
 src/app/api/org/einheit-bewohner/route.ts
 src/app/api/org/hv-notifications/route.ts
-src/app/api/org/meldung-aktion/route.ts
 src/app/api/org/objekte/einheiten/route.ts
 src/app/api/org/objekte/kontakte/route.ts
 src/app/api/org/vorgang-storno/route.ts
@@ -28,3 +27,5 @@ src/lib/lead/persist-lead.ts
 src/lib/org/finalize-org-self-created-lead.ts
 src/lib/org/persist-meldung-lead.ts
 src/lib/partner/ensure-partner-angebot-handwerker-for-auftrag.ts
+# aus api/org/meldung-aktion verschoben (gleiche Writes, angebot_eingefordert ohne write-Helfer)
+src/teo/hv/vorgang-aktionen.ts

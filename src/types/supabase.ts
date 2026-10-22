@@ -5066,6 +5066,7 @@ export type Database = {
           vorname: string | null
           webseite: string | null
           wl_ansprache_am: string | null
+          org_typ: string | null
         }
         Insert: {
           adresse?: string | null
@@ -5129,6 +5130,7 @@ export type Database = {
           vorname?: string | null
           webseite?: string | null
           wl_ansprache_am?: string | null
+          org_typ?: string | null
         }
         Update: {
           adresse?: string | null
@@ -5192,6 +5194,7 @@ export type Database = {
           vorname?: string | null
           webseite?: string | null
           wl_ansprache_am?: string | null
+          org_typ?: string | null
         }
         Relationships: []
       }
@@ -5253,6 +5256,8 @@ export type Database = {
           kunde_id: string
           name: string
           typ: string
+          fuer_bewohner: boolean
+          kunde_objekt_id: string | null
         }
         Insert: {
           fuer_kunde?: boolean
@@ -5264,6 +5269,8 @@ export type Database = {
           kunde_id: string
           name: string
           typ: string
+          fuer_bewohner?: boolean
+          kunde_objekt_id?: string | null
         }
         Update: {
           fuer_kunde?: boolean
@@ -5275,6 +5282,8 @@ export type Database = {
           kunde_id?: string
           name?: string
           typ?: string
+          fuer_bewohner?: boolean
+          kunde_objekt_id?: string | null
         }
         Relationships: [
           {
@@ -5289,30 +5298,45 @@ export type Database = {
       kunden_mitglieder: {
         Row: {
           aktiv: boolean
-          auth_user_id: string
+          auth_user_id: string | null
           created_at: string
           eingeladen_am: string
           id: string
           kunde_id: string
           rolle: string
+          darf_freigeben: boolean
+          eingeladen_von: string | null
+          email: string | null
+          ist_admin: boolean
+          name: string | null
         }
         Insert: {
           aktiv?: boolean
-          auth_user_id: string
+          auth_user_id: string | null
           created_at?: string
           eingeladen_am?: string
           id?: string
           kunde_id: string
           rolle?: string
+          darf_freigeben?: boolean
+          eingeladen_von?: string | null
+          email?: string | null
+          ist_admin?: boolean
+          name?: string | null
         }
         Update: {
           aktiv?: boolean
-          auth_user_id?: string
+          auth_user_id?: string | null
           created_at?: string
           eingeladen_am?: string
           id?: string
           kunde_id?: string
           rolle?: string
+          darf_freigeben?: boolean
+          eingeladen_von?: string | null
+          email?: string | null
+          ist_admin?: boolean
+          name?: string | null
         }
         Relationships: [
           {
@@ -5382,6 +5406,8 @@ export type Database = {
           updated_at: string
           versicherer: string | null
           versicherungs_nr: string | null
+          budget_jahr: number | null
+          zustaendig_mitglied_id: string | null
         }
         Insert: {
           akut_fall_ids?: Json | null
@@ -5408,6 +5434,8 @@ export type Database = {
           updated_at?: string
           versicherer?: string | null
           versicherungs_nr?: string | null
+          budget_jahr?: number | null
+          zustaendig_mitglied_id?: string | null
         }
         Update: {
           akut_fall_ids?: Json | null
@@ -5434,6 +5462,8 @@ export type Database = {
           updated_at?: string
           versicherer?: string | null
           versicherungs_nr?: string | null
+          budget_jahr?: number | null
+          zustaendig_mitglied_id?: string | null
         }
         Relationships: [
           {
@@ -6068,6 +6098,24 @@ export type Database = {
           },
         ]
       }
+      mitglied_objekte: {
+        Row: {
+          created_at: string
+          kunde_objekt_id: string
+          mitglied_id: string
+        }
+        Insert: {
+          created_at?: string
+          kunde_objekt_id: string
+          mitglied_id: string
+        }
+        Update: {
+          created_at?: string
+          kunde_objekt_id?: string
+          mitglied_id?: string
+        }
+        Relationships: []
+      }
       nachtraege: {
         Row: {
           akzeptiert_at: string | null
@@ -6598,6 +6646,8 @@ export type Database = {
           id: string
           lead_id: string | null
           notiz: string | null
+          beschluss_liegt_vor: boolean
+          beschluss_url: string | null
         }
         Insert: {
           aktion: string
@@ -6609,6 +6659,8 @@ export type Database = {
           id?: string
           lead_id?: string | null
           notiz?: string | null
+          beschluss_liegt_vor?: boolean
+          beschluss_url?: string | null
         }
         Update: {
           aktion?: string
@@ -6620,6 +6672,8 @@ export type Database = {
           id?: string
           lead_id?: string | null
           notiz?: string | null
+          beschluss_liegt_vor?: boolean
+          beschluss_url?: string | null
         }
         Relationships: [
           {
@@ -7959,6 +8013,186 @@ export type Database = {
           quelle?: string
           resolved?: boolean
           severity?: string
+        }
+        Relationships: []
+      }
+      teo_anlagen: {
+        Row: {
+          aktiv: boolean
+          art: string
+          baujahr: number | null
+          created_at: string
+          foto_url: string | null
+          id: string
+          kunde_id: string
+          kunde_objekt_id: string
+          name: string
+          notiz: string | null
+          updated_at: string
+        }
+        Insert: {
+          aktiv?: boolean
+          art?: string
+          baujahr?: number | null
+          created_at?: string
+          foto_url?: string | null
+          id?: string
+          kunde_id: string
+          kunde_objekt_id: string
+          name: string
+          notiz?: string | null
+          updated_at?: string
+        }
+        Update: {
+          aktiv?: boolean
+          art?: string
+          baujahr?: number | null
+          created_at?: string
+          foto_url?: string | null
+          id?: string
+          kunde_id?: string
+          kunde_objekt_id?: string
+          name?: string
+          notiz?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      teo_mitteilungen: {
+        Row: {
+          aktiv: boolean
+          created_at: string
+          erstellt_name: string | null
+          erstellt_von: string | null
+          gueltig_bis: string | null
+          id: string
+          kunde_id: string
+          kunde_objekt_id: string
+          text: string
+          titel: string
+        }
+        Insert: {
+          aktiv?: boolean
+          created_at?: string
+          erstellt_name?: string | null
+          erstellt_von?: string | null
+          gueltig_bis?: string | null
+          id?: string
+          kunde_id: string
+          kunde_objekt_id: string
+          text?: string
+          titel: string
+        }
+        Update: {
+          aktiv?: boolean
+          created_at?: string
+          erstellt_name?: string | null
+          erstellt_von?: string | null
+          gueltig_bis?: string | null
+          id?: string
+          kunde_id?: string
+          kunde_objekt_id?: string
+          text?: string
+          titel?: string
+        }
+        Relationships: []
+      }
+      teo_plaene: {
+        Row: {
+          aktiv: boolean
+          anlage_id: string | null
+          art: string
+          checkliste: Json
+          created_at: string
+          fuer_mieter_sichtbar: boolean
+          id: string
+          intervall_anzahl: number
+          intervall_einheit: string
+          kunde_id: string
+          kunde_objekt_id: string
+          naechste_faelligkeit: string
+          titel: string
+          updated_at: string
+          zustaendig: string
+          zustaendig_mitglied_id: string | null
+        }
+        Insert: {
+          aktiv?: boolean
+          anlage_id?: string | null
+          art?: string
+          checkliste?: Json
+          created_at?: string
+          fuer_mieter_sichtbar?: boolean
+          id?: string
+          intervall_anzahl?: number
+          intervall_einheit?: string
+          kunde_id: string
+          kunde_objekt_id: string
+          naechste_faelligkeit: string
+          titel: string
+          updated_at?: string
+          zustaendig?: string
+          zustaendig_mitglied_id?: string | null
+        }
+        Update: {
+          aktiv?: boolean
+          anlage_id?: string | null
+          art?: string
+          checkliste?: Json
+          created_at?: string
+          fuer_mieter_sichtbar?: boolean
+          id?: string
+          intervall_anzahl?: number
+          intervall_einheit?: string
+          kunde_id?: string
+          kunde_objekt_id?: string
+          naechste_faelligkeit?: string
+          titel?: string
+          updated_at?: string
+          zustaendig?: string
+          zustaendig_mitglied_id?: string | null
+        }
+        Relationships: []
+      }
+      teo_plan_erledigungen: {
+        Row: {
+          created_at: string
+          erledigt_am: string
+          erledigt_name: string | null
+          erledigt_von: string | null
+          faellig_am: string
+          fotos: string[]
+          id: string
+          notiz: string | null
+          plan_id: string
+          punkte: Json
+          vorgang_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          erledigt_am?: string
+          erledigt_name?: string | null
+          erledigt_von?: string | null
+          faellig_am: string
+          fotos?: string[]
+          id?: string
+          notiz?: string | null
+          plan_id: string
+          punkte?: Json
+          vorgang_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          erledigt_am?: string
+          erledigt_name?: string | null
+          erledigt_von?: string | null
+          faellig_am?: string
+          fotos?: string[]
+          id?: string
+          notiz?: string | null
+          plan_id?: string
+          punkte?: Json
+          vorgang_id?: string | null
         }
         Relationships: []
       }
