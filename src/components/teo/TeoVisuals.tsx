@@ -3,6 +3,7 @@
  * Reine Darstellung, Inhalte sind Beispiele. Styles in teo-start.css (ts-*).
  */
 import {
+  AlertTriangle,
   BadgeEuro,
   Bell,
   Building2,
@@ -14,7 +15,9 @@ import {
   FileSpreadsheet,
   Flame,
   Home,
+  MessageCircle,
   Megaphone,
+  PhoneMissed,
   QrCode,
   Wrench,
   X,
@@ -511,6 +514,92 @@ export function BentoMelden() {
         <b>3 neue Meldungen</b>
         <small>mit Fotos, sortiert nach Haus</small>
       </span>
+    </div>
+  );
+}
+
+/* ───────────── Problem ───────────── */
+
+export function ProblemAnrufe() {
+  return (
+    <ul className="ts-anrufe" aria-hidden="true">
+      {["Sanitär Maier", "Elektro Schulz", "Hausmeister-Service"].map((n, i) => (
+        <li key={n}>
+          <PhoneMissed size={15} />
+          <span>
+            <b>{n}</b>
+            <small>{["Mailbox", "Keine Antwort", "Mailbox"][i]}</small>
+          </span>
+          <em>{["Mo", "Di", "Mi"][i]}</em>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+export function ProblemFrist() {
+  return (
+    <div className="ts-fristen-paar" aria-hidden="true">
+      <div className="ts-frist">
+        <span className="ts-frist__icon">
+          <AlertTriangle size={18} />
+        </span>
+        <span>
+          <b>Rauchwarnmelder</b>
+          <small>Leopoldstr. 10 · seit 3 Wochen überfällig</small>
+        </span>
+      </div>
+      <div className="ts-frist ts-frist--bald">
+        <span className="ts-frist__icon">
+          <CalendarClock size={18} />
+        </span>
+        <span>
+          <b>Aufzug Hauptprüfung</b>
+          <small>Isarstr. 5 · in 5 Tagen</small>
+        </span>
+      </div>
+    </div>
+  );
+}
+
+export function ProblemFragen() {
+  return (
+    <div className="ts-fragen" aria-hidden="true">
+      <p>
+        <MessageCircle size={14} /> Wann kommt endlich jemand?
+      </p>
+      <p className="ts-fragen--rechts">Was hat das gekostet?</p>
+      <p>Ist das schon beauftragt?</p>
+    </div>
+  );
+}
+
+/* ───────────── Ausführung ───────────── */
+
+export function AusfuehrungKarte() {
+  return (
+    <div className="ts-karte ts-einsatz" aria-hidden="true">
+      <div className="ts-einsatz__kopf">
+        <span className="ts-einsatz__avatar">SH</span>
+        <span>
+          <b>Sanitär Huber</b>
+          <small>Partnerbetrieb · Heizung und Sanitär</small>
+        </span>
+        <Status ton="fertig">Vor Ort</Status>
+      </div>
+      <div className="ts-einsatz__zeile">
+        <CalendarClock size={15} />
+        <span>Di 14. Nov. · 9:00 bis 11:00</span>
+      </div>
+      <div className="ts-einsatz__fotos">
+        <span />
+        <span />
+        <span />
+      </div>
+      <div className="ts-einsatz__zeile ts-einsatz__zeile--ok">
+        <ClipboardCheck size={15} />
+        <span>Abnahme mit Fotos · Rechnung geprüft</span>
+      </div>
     </div>
   );
 }

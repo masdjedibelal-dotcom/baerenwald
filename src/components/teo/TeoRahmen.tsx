@@ -27,9 +27,9 @@ function TeoKopf() {
           <TeoLogo />
         </Link>
         <nav className="teo-kopf__nav" aria-label="Hauptnavigation">
-          <Link href="/#ablauf">So läuft es</Link>
+          <Link href="/#loesung">So arbeiten wir</Link>
           <Link href="/#funktionen">Funktionen</Link>
-          <Link href="/#leistungen">Leistungen</Link>
+          <Link href="/#warum">Warum teo</Link>
           <Link href="/#faq">Fragen</Link>
         </nav>
         <div className="teo-kopf__aktionen">
@@ -60,8 +60,8 @@ function TeoFuss() {
           </p>
         </div>
         <nav className="teo-fuss__links" aria-label="Fußzeile">
-          <Link href="/#ablauf">So läuft es</Link>
-          <Link href="/#leistungen">Leistungen</Link>
+          <Link href="/#loesung">So arbeiten wir</Link>
+          <Link href="/#warum">Warum teo</Link>
           <Link href="/#faq">Fragen</Link>
           <Link href={TEO_LINK_ANFRAGE}>Anfrage stellen</Link>
           <Link href={TEO_LINK_RECHNER}>Preis berechnen</Link>
