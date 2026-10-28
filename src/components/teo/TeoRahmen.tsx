@@ -6,8 +6,8 @@ import { MARKE } from "@/lib/marke";
 
 import "@/app/teo-landing.css";
 
-export const TEO_LINK_ANFRAGE = "/rechner?modus=anfrage";
-export const TEO_LINK_RECHNER = "/rechner";
+/** Anfrage für Verwaltungen (auf TEO zeigt /rechner die Anfrage, ohne Preise). */
+export const TEO_LINK_ANFRAGE = "/rechner";
 
 /** Wortmarke „teo.“ — aus dem quadratischen Logo zugeschnitten. */
 export function TeoLogo({ hell = false }: { hell?: boolean }) {
@@ -64,7 +64,6 @@ function TeoFuss() {
           <Link href="/#warum">Warum teo</Link>
           <Link href="/#faq">Fragen</Link>
           <Link href={TEO_LINK_ANFRAGE}>Anfrage stellen</Link>
-          <Link href={TEO_LINK_RECHNER}>Preis berechnen</Link>
           <Link href="/portal/login">{MARKE.portalName} anmelden</Link>
         </nav>
         <nav className="teo-fuss__links" aria-label="Rechtliches">

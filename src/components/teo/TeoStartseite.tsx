@@ -16,7 +16,7 @@ import {
   Zap,
 } from "lucide-react";
 
-import { TEO_LINK_ANFRAGE, TEO_LINK_RECHNER, TeoRahmen } from "@/components/teo/TeoRahmen";
+import { TEO_LINK_ANFRAGE, TeoRahmen } from "@/components/teo/TeoRahmen";
 import { TeoRollen } from "@/components/teo/TeoRollen";
 import {
   AblaufKarte,
@@ -109,9 +109,6 @@ function Aktionen({ hell = false }: { hell?: boolean }) {
     <div className="teo-aktionen">
       <Link href={TEO_LINK_ANFRAGE} className={hell ? "teo-btn teo-btn--hell" : "teo-btn"}>
         Anfrage stellen
-      </Link>
-      <Link href={TEO_LINK_RECHNER} className={hell ? "teo-btn teo-btn--rand-hell" : "teo-btn teo-btn--rand"}>
-        Preis berechnen
       </Link>
     </div>
   );
