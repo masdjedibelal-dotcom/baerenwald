@@ -1433,3 +1433,72 @@
 .ts-abschnitt--warm .ts-icons--blau .ts-icons__icon,
 .ts-icons--blau .ts-icons__icon { background: var(--teo-blau-bg); color: var(--teo-blau); }
 .ts-icons--blau p { max-width: 30ch; }
+
+/* Kosten: gleiche Rechnung, anderer Aufwand (Vorbild Lessen „Total cost to maintain“) */
+.ts-kosten { margin: 48px auto 0; max-width: 1000px; display: grid; gap: 16px; }
+@media (min-width: 900px) {
+  .ts-kosten { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 24px; }
+}
+.ts-kosten__karte {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  padding: 32px;
+  border-radius: 28px;
+  background: #fff;
+  border: 1px solid var(--ts-linie);
+  box-shadow: 0 24px 60px -40px rgba(11, 31, 58, 0.3);
+}
+.ts-kosten__karte--teo { background: linear-gradient(160deg, #13325c 0%, var(--teo-navy) 100%); border-color: transparent; color: #fff; }
+.teo-site .ts-kosten__karte h3 { font-size: 24px; font-weight: 800; letter-spacing: -0.03em; text-align: center; }
+.teo-site .ts-kosten__karte--teo h3 { color: #fff; }
+.ts-kosten__rechnung {
+  padding: 18px 20px;
+  border-radius: 18px;
+  background: #fbfaf8;
+  border: 1px solid var(--ts-linie);
+  color: var(--teo-text);
+  font-size: 14px;
+  font-variant-numeric: tabular-nums;
+}
+.ts-kosten__karte--teo .ts-kosten__rechnung { background: #fff; border-color: transparent; }
+.ts-kosten__rkopf { display: flex; justify-content: space-between; align-items: baseline; padding-bottom: 10px; margin-bottom: 4px; border-bottom: 1px solid var(--ts-linie); }
+.ts-kosten__rkopf b { font-family: var(--teo-serif, Georgia, serif); font-size: 20px; font-weight: 600; }
+.ts-kosten__rkopf small { color: #6a7c92; font-size: 13px; }
+.ts-kosten__posten, .ts-kosten__summe { display: flex; justify-content: space-between; gap: 12px; padding: 6px 0; }
+.ts-kosten__posten span:first-child { color: #6a7c92; }
+.ts-kosten__summe { margin-top: 4px; padding-top: 10px; border-top: 1px solid var(--ts-linie); font-weight: 750; font-size: 15px; }
+.ts-kosten__karte ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 12px; }
+.ts-kosten__karte li { display: flex; align-items: center; gap: 12px; font-size: 16px; }
+.ts-kosten__karte--teo li { color: rgba(255, 255, 255, 0.92); }
+.ts-kosten__zeichen {
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  flex: none;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.16);
+  color: #fff;
+  font-weight: 800;
+  font-size: 15px;
+  line-height: 1;
+}
+.ts-kosten__zeichen--plus { background: #fdecdf; color: #c2410c; }
+.teo-site .ts-kosten__aufwand {
+  margin-top: auto;
+  padding-top: 18px;
+  border-top: 1px solid var(--ts-linie);
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  font-size: 15px;
+  color: var(--teo-text-2);
+}
+.teo-site .ts-kosten__aufwand b { font-size: 22px; font-weight: 800; letter-spacing: -0.02em; color: #c2410c; }
+.teo-site .ts-kosten__karte--teo .ts-kosten__aufwand { border-top-color: rgba(255, 255, 255, 0.16); color: rgba(255, 255, 255, 0.75); }
+.teo-site .ts-kosten__karte--teo .ts-kosten__aufwand b { color: #7fd4a0; }
+.teo-site .ts-kosten__zeile { margin: 32px auto 0; max-width: 46ch; text-align: center; font-size: 18px; font-weight: 650; color: var(--teo-navy); text-wrap: balance; }
+@media (max-width: 560px) {
+  .ts-kosten__karte { padding: 24px 18px; border-radius: 24px; }
+}

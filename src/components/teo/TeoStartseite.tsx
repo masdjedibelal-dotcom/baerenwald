@@ -8,7 +8,6 @@ import {
   Hammer,
   Headset,
   Megaphone,
-  Minus,
   Network,
   Smartphone,
   Sparkles,
@@ -79,16 +78,21 @@ const DAVON_HABEN = [
   "Kosten im Budget",
 ] as const;
 
-/** Vergleich: ja / nein je Spalte (Software allein, Handwerker direkt, teo). */
-const VERGLEICH: Array<[string, boolean, boolean, boolean]> = [
-  ["Meldung mit Foto, ohne Anruf", true, false, true],
-  ["Handwerker kommt, auch für Kleines", false, false, true],
-  ["Termine und Nachfassen erledigt", false, false, true],
-  ["Prüffristen laufen von selbst", false, false, true],
-  ["Haftung und Gewährleistung", false, true, true],
-  ["Alle sehen denselben Stand", true, false, true],
-  ["Ein Ansprechpartner für alle Gewerke", false, false, true],
-];
+/** Kosten-Beispiel (Vorbild Lessen „Total cost to maintain“): gleiche Rechnung, anderer Aufwand. */
+const RECHNUNG = [
+  ["Leckortung", "380,00 €"],
+  ["Rohr erneuert", "640,00 €"],
+  ["Trocknung, 10 Tage", "1.460,00 €"],
+] as const;
+
+const OHNE_TEO = ["9 Telefonate", "3 Angebote vergleichen", "2 verschobene Termine", "Unterlagen für die Versicherung"] as const;
+
+const MIT_TEO_KOSTEN = [
+  "Kein Aufschlag auf die Rechnung",
+  "Angebote und Termine erledigen wir",
+  "Unterlagen für die Versicherung fertig",
+  "Software inklusive",
+] as const;
 
 export const TEO_FAQ = [
   {
@@ -123,15 +127,24 @@ export const TEO_FAQ = [
   },
 ] as const;
 
-function Haken({ ja }: { ja: boolean }) {
-  return ja ? (
-    <span className="ts-vgl__ja" aria-label="ja">
-      <Check size={16} strokeWidth={3} />
-    </span>
-  ) : (
-    <span className="ts-vgl__nein" aria-label="nein">
-      <Minus size={16} />
-    </span>
+function Rechnung() {
+  return (
+    <div className="ts-kosten__rechnung" aria-hidden="true">
+      <div className="ts-kosten__rkopf">
+        <b>Rechnung</b>
+        <small>Wasserschaden Keller</small>
+      </div>
+      {RECHNUNG.map(([posten, betrag]) => (
+        <div key={posten} className="ts-kosten__posten">
+          <span>{posten}</span>
+          <span>{betrag}</span>
+        </div>
+      ))}
+      <div className="ts-kosten__summe">
+        <span>Summe</span>
+        <span>2.480,00 €</span>
+      </div>
+    </div>
   );
 }
 
@@ -337,31 +350,46 @@ export function TeoStartseite() {
 
       <section className="ts-abschnitt" id="warum">
         <div className="teo-innen">
-          <h2 className="ts-zentriert-text">Mehr als Software.</h2>
-          <div className="ts-vgl" role="table" aria-label="Vergleich">
-            <div className="ts-vgl__zeile ts-vgl__kopf" role="row">
-              <span role="columnheader" />
-              <span role="columnheader">Software allein</span>
-              <span role="columnheader">Handwerker direkt</span>
-              <span role="columnheader" className="ts-vgl__teo">
-                teo
-              </span>
+          <h2 className="ts-zentriert-text ts-zweizeilig">
+            <span>Die Rechnung ist nicht das Teure.</span> <span className="ts-blau">Die Zeit drumherum schon.</span>
+          </h2>
+          <div className="ts-kosten">
+            <div className="ts-kosten__karte">
+              <h3>Ohne teo</h3>
+              <Rechnung />
+              <ul>
+                {OHNE_TEO.map((t) => (
+                  <li key={t}>
+                    <span className="ts-kosten__zeichen ts-kosten__zeichen--plus" aria-hidden="true">
+                      +
+                    </span>
+                    {t}
+                  </li>
+                ))}
+              </ul>
+              <p className="ts-kosten__aufwand">
+                Ihr Aufwand <b>etwa 6 Stunden</b>
+              </p>
             </div>
-            {VERGLEICH.map(([text, a, b, c]) => (
-              <div key={text} className="ts-vgl__zeile" role="row">
-                <span role="rowheader">{text}</span>
-                <span role="cell">
-                  <Haken ja={a} />
-                </span>
-                <span role="cell">
-                  <Haken ja={b} />
-                </span>
-                <span role="cell" className="ts-vgl__teo">
-                  <Haken ja={c} />
-                </span>
-              </div>
-            ))}
+            <div className="ts-kosten__karte ts-kosten__karte--teo">
+              <h3>Mit teo</h3>
+              <Rechnung />
+              <ul>
+                {MIT_TEO_KOSTEN.map((t) => (
+                  <li key={t}>
+                    <span className="ts-kosten__zeichen" aria-hidden="true">
+                      <Check size={13} strokeWidth={3} />
+                    </span>
+                    {t}
+                  </li>
+                ))}
+              </ul>
+              <p className="ts-kosten__aufwand">
+                Ihr Aufwand <b>2 Minuten</b>
+              </p>
+            </div>
           </div>
+          <p className="ts-kosten__zeile">Software allein repariert nichts. Handwerker allein koordinieren nicht. teo macht beides.</p>
         </div>
       </section>
 
