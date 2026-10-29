@@ -13,10 +13,8 @@ import {
   Home,
   KeyRound,
   Megaphone,
-  ReceiptText,
   Minus,
   PaintRoller,
-  PhoneMissed,
   QrCode,
   ShieldCheck,
   Snowflake,
@@ -24,6 +22,7 @@ import {
   Trees,
   Wallet,
   Wrench,
+  X,
   Zap,
 } from "lucide-react";
 
@@ -46,10 +45,20 @@ const ZIELGRUPPEN = [
   "Eigentümer mehrerer Häuser",
 ] as const;
 
-const PROBLEME = [
-  { icon: PhoneMissed, titel: "Handwerker suchen und nachtelefonieren." },
-  { icon: CalendarClock, titel: "Termine mit Mietern abstimmen." },
-  { icon: ReceiptText, titel: "Angebote, Rechnungen, Fristen prüfen." },
+const HEUTE = [
+  "Handwerker suchen und nachtelefonieren",
+  "Termine mit Mietern abstimmen",
+  "Den Stand per Telefon und Mail erfragen",
+  "Rechnungen ohne Nachweis prüfen",
+  "Prüffristen selbst im Kopf behalten",
+] as const;
+
+const MIT_TEO = [
+  "Eine Meldung genügt, wir übernehmen",
+  "Handwerker und Termin organisieren wir",
+  "Den Stand sehen Sie jederzeit in der App",
+  "Abnahme mit Fotos, Rechnung geprüft",
+  "Prüffristen laufen von selbst",
 ] as const;
 
 const ABLAUF = [
@@ -217,16 +226,36 @@ export function TeoStartseite() {
 
       <section className="ts-abschnitt" id="problem">
         <div className="teo-innen">
-          <h2 className="ts-zentriert-text">Jeder Schaden ist ein kleines Projekt. Und kostet Sie Stunden.</h2>
-          <div className="ts-probleme">
-            {PROBLEME.map((p) => (
-              <figure key={p.titel}>
-                <div className="ts-kachel" aria-hidden="true">
-                  <p.icon size={44} strokeWidth={1.4} />
-                </div>
-                <figcaption>{p.titel}</figcaption>
-              </figure>
-            ))}
+          <h2 className="ts-zentriert-text ts-zweizeilig">
+            <span>Jeder Schaden ist ein kleines Projekt.</span> <span className="ts-blau">Und kostet Sie Stunden.</span>
+          </h2>
+          <div className="ts-vorher">
+            <div className="ts-vorher__karte">
+              <h3>Heute koordinieren Sie selbst.</h3>
+              <ul>
+                {HEUTE.map((t) => (
+                  <li key={t}>
+                    <span className="ts-vorher__zeichen ts-vorher__zeichen--nein" aria-hidden="true">
+                      <X size={14} strokeWidth={2.5} />
+                    </span>
+                    {t}
+                  </li>
+                ))}
+              </ul>
+            </div>
+            <div className="ts-vorher__karte ts-vorher__karte--teo">
+              <h3>Mit teo melden Sie nur noch.</h3>
+              <ul>
+                {MIT_TEO.map((t) => (
+                  <li key={t}>
+                    <span className="ts-vorher__zeichen" aria-hidden="true">
+                      <Check size={14} strokeWidth={3} />
+                    </span>
+                    {t}
+                  </li>
+                ))}
+              </ul>
+            </div>
           </div>
         </div>
       </section>

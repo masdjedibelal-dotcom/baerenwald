@@ -1145,3 +1145,56 @@
   .ts-fuerwen__liste { gap: 8px; }
   .ts-fuerwen__liste li { padding: 9px 14px; font-size: 14px; }
 }
+
+/* Heute / Mit teo (Vorbild Lessen „Traditional approach / The Lessen way“) */
+.ts-blau { color: var(--teo-blau); }
+.ts-vorher {
+  margin: 48px auto 0;
+  max-width: 1000px;
+  display: grid;
+  gap: 16px;
+}
+@media (min-width: 900px) {
+  .ts-vorher { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 24px; }
+}
+.ts-vorher__karte {
+  padding: 32px;
+  border-radius: 28px;
+  background: #fff;
+  border: 1px solid var(--ts-linie);
+  box-shadow: 0 24px 60px -40px rgba(11, 31, 58, 0.3);
+}
+.ts-vorher__karte--teo {
+  background: linear-gradient(160deg, var(--teo-blau) 0%, var(--teo-navy) 100%);
+  border-color: transparent;
+  color: #fff;
+}
+.teo-site .ts-vorher__karte h3 {
+  font-size: clamp(22px, 2.2vw, 28px);
+  line-height: 1.2;
+  font-weight: 750;
+  letter-spacing: -0.025em;
+  text-wrap: balance;
+}
+.teo-site .ts-vorher__karte--teo h3 { color: #fff; }
+.ts-vorher__karte ul { list-style: none; margin: 24px 0 0; padding: 0; display: grid; gap: 16px; }
+.ts-vorher__karte li { display: flex; align-items: flex-start; gap: 12px; font-size: 17px; line-height: 1.4; }
+.ts-vorher__karte--teo li { color: rgba(255, 255, 255, 0.92); }
+.ts-vorher__zeichen {
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  flex: none;
+  margin-top: 1px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.16);
+  color: #fff;
+}
+.ts-vorher__zeichen--nein { background: #fdecdf; color: #c2410c; }
+@media (max-width: 560px) {
+  .ts-vorher__karte { padding: 24px 20px; border-radius: 24px; }
+  .ts-vorher__karte li { font-size: 16px; }
+}
+.teo-site .ts-zweizeilig { max-width: none; }
+.ts-zweizeilig > span { display: block; }
