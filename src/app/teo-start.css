@@ -981,3 +981,17 @@
   .ts-cta { min-height: 600px; }
   .ts-cta__bild img { object-position: 70% center; }
 }
+
+/* Hero: ein kurzer Satz unter der Überschrift (wie Lessen) */
+.ts-hero h1 { max-width: 16ch; }
+.teo-site .ts-hero__satz {
+  margin: 24px auto 0;
+  max-width: 34ch;
+  font-size: clamp(18px, 1.8vw, 22px);
+  line-height: 1.45;
+  color: var(--teo-text-2);
+  text-wrap: balance;
+}
+.ts-hero h1 { max-width: none; }
+.ts-hero__zeile { display: block; }
+.ts-hero h1 { font-size: clamp(36px, 6.4vw, 84px); }

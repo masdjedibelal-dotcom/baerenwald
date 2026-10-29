@@ -191,7 +191,10 @@ export function TeoStartseite() {
           <span className="ts-formen__rot" />
         </div>
         <div className="teo-innen ts-hero__kopf">
-          <h1>Sie verwalten. Wir machen die Technik.</h1>
+          <h1>
+            <span className="ts-hero__zeile">Nicht mehr koordinieren.</span> <span className="ts-hero__zeile">Nur noch entscheiden.</span>
+          </h1>
+          <p className="ts-hero__satz">teo übernimmt die Technik Ihrer Häuser. Von der Meldung bis zur Rechnung.</p>
           <div className="teo-aktionen ts-zentriert">
             <Link href={TEO_LINK_ANFRAGE} className="teo-btn">
               Anfrage stellen
