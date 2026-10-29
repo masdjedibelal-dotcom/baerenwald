@@ -1198,3 +1198,97 @@
 }
 .teo-site .ts-zweizeilig { max-width: none; }
 .ts-zweizeilig > span { display: block; }
+
+/* Fluss-Grafik: Was wir übernehmen → So machen wir es → Was Sie davon haben (Vorbild Lessen) */
+.ts-fluss {
+  margin: 56px auto 0;
+  max-width: 1120px;
+  display: grid;
+  gap: 40px;
+  align-items: center;
+}
+@media (min-width: 1000px) {
+  .ts-fluss { grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr) minmax(0, 1fr); gap: 56px; }
+}
+.ts-fluss__spalte { display: flex; flex-direction: column; align-items: flex-start; gap: 14px; }
+.teo-site .ts-fluss__marke {
+  padding: 7px 14px;
+  border-radius: 999px;
+  background: var(--teo-gelb-bg);
+  color: var(--teo-gelb-tx);
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0;
+}
+.teo-site .ts-fluss__marke--blau { background: var(--teo-blau-bg); color: var(--teo-blau); }
+.ts-fluss__liste { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; width: 100%; }
+.ts-fluss__liste li {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  border-radius: 16px;
+  background: #fff;
+  border: 1px solid var(--ts-linie);
+  font-size: 15px;
+  font-weight: 650;
+  color: var(--teo-navy);
+}
+.ts-fluss__icon {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  flex: none;
+  border-radius: 10px;
+  background: var(--teo-gelb-bg);
+  color: var(--teo-gelb-tx);
+}
+.ts-fluss__icon--blau { background: var(--teo-blau-bg); color: var(--teo-blau); }
+.ts-fluss__icon--hell { background: rgba(255, 255, 255, 0.14); color: #fff; width: 40px; height: 40px; border-radius: 12px; }
+.ts-fluss__mitte {
+  position: relative;
+  padding: 28px 22px 22px;
+  border-radius: 28px;
+  background: linear-gradient(160deg, var(--teo-blau) 0%, var(--teo-navy) 100%);
+  color: #fff;
+  box-shadow: 0 30px 70px -36px rgba(11, 31, 58, 0.6);
+}
+.teo-site .ts-fluss__mitte h3 { color: #fff; text-align: center; font-size: 20px; font-weight: 750; }
+.ts-fluss__mitte ul { list-style: none; margin: 18px 0 0; padding: 0; display: grid; gap: 10px; }
+.ts-fluss__mitte li {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 14px;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.1);
+}
+.ts-fluss__mitte li b { display: block; font-size: 16px; }
+.ts-fluss__mitte li small { display: block; margin-top: 2px; font-size: 14px; color: rgba(255, 255, 255, 0.78); }
+/* gepunktete Verbinder */
+.ts-fluss__mitte::before,
+.ts-fluss__mitte::after {
+  content: "";
+  position: absolute;
+  border-color: rgba(30, 95, 168, 0.45);
+  border-style: dashed;
+  border-width: 0;
+}
+@media (min-width: 1000px) {
+  .ts-fluss__mitte::before,
+  .ts-fluss__mitte::after { top: 50%; width: 44px; border-top-width: 2px; }
+  .ts-fluss__mitte::before { right: 100%; margin-right: 6px; }
+  .ts-fluss__mitte::after { left: 100%; margin-left: 6px; }
+}
+@media (max-width: 999px) {
+  .ts-fluss { gap: 48px; max-width: 560px; }
+  .ts-fluss__mitte::before,
+  .ts-fluss__mitte::after { left: 50%; height: 32px; border-left-width: 2px; }
+  .ts-fluss__mitte::before { bottom: 100%; margin-bottom: 8px; }
+  .ts-fluss__mitte::after { top: 100%; margin-top: 8px; }
+}
+
+/* Fotos über „Woran wir denken“ */
+.ts-zwei--fotos { margin-top: 40px; }
+.ts-zwei--fotos + .ts-icons { margin-top: 56px; }

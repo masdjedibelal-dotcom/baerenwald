@@ -4,26 +4,19 @@ import {
   CalendarClock,
   Check,
   ClipboardCheck,
-  DoorOpen,
-  Droplets,
   FileSpreadsheet,
-  Flame,
   Gauge,
   Hammer,
-  Home,
-  KeyRound,
+  Headset,
   Megaphone,
   Minus,
-  PaintRoller,
+  Network,
   QrCode,
-  ShieldCheck,
-  Snowflake,
+  Smartphone,
   Sparkles,
-  Trees,
   Wallet,
   Wrench,
   X,
-  Zap,
 } from "lucide-react";
 
 import { TeoAblaufKarte } from "@/components/teo/TeoAblaufKarte";
@@ -77,19 +70,25 @@ const FUNKTIONEN = [
   { icon: FileSpreadsheet, titel: "Kosten-Export", text: "Alle Ausgaben je Haus als Datei." },
 ] as const;
 
-const GEWERKE = [
-  { icon: Droplets, name: "Rohrbruch und Sanitär" },
-  { icon: Flame, name: "Heizung" },
-  { icon: Zap, name: "Elektrik" },
-  { icon: KeyRound, name: "Schlüssel und Schließanlage" },
-  { icon: DoorOpen, name: "Fenster und Türen" },
-  { icon: Home, name: "Dach und Rinne" },
-  { icon: PaintRoller, name: "Maler" },
-  { icon: Hammer, name: "Sanierung" },
-  { icon: ShieldCheck, name: "Wartung und Prüfungen" },
-  { icon: Sparkles, name: "Treppenhausreinigung" },
-  { icon: Trees, name: "Garten" },
-  { icon: Snowflake, name: "Winterdienst" },
+/** Fluss-Grafik (Vorbild Lessen): was rein kommt, wie wir es machen, was Sie davon haben. */
+const UEBERNEHMEN = [
+  { icon: Wrench, text: "Schäden und Reparaturen" },
+  { icon: CalendarClock, text: "Wartung und Prüffristen" },
+  { icon: Sparkles, text: "Laufender Betrieb" },
+  { icon: Hammer, text: "Sanierungen und Maßnahmen" },
+] as const;
+
+const SO_MACHEN_WIR_ES = [
+  { icon: Network, titel: "Partnerbetriebe in München", text: "Geprüft, für alle Gewerke." },
+  { icon: Smartphone, titel: "Die App", text: "Meldung, Stand, Fotos und Rechnung an einem Ort." },
+  { icon: Headset, titel: "Ihr teo-Team", text: "Koordiniert, prüft und haftet." },
+] as const;
+
+const DAVON_HABEN = [
+  "Ein Ansprechpartner für alles",
+  "Jeder Stand sichtbar",
+  "Rechnungen geprüft",
+  "Kosten im Budget",
 ] as const;
 
 /** Vergleich: ja / nein je Spalte (Software allein, Handwerker direkt, teo). */
@@ -262,28 +261,52 @@ export function TeoStartseite() {
 
       <section className="ts-abschnitt ts-abschnitt--warm" id="loesung">
         <div className="teo-innen">
-          <h2 className="ts-zentriert-text">Geben Sie es ab. Wir kümmern uns komplett.</h2>
-          <div className="ts-zwei">
-            <figure>
-              <div className="ts-buehne">
-                <TeoFoto name="handwerker" alt="Handwerker stellt ein Ventil an der Heizung ein" className="ts-foto--flach" />
-                <AbnahmeKarte />
-              </div>
-              <figcaption>
-                <b>Wir erledigen es</b>
-                <span>Handwerker, Termine, Abnahme, Rechnung. Haftung bei uns.</span>
-              </figcaption>
-            </figure>
-            <figure>
-              <div className="ts-buehne">
-                <TeoFoto name="verwaltung" alt="Verwalterin am Laptop, im Fenster die Frauenkirche" className="ts-foto--flach" />
-                <MeldungKarte />
-              </div>
-              <figcaption>
-                <b>Sie sehen es</b>
-                <span>Jeder Stand in einer App. Inklusive.</span>
-              </figcaption>
-            </figure>
+          <h2 className="ts-zentriert-text ts-zweizeilig">
+            <span>Jeder Auftrag. Ein Ablauf.</span> <span className="ts-blau">Ein Ansprechpartner.</span>
+          </h2>
+          <div className="ts-fluss">
+            <div className="ts-fluss__spalte">
+              <h3 className="ts-fluss__marke">Was wir übernehmen</h3>
+              <ul className="ts-fluss__liste">
+                {UEBERNEHMEN.map((u) => (
+                  <li key={u.text}>
+                    <span className="ts-fluss__icon">
+                      <u.icon size={18} strokeWidth={1.8} />
+                    </span>
+                    {u.text}
+                  </li>
+                ))}
+              </ul>
+            </div>
+            <div className="ts-fluss__mitte">
+              <h3>So machen wir es</h3>
+              <ul>
+                {SO_MACHEN_WIR_ES.map((m) => (
+                  <li key={m.titel}>
+                    <span className="ts-fluss__icon ts-fluss__icon--hell">
+                      <m.icon size={20} strokeWidth={1.8} />
+                    </span>
+                    <span>
+                      <b>{m.titel}</b>
+                      <small>{m.text}</small>
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+            <div className="ts-fluss__spalte">
+              <h3 className="ts-fluss__marke ts-fluss__marke--blau">Was Sie davon haben</h3>
+              <ul className="ts-fluss__liste">
+                {DAVON_HABEN.map((t) => (
+                  <li key={t}>
+                    <span className="ts-fluss__icon ts-fluss__icon--blau">
+                      <Check size={16} strokeWidth={2.6} />
+                    </span>
+                    {t}
+                  </li>
+                ))}
+              </ul>
+            </div>
           </div>
         </div>
       </section>
@@ -307,25 +330,19 @@ export function TeoStartseite() {
         </div>
       </section>
 
-      <section className="ts-abschnitt ts-abschnitt--warm" id="leistungen">
-        <div className="teo-innen">
-          <h2 className="ts-zentriert-text">Was wir erledigen.</h2>
-          <ul className="ts-gewerke">
-            {GEWERKE.map((g) => (
-              <li key={g.name}>
-                <span className="ts-gewerke__icon">
-                  <g.icon size={20} strokeWidth={1.6} />
-                </span>
-                <span>{g.name}</span>
-              </li>
-            ))}
-          </ul>
-        </div>
-      </section>
-
-      <section className="ts-abschnitt" id="funktionen">
+      <section className="ts-abschnitt ts-abschnitt--warm" id="funktionen">
         <div className="teo-innen">
           <h2 className="ts-zentriert-text">Woran wir denken, damit Sie es nicht müssen.</h2>
+          <div className="ts-zwei ts-zwei--fotos">
+            <div className="ts-buehne">
+              <TeoFoto name="handwerker" alt="Handwerker stellt ein Ventil an der Heizung ein" className="ts-foto--flach" />
+              <AbnahmeKarte />
+            </div>
+            <div className="ts-buehne">
+              <TeoFoto name="verwaltung" alt="Verwalterin am Laptop, im Fenster die Frauenkirche" className="ts-foto--flach" />
+              <MeldungKarte />
+            </div>
+          </div>
           <ul className="ts-icons ts-icons--drei">
             {FUNKTIONEN.map((f) => (
               <li key={f.titel}>
@@ -340,7 +357,7 @@ export function TeoStartseite() {
         </div>
       </section>
 
-      <section className="ts-abschnitt ts-abschnitt--warm" id="warum">
+      <section className="ts-abschnitt" id="warum">
         <div className="teo-innen">
           <h2 className="ts-zentriert-text">Mehr als Software.</h2>
           <div className="ts-vgl" role="table" aria-label="Vergleich">
@@ -370,7 +387,7 @@ export function TeoStartseite() {
         </div>
       </section>
 
-      <section className="ts-abschnitt" id="rollen">
+      <section className="ts-abschnitt ts-abschnitt--warm" id="rollen">
         <div className="teo-innen">
           <h2 className="ts-zentriert-text">Jeder im Haus sieht, was er braucht.</h2>
           <TeoRollen />
