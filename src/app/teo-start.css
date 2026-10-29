@@ -966,3 +966,18 @@
 .ts-zielgruppen__icon--rot { background: #fdecdf; color: #c2410c; }
 .ts-zielgruppen b { font-size: 18px; font-weight: 750; letter-spacing: -0.02em; align-self: end; }
 .ts-zielgruppen li > span:last-child { font-size: 15px; color: var(--teo-text-2); align-self: start; }
+
+/* Eigene Fotos (29.10.): Lösung als flache Fotos, Abschluss wieder mit Foto */
+.ts-foto--flach { aspect-ratio: 16 / 10; }
+.ts-foto--flach img { object-position: center 35%; }
+.ts-cta { min-height: 560px; align-items: end; }
+.ts-cta__bild.ts-foto { z-index: -1; }
+.ts-cta::after {
+  content: "";
+  z-index: -1;
+  background: linear-gradient(180deg, rgba(11, 31, 58, 0.1) 0%, rgba(11, 31, 58, 0.55) 45%, rgba(11, 31, 58, 0.9) 100%);
+}
+@media (max-width: 767px) {
+  .ts-cta { min-height: 600px; }
+  .ts-cta__bild img { object-position: 70% center; }
+}

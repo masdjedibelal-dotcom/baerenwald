@@ -11,11 +11,9 @@ import {
   FileSpreadsheet,
   Flame,
   Gauge,
-  HardHat,
   Hammer,
   Home,
   KeyRound,
-  LayoutList,
   Megaphone,
   MessagesSquare,
   Minus,
@@ -201,17 +199,9 @@ export function TeoStartseite() {
         </div>
         <div className="ts-breit">
           <div className="ts-buehne ts-buehne--hero">
-            <TeoFoto name="hero" alt="Münchner Altbauten mit Torbogen" />
+            <TeoFoto name="hero" alt="Handwerker mit Werkzeugkoffer im Treppenhaus eines Altbaus" />
             <VorgangKarte />
           </div>
-          <a
-            className="ts-foto-quelle"
-            href="https://commons.wikimedia.org/wiki/File:Covered_connection_between_houses_in_Munich.jpg"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Foto: AuHaidhausen, CC BY 4.0
-          </a>
         </div>
       </section>
 
@@ -254,9 +244,7 @@ export function TeoStartseite() {
           <div className="ts-zwei">
             <figure>
               <div className="ts-buehne">
-                <div className="ts-kachel ts-kachel--gross" aria-hidden="true">
-                  <LayoutList size={52} strokeWidth={1.3} />
-                </div>
+                <TeoFoto name="verwaltung" alt="Verwalterin am Laptop, im Fenster die Frauenkirche" className="ts-foto--flach" />
                 <MeldungKarte />
               </div>
               <figcaption>
@@ -266,9 +254,7 @@ export function TeoStartseite() {
             </figure>
             <figure>
               <div className="ts-buehne">
-                <div className="ts-kachel ts-kachel--gross" aria-hidden="true">
-                  <HardHat size={52} strokeWidth={1.3} />
-                </div>
+                <TeoFoto name="handwerker" alt="Handwerker stellt ein Ventil an der Heizung ein" className="ts-foto--flach" />
                 <AbnahmeKarte />
               </div>
               <figcaption>
@@ -370,11 +356,7 @@ export function TeoStartseite() {
       </section>
 
       <section className="ts-cta" id="kontakt">
-        <div className="ts-formen ts-formen--dunkel" aria-hidden="true">
-          <span className="ts-formen__blau" />
-          <span className="ts-formen__gold" />
-          <span className="ts-formen__rot" />
-        </div>
+        <TeoFoto name="cta" alt="Münchner Altbaustraße am Abend" className="ts-cta__bild" />
         <div className="teo-innen ts-cta__inhalt">
           <h2>Schicken Sie uns Ihren nächsten Schaden.</h2>
           <Link href={TEO_LINK_ANFRAGE} className="teo-btn teo-btn--hell">
