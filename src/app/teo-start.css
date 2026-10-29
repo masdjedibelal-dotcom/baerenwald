@@ -1502,3 +1502,46 @@
 @media (max-width: 560px) {
   .ts-kosten__karte { padding: 24px 18px; border-radius: 24px; }
 }
+
+/* USP-Leiste direkt unter dem Hero */
+.ts-usp-leiste {
+  list-style: none;
+  margin: 40px auto 0;
+  padding-block: 0;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+@media (min-width: 900px) {
+  .ts-usp-leiste { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; margin-top: 48px; }
+}
+.ts-usp-leiste li {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+  border-radius: 18px;
+  background: var(--ts-warm);
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--teo-navy);
+}
+.ts-usp-leiste__icon {
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  flex: none;
+  border-radius: 12px;
+  background: var(--teo-blau-bg);
+  color: var(--teo-blau);
+}
+@media (max-width: 767px) {
+  .ts-usp-leiste { margin-top: 24px; gap: 8px; }
+  .ts-usp-leiste li { flex-direction: column; align-items: flex-start; gap: 8px; padding: 14px; font-size: 15px; }
+}
+/* Vorteile: 4 × 2 */
+.ts-icons--blau.ts-icons--vier h3 { font-size: 18px; }
+@media (max-width: 767px) {
+  .ts-usp-leiste li { font-size: 14px; }
+}

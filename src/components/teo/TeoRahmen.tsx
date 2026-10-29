@@ -28,7 +28,7 @@ function TeoKopf() {
         </Link>
         <nav className="teo-kopf__nav" aria-label="Hauptnavigation">
           <Link href="/#loesung">So arbeiten wir</Link>
-          <Link href="/#funktionen">Funktionen</Link>
+          <Link href="/#funktionen">Vorteile</Link>
           <Link href="/#warum">Warum teo</Link>
           <Link href="/#faq">Fragen</Link>
         </nav>

@@ -4,11 +4,13 @@ import {
   CalendarClock,
   Check,
   ClipboardCheck,
-  FileSpreadsheet,
   Hammer,
+  Handshake,
   Headset,
-  Megaphone,
   Network,
+  ReceiptText,
+  ShieldCheck,
+  SlidersHorizontal,
   Smartphone,
   Sparkles,
   Wrench,
@@ -51,10 +53,23 @@ const MIT_TEO = [
   "Prüffristen laufen von selbst",
 ] as const;
 
-const FUNKTIONEN = [
-  { icon: CalendarClock, titel: "Prüffristen", text: "Wir beauftragen Wartungen, bevor die Frist abläuft." },
-  { icon: Megaphone, titel: "Mitteilung ans Haus", text: "Einmal schreiben, im Treppenhaus und online für alle." },
-  { icon: FileSpreadsheet, titel: "Kosten-Export", text: "Alle Ausgaben je Haus, fertig für die Abrechnung." },
+/** Kern-USPs: kurz unter dem Hero, ausführlich in „Was Sie bei teo bekommen“. */
+const USP_LEISTE = [
+  { icon: Headset, text: "Ein Ansprechpartner" },
+  { icon: ReceiptText, text: "Eine Rechnung" },
+  { icon: ShieldCheck, text: "Haftung bei uns" },
+  { icon: ClipboardCheck, text: "Geprüfte Abnahme" },
+] as const;
+
+const VORTEILE = [
+  { icon: Handshake, titel: "Wir übernehmen alles", text: "Von der Meldung bis zur bezahlten Rechnung." },
+  { icon: Headset, titel: "Ein Ansprechpartner", text: "Für jedes Haus und jedes Gewerk derselbe." },
+  { icon: ReceiptText, titel: "Eine Rechnung", text: "Wir sind Ihr Vertragspartner, nicht zehn Betriebe." },
+  { icon: ShieldCheck, titel: "Haftung und Gewährleistung", text: "Wir haften und kümmern uns auch um spätere Mängel." },
+  { icon: ClipboardCheck, titel: "Geprüft und abgenommen", text: "Jede Arbeit abgenommen und mit Fotos belegt." },
+  { icon: Network, titel: "Partnernetz in München", text: "Geprüfte Betriebe für alle Gewerke in Ihrer Nähe." },
+  { icon: SlidersHorizontal, titel: "Sie behalten die Kontrolle", text: "Unter Ihrer Wertgrenze direkt, darüber entscheiden Sie." },
+  { icon: CalendarClock, titel: "Prüffristen im Blick", text: "Wartungen beauftragen wir, bevor die Frist abläuft." },
 ] as const;
 
 /** Fluss-Grafik (Vorbild Lessen): was rein kommt, wie wir es machen, was Sie davon haben. */
@@ -74,7 +89,7 @@ const SO_MACHEN_WIR_ES = [
 const DAVON_HABEN = [
   "Ein Ansprechpartner für alles",
   "Jeder Stand sichtbar",
-  "Rechnungen geprüft",
+  "Eine Rechnung von uns",
   "Kosten im Budget",
 ] as const;
 
@@ -85,11 +100,11 @@ const RECHNUNG = [
   ["Trocknung, 10 Tage", "1.460,00 €"],
 ] as const;
 
-const OHNE_TEO = ["9 Telefonate", "3 Angebote vergleichen", "2 verschobene Termine", "Unterlagen für die Versicherung"] as const;
+const OHNE_TEO = ["9 Telefonate", "3 Rechnungen von 3 Betrieben", "2 verschobene Termine", "Unterlagen für die Versicherung"] as const;
 
 const MIT_TEO_KOSTEN = [
   "Kein Aufschlag auf die Rechnung",
-  "Angebote und Termine erledigen wir",
+  "Eine Rechnung, wir sind Vertragspartner",
   "Unterlagen für die Versicherung fertig",
   "Software inklusive",
 ] as const;
@@ -115,7 +130,15 @@ export const TEO_FAQ = [
   },
   {
     frage: "Wer haftet, wenn etwas schiefgeht?",
-    antwort: "Wir. Mit der Übergabe sind wir für die Ausführung verantwortlich, inklusive Gewährleistung.",
+    antwort: "Wir. Mit der Übergabe sind wir für die Ausführung verantwortlich. Taucht später ein Mangel auf, kümmern wir uns um die Gewährleistung.",
+  },
+  {
+    frage: "Wer ist unser Vertragspartner?",
+    antwort: "teo. Sie bekommen eine Rechnung von uns, auch wenn mehrere Betriebe beteiligt waren.",
+  },
+  {
+    frage: "Wie schnell kommt jemand?",
+    antwort: "Notfälle haben bei uns Vorrang. Wie schnell jemand vor Ort ist, hängt von Gewerk und Uhrzeit ab. Das sagen wir Ihnen sofort.",
   },
   {
     frage: "Behalten wir die Kontrolle?",
@@ -127,12 +150,12 @@ export const TEO_FAQ = [
   },
 ] as const;
 
-function Rechnung() {
+function Rechnung({ von }: { von: string }) {
   return (
     <div className="ts-kosten__rechnung" aria-hidden="true">
       <div className="ts-kosten__rkopf">
         <b>Rechnung</b>
-        <small>Wasserschaden Keller</small>
+        <small>Wasserschaden Keller · {von}</small>
       </div>
       {RECHNUNG.map(([posten, betrag]) => (
         <div key={posten} className="ts-kosten__posten">
@@ -204,6 +227,16 @@ export function TeoStartseite() {
             <TeoAblaufKarte />
           </div>
         </div>
+        <ul className="teo-innen ts-usp-leiste">
+          {USP_LEISTE.map((u) => (
+            <li key={u.text}>
+              <span className="ts-usp-leiste__icon">
+                <u.icon size={20} strokeWidth={1.8} />
+              </span>
+              {u.text}
+            </li>
+          ))}
+        </ul>
       </section>
 
       <section className="ts-abschnitt ts-abschnitt--eng" id="fuer-wen">
@@ -323,7 +356,7 @@ export function TeoStartseite() {
 
       <section className="ts-abschnitt ts-abschnitt--warm" id="funktionen">
         <div className="teo-innen">
-          <h2 className="ts-zentriert-text">Woran wir denken, damit Sie es nicht müssen.</h2>
+          <h2 className="ts-zentriert-text">Was Sie bei teo bekommen.</h2>
           <div className="ts-zwei ts-zwei--fotos">
             <div className="ts-buehne">
               <TeoFoto name="handwerker" alt="Handwerker stellt ein Ventil an der Heizung ein" className="ts-foto--flach" />
@@ -334,8 +367,8 @@ export function TeoStartseite() {
               <MeldungKarte />
             </div>
           </div>
-          <ul className="ts-icons ts-icons--drei ts-icons--blau">
-            {FUNKTIONEN.map((f) => (
+          <ul className="ts-icons ts-icons--vier ts-icons--blau">
+            {VORTEILE.map((f) => (
               <li key={f.titel}>
                 <span className="ts-icons__icon">
                   <f.icon size={24} strokeWidth={1.6} />
@@ -356,7 +389,7 @@ export function TeoStartseite() {
           <div className="ts-kosten">
             <div className="ts-kosten__karte">
               <h3>Ohne teo</h3>
-              <Rechnung />
+              <Rechnung von="3 Betriebe" />
               <ul>
                 {OHNE_TEO.map((t) => (
                   <li key={t}>
@@ -373,7 +406,7 @@ export function TeoStartseite() {
             </div>
             <div className="ts-kosten__karte ts-kosten__karte--teo">
               <h3>Mit teo</h3>
-              <Rechnung />
+              <Rechnung von="teo" />
               <ul>
                 {MIT_TEO_KOSTEN.map((t) => (
                   <li key={t}>
