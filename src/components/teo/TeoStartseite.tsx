@@ -23,6 +23,8 @@ import { TeoAblaufKarte } from "@/components/teo/TeoAblaufKarte";
 import { fotoDa, TeoFoto } from "@/components/teo/TeoFoto";
 import { TEO_LINK_ANFRAGE, TeoLogo, TeoRahmen } from "@/components/teo/TeoRahmen";
 import { TeoSchritte } from "@/components/teo/TeoSchritte";
+import { TEO_USPS } from "@/components/teo/teo-usps";
+import { TEO_SITUATIONEN } from "@/lib/funnel/teo-anfrage";
 import { MARKE } from "@/lib/marke";
 
 import "@/app/teo-start.css";
@@ -55,12 +57,6 @@ const MIT_TEO = [
 ] as const;
 
 /** Kern-USPs: kurz unter dem Hero, ausführlich in „Was Sie bei teo bekommen“. */
-const USP_LEISTE = [
-  { icon: Headset, text: "Ein Ansprechpartner" },
-  { icon: ReceiptText, text: "Eine Rechnung" },
-  { icon: ShieldCheck, text: "Haftung bei uns" },
-  { icon: ClipboardCheck, text: "Geprüfte Abnahme" },
-] as const;
 
 const VORTEILE = [
   { icon: Handshake, titel: "Wir übernehmen alles", text: "Von der Meldung bis zur bezahlten Rechnung." },
@@ -209,7 +205,7 @@ export function TeoStartseite() {
           </div>
         </div>
         <ul className="teo-innen ts-usp-leiste">
-          {USP_LEISTE.map((u) => (
+          {TEO_USPS.map((u) => (
             <li key={u.text}>
               <span className="ts-usp-leiste__icon">
                 <u.icon size={20} strokeWidth={1.8} />
@@ -429,6 +425,28 @@ export function TeoStartseite() {
                 <b>Verbindet alle.</b> Ein Vorgang, ein Stand, für jeden die passende Ansicht.
               </p>
             </div>
+          </div>
+        </div>
+      </section>
+
+      <section className="ts-abschnitt ts-abschnitt--eng" id="einstieg">
+        <div className="teo-innen">
+          <div className="ts-einstieg">
+            <h2 className="ts-zentriert-text ts-zweizeilig">
+              <span>Was ist bei Ihnen</span> <span className="ts-blau">gerade los?</span>
+            </h2>
+            <ul className="ts-einstieg__liste">
+              {TEO_SITUATIONEN.map((s) => (
+                <li key={s.id}>
+                  <Link href={`${TEO_LINK_ANFRAGE}?s=${s.id}`}>{s.label}</Link>
+                </li>
+              ))}
+              <li>
+                <Link href={TEO_LINK_ANFRAGE} className="ts-einstieg__anderes">
+                  Etwas anderes
+                </Link>
+              </li>
+            </ul>
           </div>
         </div>
       </section>

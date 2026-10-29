@@ -21,6 +21,26 @@ export const TEO_FAELLE: { id: TeoFall; label: string; hint: string }[] = [
   { id: "kennenlernen", label: "teo für unsere Häuser", hint: "Kennenlernen und Ablauf besprechen" },
 ];
 
+/** Einstieg von der Startseite („Was ist bei Ihnen gerade los?“): öffnet die Anfrage mit Vorauswahl. */
+export type TeoSituation = {
+  id: string;
+  label: string;
+  fall: TeoFall;
+  schadenArten?: string[];
+  leistungen?: string[];
+};
+
+export const TEO_SITUATIONEN: TeoSituation[] = [
+  { id: "heizung", label: "Heizung fällt aus", fall: "schaden", schadenArten: ["heizung"] },
+  { id: "wasser", label: "Wasser im Keller", fall: "schaden", schadenArten: ["wasser"] },
+  { id: "strom", label: "Strom oder Klingel defekt", fall: "schaden", schadenArten: ["strom"] },
+  { id: "angebote", label: "Wir brauchen Angebote für die Versammlung", fall: "massnahme" },
+  { id: "pruefungen", label: "Prüffristen laufen ab", fall: "betrieb", leistungen: ["wartung"] },
+  { id: "hausmeister", label: "Unser Hausmeister fällt weg", fall: "betrieb", leistungen: ["hausmeister"] },
+  { id: "winter", label: "Winterdienst fehlt", fall: "betrieb", leistungen: ["winter"] },
+  { id: "abgeben", label: "Wir wollen alle Häuser abgeben", fall: "kennenlernen" },
+];
+
 export const TEO_SCHADEN_ARTEN: Option[] = [
   { id: "wasser", label: "Wasser, Rohr, WC", bereiche: ["sanitaer"] },
   { id: "heizung", label: "Heizung, Warmwasser", bereiche: ["heizung"] },

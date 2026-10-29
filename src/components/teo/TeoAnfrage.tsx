@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   AppWindow,
   ArrowLeft,
@@ -39,6 +39,7 @@ import { submitTeoAnfrageAction } from "@/app/actions/submit-teo-anfrage";
 import { DatenschutzCheckbox } from "@/components/funnel/DatenschutzCheckbox";
 import { PhotoUpload } from "@/components/funnel/PhotoUpload";
 import { TeoLogo } from "@/components/teo/TeoRahmen";
+import { TEO_USPS } from "@/components/teo/teo-usps";
 import { ladeAnfrageFotosHoch, neueFotoSitzung } from "@/lib/funnel/fotos-hochladen";
 import {
   TEO_ABSENDER,
@@ -49,7 +50,9 @@ import {
   TEO_MASSNAHMEN,
   TEO_SCHADEN_ARTEN,
   TEO_SCHADEN_ORT,
+  TEO_SITUATIONEN,
   TEO_START,
+  type TeoSituation,
   type TeoAnfrageDaten,
 } from "@/lib/funnel/teo-anfrage";
 import { cn } from "@/lib/utils";
@@ -231,6 +234,27 @@ export function TeoAnfrage() {
   const [fehler, setFehler] = useState<string | null>(null);
   const [dsFehler, setDsFehler] = useState(false);
   const [status, setStatus] = useState<"idle" | "loading" | "done">("idle");
+  const [vorwahl, setVorwahl] = useState<TeoSituation | null>(null);
+  const [bereit, setBereit] = useState(false);
+
+  // Einstieg von der Startseite (?s=heizung …): Fall und Auswahl vorbelegen, direkt zu Schritt 2
+  useEffect(() => {
+    const id = new URLSearchParams(window.location.search).get("s");
+    const sit = TEO_SITUATIONEN.find((x) => x.id === id);
+    if (sit) {
+      setD((p) => ({ ...p, fall: sit.fall, schadenArten: sit.schadenArten ?? [], leistungen: sit.leistungen ?? [] }));
+      setVorwahl(sit);
+      setSchritt(1);
+    }
+    setBereit(true);
+  }, []);
+
+  function vorwahlAendern() {
+    setVorwahl(null);
+    setFehler(null);
+    setSchritt(0);
+    window.history.replaceState(null, "", window.location.pathname);
+  }
   const set = <K extends keyof TeoAnfrageDaten>(k: K, v: TeoAnfrageDaten[K]) => setD((p) => ({ ...p, [k]: v }));
   const kennenlernen = d.fall === "kennenlernen";
   const notfall = d.fall === "schaden" && d.dringlichkeit === "notfall";
@@ -301,11 +325,7 @@ export function TeoAnfrage() {
 
   return (
     <div className="teo-site ta">
-      <div className="ta-grund" aria-hidden="true">
-        <span className="ta-grund__form ta-grund__form--blau" />
-        <span className="ta-grund__form ta-grund__form--gold" />
-        <span className="ta-grund__form ta-grund__form--rot" />
-      </div>
+      <div className="ta-grund" aria-hidden="true" />
 
       <header className="ta-kopf">
         <Link href="/" className="ta-kopf__marke" aria-label="Zur Startseite">
@@ -318,11 +338,28 @@ export function TeoAnfrage() {
       </header>
       {status !== "done" ? (
         <div className="ta-fortschritt" aria-hidden="true">
-          <span style={{ width: `${((schritt + 1) / 4) * 100}%` }} />
+          <span className="ta-fortschritt__spur">
+            <span style={{ width: `${((schritt + 1) / 4) * 100}%` }} />
+          </span>
         </div>
       ) : null}
 
-      <main className="ta-main">
+      <main className={`ta-main ${bereit ? "" : "ta-main--wartet"}`}>
+        <aside className="ta-seite">
+          <h2>
+            <span>Anfrage stellen.</span> <span className="ta-blau">Wir kümmern uns um den Rest.</span>
+          </h2>
+          <ul>
+            {TEO_USPS.map((u) => (
+              <li key={u.text}>
+                <span className="ta-seite__icon">
+                  <u.icon size={18} strokeWidth={1.8} />
+                </span>
+                {u.text}
+              </li>
+            ))}
+          </ul>
+        </aside>
         {status === "done" ? (
           <div className="ta-karte ta-danke">
             <span className="ta-danke__icon">
@@ -336,6 +373,14 @@ export function TeoAnfrage() {
           </div>
         ) : (
           <div className="ta-karte" key={schritt}>
+            {vorwahl && schritt > 0 ? (
+              <p className="ta-vorwahl">
+                <span>{vorwahl.label}</span>
+                <button type="button" onClick={vorwahlAendern}>
+                  ändern
+                </button>
+              </p>
+            ) : null}
             <h1>{fragen[schritt]}</h1>
 
             {schritt === 0 ? (
@@ -519,20 +564,23 @@ export function TeoAnfrage() {
       {status !== "done" ? (
         <div className="ta-leiste">
           <div className="ta-leiste__innen">
-            <button type="button" className="ta-zurueck" onClick={zurueck}>
-              <ArrowLeft size={18} />
-              <span>Zurück</span>
-            </button>
-            {schritt < 3 ? (
-              <button type="button" className="teo-btn ta-weiter" onClick={weiter}>
-                Weiter
-                <ArrowRight size={18} />
+            <span className="ta-leiste__platz" aria-hidden="true" />
+            <div className="ta-leiste__knoepfe">
+              <button type="button" className="ta-zurueck" onClick={zurueck}>
+                <ArrowLeft size={18} />
+                <span>Zurück</span>
               </button>
-            ) : (
-              <button type="button" className="teo-btn ta-weiter" disabled={status === "loading"} onClick={() => void absenden()}>
-                {status === "loading" ? "Wird gesendet…" : "Anfrage senden"}
-              </button>
-            )}
+              {schritt < 3 ? (
+                <button type="button" className="teo-btn ta-weiter" onClick={weiter}>
+                  Weiter
+                  <ArrowRight size={18} />
+                </button>
+              ) : (
+                <button type="button" className="teo-btn ta-weiter" disabled={status === "loading"} onClick={() => void absenden()}>
+                  {status === "loading" ? "Wird gesendet…" : "Anfrage senden"}
+                </button>
+              )}
+            </div>
           </div>
         </div>
       ) : null}
