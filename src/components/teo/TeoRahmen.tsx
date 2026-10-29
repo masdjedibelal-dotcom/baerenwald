@@ -6,7 +6,7 @@ import { MARKE } from "@/lib/marke";
 
 import "@/app/teo-landing.css";
 
-/** Anfrage für Verwaltungen (auf TEO zeigt /rechner die Anfrage, ohne Preise). */
+/** Anfrage für Verwaltungen und Bestandshalter (auf TEO zeigt /rechner die Anfrage, ohne Preise). */
 export const TEO_LINK_ANFRAGE = "/rechner";
 
 /** Wortmarke „teo.“ — aus dem quadratischen Logo zugeschnitten. */
@@ -52,7 +52,7 @@ function TeoFuss() {
       <div className="teo-fuss__innen">
         <div className="teo-fuss__marke">
           <TeoLogo hell />
-          <p>Haustechnik für Verwaltungen in München.</p>
+          <p>Haustechnik für Verwaltungen und Bestandshalter in München.</p>
           <p className="teo-fuss__adresse">
             {f.firmenname} · {f.strasse} {f.hausnummer} · {f.plz} {f.ort}
             <br />

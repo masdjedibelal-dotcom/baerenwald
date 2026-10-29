@@ -1,10 +1,16 @@
 /**
- * Servus TEO: Anfrage für Hausverwaltungen und WEGs — aus Sicht der Fälle, ohne Preisrahmen.
+ * Servus TEO: Anfrage für alle, die Häuser verwalten (Hausverwaltung, WEG, Bestandshalter) — aus Sicht der Fälle, ohne Preisrahmen.
  * Die Auswahl wird intern auf Rechner-Bereiche gemappt, damit im CRM die Gewerke stimmen.
  */
 
 export type TeoFall = "schaden" | "massnahme" | "betrieb" | "kennenlernen";
-export type TeoAbsender = "hausverwaltung" | "weg";
+export type TeoAbsender = "hausverwaltung" | "weg" | "bestandshalter";
+
+export const TEO_ABSENDER: { id: TeoAbsender; label: string; hint: string; feld: string }[] = [
+  { id: "hausverwaltung", label: "Hausverwaltung", hint: "WEG- oder Mietverwaltung", feld: "Hausverwaltung" },
+  { id: "weg", label: "Eigentümergemeinschaft", hint: "selbst verwaltet", feld: "Name der WEG" },
+  { id: "bestandshalter", label: "Eigentümer oder Bestandshalter", hint: "Wohnungsunternehmen, Genossenschaft, eigene Häuser", feld: "Unternehmen" },
+];
 
 type Option = { id: string; label: string; bereiche: string[] };
 
@@ -12,7 +18,7 @@ export const TEO_FAELLE: { id: TeoFall; label: string; hint: string }[] = [
   { id: "schaden", label: "Schaden im Objekt", hint: "Rohrbruch, Heizung aus, Klingel defekt" },
   { id: "massnahme", label: "Angebot für eine Maßnahme", hint: "Dach, Fassade, Treppenhaus, auch für den Beschluss" },
   { id: "betrieb", label: "Laufender Betrieb", hint: "Hausmeister, Reinigung, Winterdienst, Wartungen" },
-  { id: "kennenlernen", label: "Unsere Objekte an teo übergeben", hint: "Kennenlernen und Ablauf besprechen" },
+  { id: "kennenlernen", label: "teo für unsere Häuser", hint: "Kennenlernen und Ablauf besprechen" },
 ];
 
 export const TEO_SCHADEN_ARTEN: Option[] = [
@@ -27,8 +33,8 @@ export const TEO_SCHADEN_ARTEN: Option[] = [
 ];
 
 export const TEO_SCHADEN_ORT = [
-  { id: "gemeinschaft", label: "Gemeinschaftseigentum" },
-  { id: "wohnung", label: "In einer Wohnung" },
+  { id: "gemeinschaft", label: "Allgemeinflächen" },
+  { id: "wohnung", label: "In einer Wohnung oder Einheit" },
 ] as const;
 
 export const TEO_DRINGLICHKEIT = [
@@ -115,7 +121,7 @@ export function teoBereiche(d: Pick<TeoAnfrageDaten, "fall" | "schadenArten" | "
 /** Lesbare Zusammenfassung für die Anfrage-Notiz im CRM. */
 export function teoAnfrageNachricht(d: TeoAnfrageDaten): string {
   const fall = TEO_FAELLE.find((f) => f.id === d.fall)?.label ?? "";
-  const z: string[] = [d.beschreibung.trim(), "", `Fall: ${fall}`, `Von: ${d.absender === "weg" ? "WEG (selbstverwaltet)" : "Hausverwaltung"}${d.firma.trim() ? ` · ${d.firma.trim()}` : ""}`];
+  const z: string[] = [d.beschreibung.trim(), "", `Fall: ${fall}`, `Von: ${TEO_ABSENDER.find((a) => a.id === d.absender)?.label ?? "Hausverwaltung"}${d.firma.trim() ? ` · ${d.firma.trim()}` : ""}`];
   if (d.fall === "schaden") {
     z.push(
       `Was: ${label(TEO_SCHADEN_ARTEN, d.schadenArten).join(", ") || "—"}`,

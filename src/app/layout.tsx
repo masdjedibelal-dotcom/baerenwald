@@ -42,7 +42,7 @@ export const metadata: Metadata = {
   },
 
   description: istTeo
-    ? "Instandhaltung für Haus- und WEG-Verwaltungen in München — ein Ansprechpartner für alle Gewerke, jeder Stand im Portal."
+    ? "Instandhaltung für Hausverwaltungen, WEGs und Bestandshalter in München — ein Ansprechpartner für alle Gewerke, jeder Stand im Portal."
     : "Partner München — ein Ansprechpartner für alle Gewerke. Preisrahmen online berechnen. Malerarbeiten, Bad, Elektro, Heizung. Unverbindlich.",
 
   authors: [{ name: "Beran Cakmak" }],

@@ -1,6 +1,8 @@
 import Link from "next/link";
 import {
   BellRing,
+  Briefcase,
+  Building2,
   CalendarClock,
   Check,
   ClipboardCheck,
@@ -22,6 +24,7 @@ import {
   QrCode,
   ShieldCheck,
   Snowflake,
+  Users,
   Sparkles,
   Trees,
   Wallet,
@@ -36,6 +39,12 @@ import { Status } from "@/components/teo/TeoVisuals";
 import { MARKE } from "@/lib/marke";
 
 import "@/app/teo-start.css";
+
+const ZIELGRUPPEN = [
+  { icon: Briefcase, ton: "blau", titel: "Hausverwaltungen", text: "WEG- und Mietverwaltung" },
+  { icon: Users, ton: "gold", titel: "Eigentümergemeinschaften", text: "auch selbst verwaltet" },
+  { icon: Building2, ton: "rot", titel: "Bestandshalter", text: "Wohnungsunternehmen, Genossenschaften" },
+] as const;
 
 const PROBLEME = [
   { icon: PhoneMissed, titel: "Kein Handwerker ruft zurück." },
@@ -86,6 +95,11 @@ const VERGLEICH: Array<[string, boolean, boolean, boolean]> = [
 ];
 
 export const TEO_FAQ = [
+  {
+    frage: "Für wen ist teo?",
+    antwort:
+      "Für alle, die Mehrparteienhäuser verwalten: Hausverwaltungen, Eigentümergemeinschaften und Bestandshalter wie Wohnungsunternehmen, Genossenschaften oder Eigentümer mehrerer Häuser.",
+  },
   {
     frage: "Was kostet teo?",
     antwort: "So viel wie eine direkte Beauftragung. Auf die Handwerkerleistung kommt kein Aufschlag. Die Software ist dabei.",
@@ -172,6 +186,11 @@ export function TeoStartseite() {
   return (
     <TeoRahmen>
       <section className="ts-hero">
+        <div className="ts-formen" aria-hidden="true">
+          <span className="ts-formen__blau" />
+          <span className="ts-formen__gold" />
+          <span className="ts-formen__rot" />
+        </div>
         <div className="teo-innen ts-hero__kopf">
           <h1>Sie verwalten. Wir machen die Technik.</h1>
           <div className="teo-aktionen ts-zentriert">
@@ -193,6 +212,23 @@ export function TeoStartseite() {
           >
             Foto: AuHaidhausen, CC BY 4.0
           </a>
+        </div>
+      </section>
+
+      <section className="ts-abschnitt ts-abschnitt--eng" id="fuer-wen">
+        <div className="teo-innen">
+          <h2 className="ts-zentriert-text">Für alle, die Häuser verwalten.</h2>
+          <ul className="ts-zielgruppen">
+            {ZIELGRUPPEN.map((z) => (
+              <li key={z.titel}>
+                <span className={`ts-zielgruppen__icon ts-zielgruppen__icon--${z.ton}`}>
+                  <z.icon size={24} strokeWidth={1.6} />
+                </span>
+                <b>{z.titel}</b>
+                <span>{z.text}</span>
+              </li>
+            ))}
+          </ul>
         </div>
       </section>
 
@@ -334,6 +370,11 @@ export function TeoStartseite() {
       </section>
 
       <section className="ts-cta" id="kontakt">
+        <div className="ts-formen ts-formen--dunkel" aria-hidden="true">
+          <span className="ts-formen__blau" />
+          <span className="ts-formen__gold" />
+          <span className="ts-formen__rot" />
+        </div>
         <div className="teo-innen ts-cta__inhalt">
           <h2>Schicken Sie uns Ihren nächsten Schaden.</h2>
           <Link href={TEO_LINK_ANFRAGE} className="teo-btn teo-btn--hell">

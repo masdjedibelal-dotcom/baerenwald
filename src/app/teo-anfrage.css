@@ -1,0 +1,315 @@
+/* ══ TEO-Anfrage (/rechner auf servus-teo.de) — gleiche Sprache wie die Startseite ══ */
+.ta {
+  --ta-warm: #f5f3ef;
+  --ta-linie: #e7e3dc;
+  --ta-rot: #e0563b;
+  position: relative;
+  min-height: 100dvh;
+  background: #fbfaf8;
+  color: var(--teo-text);
+  overflow-x: clip;
+  isolation: isolate;
+}
+
+/* Farbformen im Hintergrund: Blau, Gold, Rot — weich und unscharf */
+.ta-grund {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  overflow: hidden;
+}
+.ta-grund__form {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(80px);
+  opacity: 0.55;
+}
+.ta-grund__form--blau {
+  width: 46vmax;
+  height: 46vmax;
+  left: -16vmax;
+  top: -14vmax;
+  background: radial-gradient(circle at 40% 40%, #9cc0ea, transparent 70%);
+}
+.ta-grund__form--gold {
+  width: 36vmax;
+  height: 36vmax;
+  right: -12vmax;
+  top: 18vh;
+  background: radial-gradient(circle at 50% 50%, #f6cf73, transparent 70%);
+  opacity: 0.5;
+}
+.ta-grund__form--rot {
+  width: 30vmax;
+  height: 30vmax;
+  left: 18vw;
+  bottom: -16vmax;
+  background: radial-gradient(circle at 50% 50%, #f2a28f, transparent 70%);
+  opacity: 0.4;
+}
+
+/* Kopf: Logo, Schritt, Schließen */
+.ta-kopf {
+  position: sticky;
+  top: env(safe-area-inset-top, 0px);
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  max-width: 1120px;
+  margin-inline: auto;
+  padding: 16px 20px;
+}
+.ta-kopf__marke { display: inline-flex; }
+.ta-kopf__schritt {
+  font-size: 14px;
+  font-weight: 650;
+  color: var(--teo-text-2);
+  font-variant-numeric: tabular-nums;
+}
+.ta-rund {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.8);
+  border: 1px solid var(--ta-linie);
+  color: var(--teo-navy);
+  transition: background 0.15s;
+}
+.ta-rund:hover { background: #fff; }
+
+.ta-fortschritt {
+  max-width: 640px;
+  height: 4px;
+  margin: 0 auto;
+  border-radius: 999px;
+  background: rgba(11, 31, 58, 0.08);
+  overflow: hidden;
+}
+.ta-fortschritt span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--teo-navy);
+  transition: width 0.3s ease;
+}
+@media (max-width: 680px) {
+  .ta-fortschritt { margin-inline: 20px; }
+}
+
+/* Inhalt */
+.ta-main {
+  max-width: 680px;
+  margin: 0 auto;
+  padding: 32px 20px 140px;
+}
+.ta-karte {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  padding: 32px;
+  border-radius: 28px;
+  background: rgba(255, 255, 255, 0.86);
+  backdrop-filter: blur(16px);
+  box-shadow: 0 30px 80px -40px rgba(11, 31, 58, 0.35);
+  animation: ta-rein 0.25s ease both;
+}
+@keyframes ta-rein {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ta-karte { animation: none; }
+}
+@media (max-width: 560px) {
+  .ta-main { padding-top: 20px; }
+  .ta-karte { padding: 24px 18px; border-radius: 24px; gap: 20px; }
+}
+.ta .ta-karte h1 {
+  font-size: clamp(28px, 4.4vw, 40px);
+  line-height: 1.05;
+  font-weight: 800;
+  letter-spacing: -0.04em;
+  color: var(--teo-navy);
+  text-wrap: balance;
+}
+
+/* Kacheln mit Icon */
+.ta-kacheln {
+  display: grid;
+  gap: 10px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+.ta-kacheln--breit { grid-template-columns: 1fr; }
+@media (max-width: 480px) {
+  .ta-kacheln { grid-template-columns: 1fr; }
+}
+.ta-kachel {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  width: 100%;
+  padding: 12px 40px 12px 12px;
+  border: 1.5px solid var(--ta-linie);
+  border-radius: 18px;
+  background: #fff;
+  color: var(--teo-text);
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 0.15s, box-shadow 0.15s, transform 0.1s;
+}
+.ta-kachel:hover { border-color: #c9c2b6; }
+.ta-kachel:active { transform: scale(0.99); }
+.ta-kachel:focus-visible { outline: 3px solid rgba(30, 95, 168, 0.35); outline-offset: 2px; }
+.ta-kachel__icon {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  flex: none;
+  border-radius: 14px;
+  background: var(--ta-warm);
+  color: var(--teo-navy);
+  transition: background 0.15s, color 0.15s;
+}
+.ta-kacheln--breit .ta-kachel__icon { width: 52px; height: 52px; border-radius: 16px; }
+.ta-kachel__text { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.ta-kachel__text b { font-size: 16px; font-weight: 700; letter-spacing: -0.01em; }
+.ta-kachel__text small { font-size: 14px; color: var(--teo-text-2); }
+.ta-kachel__haken {
+  position: absolute;
+  right: 14px;
+  top: 50%;
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  margin-top: -11px;
+  border-radius: 50%;
+  border: 1.5px solid var(--ta-linie);
+  color: transparent;
+  transition: background 0.15s, border-color 0.15s;
+}
+.ta-kachel.ist-gewaehlt {
+  border-color: var(--teo-navy);
+  box-shadow: 0 0 0 1px var(--teo-navy);
+}
+.ta-kachel.ist-gewaehlt .ta-kachel__icon { background: var(--teo-navy); color: #fff; }
+.ta-kachel.ist-gewaehlt .ta-kachel__haken { background: var(--teo-navy); border-color: var(--teo-navy); color: #fff; }
+
+/* Pillen (eine Wahl) */
+.ta-pillen { display: flex; flex-wrap: wrap; gap: 8px; }
+.ta-pille {
+  padding: 10px 16px;
+  border: 1.5px solid var(--ta-linie);
+  border-radius: 999px;
+  background: #fff;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--teo-text);
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s, color 0.15s;
+}
+.ta-pille:hover { border-color: #c9c2b6; }
+.ta-pille.ist-gewaehlt { background: var(--teo-navy); border-color: var(--teo-navy); color: #fff; }
+
+/* Felder */
+.ta-feld { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.ta-feld__label { font-size: 14px; font-weight: 650; color: var(--teo-text); }
+.ta-input {
+  width: 100%;
+  min-height: 52px;
+  padding: 12px 16px;
+  border: 1.5px solid var(--ta-linie);
+  border-radius: 14px;
+  background: #fff;
+  font: inherit;
+  font-size: 16px;
+  color: var(--teo-text);
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+.ta-input::placeholder { color: #9aa6b4; }
+.ta-input:focus { outline: none; border-color: var(--teo-navy); box-shadow: 0 0 0 3px rgba(11, 31, 58, 0.08); }
+.ta-textarea { min-height: 128px; resize: vertical; line-height: 1.5; }
+.ta-zeile { display: grid; gap: 12px; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.ta-zeile--plz { grid-template-columns: minmax(0, 1fr) minmax(0, 2fr); }
+@media (max-width: 480px) {
+  .ta-zeile:not(.ta-zeile--plz) { grid-template-columns: 1fr; }
+}
+
+.ta-hinweis {
+  margin: -8px 0 0;
+  padding: 12px 14px;
+  border-radius: 14px;
+  background: #fdecdf;
+  color: #9a3412;
+  font-size: 14px;
+  font-weight: 600;
+}
+.ta-fehler { margin: 0; color: #b42318; font-size: 14px; font-weight: 600; }
+
+/* Fotos und Datenschutz aus dem Funnel ruhiger */
+.ta .photo-upload-btn,
+.ta [class*="photo-upload"] button { border-radius: 14px; }
+
+/* Leiste unten: Zurück + Weiter */
+.ta-leiste {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 30;
+  padding: 12px 20px calc(12px + env(safe-area-inset-bottom, 0px));
+  background: rgba(251, 250, 248, 0.88);
+  backdrop-filter: blur(12px);
+  border-top: 1px solid var(--ta-linie);
+}
+.ta-leiste__innen {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  max-width: 640px;
+  margin-inline: auto;
+}
+.ta-zurueck {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 48px;
+  padding: 0 18px 0 14px;
+  border: 1.5px solid var(--ta-linie);
+  border-radius: 999px;
+  background: #fff;
+  font-size: 15px;
+  font-weight: 650;
+  color: var(--teo-navy);
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+}
+.ta-zurueck:hover { border-color: var(--teo-navy); }
+.ta-weiter { display: inline-flex; align-items: center; gap: 8px; min-height: 48px; }
+.ta-weiter:disabled { opacity: 0.6; cursor: default; }
+@media (max-width: 480px) {
+  .ta-zurueck { padding: 0 14px; }
+  .ta-zurueck span { display: none; }
+  .ta-weiter { flex: 1; justify-content: center; }
+}
+
+/* Danke */
+.ta-danke { align-items: center; text-align: center; padding-block: 48px; }
+.ta-danke__icon {
+  display: grid;
+  place-items: center;
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  background: var(--teo-gruen-bg);
+  color: var(--teo-gruen);
+}
+.ta-danke p { color: var(--teo-text-2); font-size: 17px; }

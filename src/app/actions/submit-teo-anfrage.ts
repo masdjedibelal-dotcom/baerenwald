@@ -3,6 +3,7 @@
 import { headers } from "next/headers";
 
 import {
+  TEO_ABSENDER,
   TEO_DRINGLICHKEIT,
   TEO_FAELLE,
   type TeoAnfrageDaten,
@@ -45,6 +46,7 @@ export async function submitTeoAnfrageAction(
   }
 
   if (!TEO_FAELLE.some((f) => f.id === d.fall)) return { ok: false, error: "Bitte wählen Sie aus, worum es geht." };
+  if (!TEO_ABSENDER.some((a) => a.id === d.absender)) return { ok: false, error: "Bitte wählen Sie aus, wer anfragt." };
   const name = d.name.trim();
   const email = d.email.trim();
   const telefon = d.telefon.trim();
@@ -53,13 +55,14 @@ export async function submitTeoAnfrageAction(
   if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
     return { ok: false, error: "Bitte geben Sie eine gültige E-Mail-Adresse an." };
   }
+  const notfall = d.fall === "schaden" && d.dringlichkeit === "notfall";
+  if (notfall && !telefon) return { ok: false, error: "Bitte geben Sie für einen Notfall eine Telefonnummer an." };
   const brauchtObjekt = d.fall !== "kennenlernen";
   if (brauchtObjekt && !/^\d{5}$/.test(d.plz.trim())) return { ok: false, error: "Bitte geben Sie die PLZ des Objekts an." };
   if (!d.datenschutz) return { ok: false, error: "Bitte stimmen Sie der Datenschutzerklärung zu." };
 
   const fotos = erlaubteFotos(d.fotos ?? [], d.sitzung);
   const firma = d.firma.trim() || null;
-  const notfall = d.fall === "schaden" && d.dringlichkeit === "notfall";
   const zeitraum = d.fall === "schaden" ? TEO_DRINGLICHKEIT.find((x) => x.id === d.dringlichkeit)?.zeitraum ?? null : d.start || null;
 
   const res = await persistLead({
@@ -74,7 +77,7 @@ export async function submitTeoAnfrageAction(
     strasse: d.strasse.trim() || undefined,
     zeitraum,
     kundentyp: "hausverwaltung",
-    kunde_typ: "hausverwaltung",
+    kunde_typ: d.absender === "bestandshalter" ? "gewerbe" : "hausverwaltung",
     firma,
     kanal: "website",
     funnel_quelle: "teo_anfrage",

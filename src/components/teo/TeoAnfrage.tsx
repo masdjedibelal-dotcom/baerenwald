@@ -1,15 +1,47 @@
 "use client";
 
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import {
+  AppWindow,
+  ArrowLeft,
+  ArrowRight,
+  Briefcase,
+  Building,
+  Building2,
+  CalendarCheck,
+  Check,
+  CircleCheck,
+  ClipboardList,
+  DoorOpen,
+  Droplets,
+  Ellipsis,
+  Flame,
+  House,
+  Layers,
+  type LucideIcon,
+  PaintRoller,
+  ShieldCheck,
+  Snowflake,
+  Sparkles,
+  Trash2,
+  Trees,
+  TriangleAlert,
+  Users,
+  Waves,
+  Wrench,
+  X,
+  Zap,
+} from "lucide-react";
 
 import { submitTeoAnfrageAction } from "@/app/actions/submit-teo-anfrage";
 import { DatenschutzCheckbox } from "@/components/funnel/DatenschutzCheckbox";
-import { FunnelHeader } from "@/components/funnel/FunnelHeader";
 import { PhotoUpload } from "@/components/funnel/PhotoUpload";
-import { StepWrapper } from "@/components/funnel/StepWrapper";
+import { TeoLogo } from "@/components/teo/TeoRahmen";
 import { ladeAnfrageFotosHoch, neueFotoSitzung } from "@/lib/funnel/fotos-hochladen";
 import {
+  TEO_ABSENDER,
   TEO_ANGEBOTE_ANZAHL,
   TEO_DRINGLICHKEIT,
   TEO_FAELLE,
@@ -23,37 +55,100 @@ import {
 import { cn } from "@/lib/utils";
 
 import "@/app/baerenwald-landing.css";
+import "@/app/teo-landing.css";
+import "@/app/teo-anfrage.css";
+
+type Kachel = { id: string; label: string; hint?: string };
+
+const ICON_FALL: Record<string, LucideIcon> = {
+  schaden: TriangleAlert,
+  massnahme: ClipboardList,
+  betrieb: CalendarCheck,
+  kennenlernen: Building2,
+};
+const ICON_SCHADEN: Record<string, LucideIcon> = {
+  wasser: Droplets,
+  heizung: Flame,
+  strom: Zap,
+  dach: House,
+  tuer: DoorOpen,
+  feuchte: Waves,
+  aussen: Trees,
+  sonstiges: Ellipsis,
+};
+const ICON_MASSNAHME: Record<string, LucideIcon> = {
+  dach: House,
+  fassade: Building,
+  fenster: AppWindow,
+  treppenhaus: PaintRoller,
+  heizung: Flame,
+  leitungen: Droplets,
+  elektro: Zap,
+  balkone: Layers,
+  aussen: Trees,
+  sonstiges: Ellipsis,
+};
+const ICON_LEISTUNG: Record<string, LucideIcon> = {
+  hausmeister: Wrench,
+  reinigung: Sparkles,
+  winter: Snowflake,
+  garten: Trees,
+  wartung: ShieldCheck,
+  muell: Trash2,
+};
+const ICON_ABSENDER: Record<string, LucideIcon> = {
+  hausverwaltung: Briefcase,
+  weg: Users,
+  bestandshalter: Building2,
+};
 
 const DETAIL_FRAGE: Record<string, string> = {
   schaden: "Was ist passiert?",
   massnahme: "Was soll gemacht werden?",
-  betrieb: "Welche Leistungen?",
-  kennenlernen: "Ihre Objekte",
+  betrieb: "Welche Leistungen brauchen Sie?",
+  kennenlernen: "Wie viele Häuser sind es?",
 };
 
+/** Auswahl als Kacheln mit Icon — einfach (Radio) oder mehrfach (Checkbox). */
 function Kacheln({
   optionen,
+  icons,
   gewaehlt,
   onWahl,
   mehrfach = true,
+  breit = false,
 }: {
-  optionen: readonly { id: string; label: string }[];
+  optionen: readonly Kachel[];
+  icons: Record<string, LucideIcon>;
   gewaehlt: string[];
   onWahl: (ids: string[]) => void;
   mehrfach?: boolean;
+  breit?: boolean;
 }) {
   return (
-    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+    <div className={cn("ta-kacheln", breit && "ta-kacheln--breit")} role={mehrfach ? "group" : "radiogroup"}>
       {optionen.map((o) => {
         const aktiv = gewaehlt.includes(o.id);
+        const Icon = icons[o.id] ?? Ellipsis;
         return (
           <button
             key={o.id}
             type="button"
-            className={cn("funnel-tile funnel-tile--text-only", aktiv && "selected")}
-            onClick={() => onWahl(mehrfach ? (aktiv ? gewaehlt.filter((x) => x !== o.id) : [...gewaehlt, o.id]) : aktiv ? [] : [o.id])}
+            role={mehrfach ? "checkbox" : "radio"}
+            aria-checked={aktiv}
+            className={cn("ta-kachel", aktiv && "ist-gewaehlt")}
+            onClick={() => onWahl(mehrfach ? (aktiv ? gewaehlt.filter((x) => x !== o.id) : [...gewaehlt, o.id]) : [o.id])}
           >
-            <span className="funnel-tile-label">{o.label}</span>
+            <span className="ta-kachel__icon">
+              <Icon size={22} strokeWidth={1.6} />
+            </span>
+            <span className="ta-kachel__text">
+              <b>{o.label}</b>
+              {o.hint ? <small>{o.hint}</small> : null}
+            </span>
+            <span className="ta-kachel__haken" aria-hidden="true">
+              <Check size={14} strokeWidth={3} />
+            </span>
           </button>
         );
       })}
@@ -61,11 +156,18 @@ function Kacheln({
   );
 }
 
-function Wahl({ optionen, wert, onWahl }: { optionen: readonly string[]; wert: string; onWahl: (v: string) => void }) {
+function Pillen({ optionen, wert, onWahl }: { optionen: readonly string[]; wert: string; onWahl: (v: string) => void }) {
   return (
-    <div className="anfrage-wahl">
+    <div className="ta-pillen" role="radiogroup">
       {optionen.map((o) => (
-        <button key={o} type="button" className={cn("anfrage-wahl__opt", wert === o && "selected")} onClick={() => onWahl(wert === o ? "" : o)}>
+        <button
+          key={o}
+          type="button"
+          role="radio"
+          aria-checked={wert === o}
+          className={cn("ta-pille", wert === o && "ist-gewaehlt")}
+          onClick={() => onWahl(wert === o ? "" : o)}
+        >
           {o}
         </button>
       ))}
@@ -75,14 +177,23 @@ function Wahl({ optionen, wert, onWahl }: { optionen: readonly string[]; wert: s
 
 function Feld({ label, children }: { label: string; children: React.ReactNode }) {
   return (
-    <label className="anfrage-feld">
-      <span className="anfrage-feld__label">{label}</span>
+    <label className="ta-feld">
+      <span className="ta-feld__label">{label}</span>
       {children}
     </label>
   );
 }
 
-/** Servus TEO: Anfrage für Hausverwaltungen und WEGs — Fall → Details → Objekt → Kontakt, ohne Preise. */
+function Gruppe({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div className="ta-feld">
+      <span className="ta-feld__label">{label}</span>
+      {children}
+    </div>
+  );
+}
+
+/** Servus TEO: Anfrage für Verwaltungen und Bestandshalter — Fall → Details → Objekt → Kontakt, ohne Preise. */
 export function TeoAnfrage() {
   const router = useRouter();
   const [schritt, setSchritt] = useState(0);
@@ -122,6 +233,8 @@ export function TeoAnfrage() {
   const [status, setStatus] = useState<"idle" | "loading" | "done">("idle");
   const set = <K extends keyof TeoAnfrageDaten>(k: K, v: TeoAnfrageDaten[K]) => setD((p) => ({ ...p, [k]: v }));
   const kennenlernen = d.fall === "kennenlernen";
+  const notfall = d.fall === "schaden" && d.dringlichkeit === "notfall";
+  const absender = TEO_ABSENDER.find((a) => a.id === d.absender) ?? TEO_ABSENDER[0]!;
 
   function pruefe(i: number): string | null {
     if (i === 0 && !d.fall) return "Bitte wählen Sie aus, worum es geht.";
@@ -137,6 +250,7 @@ export function TeoAnfrage() {
     }
     if (i === 3) {
       if (d.name.trim().length < 2) return "Bitte geben Sie Ihren Namen an.";
+      if (notfall && !d.telefon.trim()) return "Bitte geben Sie für einen Notfall eine Telefonnummer an.";
       if (!d.email.trim() && !d.telefon.trim()) return "Bitte geben Sie eine E-Mail-Adresse oder Telefonnummer an.";
       if (d.email.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(d.email.trim())) return "Bitte geben Sie eine gültige E-Mail-Adresse an.";
     }
@@ -155,6 +269,7 @@ export function TeoAnfrage() {
     setFehler(null);
     if (schritt === 0) return router.push("/");
     setSchritt((s) => s - 1);
+    window.scrollTo({ top: 0, behavior: "instant" as ScrollBehavior });
   }
 
   async function absenden() {
@@ -175,186 +290,204 @@ export function TeoAnfrage() {
         return;
       }
       setStatus("done");
+      window.scrollTo({ top: 0, behavior: "instant" as ScrollBehavior });
     } catch (e) {
       setStatus("idle");
-      setFehler(e instanceof Error ? e.message : "Bitte versuchen Sie es erneut oder rufen Sie uns an.");
+      setFehler(e instanceof Error ? e.message : "Bitte versuchen Sie es erneut.");
     }
   }
 
-  const fragen = ["Worum geht es?", DETAIL_FRAGE[d.fall] ?? "Details", kennenlernen ? "Noch etwas?" : "Wo ist das Objekt?", "Wie erreichen wir Sie?"];
+  const fragen = ["Worum geht es?", DETAIL_FRAGE[d.fall] ?? "Details", kennenlernen ? "Noch etwas?" : "Wo ist das Objekt?", "Wer fragt an?"];
 
   return (
-    <div className="min-h-dvh funnel-main--strip-a">
-      <FunnelHeader onFunnelReset={() => router.push("/")} />
-      <main className="funnel-rechner-main w-full">
+    <div className="teo-site ta">
+      <div className="ta-grund" aria-hidden="true">
+        <span className="ta-grund__form ta-grund__form--blau" />
+        <span className="ta-grund__form ta-grund__form--gold" />
+        <span className="ta-grund__form ta-grund__form--rot" />
+      </div>
+
+      <header className="ta-kopf">
+        <Link href="/" className="ta-kopf__marke" aria-label="Zur Startseite">
+          <TeoLogo />
+        </Link>
+        {status !== "done" ? <span className="ta-kopf__schritt">{schritt + 1} von 4</span> : null}
+        <Link href="/" className="ta-rund" aria-label="Anfrage schließen">
+          <X size={18} />
+        </Link>
+      </header>
+      {status !== "done" ? (
+        <div className="ta-fortschritt" aria-hidden="true">
+          <span style={{ width: `${((schritt + 1) / 4) * 100}%` }} />
+        </div>
+      ) : null}
+
+      <main className="ta-main">
         {status === "done" ? (
-          <StepWrapper stepLabel="Anfrage" question="Danke, Ihre Anfrage ist da." animateKey="teo-danke" tilesCard>
-            <div className="individuell-danke">
-              <p className="individuell-danke__text">
-                {d.fall === "schaden" && d.dringlichkeit === "notfall" ? "Wir melden uns so schnell wie möglich." : "Wir melden uns am nächsten Werktag."}
-              </p>
-            </div>
-          </StepWrapper>
+          <div className="ta-karte ta-danke">
+            <span className="ta-danke__icon">
+              <CircleCheck size={36} strokeWidth={1.6} />
+            </span>
+            <h1>Danke, Ihre Anfrage ist da.</h1>
+            <p>{notfall ? "Wir rufen Sie so schnell wie möglich zurück." : "Wir melden uns am nächsten Werktag."}</p>
+            <Link href="/" className="teo-btn">
+              Zur Startseite
+            </Link>
+          </div>
         ) : (
-          <StepWrapper stepLabel={`Schritt ${schritt + 1} von 4`} question={fragen[schritt]!} animateKey={`teo-${schritt}-${d.fall}`} tilesCard>
-            <div className="individuell-form space-y-3">
-              {schritt === 0 ? (
-                <div className="grid grid-cols-1 gap-3">
-                  {TEO_FAELLE.map((f) => (
-                    <button key={f.id} type="button" className={cn("funnel-tile", d.fall === f.id && "selected")} onClick={() => set("fall", f.id)}>
-                      <span className="funnel-tile-label">{f.label}</span>
-                      <span className="funnel-tile-hint">{f.hint}</span>
-                    </button>
-                  ))}
-                </div>
-              ) : null}
+          <div className="ta-karte" key={schritt}>
+            <h1>{fragen[schritt]}</h1>
 
-              {schritt === 1 && d.fall === "schaden" ? (
-                <>
-                  <Kacheln optionen={TEO_SCHADEN_ARTEN} gewaehlt={d.schadenArten} onWahl={(v) => set("schadenArten", v)} />
-                  <div className="anfrage-feld">
-                    <span className="anfrage-feld__label">Wie dringend?</span>
-                    <Wahl
-                      optionen={TEO_DRINGLICHKEIT.map((x) => x.label)}
-                      wert={TEO_DRINGLICHKEIT.find((x) => x.id === d.dringlichkeit)?.label ?? ""}
-                      onWahl={(v) => set("dringlichkeit", TEO_DRINGLICHKEIT.find((x) => x.label === v)?.id ?? "")}
-                    />
-                  </div>
-                  <div className="anfrage-feld">
-                    <span className="anfrage-feld__label">Wo?</span>
-                    <Wahl
-                      optionen={TEO_SCHADEN_ORT.map((x) => x.label)}
-                      wert={TEO_SCHADEN_ORT.find((x) => x.id === d.schadenOrt)?.label ?? ""}
-                      onWahl={(v) => set("schadenOrt", TEO_SCHADEN_ORT.find((x) => x.label === v)?.id ?? "")}
-                    />
-                  </div>
-                  {d.schadenOrt === "wohnung" ? (
-                    <Feld label="Wohnung">
-                      <input className="funnel-input" placeholder="z. B. WE 7, 2. OG links" value={d.einheit} onChange={(e) => set("einheit", e.target.value)} />
-                    </Feld>
-                  ) : null}
-                  <Feld label="Kontakt vor Ort (optional)">
-                    <input className="funnel-input" placeholder="Name und Telefon" value={d.kontaktVorOrt} onChange={(e) => set("kontaktVorOrt", e.target.value)} />
+            {schritt === 0 ? (
+              <Kacheln
+                optionen={TEO_FAELLE}
+                icons={ICON_FALL}
+                gewaehlt={d.fall ? [d.fall] : []}
+                mehrfach={false}
+                breit
+                onWahl={([v]) => v && set("fall", v as TeoAnfrageDaten["fall"])}
+              />
+            ) : null}
+
+            {schritt === 1 && d.fall === "schaden" ? (
+              <>
+                <Kacheln optionen={TEO_SCHADEN_ARTEN} icons={ICON_SCHADEN} gewaehlt={d.schadenArten} onWahl={(v) => set("schadenArten", v)} />
+                <Gruppe label="Wie dringend?">
+                  <Pillen
+                    optionen={TEO_DRINGLICHKEIT.map((x) => x.label)}
+                    wert={TEO_DRINGLICHKEIT.find((x) => x.id === d.dringlichkeit)?.label ?? ""}
+                    onWahl={(v) => set("dringlichkeit", TEO_DRINGLICHKEIT.find((x) => x.label === v)?.id ?? "")}
+                  />
+                </Gruppe>
+                {notfall ? <p className="ta-hinweis">Wir rufen Sie zurück. Bitte geben Sie am Ende Ihre Telefonnummer an.</p> : null}
+                <Gruppe label="Wo?">
+                  <Pillen
+                    optionen={TEO_SCHADEN_ORT.map((x) => x.label)}
+                    wert={TEO_SCHADEN_ORT.find((x) => x.id === d.schadenOrt)?.label ?? ""}
+                    onWahl={(v) => set("schadenOrt", TEO_SCHADEN_ORT.find((x) => x.label === v)?.id ?? "")}
+                  />
+                </Gruppe>
+                {d.schadenOrt === "wohnung" ? (
+                  <Feld label="Wohnung oder Einheit">
+                    <input className="ta-input" placeholder="z. B. WE 7, 2. OG links" value={d.einheit} onChange={(e) => set("einheit", e.target.value)} />
                   </Feld>
-                </>
-              ) : null}
+                ) : null}
+                <Feld label="Wer öffnet vor Ort? (optional)">
+                  <input className="ta-input" placeholder="Name und Telefon" value={d.kontaktVorOrt} onChange={(e) => set("kontaktVorOrt", e.target.value)} />
+                </Feld>
+              </>
+            ) : null}
 
-              {schritt === 1 && d.fall === "massnahme" ? (
-                <>
-                  <Kacheln optionen={TEO_MASSNAHMEN} gewaehlt={d.massnahmen} onWahl={(v) => set("massnahmen", v)} />
-                  <Feld label="Angebot benötigt bis (z. B. Eigentümerversammlung)">
-                    <input type="date" className="funnel-input" value={d.frist} onChange={(e) => set("frist", e.target.value)} />
+            {schritt === 1 && d.fall === "massnahme" ? (
+              <>
+                <Kacheln optionen={TEO_MASSNAHMEN} icons={ICON_MASSNAHME} gewaehlt={d.massnahmen} onWahl={(v) => set("massnahmen", v)} />
+                <Gruppe label="Wie viele Angebote?">
+                  <Pillen optionen={TEO_ANGEBOTE_ANZAHL} wert={d.angebote} onWahl={(v) => set("angebote", v)} />
+                </Gruppe>
+                <Feld label="Angebot gebraucht bis (optional)">
+                  <input type="date" className="ta-input" value={d.frist} onChange={(e) => set("frist", e.target.value)} />
+                </Feld>
+                <div className="ta-zeile">
+                  <Feld label="Einheiten">
+                    <input className="ta-input" inputMode="numeric" value={d.einheiten} onChange={(e) => set("einheiten", e.target.value.replace(/\D/g, ""))} />
                   </Feld>
-                  <div className="anfrage-feld">
-                    <span className="anfrage-feld__label">Wie viele Angebote?</span>
-                    <Wahl optionen={TEO_ANGEBOTE_ANZAHL} wert={d.angebote} onWahl={(v) => set("angebote", v)} />
-                  </div>
-                  <div className="anfrage-zeile">
-                    <Feld label="Einheiten">
-                      <input className="funnel-input" inputMode="numeric" value={d.einheiten} onChange={(e) => set("einheiten", e.target.value.replace(/\D/g, ""))} />
-                    </Feld>
-                    <Feld label="Baujahr">
-                      <input className="funnel-input" inputMode="numeric" maxLength={4} value={d.baujahr} onChange={(e) => set("baujahr", e.target.value.replace(/\D/g, ""))} />
-                    </Feld>
-                  </div>
-                </>
-              ) : null}
-
-              {schritt === 1 && d.fall === "betrieb" ? (
-                <>
-                  <Kacheln optionen={TEO_LEISTUNGEN} gewaehlt={d.leistungen} onWahl={(v) => set("leistungen", v)} />
-                  <div className="anfrage-zeile">
-                    <Feld label="Einheiten">
-                      <input className="funnel-input" inputMode="numeric" value={d.einheiten} onChange={(e) => set("einheiten", e.target.value.replace(/\D/g, ""))} />
-                    </Feld>
-                    <Feld label="Treppenhäuser">
-                      <input className="funnel-input" inputMode="numeric" value={d.treppenhaeuser} onChange={(e) => set("treppenhaeuser", e.target.value.replace(/\D/g, ""))} />
-                    </Feld>
-                  </div>
-                  <div className="anfrage-feld">
-                    <span className="anfrage-feld__label">Ab wann?</span>
-                    <Wahl optionen={TEO_START} wert={d.start} onWahl={(v) => set("start", v)} />
-                  </div>
-                </>
-              ) : null}
-
-              {schritt === 1 && kennenlernen ? (
-                <div className="anfrage-zeile">
-                  <Feld label="Anzahl Objekte">
-                    <input className="funnel-input" inputMode="numeric" value={d.objekteAnzahl} onChange={(e) => set("objekteAnzahl", e.target.value.replace(/\D/g, ""))} />
-                  </Feld>
-                  <Feld label="Einheiten gesamt">
-                    <input className="funnel-input" inputMode="numeric" value={d.einheitenGesamt} onChange={(e) => set("einheitenGesamt", e.target.value.replace(/\D/g, ""))} />
+                  <Feld label="Baujahr">
+                    <input className="ta-input" inputMode="numeric" maxLength={4} value={d.baujahr} onChange={(e) => set("baujahr", e.target.value.replace(/\D/g, ""))} />
                   </Feld>
                 </div>
-              ) : null}
+              </>
+            ) : null}
 
-              {schritt === 2 ? (
-                <>
-                  {!kennenlernen ? (
-                    <>
-                      <Feld label="Straße und Hausnummer">
-                        <input className="funnel-input" autoComplete="street-address" value={d.strasse} onChange={(e) => set("strasse", e.target.value)} />
+            {schritt === 1 && d.fall === "betrieb" ? (
+              <>
+                <Kacheln optionen={TEO_LEISTUNGEN} icons={ICON_LEISTUNG} gewaehlt={d.leistungen} onWahl={(v) => set("leistungen", v)} />
+                <div className="ta-zeile">
+                  <Feld label="Einheiten">
+                    <input className="ta-input" inputMode="numeric" value={d.einheiten} onChange={(e) => set("einheiten", e.target.value.replace(/\D/g, ""))} />
+                  </Feld>
+                  <Feld label="Treppenhäuser">
+                    <input className="ta-input" inputMode="numeric" value={d.treppenhaeuser} onChange={(e) => set("treppenhaeuser", e.target.value.replace(/\D/g, ""))} />
+                  </Feld>
+                </div>
+                <Gruppe label="Ab wann?">
+                  <Pillen optionen={TEO_START} wert={d.start} onWahl={(v) => set("start", v)} />
+                </Gruppe>
+              </>
+            ) : null}
+
+            {schritt === 1 && kennenlernen ? (
+              <div className="ta-zeile">
+                <Feld label="Häuser">
+                  <input className="ta-input" inputMode="numeric" value={d.objekteAnzahl} onChange={(e) => set("objekteAnzahl", e.target.value.replace(/\D/g, ""))} />
+                </Feld>
+                <Feld label="Einheiten gesamt">
+                  <input className="ta-input" inputMode="numeric" value={d.einheitenGesamt} onChange={(e) => set("einheitenGesamt", e.target.value.replace(/\D/g, ""))} />
+                </Feld>
+              </div>
+            ) : null}
+
+            {schritt === 2 ? (
+              <>
+                {!kennenlernen ? (
+                  <>
+                    <Feld label="Straße und Hausnummer">
+                      <input className="ta-input" autoComplete="street-address" value={d.strasse} onChange={(e) => set("strasse", e.target.value)} />
+                    </Feld>
+                    <div className="ta-zeile ta-zeile--plz">
+                      <Feld label="PLZ *">
+                        <input className="ta-input" inputMode="numeric" maxLength={5} value={d.plz} onChange={(e) => set("plz", e.target.value.replace(/\D/g, ""))} />
                       </Feld>
-                      <div className="anfrage-zeile">
-                        <label className="anfrage-feld anfrage-feld--plz">
-                          <span className="anfrage-feld__label">PLZ *</span>
-                          <input className="funnel-input" inputMode="numeric" maxLength={5} value={d.plz} onChange={(e) => set("plz", e.target.value.replace(/\D/g, ""))} />
-                        </label>
-                        <Feld label="Ort">
-                          <input className="funnel-input" value={d.ort} onChange={(e) => set("ort", e.target.value)} />
-                        </Feld>
-                      </div>
-                    </>
-                  ) : null}
-                  <Feld label={d.fall === "schaden" || d.fall === "massnahme" ? "Beschreibung *" : "Beschreibung (optional)"}>
-                    <textarea
-                      className="funnel-textarea"
-                      rows={5}
-                      maxLength={2000}
-                      placeholder={
-                        d.fall === "schaden"
-                          ? "z. B. Wasser tropft im Keller von der Decke"
-                          : d.fall === "massnahme"
-                            ? "z. B. Fassade Nordseite, Risse und abplatzender Putz"
-                            : kennenlernen
-                              ? "Was kostet Sie heute am meisten Zeit?"
-                              : ""
-                      }
-                      value={d.beschreibung}
-                      onChange={(e) => set("beschreibung", e.target.value)}
-                    />
-                  </Feld>
-                  {!kennenlernen ? (
-                    <PhotoUpload files={dateien} onChange={setDateien} maxFiles={5} buttonTitle="Fotos (optional)" buttonHint="Bis zu 5 Fotos, je max. 8 MB." />
-                  ) : null}
-                </>
-              ) : null}
+                      <Feld label="Ort">
+                        <input className="ta-input" value={d.ort} onChange={(e) => set("ort", e.target.value)} />
+                      </Feld>
+                    </div>
+                  </>
+                ) : null}
+                <Feld label={d.fall === "schaden" || d.fall === "massnahme" ? "Beschreibung *" : "Beschreibung (optional)"}>
+                  <textarea
+                    className="ta-input ta-textarea"
+                    rows={5}
+                    maxLength={2000}
+                    placeholder={
+                      d.fall === "schaden"
+                        ? "z. B. Wasser tropft im Keller von der Decke"
+                        : d.fall === "massnahme"
+                          ? "z. B. Fassade Nordseite, Risse und abplatzender Putz"
+                          : kennenlernen
+                            ? "Was kostet Sie heute am meisten Zeit?"
+                            : ""
+                    }
+                    value={d.beschreibung}
+                    onChange={(e) => set("beschreibung", e.target.value)}
+                  />
+                </Feld>
+                {!kennenlernen ? (
+                  <PhotoUpload files={dateien} onChange={setDateien} maxFiles={5} buttonTitle="Fotos (optional)" buttonHint="Bis zu 5 Fotos, je max. 8 MB." />
+                ) : null}
+              </>
+            ) : null}
 
-              {schritt === 3 ? (
-                <>
-                  <div className="anfrage-wahl">
-                    {(
-                      [
-                        ["hausverwaltung", "Hausverwaltung"],
-                        ["weg", "WEG (selbstverwaltet)"],
-                      ] as const
-                    ).map(([id, l]) => (
-                      <button key={id} type="button" className={cn("anfrage-wahl__opt", d.absender === id && "selected")} onClick={() => set("absender", id)}>
-                        {l}
-                      </button>
-                    ))}
-                  </div>
-                  <Feld label={d.absender === "weg" ? "Name der WEG" : "Hausverwaltung"}>
-                    <input className="funnel-input" autoComplete="organization" value={d.firma} onChange={(e) => set("firma", e.target.value)} />
-                  </Feld>
-                  <Feld label="Ihr Name *">
-                    <input className="funnel-input" autoComplete="name" value={d.name} onChange={(e) => set("name", e.target.value)} />
-                  </Feld>
+            {schritt === 3 ? (
+              <>
+                <Kacheln
+                  optionen={TEO_ABSENDER}
+                  icons={ICON_ABSENDER}
+                  gewaehlt={[d.absender]}
+                  mehrfach={false}
+                  breit
+                  onWahl={([v]) => v && set("absender", v as TeoAnfrageDaten["absender"])}
+                />
+                <Feld label={absender.feld}>
+                  <input className="ta-input" autoComplete="organization" value={d.firma} onChange={(e) => set("firma", e.target.value)} />
+                </Feld>
+                <Feld label="Ihr Name *">
+                  <input className="ta-input" autoComplete="name" value={d.name} onChange={(e) => set("name", e.target.value)} />
+                </Feld>
+                <div className="ta-zeile">
                   <Feld label="E-Mail-Adresse">
                     <input
                       type="email"
-                      className="funnel-input"
+                      className="ta-input"
                       autoComplete="email"
                       inputMode="email"
                       autoCapitalize="none"
@@ -363,39 +496,46 @@ export function TeoAnfrage() {
                       onChange={(e) => set("email", e.target.value)}
                     />
                   </Feld>
-                  <Feld label="Telefonnummer">
-                    <input type="tel" className="funnel-input" autoComplete="tel" inputMode="tel" value={d.telefon} onChange={(e) => set("telefon", e.target.value)} />
+                  <Feld label={notfall ? "Telefonnummer *" : "Telefonnummer"}>
+                    <input type="tel" className="ta-input" autoComplete="tel" inputMode="tel" value={d.telefon} onChange={(e) => set("telefon", e.target.value)} />
                   </Feld>
-                  <DatenschutzCheckbox
-                    checked={d.datenschutz}
-                    onChange={(v) => {
-                      set("datenschutz", v);
-                      if (v) setDsFehler(false);
-                    }}
-                    showError={dsFehler}
-                  />
-                </>
-              ) : null}
+                </div>
+                <DatenschutzCheckbox
+                  checked={d.datenschutz}
+                  onChange={(v) => {
+                    set("datenschutz", v);
+                    if (v) setDsFehler(false);
+                  }}
+                  showError={dsFehler}
+                />
+              </>
+            ) : null}
 
-              {fehler ? <p className="field-error">{fehler}</p> : null}
-              <div className="individuell-form__aktionen">
-                <button type="button" className="individuell-form__zurueck" onClick={zurueck}>
-                  ← Zurück
-                </button>
-                {schritt < 3 ? (
-                  <button type="button" className="komplex-submit-btn" onClick={weiter}>
-                    Weiter →
-                  </button>
-                ) : (
-                  <button type="button" className="komplex-submit-btn" disabled={status === "loading"} onClick={() => void absenden()}>
-                    {status === "loading" ? "Wird gesendet…" : "Anfrage senden"}
-                  </button>
-                )}
-              </div>
-            </div>
-          </StepWrapper>
+            {fehler ? <p className="ta-fehler">{fehler}</p> : null}
+          </div>
         )}
       </main>
+
+      {status !== "done" ? (
+        <div className="ta-leiste">
+          <div className="ta-leiste__innen">
+            <button type="button" className="ta-zurueck" onClick={zurueck}>
+              <ArrowLeft size={18} />
+              <span>Zurück</span>
+            </button>
+            {schritt < 3 ? (
+              <button type="button" className="teo-btn ta-weiter" onClick={weiter}>
+                Weiter
+                <ArrowRight size={18} />
+              </button>
+            ) : (
+              <button type="button" className="teo-btn ta-weiter" disabled={status === "loading"} onClick={() => void absenden()}>
+                {status === "loading" ? "Wird gesendet…" : "Anfrage senden"}
+              </button>
+            )}
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }

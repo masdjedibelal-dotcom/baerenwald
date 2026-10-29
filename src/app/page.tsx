@@ -18,7 +18,7 @@ const title =
 const description =
   "Partner München — ein Ansprechpartner für alle Gewerke. Preisrahmen online berechnen. Malerarbeiten, Bad, Elektro, Heizung. Unverbindlich.";
 
-const teoTitle = `${MARKE.nameLang} — Instandhaltung für Hausverwaltungen in München`;
+const teoTitle = `${MARKE.nameLang} — Instandhaltung für Verwaltungen und Bestandshalter in München`;
 const teoDescription =
   "teo übernimmt den technischen Ablauf Ihrer Objekte — von der Schadenmeldung bis zur Abnahme. Ein Ansprechpartner für alle Gewerke, jeder Stand im Portal.";
 
