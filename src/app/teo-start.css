@@ -1428,3 +1428,8 @@
   .ts-schritte__inhalt { padding: 28px 18px; gap: 24px; }
   .teo-site .ts-schritte__text p { font-size: 16px; }
 }
+
+/* „Woran wir denken“: drei Punkte, Icons hellblau (Vorbild Lessen) */
+.ts-abschnitt--warm .ts-icons--blau .ts-icons__icon,
+.ts-icons--blau .ts-icons__icon { background: var(--teo-blau-bg); color: var(--teo-blau); }
+.ts-icons--blau p { max-width: 30ch; }

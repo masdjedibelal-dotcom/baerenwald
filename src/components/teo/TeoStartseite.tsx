@@ -5,16 +5,13 @@ import {
   Check,
   ClipboardCheck,
   FileSpreadsheet,
-  Gauge,
   Hammer,
   Headset,
   Megaphone,
   Minus,
   Network,
-  QrCode,
   Smartphone,
   Sparkles,
-  Wallet,
   Wrench,
   X,
 } from "lucide-react";
@@ -56,12 +53,9 @@ const MIT_TEO = [
 ] as const;
 
 const FUNKTIONEN = [
-  { icon: CalendarClock, titel: "Prüffristen", text: "Rauchmelder, Aufzug, Trinkwasser. Wir beauftragen rechtzeitig." },
-  { icon: QrCode, titel: "QR-Code im Treppenhaus", text: "Mieter melden ohne Anruf, mit Foto und Wohnung." },
-  { icon: Gauge, titel: "Ihre Wertgrenze", text: "Darunter läuft es direkt, darüber entscheiden Sie." },
-  { icon: Wallet, titel: "Budget je Haus", text: "Ein Betrag pro Jahr, daneben der Stand." },
-  { icon: Megaphone, titel: "Mitteilung ans Haus", text: "Einmal schreiben, als Aushang und online." },
-  { icon: FileSpreadsheet, titel: "Kosten-Export", text: "Alle Ausgaben je Haus als Datei." },
+  { icon: CalendarClock, titel: "Prüffristen", text: "Wir beauftragen Wartungen, bevor die Frist abläuft." },
+  { icon: Megaphone, titel: "Mitteilung ans Haus", text: "Einmal schreiben, im Treppenhaus und online für alle." },
+  { icon: FileSpreadsheet, titel: "Kosten-Export", text: "Alle Ausgaben je Haus, fertig für die Abrechnung." },
 ] as const;
 
 /** Fluss-Grafik (Vorbild Lessen): was rein kommt, wie wir es machen, was Sie davon haben. */
@@ -327,7 +321,7 @@ export function TeoStartseite() {
               <MeldungKarte />
             </div>
           </div>
-          <ul className="ts-icons ts-icons--drei">
+          <ul className="ts-icons ts-icons--drei ts-icons--blau">
             {FUNKTIONEN.map((f) => (
               <li key={f.titel}>
                 <span className="ts-icons__icon">
