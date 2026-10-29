@@ -23,6 +23,7 @@ import { TeoAblaufKarte } from "@/components/teo/TeoAblaufKarte";
 import { TeoFoto } from "@/components/teo/TeoFoto";
 import { TEO_LINK_ANFRAGE, TeoRahmen } from "@/components/teo/TeoRahmen";
 import { TeoRollen } from "@/components/teo/TeoRollen";
+import { TeoSchritte } from "@/components/teo/TeoSchritte";
 import { MARKE } from "@/lib/marke";
 
 import "@/app/teo-start.css";
@@ -52,13 +53,6 @@ const MIT_TEO = [
   "Den Stand sehen Sie jederzeit in der App",
   "Abnahme mit Fotos, Rechnung geprüft",
   "Prüffristen laufen von selbst",
-] as const;
-
-const ABLAUF = [
-  { icon: QrCode, titel: "Gemeldet", text: "Per QR-Code oder App, mit Foto." },
-  { icon: Wrench, titel: "Geprüft", text: "Wir schicken den passenden Betrieb." },
-  { icon: Wallet, titel: "Freigegeben", text: "Bis zu Ihrer Grenze direkt." },
-  { icon: ClipboardCheck, titel: "Erledigt", text: "Mit Fotos, Abnahme und Rechnung." },
 ] as const;
 
 const FUNKTIONEN = [
@@ -313,20 +307,10 @@ export function TeoStartseite() {
 
       <section className="ts-abschnitt" id="ablauf">
         <div className="teo-innen">
-          <h2 className="ts-zentriert-text">Vom Wasserfleck bis zur Rechnung.</h2>
-          <ol className="ts-icons ts-icons--vier">
-            {ABLAUF.map((s, i) => (
-              <li key={s.titel}>
-                <span className="ts-icons__icon">
-                  <s.icon size={24} strokeWidth={1.6} />
-                </span>
-                <h3>
-                  <span className="ts-icons__nr">{i + 1}</span> {s.titel}
-                </h3>
-                <p>{s.text}</p>
-              </li>
-            ))}
-          </ol>
+          <h2 className="ts-zentriert-text ts-zweizeilig">
+            <span>Vom Wasserfleck</span> <span className="ts-blau">bis zur Rechnung.</span>
+          </h2>
+          <TeoSchritte />
         </div>
       </section>
 

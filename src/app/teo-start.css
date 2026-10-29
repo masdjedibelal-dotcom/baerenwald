@@ -1292,3 +1292,139 @@
 /* Fotos über „Woran wir denken“ */
 .ts-zwei--fotos { margin-top: 40px; }
 .ts-zwei--fotos + .ts-icons { margin-top: 56px; }
+
+/* Schritte als Reiter-Fläche (Vorbild Lessen „Intake · Dispatch · …“) */
+.ts-schritte {
+  margin: 48px auto 0;
+  max-width: 1120px;
+  border-radius: 32px;
+  overflow: hidden;
+  background: linear-gradient(160deg, var(--teo-blau) 0%, var(--teo-navy) 100%);
+  color: #fff;
+}
+.ts-schritte__reiter {
+  display: flex;
+  overflow-x: auto;
+  scrollbar-width: none;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.14);
+}
+.ts-schritte__reiter::-webkit-scrollbar { display: none; }
+.ts-schritte__reiter button {
+  flex: 1 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 18px 20px;
+  border: 0;
+  border-bottom: 3px solid transparent;
+  background: none;
+  color: rgba(255, 255, 255, 0.65);
+  font: inherit;
+  font-size: 16px;
+  font-weight: 650;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: color 0.2s, border-color 0.2s;
+}
+.ts-schritte__reiter button + button { border-left: 1px solid rgba(255, 255, 255, 0.1); }
+.ts-schritte__reiter button:hover { color: #fff; }
+.ts-schritte__reiter button.ist-aktiv { color: #fff; border-bottom-color: #fff; }
+.ts-schritte__reiter button:focus-visible { outline: 2px solid #fff; outline-offset: -4px; }
+.ts-schritte__nr {
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.14);
+  font-size: 12px;
+}
+.ist-aktiv .ts-schritte__nr { background: #fff; color: var(--teo-navy); }
+/* alle Inhalte in derselben Zelle → Höhe springt nicht */
+.ts-schritte__buehne { display: grid; }
+.ts-schritte__inhalt {
+  grid-area: 1 / 1;
+  display: grid;
+  gap: 32px;
+  align-items: center;
+  padding: 40px 28px;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.35s ease;
+}
+.ts-schritte__inhalt.ist-aktiv { opacity: 1; visibility: visible; }
+@media (min-width: 900px) {
+  .ts-schritte__inhalt { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 56px; padding: 64px; }
+}
+.teo-site .ts-schritte__text h3 {
+  color: #fff;
+  font-size: clamp(26px, 3vw, 38px);
+  line-height: 1.1;
+  font-weight: 800;
+  letter-spacing: -0.035em;
+  text-wrap: balance;
+}
+.teo-site .ts-schritte__text p { margin-top: 16px; font-size: 18px; line-height: 1.5; color: rgba(255, 255, 255, 0.82); max-width: 36ch; }
+.ts-schritte__karte {
+  padding: 20px;
+  border-radius: 22px;
+  background: #fff;
+  color: var(--teo-text);
+  box-shadow: 0 30px 60px -30px rgba(0, 0, 0, 0.5);
+}
+.ts-schritte__kopf { display: flex; align-items: center; gap: 12px; padding-bottom: 14px; border-bottom: 1px solid var(--ts-linie); }
+.ts-schritte__icon {
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  flex: none;
+  border-radius: 12px;
+  background: var(--teo-navy);
+  color: #fff;
+}
+.ts-schritte__kopftext { display: flex; flex-direction: column; flex: 1; min-width: 0; }
+.ts-schritte__kopftext b { font-size: 16px; }
+.ts-schritte__kopftext small { font-size: 13px; color: #6a7c92; }
+.ts-schritte__status {
+  flex: none;
+  padding: 5px 10px;
+  border-radius: 999px;
+  background: var(--teo-blau-bg);
+  color: var(--teo-blau);
+  font-size: 12px;
+  font-weight: 700;
+}
+.ts-schritte__karte dl { margin: 6px 0 0; display: grid; }
+.ts-schritte__karte dl > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 11px 0;
+  border-bottom: 1px solid #f0ede7;
+  font-size: 14px;
+}
+.ts-schritte__karte dl > div:last-child { border-bottom: 0; }
+.ts-schritte__karte dt { color: #6a7c92; }
+.ts-schritte__karte dd { margin: 0; display: inline-flex; align-items: center; gap: 8px; font-weight: 650; text-align: right; }
+.ts-schritte__ok {
+  display: grid;
+  place-items: center;
+  width: 18px;
+  height: 18px;
+  flex: none;
+  border-radius: 50%;
+  background: var(--teo-gruen-bg);
+  color: var(--teo-gruen);
+}
+.ts-schritte__budget { margin-top: 10px; padding: 14px; border-radius: 14px; background: var(--ts-warm); display: grid; gap: 10px; font-size: 13px; color: #6a7c92; }
+.ts-schritte__budget b { color: var(--teo-navy); margin-left: 4px; }
+.ts-schritte__balken { height: 8px; border-radius: 999px; background: #e7e3dc; overflow: hidden; }
+.ts-schritte__balken span { display: block; width: 40.5%; height: 100%; border-radius: inherit; background: var(--teo-gruen); }
+@media (max-width: 560px) {
+  .ts-schritte { border-radius: 26px; }
+  .ts-schritte__reiter button { padding: 14px 16px; font-size: 14px; }
+  .ts-schritte__inhalt { padding: 28px 18px; gap: 24px; }
+  .teo-site .ts-schritte__text p { font-size: 16px; }
+}
