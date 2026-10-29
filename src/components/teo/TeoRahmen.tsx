@@ -52,7 +52,7 @@ function TeoFuss() {
       <div className="teo-fuss__innen">
         <div className="teo-fuss__marke">
           <TeoLogo hell />
-          <p>Haustechnik für Verwaltungen und Bestandshalter in München.</p>
+          <p>Technische Betreuung für Verwaltungen und Bestandshalter in München.</p>
           <p className="teo-fuss__adresse">
             {f.firmenname} · {f.strasse} {f.hausnummer} · {f.plz} {f.ort}
             <br />

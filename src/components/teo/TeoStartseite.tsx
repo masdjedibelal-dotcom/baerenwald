@@ -15,7 +15,7 @@ import {
   Home,
   KeyRound,
   Megaphone,
-  MessagesSquare,
+  ReceiptText,
   Minus,
   PaintRoller,
   PhoneMissed,
@@ -45,9 +45,9 @@ const ZIELGRUPPEN = [
 ] as const;
 
 const PROBLEME = [
-  { icon: PhoneMissed, titel: "Kein Handwerker ruft zurück." },
-  { icon: CalendarClock, titel: "Die Fristen hängen an Ihnen." },
-  { icon: MessagesSquare, titel: "Alle fragen nach dem Stand." },
+  { icon: PhoneMissed, titel: "Handwerker suchen und nachtelefonieren." },
+  { icon: CalendarClock, titel: "Termine mit Mietern abstimmen." },
+  { icon: ReceiptText, titel: "Angebote, Rechnungen, Fristen prüfen." },
 ] as const;
 
 const ABLAUF = [
@@ -103,8 +103,9 @@ export const TEO_FAQ = [
     antwort: "So viel wie eine direkte Beauftragung. Auf die Handwerkerleistung kommt kein Aufschlag. Die Software ist dabei.",
   },
   {
-    frage: "Ist teo eine Software oder ein Handwerksbetrieb?",
-    antwort: "Beides. Sie bekommen die Software für Ihr Team, und wir erledigen die Aufträge mit unseren Partnerbetrieben.",
+    frage: "Ist teo eine Software?",
+    antwort:
+      "Wir sind Ihr Dienstleister für alles Technische. Wir organisieren, beauftragen und prüfen. Die App ist dabei, damit Sie jederzeit den Stand sehen.",
   },
   {
     frage: "Was wird aus unserem Hausmeister?",
@@ -224,7 +225,7 @@ export function TeoStartseite() {
 
       <section className="ts-abschnitt" id="problem">
         <div className="teo-innen">
-          <h2 className="ts-zentriert-text">Die Meldung ist nicht das Problem. Alles danach schon.</h2>
+          <h2 className="ts-zentriert-text">Jeder Schaden ist ein kleines Projekt. Und kostet Sie Stunden.</h2>
           <div className="ts-probleme">
             {PROBLEME.map((p) => (
               <figure key={p.titel}>
@@ -240,26 +241,26 @@ export function TeoStartseite() {
 
       <section className="ts-abschnitt ts-abschnitt--warm" id="loesung">
         <div className="teo-innen">
-          <h2 className="ts-zentriert-text">Software und Handwerk aus einer Hand.</h2>
+          <h2 className="ts-zentriert-text">Geben Sie es ab. Wir kümmern uns komplett.</h2>
           <div className="ts-zwei">
-            <figure>
-              <div className="ts-buehne">
-                <TeoFoto name="verwaltung" alt="Verwalterin am Laptop, im Fenster die Frauenkirche" className="ts-foto--flach" />
-                <MeldungKarte />
-              </div>
-              <figcaption>
-                <b>Die Software</b>
-                <span>Für Verwaltung, Hausmeister, Mieter und Eigentümer. Inklusive.</span>
-              </figcaption>
-            </figure>
             <figure>
               <div className="ts-buehne">
                 <TeoFoto name="handwerker" alt="Handwerker stellt ein Ventil an der Heizung ein" className="ts-foto--flach" />
                 <AbnahmeKarte />
               </div>
               <figcaption>
-                <b>Die Ausführung</b>
-                <span>Unsere Partnerbetriebe in München. Haftung bei uns.</span>
+                <b>Wir erledigen es</b>
+                <span>Handwerker, Termine, Abnahme, Rechnung. Haftung bei uns.</span>
+              </figcaption>
+            </figure>
+            <figure>
+              <div className="ts-buehne">
+                <TeoFoto name="verwaltung" alt="Verwalterin am Laptop, im Fenster die Frauenkirche" className="ts-foto--flach" />
+                <MeldungKarte />
+              </div>
+              <figcaption>
+                <b>Sie sehen es</b>
+                <span>Jeder Stand in einer App. Inklusive.</span>
               </figcaption>
             </figure>
           </div>
@@ -285,30 +286,6 @@ export function TeoStartseite() {
         </div>
       </section>
 
-      <section className="ts-abschnitt ts-abschnitt--warm" id="rollen">
-        <div className="teo-innen">
-          <h2 className="ts-zentriert-text">Jeder im Haus sieht, was er braucht.</h2>
-          <TeoRollen />
-        </div>
-      </section>
-
-      <section className="ts-abschnitt" id="funktionen">
-        <div className="teo-innen">
-          <h2 className="ts-zentriert-text">Was sonst liegen bleibt.</h2>
-          <ul className="ts-icons ts-icons--drei">
-            {FUNKTIONEN.map((f) => (
-              <li key={f.titel}>
-                <span className="ts-icons__icon">
-                  <f.icon size={24} strokeWidth={1.6} />
-                </span>
-                <h3>{f.titel}</h3>
-                <p>{f.text}</p>
-              </li>
-            ))}
-          </ul>
-        </div>
-      </section>
-
       <section className="ts-abschnitt ts-abschnitt--warm" id="leistungen">
         <div className="teo-innen">
           <h2 className="ts-zentriert-text">Was wir erledigen.</h2>
@@ -325,9 +302,26 @@ export function TeoStartseite() {
         </div>
       </section>
 
-      <section className="ts-abschnitt" id="warum">
+      <section className="ts-abschnitt" id="funktionen">
         <div className="teo-innen">
-          <h2 className="ts-zentriert-text">Warum teo?</h2>
+          <h2 className="ts-zentriert-text">Woran wir denken, damit Sie es nicht müssen.</h2>
+          <ul className="ts-icons ts-icons--drei">
+            {FUNKTIONEN.map((f) => (
+              <li key={f.titel}>
+                <span className="ts-icons__icon">
+                  <f.icon size={24} strokeWidth={1.6} />
+                </span>
+                <h3>{f.titel}</h3>
+                <p>{f.text}</p>
+              </li>
+            ))}
+          </ul>
+        </div>
+      </section>
+
+      <section className="ts-abschnitt ts-abschnitt--warm" id="warum">
+        <div className="teo-innen">
+          <h2 className="ts-zentriert-text">Mehr als Software.</h2>
           <div className="ts-vgl" role="table" aria-label="Vergleich">
             <div className="ts-vgl__zeile ts-vgl__kopf" role="row">
               <span role="columnheader" />
@@ -352,6 +346,13 @@ export function TeoStartseite() {
               </div>
             ))}
           </div>
+        </div>
+      </section>
+
+      <section className="ts-abschnitt" id="rollen">
+        <div className="teo-innen">
+          <h2 className="ts-zentriert-text">Jeder im Haus sieht, was er braucht.</h2>
+          <TeoRollen />
         </div>
       </section>
 
