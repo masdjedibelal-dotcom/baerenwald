@@ -1,8 +1,6 @@
 import Link from "next/link";
 import {
   BellRing,
-  Briefcase,
-  Building2,
   CalendarClock,
   Check,
   ClipboardCheck,
@@ -22,7 +20,6 @@ import {
   QrCode,
   ShieldCheck,
   Snowflake,
-  Users,
   Sparkles,
   Trees,
   Wallet,
@@ -39,9 +36,14 @@ import { MARKE } from "@/lib/marke";
 import "@/app/teo-start.css";
 
 const ZIELGRUPPEN = [
-  { icon: Briefcase, ton: "blau", titel: "Hausverwaltungen", text: "WEG- und Mietverwaltung" },
-  { icon: Users, ton: "gold", titel: "Eigentümergemeinschaften", text: "auch selbst verwaltet" },
-  { icon: Building2, ton: "rot", titel: "Bestandshalter", text: "Wohnungsunternehmen, Genossenschaften" },
+  "Hausverwaltungen",
+  "WEG-Verwaltungen",
+  "Mietverwaltungen",
+  "Eigentümergemeinschaften",
+  "Wohnungsunternehmen",
+  "Genossenschaften",
+  "Family Offices",
+  "Eigentümer mehrerer Häuser",
 ] as const;
 
 const PROBLEME = [
@@ -197,18 +199,19 @@ export function TeoStartseite() {
 
       <section className="ts-abschnitt ts-abschnitt--eng" id="fuer-wen">
         <div className="teo-innen">
-          <h2 className="ts-zentriert-text">Für alle, die Häuser verwalten.</h2>
-          <ul className="ts-zielgruppen">
-            {ZIELGRUPPEN.map((z) => (
-              <li key={z.titel}>
-                <span className={`ts-zielgruppen__icon ts-zielgruppen__icon--${z.ton}`}>
-                  <z.icon size={24} strokeWidth={1.6} />
-                </span>
-                <b>{z.titel}</b>
-                <span>{z.text}</span>
-              </li>
-            ))}
-          </ul>
+          <div className="ts-fuerwen">
+            <div className="ts-fuerwen__kopf">
+              <h2>Für alle, die Häuser verwalten.</h2>
+              <Link href={TEO_LINK_ANFRAGE} className="teo-btn">
+                Anfrage stellen
+              </Link>
+            </div>
+            <ul className="ts-fuerwen__liste">
+              {ZIELGRUPPEN.map((z) => (
+                <li key={z}>{z}</li>
+              ))}
+            </ul>
+          </div>
         </div>
       </section>
 
