@@ -5,6 +5,7 @@ import { PortalButton } from "@/components/portal/PortalButton";
 
 import { useCookieConsent } from "@/components/consent/CookieConsentContext";
 import { DokumenteTabelle } from "@/components/shared/DokumenteTabelle";
+import { PortalTextarea } from "@/components/shared/PortalFormControls";
 import { PortalPhotoGallery } from "@/components/shared/PortalPhotoGallery";
 import { VorgangDetailBlocks } from "@/components/shared/vorgang-detail";
 import {
@@ -19,6 +20,7 @@ import {
 } from "@/lib/portal2/mieter-wl";
 import { buildMeldeStatusVorgangDetailVm } from "@/lib/vorgang/build-org-lead-detail-vm";
 import type { MieterStatusStufe } from "@/lib/vorgang/vorgang-phase";
+import { istTeo } from "@/lib/marke";
 import "./melden.css";
 
 type Slot = {
@@ -101,6 +103,36 @@ export function MeldeStatusClient({
   const [bestaetigt, setBestaetigt] = useState<Slot | null>(null);
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
+  const [wiederOffen, setWiederOffen] = useState(false);
+  const [wiederText, setWiederText] = useState("");
+  const [wiederGemeldet, setWiederGemeldet] = useState(false);
+
+  /** Servus TEO: Problem ist nach Erledigung wieder da → neuer Vorgang (Gewährleistung). */
+  async function wiederMelden() {
+    setBusy(true);
+    setMsg(null);
+    try {
+      const res = await fetch("/api/melden/wieder", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ token, text: wiederText }),
+      });
+      const json = (await res.json().catch(() => ({}))) as { error?: string; statusPfad?: string | null };
+      if (!res.ok) {
+        setMsg(json.error ?? "Bitte versuchen Sie es erneut.");
+        return;
+      }
+      if (json.statusPfad) {
+        window.location.assign(json.statusPfad);
+        return;
+      }
+      setWiederOffen(false);
+      setWiederGemeldet(true);
+      setMsg("Danke, wir kümmern uns darum.");
+    } finally {
+      setBusy(false);
+    }
+  }
 
   useEffect(() => {
     if (datenschutzHref && impressumHref) {
@@ -343,6 +375,42 @@ export function MeldeStatusClient({
 
         {erledigt && anhaenge.length > 0 ? (
           <DokumenteTabelle heading={"Anhänge"} dokumente={anhaenge} />
+        ) : null}
+
+        {erledigt && istTeo && !wiederGemeldet ? (
+          <MieterWlCard>
+            <div className="p-4 space-y-3">
+              <p className="text-fs-title font-bold text-[var(--p2-ink)]">{"Problem wieder da?"}</p>
+              {wiederOffen ? (
+                <>
+                  <PortalTextarea
+                    value={wiederText}
+                    onChange={(e) => setWiederText(e.target.value)}
+                    rows={3}
+                    placeholder="Was tritt wieder auf?"
+                  />
+                  <PortalButton
+                    variant="primary"
+                    type="button"
+                    className="mieter-wl-btn mieter-wl-btn--primary"
+                    disabled={busy || wiederText.trim().length < 5}
+                    onClick={() => void wiederMelden()}
+                  >
+                    {"Erneut melden"}
+                  </PortalButton>
+                </>
+              ) : (
+                <PortalButton
+                  variant="primary"
+                  type="button"
+                  className="mieter-wl-btn mieter-wl-btn--primary"
+                  onClick={() => setWiederOffen(true)}
+                >
+                  {"Ja, erneut melden"}
+                </PortalButton>
+              )}
+            </div>
+          </MieterWlCard>
         ) : null}
 
         {msg ? (

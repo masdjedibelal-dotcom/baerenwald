@@ -34,7 +34,7 @@ export const TEO_SITUATIONEN: TeoSituation[] = [
   { id: "heizung", label: "Heizung fällt aus", fall: "schaden", schadenArten: ["heizung"] },
   { id: "wasser", label: "Wasser im Keller", fall: "schaden", schadenArten: ["wasser"] },
   { id: "strom", label: "Strom oder Klingel defekt", fall: "schaden", schadenArten: ["strom"] },
-  { id: "angebote", label: "Wir brauchen Angebote für die Versammlung", fall: "massnahme" },
+  { id: "angebote", label: "Wir brauchen ein Angebot für die Versammlung", fall: "massnahme" },
   { id: "pruefungen", label: "Prüffristen laufen ab", fall: "betrieb", leistungen: ["wartung"] },
   { id: "hausmeister", label: "Unser Hausmeister fällt weg", fall: "betrieb", leistungen: ["hausmeister"] },
   { id: "winter", label: "Winterdienst fehlt", fall: "betrieb", leistungen: ["winter"] },
@@ -76,8 +76,6 @@ export const TEO_MASSNAHMEN: Option[] = [
   { id: "sonstiges", label: "Etwas anderes", bereiche: ["sonstiges"] },
 ];
 
-export const TEO_ANGEBOTE_ANZAHL = ["Ein Angebot", "Zwei Angebote", "Drei Angebote"] as const;
-
 export const TEO_LEISTUNGEN: Option[] = [
   { id: "hausmeister", label: "Hausmeister", bereiche: ["hausmeister"] },
   { id: "reinigung", label: "Treppenhausreinigung", bereiche: ["reinigung"] },
@@ -101,7 +99,6 @@ export type TeoAnfrageDaten = {
   /** Maßnahme */
   massnahmen: string[];
   frist: string;
-  angebote: string;
   /** Maßnahme + Betrieb */
   einheiten: string;
   baujahr: string;
@@ -154,7 +151,6 @@ export function teoAnfrageNachricht(d: TeoAnfrageDaten): string {
     z.push(
       `Maßnahme: ${label(TEO_MASSNAHMEN, d.massnahmen).join(", ") || "—"}`,
       d.frist ? `Angebot benötigt bis: ${d.frist.split("-").reverse().join(".")}` : "",
-      d.angebote ? `Gewünscht: ${d.angebote}` : "",
       d.einheiten.trim() ? `Einheiten: ${d.einheiten.trim()}` : "",
       d.baujahr.trim() ? `Baujahr: ${d.baujahr.trim()}` : ""
     );

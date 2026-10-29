@@ -82,15 +82,15 @@ const SCHRITTE: Schritt[] = [
   {
     id: "abnahme",
     reiter: "Abnahme & Rechnung",
-    titel: "Geprüft, bevor es bei Ihnen landet.",
-    text: "Wir prüfen Arbeit und Rechnung. Sie sehen die Kosten direkt im Budget des Hauses.",
+    titel: "Abgenommen und abgerechnet.",
+    text: "Wir nehmen die Arbeit ab und stellen Ihnen eine Rechnung. Die Kosten sehen Sie im Budget des Hauses.",
     karte: {
       icon: ClipboardCheck,
-      titel: "Rechnung geprüft",
+      titel: "Abgenommen",
       status: "Abgeschlossen",
       zeilen: [
-        { label: "Rechnung", wert: "286,40 €", ok: true },
-        { label: "Passt zum Auftrag", wert: "Ja", ok: true },
+        { label: "Abnahme", wert: "Ohne Mängel", ok: true },
+        { label: "Rechnung von teo", wert: "286,40 €", ok: true },
       ],
       budget: true,
     },

@@ -91,7 +91,7 @@ export async function submitTeoAnfrageAction(
           : null,
       massnahme:
         d.fall === "massnahme"
-          ? { massnahmen: d.massnahmen, frist: d.frist || null, angebote: d.angebote || null, einheiten: d.einheiten.trim() || null, baujahr: d.baujahr.trim() || null }
+          ? { massnahmen: d.massnahmen, frist: d.frist || null, einheiten: d.einheiten.trim() || null, baujahr: d.baujahr.trim() || null }
           : null,
       betrieb:
         d.fall === "betrieb"

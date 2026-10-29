@@ -18,7 +18,7 @@ const FAELLE: Fall[] = [
       ["Heizungsbauer beauftragt", "07:31"],
       ["Termin mit Mieter abgestimmt", "08:05"],
       ["Repariert, 3 Fotos", "11:40"],
-      ["Rechnung geprüft", "14:10"],
+      ["Abgenommen, Rechnung von teo", "14:10"],
     ],
   },
   {
@@ -31,8 +31,8 @@ const FAELLE: Fall[] = [
       ["Notdienst beauftragt", "06:55"],
       ["Leck abgedichtet", "08:20"],
       ["Trocknung geplant", "09:10"],
-      ["Abnahme mit Fotos", "Fr 10:00"],
-      ["Rechnung geprüft", "Fr 12:30"],
+      ["Abgenommen mit Fotos", "Fr 10:00"],
+      ["Rechnung von teo", "Fr 12:30"],
     ],
   },
   {
@@ -46,7 +46,7 @@ const FAELLE: Fall[] = [
       ["Elektriker beauftragt", "Mo 08:10"],
       ["Termin abgestimmt", "Mo 08:40"],
       ["Repariert", "Di 10:15"],
-      ["Rechnung geprüft", "Di 16:00"],
+      ["Abgenommen, Rechnung von teo", "Di 16:00"],
     ],
   },
 ];

@@ -133,13 +133,12 @@ export async function ladeHausPlaene(objektIds: string[]): Promise<Map<string, M
   return aus
 }
 
-/** Eigentümer: zugeordnete Objekte. Kosten nur bei WEG (Eigentümer tragen sie selbst). */
+/** Eigentümer: zugeordnete Objekte mit Kosten und Budget (WEG und Mietobjekt — Eigentümer tragen die Kosten). */
 export async function ladeEigentuemerObjekte(k: ApKontext): Promise<MeinObjekt[]> {
   const ids = k.person.objektIds ?? []
   if (!ids.length) return []
-  const weg = k.org.orgTyp === 'weg'
-  // Bei WEG Beträge mitladen — Sichtbarkeit bleibt auf die zugeordneten Objekte begrenzt (objektIds)
-  const ladeK: ApKontext = weg ? { ...k, person: { ...k.person, rolle: 'verwaltung' } } : k
+  // Beträge mitladen — Sichtbarkeit bleibt auf die zugeordneten Objekte begrenzt (objektIds)
+  const ladeK: ApKontext = { ...k, person: { ...k.person, rolle: 'verwaltung' } }
   const details = await Promise.all(ids.map((id) => ladeObjekt(ladeK, id)))
   return details
     .filter((d): d is NonNullable<typeof d> => Boolean(d))
@@ -152,7 +151,7 @@ export async function ladeEigentuemerObjekte(k: ApKontext): Promise<MeinObjekt[]
         .filter((v) => v.status !== 'abgelehnt')
         .slice(0, 20)
         .map((v) => ({ id: v.id, titel: v.titel, datum: v.erstellt, status: EIGENTUEMER_STATUS[v.status], erledigt: v.status === 'erledigt' })),
-      kosten: weg ? { jahr: d.jahr, beauftragt: d.beauftragt, budget: d.objekt.budget } : null,
+      kosten: { jahr: d.jahr, beauftragt: d.beauftragt, budget: d.objekt.budget },
     }))
 }
 

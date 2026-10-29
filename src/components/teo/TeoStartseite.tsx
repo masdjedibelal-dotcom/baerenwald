@@ -52,7 +52,7 @@ const MIT_TEO = [
   "Eine Meldung genügt, wir übernehmen",
   "Handwerker und Termin organisieren wir",
   "Den Stand sehen Sie jederzeit in der App",
-  "Abnahme mit Fotos, Rechnung geprüft",
+  "Abnahme mit Fotos, eine Rechnung von uns",
   "Prüffristen laufen von selbst",
 ] as const;
 
@@ -110,7 +110,7 @@ const MIT_TEO_KOSTEN = [
 const BETEILIGTE = [
   { foto: "rolle-verwaltung", quelle: "verwaltung", icon: Briefcase, titel: "Verwaltung", text: "Alle Häuser auf einer Seite. Freigeben mit einem Klick.", alt: "Verwalterin am Laptop" },
   { foto: "rolle-mieter", quelle: null, icon: KeyRound, titel: "Mieter & Hausmeister", text: "Melden per QR-Code oder App, ganz ohne Anruf.", alt: "Mieterin meldet einen Schaden mit dem Handy" },
-  { foto: "rolle-handwerker", quelle: "handwerker", icon: Wrench, titel: "Handwerker", text: "Auftrag, Termin und Abnahme direkt auf dem Handy.", alt: "Handwerker an der Heizung" },
+  { foto: "rolle-handwerker", quelle: "handwerker", icon: Wrench, titel: "Handwerker", text: "Auftrag, Termin und Fotos direkt auf dem Handy.", alt: "Handwerker an der Heizung" },
   { foto: "rolle-eigentuemer", quelle: null, icon: Building, titel: "Eigentümer", text: "Sehen, was im Haus passiert, mit den Kosten je Haus.", alt: "Eigentümer vor seinem Haus" },
 ] as const;
 

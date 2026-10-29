@@ -43,7 +43,6 @@ import { TEO_USPS } from "@/components/teo/teo-usps";
 import { ladeAnfrageFotosHoch, neueFotoSitzung } from "@/lib/funnel/fotos-hochladen";
 import {
   TEO_ABSENDER,
-  TEO_ANGEBOTE_ANZAHL,
   TEO_DRINGLICHKEIT,
   TEO_FAELLE,
   TEO_LEISTUNGEN,
@@ -210,7 +209,6 @@ export function TeoAnfrage() {
     kontaktVorOrt: "",
     massnahmen: [],
     frist: "",
-    angebote: "",
     einheiten: "",
     baujahr: "",
     leistungen: [],
@@ -426,9 +424,6 @@ export function TeoAnfrage() {
             {schritt === 1 && d.fall === "massnahme" ? (
               <>
                 <Kacheln optionen={TEO_MASSNAHMEN} icons={ICON_MASSNAHME} gewaehlt={d.massnahmen} onWahl={(v) => set("massnahmen", v)} />
-                <Gruppe label="Wie viele Angebote?">
-                  <Pillen optionen={TEO_ANGEBOTE_ANZAHL} wert={d.angebote} onWahl={(v) => set("angebote", v)} />
-                </Gruppe>
                 <Feld label="Angebot gebraucht bis (optional)">
                   <input type="date" className="ta-input" value={d.frist} onChange={(e) => set("frist", e.target.value)} />
                 </Feld>

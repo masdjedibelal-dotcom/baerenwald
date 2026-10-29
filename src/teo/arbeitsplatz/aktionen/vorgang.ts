@@ -101,3 +101,16 @@ export async function vorgangAnlegen(v: NeuerVorgang): Promise<ApAktionsErgebnis
   revalidatePath('/arbeitsplatz', 'layout')
   return r
 }
+
+/** Gewährleistung: erledigter Vorgang, Problem ist wieder da → neuer Vorgang direkt bei TEO (nur Verwaltung). */
+export async function wiederAufgetreten(leadId: string, beschreibung: string): Promise<ApAktionsErgebnis & { id?: string }> {
+  const p = await pruefen(leadId, 'vorgang.an_teo')
+  if (!p.ok) return p
+  const [v] = await ladeVorgaenge(p.k, { nurIds: [leadId] })
+  if (v?.status !== 'erledigt') return { ok: false, fehler: 'Das geht erst, wenn der Vorgang erledigt ist.' }
+  const { legeGewaehrleistungAn } = await import('@/teo/hv/gewaehrleistung')
+  const r = await legeGewaehrleistungAn(leadId, beschreibung, { art: 'verwaltung', name: p.k.person.name, email: p.k.person.email })
+  if (!r.ok) return r
+  revalidatePath('/arbeitsplatz', 'layout')
+  return { ok: true, id: r.id }
+}

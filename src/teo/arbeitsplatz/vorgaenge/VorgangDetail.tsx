@@ -10,6 +10,7 @@ import {
   angebotEntscheiden,
   meldungAbweisen,
   nachrichtAnTeo,
+  wiederAufgetreten,
   type ApAktionsErgebnis,
 } from '@/teo/arbeitsplatz/aktionen/vorgang'
 import type { ApVorgangDetail } from '@/teo/arbeitsplatz/daten/vorgang-detail'
@@ -37,6 +38,8 @@ export function VorgangDetail({ d, rechte, weg }: { d: ApVorgangDetail; rechte: 
   const [beschluss, setBeschluss] = useState(false)
   const [beschlussDatei, setBeschlussDatei] = useState<File | null>(null)
   const [nachricht, setNachricht] = useState('')
+  const [wiederKarte, setWiederKarte] = useState(false)
+  const [wiederText, setWiederText] = useState('')
   const { zeile, item } = d
   const st = AP_STATUS[zeile.status]
 
@@ -54,6 +57,22 @@ export function VorgangDetail({ d, rechte, weg }: { d: ApVorgangDetail; rechte: 
   }
 
   const istNeu = zeile.status === 'neu' && rechte.anTeo
+  const kannWieder = zeile.status === 'erledigt' && rechte.anTeo
+
+  function wiederMelden() {
+    setFehler(null)
+    starten(async () => {
+      const r = await wiederAufgetreten(zeile.id, wiederText)
+      if (!r.ok) {
+        setFehler(r.fehler)
+        return
+      }
+      setWiederKarte(false)
+      setWiederText('')
+      if (r.id) router.push(`/arbeitsplatz/vorgaenge/${r.id}`)
+      else router.refresh()
+    })
+  }
   const zuEntscheiden = zeile.status === 'zu_entscheiden' && rechte.freigeben
 
   const verlauf = useMemo<VerlaufPunkt[]>(() => {
@@ -107,26 +126,36 @@ export function VorgangDetail({ d, rechte, weg }: { d: ApVorgangDetail; rechte: 
             <span>{formatDatum(zeile.erstellt)}</span>
           </div>
         </div>
-        {istNeu || zuEntscheiden ? (
-          <div className="detail-head-actions min-w-0">
-            <MockBtn kind="secondary" sm type="button" disabled={laeuft} onClick={() => setAblehnen((v) => !v)}>
-              Ablehnen
+        <div className="detail-head-actions min-w-0">
+          <MockBtn kind="secondary" sm type="button" onClick={() => window.open(`/unterlagen/${zeile.id}`, '_blank', 'noopener')}>
+            Schadenunterlagen
+          </MockBtn>
+          {kannWieder ? (
+            <MockBtn kind="secondary" sm type="button" disabled={laeuft} onClick={() => setWiederKarte((v) => !v)}>
+              Wieder aufgetreten
             </MockBtn>
-            <MockBtn
-              kind="primary"
-              sm
-              type="button"
-              disabled={laeuft}
-              onClick={() =>
-                !istNeu && weg
-                  ? setFreigabeKarte((v) => !v)
-                  : ausfuehren(() => (istNeu ? anTeoGeben(zeile.id) : angebotEntscheiden(zeile.id, 'freigegeben', { betragEur: zeile.betrag })))
-              }
-            >
-              {istNeu ? 'An TEO geben' : 'Freigeben'}
-            </MockBtn>
-          </div>
-        ) : null}
+          ) : null}
+          {istNeu || zuEntscheiden ? (
+            <>
+              <MockBtn kind="secondary" sm type="button" disabled={laeuft} onClick={() => setAblehnen((v) => !v)}>
+                Ablehnen
+              </MockBtn>
+              <MockBtn
+                kind="primary"
+                sm
+                type="button"
+                disabled={laeuft}
+                onClick={() =>
+                  !istNeu && weg
+                    ? setFreigabeKarte((v) => !v)
+                    : ausfuehren(() => (istNeu ? anTeoGeben(zeile.id) : angebotEntscheiden(zeile.id, 'freigegeben', { betragEur: zeile.betrag })))
+                }
+              >
+                {istNeu ? 'An TEO geben' : 'Freigeben'}
+              </MockBtn>
+            </>
+          ) : null}
+        </div>
       </header>
 
       {freigabeKarte ? (
@@ -193,6 +222,20 @@ export function VorgangDetail({ d, rechte, weg }: { d: ApVorgangDetail; rechte: 
               }
             >
               Ablehnen
+            </MockBtn>
+          </div>
+        </MockCard>
+      ) : null}
+
+      {wiederKarte ? (
+        <MockCard title="Problem ist wieder da" icon="refresh">
+          <MockTextarea value={wiederText} onChange={(e) => setWiederText(e.target.value)} placeholder="Was tritt wieder auf?" rows={3} />
+          <div className="ap-knopfzeile">
+            <MockBtn kind="ghost" sm type="button" onClick={() => setWiederKarte(false)}>
+              Abbrechen
+            </MockBtn>
+            <MockBtn kind="primary" sm type="button" disabled={laeuft || wiederText.trim().length < 5} onClick={wiederMelden}>
+              An TEO melden
             </MockBtn>
           </div>
         </MockCard>
