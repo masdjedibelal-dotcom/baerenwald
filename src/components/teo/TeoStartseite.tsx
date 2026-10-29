@@ -192,9 +192,11 @@ export function TeoStartseite() {
         </div>
         <div className="teo-innen ts-hero__kopf">
           <h1>
-            <span className="ts-hero__zeile">Nicht mehr koordinieren.</span> <span className="ts-hero__zeile">Nur noch entscheiden.</span>
+            <span className="ts-hero__zeile">
+              Kein <span className="ts-hero__ganz">Handwerker-Aufwand.</span>
+            </span> <span className="ts-hero__zeile">Mehr Zeit fürs Verwalten.</span>
           </h1>
-          <p className="ts-hero__satz">teo übernimmt die Technik Ihrer Häuser. Von der Meldung bis zur Rechnung.</p>
+          <p className="ts-hero__satz">teo übernimmt alles, von der Meldung bis zur Ausführung durch den Handwerker.</p>
           <div className="teo-aktionen ts-zentriert">
             <Link href={TEO_LINK_ANFRAGE} className="teo-btn">
               Anfrage stellen

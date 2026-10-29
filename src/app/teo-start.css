@@ -995,3 +995,7 @@
 .ts-hero h1 { max-width: none; }
 .ts-hero__zeile { display: block; }
 .ts-hero h1 { font-size: clamp(36px, 6.4vw, 84px); }
+.ts-hero__ganz { white-space: nowrap; }
+@media (max-width: 480px) {
+  .ts-hero h1 { font-size: clamp(30px, 9vw, 40px); }
+}
