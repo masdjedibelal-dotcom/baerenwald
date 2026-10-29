@@ -30,10 +30,10 @@ import {
   Zap,
 } from "lucide-react";
 
+import { TeoAblaufKarte } from "@/components/teo/TeoAblaufKarte";
 import { TeoFoto } from "@/components/teo/TeoFoto";
 import { TEO_LINK_ANFRAGE, TeoRahmen } from "@/components/teo/TeoRahmen";
 import { TeoRollen } from "@/components/teo/TeoRollen";
-import { Status } from "@/components/teo/TeoVisuals";
 import { MARKE } from "@/lib/marke";
 
 import "@/app/teo-start.css";
@@ -137,22 +137,6 @@ function Haken({ ja }: { ja: boolean }) {
   );
 }
 
-/** Eine echte Produktkarte über dem Foto (statt vieler Mini-Oberflächen). */
-function VorgangKarte() {
-  return (
-    <div className="ts-overlay" aria-hidden="true">
-      <span className="ts-overlay__icon">
-        <Flame size={18} />
-      </span>
-      <span className="ts-overlay__text">
-        <b>Heizung fällt aus</b>
-        <small>Leopoldstr. 10 · Termin Do 9:00</small>
-      </span>
-      <Status ton="teo">Bei TEO</Status>
-    </div>
-  );
-}
-
 function AbnahmeKarte() {
   return (
     <div className="ts-overlay ts-overlay--klein" aria-hidden="true">
@@ -206,7 +190,7 @@ export function TeoStartseite() {
         <div className="ts-breit">
           <div className="ts-buehne ts-buehne--hero">
             <TeoFoto name="hero" alt="Handwerker mit Werkzeugkoffer im Treppenhaus eines Altbaus" />
-            <VorgangKarte />
+            <TeoAblaufKarte />
           </div>
         </div>
       </section>
