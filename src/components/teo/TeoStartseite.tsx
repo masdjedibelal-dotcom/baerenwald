@@ -1,12 +1,14 @@
 import Link from "next/link";
 import {
-  BellRing,
+  Briefcase,
+  Building,
   CalendarClock,
   Check,
   ClipboardCheck,
   Hammer,
   Handshake,
   Headset,
+  KeyRound,
   Network,
   ReceiptText,
   ShieldCheck,
@@ -18,9 +20,8 @@ import {
 } from "lucide-react";
 
 import { TeoAblaufKarte } from "@/components/teo/TeoAblaufKarte";
-import { TeoFoto } from "@/components/teo/TeoFoto";
-import { TEO_LINK_ANFRAGE, TeoRahmen } from "@/components/teo/TeoRahmen";
-import { TeoRollen } from "@/components/teo/TeoRollen";
+import { fotoDa, TeoFoto } from "@/components/teo/TeoFoto";
+import { TEO_LINK_ANFRAGE, TeoLogo, TeoRahmen } from "@/components/teo/TeoRahmen";
 import { TeoSchritte } from "@/components/teo/TeoSchritte";
 import { MARKE } from "@/lib/marke";
 
@@ -109,6 +110,14 @@ const MIT_TEO_KOSTEN = [
   "Software inklusive",
 ] as const;
 
+/** Alle Beteiligten (Vorbild Lessen „Every party connected“): Foto je Rolle, darunter teo als Klammer. */
+const BETEILIGTE = [
+  { foto: "rolle-verwaltung", quelle: "verwaltung", icon: Briefcase, titel: "Verwaltung", text: "Alle Häuser auf einer Seite. Freigeben mit einem Klick.", alt: "Verwalterin am Laptop" },
+  { foto: "rolle-mieter", quelle: null, icon: KeyRound, titel: "Mieter & Hausmeister", text: "Melden per QR-Code oder App, ganz ohne Anruf.", alt: "Mieterin meldet einen Schaden mit dem Handy" },
+  { foto: "rolle-handwerker", quelle: "handwerker", icon: Wrench, titel: "Handwerker", text: "Auftrag, Termin und Abnahme direkt auf dem Handy.", alt: "Handwerker an der Heizung" },
+  { foto: "rolle-eigentuemer", quelle: null, icon: Building, titel: "Eigentümer", text: "Sehen, was im Haus passiert, mit den Kosten je Haus.", alt: "Eigentümer vor seinem Haus" },
+] as const;
+
 export const TEO_FAQ = [
   {
     frage: "Für wen ist teo?",
@@ -167,34 +176,6 @@ function Rechnung({ von }: { von: string }) {
         <span>Summe</span>
         <span>2.480,00 €</span>
       </div>
-    </div>
-  );
-}
-
-function AbnahmeKarte() {
-  return (
-    <div className="ts-overlay ts-overlay--klein" aria-hidden="true">
-      <span className="ts-overlay__icon ts-overlay__icon--gruen">
-        <ClipboardCheck size={18} />
-      </span>
-      <span className="ts-overlay__text">
-        <b>Abnahme mit 3 Fotos</b>
-        <small>Rechnung geprüft</small>
-      </span>
-    </div>
-  );
-}
-
-function MeldungKarte() {
-  return (
-    <div className="ts-overlay ts-overlay--klein" aria-hidden="true">
-      <span className="ts-overlay__icon">
-        <BellRing size={18} />
-      </span>
-      <span className="ts-overlay__text">
-        <b>3 neue Meldungen</b>
-        <small>mit Fotos, sortiert nach Haus</small>
-      </span>
     </div>
   );
 }
@@ -357,16 +338,6 @@ export function TeoStartseite() {
       <section className="ts-abschnitt ts-abschnitt--warm" id="funktionen">
         <div className="teo-innen">
           <h2 className="ts-zentriert-text">Was Sie bei teo bekommen.</h2>
-          <div className="ts-zwei ts-zwei--fotos">
-            <div className="ts-buehne">
-              <TeoFoto name="handwerker" alt="Handwerker stellt ein Ventil an der Heizung ein" className="ts-foto--flach" />
-              <AbnahmeKarte />
-            </div>
-            <div className="ts-buehne">
-              <TeoFoto name="verwaltung" alt="Verwalterin am Laptop, im Fenster die Frauenkirche" className="ts-foto--flach" />
-              <MeldungKarte />
-            </div>
-          </div>
           <ul className="ts-icons ts-icons--vier ts-icons--blau">
             {VORTEILE.map((f) => (
               <li key={f.titel}>
@@ -428,8 +399,37 @@ export function TeoStartseite() {
 
       <section className="ts-abschnitt ts-abschnitt--warm" id="rollen">
         <div className="teo-innen">
-          <h2 className="ts-zentriert-text">Jeder im Haus sieht, was er braucht.</h2>
-          <TeoRollen />
+          <h2 className="ts-zentriert-text ts-zweizeilig">
+            <span>Alle Beteiligten.</span> <span className="ts-blau">Ein Stand.</span>
+          </h2>
+          <div className="ts-beteiligte">
+            <ul className="ts-beteiligte__karten">
+              {BETEILIGTE.map((b) => (
+                <li key={b.titel}>
+                  <TeoFoto
+                    name={b.quelle && !fotoDa(b.foto) ? b.quelle : b.foto}
+                    alt={b.alt}
+                    className="ts-beteiligte__foto"
+                    ersatz={
+                      <span className="ts-beteiligte__ersatz" aria-hidden="true">
+                        <b.icon size={40} strokeWidth={1.4} />
+                      </span>
+                    }
+                  />
+                  <h3>{b.titel}</h3>
+                  <p>{b.text}</p>
+                </li>
+              ))}
+            </ul>
+            <div className="ts-beteiligte__system">
+              <span className="ts-beteiligte__logo" aria-hidden="true">
+                <TeoLogo hell />
+              </span>
+              <p>
+                <b>Verbindet alle.</b> Ein Vorgang, ein Stand, für jeden die passende Ansicht.
+              </p>
+            </div>
+          </div>
         </div>
       </section>
 
