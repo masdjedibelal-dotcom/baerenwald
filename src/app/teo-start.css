@@ -872,3 +872,43 @@
   .ts-mobil-cta .teo-btn,
   .ts-mobil-cta .teo-btn:hover { background: var(--teo-navy); border-color: var(--teo-navy); }
 }
+
+/* Ohne eigene Fotos: ruhige Icon-Kacheln (wie Airbnb), nur der Hero hat ein Foto */
+.ts-kachel {
+  display: grid;
+  place-items: center;
+  aspect-ratio: 4 / 3;
+  border-radius: 28px;
+  background: var(--ts-warm);
+  color: var(--teo-navy);
+}
+.ts-kachel svg { opacity: 0.85; }
+.ts-kachel--gross { aspect-ratio: 5 / 4; background: #fff; padding-bottom: 72px; }
+.ts-foto-quelle {
+  display: block;
+  margin-top: 8px;
+  text-align: right;
+  font-size: 11px;
+  color: #8a96a6;
+  text-decoration: none;
+}
+.ts-cta { min-height: 0; align-items: center; }
+.ts-cta::after { content: none; }
+.ts-kachel { aspect-ratio: 16 / 10; }
+.ts-kachel svg {
+  box-sizing: content-box;
+  padding: 26px;
+  border-radius: 50%;
+  background: #fff;
+  opacity: 1;
+}
+.ts-kachel--gross { aspect-ratio: 16 / 10; background: #fff; padding-bottom: 64px; }
+.ts-kachel--gross svg { background: var(--ts-warm); }
+.ts-zwei .ts-overlay--klein { left: 50%; transform: translateX(-50%); width: max-content; }
+@media (max-width: 899px) {
+  .ts-probleme { gap: 12px; }
+  .ts-probleme figure { display: flex; align-items: center; gap: 16px; padding: 12px; border-radius: 20px; background: var(--ts-warm); }
+  .ts-probleme .ts-kachel { aspect-ratio: 1; width: 64px; flex: none; border-radius: 16px; background: #fff; }
+  .ts-probleme .ts-kachel svg { width: 28px; height: 28px; padding: 0; background: none; }
+  .ts-probleme figcaption { margin: 0; text-align: left; font-size: 18px; }
+}

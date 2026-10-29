@@ -9,12 +9,16 @@ import {
   FileSpreadsheet,
   Flame,
   Gauge,
+  HardHat,
   Hammer,
   Home,
   KeyRound,
+  LayoutList,
   Megaphone,
+  MessagesSquare,
   Minus,
   PaintRoller,
+  PhoneMissed,
   QrCode,
   ShieldCheck,
   Snowflake,
@@ -34,9 +38,9 @@ import { MARKE } from "@/lib/marke";
 import "@/app/teo-start.css";
 
 const PROBLEME = [
-  { foto: "problem-telefon", alt: "Telefon auf dem Schreibtisch einer Hausverwaltung", titel: "Kein Handwerker ruft zurück." },
-  { foto: "problem-rauchmelder", alt: "Rauchwarnmelder an der Decke eines Treppenhauses", titel: "Die Fristen hängen an Ihnen." },
-  { foto: "problem-briefkasten", alt: "Briefkastenanlage in einem Münchner Altbau", titel: "Alle fragen nach dem Stand." },
+  { icon: PhoneMissed, titel: "Kein Handwerker ruft zurück." },
+  { icon: CalendarClock, titel: "Die Fristen hängen an Ihnen." },
+  { icon: MessagesSquare, titel: "Alle fragen nach dem Stand." },
 ] as const;
 
 const ABLAUF = [
@@ -178,9 +182,17 @@ export function TeoStartseite() {
         </div>
         <div className="ts-breit">
           <div className="ts-buehne ts-buehne--hero">
-            <TeoFoto name="hero" alt="Handwerker im Treppenhaus eines Münchner Altbaus" />
+            <TeoFoto name="hero" alt="Münchner Altbauten mit Torbogen" />
             <VorgangKarte />
           </div>
+          <a
+            className="ts-foto-quelle"
+            href="https://commons.wikimedia.org/wiki/File:Covered_connection_between_houses_in_Munich.jpg"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            Foto: AuHaidhausen, CC BY 4.0
+          </a>
         </div>
       </section>
 
@@ -189,8 +201,10 @@ export function TeoStartseite() {
           <h2 className="ts-zentriert-text">Die Meldung ist nicht das Problem. Alles danach schon.</h2>
           <div className="ts-probleme">
             {PROBLEME.map((p) => (
-              <figure key={p.foto}>
-                <TeoFoto name={p.foto} alt={p.alt} className="ts-foto--hoch" />
+              <figure key={p.titel}>
+                <div className="ts-kachel" aria-hidden="true">
+                  <p.icon size={44} strokeWidth={1.4} />
+                </div>
                 <figcaption>{p.titel}</figcaption>
               </figure>
             ))}
@@ -204,7 +218,9 @@ export function TeoStartseite() {
           <div className="ts-zwei">
             <figure>
               <div className="ts-buehne">
-                <TeoFoto name="verwaltung" alt="Verwalterin am Schreibtisch mit Laptop" className="ts-foto--hoch" />
+                <div className="ts-kachel ts-kachel--gross" aria-hidden="true">
+                  <LayoutList size={52} strokeWidth={1.3} />
+                </div>
                 <MeldungKarte />
               </div>
               <figcaption>
@@ -214,7 +230,9 @@ export function TeoStartseite() {
             </figure>
             <figure>
               <div className="ts-buehne">
-                <TeoFoto name="handwerker" alt="Handwerker repariert eine Heizung" className="ts-foto--hoch" />
+                <div className="ts-kachel ts-kachel--gross" aria-hidden="true">
+                  <HardHat size={52} strokeWidth={1.3} />
+                </div>
                 <AbnahmeKarte />
               </div>
               <figcaption>
@@ -316,7 +334,6 @@ export function TeoStartseite() {
       </section>
 
       <section className="ts-cta" id="kontakt">
-        <TeoFoto name="cta" alt="Straße mit Münchner Altbauten am Abend" className="ts-cta__bild" />
         <div className="teo-innen ts-cta__inhalt">
           <h2>Schicken Sie uns Ihren nächsten Schaden.</h2>
           <Link href={TEO_LINK_ANFRAGE} className="teo-btn teo-btn--hell">
