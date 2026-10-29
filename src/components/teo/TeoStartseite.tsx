@@ -433,30 +433,43 @@ export function TeoStartseite() {
         </div>
       </section>
 
-      <section className="ts-cta" id="kontakt">
-        <TeoFoto name="cta" alt="Münchner Altbaustraße am Abend" className="ts-cta__bild" />
-        <div className="teo-innen ts-cta__inhalt">
-          <h2>Schicken Sie uns Ihren nächsten Schaden.</h2>
-          <Link href={TEO_LINK_ANFRAGE} className="teo-btn teo-btn--hell">
-            Anfrage stellen
-          </Link>
-          <a className="ts-cta__mail" href={`mailto:${MARKE.firma.email}`}>
-            {MARKE.firma.email}
-          </a>
+      <section className="ts-abschnitt" id="faq">
+        <div className="teo-innen">
+          <div className="ts-faq">
+            <h2 className="ts-zentriert-text">Häufige Fragen.</h2>
+            <div className="teo-faq ts-faq__liste">
+              {TEO_FAQ.map((f, i) => (
+                <details key={f.frage} open={i === 0}>
+                  <summary>{f.frage}</summary>
+                  <p>{f.antwort}</p>
+                </details>
+              ))}
+            </div>
+          </div>
         </div>
       </section>
 
-      <section className="teo-abschnitt" id="faq">
-        <div className="teo-innen teo-zweispaltig">
-          <h2>Häufige Fragen.</h2>
-          <div className="teo-faq">
-            {TEO_FAQ.map((f, i) => (
-              <details key={f.frage} open={i === 0}>
-                <summary>{f.frage}</summary>
-                <p>{f.antwort}</p>
-              </details>
-            ))}
+      <section className="ts-ende" id="kontakt">
+        <div className="ts-formen ts-formen--dunkel" aria-hidden="true">
+          <span className="ts-formen__blau" />
+          <span className="ts-formen__gold" />
+          <span className="ts-formen__rot" />
+        </div>
+        <div className="teo-innen ts-ende__innen">
+          <div className="ts-ende__text">
+            <h2 className="ts-zweizeilig">
+              <span>Schicken Sie uns</span> <span className="ts-ende__blau">Ihren nächsten Schaden.</span>
+            </h2>
+            <div className="ts-ende__aktionen">
+              <Link href={TEO_LINK_ANFRAGE} className="teo-btn teo-btn--hell">
+                Anfrage stellen
+              </Link>
+              <a className="ts-ende__mail" href={`mailto:${MARKE.firma.email}`}>
+                {MARKE.firma.email}
+              </a>
+            </div>
           </div>
+          <TeoFoto name="cta" alt="Münchner Altbaustraße am Abend" className="ts-ende__bild" />
         </div>
       </section>
 
