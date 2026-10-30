@@ -8,6 +8,7 @@ import { normalizeFunnelDaten } from "@/lib/lead-funnel-daten";
 import { labelBereich, labelSituation } from "@/lib/lead-funnel-labels";
 import {
   isMeldeBereichId,
+  MELDE_BEREICHE,
   meldeBereichLabel,
   type MeldeBereichId,
 } from "@/lib/org/melde-bereiche";
@@ -129,10 +130,11 @@ function isGenericTitel(t: string): boolean {
   return false;
 }
 
-/** Bereichs-Labels wie „Wasser / Rohr / WC“ sind kein Vorgangs-Titel. */
+/** Bereichs-Labels wie „Wasser, Rohr, WC“ (früher „Wasser / Rohr / WC“) sind kein Vorgangs-Titel. */
 function isMeldeBereichFallbackTitel(t: string): boolean {
   const n = t.trim().toLowerCase();
   if (!n) return false;
+  if (MELDE_BEREICHE.some((o) => o.label.toLowerCase() === n)) return true;
   if (n.includes(" / ")) return true;
   if (n === "wasser / rohr / wc" || n.includes("rohr / wc")) return true;
   return false;

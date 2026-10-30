@@ -7074,3 +7074,17 @@ select {
   --p2-accent-light: #dce4ee;
   --p2-accent-hover: #184f8c;
 }
+/* Servus TEO: Kachel-Icons wie in der Website-Anfrage (Feld mit Linien-Icon, gewählt = Navy) */
+:root[data-marke="teo"] .funnel-tile-icon-wrap {
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  margin-bottom: 8px;
+  border-radius: 12px;
+  background: #f5f3ef;
+  color: #0b1f3a;
+}
+:root[data-marke="teo"] .funnel-tile.selected .funnel-tile-icon-wrap {
+  background: #0b1f3a;
+  color: #fff;
+}

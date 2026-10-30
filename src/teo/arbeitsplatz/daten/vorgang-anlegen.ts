@@ -1,6 +1,7 @@
 import 'server-only'
 
 import { logDbError } from '@/lib/errors/log-db-error'
+import { isMeldeBereichId, meldeBereichToFunnelBereiche } from '@/lib/org/melde-bereiche'
 import { supabaseAdmin } from '@/lib/supabase'
 import type { ApKontext } from '@/teo/arbeitsplatz/kontext'
 
@@ -12,6 +13,8 @@ export type NeuerVorgang = {
   kontaktTelefon?: string
   /** Einheit (Bezeichnung) — optional */
   einheit?: string
+  /** Schadenbereich (gleiche Liste wie Mieter-Meldung) — optional */
+  bereich?: string
   fotos?: string[]
 }
 
@@ -37,6 +40,7 @@ export async function legeVorgangAn(k: ApKontext, v: NeuerVorgang): Promise<{ ok
   const fotos = (v.fotos ?? []).filter((u) => /^https?:\/\//.test(u)).slice(0, 8)
   const kontakt = { name: v.kontaktName?.trim() || null, telefon: v.kontaktTelefon?.trim() || null }
   const kanal = direktAnTeo ? 'hv_direkt' : 'hv_melder_link'
+  const bereich = v.bereich && isMeldeBereichId(v.bereich) ? v.bereich : null
   const { persistLead } = await import('@/lib/lead/persist-lead')
   const r = await persistLead({
     kunde_id: k.org.id,
@@ -48,7 +52,7 @@ export async function legeVorgangAn(k: ApKontext, v: NeuerVorgang): Promise<{ ok
     hausnummer: String(objekt.hausnummer ?? ''),
     ort: objekt.ort ? String(objekt.ort) : undefined,
     situation: v.dringend ? 'notfall' : 'reparatur',
-    bereiche: [],
+    bereiche: bereich ? meldeBereichToFunnelBereiche(bereich) : [],
     zeitraum: v.dringend ? 'sofort' : 'diese_woche',
     kanal,
     anlass: 'meldung',
@@ -66,7 +70,7 @@ export async function legeVorgangAn(k: ApKontext, v: NeuerVorgang): Promise<{ ok
     notizen: [beschreibung, kontakt.name || kontakt.telefon ? `Kontakt vor Ort: ${[kontakt.name, kontakt.telefon].filter(Boolean).join(', ')}` : null]
       .filter(Boolean)
       .join('\n\n'),
-    funnel_daten: { quelle: kanal, beschreibung, fotos, kontakt_vor_ort: kontakt, ...(objekt.ort ? { ort: String(objekt.ort) } : {}) },
+    funnel_daten: { quelle: kanal, beschreibung, fotos, kontakt_vor_ort: kontakt, ...(bereich ? { melde_bereich: bereich } : {}), ...(objekt.ort ? { ort: String(objekt.ort) } : {}) },
     funnel_quelle: kanal,
   })
   if (!r.ok) {

@@ -40,7 +40,8 @@ import type { StepOption } from "@/lib/types";
 import { formatCurrencyEUR } from "@/lib/price-calc";
 import { CONFIRM } from "@/lib/portal-copy";
 import { cn } from "@/lib/utils";
-import { MARKE } from "@/lib/marke";
+import { istTeo, MARKE } from "@/lib/marke";
+import { meldeBereichIconFuerWert } from "@/lib/org/melde-bereich-icons";
 
 export function PortalFunnelHostView(m: PortalFunnelHostModel) {
   const {
@@ -578,10 +579,13 @@ export function PortalFunnelHostView(m: PortalFunnelHostModel) {
                     return rest;
                   })()
                 : o;
+              // Servus TEO: dieselben Icons wie Website und Arbeitsplatz statt der Bärenwald-Grafiken
+              const TeoIcon = istTeo && useMeldeKaputtFlow ? meldeBereichIconFuerWert(opt.value) : null;
               return (
               <SelectionTile
                 key={opt.value}
-                option={opt}
+                option={TeoIcon ? { ...opt, icon: undefined } : opt}
+                icon={TeoIcon ? <TeoIcon size={20} strokeWidth={1.7} /> : undefined}
                 multi={false}
                 selected={state.bereiche.includes(opt.value)}
                 onChange={(v) => {

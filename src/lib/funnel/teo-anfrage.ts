@@ -3,6 +3,8 @@
  * Die Auswahl wird intern auf Rechner-Bereiche gemappt, damit im CRM die Gewerke stimmen.
  */
 
+import { MELDE_BEREICHE } from "@/lib/org/melde-bereiche";
+
 export type TeoFall = "schaden" | "massnahme" | "betrieb" | "kennenlernen";
 export type TeoAbsender = "hausverwaltung" | "weg" | "bestandshalter";
 
@@ -12,7 +14,7 @@ export const TEO_ABSENDER: { id: TeoAbsender; label: string; hint: string; feld:
   { id: "bestandshalter", label: "Eigentümer oder Bestandshalter", hint: "Wohnungsunternehmen, Genossenschaft, eigene Häuser", feld: "Unternehmen" },
 ];
 
-type Option = { id: string; label: string; bereiche: string[] };
+type Option = { id: string; label: string; hint?: string; bereiche: string[] };
 
 export const TEO_FAELLE: { id: TeoFall; label: string; hint: string }[] = [
   { id: "schaden", label: "Schaden im Objekt", hint: "Rohrbruch, Heizung aus, Klingel defekt" },
@@ -41,16 +43,23 @@ export const TEO_SITUATIONEN: TeoSituation[] = [
   { id: "abgeben", label: "Wir wollen alle Häuser abgeben", fall: "kennenlernen" },
 ];
 
-export const TEO_SCHADEN_ARTEN: Option[] = [
-  { id: "wasser", label: "Wasser, Rohr, WC", bereiche: ["sanitaer"] },
-  { id: "heizung", label: "Heizung, Warmwasser", bereiche: ["heizung"] },
-  { id: "strom", label: "Strom, Licht, Klingel", bereiche: ["elektrik"] },
-  { id: "dach", label: "Dach, Regenrinne", bereiche: ["dach"] },
-  { id: "tuer", label: "Tür, Fenster, Schloss", bereiche: ["fenster"] },
-  { id: "feuchte", label: "Feuchtigkeit, Schimmel", bereiche: ["waende"] },
-  { id: "aussen", label: "Außenanlage, Baum, Weg", bereiche: ["gartengestaltung"] },
-  { id: "sonstiges", label: "Etwas anderes", bereiche: ["sonstiges"] },
-];
+/** Gleiche Schadenbereiche wie Mieter-Meldung und Arbeitsplatz; hier auf Rechner-Bereiche gemappt (Gewerke im CRM). */
+const SCHADEN_RECHNER_BEREICHE: Record<string, string[]> = {
+  wasser: ["sanitaer"],
+  heizung: ["heizung"],
+  strom: ["elektrik"],
+  fenster_tuer: ["fenster"],
+  dach: ["dach"],
+  schimmel: ["waende"],
+  sonstiges: ["sonstiges"],
+};
+
+export const TEO_SCHADEN_ARTEN: Option[] = MELDE_BEREICHE.map((o) => ({
+  id: o.id,
+  label: o.label,
+  hint: o.hint,
+  bereiche: SCHADEN_RECHNER_BEREICHE[o.id] ?? ["sonstiges"],
+}));
 
 export const TEO_SCHADEN_ORT = [
   { id: "gemeinschaft", label: "Allgemeinflächen" },

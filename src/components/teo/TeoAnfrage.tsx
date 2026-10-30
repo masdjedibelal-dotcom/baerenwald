@@ -14,7 +14,6 @@ import {
   Check,
   CircleCheck,
   ClipboardList,
-  DoorOpen,
   Droplets,
   Ellipsis,
   Flame,
@@ -29,7 +28,6 @@ import {
   Trees,
   TriangleAlert,
   Users,
-  Waves,
   Wrench,
   X,
   Zap,
@@ -54,6 +52,7 @@ import {
   type TeoSituation,
   type TeoAnfrageDaten,
 } from "@/lib/funnel/teo-anfrage";
+import { MELDE_BEREICH_ICON } from "@/lib/org/melde-bereich-icons";
 import { cn } from "@/lib/utils";
 
 import "@/app/baerenwald-landing.css";
@@ -67,16 +66,6 @@ const ICON_FALL: Record<string, LucideIcon> = {
   massnahme: ClipboardList,
   betrieb: CalendarCheck,
   kennenlernen: Building2,
-};
-const ICON_SCHADEN: Record<string, LucideIcon> = {
-  wasser: Droplets,
-  heizung: Flame,
-  strom: Zap,
-  dach: House,
-  tuer: DoorOpen,
-  feuchte: Waves,
-  aussen: Trees,
-  sonstiges: Ellipsis,
 };
 const ICON_MASSNAHME: Record<string, LucideIcon> = {
   dach: House,
@@ -394,7 +383,7 @@ export function TeoAnfrage() {
 
             {schritt === 1 && d.fall === "schaden" ? (
               <>
-                <Kacheln optionen={TEO_SCHADEN_ARTEN} icons={ICON_SCHADEN} gewaehlt={d.schadenArten} onWahl={(v) => set("schadenArten", v)} />
+                <Kacheln optionen={TEO_SCHADEN_ARTEN} icons={MELDE_BEREICH_ICON} gewaehlt={d.schadenArten} onWahl={(v) => set("schadenArten", v)} />
                 <Gruppe label="Wie dringend?">
                   <Pillen
                     optionen={TEO_DRINGLICHKEIT.map((x) => x.label)}

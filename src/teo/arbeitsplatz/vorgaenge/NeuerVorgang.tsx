@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation'
 import { useState, useTransition } from 'react'
 
 import { ladeAnfrageFotosHoch } from '@/lib/funnel/fotos-hochladen'
+import { MELDE_BEREICHE } from '@/lib/org/melde-bereiche'
 import { MockBtn, MockCard, MockCheckbox, MockField, MockFormSection, MockIcon, MockInput, MockSelect, MockTextarea } from '@/teo/arbeitsplatz/kit'
 import { vorgangAnlegen } from '@/teo/arbeitsplatz/aktionen/vorgang'
 
@@ -21,6 +22,7 @@ export function NeuerVorgang({
   const router = useRouter()
   const [objektId, setObjektId] = useState(vorauswahl && objekte.some((o) => o.id === vorauswahl) ? vorauswahl : objekte[0]?.id ?? '')
   const [beschreibung, setBeschreibung] = useState('')
+  const [bereich, setBereich] = useState('')
   const [einheit, setEinheit] = useState('')
   const einheitenHier = einheiten.filter((e) => e.objektId === objektId)
   const [dringend, setDringend] = useState(false)
@@ -42,7 +44,7 @@ export function NeuerVorgang({
           return
         }
       }
-      const r = await vorgangAnlegen({ objektId, einheit, beschreibung, dringend, kontaktName, kontaktTelefon, fotos })
+      const r = await vorgangAnlegen({ objektId, einheit, bereich, beschreibung, dringend, kontaktName, kontaktTelefon, fotos })
       if (!r.ok) {
         setFehler(r.fehler)
         return
@@ -82,6 +84,16 @@ export function NeuerVorgang({
               </MockSelect>
             </MockField>
           ) : null}
+          <MockField label="Bereich" full>
+            <MockSelect value={bereich} onChange={(e) => setBereich(e.target.value)}>
+              <option value="">Bitte wählen</option>
+              {MELDE_BEREICHE.map((b) => (
+                <option key={b.id} value={b.id}>
+                  {b.label}
+                </option>
+              ))}
+            </MockSelect>
+          </MockField>
           <MockField label="Was ist zu tun?" required full>
             <MockTextarea value={beschreibung} onChange={(e) => setBeschreibung(e.target.value)} rows={5} autoFocus />
           </MockField>

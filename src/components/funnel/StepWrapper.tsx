@@ -4,6 +4,7 @@ import type { ReactNode } from "react";
 import { useEffect, useState } from "react";
 
 import { InfoTip } from "@/components/ui/InfoTip";
+import { istTeo } from "@/lib/marke";
 import { cn } from "@/lib/utils";
 
 export interface StepWrapperProps {
@@ -71,7 +72,7 @@ export function StepWrapper({
     >
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0 flex-1">
-          {stepLabel ? (
+          {stepLabel && !istTeo ? (
             <p className="mb-1.5 text-fs-caption font-semibold uppercase tracking-widest text-text-tertiary">
               {stepLabel}
             </p>

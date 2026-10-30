@@ -1,5 +1,6 @@
 /**
- * Melde-Bereiche für Kaputt-/HV-Meldung (UI + Mapping auf Funnel-bereiche).
+ * Schadenbereiche — eine Liste für alle Formulare (Mieter-Meldung, Website-Anfrage, Arbeitsplatz „Neuer Vorgang“).
+ * Icons dazu: `melde-bereich-icons.ts`.
  */
 
 export type MeldeBereichId =
@@ -25,50 +26,50 @@ export type MeldeBereichOption = {
 export const MELDE_BEREICHE: MeldeBereichOption[] = [
   {
     id: "wasser",
-    label: "Wasser / Rohr / WC",
+    label: "Wasser, Rohr, WC",
     hint: "tropft, läuft aus, verstopft, von oben",
     bereich: "sanitaer",
     icon: "08-bad",
   },
   {
     id: "heizung",
-    label: "Heizung / Warmwasser",
+    label: "Heizung, Warmwasser",
     hint: "kalt, geht nicht, kein Warmwasser",
     bereich: "heizung",
     icon: "05-heizung",
   },
   {
     id: "strom",
-    label: "Strom / Sicherung",
-    hint: "kein Strom, fliegt raus, steckt nicht",
+    label: "Strom, Licht, Klingel",
+    hint: "kein Strom, Sicherung fliegt, Klingel geht nicht",
     bereich: "elektro",
     icon: "06-elektrik",
   },
   {
     id: "fenster_tuer",
-    label: "Fenster / Tür",
+    label: "Tür, Fenster, Schloss",
     hint: "klemmt, undicht, Schloss, Glas",
     bereich: "fenster_tuer",
     icon: "11-fenster",
   },
   {
     id: "dach",
-    label: "Dach / Regenrinne",
+    label: "Dach, Regenrinne",
     hint: "undicht, Wasser von oben, Rinne",
     bereich: "dach",
     icon: "12-dach",
   },
   {
     id: "schimmel",
-    label: "Schimmel / Feuchtigkeit",
+    label: "Feuchtigkeit, Schimmel",
     hint: "Flecken, muffiger Geruch, feuchte Wand",
     bereich: "schimmel",
     icon: "02-reparatur",
   },
   {
     id: "sonstiges",
-    label: "Sonstiges / Haus / Weg",
-    hint: "Müll, Treppenhaus, Wespen, Ast/Weg — kurz beschreiben",
+    label: "Etwas anderes",
+    hint: "Außenanlage, Treppenhaus, Müll, Wespen",
     bereich: "sonstiges",
     icon: "02-reparatur",
   },
@@ -88,7 +89,7 @@ export function isMeldeBereichId(v: string): v is MeldeBereichId {
 }
 
 export function meldeBereichLabel(id: string | null | undefined): string {
-  if (id === "baum_notfall") return "Sonstiges / Haus / Weg";
+  if (id === "baum_notfall") return "Etwas anderes";
   const opt = MELDE_BEREICHE.find((o) => o.id === id);
   return opt?.label ?? "Sonstiges";
 }
