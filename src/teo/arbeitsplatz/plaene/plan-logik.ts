@@ -1,3 +1,4 @@
+// SYNCED FROM CRM — do not edit
 /** Pläne: Fälligkeit, Vorlagen, Bezeichnungen — ohne Server-Abhängigkeiten (auch im Browser nutzbar). */
 
 export type PlanArt = 'reinigung' | 'kontrolle' | 'wartung' | 'pruefung' | 'winterdienst' | 'garten' | 'sonstiges'
