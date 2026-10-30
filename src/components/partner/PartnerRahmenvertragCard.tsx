@@ -19,11 +19,11 @@ import { PortalButton } from "@/components/portal/PortalButton";
 export function PartnerRahmenvertragCard({
   rahmenvertrag,
   stammItems,
-  handwerkskarte = [],
+  nachweise = [],
 }: {
   rahmenvertrag: PartnerRahmenvertrag | null;
   stammItems: PartnerComplianceItem[];
-  handwerkskarte?: PartnerComplianceItem[];
+  nachweise?: PartnerComplianceItem[];
 }) {
   const router = useRouter();
   const [akzeptiert, setAkzeptiert] = useState(false);
@@ -79,7 +79,7 @@ export function PartnerRahmenvertragCard({
       rahmenvertrag={rahmenvertrag}
       akzeptiert={akzeptiertAnzeige}
       pdfUrl={pdfUrl}
-      handwerkskarte={handwerkskarte}
+      nachweise={nachweise}
       footer={footer}
     />
   );

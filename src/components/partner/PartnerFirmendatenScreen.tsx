@@ -191,7 +191,7 @@ export function PartnerFirmendatenScreen({
     });
   }
 
-  const handwerkskarte = filterProfilStammCompliance([
+  const nachweise = filterProfilStammCompliance([
     ...profil.allgemein,
     ...profil.meister,
   ]);
@@ -206,7 +206,7 @@ export function PartnerFirmendatenScreen({
                 <PartnerRahmenvertragCard
                   rahmenvertrag={profil.rahmenvertrag}
                   stammItems={profil.stamm}
-                  handwerkskarte={handwerkskarte}
+                  nachweise={nachweise}
                 />
               </div>
             );

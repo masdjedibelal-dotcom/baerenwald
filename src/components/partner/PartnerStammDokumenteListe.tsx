@@ -6,7 +6,7 @@ import type { ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
-import { PortalInput,PortalSelect,PortalTextarea } from "@/components/shared/PortalFormControls";
+import { PortalDate,PortalInput,PortalSelect,PortalTextarea } from "@/components/shared/PortalFormControls";
 import {
   deletePartnerComplianceDokument,
   uploadPartnerComplianceDokument,
@@ -52,6 +52,7 @@ type UploadDraft = {
   typ: string;
   titel: string;
   beschreibung: string;
+  gueltigBis: string;
   file: File | null;
 };
 
@@ -194,13 +195,13 @@ export function PartnerStammDokumenteListe({
   rahmenvertrag,
   akzeptiert,
   pdfUrl,
-  handwerkskarte = [],
+  nachweise = [],
   footer,
 }: {
   rahmenvertrag: PartnerRahmenvertrag | null;
   akzeptiert: boolean;
   pdfUrl?: string | null;
-  handwerkskarte?: PartnerComplianceItem[];
+  nachweise?: PartnerComplianceItem[];
   footer?: ReactNode;
 }) {
   const router = useRouter();
@@ -210,6 +211,7 @@ export function PartnerStammDokumenteListe({
     typ: EIGENES_STAMM_DOKUMENT_TYP,
     titel: "",
     beschreibung: "",
+    gueltigBis: "",
     file: null,
   });
   const [formError, setFormError] = useState<string | null>(null);
@@ -219,6 +221,7 @@ export function PartnerStammDokumenteListe({
       typ: item.slug || EIGENES_STAMM_DOKUMENT_TYP,
       titel: "",
       beschreibung: item.beschreibung?.trim() || "",
+      gueltigBis: "",
       file: null,
     });
     setFormError(null);
@@ -231,9 +234,9 @@ export function PartnerStammDokumenteListe({
     setFormError(null);
   }
 
-  // Im Profil nur noch die Handwerkskarte
+  // Im Profil nur Handwerkskarte + Freistellungsbescheinigung
   const arten = Array.from(
-    new Map(handwerkskarte.filter((i) => i.slug).map((i) => [i.slug, { slug: i.slug, label: i.bezeichnung }])).values()
+    new Map(nachweise.filter((i) => i.slug).map((i) => [i.slug, { slug: i.slug, label: i.bezeichnung }])).values()
   );
   const artLabel = arten.find((a) => a.slug === draft.typ)?.label ?? "Dokument";
 
@@ -254,6 +257,7 @@ export function PartnerStammDokumenteListe({
     if (draft.beschreibung.trim()) {
       fd.set("beschreibung", draft.beschreibung.trim());
     }
+    if (draft.gueltigBis) fd.set("gueltigBis", draft.gueltigBis);
     // Fotos verkleinern — Uploads laufen über den Server (Netlify: ~4,5 MB je Anfrage)
     let datei = draft.file;
     if (datei.type.startsWith("image/")) {
@@ -290,7 +294,7 @@ export function PartnerStammDokumenteListe({
             akzeptiert={akzeptiert}
             pdfUrl={pdfUrl}
           />
-          {handwerkskarte.map((item) => (
+          {nachweise.map((item) => (
             <ComplianceDokumentItem
               key={`${item.ebene}-${item.slug}-${item.dokument?.id ?? "open"}`}
               item={item}
@@ -299,7 +303,7 @@ export function PartnerStammDokumenteListe({
           ))}
         </div>
 
-        {/* Nur Handwerkskarte + Rahmenvertrag im Profil (04.10.2026) — Dokumente zum Auftrag am Einsatz */}
+        {/* Nur Handwerkskarte, Freistellung + Rahmenvertrag im Profil (04.10.2026) — Dokumente zum Auftrag am Einsatz */}
 
         {footer ? (
           <div className="mt-4 border-t border-border-light pt-4">{footer}</div>
@@ -364,6 +368,19 @@ export function PartnerStammDokumenteListe({
             disabled={saving}
           />
         </label>
+        {draft.typ !== EIGENES_STAMM_DOKUMENT_TYP ? (
+          <label className="block space-y-1">
+            <span className="portal-text-label normal-case text-text-tertiary">
+              Gültig bis (optional)
+            </span>
+            <PortalDate
+              className="w-full"
+              value={draft.gueltigBis}
+              onChange={(e) => setDraft((d) => ({ ...d, gueltigBis: e.target.value }))}
+              disabled={saving}
+            />
+          </label>
+        ) : null}
         <FileUploadField
           label="Datei"
           hint="PDF oder Foto · max. 4 MB"

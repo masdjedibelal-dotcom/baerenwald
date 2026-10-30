@@ -6,13 +6,14 @@ import {
 
 export const RAHMENVERTRAG_TYP_SLUG = "rahmenvertrag";
 export const HANDWERKSKARTE_TYP_SLUG = "handwerkskarte";
+export const FREISTELLUNG_TYP_SLUG = "freistellungsbescheinigung";
 export { EIGENES_STAMM_DOKUMENT_TYP };
 
-/** Nur die Handwerkskarte — unter Rahmenvertrag im Profil (keine weiteren Pflichtnachweise, 04.10.2026). */
+/** Handwerkskarte + Freistellungsbescheinigung — unter Rahmenvertrag im Profil (keine weiteren Pflichtnachweise, 04.10.2026). */
 export function filterProfilStammCompliance(
   items: PartnerComplianceItem[]
 ): PartnerComplianceItem[] {
-  return items.filter((i) => i.slug === HANDWERKSKARTE_TYP_SLUG);
+  return items.filter((i) => i.slug === HANDWERKSKARTE_TYP_SLUG || i.slug === FREISTELLUNG_TYP_SLUG);
 }
 
 /** Nachweise laut Projekt-Nachunternehmervertrag (Stamm + auftragsspezifisch). */
