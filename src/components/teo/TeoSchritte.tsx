@@ -18,7 +18,7 @@ const SCHRITTE: Schritt[] = [
     id: "meldung",
     reiter: "Meldung",
     titel: "Gemeldet in einer Minute.",
-    text: "Mieter, Hausmeister oder Sie melden per QR-Code, App oder Mail. Mit Foto und Wohnung.",
+    text: "Mieter, Hausmeister oder Sie melden per QR-Code im Haus, im Portal oder per Mail. Mit Foto und Wohnung.",
     karte: {
       icon: QrCode,
       titel: "Neue Meldung",
@@ -35,7 +35,7 @@ const SCHRITTE: Schritt[] = [
     id: "pruefung",
     reiter: "Prüfung",
     titel: "Geprüft, bevor jemand losfährt.",
-    text: "Wir klären, was es ist, wie dringend es ist und ob es unter Ihrer Wertgrenze liegt.",
+    text: "Wir klären, was es ist und wie dringend. Bis zu Ihrer Wertgrenze geht es direkt los, darüber fragen wir Sie.",
     karte: {
       icon: Search,
       titel: "Heizung fällt aus",

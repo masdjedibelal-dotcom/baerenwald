@@ -986,7 +986,7 @@
 .ts-hero h1 { max-width: 16ch; }
 .teo-site .ts-hero__satz {
   margin: 24px auto 0;
-  max-width: 34ch;
+  max-width: 44ch;
   font-size: clamp(18px, 1.8vw, 22px);
   line-height: 1.45;
   color: var(--teo-text-2);

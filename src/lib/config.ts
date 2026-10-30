@@ -19,7 +19,7 @@ export const SITE_CONFIG = {
   url: siteUrl,
   /** Social Preview — Bärenwald: grüner Hintergrund, weißes Logo-Mark; TEO: eigenes Bild unter /brand/teo/ */
   ogImagePath: istTeo ? "/brand/teo/og-image.jpg" : "/og-image.png",
-  ogImageVersion: istTeo ? "20261030" : "20260602",
+  ogImageVersion: istTeo ? "20261031" : "20260602",
   /** Öffentliche Erreichbarkeit (UI, Header, Funnel, CTAs) — Festnetz */
   phone: "08980955726",
   phoneHref: "tel:+498980955726",

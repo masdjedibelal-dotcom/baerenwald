@@ -51,21 +51,21 @@ const HEUTE = [
 const MIT_TEO = [
   "Eine Meldung genügt, wir übernehmen",
   "Handwerker und Termin organisieren wir",
-  "Den Stand sehen Sie jederzeit in der App",
+  "Den Stand sehen Sie jederzeit im Portal",
   "Abnahme mit Fotos, eine Rechnung von uns",
-  "Prüffristen laufen von selbst",
+  "Wartungen planen wir für Sie",
 ] as const;
 
 /** Kern-USPs: kurz unter dem Hero, ausführlich in „Was Sie bei teo bekommen“. */
 
 const VORTEILE = [
-  { icon: Handshake, titel: "Wir übernehmen alles", text: "Von der Meldung bis zur bezahlten Rechnung." },
+  { icon: Handshake, titel: "Von der Meldung bis zur Rechnung", text: "Sie melden, wir erledigen den Rest." },
   { icon: Headset, titel: "Ein Ansprechpartner", text: "Für jedes Haus und jedes Gewerk derselbe." },
   { icon: ReceiptText, titel: "Eine Rechnung", text: "Wir sind Ihr Vertragspartner, nicht zehn Betriebe." },
   { icon: ShieldCheck, titel: "Haftung und Gewährleistung", text: "Wir haften und kümmern uns auch um spätere Mängel." },
   { icon: ClipboardCheck, titel: "Geprüft und abgenommen", text: "Jede Arbeit abgenommen und mit Fotos belegt." },
   { icon: Network, titel: "Partnernetz in München", text: "Geprüfte Betriebe für alle Gewerke in Ihrer Nähe." },
-  { icon: SlidersHorizontal, titel: "Sie behalten die Kontrolle", text: "Unter Ihrer Wertgrenze direkt, darüber entscheiden Sie." },
+  { icon: SlidersHorizontal, titel: "Sie behalten die Kontrolle", text: "Sie legen fest, bis zu welchem Betrag wir direkt beauftragen." },
   { icon: CalendarClock, titel: "Prüffristen im Blick", text: "Wartungen beauftragen wir, bevor die Frist abläuft." },
 ] as const;
 
@@ -73,13 +73,13 @@ const VORTEILE = [
 const UEBERNEHMEN = [
   { icon: Wrench, text: "Schäden und Reparaturen" },
   { icon: CalendarClock, text: "Wartung und Prüffristen" },
-  { icon: Sparkles, text: "Laufender Betrieb" },
+  { icon: Sparkles, text: "Hausmeister und Reinigung" },
   { icon: Hammer, text: "Sanierungen und Maßnahmen" },
 ] as const;
 
 const SO_MACHEN_WIR_ES = [
-  { icon: Network, titel: "Partnerbetriebe in München", text: "Geprüft, für alle Gewerke." },
-  { icon: Smartphone, titel: "Die App", text: "Meldung, Stand, Fotos und Rechnung an einem Ort." },
+  { icon: Network, titel: "Meisterbetriebe aus München", text: "Geprüft, für alle Gewerke." },
+  { icon: Smartphone, titel: "Das Portal", text: "Meldung, Stand, Fotos und Rechnung an einem Ort." },
   { icon: Headset, titel: "Ihr teo-Team", text: "Koordiniert, prüft und haftet." },
 ] as const;
 
@@ -87,7 +87,7 @@ const DAVON_HABEN = [
   "Ein Ansprechpartner für alles",
   "Jeder Stand sichtbar",
   "Eine Rechnung von uns",
-  "Kosten im Budget",
+  "Kosten je Haus im Blick",
 ] as const;
 
 /** Kosten-Beispiel (Vorbild Lessen „Total cost to maintain“): gleiche Rechnung, anderer Aufwand. */
@@ -103,22 +103,22 @@ const MIT_TEO_KOSTEN = [
   "Kein Aufschlag auf die Rechnung",
   "Eine Rechnung, wir sind Vertragspartner",
   "Unterlagen für die Versicherung fertig",
-  "Software inklusive",
+  "Portal inklusive",
 ] as const;
 
 /** Alle Beteiligten (Vorbild Lessen „Every party connected“): Foto je Rolle, darunter teo als Klammer. */
 const BETEILIGTE = [
-  { foto: "rolle-verwaltung", quelle: "verwaltung", icon: Briefcase, titel: "Verwaltung", text: "Alle Häuser auf einer Seite. Freigeben mit einem Klick.", alt: "Verwalterin am Laptop" },
-  { foto: "rolle-mieter", quelle: null, icon: KeyRound, titel: "Mieter & Hausmeister", text: "Melden per QR-Code oder App, ganz ohne Anruf.", alt: "Mieterin meldet einen Schaden mit dem Handy" },
+  { foto: "rolle-verwaltung", quelle: "verwaltung", icon: Briefcase, titel: "Verwaltung", text: "Alle Häuser auf einer Seite. Freigeben nur, wenn es über Ihre Grenze geht.", alt: "Verwalterin am Laptop" },
+  { foto: "rolle-mieter", quelle: null, icon: KeyRound, titel: "Mieter & Hausmeister", text: "Mieter melden per QR-Code. Hausmeister und Putzdienst haken ihre Aufgaben im Portal ab.", alt: "Mieterin meldet einen Schaden mit dem Handy" },
   { foto: "rolle-handwerker", quelle: "handwerker", icon: Wrench, titel: "Handwerker", text: "Auftrag, Termin und Fotos direkt auf dem Handy.", alt: "Handwerker an der Heizung" },
   { foto: "rolle-eigentuemer", quelle: null, icon: Building, titel: "Eigentümer", text: "Sehen, was im Haus passiert, mit den Kosten je Haus.", alt: "Eigentümer vor seinem Haus" },
 ] as const;
 
 export const TEO_FAQ = [
   {
-    frage: "Für wen ist teo?",
+    frage: "Was macht teo genau?",
     antwort:
-      "Für alle, die Mehrparteienhäuser verwalten: Hausverwaltungen, Eigentümergemeinschaften und Bestandshalter wie Wohnungsunternehmen, Genossenschaften oder Eigentümer mehrerer Häuser.",
+      "Wir organisieren alles Technische an Ihren Häusern: Schäden, Wartungen, Hausmeister, Reinigung und Sanierungen. Mit geprüften Meisterbetrieben, einer Rechnung und einem Portal für alle.",
   },
   {
     frage: "Was kostet teo?",
@@ -127,11 +127,11 @@ export const TEO_FAQ = [
   {
     frage: "Ist teo eine Software?",
     antwort:
-      "Wir sind Ihr Dienstleister für alles Technische. Wir organisieren, beauftragen und prüfen. Die App ist dabei, damit Sie jederzeit den Stand sehen.",
+      "Wir sind Ihr Dienstleister für alles Technische. Wir organisieren, beauftragen und prüfen. Das Portal ist dabei, damit Sie jederzeit den Stand sehen.",
   },
   {
     frage: "Was wird aus unserem Hausmeister?",
-    antwort: "Er bleibt. Mit der App hakt er Rundgänge ab und meldet, was ihm auffällt. Den Rest organisieren wir.",
+    antwort: "Er bleibt. Im Portal sieht er seine Aufgaben, hakt Rundgänge ab und schaut sich Meldungen auf Wunsch zuerst selbst an. Was er nicht lösen kann, übernimmt ein Fachbetrieb.",
   },
   {
     frage: "Wer haftet, wenn etwas schiefgeht?",
@@ -147,7 +147,7 @@ export const TEO_FAQ = [
   },
   {
     frage: "Behalten wir die Kontrolle?",
-    antwort: "Ja. Sie legen pro Haus fest, bis zu welchem Betrag wir direkt beauftragen. Alles darüber geben Sie frei.",
+    antwort: "Ja. Sie legen pro Haus fest, bis zu welchem Betrag wir direkt beauftragen. Alles darüber geben Sie frei. Bei akuten Schäden, etwa einem Rohrbruch, legen wir sofort los.",
   },
   {
     frage: "Wo ist teo tätig?",
@@ -188,10 +188,10 @@ export function TeoStartseite() {
         <div className="teo-innen ts-hero__kopf">
           <h1>
             <span className="ts-hero__zeile">
-              Kein <span className="ts-hero__ganz">Handwerker-Aufwand.</span>
-            </span> <span className="ts-hero__zeile">Mehr Zeit fürs Verwalten.</span>
+              Ein Partner für <span className="ts-hero__ganz">alles Technische</span>
+            </span> <span className="ts-hero__zeile">in Ihren Häusern.</span>
           </h1>
-          <p className="ts-hero__satz">teo übernimmt alles, von der Meldung bis zur Ausführung durch den Handwerker.</p>
+          <p className="ts-hero__satz">teo organisiert Reparaturen, Wartungen und Hausmeisterdienste für Wohnhäuser in München. Mit geprüften Meisterbetrieben und einer Rechnung.</p>
           <div className="teo-aktionen ts-zentriert">
             <Link href={TEO_LINK_ANFRAGE} className="teo-btn">
               Anfrage stellen
@@ -273,7 +273,7 @@ export function TeoStartseite() {
       <section className="ts-abschnitt ts-abschnitt--warm" id="loesung">
         <div className="teo-innen">
           <h2 className="ts-zentriert-text ts-zweizeilig">
-            <span>Jeder Auftrag. Ein Ablauf.</span> <span className="ts-blau">Ein Ansprechpartner.</span>
+            <span>Alles Technische im Haus.</span> <span className="ts-blau">Aus einer Hand.</span>
           </h2>
           <div className="ts-fluss">
             <div className="ts-fluss__spalte">
@@ -396,7 +396,7 @@ export function TeoStartseite() {
       <section className="ts-abschnitt ts-abschnitt--warm" id="rollen">
         <div className="teo-innen">
           <h2 className="ts-zentriert-text ts-zweizeilig">
-            <span>Alle Beteiligten.</span> <span className="ts-blau">Ein Stand.</span>
+            <span>Alle sehen</span> <span className="ts-blau">denselben Stand.</span>
           </h2>
           <div className="ts-beteiligte">
             <ul className="ts-beteiligte__karten">
