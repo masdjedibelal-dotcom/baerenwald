@@ -2,7 +2,7 @@
  * Zentrale Betriebs-Konfiguration — Akzent entspricht Design-Token --acc.
  */
 import { publicSiteOrigin } from "@/lib/staging";
-import { MARKE } from "@/lib/marke";
+import { istTeo, MARKE } from "@/lib/marke";
 
 const accentFromEnv =
   typeof process !== "undefined" && process.env.NEXT_PUBLIC_ACCENT_COLOR
@@ -17,9 +17,9 @@ export const SITE_CONFIG = {
   accentColor: accentFromEnv,
   /** Kanonische Site-URL für Schema & Open Graph */
   url: siteUrl,
-  /** Social Preview — grüner Hintergrund (var(--p2-primary)), weißes Logo-Mark */
-  ogImagePath: "/og-image.png",
-  ogImageVersion: "20260602",
+  /** Social Preview — Bärenwald: grüner Hintergrund, weißes Logo-Mark; TEO: eigenes Bild unter /brand/teo/ */
+  ogImagePath: istTeo ? "/brand/teo/og-image.jpg" : "/og-image.png",
+  ogImageVersion: istTeo ? "20261030" : "20260602",
   /** Öffentliche Erreichbarkeit (UI, Header, Funnel, CTAs) — Festnetz */
   phone: "08980955726",
   phoneHref: "tel:+498980955726",
@@ -46,7 +46,9 @@ export const SITE_CONFIG = {
     "innerhalb von 24–48 Stunden (Mo–Sa; an Sonntagen am folgenden Werktag)",
 } as const;
 
-const ogImageAlt = `${MARKE.nameLang} — Partner aus einer Hand`;
+const ogImageAlt = istTeo
+  ? `${MARKE.nameLang} — Instandhaltung für Verwaltungen und Bestandshalter in München`
+  : `${MARKE.nameLang} — Partner aus einer Hand`;
 
 /** Open Graph / Twitter — einheitlich für alle Seiten */
 export const OG_IMAGE = {

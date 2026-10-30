@@ -28,7 +28,21 @@ export async function generateMetadata(): Promise<Metadata> {
       title: { absolute: teoTitle },
       description: teoDescription,
       robots: isStagingDeploy() ? { index: false, follow: false } : { index: true, follow: true },
-      openGraph: { title: { absolute: teoTitle }, description: teoDescription, type: "website" },
+      openGraph: {
+        title: { absolute: teoTitle },
+        description: teoDescription,
+        type: "website",
+        locale: "de_DE",
+        url: MARKE.portalUrl,
+        siteName: MARKE.nameLang,
+        images: [{ url: OG_IMAGE.url, width: OG_IMAGE.width, height: OG_IMAGE.height, alt: OG_IMAGE.alt }],
+      },
+      twitter: {
+        card: "summary_large_image",
+        title: { absolute: teoTitle },
+        description: teoDescription,
+        images: [OG_IMAGE.url],
+      },
     };
   }
   return {

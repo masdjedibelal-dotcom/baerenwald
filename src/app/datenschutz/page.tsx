@@ -5,7 +5,7 @@ import { istTeo, MARKE } from "@/lib/marke";
 import { ANBIETER } from "@/lib/recht-anbieter";
 
 export const metadata: Metadata = {
-  title: `Datenschutz — ${MARKE.nameLang}`,
+  title: "Datenschutz",
   robots: "noindex",
 };
 

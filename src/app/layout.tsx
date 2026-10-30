@@ -33,6 +33,14 @@ const ICON_DIR = istTeo ? "/brand/teo" : "/icons";
 const BASE_URL = publicSiteOrigin();
 const staging = isStagingDeploy();
 
+const BESCHREIBUNG = istTeo
+  ? "Instandhaltung für Hausverwaltungen, WEGs und Bestandshalter in München — ein Ansprechpartner für alle Gewerke, jeder Stand im Portal."
+  : "Partner München — ein Ansprechpartner für alle Gewerke. Preisrahmen online berechnen. Malerarbeiten, Bad, Elektro, Heizung. Unverbindlich.";
+/** Vorschau-Titel (Open Graph / Twitter) */
+const VORSCHAU_TITEL = istTeo
+  ? `${MARKE.nameLang} — Instandhaltung für Verwaltungen und Bestandshalter`
+  : `${MARKE.nameLang} — Partner aus einer Hand`;
+
 export const metadata: Metadata = {
   metadataBase: new URL(BASE_URL),
 
@@ -41,11 +49,9 @@ export const metadata: Metadata = {
     template: `%s — ${MARKE.nameLang}`,
   },
 
-  description: istTeo
-    ? "Instandhaltung für Hausverwaltungen, WEGs und Bestandshalter in München — ein Ansprechpartner für alle Gewerke, jeder Stand im Portal."
-    : "Partner München — ein Ansprechpartner für alle Gewerke. Preisrahmen online berechnen. Malerarbeiten, Bad, Elektro, Heizung. Unverbindlich.",
+  description: BESCHREIBUNG,
 
-  authors: [{ name: "Beran Cakmak" }],
+  authors: [{ name: istTeo ? MARKE.nameLang : "Beran Cakmak" }],
   creator: MARKE.nameLang,
   publisher: MARKE.nameLang,
 
@@ -69,9 +75,8 @@ export const metadata: Metadata = {
     locale: "de_DE",
     url: BASE_URL,
     siteName: MARKE.nameLang,
-    title: `${MARKE.nameLang} — Partner aus einer Hand`,
-    description:
-      "Partner München — ein Ansprechpartner für alle Gewerke. Preisrahmen online berechnen. Malerarbeiten, Bad, Elektro, Heizung. Unverbindlich.",
+    title: VORSCHAU_TITEL,
+    description: BESCHREIBUNG,
     images: [
       {
         url: OG_IMAGE.url,
@@ -84,9 +89,10 @@ export const metadata: Metadata = {
 
   twitter: {
     card: "summary_large_image",
-    title: `${MARKE.nameLang} — Partner aus einer Hand`,
-    description:
-      "Partner München — ein Ansprechpartner für alle Gewerke. Preisrahmen online berechnen. Malerarbeiten, Bad, Elektro, Heizung.",
+    title: VORSCHAU_TITEL,
+    description: istTeo
+      ? BESCHREIBUNG
+      : "Partner München — ein Ansprechpartner für alle Gewerke. Preisrahmen online berechnen. Malerarbeiten, Bad, Elektro, Heizung.",
     images: [OG_IMAGE.url],
   },
 

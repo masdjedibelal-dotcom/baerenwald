@@ -1,11 +1,11 @@
 import type { Metadata } from "next";
 import { PageLayout } from "@/components/layout/PageLayout";
 import { TeoRechtsSeite } from "@/components/teo/TeoRechtsSeite";
-import { istTeo, MARKE } from "@/lib/marke";
+import { istTeo } from "@/lib/marke";
 import { ANBIETER } from "@/lib/recht-anbieter";
 
 export const metadata: Metadata = {
-  title: `Impressum — ${MARKE.nameLang}`,
+  title: "Impressum",
   robots: "noindex",
 };
 

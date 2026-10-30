@@ -1,9 +1,8 @@
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
-import { MARKE } from "@/lib/marke";
 
 export const metadata: Metadata = {
-  title: `Preisrechner — ${MARKE.nameLang}`,
+  title: "Preisrechner",
   robots: {
     index: false,
     follow: false,
