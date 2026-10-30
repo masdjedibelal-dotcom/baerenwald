@@ -89,3 +89,18 @@ export async function ladeTeamPersonen(k: ApKontext): Promise<Array<{ id: string
   if (error) logDbError('teo/arbeitsplatz/daten/team:teampersonen', error)
   return (data ?? []).map((m) => ({ id: String(m.id), name: (m.name as string | null)?.trim() || String(m.email ?? '') }))
 }
+
+/** Team-Mitglieder, die dieses Objekt betreuen — Auswahl „An Team geben“ im Vorgang. */
+export async function ladeTeamFuerObjekt(k: ApKontext, objektId: string | null): Promise<Array<{ id: string; name: string }>> {
+  if (!objektId) return []
+  const personen = await ladeTeamPersonen(k)
+  if (!personen.length) return []
+  const { data, error } = await supabaseAdmin
+    .from('mitglied_objekte')
+    .select('mitglied_id')
+    .eq('kunde_objekt_id', objektId)
+    .in('mitglied_id', personen.map((p) => p.id))
+  if (error) logDbError('teo/arbeitsplatz/daten/team:objekt', error)
+  const ids = new Set((data ?? []).map((r) => String(r.mitglied_id)))
+  return personen.filter((p) => ids.has(p.id))
+}

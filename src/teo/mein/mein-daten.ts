@@ -32,6 +32,7 @@ export type MeinObjekt = {
 
 const EIGENTUEMER_STATUS: Record<ApStatus, string> = {
   neu: 'Eingegangen',
+  beim_team: 'In Bearbeitung',
   zu_entscheiden: 'In Bearbeitung',
   bei_teo: 'In Bearbeitung',
   termin: 'Termin geplant',

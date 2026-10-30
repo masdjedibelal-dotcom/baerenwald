@@ -4,8 +4,9 @@ import { useRouter } from 'next/navigation'
 import { useMemo, useState, useTransition } from 'react'
 
 import { formatDatum, formatDatumZeit, formatEuro } from '@/lib/shared-domain/geld-datum'
-import { MockBadge, MockBtn, MockCard, MockCheckbox, MockEmpty, MockIcon, MockProp, MockTabs, MockTextarea } from '@/teo/arbeitsplatz/kit'
+import { MockBadge, MockBtn, MockCard, MockCheckbox, MockEmpty, MockIcon, MockProp, MockSelect, MockTabs, MockTextarea } from '@/teo/arbeitsplatz/kit'
 import {
+  anTeamGeben,
   anTeoGeben,
   angebotEntscheiden,
   meldungAbweisen,
@@ -28,7 +29,18 @@ const KONTAKT_FELD = /^(vorname|nachname|name|stra(ß|ss)e|hausnummer|plz|ort|e-
 
 type VerlaufPunkt = { id: string; wann: string; titel: string; text?: string | null; fotos?: string[]; link?: { href: string; label: string } }
 
-export function VorgangDetail({ d, rechte, weg }: { d: ApVorgangDetail; rechte: Rechte; weg: boolean }) {
+export function VorgangDetail({
+  d,
+  rechte,
+  weg,
+  team,
+}: {
+  d: ApVorgangDetail
+  rechte: Rechte
+  weg: boolean
+  /** Team-Mitglieder, die das Objekt betreuen (Hausmeister …) */
+  team: Array<{ id: string; name: string }>
+}) {
   const router = useRouter()
   const [laeuft, starten] = useTransition()
   const [fehler, setFehler] = useState<string | null>(null)
@@ -40,6 +52,8 @@ export function VorgangDetail({ d, rechte, weg }: { d: ApVorgangDetail; rechte: 
   const [nachricht, setNachricht] = useState('')
   const [wiederKarte, setWiederKarte] = useState(false)
   const [wiederText, setWiederText] = useState('')
+  const [teamKarte, setTeamKarte] = useState(false)
+  const [teamId, setTeamId] = useState(team[0]?.id ?? '')
   const { zeile, item } = d
   const st = AP_STATUS[zeile.status]
 
@@ -56,7 +70,8 @@ export function VorgangDetail({ d, rechte, weg }: { d: ApVorgangDetail; rechte: 
     })
   }
 
-  const istNeu = zeile.status === 'neu' && rechte.anTeo
+  const istNeu = (zeile.status === 'neu' || zeile.status === 'beim_team') && rechte.anTeo
+  const kannAnTeam = istNeu && team.length > 0
   const kannWieder = zeile.status === 'erledigt' && rechte.anTeo
 
   function wiederMelden() {
@@ -77,6 +92,17 @@ export function VorgangDetail({ d, rechte, weg }: { d: ApVorgangDetail; rechte: 
 
   const verlauf = useMemo<VerlaufPunkt[]>(() => {
     const punkte: VerlaufPunkt[] = [{ id: 'gemeldet', wann: zeile.erstellt, titel: 'Gemeldet', text: item?.melderName ? `von ${item.melderName}` : null }]
+    if (zeile.team) {
+      punkte.push({ id: 'team', wann: zeile.team.am, titel: `An ${zeile.team.name} gegeben` })
+      if (zeile.team.ergebnis && zeile.team.fertig_am) {
+        punkte.push({
+          id: 'team-ergebnis',
+          wann: zeile.team.fertig_am,
+          titel: `${zeile.team.name}: ${zeile.team.ergebnis === 'erledigt' ? 'Selbst erledigt' : 'Braucht Fachbetrieb, an TEO gegeben'}`,
+          text: zeile.team.notiz ?? null,
+        })
+      }
+    }
     for (const t of d.termine) punkte.push({ id: `t-${t.id}`, wann: t.von, titel: `Termin: ${formatDatumZeit(t.von)}`, text: t.titel })
     for (const [i, b] of (item?.bautagebuch ?? []).entries()) {
       punkte.push({ id: `b-${b.id ?? i}`, wann: b.created_at ?? b.datum ?? zeile.erstellt, titel: b.titel || 'Update', text: b.notiz, fotos: b.fotos_urls })
@@ -140,6 +166,11 @@ export function VorgangDetail({ d, rechte, weg }: { d: ApVorgangDetail; rechte: 
               <MockBtn kind="secondary" sm type="button" disabled={laeuft} onClick={() => setAblehnen((v) => !v)}>
                 Ablehnen
               </MockBtn>
+              {kannAnTeam ? (
+                <MockBtn kind="secondary" sm type="button" disabled={laeuft} onClick={() => setTeamKarte((v) => !v)}>
+                  {zeile.status === 'beim_team' ? 'Anderer Person geben' : 'An Team geben'}
+                </MockBtn>
+              ) : null}
               <MockBtn
                 kind="primary"
                 sm
@@ -197,6 +228,33 @@ export function VorgangDetail({ d, rechte, weg }: { d: ApVorgangDetail; rechte: 
               }
             >
               Freigeben
+            </MockBtn>
+          </div>
+        </MockCard>
+      ) : null}
+
+      {teamKarte ? (
+        <MockCard title="An Team geben" icon="users">
+          <p className="ap-gedimmt" style={{ margin: '0 0 10px' }}>
+            Die Person schaut es sich an und trägt ein, ob es erledigt ist oder ein Fachbetrieb kommen muss. Dann geht es mit Fotos und Beschreibung an TEO.
+          </p>
+          {team.length > 1 ? (
+            <MockSelect value={teamId} onChange={(e) => setTeamId(e.target.value)}>
+              {team.map((t) => (
+                <option key={t.id} value={t.id}>
+                  {t.name}
+                </option>
+              ))}
+            </MockSelect>
+          ) : (
+            <div>{team[0]?.name}</div>
+          )}
+          <div className="ap-knopfzeile">
+            <MockBtn kind="ghost" sm type="button" onClick={() => setTeamKarte(false)}>
+              Abbrechen
+            </MockBtn>
+            <MockBtn kind="primary" sm type="button" disabled={laeuft || !teamId} onClick={() => ausfuehren(() => anTeamGeben(zeile.id, teamId), () => setTeamKarte(false))}>
+              Geben
             </MockBtn>
           </div>
         </MockCard>

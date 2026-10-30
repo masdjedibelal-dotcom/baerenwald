@@ -24,6 +24,7 @@ export type ApAktion =
   | 'vorgang.an_teo'
   | 'vorgang.freigeben'
   | 'vorgang.nachricht'
+  | 'vorgang.team_ergebnis'
   | 'kosten.sehen'
   | 'objekte.bearbeiten'
   | 'dokumente.hochladen'
@@ -43,6 +44,7 @@ const REGELN: Record<ApAktion, Regel> = {
   'vorgang.an_teo': verwaltung,
   'vorgang.freigeben': (p) => verwaltung(p) && (p.darfFreigeben || p.istAdmin),
   'vorgang.nachricht': verwaltung,
+  'vorgang.team_ergebnis': (p) => p.rolle === 'team',
   'kosten.sehen': verwaltung,
   'objekte.bearbeiten': verwaltung,
   'dokumente.hochladen': verwaltung,

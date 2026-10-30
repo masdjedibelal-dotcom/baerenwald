@@ -1,14 +1,19 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
+import { Resend } from 'resend'
 
+import { SITE_CONFIG } from '@/lib/config'
+import { buildStandardMailHtml, mailBegruessungHtml, mailPrimaryButtonHtml, mailTeamGrussHtml } from '@/lib/email/mail-shell'
+import { sendBrandedMail } from '@/lib/email/send-branded-mail'
 import { logDbError } from '@/lib/errors/log-db-error'
+import { MARKE } from '@/lib/marke'
 import { supabaseAdmin } from '@/lib/supabase'
 import { ladeVorgaenge } from '@/teo/arbeitsplatz/daten/vorgaenge'
 import { ladeApKontext, type ApKontext } from '@/teo/arbeitsplatz/kontext'
 import { darf, type ApAktion } from '@/teo/arbeitsplatz/rechte'
 import { legeVorgangAn, type NeuerVorgang } from '@/teo/arbeitsplatz/daten/vorgang-anlegen'
-import { freigabeEntscheiden, meldungAblehnen, meldungAnTeo } from '@/teo/hv/vorgang-aktionen'
+import { freigabeEntscheiden, meldungAblehnen, meldungAnTeam, meldungAnTeo, teamErgebnis } from '@/teo/hv/vorgang-aktionen'
 
 export type ApAktionsErgebnis = { ok: true } | { ok: false; fehler: string }
 
@@ -33,6 +38,76 @@ export async function anTeoGeben(leadId: string): Promise<ApAktionsErgebnis> {
   if (!p.ok) return p
   const r = await meldungAnTeo(p.k.org.id, leadId, { wirKuemmernMail: true })
   return r.ok ? fertig(leadId) : { ok: false, fehler: r.error }
+}
+
+/** Neue Meldung an eine Person aus dem Team (Hausmeister …) — prüft, ob sie das Objekt betreut. */
+export async function anTeamGeben(leadId: string, mitgliedId: string): Promise<ApAktionsErgebnis> {
+  const p = await pruefen(leadId, 'vorgang.an_teo')
+  if (!p.ok) return p
+  const [v] = await ladeVorgaenge(p.k, { nurIds: [leadId] })
+  const { data: m, error } = await supabaseAdmin
+    .from('kunden_mitglieder')
+    .select('id, name, email')
+    .eq('id', mitgliedId)
+    .eq('kunde_id', p.k.org.id)
+    .eq('rolle', 'team')
+    .eq('aktiv', true)
+    .maybeSingle()
+  if (error) logDbError('teo/arbeitsplatz/aktionen/vorgang:team-person', error)
+  if (!m) return { ok: false, fehler: 'Person nicht gefunden.' }
+  if (v?.objektId) {
+    const { data: z } = await supabaseAdmin.from('mitglied_objekte').select('kunde_objekt_id').eq('mitglied_id', mitgliedId).eq('kunde_objekt_id', v.objektId).maybeSingle()
+    if (!z) return { ok: false, fehler: 'Diese Person betreut das Objekt nicht.' }
+  }
+  const name = (m.name as string | null)?.trim() || String(m.email ?? 'Team')
+  const r = await meldungAnTeam(p.k.org.id, leadId, { id: String(m.id), name })
+  if (!r.ok) return { ok: false, fehler: r.error }
+  if (m.email) await teamAufgabeMail(p.k, String(m.email), name, v?.titel ?? 'Neuer Vorgang', v?.objektName ?? null)
+  return fertig(leadId)
+}
+
+async function teamAufgabeMail(k: ApKontext, email: string, name: string, titel: string, objekt: string | null) {
+  const key = process.env.RESEND_API_KEY
+  if (!key) return
+  const esc = (t: string) => t.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
+  const html = buildStandardMailHtml({
+    preheader: `Neue Aufgabe von ${k.org.name}`,
+    bodyHtml: [
+      `<p>${mailBegruessungHtml('sie', name)}</p>`,
+      `<p><strong>${esc(k.person.name)}</strong> von <strong>${esc(k.org.name)}</strong> hat Ihnen einen Vorgang gegeben:</p>`,
+      `<p><strong>${esc(titel)}</strong>${objekt ? `<br>${esc(objekt)}` : ''}</p>`,
+      `<p>Bitte schauen Sie sich das an und tragen Sie in der App ein, ob es erledigt ist oder ein Fachbetrieb kommen muss.</p>`,
+      mailPrimaryButtonHtml('Aufgabe öffnen', `${SITE_CONFIG.url}/team`),
+      `<p>${mailTeamGrussHtml('sie')}</p>`,
+    ].join(''),
+  })
+  try {
+    await sendBrandedMail(new Resend(key), {
+      from: process.env.RESEND_FROM_SYSTEM ?? `${MARKE.name} <system@${MARKE.websiteHost}>`,
+      to: email,
+      subject: `Neue Aufgabe: ${titel}`,
+      html,
+    })
+  } catch (e) {
+    console.error('[arbeitsplatz/an-team] mail:', e)
+  }
+}
+
+/** Ergebnis vom Team: selbst erledigt oder braucht Fachbetrieb (geht mit Befund an TEO). */
+export async function teamErgebnisMelden(
+  leadId: string,
+  e: { ergebnis: 'erledigt' | 'fachbetrieb'; notiz: string; fotos: string[] }
+): Promise<ApAktionsErgebnis> {
+  const p = await pruefen(leadId, 'vorgang.team_ergebnis')
+  if (!p.ok) return p
+  if (!p.k.person.mitgliedId) return { ok: false, fehler: 'Dafür fehlt Ihnen die Berechtigung.' }
+  const notiz = e.notiz.trim().slice(0, 2000) || null
+  if (e.ergebnis === 'fachbetrieb' && !notiz) return { ok: false, fehler: 'Bitte kurz beschreiben, was Sie gesehen haben.' }
+  const fotos = e.fotos.filter((u) => /^https?:\/\//.test(u)).slice(0, 8)
+  const r = await teamErgebnis(p.k.org.id, leadId, { id: p.k.person.mitgliedId, name: p.k.person.name }, { ergebnis: e.ergebnis, notiz, fotos })
+  if (!r.ok) return { ok: false, fehler: r.error }
+  revalidatePath('/team')
+  return fertig(leadId)
 }
 
 export async function meldungAbweisen(leadId: string): Promise<ApAktionsErgebnis> {

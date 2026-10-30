@@ -7,6 +7,7 @@ import { resolveAngebotGesamtBrutto } from '@/lib/portal/portal-angebot-display'
 import type { ApKontext } from '@/teo/arbeitsplatz/kontext'
 import { darf } from '@/teo/arbeitsplatz/rechte'
 import { apStatus, type ApStatus } from '@/teo/arbeitsplatz/vorgang-status'
+import { teamAuftragAus, type TeamAuftrag } from '@/teo/hv/vorgang-aktionen'
 
 export type ApVorgangZeile = {
   id: string
@@ -24,6 +25,8 @@ export type ApVorgangZeile = {
   betrag: number | null
   /** Abgerechnet (Rechnungen, brutto) — nur mit Kostenrecht */
   abgerechnet: number | null
+  /** Beim eigenen Team (Hausmeister …): wer, seit wann, Ergebnis */
+  team: TeamAuftrag | null
 }
 
 const LEAD_SPALTEN =
@@ -111,7 +114,7 @@ export async function ladeVorgaenge(k: ApKontext, opts: { nurIds?: string[] } = 
       auftraege: auf as never,
       rechnungen: rech as never,
     })
-    const status = apStatus(lead as { hv_meldung_status?: string; org_freigabe_status?: string }, v)
+    const status = apStatus(lead as { hv_meldung_status?: string; org_freigabe_status?: string; funnel_daten?: unknown }, v)
     const beauftragtesAngebot = ang.find((a) => auf.some((x) => x.angebot_id === a.id)) ?? ang[0]
     const betrag = beauftragtesAngebot
       ? resolveAngebotGesamtBrutto({
@@ -138,6 +141,7 @@ export async function ladeVorgaenge(k: ApKontext, opts: { nurIds?: string[] } = 
       aktualisiert: v.updatedAt || (lead.updated_at as string | null) || lead.created_at,
       betrag: kosten ? betrag : null,
       abgerechnet: kosten && abgerechnet > 0 ? abgerechnet : null,
+      team: teamAuftragAus(lead.funnel_daten),
     }
   })
 }

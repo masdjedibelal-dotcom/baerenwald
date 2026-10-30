@@ -222,3 +222,98 @@ export async function freigabeEntscheiden(
 
   return { ok: true, status: aktion }
 }
+
+/** Vorgang beim eigenen Team (Hausmeister, Reinigung …) — steht in funnel_daten.team, Meldung bleibt „neu“. */
+export type TeamAuftrag = {
+  mitglied_id: string
+  name: string
+  am: string
+  ergebnis?: 'erledigt' | 'fachbetrieb'
+  notiz?: string | null
+  fertig_am?: string
+}
+
+export function teamAuftragAus(funnel: unknown): TeamAuftrag | null {
+  const t = funnel && typeof funnel === 'object' && !Array.isArray(funnel) ? (funnel as { team?: unknown }).team : null
+  if (!t || typeof t !== 'object' || typeof (t as TeamAuftrag).mitglied_id !== 'string') return null
+  return t as TeamAuftrag
+}
+
+function funnelObjekt(funnel: unknown): Record<string, unknown> {
+  return funnel && typeof funnel === 'object' && !Array.isArray(funnel) ? (funnel as Record<string, unknown>) : {}
+}
+
+/** Neue Meldung an eine Person aus dem Team geben (nur aus neu, nur wenn noch nicht bei TEO). */
+export async function meldungAnTeam(orgId: string, leadId: string, person: { id: string; name: string }): Promise<AktionErgebnis> {
+  const lead = await leadDerOrg(orgId, leadId)
+  if (!lead || lead.auftraggeber_kunde_id !== orgId) return { ok: false, status: 404, error: 'Meldung nicht gefunden.' }
+  if ((lead.hv_meldung_status ?? 'neu').trim().toLowerCase() !== 'neu') {
+    return { ok: false, status: 409, error: 'Für diese Meldung ist die Aktion nicht mehr möglich.' }
+  }
+  if (freigabeEntfaellt(lead, false)) return { ok: false, status: 409, error: 'Die Meldung ist schon bei TEO (Akut oder unter Schwelle).' }
+
+  const team: TeamAuftrag = { mitglied_id: person.id, name: person.name, am: new Date().toISOString() }
+  const { error } = await supabaseAdmin
+    .from('leads')
+    .update({ funnel_daten: { ...funnelObjekt(lead.funnel_daten), team } as never })
+    .eq('id', leadId)
+  if (error) {
+    logDbError('teo/hv/vorgang-aktionen:an-team', error)
+    return { ok: false, status: 500, error: error.message }
+  }
+  return { ok: true, status: 'neu' }
+}
+
+/**
+ * Ergebnis vom Team: selbst erledigt (Vorgang abgeschlossen) oder braucht Fachbetrieb (geht mit Befund an TEO).
+ * Fotos landen bei den Meldungsfotos, der Befund als Nachricht im Vorgang (CRM sieht beides).
+ */
+export async function teamErgebnis(
+  orgId: string,
+  leadId: string,
+  person: { id: string; name: string },
+  e: { ergebnis: 'erledigt' | 'fachbetrieb'; notiz: string | null; fotos: string[] }
+): Promise<AktionErgebnis> {
+  const lead = await leadDerOrg(orgId, leadId)
+  if (!lead || lead.auftraggeber_kunde_id !== orgId) return { ok: false, status: 404, error: 'Vorgang nicht gefunden.' }
+  const team = teamAuftragAus(lead.funnel_daten)
+  if (!team || team.mitglied_id !== person.id) return { ok: false, status: 403, error: 'Dieser Vorgang ist Ihnen nicht zugewiesen.' }
+  if (team.ergebnis || (lead.hv_meldung_status ?? 'neu').trim().toLowerCase() !== 'neu') {
+    return { ok: false, status: 409, error: 'Dieser Vorgang ist schon abgeschlossen.' }
+  }
+
+  const fd = funnelObjekt(lead.funnel_daten)
+  const alteFotos = Array.isArray(fd.fotos) ? (fd.fotos as unknown[]).filter((u): u is string => typeof u === 'string') : []
+  const jetzt = new Date().toISOString()
+  const neuesFd = {
+    ...fd,
+    fotos: [...alteFotos, ...e.fotos].slice(0, 20),
+    team: { ...team, ergebnis: e.ergebnis, notiz: e.notiz, fertig_am: jetzt },
+  }
+  const patch =
+    e.ergebnis === 'erledigt'
+      ? { funnel_daten: neuesFd as never, hv_meldung_status: 'abgeschlossen' }
+      : { funnel_daten: neuesFd as never, hv_meldung_status: 'angebot_eingefordert' }
+  const { error } = await supabaseAdmin.from('leads').update(patch).eq('id', leadId)
+  if (error) {
+    logDbError('teo/hv/vorgang-aktionen:team-ergebnis', error)
+    return { ok: false, status: 500, error: error.message }
+  }
+
+  const titel = e.ergebnis === 'erledigt' ? 'Selbst erledigt' : 'Braucht Fachbetrieb'
+  const { error: kErr } = await supabaseAdmin.from('vorgang_kommentare').insert({
+    lead_id: leadId,
+    kunde_id: orgId,
+    actor_rolle: 'team',
+    actor_name: person.name,
+    text: [`${titel}.`, e.notiz].filter(Boolean).join('\n'),
+  })
+  if (kErr) logDbError('teo/hv/vorgang-aktionen:team-kommentar', kErr)
+
+  if (e.ergebnis === 'erledigt') {
+    await setLeadVorgangPhase(leadId, 'abgeschlossen')
+  } else {
+    await crmBenachrichtigen({ leadId, typ: 'meldung' }, 'team-fachbetrieb')
+  }
+  return { ok: true, status: e.ergebnis === 'erledigt' ? 'abgeschlossen' : 'angebot_eingefordert' }
+}
