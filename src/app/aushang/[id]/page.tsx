@@ -8,6 +8,8 @@ import { supabaseAdmin } from '@/lib/supabase'
 import { objektName } from '@/teo/arbeitsplatz/daten/objekte'
 import { ladeApKontext } from '@/teo/arbeitsplatz/kontext'
 import { darf, siehtObjekt } from '@/teo/arbeitsplatz/rechte'
+import { DruckFuss, DruckKopf, ladeOrgLogo } from '@/teo/arbeitsplatz/druck/DruckKopf'
+import { DRUCK_SCHRIFT } from '@/teo/arbeitsplatz/druck/schrift'
 import { DruckenKnopf } from '@/teo/arbeitsplatz/objekte/DruckenKnopf'
 
 import '@/teo/arbeitsplatz/aushang.css'
@@ -31,9 +33,10 @@ export default async function AushangSeite({ params }: { params: Promise<{ id: s
     .maybeSingle()
   if (!m || !siehtObjekt(k.person, String(m.kunde_objekt_id))) notFound()
 
-  const [{ data: o }, { data: org }] = await Promise.all([
+  const [{ data: o }, { data: org }, logoUrl] = await Promise.all([
     supabaseAdmin.from('kunden_objekte').select('titel, strasse, hausnummer, plz, ort, melde_slug, melde_aktiv').eq('id', m.kunde_objekt_id).maybeSingle(),
     supabaseAdmin.from('kunden').select('org_kennung, mieter_kontakt_telefon, mieter_kontakt_email').eq('id', k.org.id).maybeSingle(),
+    ladeOrgLogo(k.org.id),
   ])
   let qr: string | null = null
   if (org?.org_kennung && o?.melde_slug && o.melde_aktiv !== false) {
@@ -47,23 +50,27 @@ export default async function AushangSeite({ params }: { params: Promise<{ id: s
   const kontakt = [org?.mieter_kontakt_telefon, org?.mieter_kontakt_email].filter(Boolean).join(' · ')
 
   return (
-    <div className="ah-seite">
+    <div className={`ah-seite ${DRUCK_SCHRIFT}`}>
       <div className="ah-werkzeug">
         <DruckenKnopf />
       </div>
       <article className="ah-blatt">
-        <header className="ah-kopf">
-          <div className="ah-org">{k.org.name}</div>
-          <div className="ah-objekt">
-            {o ? objektName(o) : ''}
-            {o ? ` · ${[o.strasse, o.hausnummer].filter(Boolean).join(' ')}, ${[o.plz, o.ort].filter(Boolean).join(' ')}` : ''}
-          </div>
-        </header>
+        <DruckKopf orgName={k.org.name} logoUrl={logoUrl} art="Mitteilung">
+          {o ? <b>{objektName(o)}</b> : null}
+          {o ? <div>{[[o.strasse, o.hausnummer].filter(Boolean).join(' '), [o.plz, o.ort].filter(Boolean).join(' ')].filter(Boolean).join(', ')}</div> : null}
+        </DruckKopf>
         <div className="ah-datum">{formatDatum(String(m.created_at))}</div>
-        <h1 className="ah-titel">{m.titel}</h1>
+        <h1 className="ah-titel">
+          {/[!?]$/.test(String(m.titel).trim()) ? m.titel : (
+            <>
+              {String(m.titel).trim().replace(/\.+$/, '')}
+              <span className="ah-punkt">.</span>
+            </>
+          )}
+        </h1>
         {m.text ? <div className="ah-text">{m.text}</div> : null}
         {m.gueltig_bis ? <div className="ah-gueltig">Gilt bis {formatDatum(String(m.gueltig_bis))}</div> : null}
-        <footer className="ah-fuss">
+        <div className="ah-fuss-block">
           {qr ? (
             <div className="ah-qr">
               {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -74,8 +81,8 @@ export default async function AushangSeite({ params }: { params: Promise<{ id: s
               </div>
             </div>
           ) : null}
-          {kontakt ? <div className="ah-kontakt">Fragen: {kontakt}</div> : null}
-        </footer>
+          <DruckFuss>{kontakt ? `Fragen: ${kontakt}` : null}</DruckFuss>
+        </div>
       </article>
     </div>
   )

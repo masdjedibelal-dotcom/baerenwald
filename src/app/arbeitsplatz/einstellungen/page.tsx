@@ -1,6 +1,7 @@
 import { redirect } from 'next/navigation'
 
 import { supabaseAdmin } from '@/lib/supabase'
+import { ladeOrgLogo } from '@/teo/arbeitsplatz/druck/DruckKopf'
 import { EinstellungenSeite } from '@/teo/arbeitsplatz/einstellungen/EinstellungenSeite'
 import { ladeApKontext } from '@/teo/arbeitsplatz/kontext'
 import { darf } from '@/teo/arbeitsplatz/rechte'
@@ -11,13 +12,17 @@ export default async function EinstellungenRoute() {
   const k = await ladeApKontext()
   if (!k) redirect('/portal/login')
   if (!darf(k.person, 'einstellungen')) redirect('/arbeitsplatz')
-  const { data } = await supabaseAdmin
-    .from('kunden')
-    .select('name, org_anzeigename, org_typ, freigabe_schwelle_eur, akut_fall_ids, impressum_url, datenschutz_url')
-    .eq('id', k.org.id)
-    .maybeSingle()
+  const [{ data }, logoUrl] = await Promise.all([
+    supabaseAdmin
+      .from('kunden')
+      .select('name, org_anzeigename, org_typ, freigabe_schwelle_eur, akut_fall_ids, impressum_url, datenschutz_url')
+      .eq('id', k.org.id)
+      .maybeSingle(),
+    ladeOrgLogo(k.org.id),
+  ])
   return (
     <EinstellungenSeite
+      logoUrl={logoUrl}
       start={{
         anzeigename: String(data?.org_anzeigename ?? data?.name ?? ''),
         orgTyp: data?.org_typ === 'weg' ? 'weg' : 'hv',

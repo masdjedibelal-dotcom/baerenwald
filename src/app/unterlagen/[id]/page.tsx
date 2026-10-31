@@ -5,6 +5,8 @@ import { istTeo, MARKE } from '@/lib/marke'
 import { formatDatum, formatDatumZeit, formatEuro } from '@/lib/shared-domain/geld-datum'
 import { ladeVorgangDetail } from '@/teo/arbeitsplatz/daten/vorgang-detail'
 import { ladeApKontext } from '@/teo/arbeitsplatz/kontext'
+import { DruckFuss, DruckKopf, ladeOrgLogo } from '@/teo/arbeitsplatz/druck/DruckKopf'
+import { DRUCK_SCHRIFT } from '@/teo/arbeitsplatz/druck/schrift'
 import { DruckenKnopf } from '@/teo/arbeitsplatz/objekte/DruckenKnopf'
 import { darf } from '@/teo/arbeitsplatz/rechte'
 
@@ -21,7 +23,7 @@ export default async function UnterlagenSeite({ params }: { params: Promise<{ id
   const { id } = await params
   const k = await ladeApKontext()
   if (!k) redirect(`/portal/login?next=/unterlagen/${id}`)
-  const d = await ladeVorgangDetail(k, id)
+  const [d, logoUrl] = await Promise.all([ladeVorgangDetail(k, id), ladeOrgLogo(k.org.id)])
   if (!d) notFound()
   const kosten = darf(k.person, 'kosten.sehen')
   const { zeile, item } = d
@@ -40,19 +42,18 @@ export default async function UnterlagenSeite({ params }: { params: Promise<{ id
   const fachdetails = item?.meldeFachdetails ?? []
 
   return (
-    <div className="ah-seite">
+    <div className={`ah-seite ${DRUCK_SCHRIFT}`}>
       <div className="ah-werkzeug">
         <DruckenKnopf />
       </div>
       <article className="ah-blatt ul-blatt">
-        <header className="ah-kopf">
-          <div className="ah-org">Schadenunterlagen</div>
-          <div className="ah-objekt">
-            {[zeile.objektName, zeile.einheit].filter(Boolean).join(' · ')} · {k.org.name}
-          </div>
-        </header>
+        <DruckKopf orgName={k.org.name} logoUrl={logoUrl} art="Schadenunterlagen">
+          <b>{zeile.objektName ?? ''}</b>
+          {zeile.einheit ? <div>{zeile.einheit}</div> : null}
+        </DruckKopf>
 
         <h1 className="ul-titel">{zeile.titel}</h1>
+        <p className="ul-unter">Zusammenstellung für Versicherung und Unterlagen · Stand {formatDatum(new Date().toISOString())}</p>
         <dl className="ul-fakten">
           <div>
             <dt>Gemeldet am</dt>
@@ -120,11 +121,9 @@ export default async function UnterlagenSeite({ params }: { params: Promise<{ id
           </section>
         ) : null}
 
-        <footer className="ah-fuss">
-          <div className="ah-kontakt">
-            Erstellt am {formatDatum(new Date().toISOString())} · {MARKE.firma.firmenname} · {MARKE.firma.email}
-          </div>
-        </footer>
+        <DruckFuss>
+          Erstellt mit {MARKE.firma.firmenname} · {MARKE.firma.email}
+        </DruckFuss>
       </article>
     </div>
   )

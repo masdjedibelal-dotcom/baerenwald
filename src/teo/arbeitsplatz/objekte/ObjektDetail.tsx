@@ -126,10 +126,16 @@ export function ObjektDetail({
                       title={`Kosten ${d.jahr}`}
                       icon="euro"
                       actions={
-                        <a className="btn ghost sm" href={`/arbeitsplatz/objekte/${objekt.id}/kosten`} download>
-                          <MockIcon ctx="btn" n="download" size={14} />
-                          <span>Exportieren</span>
-                        </a>
+                        <>
+                          <a className="btn ghost sm" href={`/bericht/${objekt.id}`} target="_blank" rel="noreferrer">
+                            <MockIcon ctx="btn" n="file-text" size={14} />
+                            <span>Jahresbericht</span>
+                          </a>
+                          <a className="btn ghost sm" href={`/arbeitsplatz/objekte/${objekt.id}/kosten`} download>
+                            <MockIcon ctx="btn" n="download" size={14} />
+                            <span>Excel</span>
+                          </a>
+                        </>
                       }
                     >
                       <div className="props">

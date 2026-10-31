@@ -7,7 +7,7 @@ import { MockBtn, MockCard, MockCheckbox, MockField, MockFormSection, MockInput,
 import { einstellungenSpeichern, type EinstellungenFelder } from '@/teo/arbeitsplatz/aktionen/einstellungen'
 import { SOFORTMASSNAHME_FAELLE_KATALOG } from '@/teo/hv/sofortmassnahme-faelle'
 
-export function EinstellungenSeite({ start }: { start: EinstellungenFelder }) {
+export function EinstellungenSeite({ start, logoUrl }: { start: EinstellungenFelder; logoUrl: string | null }) {
   const router = useRouter()
   const [f, setF] = useState(start)
   const [meldung, setMeldung] = useState<{ ok: boolean; text: string } | null>(null)
@@ -46,6 +46,8 @@ export function EinstellungenSeite({ start }: { start: EinstellungenFelder }) {
           </MockField>
         </MockFormSection>
       </MockCard>
+
+      <LogoKarte logoUrl={logoUrl} />
 
       <MockCard title="Freigaben" icon="shield-check">
         <MockFormSection>
@@ -87,5 +89,53 @@ export function EinstellungenSeite({ start }: { start: EinstellungenFelder }) {
         </MockBtn>
       </div>
     </div>
+  )
+}
+
+/** Logo der Verwaltung — erscheint auf Aushängen, Schadenunterlagen und Jahresbericht (Farben bleiben im TEO-Look). */
+function LogoKarte({ logoUrl }: { logoUrl: string | null }) {
+  const router = useRouter()
+  const [fehler, setFehler] = useState<string | null>(null)
+  const [laeuft, starten] = useTransition()
+
+  function senden(init: RequestInit) {
+    setFehler(null)
+    starten(async () => {
+      const res = await fetch('/arbeitsplatz/einstellungen/logo', init)
+      const r = (await res.json().catch(() => ({ ok: false }))) as { ok: boolean; fehler?: string }
+      if (!r.ok) setFehler(r.fehler ?? 'Das hat nicht geklappt.')
+      else router.refresh()
+    })
+  }
+
+  function hochladen(datei: File | undefined) {
+    if (!datei) return
+    const fd = new FormData()
+    fd.set('datei', datei)
+    senden({ method: 'POST', body: fd })
+  }
+
+  return (
+    <MockCard title="Logo" icon="photo">
+      <p className="ap-hinweis">Erscheint oben auf Aushängen, Schadenunterlagen und dem Jahresbericht. PNG, JPG oder WebP, höchstens 2 MB.</p>
+      <div className="ap-logo-zeile">
+        <div className="ap-logo-vorschau">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          {logoUrl ? <img src={logoUrl} alt="Logo" /> : <span>Noch kein Logo</span>}
+        </div>
+        <div className="ap-knopfzeile">
+          <label className="btn secondary sm">
+            <span>{laeuft ? 'Lädt …' : logoUrl ? 'Anderes Logo' : 'Logo hochladen'}</span>
+            <input type="file" accept="image/png,image/jpeg,image/webp" hidden disabled={laeuft} onChange={(e) => hochladen(e.target.files?.[0])} />
+          </label>
+          {logoUrl ? (
+            <MockBtn kind="ghost" sm type="button" disabled={laeuft} onClick={() => senden({ method: 'DELETE' })}>
+              Entfernen
+            </MockBtn>
+          ) : null}
+        </div>
+      </div>
+      {fehler ? <p className="ap-rot">{fehler}</p> : null}
+    </MockCard>
   )
 }

@@ -105,3 +105,11 @@
 .ap-link, .ap-verlauf .link { color: var(--green); font-weight: 500; background: none; border: 0; padding: 0; cursor: pointer; font-size: inherit; }
 .ap-link:hover, .ap-verlauf .link:hover { text-decoration: underline; }
 .ap-knopfzeile--links { justify-content: flex-start; align-items: center; gap: 14px; margin-top: 6px; }
+
+/* Einstellungen → Logo */
+.ap-hinweis { margin: 0 0 12px; font-size: 13px; color: var(--text-2); }
+.ap-logo-zeile { display: flex; flex-wrap: wrap; align-items: center; gap: 16px; }
+.ap-logo-vorschau { width: 180px; height: 72px; border: 1px dashed var(--border-strong); border-radius: 10px; display: flex; align-items: center; justify-content: center; padding: 8px; background: #fff; font-size: 12px; color: var(--text-3); }
+.ap-logo-vorschau img { max-width: 100%; max-height: 100%; object-fit: contain; display: block; }
+.ap-logo-zeile .ap-knopfzeile { margin: 0; }
+.ap-logo-zeile label.btn { cursor: pointer; }
