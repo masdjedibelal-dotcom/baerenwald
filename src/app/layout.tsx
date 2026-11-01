@@ -23,7 +23,7 @@ const lora = Lora({
 });
 
 /* Servus TEO: Manrope + Literata (nur bei NEXT_PUBLIC_MARKE=teo eingebunden) */
-const teoSans = Manrope({ subsets: ["latin"], variable: "--font-sans" });
+const teoSans = Manrope({ subsets: ["latin"], variable: "--font-teo" });
 const teoDisplay = Literata({ subsets: ["latin"], weight: ["400", "600", "700"], variable: "--font-display" });
 const SCHRIFT_KLASSEN = istTeo
   ? `${teoSans.variable} ${teoDisplay.variable}`

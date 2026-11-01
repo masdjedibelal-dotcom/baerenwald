@@ -7069,6 +7069,11 @@ select {
   --p2-bg: #f5f7fa;
   --p2-bg-content: #f5f7fa;
   --p2-ink: #0b1f3a;
+  /* Schrift wie CRM und Drucke: Manrope (next/font setzt --font-teo am <html>) */
+  --p2-font-head: var(--font-teo), -apple-system, "Segoe UI", system-ui, sans-serif;
+  --p2-font-body: var(--font-teo), -apple-system, "Segoe UI", system-ui, sans-serif;
+  --font-sans: var(--p2-font-body);
+  --font-display: var(--p2-font-head);
 }
 :root[data-marke="teo"] {
   --p2-accent-light: #dce4ee;
