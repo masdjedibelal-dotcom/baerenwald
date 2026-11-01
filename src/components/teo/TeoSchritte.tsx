@@ -92,6 +92,9 @@ export function TeoSchritte() {
           >
             <span className="ts-schritte__nr">{i + 1}</span>
             {s.reiter}
+            {i === aktiv && !angehalten ? (
+              <span key={aktiv} className="ts-schritte__lauf" style={{ animationDuration: `${WECHSEL_MS}ms` }} aria-hidden="true" />
+            ) : null}
           </button>
         ))}
       </div>

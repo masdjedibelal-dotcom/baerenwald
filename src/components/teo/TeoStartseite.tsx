@@ -5,21 +5,28 @@ import {
   CalendarClock,
   Check,
   ClipboardCheck,
+  Droplets,
+  FileText,
+  Flame,
   Hammer,
   Handshake,
   Headset,
   KeyRound,
+  type LucideIcon,
   Network,
   ReceiptText,
   ShieldCheck,
   SlidersHorizontal,
   Smartphone,
+  Snowflake,
   Sparkles,
   Wrench,
   X,
+  Zap,
 } from "lucide-react";
 
 import { TeoAblaufKarte } from "@/components/teo/TeoAblaufKarte";
+import { TeoEffekte } from "@/components/teo/TeoEffekte";
 import { fotoDa, TeoFoto } from "@/components/teo/TeoFoto";
 import { TEO_LINK_ANFRAGE, TeoLogo, TeoRahmen } from "@/components/teo/TeoRahmen";
 import { TeoSchritte } from "@/components/teo/TeoSchritte";
@@ -105,6 +112,18 @@ const BETEILIGTE = [
   { foto: "rolle-eigentuemer", quelle: null, icon: Building, titel: "Eigentümer", text: "Sehen, was im Haus passiert, mit den Kosten je Haus.", alt: "Eigentümer vor seinem Haus" },
 ] as const;
 
+/** Icons der Pillen „Was ist bei Ihnen gerade los?“ (erscheinen beim Drüberfahren) */
+const SITUATION_ICON: Record<string, LucideIcon> = {
+  heizung: Flame,
+  wasser: Droplets,
+  strom: Zap,
+  angebote: FileText,
+  pruefungen: CalendarClock,
+  hausmeister: KeyRound,
+  winter: Snowflake,
+  abgeben: Building,
+};
+
 export const TEO_FAQ = [
   {
     frage: "Was macht teo genau?",
@@ -149,6 +168,7 @@ export const TEO_FAQ = [
 export function TeoStartseite() {
   return (
     <TeoRahmen>
+      <TeoEffekte />
       <section className="ts-hero">
         <div className="ts-formen" aria-hidden="true">
           <span className="ts-formen__blau" />
@@ -383,7 +403,17 @@ export function TeoStartseite() {
             <ul className="ts-einstieg__liste">
               {TEO_SITUATIONEN.map((s) => (
                 <li key={s.id}>
-                  <Link href={`${TEO_LINK_ANFRAGE}?s=${s.id}`}>{s.label}</Link>
+                  <Link href={`${TEO_LINK_ANFRAGE}?s=${s.id}`}>
+                    {(() => {
+                      const Icon = SITUATION_ICON[s.id];
+                      return Icon ? (
+                        <span className="ts-einstieg__icon" aria-hidden="true">
+                          <Icon size={16} strokeWidth={2} />
+                        </span>
+                      ) : null;
+                    })()}
+                    {s.label}
+                  </Link>
                 </li>
               ))}
               <li>

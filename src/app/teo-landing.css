@@ -709,3 +709,14 @@
   margin: 0;
   padding-left: 20px;
 }
+
+/* Kopfzeile: nach etwas Scrollen schmaler, Glas-Grund (Klasse von TeoScrollKopf) */
+.teo-kopf { transition: background 0.25s ease, box-shadow 0.25s ease; }
+.teo-kopf__innen { transition: padding 0.25s ease; }
+html.teo-gescrollt .teo-kopf {
+  background: rgba(255, 255, 255, 0.74);
+  backdrop-filter: saturate(1.6) blur(16px);
+  -webkit-backdrop-filter: saturate(1.6) blur(16px);
+  box-shadow: 0 10px 30px -22px rgba(11, 31, 58, 0.4);
+}
+html.teo-gescrollt .teo-kopf__innen { padding-block: 6px; }

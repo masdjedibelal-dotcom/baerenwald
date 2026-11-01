@@ -1,6 +1,8 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
 
+import { TeoScrollKopf } from "@/components/teo/TeoScrollKopf";
+
 import { CookieSettingsLink } from "@/components/consent/CookieSettingsLink";
 import { MARKE } from "@/lib/marke";
 
@@ -82,6 +84,7 @@ function TeoFuss() {
 export function TeoRahmen({ children }: { children: ReactNode }) {
   return (
     <div className="teo-site">
+      <TeoScrollKopf />
       <TeoKopf />
       <main>{children}</main>
       <TeoFuss />
