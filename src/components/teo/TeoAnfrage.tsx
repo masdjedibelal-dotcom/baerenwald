@@ -38,6 +38,7 @@ import { DatenschutzCheckbox } from "@/components/funnel/DatenschutzCheckbox";
 import { PhotoUpload } from "@/components/funnel/PhotoUpload";
 import { TeoLogo } from "@/components/teo/TeoRahmen";
 import { TEO_USPS } from "@/components/teo/teo-usps";
+import { track } from "@/lib/analytics";
 import { ladeAnfrageFotosHoch, neueFotoSitzung } from "@/lib/funnel/fotos-hochladen";
 import {
   TEO_ABSENDER,
@@ -92,6 +93,9 @@ const ICON_ABSENDER: Record<string, LucideIcon> = {
   weg: Users,
   bestandshalter: Building2,
 };
+
+/** Kurznamen der 4 Schritte für den Anfrage-Weg im CRM-Dashboard */
+const SCHRITT_NAMEN = ["Anliegen", "Details", "Objekt", "Kontakt"] as const;
 
 const DETAIL_FRAGE: Record<string, string> = {
   schaden: "Was ist passiert?",
@@ -233,8 +237,15 @@ export function TeoAnfrage() {
       setVorwahl(sit);
       setSchritt(1);
     }
+    track.teoAnfrageStart(sit?.id ?? "direkt");
     setBereit(true);
   }, []);
+
+  // Anfrage-Weg fürs CRM-Dashboard: jeder erreichte Schritt (1–4)
+  useEffect(() => {
+    if (!bereit || status === "done") return;
+    track.teoAnfrageSchritt(schritt + 1, SCHRITT_NAMEN[schritt] ?? `Schritt ${schritt + 1}`);
+  }, [bereit, schritt, status]);
 
   function vorwahlAendern() {
     setVorwahl(null);
@@ -300,6 +311,7 @@ export function TeoAnfrage() {
         setFehler(res.error);
         return;
       }
+      track.teoAnfrageAbgeschickt(d.fall || "unbekannt");
       setStatus("done");
       window.scrollTo({ top: 0, behavior: "instant" as ScrollBehavior });
     } catch (e) {

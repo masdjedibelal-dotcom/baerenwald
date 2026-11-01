@@ -46,6 +46,19 @@ export const track = {
     ph("preis_angezeigt", { leistung, preis_min, preis_max });
   },
 
+  /** Servus TEO: Anfrage-Weg (servus-teo.de/rechner) — eigene Events, getrennt vom Bärenwald-Rechner */
+  teoAnfrageStart: (einstieg?: string) => {
+    ph("teo_anfrage_start", { einstieg });
+  },
+
+  teoAnfrageSchritt: (schritt: number, name: string) => {
+    ph("teo_anfrage_schritt", { schritt_nummer: schritt, schritt_name: name });
+  },
+
+  teoAnfrageAbgeschickt: (fall: string) => {
+    ph("teo_anfrage_abgeschickt", { fall });
+  },
+
   leadAbgeschickt: (leistung: string) => {
     recordMarketingClick("lead_abgeschickt", leistung);
     ph("lead_abgeschickt", { leistung });
