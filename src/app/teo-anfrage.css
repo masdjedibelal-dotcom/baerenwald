@@ -62,6 +62,16 @@
   margin-inline: auto;
   padding: 16px 20px;
 }
+/* Beim Scrollen: leicht unscharfer Grund über die volle Breite, damit Logo und Schritt nicht über dem Inhalt liegen */
+.ta-kopf::before {
+  content: '';
+  position: absolute;
+  inset: 0 calc(50% - 50vw);
+  z-index: -1;
+  background: rgba(251, 250, 248, 0.82);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
 .ta-kopf__marke { display: inline-flex; }
 .ta-kopf__schritt {
   font-size: 14px;
