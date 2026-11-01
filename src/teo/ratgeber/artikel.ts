@@ -149,7 +149,7 @@ export const TEO_RATGEBER: RatgeberArtikel[] = [
         antwort: "Die WEG-Verwaltung. Prüfungen am Gemeinschaftseigentum gehören zur laufenden Verwaltung nach § 27 WEG und brauchen in der Regel keinen eigenen Beschluss.",
       },
     ],
-    verwandt: ["rauchwarnmelder-bayern", "legionellenpruefung-trinkwasser", "winterdienst-muenchen"],
+    verwandt: ["rauchwarnmelder-bayern", "legionellenpruefung-trinkwasser", "aufzugspruefung"],
     anfrage: { text: "teo plant und beauftragt alle Prüfungen Ihrer Häuser rechtzeitig, mit Nachweis im Portal.", situation: "pruefungen" },
   },
   {
@@ -325,7 +325,7 @@ export const TEO_RATGEBER: RatgeberArtikel[] = [
         antwort: "Nein, wenn kein Wasser im Rahmen einer Vermietung abgegeben wird. In gemischt genutzten Häusern mit zentraler Anlage gilt sie für die Anlage insgesamt.",
       },
     ],
-    verwandt: ["pruefpflichten-mehrfamilienhaus", "wasserschaden-mehrfamilienhaus"],
+    verwandt: ["pruefpflichten-mehrfamilienhaus", "heizungswartung-mehrfamilienhaus"],
     anfrage: { text: "teo beauftragt Labor und Probenahme, prüft die Ventile und kümmert sich bei einem Befund um die Maßnahmen.", situation: "pruefungen" },
   },
   {
@@ -426,7 +426,7 @@ export const TEO_RATGEBER: RatgeberArtikel[] = [
         antwort: "Die Stromkosten der Trocknung sind in der Regel Teil des Schadens und werden von der Gebäudeversicherung erstattet. Dafür den Zählerstand zu Beginn und Ende festhalten.",
       },
     ],
-    verwandt: ["instandhaltung-wer-zahlt", "legionellenpruefung-trinkwasser"],
+    verwandt: ["schimmel-feuchte-mietwohnung", "rueckstausicherung-keller", "instandhaltung-wer-zahlt"],
     anfrage: { text: "teo kommt mit Notdienst und Leckortung, organisiert die Trocknung und stellt die Unterlagen für die Versicherung zusammen.", situation: "wasser" },
   },
   {
@@ -603,7 +603,7 @@ export const TEO_RATGEBER: RatgeberArtikel[] = [
         antwort: "Außerhalb der Zeiten von 7 bzw. 8 bis 20 Uhr besteht in München keine allgemeine Räumpflicht.",
       },
     ],
-    verwandt: ["pruefpflichten-mehrfamilienhaus", "instandhaltung-wer-zahlt"],
+    verwandt: ["treppenhausreinigung-mehrfamilienhaus", "baumkontrolle-verkehrssicherung", "hausmeisterkosten-umlegen"],
     anfrage: { text: "teo übernimmt den Winterdienst für Ihre Häuser, mit Räumprotokoll im Portal.", situation: "winter" },
   },
   {
@@ -679,8 +679,512 @@ export const TEO_RATGEBER: RatgeberArtikel[] = [
         antwort: "Ja. Seit der WEG-Reform 2020 kann die Gemeinschaft für einzelne Kosten oder bestimmte Arten von Kosten einen anderen Verteilerschlüssel beschließen.",
       },
     ],
-    verwandt: ["sanierung-weg-vergleichsangebote", "wasserschaden-mehrfamilienhaus"],
+    verwandt: ["sanierung-weg-vergleichsangebote", "hausmeisterkosten-umlegen"],
     anfrage: { text: "teo erledigt Reparaturen am Gemeinschafts- und Sondereigentum und rechnet je Haus nachvollziehbar ab." },
+  },
+  {
+    slug: "hausmeisterkosten-umlegen",
+    kategorie: "Betrieb & Pflichten",
+    titel: "Hausmeisterkosten umlegen: was erlaubt ist und was nicht",
+    metaTitel: "Hausmeisterkosten umlegen: Was ist umlagefähig?",
+    beschreibung:
+      "Welche Hausmeisterkosten Vermieter als Betriebskosten abrechnen dürfen, welche Anteile herausgerechnet werden müssen und wie die Abrechnung prüfsicher wird.",
+    kurzantwort:
+      "Hausmeisterkosten sind als Betriebskosten umlagefähig, soweit sie für laufende Tätigkeiten anfallen: Kontrollgänge, Pflege der Außenanlagen, Treppenhaus, Winterdienst, Bedienung der Technik (§ 2 Nr. 14 Betriebskostenverordnung). Nicht umlegbar sind Reparaturen, Erneuerungen und Verwaltungsarbeiten. Diese Anteile müssen aus der Rechnung herausgerechnet werden.",
+    lesezeitMin: 5,
+    aktualisiert: "2026-11-01",
+    abschnitte: [
+      {
+        id: "abgrenzung",
+        titel: "Was umlagefähig ist und was nicht",
+        bloecke: [
+          {
+            typ: "tabelle",
+            kopf: ["Tätigkeit", "Umlagefähig"],
+            zeilen: [
+              ["Kontrollgänge, Haustechnik überwachen", "ja"],
+              ["Treppenhaus, Außenanlagen, Mülltonnen", "ja, wenn nicht schon gesondert abgerechnet"],
+              ["Winterdienst", "ja, wenn nicht schon gesondert abgerechnet"],
+              ["Kleine Reparaturen, Austausch von Teilen", "nein, Instandhaltung"],
+              ["Handwerker beauftragen, Wohnungsübergaben, Schriftverkehr", "nein, Verwaltung"],
+              ["Notdienst-Bereitschaft für Reparaturen", "in der Regel nein"],
+            ],
+          },
+        ],
+      },
+      {
+        id: "doppelt",
+        titel: "Keine doppelte Abrechnung",
+        bloecke: [
+          {
+            typ: "text",
+            text: "Wird die Treppenhausreinigung, die Gartenpflege oder der Winterdienst bereits als eigene Position abgerechnet, darf dieselbe Leistung nicht noch einmal in den Hausmeisterkosten stecken. Gerichte achten darauf besonders.",
+          },
+        ],
+      },
+      {
+        id: "nachweis",
+        titel: "So wird die Abrechnung prüfsicher",
+        bloecke: [
+          {
+            typ: "schritte",
+            punkte: [
+              { titel: "Leistungsverzeichnis", text: "Im Vertrag mit Hausmeister oder Dienstleister die Tätigkeiten einzeln aufführen." },
+              { titel: "Anteile trennen", text: "Für Reparatur- und Verwaltungsanteile einen nachvollziehbaren Prozentsatz oder Stundennachweis festlegen." },
+              { titel: "Tätigkeiten belegen", text: "Kontrollgänge und Einsätze mit Datum festhalten, etwa als Rundgangsprotokoll." },
+              { titel: "Wirtschaftlich bleiben", text: "Kosten müssen angemessen sein (§ 556 Abs. 3 BGB). Vergleichsangebote helfen beim Nachweis." },
+            ],
+          },
+          {
+            typ: "hinweis",
+            text: "Bestreitet ein Mieter die Aufteilung, muss der Vermieter darlegen, wie sich die Kosten zusammensetzen. Ohne Nachweis droht, dass ein Teil nicht anerkannt wird.",
+          },
+        ],
+      },
+    ],
+    faq: [
+      {
+        frage: "Darf der Hausmeister auch Reparaturen machen?",
+        antwort: "Ja, nur dürfen diese Kosten nicht als Betriebskosten auf Mieter umgelegt werden. Sie gehören zur Instandhaltung, die der Eigentümer trägt.",
+      },
+      {
+        frage: "Müssen Mieter die Hausmeisterkosten zahlen, wenn der Mietvertrag nichts dazu sagt?",
+        antwort: "Nein. Betriebskosten dürfen nur umgelegt werden, wenn der Mietvertrag das vereinbart. Ein Verweis auf die Betriebskostenverordnung genügt in der Regel.",
+      },
+    ],
+    verwandt: ["treppenhausreinigung-mehrfamilienhaus", "instandhaltung-wer-zahlt", "winterdienst-muenchen"],
+    anfrage: { text: "teo stellt Hausmeister und Reinigung mit klarem Leistungsverzeichnis und Rundgangsprotokoll im Portal.", situation: "hausmeister" },
+  },
+  {
+    slug: "aufzugspruefung",
+    kategorie: "Wartung & Prüfung",
+    titel: "Aufzugsprüfung im Wohnhaus: Fristen, Notruf, Kosten",
+    metaTitel: "Aufzugsprüfung: Fristen, Notruf und Kosten",
+    beschreibung:
+      "Wie oft ein Aufzug im Wohnhaus geprüft werden muss, was Betreiber beim Notruf beachten müssen und welche Aufzugskosten Mieter zahlen.",
+    kurzantwort:
+      "Aufzüge in Wohnhäusern sind überwachungsbedürftige Anlagen. Spätestens alle zwei Jahre ist eine Hauptprüfung durch eine zugelassene Überwachungsstelle fällig, in der Mitte dazwischen eine Zwischenprüfung (Betriebssicherheitsverordnung). Der Aufzug braucht einen Notruf, der jederzeit eine besetzte Stelle erreicht. Prüf- und Wartungskosten sind umlagefähig, Reparaturen nicht.",
+    lesezeitMin: 4,
+    aktualisiert: "2026-11-01",
+    abschnitte: [
+      {
+        id: "fristen",
+        titel: "Welche Prüfungen fällig sind",
+        bloecke: [
+          {
+            typ: "tabelle",
+            kopf: ["Prüfung", "Wann", "Wer"],
+            zeilen: [
+              ["Prüfung vor Inbetriebnahme", "vor dem ersten Betrieb und nach wesentlichen Änderungen", "zugelassene Überwachungsstelle"],
+              ["Hauptprüfung", "spätestens alle 2 Jahre", "zugelassene Überwachungsstelle (z. B. TÜV, DEKRA)"],
+              ["Zwischenprüfung", "in der Mitte zwischen zwei Hauptprüfungen", "zugelassene Überwachungsstelle"],
+              ["Wartung", "nach Herstellerangabe, meist mehrmals jährlich", "Aufzugsfirma"],
+            ],
+          },
+          {
+            typ: "text",
+            text: "Die Prüfplakette im Fahrkorb zeigt, wann die nächste Prüfung fällig ist. Stellt die Prüfstelle gefährliche Mängel fest, darf der Aufzug bis zur Behebung nicht weiter betrieben werden.",
+          },
+        ],
+      },
+      {
+        id: "notruf",
+        titel: "Notruf",
+        bloecke: [
+          {
+            typ: "text",
+            text: "Eingeschlossene Personen müssen jederzeit Hilfe rufen können. Dafür braucht der Aufzug ein Zwei-Wege-Kommunikationssystem, das eine ständig besetzte Stelle erreicht, und einen Notfallplan, wer im Fall der Fälle befreit. Viele Häuser haben noch alte Telefonleitungen, die nach der Umstellung auf IP-Telefonie nicht mehr zuverlässig funktionieren. Das sollte bei der nächsten Wartung geprüft werden.",
+          },
+        ],
+      },
+      {
+        id: "kosten",
+        titel: "Welche Kosten Mieter tragen",
+        bloecke: [
+          {
+            typ: "liste",
+            punkte: [
+              "Umlagefähig (§ 2 Nr. 7 Betriebskostenverordnung): Betriebsstrom, Beaufsichtigung, Pflege, regelmäßige Prüfung, Reinigung, Notrufbereitschaft",
+              "Nicht umlagefähig: Reparaturen und Ersatzteile",
+              "Bei einem Vollwartungsvertrag muss der Reparaturanteil herausgerechnet werden",
+            ],
+          },
+          {
+            typ: "text",
+            text: "Mieter im Erdgeschoss können an den Aufzugskosten beteiligt werden, wenn der Mietvertrag das vorsieht und kein abweichender Schlüssel vereinbart ist.",
+          },
+        ],
+      },
+    ],
+    faq: [
+      {
+        frage: "Wer ist Betreiber des Aufzugs?",
+        antwort: "Der Eigentümer, in der WEG die Gemeinschaft, vertreten durch die Verwaltung. Der Betreiber muss Prüfungen beauftragen und den sicheren Betrieb gewährleisten.",
+      },
+      {
+        frage: "Was kostet es, wenn die Prüfung versäumt wird?",
+        antwort: "Ein Betrieb ohne gültige Prüfung ist eine Ordnungswidrigkeit. Bei einem Unfall drohen zudem Haftung und Probleme mit der Versicherung.",
+      },
+    ],
+    verwandt: ["pruefpflichten-mehrfamilienhaus", "hausmeisterkosten-umlegen"],
+    anfrage: { text: "teo behält die Aufzugsfristen im Blick, beauftragt Prüfstelle und Wartung und kümmert sich um Mängel.", situation: "pruefungen" },
+  },
+  {
+    slug: "rueckstausicherung-keller",
+    kategorie: "Wartung & Prüfung",
+    titel: "Rückstausicherung im Keller: Pflicht, Wartung, Versicherung",
+    metaTitel: "Rückstausicherung: Pflicht, Wartung, Versicherung",
+    beschreibung:
+      "Warum Kellerabläufe gegen Rückstau aus dem Kanal gesichert sein müssen, wie oft Rückstauverschluss und Hebeanlage gewartet werden und was die Versicherung erwartet.",
+    kurzantwort:
+      "Alle Abläufe unterhalb der Rückstauebene, meist der Straßenoberkante, müssen gegen Rückstau aus dem Kanal gesichert sein. Das verlangen die Entwässerungssatzungen der Gemeinden. Rückstauverschlüsse sollten monatlich vom Betreiber betätigt und halbjährlich von einem Fachkundigen gewartet werden (DIN 1986-100). Fehlt die Sicherung oder ist sie nicht gewartet, zahlt die Versicherung oft nicht.",
+    lesezeitMin: 4,
+    aktualisiert: "2026-11-01",
+    abschnitte: [
+      {
+        id: "warum",
+        titel: "Warum Rückstau gefährlich ist",
+        bloecke: [
+          {
+            typ: "text",
+            text: "Bei Starkregen kann der öffentliche Kanal so voll laufen, dass Abwasser durch Bodenabläufe, Waschbecken oder Toiletten im Keller nach oben drückt. Für Schäden durch fehlende Sicherung haftet in der Regel nicht die Stadt, sondern der Eigentümer selbst.",
+          },
+        ],
+      },
+      {
+        id: "loesungen",
+        titel: "Welche Sicherung passt",
+        bloecke: [
+          {
+            typ: "tabelle",
+            kopf: ["Lösung", "Geeignet für"],
+            zeilen: [
+              ["Rückstauverschluss (Klappe)", "selten genutzte Abläufe, z. B. Bodenablauf ohne Toilette"],
+              ["Rückstauverschluss für fäkalienhaltiges Abwasser", "WC im Keller, mit Motor und Warnung"],
+              ["Hebeanlage", "genutzte Räume im Keller, Wohnungen im Souterrain"],
+            ],
+          },
+        ],
+      },
+      {
+        id: "wartung",
+        titel: "Wartung und Kontrolle",
+        bloecke: [
+          {
+            typ: "tabelle",
+            kopf: ["Anlage", "Betreiber", "Fachkundiger"],
+            zeilen: [
+              ["Rückstauverschluss", "monatlich betätigen", "halbjährlich warten"],
+              ["Hebeanlage im Mehrfamilienhaus", "regelmäßig Sichtkontrolle", "halbjährlich warten"],
+            ],
+          },
+          {
+            typ: "hinweis",
+            text: "Viele Versicherungen verlangen eine funktionsfähige, gewartete Rückstausicherung. Wartungsprotokolle aufbewahren.",
+          },
+        ],
+      },
+    ],
+    faq: [
+      {
+        frage: "Wo liegt die Rückstauebene?",
+        antwort: "In der Regel auf Höhe der Straßenoberkante an der Anschlussstelle. Die genaue Festlegung steht in der Entwässerungssatzung der Gemeinde.",
+      },
+      {
+        frage: "Darf der Rückstauverschluss dauerhaft geschlossen bleiben?",
+        antwort: "Nur bei Abläufen, die nicht genutzt werden. Ist der Verschluss geschlossen, kann im Keller kein Wasser mehr ablaufen; ein Rohrbruch im Haus führt dann zu Wasser im Keller.",
+      },
+    ],
+    verwandt: ["wasserschaden-mehrfamilienhaus", "pruefpflichten-mehrfamilienhaus"],
+    anfrage: { text: "teo prüft die Rückstausicherung, übernimmt die halbjährliche Wartung und rüstet bei Bedarf nach.", situation: "pruefungen" },
+  },
+  {
+    slug: "schimmel-feuchte-mietwohnung",
+    kategorie: "Schaden & Versicherung",
+    titel: "Schimmel und Feuchte in der Mietwohnung: Ursache klären, richtig handeln",
+    metaTitel: "Schimmel in der Mietwohnung: Ursache und Vorgehen",
+    beschreibung:
+      "Wie Verwaltung und Vermieter bei Schimmelmeldungen vorgehen: Ursache feststellen, Bausubstanz oder Lüftung, Sanierung, Mietminderung.",
+    kurzantwort:
+      "Bei Schimmel zuerst die Ursache klären: Feuchte von außen oder aus Leitungen ist ein Baumangel, zu wenig Lüften oder Heizen liegt beim Bewohner. Dafür Feuchte messen und den Bauzustand prüfen lassen. Liegt ein Baumangel vor, muss der Vermieter sanieren und die Miete kann gemindert werden. Kleine Flächen unter etwa einem halben Quadratmeter lassen sich oft ohne Fachfirma entfernen, wenn die Ursache behoben ist.",
+    lesezeitMin: 5,
+    aktualisiert: "2026-11-01",
+    abschnitte: [
+      {
+        id: "ursachen",
+        titel: "Typische Ursachen",
+        bloecke: [
+          {
+            typ: "tabelle",
+            kopf: ["Ursache", "Anzeichen"],
+            zeilen: [
+              ["Undichtes Dach, Fassade oder Leitung", "Feuchte auch bei guter Lüftung, Flecken wachsen von außen nach innen"],
+              ["Wärmebrücke", "Schimmel in Außenecken, an Fensterlaibungen, hinter Schränken an Außenwänden"],
+              ["Aufsteigende Feuchte", "Erdgeschoss oder Keller, Salzränder am Putz"],
+              ["Zu wenig Lüften oder Heizen", "Kondenswasser an Fenstern, hohe Luftfeuchte in Bad und Schlafzimmer"],
+            ],
+          },
+        ],
+      },
+      {
+        id: "vorgehen",
+        titel: "So gehen Sie vor",
+        bloecke: [
+          {
+            typ: "schritte",
+            punkte: [
+              { titel: "Meldung aufnehmen", text: "Fotos, betroffene Räume, seit wann, wie gelüftet und geheizt wird." },
+              { titel: "Ursache prüfen", text: "Feuchtemessung an der Wand, Raumklima, Begutachtung von Fassade, Dach und Leitungen." },
+              { titel: "Ursache beheben", text: "Undichtigkeit reparieren oder Wärmebrücke beseitigen. Ohne diesen Schritt kommt der Schimmel zurück." },
+              { titel: "Sanieren", text: "Befallene Bauteile reinigen oder austauschen, bei größeren Flächen durch eine Fachfirma." },
+            ],
+          },
+          {
+            typ: "hinweis",
+            text: "Als Richtwert gilt eine relative Luftfeuchte von 40 bis 60 Prozent. Dauerhaft höhere Werte begünstigen Schimmel.",
+          },
+        ],
+      },
+      {
+        id: "miete",
+        titel: "Mietrecht: wer muss was beweisen",
+        bloecke: [
+          {
+            typ: "text",
+            text: "Zunächst muss der Vermieter darlegen, dass die Ursache nicht in der Bausubstanz liegt. Gelingt das, muss der Mieter zeigen, dass er ausreichend gelüftet und geheizt hat. Ein Gutachten schafft hier am schnellsten Klarheit. Liegt die Ursache beim Gebäude, kann der Mieter die Miete angemessen mindern, solange der Mangel besteht.",
+          },
+        ],
+      },
+    ],
+    faq: [
+      {
+        frage: "Darf der Vermieter bestimmte Lüftungszeiten vorschreiben?",
+        antwort: "Verlangt werden darf ein übliches Lüften und Heizen. Übertriebene Vorgaben, etwa mehrmals stündlich zu lüften, sind nicht zumutbar.",
+      },
+      {
+        frage: "Zahlt die Versicherung Schimmel?",
+        antwort: "Schimmel als Folge eines versicherten Leitungswasserschadens ist oft mitversichert. Schimmel durch Baumängel oder falsches Lüften in der Regel nicht.",
+      },
+    ],
+    verwandt: ["wasserschaden-mehrfamilienhaus", "instandhaltung-wer-zahlt"],
+    anfrage: { text: "teo misst Feuchte, klärt die Ursache und saniert, mit Fotos und Bericht für Verwaltung und Mieter.", situation: "wasser" },
+  },
+  {
+    slug: "treppenhausreinigung-mehrfamilienhaus",
+    kategorie: "Betrieb & Pflichten",
+    titel: "Treppenhausreinigung im Mehrfamilienhaus: Pflicht, Umfang, Kosten",
+    metaTitel: "Treppenhausreinigung: Pflicht, Umfang und Kosten",
+    beschreibung:
+      "Wer das Treppenhaus reinigen muss, wann Mieter dazu verpflichtet sind, was zu einer ordentlichen Reinigung gehört und wie die Kosten umgelegt werden.",
+    kurzantwort:
+      "Für die Reinigung von Treppenhaus und Gemeinschaftsflächen ist der Eigentümer verantwortlich. Er kann sie per Mietvertrag auf die Mieter übertragen, etwa im Wechsel, oder einen Reinigungsdienst beauftragen. Die Kosten eines Dienstleisters sind als Betriebskosten umlagefähig (§ 2 Nr. 9 Betriebskostenverordnung). Üblich ist eine wöchentliche Reinigung.",
+    lesezeitMin: 4,
+    aktualisiert: "2026-11-01",
+    abschnitte: [
+      {
+        id: "umfang",
+        titel: "Was zur Reinigung gehört",
+        bloecke: [
+          {
+            typ: "tabelle",
+            kopf: ["Bereich", "Üblicher Rhythmus"],
+            zeilen: [
+              ["Treppen, Podeste, Eingangsbereich kehren und wischen", "wöchentlich"],
+              ["Handläufe, Türen, Briefkästen, Lichtschalter", "wöchentlich"],
+              ["Kellergänge, Fahrradraum, Waschküche", "monatlich"],
+              ["Treppenhausfenster", "mehrmals im Jahr"],
+              ["Spinnweben, Heizkörper, Leuchten", "mehrmals im Jahr"],
+            ],
+          },
+        ],
+      },
+      {
+        id: "mieter",
+        titel: "Reinigung durch die Mieter",
+        bloecke: [
+          {
+            typ: "text",
+            text: "Die Pflicht kann auf Mieter übertragen werden, wenn der Mietvertrag das vorsieht. Eine Hausordnung, die Teil des Mietvertrags ist, genügt. Klappt die Reinigung im Wechsel nicht, kann der Vermieter nach Abmahnung einen Dienstleister beauftragen; ob die Kosten dann umgelegt werden dürfen, hängt vom Vertrag ab.",
+          },
+        ],
+      },
+      {
+        id: "kosten",
+        titel: "Kosten",
+        bloecke: [
+          {
+            typ: "liste",
+            punkte: [
+              "Umlagefähig: laufende Reinigung der gemeinsam genutzten Flächen",
+              "Nicht umlagefähig: Sonderreinigung nach Bau- oder Handwerkerarbeiten, Beseitigung von Graffiti",
+              "Keine doppelte Abrechnung mit den Hausmeisterkosten",
+            ],
+          },
+        ],
+      },
+    ],
+    faq: [
+      {
+        frage: "Darf ein älterer Mieter von der Reinigung befreit werden?",
+        antwort: "Eine Befreiung ist möglich, wenn alle Beteiligten zustimmen oder der Vermieter einen Ausgleich regelt. Einen allgemeinen Anspruch gibt es nicht; der Mieter kann aber eine Hilfe oder einen Dienstleister auf eigene Kosten beauftragen.",
+      },
+      {
+        frage: "Wie oft muss gereinigt werden?",
+        antwort: "Gesetzlich ist das nicht festgelegt. Wöchentlich gilt als üblich und angemessen, bei großen Häusern auch häufiger.",
+      },
+    ],
+    verwandt: ["hausmeisterkosten-umlegen", "winterdienst-muenchen"],
+    anfrage: { text: "teo übernimmt die Treppenhausreinigung mit festem Plan und Nachweis je Reinigung im Portal.", situation: "hausmeister" },
+  },
+  {
+    slug: "heizungswartung-mehrfamilienhaus",
+    kategorie: "Wartung & Prüfung",
+    titel: "Heizungswartung im Mehrfamilienhaus: Pflichten nach GEG und Schornsteinfeger",
+    metaTitel: "Heizungswartung Mehrfamilienhaus: GEG und Pflichten",
+    beschreibung:
+      "Welche Prüfungen und Wartungen für die Zentralheizung im Mehrfamilienhaus anfallen: Schornsteinfeger, Heizungsprüfung nach GEG, Wartung und Kosten.",
+    kurzantwort:
+      "Für die Zentralheizung im Mehrfamilienhaus sind die Termine des Schornsteinfegers laut Feuerstättenbescheid Pflicht. Das Gebäudeenergiegesetz verlangt für viele Gas- und Ölheizungen in Häusern ab sechs Wohnungen außerdem eine Heizungsprüfung und Optimierung (§ 60b GEG); die Frist hängt vom Einbaujahr ab. Eine jährliche Wartung durch einen Fachbetrieb ist üblich und hält Herstellergarantien aufrecht. Die Wartungskosten sind umlagefähig.",
+    lesezeitMin: 5,
+    aktualisiert: "2026-11-01",
+    abschnitte: [
+      {
+        id: "pflichten",
+        titel: "Was Pflicht ist",
+        bloecke: [
+          {
+            typ: "tabelle",
+            kopf: ["Was", "Wann", "Grundlage"],
+            zeilen: [
+              ["Kehren, Messen, Überprüfen durch den Schornsteinfeger", "laut Feuerstättenbescheid", "Schornsteinfeger-Handwerksgesetz, 1. BImSchV"],
+              ["Feuerstättenschau", "zweimal in sieben Jahren", "Schornsteinfeger-Handwerksgesetz"],
+              ["Heizungsprüfung und -optimierung", "bei Gas- und Ölheizungen in Häusern ab 6 Wohnungen, Frist nach Einbaujahr", "§ 60b GEG"],
+              ["Hydraulischer Abgleich", "in bestimmten Fällen bei Häusern ab 6 Wohnungen", "§ 60c GEG"],
+            ],
+          },
+          {
+            typ: "hinweis",
+            text: "Die GEG-Pflichten haben Ausnahmen und Übergangsfristen. Welche für Ihre Anlage gilt, klärt der Heizungsfachbetrieb bei der nächsten Wartung.",
+          },
+        ],
+      },
+      {
+        id: "wartung",
+        titel: "Was eine Wartung umfasst",
+        bloecke: [
+          {
+            typ: "liste",
+            punkte: [
+              "Brenner und Wärmetauscher reinigen",
+              "Einstellungen und Abgaswerte prüfen",
+              "Sicherheitseinrichtungen und Ausdehnungsgefäß prüfen",
+              "Heizkurve und Zirkulation an den Bedarf anpassen",
+              "Protokoll für Gewährleistung und Versicherung",
+            ],
+          },
+          {
+            typ: "text",
+            text: "Am besten im Sommer warten lassen. Dann sind Termine leichter zu bekommen und ein Ausfall trifft niemanden.",
+          },
+        ],
+      },
+      {
+        id: "kosten",
+        titel: "Kosten",
+        bloecke: [
+          {
+            typ: "text",
+            text: "Wartung, Reinigung und Prüfung der Betriebssicherheit sowie die Kosten des Schornsteinfegers sind Teil der Heizkosten und umlagefähig. Reparaturen und der Austausch von Teilen trägt der Eigentümer.",
+          },
+        ],
+      },
+    ],
+    faq: [
+      {
+        frage: "Ist eine jährliche Heizungswartung gesetzlich vorgeschrieben?",
+        antwort: "Eine allgemeine gesetzliche Pflicht zur jährlichen Wartung gibt es nicht. Hersteller verlangen sie aber meist für die Garantie, und sie senkt Ausfälle im Winter deutlich.",
+      },
+      {
+        frage: "Was tun, wenn die Heizung im Winter ausfällt?",
+        antwort: "Sofort einen Heizungsbetrieb beauftragen. Bei Ausfall im Winter ist das ein dringender Fall, den die Verwaltung auch ohne Beschluss beauftragen darf.",
+      },
+    ],
+    verwandt: ["pruefpflichten-mehrfamilienhaus", "instandhaltung-wer-zahlt"],
+    anfrage: { text: "teo plant Wartung und Schornsteinfeger-Termine, kümmert sich um die GEG-Prüfung und ist bei Ausfall schnell da.", situation: "heizung" },
+  },
+  {
+    slug: "baumkontrolle-verkehrssicherung",
+    kategorie: "Betrieb & Pflichten",
+    titel: "Bäume auf dem Grundstück: Kontrolle, Fällung, Haftung",
+    metaTitel: "Baumkontrolle und Verkehrssicherung: Pflichten",
+    beschreibung:
+      "Wie oft Eigentümer Bäume kontrollieren müssen, wann in München eine Fällgenehmigung nötig ist, welche Schnittzeiten gelten und wer bei Schäden haftet.",
+    kurzantwort:
+      "Eigentümer müssen Bäume auf ihrem Grundstück regelmäßig auf Schäden kontrollieren lassen, üblich ist eine Sichtkontrolle ein- bis zweimal im Jahr, belaubt und unbelaubt. In München braucht das Fällen vieler Bäume eine Genehmigung nach der Baumschutzverordnung. Starke Rückschnitte und Fällungen sind vom 1. März bis 30. September grundsätzlich verboten (§ 39 Bundesnaturschutzgesetz).",
+    lesezeitMin: 4,
+    aktualisiert: "2026-11-01",
+    abschnitte: [
+      {
+        id: "kontrolle",
+        titel: "Regelmäßige Kontrolle",
+        bloecke: [
+          {
+            typ: "text",
+            text: "Fällt ein Ast auf ein Auto oder einen Passanten, prüfen Gerichte, ob der Baum ordentlich kontrolliert wurde. Üblich ist eine Sichtkontrolle vom Boden aus durch eine sachkundige Person, angelehnt an die Baumkontrollrichtlinie der FLL. Bei Auffälligkeiten folgt eine eingehende Untersuchung.",
+          },
+          {
+            typ: "liste",
+            punkte: [
+              "Totholz und abgebrochene Äste",
+              "Pilzbefall an Stamm und Wurzeln",
+              "Risse, Höhlen, Schieflage",
+              "Anhebung des Bodens im Wurzelbereich",
+            ],
+          },
+        ],
+      },
+      {
+        id: "faellung",
+        titel: "Fällen und Schneiden in München",
+        bloecke: [
+          {
+            typ: "tabelle",
+            kopf: ["Thema", "Regel"],
+            zeilen: [
+              ["Fällgenehmigung", "für geschützte Bäume nach der Münchner Baumschutzverordnung, vor allem ab einem Stammumfang von 80 cm in 1 m Höhe"],
+              ["Schnittzeiten", "1. März bis 30. September keine Fällung und keine starken Rückschnitte; schonende Pflegeschnitte erlaubt"],
+              ["Gefahr im Verzug", "akute Gefahr darf sofort beseitigt werden, danach der Behörde melden und dokumentieren"],
+            ],
+          },
+          {
+            typ: "hinweis",
+            text: "Vor jeder Fällung bei der Unteren Naturschutzbehörde der Stadt nachfragen. Ungenehmigte Fällungen können Bußgelder und Ersatzpflanzungen nach sich ziehen.",
+          },
+        ],
+      },
+      {
+        id: "kosten",
+        titel: "Kosten",
+        bloecke: [
+          {
+            typ: "text",
+            text: "Laufende Baumpflege gehört zur Gartenpflege und ist umlagefähig (§ 2 Nr. 10 Betriebskostenverordnung). Ob die Kosten einer Fällung umgelegt werden dürfen, ist umstritten und hängt vom Einzelfall ab.",
+          },
+        ],
+      },
+    ],
+    faq: [
+      {
+        frage: "Wer haftet, wenn ein Baum bei Sturm umstürzt?",
+        antwort: "Bei einem gesunden, regelmäßig kontrollierten Baum gilt ein Sturmschaden meist als höhere Gewalt. Haftung droht, wenn Schäden erkennbar waren und nicht gehandelt wurde.",
+      },
+      {
+        frage: "Wer kontrolliert die Bäume in der WEG?",
+        antwort: "Die Verwaltung beauftragt die Kontrolle für die Gemeinschaft. Die Protokolle sollten aufbewahrt werden, sie sind im Schadensfall der wichtigste Nachweis.",
+      },
+    ],
+    verwandt: ["winterdienst-muenchen", "pruefpflichten-mehrfamilienhaus"],
+    anfrage: { text: "teo lässt Ihre Bäume kontrollieren, klärt Genehmigungen und organisiert Pflege und Fällung." },
   },
 ];
 
