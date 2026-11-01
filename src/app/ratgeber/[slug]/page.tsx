@@ -6,6 +6,7 @@ import { OG_IMAGE } from "@/lib/config";
 import { ratgeberDataForSlug } from "@/lib/ratgeber/data";
 import { istTeo, MARKE_WEBSITE_URL } from "@/lib/marke";
 import { RATGEBER } from "@/lib/routes";
+import { isStagingDeploy } from "@/lib/staging";
 import {
   articleSchema,
   breadcrumbSchema,
@@ -31,6 +32,8 @@ export async function generateMetadata({ params }: PageProps) {
       title: a.metaTitel,
       description: a.beschreibung,
       alternates: { canonical },
+      // TEO-Layout ist standardmäßig noindex (Portal) — Ratgeber-Artikel sollen gefunden werden
+      robots: isStagingDeploy() ? { index: false, follow: false } : { index: true, follow: true },
       openGraph: { type: "article", title: a.titel, description: a.beschreibung, url: canonical },
     };
   }

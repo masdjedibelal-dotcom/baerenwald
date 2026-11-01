@@ -3,6 +3,7 @@ import Link from "next/link";
 import { PageLayout } from "@/components/layout/PageLayout";
 import { istTeo, MARKE_WEBSITE_URL } from "@/lib/marke";
 import { RATGEBER, ratgeberHref } from "@/lib/routes";
+import { isStagingDeploy } from "@/lib/staging";
 import { TeoRatgeberUebersicht } from "@/teo/ratgeber/TeoRatgeber";
 
 export const metadata = istTeo
@@ -11,6 +12,8 @@ export const metadata = istTeo
       description:
         "Prüffristen, Wasserschaden, Rauchwarnmelder, Winterdienst und Sanierung in der WEG: kurze, verlässliche Antworten für Verwaltungen und Eigentümer.",
       alternates: { canonical: `${MARKE_WEBSITE_URL}/ratgeber` },
+      // TEO-Layout ist standardmäßig noindex (Portal) — der Ratgeber soll gefunden werden
+      robots: isStagingDeploy() ? { index: false, follow: false } : { index: true, follow: true },
     }
   : {
       title: "Ratgeber — Kosten & Ablauf | Bärenwald München",
