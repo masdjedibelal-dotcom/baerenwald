@@ -33136,6 +33136,18 @@ button.abschlagsplan-zeile__del:hover {
   gap: 4px;
   margin-top: 6px;
   width: 100%;
+  flex-basis: 100%;
+}
+
+/* Handy: Name volle Breite, Gewerke-Pills in eigener Zeile darunter */
+
+.vg-row--kontakt > .vg-vorgang {
+  flex-wrap: wrap;
+  row-gap: 0;
+}
+
+.vg-row--kontakt > .vg-vorgang .t {
+  flex: 1 1 0;
 }
 
 /* Dokumente (05.10.2026): flache Gruppen + Listenzeilen statt Karten in Karten — auch mobil */
@@ -34742,4 +34754,30 @@ button.dok-gruppe__kopf {
   display: flex;
   justify-content: flex-end;
   margin-top: 8px;
+}
+
+/* Servus TEO: Knöpfe wie auf der Website — rund, Hauptknopf Navy */
+
+:root[data-marke='teo'] .btn,
+:root[data-marke='teo'] .btn.sm {
+  border-radius: 999px;
+}
+
+:root[data-marke='teo'] .btn.primary {
+  background: var(--green-dark);
+  border-color: var(--green-dark);
+}
+
+:root[data-marke='teo'] .btn.primary:hover {
+  background: #13325c;
+  border-color: #13325c;
+}
+
+:root[data-marke='teo'] .crm-login__submit {
+  border-radius: 999px;
+  background: var(--green-dark);
+}
+
+:root[data-marke='teo'] .crm-login__submit:hover:not(:disabled) {
+  background: #13325c;
 }

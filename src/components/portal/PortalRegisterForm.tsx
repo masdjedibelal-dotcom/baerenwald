@@ -293,6 +293,7 @@ export function PortalRegisterForm({
               return (
                 <PortalButton
                   variant="primary"
+                  action={false}
                   key={opt.value}
                   type="button"
                   onClick={() => {

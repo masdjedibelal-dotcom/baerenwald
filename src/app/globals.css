@@ -7093,3 +7093,43 @@ select {
   background: #0b1f3a;
   color: #fff;
 }
+
+/* Servus TEO: Anmeldung/Registrierung wie Website (heller Grund, Farbformen, eine Karte) */
+:root[data-marke="teo"] .portal-auth-page--teo {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  gap: 24px;
+  background: #fbfaf8;
+}
+.pa-teo-grund { position: fixed; inset: 0; z-index: -1; pointer-events: none; overflow: hidden; }
+.pa-teo-grund span { position: absolute; border-radius: 50%; filter: blur(80px); }
+.pa-teo-grund__blau { width: 46vmax; height: 46vmax; left: -16vmax; top: -14vmax; background: radial-gradient(circle at 40% 40%, #9cc0ea, transparent 70%); opacity: 0.55; }
+.pa-teo-grund__gold { width: 36vmax; height: 36vmax; right: -12vmax; top: 18vh; background: radial-gradient(circle, #f6cf73, transparent 70%); opacity: 0.5; }
+.pa-teo-grund__rot { width: 30vmax; height: 30vmax; left: 18vw; bottom: -16vmax; background: radial-gradient(circle, #f2a28f, transparent 70%); opacity: 0.4; }
+/* gleicher Ausschnitt wie .teo-logo der Website, 1,4-fach */
+.pa-teo-logo { position: relative; display: inline-block; width: 90px; height: 38px; overflow: hidden; flex-shrink: 0; }
+.pa-teo-logo img { position: absolute; width: 126px; height: 126px; max-width: none; left: -17px; top: -46px; }
+:root[data-marke="teo"] .pa-teo-karte {
+  max-width: 480px;
+  min-height: 0;
+  border: 0;
+  border-radius: 28px;
+  background: rgba(255, 255, 255, 0.9);
+  backdrop-filter: blur(16px);
+  box-shadow: 0 30px 80px -40px rgba(11, 31, 58, 0.35);
+}
+:root[data-marke="teo"] .pa-teo-karte .portal-auth-body { background: transparent; padding: 36px 32px; }
+@media (max-width: 560px) {
+  :root[data-marke="teo"] .pa-teo-karte .portal-auth-body { padding: 28px 20px; }
+}
+:root[data-marke="teo"] .portal-auth-heading { font-family: var(--font-sans); font-weight: 800; font-size: 30px; letter-spacing: -0.03em; color: #0b1f3a; }
+:root[data-marke="teo"] .portal-auth-sub { font-size: 15px; color: #4a5d75; }
+:root[data-marke="teo"] .portal-auth-input { border-radius: 14px; border-color: #dce4ee; padding-block: 13px; }
+:root[data-marke="teo"] .portal-auth-btn:not(.border) { border-radius: 999px; background: #0b1f3a; padding-block: 14px; font-weight: 700; }
+:root[data-marke="teo"] .portal-auth-btn { border-radius: 999px; }
+
+/* Servus TEO: Portal-Knöpfe wie Website — rund, Hauptknopf Navy */
+:root[data-marke="teo"] .portal-ui .portal-action-btn { border-radius: 999px; }
+:root[data-marke="teo"] .portal-ui .portal-action-btn--primary { background: #0b1f3a; }
+:root[data-marke="teo"] .portal-ui .portal-action-btn--primary:hover:not(:disabled) { background: #13325c; }

@@ -7,6 +7,7 @@ import { PortalLegalFooter } from "@/components/shared/PortalLegalFooter";
 import { applyBrandStyle } from "@/lib/portal2/apply-brand";
 import type { AuthPortalRole } from "@/lib/portal2/auth";
 import { authWL } from "@/lib/portal2/auth";
+import { istTeo, MARKE } from "@/lib/marke";
 import { cn } from "@/lib/utils";
 
 type Props = {
@@ -45,6 +46,27 @@ export function PortalAuthFrame({
         soft: orgSoft,
       })
     : undefined;
+
+  /* Servus TEO: wie Website und Anfrage — heller Grund mit Farbformen, Logo einmal, eine Karte */
+  if (istTeo) {
+    return (
+      <div className={cn("portal-ui portal-auth-page portal-auth-page--teo", className)}>
+        <div className="pa-teo-grund" aria-hidden="true">
+          <span className="pa-teo-grund__blau" />
+          <span className="pa-teo-grund__gold" />
+          <span className="pa-teo-grund__rot" />
+        </div>
+        <a href="/" className="pa-teo-logo" aria-label={MARKE.nameLang}>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/brand/teo/logo-mark-green.png" alt="" />
+        </a>
+        <div className="portal-auth-frame pa-teo-karte">
+          <div className="portal-auth-body">{children}</div>
+        </div>
+        <PortalLegalFooter variant={legalVariant} className="portal-auth-legal" showServiceBy={false} />
+      </div>
+    );
+  }
 
   return (
     <div
