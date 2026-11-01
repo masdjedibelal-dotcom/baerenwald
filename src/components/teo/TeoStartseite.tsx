@@ -50,7 +50,7 @@ const HEUTE = [
 
 const MIT_TEO = [
   "Eine Meldung genügt, wir übernehmen",
-  "Handwerker und Termin organisieren wir",
+  "Wir erledigen es, Sie suchen keinen Handwerker",
   "Den Stand sehen Sie jederzeit im Portal",
   "Abnahme mit Fotos, eine Rechnung von uns",
   "Wartungen planen wir für Sie",
@@ -80,7 +80,7 @@ const UEBERNEHMEN = [
 const SO_MACHEN_WIR_ES = [
   { icon: Network, titel: "Meisterbetriebe aus München", text: "Geprüft, für alle Gewerke." },
   { icon: Smartphone, titel: "Das Portal", text: "Meldung, Stand, Fotos und Rechnung an einem Ort." },
-  { icon: Headset, titel: "Ihr teo-Team", text: "Koordiniert, prüft und haftet." },
+  { icon: Headset, titel: "Ihr teo-Team", text: "Steht für jeden Auftrag ein und haftet." },
 ] as const;
 
 const DAVON_HABEN = [
@@ -118,7 +118,7 @@ export const TEO_FAQ = [
   {
     frage: "Was macht teo genau?",
     antwort:
-      "Wir organisieren alles Technische an Ihren Häusern: Schäden, Wartungen, Hausmeister, Reinigung und Sanierungen. Mit geprüften Meisterbetrieben, einer Rechnung und einem Portal für alle.",
+      "Bei teo beauftragen Sie alles Technische an Ihren Häusern: Schäden, Wartungen, Hausmeister, Reinigung und Sanierungen. teo erledigt es, mit geprüften Meisterbetrieben, einer Rechnung und einem Portal für alle.",
   },
   {
     frage: "Was kostet teo?",
@@ -127,7 +127,7 @@ export const TEO_FAQ = [
   {
     frage: "Ist teo eine Software?",
     antwort:
-      "Wir sind Ihr Dienstleister für alles Technische. Wir organisieren, beauftragen und prüfen. Das Portal ist dabei, damit Sie jederzeit den Stand sehen.",
+      "Nein. Wir sind Ihr Dienstleister für alles Technische. Sie beauftragen teo, und teo erledigt den Auftrag. Das Portal ist dabei, damit Sie jederzeit den Stand sehen.",
   },
   {
     frage: "Was wird aus unserem Hausmeister?",
@@ -191,7 +191,7 @@ export function TeoStartseite() {
               Ein Partner für <span className="ts-hero__ganz">alles Technische</span>
             </span> <span className="ts-hero__zeile">in Ihren Häusern.</span>
           </h1>
-          <p className="ts-hero__satz">teo organisiert Reparaturen, Wartungen und Hausmeisterdienste für Wohnhäuser in München. Mit geprüften Meisterbetrieben und einer Rechnung.</p>
+          <p className="ts-hero__satz">Bei teo buchen Sie Reparaturen, Wartungen und Hausmeisterdienste für Wohnhäuser in München. teo erledigt sie, mit geprüften Meisterbetrieben und einer Rechnung.</p>
           <div className="teo-aktionen ts-zentriert">
             <Link href={TEO_LINK_ANFRAGE} className="teo-btn">
               Anfrage stellen
