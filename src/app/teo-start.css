@@ -1749,3 +1749,7 @@
   .ts-schritte__lauf { display: none; }
   .ts-beteiligte__karten li, .ts-beteiligte__foto img, .ts-einstieg__icon { transition: none; }
 }
+
+/* Ratgeber-Auszug auf der Startseite */
+.ts-ratgeber { margin-top: 40px; }
+.ts-ratgeber__alle { margin-top: 28px; text-align: center; }

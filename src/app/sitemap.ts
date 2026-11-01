@@ -3,13 +3,23 @@ import handwerkerContent from "@/data/handwerker-content.json";
 import { LEISTUNGEN, RATGEBER, leistungHref, ratgeberHref } from "@/lib/routes";
 import type { HandwerkerContentItem } from "@/lib/handwerker-types";
 import { MARKE } from "@/lib/marke";
+import { ratgeberPfad, TEO_RATGEBER } from "@/teo/ratgeber/artikel";
 
 const BASE = MARKE.portalUrl;
 
 export default function sitemap(): MetadataRoute.Sitemap {
-  // Servus TEO: nur die Startseite (keine Leistungs-/Ratgeber-Seiten)
+  // Servus TEO: Startseite und eigener Ratgeber (keine Bärenwald-Leistungsseiten)
   if (!MARKE.marketingSeite) {
-    return [{ url: BASE, lastModified: new Date(), changeFrequency: "monthly", priority: 1.0 }];
+    return [
+      { url: BASE, lastModified: new Date(), changeFrequency: "monthly", priority: 1.0 },
+      { url: `${BASE}/ratgeber`, lastModified: new Date(), changeFrequency: "weekly", priority: 0.8 },
+      ...TEO_RATGEBER.map((a) => ({
+        url: `${BASE}${ratgeberPfad(a.slug)}`,
+        lastModified: new Date(`${a.aktualisiert}T12:00:00`),
+        changeFrequency: "monthly" as const,
+        priority: 0.7,
+      })),
+    ];
   }
   return [
     // Startseite

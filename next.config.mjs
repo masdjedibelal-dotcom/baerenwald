@@ -77,11 +77,11 @@ const nextConfig = {
         ? "https://staging--baerenwald-backend.netlify.app"
         : "https://crm.baerenwaldmuenchen.de")
     ).replace(/\/$/, "");
-    // Servus TEO (NEXT_PUBLIC_MARKE=teo): eigene Startseite, Rechner (+ Anfrage) und Rechtstexte —
+    // Servus TEO (NEXT_PUBLIC_MARKE=teo): eigene Startseite, Rechner (+ Anfrage), Ratgeber und Rechtstexte —
     // die übrigen Bärenwald-Marketing-Seiten gibt es nicht, sie führen ins Portal
     const teo = (process.env.NEXT_PUBLIC_MARKE || "").trim().toLowerCase() === "teo";
     const teoRedirects = teo
-      ? ["/leistungen", "/ratgeber", "/handwerker-muenchen", "/kontakt", "/ueber-uns", "/gpt", "/galerie"].flatMap((p) => [
+      ? ["/leistungen", "/handwerker-muenchen", "/kontakt", "/ueber-uns", "/gpt", "/galerie"].flatMap((p) => [
           { source: p, destination: "/portal", permanent: false },
           { source: `${p}/:path*`, destination: "/portal", permanent: false },
         ])

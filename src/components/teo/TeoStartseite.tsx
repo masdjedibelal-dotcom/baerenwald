@@ -32,6 +32,8 @@ import { TEO_LINK_ANFRAGE, TeoLogo, TeoRahmen } from "@/components/teo/TeoRahmen
 import { TeoSchritte } from "@/components/teo/TeoSchritte";
 import { TEO_USPS } from "@/components/teo/teo-usps";
 import { TEO_SITUATIONEN } from "@/lib/funnel/teo-anfrage";
+import { RATGEBER_PFAD, ratgeberArtikel, type RatgeberArtikel } from "@/teo/ratgeber/artikel";
+import { TeoRatgeberKarte } from "@/teo/ratgeber/TeoRatgeber";
 import { MARKE } from "@/lib/marke";
 
 import "@/app/teo-start.css";
@@ -123,6 +125,11 @@ const SITUATION_ICON: Record<string, LucideIcon> = {
   winter: Snowflake,
   abgeben: Building,
 };
+
+/** Drei Ratgeber-Beiträge auf der Startseite (interne Links für Google) */
+const RATGEBER_START = ["pruefpflichten-mehrfamilienhaus", "wasserschaden-mehrfamilienhaus", "sanierung-weg-vergleichsangebote"]
+  .map(ratgeberArtikel)
+  .filter((a): a is RatgeberArtikel => Boolean(a));
 
 export const TEO_FAQ = [
   {
@@ -423,6 +430,24 @@ export function TeoStartseite() {
               </li>
             </ul>
           </div>
+        </div>
+      </section>
+
+      <section className="ts-abschnitt ts-abschnitt--warm" id="ratgeber">
+        <div className="teo-innen">
+          <h2 className="ts-zentriert-text ts-zweizeilig">
+            <span>Wissen für Verwaltungen.</span> <span className="ts-blau">Kurz und verlässlich.</span>
+          </h2>
+          <div className="tr-raster ts-ratgeber">
+            {RATGEBER_START.map((a) => (
+              <TeoRatgeberKarte key={a.slug} a={a} />
+            ))}
+          </div>
+          <p className="ts-ratgeber__alle">
+            <Link href={RATGEBER_PFAD} className="teo-btn teo-btn--rand">
+              Alle Beiträge
+            </Link>
+          </p>
         </div>
       </section>
 

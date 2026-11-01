@@ -4,20 +4,36 @@ import { PageLayout } from "@/components/layout/PageLayout";
 import { RatgeberPage } from "@/components/ratgeber/RatgeberPage";
 import { OG_IMAGE } from "@/lib/config";
 import { ratgeberDataForSlug } from "@/lib/ratgeber/data";
+import { istTeo, MARKE_WEBSITE_URL } from "@/lib/marke";
 import { RATGEBER } from "@/lib/routes";
 import {
   articleSchema,
   breadcrumbSchema,
   faqSchema,
 } from "@/lib/schema";
+import { ratgeberArtikel, ratgeberPfad, TEO_RATGEBER } from "@/teo/ratgeber/artikel";
+import { TeoRatgeberArtikel } from "@/teo/ratgeber/TeoRatgeber";
 
 type PageProps = { params: { slug: string } };
 
 export function generateStaticParams() {
+  if (istTeo) return TEO_RATGEBER.map((a) => ({ slug: a.slug }));
   return RATGEBER.map((r) => ({ slug: r.slug }));
 }
 
 export async function generateMetadata({ params }: PageProps) {
+  // Servus TEO: eigener Ratgeber für Verwaltungen (src/teo/ratgeber)
+  if (istTeo) {
+    const a = ratgeberArtikel(params.slug);
+    if (!a) return { title: "Ratgeber" };
+    const canonical = `${MARKE_WEBSITE_URL}${ratgeberPfad(a.slug)}`;
+    return {
+      title: a.metaTitel,
+      description: a.beschreibung,
+      alternates: { canonical },
+      openGraph: { type: "article", title: a.titel, description: a.beschreibung, url: canonical },
+    };
+  }
   const data = ratgeberDataForSlug(params.slug);
   if (!data) {
     return { title: "Ratgeber — Bärenwald" };
@@ -50,6 +66,11 @@ export async function generateMetadata({ params }: PageProps) {
 }
 
 export default function RatgeberDetailPage({ params }: PageProps) {
+  if (istTeo) {
+    const a = ratgeberArtikel(params.slug);
+    if (!a) notFound();
+    return <TeoRatgeberArtikel a={a} />;
+  }
   const data = ratgeberDataForSlug(params.slug);
   if (!data) notFound();
 

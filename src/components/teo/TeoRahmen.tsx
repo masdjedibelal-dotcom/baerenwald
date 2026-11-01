@@ -33,6 +33,7 @@ function TeoKopf() {
           <Link href="/#funktionen">Vorteile</Link>
           <Link href="/#warum">Warum teo</Link>
           <Link href="/#faq">Fragen</Link>
+          <Link href="/ratgeber">Ratgeber</Link>
         </nav>
         <div className="teo-kopf__aktionen">
           <Link href="/portal/login" className="teo-kopf__login">
@@ -65,6 +66,7 @@ function TeoFuss() {
           <Link href="/#loesung">So arbeiten wir</Link>
           <Link href="/#warum">Warum teo</Link>
           <Link href="/#faq">Fragen</Link>
+          <Link href="/ratgeber">Ratgeber</Link>
           <Link href={TEO_LINK_ANFRAGE}>Anfrage stellen</Link>
           <Link href="/portal/login">{MARKE.portalName} anmelden</Link>
         </nav>

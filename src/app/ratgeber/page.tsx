@@ -1,15 +1,25 @@
 import Link from "next/link";
 
 import { PageLayout } from "@/components/layout/PageLayout";
+import { istTeo, MARKE_WEBSITE_URL } from "@/lib/marke";
 import { RATGEBER, ratgeberHref } from "@/lib/routes";
+import { TeoRatgeberUebersicht } from "@/teo/ratgeber/TeoRatgeber";
 
-export const metadata = {
-  title: "Ratgeber — Kosten & Ablauf | Bärenwald München",
-  description:
-    "Kosten, Ablauf und Tipps zu Renovierung, Bad, Boden, Heizung, Garten und mehr — speziell für München.",
-};
+export const metadata = istTeo
+  ? {
+      title: "Ratgeber für Hausverwaltungen und WEG in München",
+      description:
+        "Prüffristen, Wasserschaden, Rauchwarnmelder, Winterdienst und Sanierung in der WEG: kurze, verlässliche Antworten für Verwaltungen und Eigentümer.",
+      alternates: { canonical: `${MARKE_WEBSITE_URL}/ratgeber` },
+    }
+  : {
+      title: "Ratgeber — Kosten & Ablauf | Bärenwald München",
+      description:
+        "Kosten, Ablauf und Tipps zu Renovierung, Bad, Boden, Heizung, Garten und mehr — speziell für München.",
+    };
 
 export default function RatgeberIndexPage() {
+  if (istTeo) return <TeoRatgeberUebersicht />;
   return (
     <PageLayout>
       <div className="baerenwald-landing">
