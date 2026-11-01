@@ -90,27 +90,18 @@ const DAVON_HABEN = [
   "Kosten je Haus im Blick",
 ] as const;
 
-/** Kosten-Beispiel (Vorbild Lessen „Total cost to maintain“): gleiche Rechnung, anderer Aufwand. */
-const RECHNUNG = [
-  ["Leckortung", "380,00 €"],
-  ["Rohr erneuert", "640,00 €"],
-  ["Trocknung, 10 Tage", "1.460,00 €"],
-] as const;
-
-const OHNE_TEO = ["9 Telefonate", "3 Rechnungen von 3 Betrieben", "2 verschobene Termine", "Unterlagen für die Versicherung"] as const;
-
-const MIT_TEO_KOSTEN = [
-  "Kein Aufschlag auf die Rechnung",
-  "Eine Rechnung, wir sind Vertragspartner",
-  "Unterlagen für die Versicherung fertig",
-  "Portal inklusive",
+/** Was teo ist: Handwerksbetrieb und Generalunternehmer, digital für alle Beteiligten. */
+const WAS_TEO_IST = [
+  { icon: Hammer, titel: "Eigener Handwerksbetrieb", text: "Wir führen selbst aus und mit geprüften Meisterbetrieben aus München." },
+  { icon: ShieldCheck, titel: "Ihr Generalunternehmer", text: "Sie beauftragen teo. Wir sind Vertragspartner und haften für die Arbeit." },
+  { icon: Smartphone, titel: "Digital für alle", text: "Verwaltung, Mieter, Eigentümer und Handwerker in einem Vorgang. Weniger Telefonate, kein Leerlauf." },
 ] as const;
 
 /** Alle Beteiligten (Vorbild Lessen „Every party connected“): Foto je Rolle, darunter teo als Klammer. */
 const BETEILIGTE = [
   { foto: "rolle-verwaltung", quelle: "verwaltung", icon: Briefcase, titel: "Verwaltung", text: "Alle Häuser auf einer Seite. Freigeben nur, wenn es über Ihre Grenze geht.", alt: "Verwalterin am Laptop" },
-  { foto: "rolle-mieter", quelle: null, icon: KeyRound, titel: "Mieter & Hausmeister", text: "Mieter melden per QR-Code. Hausmeister und Putzdienst haken ihre Aufgaben im Portal ab.", alt: "Mieterin meldet einen Schaden mit dem Handy" },
-  { foto: "rolle-handwerker", quelle: "handwerker", icon: Wrench, titel: "Handwerker", text: "Auftrag, Termin und Fotos direkt auf dem Handy.", alt: "Handwerker an der Heizung" },
+  { foto: "rolle-mieter", quelle: null, icon: KeyRound, titel: "Mieter", text: "Melden per QR-Code im Treppenhaus, mit Foto. Ohne Konto.", alt: "Mieterin meldet einen Schaden mit dem Handy" },
+  { foto: "rolle-handwerker", quelle: "handwerker", icon: Wrench, titel: "Handwerker & Hausmeister", text: "Auftrag, Termin und Fotos auf dem Handy. Hausmeister haken ihre Rundgänge ab.", alt: "Handwerker an der Heizung" },
   { foto: "rolle-eigentuemer", quelle: null, icon: Building, titel: "Eigentümer", text: "Sehen, was im Haus passiert, mit den Kosten je Haus.", alt: "Eigentümer vor seinem Haus" },
 ] as const;
 
@@ -127,7 +118,7 @@ export const TEO_FAQ = [
   {
     frage: "Ist teo eine Software?",
     antwort:
-      "Nein. Wir sind Ihr Dienstleister für alles Technische. Sie beauftragen teo, und teo erledigt den Auftrag. Das Portal ist dabei, damit Sie jederzeit den Stand sehen.",
+      "Nein. teo ist ein Handwerksbetrieb und Ihr Generalunternehmer. Wir führen selbst aus und mit Partnerbetrieben. Das Portal ist dabei, damit alle Beteiligten denselben Stand sehen.",
   },
   {
     frage: "Was wird aus unserem Hausmeister?",
@@ -155,27 +146,6 @@ export const TEO_FAQ = [
   },
 ] as const;
 
-function Rechnung({ von }: { von: string }) {
-  return (
-    <div className="ts-kosten__rechnung" aria-hidden="true">
-      <div className="ts-kosten__rkopf">
-        <b>Rechnung</b>
-        <small>Wasserschaden Keller · {von}</small>
-      </div>
-      {RECHNUNG.map(([posten, betrag]) => (
-        <div key={posten} className="ts-kosten__posten">
-          <span>{posten}</span>
-          <span>{betrag}</span>
-        </div>
-      ))}
-      <div className="ts-kosten__summe">
-        <span>Summe</span>
-        <span>2.480,00 €</span>
-      </div>
-    </div>
-  );
-}
-
 export function TeoStartseite() {
   return (
     <TeoRahmen>
@@ -191,7 +161,7 @@ export function TeoStartseite() {
               Ein Partner für <span className="ts-hero__ganz">alles Technische</span>
             </span> <span className="ts-hero__zeile">in Ihren Häusern.</span>
           </h1>
-          <p className="ts-hero__satz">Bei teo buchen Sie Reparaturen, Wartungen und Hausmeisterdienste für Wohnhäuser in München. teo erledigt sie, mit geprüften Meisterbetrieben und einer Rechnung.</p>
+          <p className="ts-hero__satz">Bei teo buchen Sie Reparaturen, Wartungen und Hausmeisterdienste für Wohnhäuser in München. Wir führen selbst aus und mit geprüften Meisterbetrieben, mit einer Rechnung.</p>
           <div className="teo-aktionen ts-zentriert">
             <Link href={TEO_LINK_ANFRAGE} className="teo-btn">
               Anfrage stellen
@@ -351,44 +321,19 @@ export function TeoStartseite() {
       <section className="ts-abschnitt" id="warum">
         <div className="teo-innen">
           <h2 className="ts-zentriert-text ts-zweizeilig">
-            <span>Die Rechnung ist nicht das Teure.</span> <span className="ts-blau">Die Zeit drumherum schon.</span>
+            <span>Ein Handwerksbetrieb.</span> <span className="ts-blau">Digital gebaut.</span>
           </h2>
-          <div className="ts-kosten">
-            <div className="ts-kosten__karte">
-              <h3>Ohne teo</h3>
-              <Rechnung von="3 Betriebe" />
-              <ul>
-                {OHNE_TEO.map((t) => (
-                  <li key={t}>
-                    <span className="ts-kosten__zeichen ts-kosten__zeichen--plus" aria-hidden="true">
-                      +
-                    </span>
-                    {t}
-                  </li>
-                ))}
-              </ul>
-              <p className="ts-kosten__aufwand">
-                Ihr Aufwand <b>etwa 6 Stunden</b>
-              </p>
-            </div>
-            <div className="ts-kosten__karte ts-kosten__karte--teo">
-              <h3>Mit teo</h3>
-              <Rechnung von="teo" />
-              <ul>
-                {MIT_TEO_KOSTEN.map((t) => (
-                  <li key={t}>
-                    <span className="ts-kosten__zeichen" aria-hidden="true">
-                      <Check size={13} strokeWidth={3} />
-                    </span>
-                    {t}
-                  </li>
-                ))}
-              </ul>
-              <p className="ts-kosten__aufwand">
-                Ihr Aufwand <b>2 Minuten</b>
-              </p>
-            </div>
-          </div>
+          <ul className="ts-icons ts-icons--drei ts-icons--blau">
+            {WAS_TEO_IST.map((f) => (
+              <li key={f.titel}>
+                <span className="ts-icons__icon">
+                  <f.icon size={24} strokeWidth={1.6} />
+                </span>
+                <h3>{f.titel}</h3>
+                <p>{f.text}</p>
+              </li>
+            ))}
+          </ul>
           <p className="ts-kosten__zeile">Software allein repariert nichts. Handwerker allein koordinieren nicht. teo macht beides.</p>
         </div>
       </section>

@@ -36,7 +36,7 @@ export const TEO_SITUATIONEN: TeoSituation[] = [
   { id: "heizung", label: "Heizung fällt aus", fall: "schaden", schadenArten: ["heizung"] },
   { id: "wasser", label: "Wasser im Keller", fall: "schaden", schadenArten: ["wasser"] },
   { id: "strom", label: "Strom oder Klingel defekt", fall: "schaden", schadenArten: ["strom"] },
-  { id: "angebote", label: "Wir brauchen ein Angebot für die Versammlung", fall: "massnahme" },
+  { id: "angebote", label: "Vergleichsangebot Sanierung", fall: "massnahme" },
   { id: "pruefungen", label: "Prüffristen laufen ab", fall: "betrieb", leistungen: ["wartung"] },
   { id: "hausmeister", label: "Unser Hausmeister fällt weg", fall: "betrieb", leistungen: ["hausmeister"] },
   { id: "winter", label: "Winterdienst fehlt", fall: "betrieb", leistungen: ["winter"] },

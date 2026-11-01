@@ -24,9 +24,9 @@ const SCHRITTE: Schritt[] = [
   {
     id: "pruefung",
     reiter: "Prüfung",
-    titel: "Geprüft, bevor jemand losfährt.",
-    text: "Wir klären, was es ist und wie dringend. Bis zu Ihrer Wertgrenze geht es direkt los, darüber fragen wir Sie.",
-    karte: { icon: Search, status: "Geprüft", gross: "Heute noch", klein: "Unter Ihrer Wertgrenze, direkt los" },
+    titel: "Geprüft nach Ihren Regeln.",
+    text: "Sie legen einmal fest, was ohne Rückfrage losgehen darf, etwa bis 500 € je Haus. Alles darüber landet bei Ihnen zur Freigabe.",
+    karte: { icon: Search, status: "Automatisch", gross: "Freigegeben", klein: "Unter Ihrer Grenze von 500 €" },
   },
   {
     id: "beauftragung",
@@ -46,7 +46,7 @@ const SCHRITTE: Schritt[] = [
     id: "abnahme",
     reiter: "Abnahme & Rechnung",
     titel: "Abgenommen und abgerechnet.",
-    text: "Wir nehmen die Arbeit ab und stellen Ihnen eine Rechnung. Die Kosten sehen Sie im Budget des Hauses.",
+    text: "Wir nehmen die Arbeit ab. Sie bekommen eine Rechnung von uns, mit Fotos und Abnahme im Portal.",
     karte: { icon: ClipboardCheck, status: "Abgeschlossen", gross: "286,40 €", klein: "Eine Rechnung von teo" },
   },
 ];
