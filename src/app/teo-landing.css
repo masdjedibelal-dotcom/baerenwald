@@ -720,3 +720,14 @@ html.teo-gescrollt .teo-kopf {
   box-shadow: 0 10px 30px -22px rgba(11, 31, 58, 0.4);
 }
 html.teo-gescrollt .teo-kopf__innen { padding-block: 6px; }
+
+/* Fußzeile am Handy kurz: Logo, Rechtliches in einer Zeile, Copyright */
+@media (max-width: 839px) {
+  .teo-fuss { padding-block: 32px calc(96px + env(safe-area-inset-bottom, 0px)); }
+  .teo-fuss__innen { gap: 18px; }
+  .teo-fuss__satz,
+  .teo-fuss__adresse,
+  .teo-fuss__links--seite { display: none; }
+  .teo-fuss__links--recht { flex-direction: row; flex-wrap: wrap; gap: 8px 18px; font-size: 14px; }
+  .teo-fuss__copy { margin-top: 16px !important; }
+}

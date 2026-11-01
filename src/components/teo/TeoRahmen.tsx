@@ -54,21 +54,21 @@ function TeoFuss() {
       <div className="teo-fuss__innen">
         <div className="teo-fuss__marke">
           <TeoLogo hell />
-          <p>Technische Betreuung für Verwaltungen und Bestandshalter in München.</p>
+          <p className="teo-fuss__satz">Technische Betreuung für Verwaltungen und Bestandshalter in München.</p>
           <p className="teo-fuss__adresse">
             {f.firmenname} · {f.strasse} {f.hausnummer} · {f.plz} {f.ort}
             <br />
             <a href={`mailto:${f.email}`}>{f.email}</a>
           </p>
         </div>
-        <nav className="teo-fuss__links" aria-label="Fußzeile">
+        <nav className="teo-fuss__links teo-fuss__links--seite" aria-label="Fußzeile">
           <Link href="/#loesung">So arbeiten wir</Link>
           <Link href="/#warum">Warum teo</Link>
           <Link href="/#faq">Fragen</Link>
           <Link href={TEO_LINK_ANFRAGE}>Anfrage stellen</Link>
           <Link href="/portal/login">{MARKE.portalName} anmelden</Link>
         </nav>
-        <nav className="teo-fuss__links" aria-label="Rechtliches">
+        <nav className="teo-fuss__links teo-fuss__links--recht" aria-label="Rechtliches">
           <Link href={MARKE.recht.impressum}>Impressum</Link>
           <Link href={MARKE.recht.datenschutz}>Datenschutz</Link>
           <Link href={MARKE.recht.agb}>AGB</Link>
