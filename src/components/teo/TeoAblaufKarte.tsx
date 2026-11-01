@@ -3,52 +3,13 @@
 import { useEffect, useState } from "react";
 import { Check, Droplets, Flame, type LucideIcon, Zap } from "lucide-react";
 
-type Fall = { icon: LucideIcon; nr: string; titel: string; ort: string; schritte: [string, string][] };
+type Fall = { icon: LucideIcon; nr: string; titel: string; ort: string; schritte: string[] };
 
 /** Beispiel-Vorgänge für die Hero-Karte: so läuft ein Fall bei teo durch (nur Optik). */
 const FAELLE: Fall[] = [
-  {
-    icon: Flame,
-    nr: "1042",
-    titel: "Heizung fällt aus",
-    ort: "Leopoldstr. 10 · WE 4",
-    schritte: [
-      ["Gemeldet per QR-Code, mit Foto", "07:12"],
-      ["Geprüft und Gewerk zugeordnet", "07:18"],
-      ["Heizungsbauer beauftragt", "07:31"],
-      ["Termin mit Mieter abgestimmt", "08:05"],
-      ["Repariert, 3 Fotos", "11:40"],
-      ["Abgenommen, Rechnung von teo", "14:10"],
-    ],
-  },
-  {
-    icon: Droplets,
-    nr: "1043",
-    titel: "Wasser im Keller",
-    ort: "Hohenzollernstr. 31",
-    schritte: [
-      ["Hausmeister meldet mit Foto", "06:48"],
-      ["Notdienst beauftragt", "06:55"],
-      ["Leck abgedichtet", "08:20"],
-      ["Trocknung geplant", "09:10"],
-      ["Abgenommen mit Fotos", "Fr 10:00"],
-      ["Rechnung von teo", "Fr 12:30"],
-    ],
-  },
-  {
-    icon: Zap,
-    nr: "1044",
-    titel: "Klingel defekt",
-    ort: "Belgradstr. 5",
-    schritte: [
-      ["Mieterin meldet online", "18:02"],
-      ["Unter Ihrer Wertgrenze, direkt los", "18:03"],
-      ["Elektriker beauftragt", "Mo 08:10"],
-      ["Termin abgestimmt", "Mo 08:40"],
-      ["Repariert", "Di 10:15"],
-      ["Abgenommen, Rechnung von teo", "Di 16:00"],
-    ],
-  },
+  { icon: Flame, nr: "1042", titel: "Heizung fällt aus", ort: "Leopoldstr. 10", schritte: ["Gemeldet mit Foto", "Heizungsbauer beauftragt", "Repariert", "Abgenommen"] },
+  { icon: Droplets, nr: "1043", titel: "Wasser im Keller", ort: "Hohenzollernstr. 31", schritte: ["Gemeldet mit Foto", "Notdienst beauftragt", "Leck abgedichtet", "Abgenommen"] },
+  { icon: Zap, nr: "1044", titel: "Klingel defekt", ort: "Belgradstr. 5", schritte: ["Gemeldet online", "Elektriker beauftragt", "Repariert", "Abgenommen"] },
 ];
 
 const TAKT_MS = 1100;
@@ -85,20 +46,17 @@ export function TeoAblaufKarte() {
         </span>
         <span className="ts-ablauf-karte__titel">
           <b>{fall.titel}</b>
-          <small>
-            #{fall.nr} · {fall.ort}
-          </small>
+          <small>{fall.ort}</small>
         </span>
         <span className={`ts-ablauf-karte__status ${fertig ? "ist-fertig" : ""}`}>{fertig ? "Erledigt" : "Bei teo"}</span>
       </div>
       <ol className="ts-ablauf-karte__schritte">
-        {fall.schritte.map(([text, zeit], i) => {
+        {fall.schritte.map((text, i) => {
           const zustand = i < stand - 1 || fertig ? "fertig" : i === stand - 1 ? "aktiv" : "offen";
           return (
             <li key={`${fall.nr}-${i}`} className={`ist-${zustand}`}>
               <span className="ts-ablauf-karte__punkt">{zustand === "fertig" ? <Check size={12} strokeWidth={3} /> : null}</span>
               <span className="ts-ablauf-karte__text">{text}</span>
-              <span className="ts-ablauf-karte__zeit">{zeit}</span>
             </li>
           );
         })}

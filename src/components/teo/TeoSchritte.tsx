@@ -1,15 +1,15 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Camera, Check, ClipboardCheck, type LucideIcon, QrCode, Search, Wrench } from "lucide-react";
+import { Camera, ClipboardCheck, type LucideIcon, QrCode, Search, Wrench } from "lucide-react";
 
-type Zeile = { label: string; wert: string; ok?: boolean };
 type Schritt = {
   id: string;
   reiter: string;
   titel: string;
   text: string;
-  karte: { icon: LucideIcon; titel: string; status: string; zeilen: Zeile[]; budget?: boolean };
+  /** Beispielkarte: eine Hauptaussage, eine kleine Zeile darunter */
+  karte: { icon: LucideIcon; status: string; gross: string; klein: string };
 };
 
 /** Die fünf Schritte eines Vorgangs, je mit einer kleinen Beispiel-Oberfläche (nur Optik). */
@@ -19,81 +19,35 @@ const SCHRITTE: Schritt[] = [
     reiter: "Meldung",
     titel: "Gemeldet in einer Minute.",
     text: "Mieter, Hausmeister oder Sie melden per QR-Code im Haus, im Portal oder per Mail. Mit Foto und Wohnung.",
-    karte: {
-      icon: QrCode,
-      titel: "Neue Meldung",
-      status: "Eingang",
-      zeilen: [
-        { label: "Haus", wert: "Leopoldstr. 10" },
-        { label: "Wohnung", wert: "WE 4, 2. OG" },
-        { label: "Was", wert: "Heizung kalt seit heute früh" },
-        { label: "Fotos", wert: "2 angehängt", ok: true },
-      ],
-    },
+    karte: { icon: QrCode, status: "Neu", gross: "Heizung kalt", klein: "Leopoldstr. 10 · mit Foto" },
   },
   {
     id: "pruefung",
     reiter: "Prüfung",
     titel: "Geprüft, bevor jemand losfährt.",
     text: "Wir klären, was es ist und wie dringend. Bis zu Ihrer Wertgrenze geht es direkt los, darüber fragen wir Sie.",
-    karte: {
-      icon: Search,
-      titel: "Heizung fällt aus",
-      status: "Geprüft",
-      zeilen: [
-        { label: "Gewerk", wert: "Heizung", ok: true },
-        { label: "Dringlichkeit", wert: "Heute", ok: true },
-        { label: "Wertgrenze", wert: "Unter 500 €, direkt los", ok: true },
-      ],
-    },
+    karte: { icon: Search, status: "Geprüft", gross: "Heute noch", klein: "Unter Ihrer Wertgrenze, direkt los" },
   },
   {
     id: "beauftragung",
     reiter: "Beauftragung",
     titel: "Der richtige Betrieb, der richtige Termin.",
     text: "Ein Partnerbetrieb bekommt den Auftrag. Den Termin stimmen wir mit dem Mieter ab.",
-    karte: {
-      icon: Wrench,
-      titel: "Auftrag vergeben",
-      status: "Beauftragt",
-      zeilen: [
-        { label: "Betrieb", wert: "Partnerbetrieb Heizung", ok: true },
-        { label: "Termin", wert: "Do, 9:00 Uhr", ok: true },
-        { label: "Mieter", wert: "Informiert", ok: true },
-      ],
-    },
+    karte: { icon: Wrench, status: "Beauftragt", gross: "Do, 9:00 Uhr", klein: "Heizungsbauer kommt, Mieter weiß Bescheid" },
   },
   {
     id: "ausfuehrung",
     reiter: "Ausführung",
     titel: "Erledigt und dokumentiert.",
     text: "Der Handwerker hält die Arbeit mit Fotos fest. Sie sehen den Stand, ohne anzurufen.",
-    karte: {
-      icon: Camera,
-      titel: "Arbeit erledigt",
-      status: "Erledigt",
-      zeilen: [
-        { label: "Repariert", wert: "Thermostatventil getauscht", ok: true },
-        { label: "Fotos", wert: "3 vorher und nachher", ok: true },
-        { label: "Dauer", wert: "1,5 Stunden" },
-      ],
-    },
+    karte: { icon: Camera, status: "Erledigt", gross: "Repariert", klein: "3 Fotos vorher und nachher" },
   },
   {
     id: "abnahme",
     reiter: "Abnahme & Rechnung",
     titel: "Abgenommen und abgerechnet.",
     text: "Wir nehmen die Arbeit ab und stellen Ihnen eine Rechnung. Die Kosten sehen Sie im Budget des Hauses.",
-    karte: {
-      icon: ClipboardCheck,
-      titel: "Abgenommen",
-      status: "Abgeschlossen",
-      zeilen: [
-        { label: "Abnahme", wert: "Ohne Mängel", ok: true },
-        { label: "Rechnung von teo", wert: "286,40 €", ok: true },
-      ],
-      budget: true,
-    },
+    karte: { icon: ClipboardCheck, status: "Abgeschlossen", gross: "286,40 €", klein: "Eine Rechnung von teo" },
   },
 ];
 
@@ -162,37 +116,10 @@ export function TeoSchritte() {
                   <span className="ts-schritte__icon">
                     <K size={18} />
                   </span>
-                  <span className="ts-schritte__kopftext">
-                    <b>{s.karte.titel}</b>
-                    <small>Leopoldstr. 10 · WE 4</small>
-                  </span>
                   <span className="ts-schritte__status">{s.karte.status}</span>
                 </div>
-                <dl>
-                  {s.karte.zeilen.map((z) => (
-                    <div key={z.label}>
-                      <dt>{z.label}</dt>
-                      <dd>
-                        {z.ok ? (
-                          <span className="ts-schritte__ok">
-                            <Check size={12} strokeWidth={3} />
-                          </span>
-                        ) : null}
-                        {z.wert}
-                      </dd>
-                    </div>
-                  ))}
-                </dl>
-                {s.karte.budget ? (
-                  <div className="ts-schritte__budget">
-                    <span>
-                      Budget Leopoldstr. 10 <b>3.240 € von 8.000 €</b>
-                    </span>
-                    <span className="ts-schritte__balken">
-                      <span />
-                    </span>
-                  </div>
-                ) : null}
+                <b className="ts-schritte__gross">{s.karte.gross}</b>
+                <span className="ts-schritte__klein">{s.karte.klein}</span>
               </div>
             </div>
           );
