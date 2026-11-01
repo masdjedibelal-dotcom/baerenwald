@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   AppWindow,
   ArrowLeft,
@@ -237,15 +237,20 @@ export function TeoAnfrage() {
       setVorwahl(sit);
       setSchritt(1);
     }
-    track.teoAnfrageStart(sit?.id ?? "direkt");
     setBereit(true);
   }, []);
 
-  // Anfrage-Weg fürs CRM-Dashboard: jeder erreichte Schritt (1–4)
+  // Anfrage-Weg fürs CRM-Dashboard: „geöffnet“ einmal, dann jeder erreichte Schritt (1–4).
+  // Start erst hier senden — beim allerersten Render ist PostHog oft noch nicht geladen und verwirft das Event.
+  const gestartet = useRef(false);
   useEffect(() => {
     if (!bereit || status === "done") return;
+    if (!gestartet.current) {
+      gestartet.current = true;
+      track.teoAnfrageStart(vorwahl?.id ?? "direkt");
+    }
     track.teoAnfrageSchritt(schritt + 1, SCHRITT_NAMEN[schritt] ?? `Schritt ${schritt + 1}`);
-  }, [bereit, schritt, status]);
+  }, [bereit, schritt, status, vorwahl?.id]);
 
   function vorwahlAendern() {
     setVorwahl(null);
