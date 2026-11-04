@@ -196,8 +196,8 @@ export const LEISTUNGEN_DATA: Record<string, LeistungsData> = {
       ["🏠", "Abgestimmt mit Maler und Boden"],
       ["🔌", "Wallbox & Zukunftstechnik"]
     ),
-    ratgeberSlug: "elektroarbeiten-kosten-muenchen",
-    ratgeberLabel: "Was kosten Elektroarbeiten in München?",
+    ratgeberSlug: "wohnung-renovieren-kosten-muenchen",
+    ratgeberLabel: "Wohnung renovieren — Gesamtkosten",
     rechnerSituation: "erneuern",
     faq: [
       {
@@ -280,8 +280,8 @@ export const LEISTUNGEN_DATA: Record<string, LeistungsData> = {
       ["💧", "Bewässerung nach Bedarf"],
       ["🎯", "Transparente Kostenrahmen"]
     ),
-    ratgeberSlug: "gartengestaltung-kosten-muenchen",
-    ratgeberLabel: "Was kostet Gartengestaltung in München?",
+    ratgeberSlug: "generalunternehmer-vs-einzelhandwerker-muenchen",
+    ratgeberLabel: "Generalunternehmer oder Einzelhandwerker?",
     rechnerSituation: "erneuern",
     faq: [
       {
