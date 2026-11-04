@@ -12,7 +12,6 @@ import {
 } from "react";
 
 import { track } from "@/lib/analytics";
-import { SITE_CONFIG } from "@/lib/config";
 import { CTAButton } from "@/components/ui/CTAButton";
 import { SiteIcon } from "@/components/ui/SiteIcon";
 
@@ -48,7 +47,7 @@ const KATEGORIEN: Kategorie[] = [
       {
         slug: "malerarbeiten",
         name: "Streichen & Tapezieren",
-        hint: "Frische Farbe für Wände und Decken",
+        hint: "Maler- und Oberflächenarbeiten mit Fachbetrieben",
         emoji: "🖌️",
         href: "/leistungen/malerarbeiten-muenchen",
         rechnerHref: "/rechner?situation=erneuern",
@@ -60,7 +59,7 @@ const KATEGORIEN: Kategorie[] = [
       {
         slug: "badezimmer-sanierung",
         name: "Neues Bad",
-        hint: "Komplett erneuern oder einzelne Teile",
+        hint: "Rückbau, Sanitär, Elektro, Fliesen – abgestimmt",
         emoji: "🚿",
         href: "/leistungen/badezimmer-sanierung-muenchen",
         rechnerHref: "/rechner?situation=erneuern",
@@ -72,7 +71,7 @@ const KATEGORIEN: Kategorie[] = [
       {
         slug: "bodenbelag",
         name: "Neuer Boden",
-        hint: "Laminat, Parkett, Fliesen verlegen",
+        hint: "PVC, Teppich, Laminat, Fertigparkett",
         emoji: "🪵",
         href: "/leistungen/bodenbelag-muenchen",
         rechnerHref: "/rechner?situation=erneuern",
@@ -84,7 +83,7 @@ const KATEGORIEN: Kategorie[] = [
       {
         slug: "fenster-tueren",
         name: "Fenster & Türen",
-        hint: "Tausch, Reparatur, Abdichten",
+        hint: "Einbau genormter Fenster, Türen und Zargen",
         emoji: "🪟",
         href: "/leistungen/fenster-tueren-muenchen",
         rechnerHref: "/rechner?situation=erneuern",
@@ -96,7 +95,7 @@ const KATEGORIEN: Kategorie[] = [
       {
         slug: "trockenbau",
         name: "Neue Wände & Decken",
-        hint: "Zimmer teilen, Decke abhängen",
+        hint: "Trockenbau und Innenausbau mit eigener Mannschaft",
         emoji: "🏗️",
         href: "/leistungen/trockenbau-muenchen",
         rechnerHref: "/rechner?situation=erneuern",
@@ -115,7 +114,7 @@ const KATEGORIEN: Kategorie[] = [
       {
         slug: "heizung-sanitaer",
         name: "Heizung & Wasser",
-        hint: "Heizung tauschen, Rohre reparieren",
+        hint: "Heizung, Sanitär und Wärmepumpe mit Fachbetrieben",
         emoji: "🔧",
         href: "/leistungen/heizung-sanitaer-muenchen",
         rechnerHref: "/rechner?situation=erneuern",
@@ -126,8 +125,8 @@ const KATEGORIEN: Kategorie[] = [
       },
       {
         slug: "elektroarbeiten",
-        name: "Strom & Licht",
-        hint: "Steckdosen, Sicherungskasten, Elektrik",
+        name: "Elektrotechnik",
+        hint: "Eigener Elektrobereich unter Meisterleitung",
         emoji: "⚡",
         href: "/leistungen/elektroarbeiten-muenchen",
         rechnerHref: "/rechner?situation=erneuern",
@@ -138,8 +137,8 @@ const KATEGORIEN: Kategorie[] = [
       },
       {
         slug: "dacharbeiten",
-        name: "Dach & Regenrinnen",
-        hint: "Reparatur, Sanierung, Abdichten",
+        name: "Dach & Gebäudehülle",
+        hint: "Dach, Spenglerei und Fassade mit Fachbetrieben",
         emoji: "🏠",
         href: "/leistungen/dacharbeiten-muenchen",
         rechnerHref: "/rechner?situation=erneuern",
@@ -156,21 +155,9 @@ const KATEGORIEN: Kategorie[] = [
     icon: "garten",
     leistungen: [
       {
-        slug: "gartenpflege",
-        name: "Gartenpflege",
-        hint: "Mähen, Schneiden, Aufräumen",
-        emoji: "🌿",
-        href: "/leistungen/gartenpflege-muenchen",
-        rechnerHref: "/rechner?situation=betreuung",
-        imageSrc: "/images/leistung-gartenpflege.png",
-        imageAlt:
-          "Gärtner mäht den Rasen und schneidet eine Hecke vor einem Wohnhaus",
-        imageObjectPosition: "50% 44%",
-      },
-      {
         slug: "gartengestaltung",
         name: "Garten neu gestalten",
-        hint: "Terrasse, Wege, Bepflanzung",
+        hint: "Terrassen, Wege, Pflaster und Bepflanzung",
         emoji: "🌳",
         href: "/leistungen/gartengestaltung-muenchen",
         rechnerHref: "/rechner?leistung=gartengestaltung",
@@ -178,104 +165,6 @@ const KATEGORIEN: Kategorie[] = [
         imageAlt:
           "Partner gestalten einen Garten neu mit Steinplatten, Wegen und sauberem Unterbau",
         imageObjectPosition: "50% 46%",
-      },
-    ],
-  },
-  {
-    id: "service",
-    label: "Service & Betreuung",
-    icon: "shield",
-    leistungen: [
-      {
-        slug: "hausmeisterservice",
-        name: "Hausmeisterservice",
-        hint: "Alles aus einer Hand — regelmäßig",
-        emoji: "🏡",
-        href: "/leistungen/hausmeisterservice-muenchen",
-        rechnerHref: "/rechner?situation=betreuung",
-        imageSrc: "/images/leistung-hausmeisterservice.png",
-        imageAlt:
-          "Hausmeister kontrolliert Treppenhaus, schneidet Hecken und kümmert sich um die Außenanlage",
-        imageObjectPosition: "50% 44%",
-      },
-      {
-        slug: "gebauedereinigung",
-        name: "Gebäudereinigung",
-        hint: "Treppenhaus, Gemeinschaftsflächen, regelmäßig oder einmalig",
-        emoji: "🧹",
-        href: "/leistungen/hausmeisterservice-muenchen",
-        rechnerHref: "/rechner?situation=betreuung",
-        imageSrc: "/images/leistung-gebaeudereinigung.png",
-        imageAlt:
-          "Reinigungskraft säubert Treppenhaus und Glasflächen im Eingangsbereich eines Wohngebäudes",
-        imageObjectPosition: "50% 44%",
-      },
-      {
-        slug: "wartung",
-        name: "Wartung & Pflege",
-        hint: "Heizungswartung, Lüftung, regelmäßige Kontrollen",
-        emoji: "🔩",
-        href: "/leistungen/heizung-sanitaer-muenchen",
-        rechnerHref: "/rechner?situation=betreuung",
-        imageSrc: "/images/leistung-wartung-pflege.png",
-        imageAlt:
-          "Techniker wartet Heizungs- und Lüftungsanlage und prüft die Komponenten im Keller",
-        imageObjectPosition: "50% 44%",
-      },
-      {
-        slug: "winterdienst-service",
-        name: "Winterdienst",
-        hint: "Räumen und Streuen — Streupflicht übernehmen wir",
-        emoji: "❄️",
-        href: "/leistungen/winterdienst-muenchen",
-        rechnerHref: "/rechner?situation=betreuung",
-        imageSrc: "/images/leistung-winterdienst.png",
-        imageAlt:
-          "Winterdienst räumt Gehweg und Straße mit einer Schneefräse in einem Wohngebiet",
-        imageObjectPosition: "50% 44%",
-      },
-    ],
-  },
-  {
-    id: "notfall",
-    label: "Notfall",
-    icon: "blitz",
-    leistungen: [
-      {
-        slug: "heizung-sanitaer-notfall",
-        name: "Heizung ausgefallen",
-        hint: "Schnell vor Ort — auch kurzfristig",
-        emoji: "🔥",
-        href: "/leistungen/heizung-sanitaer-muenchen",
-        rechnerHref: "/rechner?situation=kaputt",
-        imageSrc: "/images/leistung-heizung-ausgefallen.png",
-        imageAlt:
-          "Moderne Heizkörperanlage in Wohnraum als Visual für Heizungsausfall-Notdienst",
-        imageObjectPosition: "50% 42%",
-      },
-      {
-        slug: "wasser-notfall",
-        name: "Rohrbruch / Leck",
-        hint: "Soforteinsatz — Haupthahn schließen",
-        emoji: "💧",
-        href: "/leistungen/heizung-sanitaer-muenchen",
-        rechnerHref: "/rechner?situation=kaputt",
-        imageSrc: "/images/leistung-heizung-wasser.png",
-        imageAlt:
-          "Heizungsmonteur wartet eine Anlage und verlötet Wasserleitungen",
-        imageObjectPosition: "50% 42%",
-      },
-      {
-        slug: "elektro-notfall",
-        name: "Strom weg",
-        hint: "Zertifizierter Elektrobetrieb",
-        emoji: "⚡",
-        href: "/leistungen/elektroarbeiten-muenchen",
-        rechnerHref: "/rechner?situation=kaputt",
-        imageSrc: "/images/leistung-strom-weg.png",
-        imageAlt:
-          "Elektriker prüft bei Stromausfall den Sicherungskasten im dunklen Flur",
-        imageObjectPosition: "50% 42%",
       },
     ],
   },
@@ -306,7 +195,6 @@ export function LeistungenCarousel() {
     [activeKat]
   );
 
-  const telHref = `tel:${SITE_CONFIG.phone.replace(/\s/g, "")}`;
 
   const scrollByDir = useCallback((dir: "left" | "right") => {
     cardsRef.current?.scrollBy({
@@ -358,16 +246,15 @@ export function LeistungenCarousel() {
     }
   };
 
-  const isNotfall = activeKat === "notfall";
 
   return (
     <section className="leistungen-section" id="leistungen">
       <div className="leistungen-inner">
         <div className="leistungen-header">
-          <div className="section-eyebrow">Was wir machen</div>
-          <h2 className="section-h2">Alle Leistungen aus einer Hand</h2>
+          <div className="section-eyebrow">Leistungen</div>
+          <h2 className="section-h2">Was möchten Sie verändern?</h2>
           <p className="checks-section-tagline">
-            Wähle eine Kategorie — oder starte direkt den Preisrechner.
+            Eigene Gewerke und passende Fachpartner für Ihr Vorhaben.
           </p>
         </div>
 
@@ -496,22 +383,6 @@ export function LeistungenCarousel() {
             <SiteIcon n="chevron-right" ctx="default" size={18} aria-hidden />
           </button>
         </div>
-
-        {isNotfall ? (
-          <div className="leistungen-notfall-banner">
-            <div>
-              <div className="leistungen-notfall-banner-title">
-                Akuter Notfall?
-              </div>
-              <div className="leistungen-notfall-banner-text">
-                Ruf uns direkt an — wir sind Mo–Sa 7–20 Uhr erreichbar.
-              </div>
-            </div>
-            <a href={telHref} className="leistungen-notfall-banner-cta">
-              Jetzt anrufen →
-            </a>
-          </div>
-        ) : null}
       </div>
     </section>
   );

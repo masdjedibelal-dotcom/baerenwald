@@ -39,12 +39,12 @@ export const LEISTUNGEN_DATA: Record<string, LeistungsData> = {
     preisBis: 22,
     preisEinheit: "pro m² Wandfläche",
     preisHinweis:
-      "Der Preis hängt davon ab wie groß die Fläche ist und ob die Wände in gutem Zustand sind. Beim Vor-Ort-Termin sehen wir uns alles an und nennen Ihnen einen festen Preis. Anfahrt wird bei Beauftragung angerechnet.",
+      "Der Preis hängt davon ab wie groß die Fläche ist und ob die Wände in gutem Zustand sind. Beim Vor-Ort-Termin sehen wir uns alles an und erstellen Ihnen ein Angebot.",
     vorteile: vorteil(
       ["🎯", "Ein Ansprechpartner für alles"],
-      ["✓", "Geprüfte Meisterbetriebe"],
+      ["✓", "Eigene Gewerke & Fachpartner"],
       ["⏱", "Termintreue & saubere Baustelle"],
-      ["💶", "Transparente Festpreise"]
+      ["💶", "Angebot nach Besichtigung"]
     ),
     ratgeberSlug: "malerarbeiten-kosten-muenchen",
     ratgeberLabel: "Was kosten Malerarbeiten in München?",
@@ -93,11 +93,11 @@ export const LEISTUNGEN_DATA: Record<string, LeistungsData> = {
     preisBis: 20000,
     preisEinheit: "pauschal je nach Umfang",
     preisHinweis:
-      "Oben auf dieser Seite wählen Sie Ihr Bad-Paket und sehen den Preisrahmen live. Beim Termin schauen wir, was wirklich nötig ist — Festpreis nach Besichtigung.",
+      "Oben auf dieser Seite wählen Sie Ihr Bad-Paket und sehen den Preisrahmen live. Beim Termin schauen wir, was wirklich nötig ist — Angebot nach Besichtigung.",
     vorteile: vorteil(
       ["🔧", "Alle Schritte aus einer Hand"],
       ["📐", "Durchdachte Planung vor dem Start"],
-      ["🛡", "Festpreis nach Vor-Ort-Termin"],
+      ["🛡", "Angebot nach Besichtigung"],
       ["⏱", "Realistische Zeitplanung"]
     ),
     ratgeberSlug: "bad-sanierung-kosten-muenchen",
@@ -117,7 +117,7 @@ export const LEISTUNGEN_DATA: Record<string, LeistungsData> = {
         a: "Ja — die KfW fördert altersgerechten Umbau mit Zuschüssen bis 6.250 €. Wir informieren Sie bei Bedarf.",
       },
       {
-        q: "Was ist im Festpreis enthalten?",
+        q: "Was ist im Angebot enthalten?",
         a: "Alle vereinbarten Leistungen, Material (sofern vereinbart), Entsorgung und die Koordination durch Bärenwald. Keine versteckten Kosten.",
       },
     ],
@@ -171,12 +171,12 @@ export const LEISTUNGEN_DATA: Record<string, LeistungsData> = {
 
   elektroarbeiten: {
     slug: "elektroarbeiten",
-    label: "Strom & Licht",
-    headline: "Strom & Licht in München —\nsicher und zertifiziert",
+    label: "Elektrotechnik",
+    headline: "Elektrotechnik in München —\nunter eigener Meisterleitung",
     subline:
-      "Nur durch zugelassene Elektrofachbetriebe. Von der einzelnen Steckdose bis zum Sicherungskasten.",
+      "Unser eigener Elektrobereich mit technischem Betriebsleiter und Elektromeister. Abgestimmt mit dem Bauablauf und den übrigen Gewerken.",
     beschreibung:
-      "Zu wenig Steckdosen, schlechtes Licht, alter Sicherungskasten — das kennt jeder. Elektroarbeiten dürfen nur vom Fachbetrieb gemacht werden. Unsere Elektriker sind zertifiziert und erledigen alles sicher und sauber.",
+      "Die Elektrotechnik ist Teil unserer Bau- und Sanierungsleistungen. Unser Elektromeister leitet als technischer Betriebsleiter den Elektrobereich. Leitungsführung, Trockenbau und spätere Ausstattung bereiten wir gemeinsam vor.",
     wasWirMachen: [
       "Neue Steckdosen und Lichtschalter einbauen",
       "Licht installieren — Einbaustrahler, Pendelleuchten, Außenlicht",
@@ -191,7 +191,7 @@ export const LEISTUNGEN_DATA: Record<string, LeistungsData> = {
     preisHinweis:
       "Eine neue Steckdose kostet 85–140 €. Den gesamten Sicherungskasten erneuern 800–2.500 €. Eine Ladestation fürs E-Auto 1.200–2.500 € komplett eingebaut.",
     vorteile: vorteil(
-      ["⚡", "Nur zugelassene Fachbetriebe"],
+      ["⚡", "Eigener Elektromeister"],
       ["📋", "Dokumentation & Prüfprotokoll"],
       ["🏠", "Abgestimmt mit Maler und Boden"],
       ["🔌", "Wallbox & Zukunftstechnik"]
@@ -225,7 +225,7 @@ export const LEISTUNGEN_DATA: Record<string, LeistungsData> = {
       "Heizkörper versetzen oder austauschen",
       "Undichte Rohre reparieren",
       "Warmwasserboiler erneuern",
-      "Notfallservice — auch kurzfristig",
+      "Elektrische Einbindung durch unseren Elektrobereich",
     ],
     preisVon: 8000,
     preisBis: 22000,
@@ -249,48 +249,6 @@ export const LEISTUNGEN_DATA: Record<string, LeistungsData> = {
       {
         q: "Wie hoch ist die Förderung für eine Wärmepumpe?",
         a: "Bis zu 70% der Investitionskosten durch BAFA und KfW — je nach Einkommenssituation und Gebäudezustand. Wir helfen beim Förderantrag.",
-      },
-    ],
-  },
-
-  gartenpflege: {
-    slug: "gartenpflege",
-    label: "Gartenpflege",
-    headline: "Gartenpflege in München —\nregelmäßig und zuverlässig",
-    subline:
-      "Mähen, Schneiden, Aufräumen. Wir kümmern uns regelmäßig damit Ihr Garten immer gut aussieht.",
-    beschreibung:
-      "Regelmäßige Pflege hält den Garten in Schuss — ohne dass Sie jeden Samstag selbst mähen müssen. Wir kommen wöchentlich, zweiwöchentlich oder monatlich und halten alles ordentlich.",
-    wasWirMachen: [
-      "Rasen mähen und Kanten schneiden",
-      "Hecken und Sträucher in Form halten",
-      "Beete von Unkraut befreien",
-      "Laub und Schnittgut mitnehmen",
-      "Beete und Pflanzen gießen wenn nötig",
-      "Frühjahrs- und Herbstschnitt",
-    ],
-    preisVon: 2.2,
-    preisBis: 3.8,
-    preisEinheit: "pro m² pro Monat",
-    preisHinweis:
-      "Ein kleiner Stadtgarten kostet ab 220 € pro Monat bei zweiwöchentlicher Pflege. Beim ersten Termin schauen wir uns alles an und machen Ihnen ein individuelles Angebot.",
-    vorteile: vorteil(
-      ["🌿", "Fester Rhythmus, weniger Stress"],
-      ["📅", "Flexibel wöchentlich oder monatlich"],
-      ["♻", "Entsorgung inklusive"],
-      ["🏡", "München & Umgebung"]
-    ),
-    ratgeberSlug: "gartenpflege-kosten-muenchen",
-    ratgeberLabel: "Was kostet Gartenpflege in München?",
-    rechnerSituation: "betreuung",
-    faq: [
-      {
-        q: "Wann ist die beste Zeit für den ersten Schnitt?",
-        a: "In München ab Mitte April wenn kein Frost mehr zu erwarten ist. Hecken idealerweise vor dem 15. März oder nach dem 15. September (Brutschutz § 39 BNatSchG).",
-      },
-      {
-        q: "Brauche ich einen Vertrag?",
-        a: "Nein — wir bieten auch Einzeleinsätze an. Ein Abo ist günstiger und gibt Ihnen Planungssicherheit.",
       },
     ],
   },
@@ -329,90 +287,6 @@ export const LEISTUNGEN_DATA: Record<string, LeistungsData> = {
       {
         q: "Brauche ich eine Genehmigung?",
         a: "Für Terrassen und Wege meist nicht. Für Zäune und größere Bauten je nach Gemeinde. Wir prüfen das für Sie.",
-      },
-    ],
-  },
-
-  winterdienst: {
-    slug: "winterdienst",
-    label: "Winterdienst",
-    headline: "Winterdienst München —\nzuverlässig und haftungssicher",
-    subline:
-      "Räumen und Streuen wenn es drauf ankommt. Wir übernehmen Ihre Streupflicht.",
-    beschreibung:
-      "In München müssen Sie als Hauseigentümer oder Mieter (wenn im Mietvertrag so vereinbart) den Gehweg räumen und streuen — ab 7 Uhr morgens. Wer das nicht tut haftet persönlich wenn jemand stürzt. Wir übernehmen diese Pflicht vollständig.",
-    wasWirMachen: [
-      "Gehweg räumen sobald es schneit",
-      "Streuen damit niemand ausrutscht",
-      "Einfahrt und Parkplatz freihalten",
-      "Bereitschaft auch frühmorgens und am Wochenende",
-      "Jeden Einsatz dokumentieren — für Ihre Absicherung",
-      "Umweltfreundliches Streumittel nutzen",
-    ],
-    preisVon: 620,
-    preisBis: 1100,
-    preisEinheit: "pro Saison",
-    preisHinweis:
-      "Pro Saison (Oktober bis April) kostet ein normaler Gehweg 620–1.100 €. Einmalig buchen oder als Jahresvertrag — ganz wie Sie wollen.",
-    vorteile: vorteil(
-      ["❄", "Bereitschaft bei Schneefall"],
-      ["📄", "Dokumentation für Nachweise"],
-      ["🌱", "Umweltfreundliches Streugut"],
-      ["⚖", "Vertragliche Übernahme der Pflicht"]
-    ),
-    ratgeberSlug: "winterdienst-kosten-muenchen",
-    ratgeberLabel: "Winterdienst München — Kosten und Streupflicht",
-    rechnerSituation: "betreuung",
-    faq: [
-      {
-        q: "Was passiert wenn es morgens schneit und ihr nicht da wart?",
-        a: "Wir haben einen Bereitschaftsdienst ab 5 Uhr morgens. Bei starkem Schneefall fahren wir mehrere Runden.",
-      },
-      {
-        q: "Übernehmt ihr die Haftung?",
-        a: "Ja — durch unseren Vertrag geht die Streupflicht und damit die Haftung auf Bärenwald über. Wir dokumentieren jeden Einsatz.",
-      },
-    ],
-  },
-
-  hausmeisterservice: {
-    slug: "hausmeisterservice",
-    label: "Hausmeisterservice",
-    headline: "Rund ums Haus —\nein fester Ansprechpartner",
-    subline:
-      "Garten, Reinigung, Winterdienst, kleine Reparaturen — wir kümmern uns regelmäßig um Ihr Objekt.",
-    beschreibung:
-      "Ein Ansprechpartner für alles rund ums Haus. Garten, Reinigung, kleine Reparaturen, Winterdienst — wir kümmern uns regelmäßig damit Sie es nicht müssen. Ideal für Eigentümer die keine Zeit haben oder Vermieter die ihr Objekt in Schuss halten wollen.",
-    wasWirMachen: [
-      "Regelmäßige Kontrollgänge",
-      "Garten pflegen und Winterdienst machen",
-      "Treppenhaus und Gemeinschaftsflächen reinigen",
-      "Kleine Reparaturen direkt erledigen",
-      "Mülltonnen raus- und reinstellen",
-      "Ansprechpartner für Mieter sein",
-    ],
-    preisVon: 180,
-    preisBis: 480,
-    preisEinheit: "pro Monat je nach Objekt",
-    preisHinweis:
-      "Ab 180 € pro Monat für eine Wohnung mit kleinem Garten. Für größere Objekte schnüren wir ein individuelles Paket. Einfach anrufen und besprechen.",
-    vorteile: vorteil(
-      ["🏠", "Ein Paket für Haus & Hof"],
-      ["📞", "Direkter Ansprechpartner"],
-      ["🧹", "Reinigung & Kontrolle"],
-      ["🔧", "Kleinreparaturen koordiniert"]
-    ),
-    ratgeberSlug: "hausmeisterservice-kosten-muenchen",
-    ratgeberLabel: "Was kostet Hausmeisterservice in München?",
-    rechnerSituation: "betreuung",
-    faq: [
-      {
-        q: "Für welche Objekte ist das geeignet?",
-        a: "Für Einfamilienhäuser, Mehrfamilienhäuser, WEGs und gewerbliche Objekte. Wir erstellen individuelle Pakete.",
-      },
-      {
-        q: "Was ist bei Urlaub oder Abwesenheit?",
-        a: "Wir betreuen das Objekt auch während eurer Abwesenheit — auf Wunsch mit Post-Service und regelmäßigem Foto-Report.",
       },
     ],
   },
@@ -484,7 +358,7 @@ export const LEISTUNGEN_DATA: Record<string, LeistungsData> = {
       ["🏗", "Schnell & relativ sauber"],
       ["🔇", "Schallschutz nach Plan"],
       ["🚿", "Vorwand fürs Bad & Küche"],
-      ["✓", "Meisterbetriebe"]
+      ["✓", "Eigene Gewerke & Fachpartner"]
     ),
     ratgeberSlug: "trockenbau-kosten-muenchen",
     ratgeberLabel: "Neue Wände — was kostet das?",
@@ -502,9 +376,9 @@ export const LEISTUNGEN_DATA: Record<string, LeistungsData> = {
     label: "Dach & Regenrinnen",
     headline: "Dach & Regenrinnen in München",
     subline:
-      "Undichtes Dach, Sturmschaden oder volle Sanierung — wir sind schnell da.",
+      "Dach, Spenglerei und Gebäudehülle mit spezialisierten Fachbetrieben — koordiniert von Bärenwald.",
     beschreibung:
-      "Ein undichtes Dach ist ein Notfall — jede Stunde die vergeht kann teurer werden. Wir reparieren schnell und sauber. Von der kleinen Reparatur bis zur kompletten Dachsanierung.",
+      "Von der Reparatur bis zur kompletten Dachsanierung: Wir binden die passenden Dach- und Spenglerbetriebe ein und stimmen die Arbeiten mit Fassade, Fenstern und den übrigen Gewerken ab.",
     wasWirMachen: [
       "Kaputte Dachziegel tauschen",
       "Undichte Stellen abdichten",
@@ -517,9 +391,9 @@ export const LEISTUNGEN_DATA: Record<string, LeistungsData> = {
     preisBis: 180,
     preisEinheit: "pro m² Dachfläche",
     preisHinweis:
-      "Kleine Reparaturen ab 250 € pauschal. Größere Schäden schauen wir uns beim Vor-Ort-Termin an und nennen Ihnen einen festen Preis. Anfahrt wird bei Beauftragung angerechnet. Bei Sturmschäden helfen wir auch bei der Versicherung.",
+      "Kleine Reparaturen ab 250 € pauschal. Größere Schäden schauen wir uns beim Vor-Ort-Termin an und erstellen Ihnen ein Angebot. Bei Sturmschäden helfen wir auch bei der Versicherung.",
     vorteile: vorteil(
-      ["🏡", "Notfall & schnelle Abdichtung"],
+      ["🏡", "Abgestimmt mit der Gebäudehülle"],
       ["🛡", "Fachbetriebe für alle Dachformen"],
       ["📋", "Schadensdokumentation"],
       ["💶", "Klarer Kostenrahmen nach Termin"]
@@ -529,8 +403,8 @@ export const LEISTUNGEN_DATA: Record<string, LeistungsData> = {
     rechnerSituation: "kaputt",
     faq: [
       {
-        q: "Was tun bei akutem Sturmschaden?",
-        a: "Sofort anrufen — wir haben einen Notfalldienst für akute Schäden. Provisorische Abdichtung am gleichen Tag möglich.",
+        q: "Wer führt die Dacharbeiten aus?",
+        a: "Ein spezialisierter Dachdecker- oder Spenglerbetrieb aus unserem Partnernetz. Bärenwald koordiniert und bleibt Ihr Ansprechpartner.",
       },
       {
         q: "Übernimmt die Versicherung Sturmschäden?",
@@ -556,10 +430,10 @@ export const LEISTUNGEN_DATA: Record<string, LeistungsData> = {
     preisBis: 2200,
     preisEinheit: "pro m² Wohnfläche (Richtwert)",
     preisHinweis:
-      "Der endgültige Preis hängt von Rohbau, Höhe und Ausstattung ab — Festpreis nach Vor-Ort-Termin.",
+      "Der endgültige Preis hängt von Rohbau, Höhe und Ausstattung ab — Angebot nach Besichtigung.",
     vorteile: vorteil(
       ["✓", "GU-Koordination"],
-      ["✓", "Meisterbetriebe"],
+      ["✓", "Eigene Gewerke & Fachpartner"],
       ["📐", "Transparente Planung"],
       ["💶", "Klarer Kostenrahmen"]
     ),
@@ -580,7 +454,7 @@ export const LEISTUNGEN_DATA: Record<string, LeistungsData> = {
     headline: "Kellerausbau in München",
     subline: "Trockenlegen, Feuchteschutz und nutzbarer Keller — aus einer Hand.",
     beschreibung:
-      "Keller ausbauen braucht Erfahrung mit Feuchteschutz und Entwässerung. Wir planen und setzen um — mit klarem Festpreis nach Besichtigung.",
+      "Keller ausbauen braucht Erfahrung mit Feuchteschutz und Entwässerung. Wir planen und setzen um — mit einem Angebot nach der Besichtigung.",
     wasWirMachen: [
       "Feuchteanalyse und Konzept",
       "Trockenlegung / Abdichtung",
@@ -595,7 +469,7 @@ export const LEISTUNGEN_DATA: Record<string, LeistungsData> = {
       ["✓", "Fachbetriebe"],
       ["🛡", "Feuchteschutz im Fokus"],
       ["📋", "Dokumentation"],
-      ["💶", "Festpreis nach Termin"]
+      ["💶", "Angebot nach Besichtigung"]
     ),
     ratgeberSlug: "wohnung-renovieren-kosten-muenchen",
     ratgeberLabel: "Wohnung renovieren — Gesamtkosten",
@@ -624,7 +498,7 @@ export const LEISTUNGEN_DATA: Record<string, LeistungsData> = {
     preisVon: 1800,
     preisBis: 8500,
     preisEinheit: "pro Öffnung (Richtwert)",
-    preisHinweis: "Tragende Wände sind deutlich aufwendiger — Angebot nach Vor-Ort-Termin.",
+    preisHinweis: "Tragende Wände sind deutlich aufwendiger — Angebot nach Besichtigung.",
     vorteile: vorteil(
       ["✓", "Statik koordiniert"],
       ["✓", "Saubere Ausführung"],
@@ -653,20 +527,20 @@ export const LEISTUNGEN_DATA: Record<string, LeistungsData> = {
       "Planung und Materialwahl",
       "Unterbau und Entwässerung",
       "Aufbau und Abdichtung",
-      "Übergabe mit Festpreis nach Termin",
+      "Angebot nach Besichtigung",
     ],
     preisVon: 220,
     preisBis: 520,
     preisEinheit: "pro m² Terrasse (Richtwert)",
-    preisHinweis: "Unterbau und Zugang beeinflussen den Preis stark — Festpreis nach Aufmaß.",
+    preisHinweis: "Unterbau und Zugang beeinflussen den Preis stark — Angebot nach Besichtigung.",
     vorteile: vorteil(
       ["✓", "GU-Paket"],
       ["🪵", "Holz & Stein"],
       ["📐", "Aufmaß vor Ort"],
       ["💶", "Klarer Rahmen"]
     ),
-    ratgeberSlug: "gartenpflege-kosten-muenchen",
-    ratgeberLabel: "Was kostet Gartenpflege?",
+    ratgeberSlug: "generalunternehmer-vs-einzelhandwerker-muenchen",
+    ratgeberLabel: "Generalunternehmer oder Einzelhandwerker?",
     rechnerSituation: "erneuern",
     faq: [
       {
@@ -682,7 +556,7 @@ export const LEISTUNGEN_DATA: Record<string, LeistungsData> = {
     headline: "Bad sanieren in München",
     subline: "Modernisierung oder Neubad — ein Ansprechpartner für alle Gewerke.",
     beschreibung:
-      "Sanitär, Fliesen, Elektro und Lüftung greifen ineinander. Wir koordinieren alles und nennen Ihnen einen verbindlichen Festpreis nach dem Termin.",
+      "Sanitär, Fliesen, Elektro und Lüftung greifen ineinander. Wir koordinieren alles und erstellen Ihnen nach der Besichtigung ein Angebot.",
     wasWirMachen: [
       "Planung und Auswahl",
       "Abriss und Entsorgung",
@@ -695,9 +569,9 @@ export const LEISTUNGEN_DATA: Record<string, LeistungsData> = {
     preisHinweis: "Kleines Bad vs. Masterbad — wir rechnen realistisch nach m² und Ausstattung.",
     vorteile: vorteil(
       ["🔧", "Alles aus einer Hand"],
-      ["🛡", "Festpreis nach Termin"],
+      ["🛡", "Angebot nach Besichtigung"],
       ["⏱", "Termintreue"],
-      ["✓", "Meisterbetriebe"]
+      ["✓", "Eigene Gewerke & Fachpartner"]
     ),
     ratgeberSlug: "bad-sanierung-kosten-muenchen",
     ratgeberLabel: "Was kostet eine Badsanierung?",
@@ -731,7 +605,7 @@ export const LEISTUNGEN_DATA: Record<string, LeistungsData> = {
       ["✓", "Saubere Baustelle"],
       ["🪵", "Viele Materialien"],
       ["📏", "Aufmaß"],
-      ["💶", "Festpreis nach Termin"]
+      ["💶", "Angebot nach Besichtigung"]
     ),
     ratgeberSlug: "bodenbelag-kosten-muenchen",
     ratgeberLabel: "Was kostet neuer Boden?",
@@ -760,11 +634,11 @@ export const LEISTUNGEN_DATA: Record<string, LeistungsData> = {
     preisVon: 120,
     preisBis: 220,
     preisEinheit: "pro m² Fassade (Richtwert)",
-    preisHinweis: "Gebäudehöhe und Gerüst beeinflussen den Preis — Festpreis nach Begehung.",
+    preisHinweis: "Gebäudehöhe und Gerüst beeinflussen den Preis — Angebot nach Besichtigung.",
     vorteile: vorteil(
       ["🧱", "WDVS-Qualität"],
       ["📋", "Förder-Hinweise"],
-      ["✓", "Meisterbetriebe"],
+      ["✓", "Eigene Gewerke & Fachpartner"],
       ["💶", "Transparenz"]
     ),
     ratgeberSlug: "wohnung-renovieren-kosten-muenchen",
@@ -774,150 +648,6 @@ export const LEISTUNGEN_DATA: Record<string, LeistungsData> = {
       {
         q: "Gibt es Förderung?",
         a: "Oft ja für energetische Maßnahmen — weisen wir Sie auf aktuelle Programme hin.",
-      },
-    ],
-  },
-
-  "heizung-defekt": {
-    slug: "heizung-defekt",
-    label: "Heizung defekt",
-    headline: "Heizung defekt in München",
-    subline: "Schnelle Hilfe bei Ausfall — Diagnose und Reparatur.",
-    beschreibung:
-      "Heizung oder Warmwasser ausgefallen? Wir priorisieren und schicken qualifizierte Fachkräfte — mit klarem Kostenrahmen nach Diagnose.",
-    wasWirMachen: [
-      "Fehleranalyse vor Ort",
-      "Reparatur oder Teiletausch",
-      "Dokumentation",
-      "Optional: Ersatzplanung",
-    ],
-    preisVon: 120,
-    preisBis: 450,
-    preisEinheit: "pauschal Einsatz (Richtwert)",
-    preisHinweis: "Material und Umfang ergeben den Endpreis — Festpreisangebot nach Diagnose.",
-    vorteile: vorteil(
-      ["🔥", "Heizungsfachbetriebe"],
-      ["⏱", "Zeitnahe Termine"],
-      ["📋", "Nachvollziehbar"],
-      ["💶", "Ehrliche Einschätzung"]
-    ),
-    ratgeberSlug: "heizung-tauschen-kosten",
-    ratgeberLabel: "Heizung tauschen — was kostet das?",
-    relatedRatgeber: {
-      slug: "notfall-handwerker-muenchen",
-      label: "Notfall-Partner — wer kommt schnell?",
-    },
-    rechnerSituation: "kaputt",
-    faq: [
-      {
-        q: "Was tun bei akutem Wasserschaden an der Heizung?",
-        a: "Haupthahn zu, Strom an der Heizung sicher trennen und uns anrufen.",
-      },
-    ],
-  },
-
-  rohrbruch: {
-    slug: "rohrbruch",
-    label: "Rohrbruch",
-    headline: "Rohrbruch & Leck in München",
-    subline: "Sanitär-Notfälle — schnell abdichten und reparieren.",
-    beschreibung:
-      "Leckage oder Rohrbruch: wir helfen zügig mit Ortung, Abdichtung und fachgerechter Instandsetzung.",
-    wasWirMachen: [
-      "Schaden begrenzen",
-      "Leckortung",
-      "Reparatur oder Austausch",
-      "Dokumentation für Versicherung",
-    ],
-    preisVon: 150,
-    preisBis: 600,
-    preisEinheit: "Einsatz pauschal (Richtwert)",
-    preisHinweis: "Umfang und Material variieren — Angebot nach Sichtung.",
-    vorteile: vorteil(
-      ["💧", "Sanitär-Spezialisten"],
-      ["⏱", "Kurzfristige Termine"],
-      ["📋", "Schadensdoku"],
-      ["💶", "Klarer Rahmen"]
-    ),
-    ratgeberSlug: "bad-sanierung-kosten-muenchen",
-    ratgeberLabel: "Was kostet eine Badsanierung?",
-    relatedRatgeber: {
-      slug: "notfall-handwerker-muenchen",
-      label: "Notfall-Partner — wer kommt schnell?",
-    },
-    rechnerSituation: "kaputt",
-    faq: [
-      {
-        q: "Was ist der erste Schritt?",
-        a: "Wasser abstellen und uns kontaktieren — je schneller, desto geringer der Folgeschaden.",
-      },
-    ],
-  },
-
-  stromausfall: {
-    slug: "stromausfall",
-    label: "Stromausfall",
-    headline: "Stromausfall & Elektro in München",
-    subline: "Sicherung, Verteilung, Steckdosen — zertifizierte Elektriker.",
-    beschreibung:
-      "Teilweiser oder kompletter Stromausfall: wir finden die Ursache und beheben sie normkonform.",
-    wasWirMachen: [
-      "Fehlersuche",
-      "Sicherungskasten / Leitungen",
-      "Reparatur oder Nachrüstung",
-      "Prüfprotokoll auf Wunsch",
-    ],
-    preisVon: 95,
-    preisBis: 320,
-    preisEinheit: "Einsatz (Richtwert)",
-    preisHinweis: "Umfang erst nach Prüfung am Objekt abschätzbar.",
-    vorteile: vorteil(
-      ["⚡", "Zertifizierte Elektriker"],
-      ["🛡", "Normgerecht"],
-      ["⏱", "Schnelle Hilfe"],
-      ["💶", "Transparent"]
-    ),
-    ratgeberSlug: "wohnung-renovieren-kosten-muenchen",
-    ratgeberLabel: "Wohnung renovieren — Gesamtkosten",
-    rechnerSituation: "kaputt",
-    faq: [
-      {
-        q: "Ist das gefährlich?",
-        a: "Bei Brandgeruch oder Funken sofort Strom aus und 112 bei Gefahr — sonst Fachbetrieb.",
-      },
-    ],
-  },
-
-  dachschaden: {
-    slug: "dachschaden",
-    label: "Dachschaden",
-    headline: "Dachschaden in München",
-    subline: "Undichtigkeit, Sturm, Rinne — schnell und fachgerecht.",
-    beschreibung:
-      "Wir sichern die Eindeckung, dokumentieren Schäden für die Versicherung und reparieren dauerhaft.",
-    wasWirMachen: [
-      "Notabdichtung bei Bedarf",
-      "Schadensaufnahme",
-      "Reparatur / Teilerneuerung",
-      "Regenrinnen prüfen und reparieren",
-    ],
-    preisVon: 180,
-    preisBis: 420,
-    preisEinheit: "pro m² Dach (Richtwert)",
-    preisHinweis: "Kleine Reparaturen pauschalierbar — größere Schäden nach Aufmaß.",
-    vorteile: vorteil(
-      ["🏡", "Dachdecker"],
-      ["📋", "Versicherungsdoku"],
-      ["⏱", "Zeitnah"],
-      ["💶", "Ehrliche Spanne"]
-    ),
-    ratgeberSlug: "dacharbeiten-kosten-muenchen",
-    ratgeberLabel: "Dacharbeiten Kosten München",
-    rechnerSituation: "kaputt",
-    faq: [
-      {
-        q: "Droht Wasserschaden?",
-        a: "Ja — bei aktiver Undichtigkeit sofort absichern lassen.",
       },
     ],
   },
@@ -943,10 +673,10 @@ export const LEISTUNGEN_DATA: Record<string, LeistungsData> = {
       ["🌲", "Fachgerecht"],
       ["📋", "Genehmigungshinweise"],
       ["✓", "Versichert & sauber"],
-      ["💶", "Festpreis nach Termin"]
+      ["💶", "Angebot nach Besichtigung"]
     ),
-    ratgeberSlug: "gartenpflege-kosten-muenchen",
-    ratgeberLabel: "Was kostet Gartenpflege?",
+    ratgeberSlug: "generalunternehmer-vs-einzelhandwerker-muenchen",
+    ratgeberLabel: "Generalunternehmer oder Einzelhandwerker?",
     rechnerSituation: "betreuung",
     faq: [
       {
@@ -1023,7 +753,7 @@ export function buildLeistungsDataFallback(base: string): LeistungsData | null {
     ],
     ...preis,
     preisHinweis:
-      "Der Endpreis ergibt sich nach Aufmaß vor Ort. Festpreisangebot auf Wunsch.",
+      "Der Endpreis ergibt sich nach Aufmaß vor Ort. ",
     vorteile: vorteil(
       ["🎯", "Ein Ansprechpartner"],
       ["✓", "Qualifizierte Betriebe"],
@@ -1033,7 +763,7 @@ export function buildLeistungsDataFallback(base: string): LeistungsData | null {
     ratgeberSlug: rat.slug,
     ratgeberLabel: rat.label,
     rechnerSituation: preset.situation,
-    metaDescription: `${route.label} in München — Preisrahmen online, Meisterbetriebe, ein Ansprechpartner.`,
+    metaDescription: `${route.label} in München — Preisrahmen online, eigene Gewerke und Fachpartner, ein Ansprechpartner.`,
     faq: [
       {
         q: "Wie schnell gibt es einen Termin?",

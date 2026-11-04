@@ -34,6 +34,8 @@ export function HandwerkerSeoPage({ data }: { data: HandwerkerContentItem }) {
     );
   }
   const kontaktHref = "/kontakt";
+  // Elektro und Boden führt Bärenwald selbst aus, alle anderen Gewerke Partner-Meisterbetriebe
+  const eigenesGewerk = data.leistung === "elektriker" || data.leistung === "bodenleger";
   const { subline, body } = splitHandwerkerIntro(data.intro);
 
   const faqItems = [
@@ -70,8 +72,8 @@ export function HandwerkerSeoPage({ data }: { data: HandwerkerContentItem }) {
             </div>
 
             <div className="page-hero-trust">
-              <span>Meisterbetriebe München</span>
-              <span>Anfahrt bei Auftrag</span>
+              <span>{eigenesGewerk ? "Eigener Fachbereich" : "Ausführung durch Partner-Meisterbetriebe"}</span>
+              <span>Koordiniert von Bärenwald</span>
               <span>Ein Ansprechpartner</span>
             </div>
           </div>
@@ -114,8 +116,8 @@ export function HandwerkerSeoPage({ data }: { data: HandwerkerContentItem }) {
 
             <div className="hinweis">
               <p>
-                Der endgültige Preis hängt vom Umfang ab — Festpreis nach
-                Vor-Ort-Termin.
+                Der endgültige Preis hängt vom Umfang ab — das Angebot
+                erstellen wir nach der Besichtigung.
               </p>
             </div>
 
@@ -152,13 +154,14 @@ export function HandwerkerSeoPage({ data }: { data: HandwerkerContentItem }) {
                 <span aria-hidden>✓ </span>Ein Ansprechpartner
               </li>
               <li>
-                <span aria-hidden>✓ </span>Meisterbetriebe
+                <span aria-hidden>✓ </span>
+                {eigenesGewerk ? "Eigene Mannschaft" : "Partner-Meisterbetriebe"}
               </li>
               <li>
-                <span aria-hidden>📐 </span>Transparente Preise
+                <span aria-hidden>📐 </span>Transparenter Preisrahmen
               </li>
               <li>
-                <span aria-hidden>💶 </span>Festpreis nach Termin
+                <span aria-hidden>📋 </span>Dokumentierte Abnahme
               </li>
             </ul>
           </div>
@@ -193,7 +196,7 @@ export function HandwerkerSeoPage({ data }: { data: HandwerkerContentItem }) {
               />
             </div>
             <p className="final-cta-trust">
-              Unverbindlich · Festpreisangebot · Meisterbetriebe München
+              Unverbindlich · Angebot nach Besichtigung · Ein Ansprechpartner
             </p>
           </div>
         </div>

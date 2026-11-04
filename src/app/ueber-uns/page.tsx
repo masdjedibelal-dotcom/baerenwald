@@ -6,7 +6,7 @@ import { PageLayout } from "@/components/layout/PageLayout";
 export const metadata: Metadata = {
   title: "Über uns — Bärenwald München",
   description:
-    "Handwerk in München — Praxis, Prozesse und Koordination. Ein Ansprechpartner, klare Abläufe, dokumentierte Projekte.",
+    "Generalunternehmer und Handwerksbetrieb in München: eigene Gewerke, Elektrotechnik unter Meisterleitung und rund 70 Partnerbetriebe. Ein Ansprechpartner, dokumentierte Projekte.",
 };
 
 const PROCESS_ITEMS = [
@@ -31,7 +31,7 @@ const CLOSING_BULLETS = [
   "Ein Ansprechpartner",
   "Klare Prozesse",
   "Dokumentierte Projekte",
-  "Verantwortung auf\nbeiden Seiten",
+  "Eigene Gewerke und\nFachpartner",
 ] as const;
 
 export default function UeberUnsPage() {
@@ -48,9 +48,9 @@ export default function UeberUnsPage() {
               <span className="breadcrumb-current">Über uns</span>
             </nav>
             <h1 className="page-hero-h1">
-              Handwerk in München —
+              Handwerkliche Praxis —
               <br />
-              einfach, transparent, digital.
+              klare Organisation.
             </h1>
             <p className="page-hero-sub">
               Wir verstehen sowohl die
@@ -66,43 +66,28 @@ export default function UeberUnsPage() {
           <div className="article-section-inner">
             <div className="article-body legal-body">
               <p className="text-base text-p2-sub mb-8">
-                Bärenwald München koordiniert Handwerksprojekte in München und
-                Umgebung — von der kleinen Reparatur bis zur Komplettsanierung.
-                Als Generalunternehmer übernimmt Bärenwald die Planung,
-                Koordination und Kontrolle aller Gewerke mit einem einzigen
-                Ansprechpartner für den Kunden. Eigene Teams für Gartenbau,
-                Hausmeisterservice und Reinigung, festes Netzwerk aus geprüften
-                Meisterbetrieben für Sanitär, Elektro, Heizung, Dach und
-                Innenausbau. Preisrahmen online berechenbar auf
-                baerenwaldmuenchen.de/rechner.
+                Bärenwald München ist Generalunternehmer und Handwerksbetrieb für
+                Bau, Umbau und Sanierung in München und Umgebung. Wir verbinden
+                eigene Ausführung mit der Koordination umfassender Bauvorhaben.
               </p>
-              <h2>Warum Bärenwald?</h2>
+              <h2>Eigene Kompetenz und ergänzende Fachpartner</h2>
               <p>
-                Früher funktionierte vieles über Vertrauen, Erfahrung und Menschen
-                die mitgedacht haben. Heute scheitern viele Projekte nicht am
-                Handwerk selbst — sondern an fehlender Abstimmung, Zeitdruck und
-                unklaren Verantwortlichkeiten.
+                Unsere eigenen Schwerpunkte liegen im Trockenbau, Bodenlegen,
+                Abbruch, Garten- und Landschaftsbau sowie in der Elektrotechnik
+                unter fachlicher Leitung unseres technischen Betriebsleiters und
+                Elektromeisters.
               </p>
               <p>
-                Genau deshalb verbindet Bärenwald echte Baustellenpraxis mit
-                modernen Prozessen.
+                Je nach Projekt ergänzen wir die Mannschaft durch rund 70
+                Partnerbetriebe, Bauleitung, Statik und erforderliche
+                Fachplanung.
               </p>
 
-              <h2>Unser Ansatz</h2>
+              <h2>Können entscheidet</h2>
               <p>
-                Wir wollen nicht einfach Partner vermitteln wie ein normales
-                Portal. Wir wollen Handwerk, Koordination und Prozesse in ein
-                nachvollziehbares System bringen.
-              </p>
-              <p>
-                Der Kunde erklärt sein Anliegen in seiner Sprache. Wir übersetzen
-                dieses Anliegen fachlich richtig für den passenden
-                Handwerksbetrieb.
-              </p>
-              <p>
-                Wir planen Betriebe nicht nach Bewertungen oder Werbung ein —
-                sondern nach echten Fähigkeiten, Erfahrung, Kapazität und
-                Kompetenz.
+                Wir wählen unsere Fachpartner nach ihrer Eignung für die konkrete
+                Aufgabe aus. Erfahrung und Spezialisierung bilden die Grundlage.
+                Danach stimmen wir Verfügbarkeit und Einsatz im Projekt ab.
               </p>
               <div className="ueber-uns-example-box">
                 <div className="ueber-uns-example-box-text whitespace-pre-line">
@@ -112,16 +97,12 @@ Genau diese Unterschiede verstehen wir durch unsere eigene Praxis.`}
                 </div>
               </div>
 
-              <h2>Aus eigener Praxis</h2>
+              <h2>Informationen zusammenführen</h2>
               <p>
-                Aus eigenen Gewerken — Hausmeisterservice, Gartenbau, Reinigung —
-                entstanden über Jahre feste Abläufe, Checklisten und dokumentierte
-                Prozesse. Daraus entwickelte sich ein Netzwerk aus festen
-                Partnerfirmen, Meisterbetrieben und eigenen Teams.
-              </p>
-              <p>
-                Dadurch kennen wir echte Abläufe auf Baustellen und wissen wo
-                Probleme entstehen.
+                Unsere Mitarbeiter kümmern sich um Organisation und
+                Projektdokumentation. Berichte, Fotos und wichtige Entscheidungen
+                werden zentral zugeordnet. Das schafft nachvollziehbare Abläufe
+                zwischen Kunde, Büro und Baustelle.
               </p>
 
               <h2>Wie wir arbeiten</h2>
@@ -163,16 +144,16 @@ Sondern ein strukturierter Ablauf zwischen Kunde, Handwerk und Umsetzung.`}
                 aria-label="Nächste Schritte"
               >
                 <Link
-                  href="/kontakt"
+                  href="/rechner?modus=anfrage"
                   className="btn-pill-primary inline-flex py-2.5 px-5 text-fs-meta"
                 >
-                  Kontakt aufnehmen →
+                  Projekt anfragen →
                 </Link>
                 <Link
-                  href="/leistungen"
+                  href="/partner/registrieren"
                   className="inline-flex items-center rounded-pill border border-border-default px-5 py-2.5 text-fs-meta font-semibold text-text-primary hover:bg-muted"
                 >
-                  Alle Leistungen
+                  Partnerbetrieb werden
                 </Link>
               </div>
             </div>

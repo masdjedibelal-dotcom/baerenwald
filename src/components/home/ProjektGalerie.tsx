@@ -331,8 +331,8 @@ export function ProjektGalerie({
             Echte Ergebnisse.
           </h2>
           <p className="section-sub">
-            Von Notfalleinsätzen bis zur kompletten Außenanlage — koordiniert,
-            pünktlich, sauber abgeschlossen.
+            Von der Badsanierung bis zur Außenanlage — mit eigenen Gewerken und
+            Fachpartnern umgesetzt und dokumentiert übergeben.
           </p>
         </div>
 

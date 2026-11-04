@@ -79,67 +79,11 @@ export const LEISTUNGEN: LeistungRoute[] = [
     category: "service",
   },
   {
-    slug: "heizung-defekt",
-    label: "Heizung defekt",
-    icon: "",
-    kurz: "Heizung geht nicht, kein Warmwasser",
-    hint: "Ausfall, Störung, Heizungsnotfall",
-    category: "reparatur",
-  },
-  {
-    slug: "rohrbruch",
-    label: "Rohrbruch",
-    icon: "",
-    kurz: "Wasser, Leck, Sanitär",
-    hint: "Rohr undicht, Verstopfung",
-    category: "reparatur",
-  },
-  {
-    slug: "stromausfall",
-    label: "Stromausfall",
-    icon: "",
-    kurz: "Sicherung, Elektrik, Steckdose",
-    hint: "Strom weg, Elektro defekt",
-    category: "reparatur",
-  },
-  {
-    slug: "dachschaden",
-    label: "Dachschaden",
-    icon: "",
-    kurz: "Undicht, Sturm, Regenrinne",
-    hint: "Dach reparieren, Ziegel",
-    category: "reparatur",
-  },
-  {
-    slug: "winterdienst",
-    label: "Winterdienst",
-    icon: "",
-    kurz: "Räumen und Streuen",
-    hint: "Streupflicht, Gehweg",
-    category: "service",
-  },
-  {
-    slug: "gartenpflege",
-    label: "Gartenpflege",
-    icon: "",
-    kurz: "Mähen, schneiden, pflegen",
-    hint: "Regelmäßige Gartenbetreuung",
-    category: "service",
-  },
-  {
     slug: "baumarbeiten",
     label: "Baumarbeiten",
     icon: "",
     kurz: "Fällen, zurückschneiden",
     hint: "Baum, Kronenschnitt",
-    category: "service",
-  },
-  {
-    slug: "hausmeisterservice",
-    label: "Hausmeisterservice",
-    icon: "",
-    kurz: "Alles aus einer Hand",
-    hint: "Objektbetreuung, Koordination",
     category: "service",
   },
 ];
@@ -169,14 +113,6 @@ export const RATGEBER: RatgeberRoute[] = [
   {
     slug: "wohnung-renovieren-kosten-muenchen",
     label: "Wohnung renovieren — Gesamtkosten",
-  },
-  {
-    slug: "gartenpflege-kosten-muenchen",
-    label: "Was kostet Gartenpflege?",
-  },
-  {
-    slug: "winterdienst-kosten-muenchen",
-    label: "Was kostet Winterdienst?",
   },
   {
     slug: "waermepumpe-foerderung-2025",
@@ -209,10 +145,6 @@ export const RATGEBER: RatgeberRoute[] = [
   {
     slug: "zuverlaessigen-handwerker-finden-muenchen",
     label: "Zuverlässigen Partner finden",
-  },
-  {
-    slug: "notfall-handwerker-muenchen",
-    label: "Notfall Partner München",
   },
   {
     slug: "renovierung-muenchen-checkliste",

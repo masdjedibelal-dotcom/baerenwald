@@ -38,7 +38,7 @@ export async function generateMetadata({ params }: PageProps) {
   const title = `${data.label} München — Preise & Angebot`;
   const description =
     data.metaDescription ??
-    `${data.label} in München — Preisrahmen online berechnen, unverbindlich anfragen. Meisterbetriebe, ein Ansprechpartner.`;
+    `${data.label} in München — Preisrahmen online berechnen, unverbindlich anfragen. Eigene Gewerke und Fachpartner, ein Ansprechpartner.`;
   const canonical = `https://baerenwaldmuenchen.de/leistungen/${params.slug}`;
 
   return {

@@ -58,47 +58,37 @@ const TESTIMONIALS = [
     quote:
       "Unverbindliche Beratung, kein Druck. Das Angebot kam schnell und war klar. So wünscht man sich Handwerk.",
   },
-  {
-    name: "Sandra B.",
-    rolle: "Bogenhausen, München",
-    initials: "SB",
-    color: "blue" as const,
-    quote:
-      "Heizung im Januar ausgefallen — zügig war jemand da. Sehr zuverlässig und freundlich.",
-  },
-  {
-    name: "Markus H.",
-    rolle: "Pasing, München",
-    initials: "MH",
-    color: "gray" as const,
-    quote:
-      "Gartenpflege seit zwei Jahren. Kommt immer pünktlich, macht saubere Arbeit. Kann ich nur empfehlen.",
-  },
 ] satisfies readonly MarqueeTestimonial[];
 
 /** Echte Bärenwald-Referenzprojekte (Bildpfade Platzhalter bis finale Assets). */
 const PROJEKTE: readonly BaerenwaldProjekt[] = [
   {
-    id: 1,
-    bild: "/images/projekt-notdienst-kein-warmwasser.png",
+    id: 8,
+    bild: "/images/projekt-badsanierung-ramersdorf-perlach.png",
     bilder: [
-      "/images/projekt-notdienst-kein-warmwasser.png",
-      "/images/projekt-notdienst-kein-warmwasser-2.png",
+      "/images/projekt-badsanierung-ramersdorf-perlach.png",
+      "/images/projekt-badsanierung-ramersdorf-perlach-2.png",
+      "/images/projekt-badsanierung-ramersdorf-perlach-3.png",
+      "/images/projekt-badsanierung-ramersdorf-perlach-4.png",
+      "/images/projekt-badsanierung-ramersdorf-perlach-5.png",
+      "/images/projekt-badsanierung-ramersdorf-perlach-6.png",
+      "/images/projekt-badsanierung-ramersdorf-perlach-7.png",
+      "/images/projekt-badsanierung-ramersdorf-perlach-8.png",
     ],
     bildAlt:
-      "Technikraum München: Wilo Star Umwälzpumpe und isolierte Heizungsrohrleitungen nach Notdienst-Einsatz bei Warmwasserausfall",
-    gewerk: "Notdienst / Kein Warmwasser",
-    stadtteil: "München",
+      "Komplette Badsanierung Ramersdorf-Perlach: Entkernung, Elektro-Unterverteilung, Feuchtraum, Fliesen, Geberit-Unterputz, Dusche und fertiges modernes Bad mit LED-Spots",
+    gewerk: "Komplette Badsanierung in München Ramersdorf-Perlach",
+    stadtteil: "Privat",
     jahr: "2026",
-    tag: "notfall",
+    tag: "privat",
     problem:
-      "Kompletter Ausfall der Warmwasserversorgung in einem Mehrfamilienhaus — hoher Zeitdruck und sofortiger Handlungsbedarf, da das gesamte Gebäude betroffen war.",
+      "Die Umsetzung erfolgte durch eigene Teams sowie koordinierte Meisterbetriebe aus den Bereichen Sanitär, Heizung, Elektro, Trockenbau und Fliesenbau.\n\nDurch die enge Zusammenarbeit mit erfahrenen Partner-Meisterbetrieben konnte das Projekt fachgerecht, termingerecht und nach aktuellem technischen Standard umgesetzt werden.",
     loesung:
-      "• Sofortige Vor-Ort-Analyse und technische Erstbewertung\n• Dokumentation und strukturierte Fehleraufnahme\n• Koordination eines zertifizierten Meisterbetriebs aus unserem Heizungs- und Sanitärnetzwerk\n• Austausch von Pumpe und Steuerung\n• Entlüftung, Neueinstellung und Wiederinbetriebnahme der Anlage\n• Zentrale Koordination aller beteiligten Gewerke und Abläufe",
+      "Leistungsumfang:\n\n• Komplette Entkernung und Rückbau\n• Neuinstallation Sanitär- und Abwasserleitungen\n• Elektro-Neuinstallation inklusive Unterverteilung\n• LED-Beleuchtung und Deckenspots\n• Geberit-Unterputzsysteme\n• Feuchtraum-Trockenbau und Abdichtung\n• Estrich- und Fliesenarbeiten\n• Montage von Dusche, WC, Waschtisch und Badmöbeln\n• Installation elektrischer Fußbodenheizung\n• Endmontage, Funktionsprüfung und Übergabe",
     ergebnis:
-      "Die Warmwasserversorgung wurde innerhalb von 2 Tagen vollständig wiederhergestellt — mit minimaler Ausfallzeit und nur einem zentralen Ansprechpartner für den Auftraggeber.",
-    placeholderGradient: `linear-gradient(135deg, var(--fl-accent-dark), var(--fl-accent))`,
-    placeholderEmoji: "⚡",
+      "Alle Arbeiten wurden professionell koordiniert und durch eigene Fachkräfte sowie Partner-Meisterbetriebe umgesetzt. Das Ergebnis ist ein modernes, hochwertiges Badezimmer mit aktueller Sanitär- und Elektrotechnik.",
+    placeholderGradient: `linear-gradient(135deg, ${PALETTE.h1a2d36}, ${PALETTE.h2d5a6e})`,
+    placeholderEmoji: "🛁",
   },
   {
     id: 2,
@@ -112,7 +102,7 @@ const PROJEKTE: readonly BaerenwaldProjekt[] = [
     ],
     bildAlt:
       "Gewerbeumbau in München: Abriss und Rohbau mit freigelegten Installationen, Baustellenkoordination und Elektriker am Verteiler",
-    gewerk: "Abriss & Notdienst",
+    gewerk: "Abriss & Gewerbeumbau",
     stadtteil: "München",
     jahr: "2024",
     tag: "gewerbe",
@@ -124,28 +114,6 @@ const PROJEKTE: readonly BaerenwaldProjekt[] = [
       "Der komplette Abriss konnte trotz kritischer Ausgangslage fristgerecht umgesetzt werden. Entsorgung und Logistik wurden auch während des Engpasses organisiert, sodass die nachfolgenden Gewerke ohne Verzögerung weiterarbeiten konnten.\n\nUmsetzung durch eigene Teams und spezialisierte Meister- und Partnerbetriebe.",
     placeholderGradient: `linear-gradient(135deg, ${PALETTE.h2d2520}, ${PALETTE.h5c4033})`,
     placeholderEmoji: "🔨",
-  },
-  {
-    id: 3,
-    bild: "/images/projekt-gefahrenabwehr-baum-notfall.jpg",
-    bilder: [
-      "/images/projekt-gefahrenabwehr-baum-notfall.jpg",
-      "/images/projekt-gefahrenabwehr-baum-notfall-2.jpg",
-    ],
-    bildAlt:
-      "Gebrochener Baumast im Innenhof einer Wohnanlage als akutes Sicherheitsrisiko",
-    gewerk: "Gefahrenabwehr Baum / Notfall",
-    stadtteil: "Hausverwaltung · München",
-    jahr: "2026",
-    tag: "notfall",
-    problem:
-      "Großer Ast gebrochen, akute Gefahr für Bewohner und Passanten im Innenhof — sofortiger Handlungsbedarf.",
-    loesung:
-      "Eigene GaLaBau-Mannschaft in unter 2 Stunden disponiert, Vor-Ort-Gefährdungsanalyse durchgeführt und beschädigten Ast fachgerecht mit Sicherungstechnik zurückgeschnitten.",
-    ergebnis:
-      "Gefahrenquelle am selben Tag beseitigt, Sicherheit sofort wiederhergestellt und Schnittgut vollständig entsorgt inkl. Einsatzdokumentation und Rechnung am Einsatztag.",
-    placeholderGradient: `linear-gradient(135deg, ${PALETTE.h1a2d3d}, ${PALETTE.h2e5c7d})`,
-    placeholderEmoji: "🌳",
   },
   {
     id: 4,
@@ -196,105 +164,6 @@ const PROJEKTE: readonly BaerenwaldProjekt[] = [
       "Die Behandlung wurde vollständig durch das eigene Team von Bärenwald Garten- und Landschaftsbau ausgeführt. Durch die natürliche Ölbehandlung konnten die Holzoberflächen nachhaltig geschützt, optisch aufgewertet und optimal auf die Anforderungen im Außenbereich abgestimmt werden. Das Ergebnis fügt sich harmonisch in die hochwertige Garten- und Naturpoollandschaft ein und unterstützt den langfristigen Werterhalt der Anlage.\n\n✓ Ausgeführt durch eigenes Gewerk – Bärenwald Garten- und Landschaftsbau 🌿",
     placeholderGradient: `linear-gradient(135deg, ${PALETTE.h1b2e1f}, ${PALETTE.h3d6b45})`,
     placeholderEmoji: "🪵",
-  },
-  {
-    id: 6,
-    bild: "/images/projekt-gruenwald-villa-sanitaer-heizung.png",
-    bilder: [
-      "/images/projekt-gruenwald-villa-sanitaer-heizung.png",
-      "/images/projekt-gruenwald-villa-sanitaer-heizung-2.png",
-      "/images/projekt-gruenwald-villa-sanitaer-heizung-3.png",
-      "/images/projekt-gruenwald-villa-sanitaer-heizung-4.png",
-      "/images/projekt-gruenwald-villa-sanitaer-heizung-5.png",
-    ],
-    bildAlt:
-      "Grünwald Villa: Wartung Heizung und Sanitär — Viessmann-Anlage, Smart-Home-Fußbodenheizung, BWT-Wasserenthärtung und Steuerungsprüfung im Technikraum",
-    gewerk: "Grünwald Villa · Sanitärwartung & Heizungsservice",
-    stadtteil: "Privat",
-    jahr: "2026",
-    tag: "privat",
-    problem:
-      "Koordination und Betreuung durch Bärenwald München gemeinsam mit einer Meister Sanitär Partnerfirma.\n\nDurchgeführt wurden umfangreiche Wartungs- und Kontrollarbeiten an der Sanitär- und Heizungsanlage:",
-    loesung:
-      "• Wartung der Fußbodenheizung und Heizkreisverteiler\n• Kontrolle der Heizkreispumpen und Temperaturregelung\n• Prüfung von Druck, Ventilen und Sicherheitsbauteilen\n• Überprüfung der Smart-Home-Heizungssteuerung\n• Wartung der Wasserenthärtungsanlage\n• Kontrolle und Instandsetzung von Sanitärarmaturen\n• Funktionsprüfung der gesamten Heizungs- und Sanitärtechnik\n• Fachgerechter Austausch einzelner Sanitärkomponenten",
-    ergebnis:
-      "Alle Arbeiten wurden professionell, sauber und zuverlässig durch die Meister Sanitär Partnerfirma umgesetzt. Die gesamte Anlage funktioniert wieder einwandfrei und wurde technisch geprüft übergeben.",
-    placeholderGradient: `linear-gradient(135deg, ${PALETTE.h1a2838}, ${PALETTE.h2e4a66})`,
-    placeholderEmoji: "🔧",
-  },
-  {
-    id: 7,
-    bild: "/images/projekt-kindergarten-sanitaer-notdienst.png",
-    bilder: [
-      "/images/projekt-kindergarten-sanitaer-notdienst.png",
-      "/images/projekt-kindergarten-sanitaer-notdienst-2.png",
-      "/images/projekt-kindergarten-sanitaer-notdienst-3.png",
-    ],
-    bildAlt:
-      "Kindergarten: Sanitär-Notdienst an Unterputz-Duscharmatur mit Thermostat — Demontage, Kartuschenwechsel, Funktions- und Dichtheitsprüfung in der Dusche",
-    gewerk: "Kindergarten Notdienst · Koordination durch Bärenwald",
-    stadtteil: "München",
-    jahr: "2026",
-    tag: "notfall",
-    problem:
-      "Im Rahmen eines dringenden Sanitär-Notdienstes in einem Kindergarten wurde durch Bärenwald die komplette Koordination und Umsetzung organisiert.\n\nNach der Schadensaufnahme vor Ort haben wir umgehend einen spezialisierten Meisterbetrieb aus unserem Partnernetzwerk beauftragt und den gesamten Ablauf begleitet — von der Terminabstimmung bis zur erfolgreichen Fertigstellung.\n\nBei der Reparatur handelte es sich um eine spezielle Unterputz-Duscharmatur mit Thermostatregelung. Für den Ausbau der defekten Kartuschen war spezielles Werkzeug sowie ein besonderer Steckschlüssel notwendig, da das Innenventil nur mit Fachwerkzeug geöffnet werden konnte.",
-    loesung:
-      "Durchgeführt wurden unter anderem:\n\n• Absperren der Wasserzufuhr\n• Ausbau der defekten Thermostat-Kartuschen\n• Demontage und Zerlegung der Unterputz-Armatur\n• Einbau und Justierung neuer Kartuschen\n• Funktions- und Dichtheitsprüfung\n• Wiederinbetriebnahme der Duschanlage",
-    ergebnis:
-      "Dank der schnellen Koordination durch Bärenwald und der fachgerechten Umsetzung durch den Partner-Meisterbetrieb konnte der Sanitärbereich kurzfristig wieder sicher genutzt werden.\n\nDer Kindergartenbetrieb war dadurch schnell wieder abgesichert und einsatzbereit.\n\nKoordiniert durch Bärenwald München · Umsetzung durch spezialisierten Partner-Meisterbetrieb.",
-    placeholderGradient: `linear-gradient(135deg, var(--fl-accent-dark), ${PALETTE.h2e6b8f})`,
-    placeholderEmoji: "🚿",
-  },
-  {
-    id: 8,
-    bild: "/images/projekt-badsanierung-ramersdorf-perlach.png",
-    bilder: [
-      "/images/projekt-badsanierung-ramersdorf-perlach.png",
-      "/images/projekt-badsanierung-ramersdorf-perlach-2.png",
-      "/images/projekt-badsanierung-ramersdorf-perlach-3.png",
-      "/images/projekt-badsanierung-ramersdorf-perlach-4.png",
-      "/images/projekt-badsanierung-ramersdorf-perlach-5.png",
-      "/images/projekt-badsanierung-ramersdorf-perlach-6.png",
-      "/images/projekt-badsanierung-ramersdorf-perlach-7.png",
-      "/images/projekt-badsanierung-ramersdorf-perlach-8.png",
-    ],
-    bildAlt:
-      "Komplette Badsanierung Ramersdorf-Perlach: Entkernung, Elektro-Unterverteilung, Feuchtraum, Fliesen, Geberit-Unterputz, Dusche und fertiges modernes Bad mit LED-Spots",
-    gewerk: "Komplette Badsanierung in München Ramersdorf-Perlach",
-    stadtteil: "Privat",
-    jahr: "2026",
-    tag: "privat",
-    problem:
-      "Die Umsetzung erfolgte durch eigene Teams sowie koordinierte Meisterbetriebe aus den Bereichen Sanitär, Heizung, Elektro, Trockenbau und Fliesenbau.\n\nDurch die enge Zusammenarbeit mit erfahrenen Partner-Meisterbetrieben konnte das Projekt fachgerecht, termingerecht und nach aktuellem technischen Standard umgesetzt werden.",
-    loesung:
-      "Leistungsumfang:\n\n• Komplette Entkernung und Rückbau\n• Neuinstallation Sanitär- und Abwasserleitungen\n• Elektro-Neuinstallation inklusive Unterverteilung\n• LED-Beleuchtung und Deckenspots\n• Geberit-Unterputzsysteme\n• Feuchtraum-Trockenbau und Abdichtung\n• Estrich- und Fliesenarbeiten\n• Montage von Dusche, WC, Waschtisch und Badmöbeln\n• Installation elektrischer Fußbodenheizung\n• Endmontage, Funktionsprüfung und Übergabe",
-    ergebnis:
-      "Alle Arbeiten wurden professionell koordiniert und durch eigene Fachkräfte sowie Partner-Meisterbetriebe umgesetzt. Das Ergebnis ist ein modernes, hochwertiges Badezimmer mit aktueller Sanitär- und Elektrotechnik.",
-    placeholderGradient: `linear-gradient(135deg, ${PALETTE.h1a2d36}, ${PALETTE.h2d5a6e})`,
-    placeholderEmoji: "🛁",
-  },
-  {
-    id: 9,
-    bild: "/images/projekt-hebeanlage-notdienst-ottobrunn.png",
-    bilder: [
-      "/images/projekt-hebeanlage-notdienst-ottobrunn.png",
-      "/images/projekt-hebeanlage-notdienst-ottobrunn-2.png",
-      "/images/projekt-hebeanlage-notdienst-ottobrunn-3.png",
-    ],
-    bildAlt:
-      "Wohnanlage Ottobrunn: Zugang Technikraum, Hebeanlage mit Steigleitungen und Schaltschrank mit Pumpen-Handeinschaltung nach Notdienst-Koordination",
-    gewerk: "Notdienst / Ausfall Hebeanlage",
-    stadtteil: "Ottobrunn",
-    jahr: "2026",
-    tag: "verwaltung",
-    problem:
-      "Ausfall der Hebeanlage in einer Wohnanlage — akuter Handlungsbedarf zur Sicherstellung des laufenden Betriebs und zur Vermeidung weiterer Schäden.",
-    loesung:
-      "• Sofortige technische Aufnahme und Dokumentation vor Ort\n• Koordination mit der zuständigen Hausverwaltung\n• Organisation und Beauftragung eines spezialisierten Meisterpartnerbetriebs\n• Planung und Begleitung des Austauschs der Hebeanlage\n• Koordination der Umsetzung bis zur vollständigen Wiederinbetriebnahme",
-    ergebnis:
-      "Die neue Hebeanlage wurde kurzfristig umgesetzt, fachgerecht installiert und direkt wieder in Betrieb genommen — zentral koordiniert durch Bärenwald mit minimaler Ausfallzeit und nur einem Ansprechpartner für die Hausverwaltung.",
-    placeholderGradient: `linear-gradient(135deg, ${PALETTE.h1a2d3d}, ${PALETTE.h3d4d5c})`,
-    placeholderEmoji: "⚡",
   },
 ];
 
@@ -479,34 +348,33 @@ export default function BaerenwaldLandingClient({
         <div className="hero-section">
           <div className="hero">
             <div className="hero-copy">
-              <p className="hero-eyebrow">Handwerk neu gedacht</p>
+              <p className="hero-eyebrow">Generalunternehmer &amp; Handwerksbetrieb</p>
               <h1 className="hero-h1-split">
                 <span className="hero-h1-line--1 au">
-                  Kein Vermittler.
+                  Ihr Bauvorhaben.
                 </span>
                 <WaveUnderline
                   className="hero-h1-line--2 hero-h1-wave au d2"
                   tone="on-light"
                 >
-                  <em>Ein Ansprechpartner.</em>
+                  <em>Unsere Umsetzung.</em>
                 </WaveUnderline>
-                <span className="hero-h1-line--3 au d3">Fürs Handwerk.</span>
               </h1>
               <p className="hero-lead au d4">
-                Von Reparatur bis Komplettprojekt.
-                <br />
-                Bärenwald bleibt von Anfang bis Ende dabei — Koordination,
-                Handwerk und Umsetzung.
+                Wir bauen um, sanieren und gestalten neu: mit eigenen
+                Handwerkern, Elektrotechnik unter Meisterleitung und rund 70
+                Partnerbetrieben. Für Privatkunden, Hausverwaltungen,
+                Unternehmen und Investoren in München.
               </p>
               <div className="hero-actions-row au d5" style={{ marginTop: 28 }}>
                 <div className="hero-cta-paar">
                   <CTAButton
                     bare
                     tone="hero"
-                    href={RECHNER_HREF}
-                    label={CTA.hero}
+                    href={ANFRAGE_HREF}
+                    label={CTA.anfrage}
                     onClick={() =>
-                      capturePostHogEvent("cta_rechner_clicked", {
+                      capturePostHogEvent("cta_anfrage_clicked", {
                         location: "hero",
                       })
                     }
@@ -514,10 +382,10 @@ export default function BaerenwaldLandingClient({
                   <CTAButton
                     bare
                     tone="hero-secondary"
-                    href={ANFRAGE_HREF}
-                    label={CTA.anfrage}
+                    href={RECHNER_HREF}
+                    label={CTA.hero}
                     onClick={() =>
-                      capturePostHogEvent("cta_anfrage_clicked", {
+                      capturePostHogEvent("cta_rechner_clicked", {
                         location: "hero",
                       })
                     }
@@ -602,21 +470,21 @@ export default function BaerenwaldLandingClient({
       >
         <div className="final-cta-inner">
           <h2 id="landing-final-cta-h2" className="final-cta-h2">
-            Bereit für Ihr Projekt?
+            Lernen wir Ihr Vorhaben kennen.
           </h2>
           <p className="final-cta-sub">
-            Preisrahmen in wenigen Minuten — ein Ansprechpartner für die
-            Umsetzung.
+            Ein einzelnes Gewerk oder ein umfassendes Projekt: Beschreiben Sie
+            uns, was Sie planen. Gemeinsam klären wir die nächsten Schritte.
           </p>
           <div className="final-cta-actions">
             <CTAButton
               bare
               tone="final"
-              href={RECHNER_HREF}
+              href={ANFRAGE_HREF}
               label={CTA.final}
               className="btn-main"
               onClick={() =>
-                capturePostHogEvent("cta_rechner_clicked", {
+                capturePostHogEvent("cta_anfrage_clicked", {
                   location: "final_cta",
                 })
               }

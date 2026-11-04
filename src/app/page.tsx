@@ -13,10 +13,10 @@ import { isStagingDeploy } from "@/lib/staging";
 import "@/app/baerenwald-landing.css";
 
 const title =
-  "Bärenwald München — Maler, Elektriker, Bodenleger — alles aus einer Hand";
+  "Bärenwald München — Generalunternehmer & Handwerksbetrieb für Umbau und Sanierung";
 
 const description =
-  "Partner München — ein Ansprechpartner für alle Gewerke. Preisrahmen online berechnen. Malerarbeiten, Bad, Elektro, Heizung. Unverbindlich.";
+  "Bau, Umbau und Sanierung in München: eigene Gewerke, Elektrotechnik unter Meisterleitung und rund 70 Partnerbetriebe. Ein Ansprechpartner von der Besichtigung bis zur Abnahme.";
 
 const teoTitle = `${MARKE.nameLang} — Handwerksbetrieb für Hausverwaltungen in München`;
 const teoDescription =

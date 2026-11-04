@@ -223,64 +223,6 @@ export const zuverlaessigenHandwerkerFindenMuenchen: RatgeberData = {
     "Preisrahmen berechnen — ein Ansprechpartner für alle Gewerke →",
 };
 
-export const notfallHandwerkerMuenchen: RatgeberData = {
-  slug: "notfall-handwerker-muenchen",
-  titel: "Notfall Handwerker München",
-  ...NOTFALL_HANDWERKER_SEO,
-  ...GUIDE_SHELL,
-  hero: {
-    headline:
-      "Notfall-Handwerker in München — wer kommt schnell und was kostet das?",
-    subline:
-      "Heizung, Rohrbruch, Strom, Sturmschaden — was Sie sofort tun sollten und wie Bärenwald den passenden Fachbetrieb koordiniert.",
-  },
-  ablauf: [
-    {
-      schritt: "Was tun bei Heizungsausfall in München?",
-      text: "Sofort prüfen: Thermostat, Sicherung, Gaszufuhr. Wenn nichts hilft: Notdienst anrufen. Bärenwald koordiniert Heizungs-Meisterbetriebe in München meist innerhalb von 2–4 Stunden. Kosten für Notdienst-Diagnose und einfache Reparatur: 300–800 Euro. Bei Totalausfall und nötigem Austausch: 8.000–35.000 Euro je nach Anlage.",
-    },
-    {
-      schritt: "Was tun bei Rohrbruch oder Wasserschaden in München?",
-      text: "Sofort Haupthahn zudrehen (meist im Keller oder unter der Spüle), Sicherungskasten prüfen, betroffenen Raum nicht betreten, wenn Wasser und Strom zusammenkommen. Dann Notdienst anrufen und Versicherung informieren. Bärenwald dokumentiert den Schaden für den Versicherungsfall. Kosten Notdienst: 400–1.500 Euro je nach Aufwand.",
-    },
-    {
-      schritt: "Was tun bei Stromausfall in München?",
-      text: "Zuerst Sicherungskasten prüfen — oft ist nur eine Sicherung rausgeflogen. Wenn alle Sicherungen in Ordnung sind und der Strom bleibt weg: Nachbar fragen ob Hausausfall, dann Stadtwerke München anrufen (bei Hausausfall). Bei Defekt in der eigenen Wohnung: Elektro-Notdienst. Bärenwald koordiniert Elektro-Meisterbetriebe für Notfälle.",
-    },
-    {
-      schritt: "Was tun bei Sturmschaden am Dach in München?",
-      text: "Wenn Ziegel fehlen oder der First beschädigt ist: provisorische Abdeckung mit Plane (Feuerwehr macht das bei akuter Gefahr), Versicherung informieren, Notdienst-Dachdecker beauftragen. Bärenwald koordiniert Dachdecker und Gerüstbauer auch kurzfristig. Wichtig: Schaden fotografieren, bevor er behoben wird — für die Versicherung.",
-    },
-    {
-      schritt: "Was kostet ein Notdienst-Einsatz in München?",
-      text: "Notdienst-Aufschläge in München sind je nach Uhrzeit 50–150 % des normalen Stundensatzes. Ein Einsatz abends oder am Wochenende kostet entsprechend mehr. Typische Kosten: Heizung 300–800 €, Rohrbruch 400–1.500 €, Elektro 200–600 €, Dach-Notreparatur 500–2.000 €. Bärenwald nennt vor dem Einsatz eine Kostenschätzung.",
-    },
-  ],
-  faq: [
-    {
-      q: "Wie schnell ist Bärenwald im Notfall vor Ort?",
-      a: "Wir koordinieren meist innerhalb von 2–4 Stunden einen Fachbetrieb — je nach Tageszeit und Verfügbarkeit. Bei akuter Gefahr (Gas, Wasser, Strom) immer zuerst 112 oder 110 anrufen.",
-    },
-    {
-      q: "Wer zahlt bei einem Wasserschaden?",
-      a: "Die Wohngebäudeversicherung oder Hausratversicherung — je nach Schadensursache. Bärenwald dokumentiert den Schaden mit Fotos und Bericht für den Versicherungsfall.",
-    },
-    {
-      q: "Gibt es Notdienst auch nachts und am Wochenende?",
-      a: "Ja — für akute Notfälle sind wir auch außerhalb der Geschäftszeiten erreichbar. Nacht- und Wochenendeinsätze haben einen Aufschlag.",
-    },
-    {
-      q: "Was ist der Unterschied zu einem normalen Handwerker-Notdienst?",
-      a: "Bärenwald koordiniert den passenden Fachbetrieb für Ihr spezifisches Problem — Sie müssen nicht selbst herausfinden, welcher Handwerker für Heizung, Rohrbruch oder Elektro zuständig ist. Ein Anruf reicht.",
-    },
-  ],
-  leistungsSlug: "heizung-sanitaer",
-  leistungsLabel: "Heizung & Sanitär in München",
-  rechnerSituation: "kaputt",
-  ctaRechnerLabel: "Preisrahmen berechnen →",
-  finalCtaPhoneFirst: true,
-};
-
 const REIHENFOLGE_RENOVIERUNG = `1. Abbruch und Entsorgung
 2. Elektro-Rauputz (Leitungen legen)
 3. Neue Wände / Trockenbau
@@ -435,7 +377,6 @@ export const GUIDE_PAGES: RatgeberData[] = [
   generalunternehmerVsEinzelhandwerkerMuenchen,
   besteGeneralunternehmerMuenchen,
   zuverlaessigenHandwerkerFindenMuenchen,
-  notfallHandwerkerMuenchen,
   renovierungMuenchenCheckliste,
   komplettsanierungAblaufMuenchen,
 ];

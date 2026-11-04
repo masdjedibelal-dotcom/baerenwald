@@ -86,8 +86,27 @@ const nextConfig = {
           { source: `${p}/:path*`, destination: "/portal", permanent: false },
         ])
       : [];
+    // Bärenwald: Service-, Notdienst- und Vermittlungsangebote eingestellt (Nov. 2026) — alte Adressen weiterleiten
+    const bwEntfernt = teo
+      ? []
+      : [
+          ["/leistungen/hausmeisterservice", "/"],
+          ["/leistungen/winterdienst", "/"],
+          ["/leistungen/gartenpflege", "/leistungen/gartengestaltung-muenchen"],
+          ["/leistungen/heizung-defekt", "/leistungen/heizung-sanitaer-muenchen"],
+          ["/leistungen/rohrbruch", "/leistungen/heizung-sanitaer-muenchen"],
+          ["/leistungen/stromausfall", "/leistungen/elektroarbeiten-muenchen"],
+          ["/leistungen/dachschaden", "/leistungen/dacharbeiten-muenchen"],
+          ["/ratgeber/gartenpflege-kosten-muenchen", "/ratgeber"],
+          ["/ratgeber/winterdienst-kosten-muenchen", "/ratgeber"],
+          ["/ratgeber/notfall-handwerker-muenchen", "/ratgeber"],
+        ].flatMap(([von, nach]) => [
+          { source: von, destination: nach, permanent: true },
+          ...(von.startsWith("/leistungen/") ? [{ source: `${von}-muenchen`, destination: nach, permanent: true }] : []),
+        ]);
     return [
       ...teoRedirects,
+      ...bwEntfernt,
       {
         source: "/gpt",
         destination: "/rechner",

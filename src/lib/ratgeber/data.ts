@@ -9,11 +9,9 @@ import {
   bodenbelagKostenMuenchen,
   dacharbeitenKostenMuenchen,
   fensterTauschenKosten,
-  gartenpflegeKostenMuenchen,
   heizungTauschenKosten,
   trockenbauKostenMuenchen,
   waermepumpeFoerderung2025,
-  winterdienstKostenMuenchen,
   wohnungRenovierenKostenMuenchen,
 } from "@/lib/ratgeber/articles/batch";
 import { GUIDE_PAGES } from "@/lib/ratgeber/articles/guide-pages";
@@ -24,8 +22,6 @@ export const RATGEBER_DATA: Record<string, RatgeberData> = {
   [bodenbelagKostenMuenchen.slug]: bodenbelagKostenMuenchen,
   [heizungTauschenKosten.slug]: heizungTauschenKosten,
   [wohnungRenovierenKostenMuenchen.slug]: wohnungRenovierenKostenMuenchen,
-  [gartenpflegeKostenMuenchen.slug]: gartenpflegeKostenMuenchen,
-  [winterdienstKostenMuenchen.slug]: winterdienstKostenMuenchen,
   [waermepumpeFoerderung2025.slug]: waermepumpeFoerderung2025,
   [badRenovierenAblauf.slug]: badRenovierenAblauf,
   [fensterTauschenKosten.slug]: fensterTauschenKosten,

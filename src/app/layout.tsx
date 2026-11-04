@@ -34,12 +34,12 @@ const BASE_URL = publicSiteOrigin();
 const staging = isStagingDeploy();
 
 const BESCHREIBUNG = istTeo
-  ? "Instandhaltung für Hausverwaltungen, WEGs und Bestandshalter in München — ein Ansprechpartner für alle Gewerke, jeder Stand im Portal."
-  : "Partner München — ein Ansprechpartner für alle Gewerke. Preisrahmen online berechnen. Malerarbeiten, Bad, Elektro, Heizung. Unverbindlich.";
+  ? "Handwerksbetrieb und Generalunternehmer für Hausverwaltungen in München — alle Gewerke, ein Vertragspartner, eine Rechnung, zum Preis eines Fachbetriebs."
+  : "Generalunternehmer & Handwerksbetrieb in München — Bau, Umbau und Sanierung mit eigenen Gewerken und rund 70 Partnerbetrieben. Ein Ansprechpartner.";
 /** Vorschau-Titel (Open Graph / Twitter) */
 const VORSCHAU_TITEL = istTeo
-  ? `${MARKE.nameLang} — Instandhaltung für Verwaltungen und Bestandshalter`
-  : `${MARKE.nameLang} — Partner aus einer Hand`;
+  ? `${MARKE.nameLang} — Handwerksbetrieb für Hausverwaltungen`
+  : `${MARKE.nameLang} — Generalunternehmer & Handwerksbetrieb`;
 
 export const metadata: Metadata = {
   metadataBase: new URL(BASE_URL),

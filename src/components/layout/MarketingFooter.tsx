@@ -47,9 +47,9 @@ export function MarketingFooter() {
             <p className="footer-mobile-brand-name">Bärenwald München</p>
           </div>
           <p className="footer-mobile-tagline">
-            Handwerk. Koordination.
+            Generalunternehmer &amp; Handwerksbetrieb.
             <br />
-            Verantwortung.
+            Bau, Umbau und Sanierung in München.
           </p>
           <FooterSocialLinks className="footer-mobile-social" secondaryIconsOnly />
         </div>
@@ -76,6 +76,15 @@ export function MarketingFooter() {
               <ul className="site-footer-links">
                 <li>
                   <a href="/">Startseite</a>
+                </li>
+                <li>
+                  <a href="/ueber-uns">Über uns</a>
+                </li>
+                <li>
+                  <a href="/rechner?modus=anfrage">Projekt anfragen</a>
+                </li>
+                <li>
+                  <a href="/partner/registrieren">Partner werden</a>
                 </li>
                 <li>
                   <a href="/ratgeber">Ratgeber-Übersicht</a>

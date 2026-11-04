@@ -42,9 +42,9 @@ export function HowTimelineMotion() {
     <section className="how-section" id="how">
       <div className="how-section-inner">
         <header className="how-tl-header fade-up">
-          <h2 className="how-h2">So läuft es bei uns.</h2>
+          <h2 className="how-h2">Von Ihrer Idee bis zur Abnahme.</h2>
           <p className="how-tl-sub">
-            Kein Abstimmen. Kein Nachfragen. Kein Stress.
+            Ein Ansprechpartner für das ganze Vorhaben.
           </p>
         </header>
 
@@ -58,7 +58,7 @@ export function HowTimelineMotion() {
           <CTAButton
             bare
             href="/kontakt"
-            label="Kontakt aufnehmen →"
+            label="Projekt anfragen →"
             className="how-tl-cta-action"
           />
         </div>

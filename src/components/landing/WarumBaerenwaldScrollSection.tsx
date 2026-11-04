@@ -39,10 +39,10 @@ export function WarumBaerenwaldScrollSection() {
       <div className="warum-inner warum-inner--grid">
         <header className="warum-header">
           <h2 id="warum-heading" className="warum-h2">
-            Warum Bärenwald?
+            Eigene Mannschaft. Eingespielte Partner.
           </h2>
           <p className="warum-sub">
-            Ein Ansprechpartner, klare Schritte — für Kunden und Handwerk gleichermaßen.
+            Bärenwald verbindet eigene handwerkliche Ausführung mit spezialisierten Fachbetrieben.
           </p>
         </header>
         <div className="warum-cards-grid">

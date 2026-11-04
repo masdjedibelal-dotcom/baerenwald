@@ -5,7 +5,7 @@ import { SITE_CONFIG } from "@/lib/config";
 
 export const metadata: Metadata = {
   title: "Kontakt — Bärenwald München",
-  description: `Einfach anfragen: Anrufen oder E-Mail schreiben — wir melden uns ${SITE_CONFIG.responseSlaWithin}.`,
+  description: `Bauvorhaben besprechen: Projekt anfragen, anrufen oder E-Mail schreiben — wir melden uns ${SITE_CONFIG.responseSlaWithin}.`,
 };
 
 export default function KontaktPage() {
@@ -21,12 +21,10 @@ export default function KontaktPage() {
               </span>
               <span className="breadcrumb-current">Kontakt</span>
             </nav>
-            <h1 className="page-hero-h1">Einfach anfragen.</h1>
+            <h1 className="page-hero-h1">Lassen Sie uns Ihr Bauvorhaben besprechen.</h1>
             <p className="page-hero-sub">
-              Ihr beschreibt was ihr braucht —
-              <br />
-              wir melden uns in der Regel
-              <br />
+              Umbau, Sanierung oder neue Außenanlage: Senden Sie uns eine kurze
+              Beschreibung. Wir melden uns in der Regel{" "}
               {SITE_CONFIG.responseSlaWithin}.
             </p>
           </div>
@@ -41,8 +39,6 @@ export default function KontaktPage() {
                 {SITE_CONFIG.phone}
                 <br />
                 Mo–Fr 8–18 Uhr
-                <br />
-                Bei Notfall auch außerhalb der Geschäftszeiten.
                 <br />
                 <a href={SITE_CONFIG.phoneHref}>Jetzt anrufen →</a>
               </p>
@@ -67,15 +63,21 @@ export default function KontaktPage() {
               </p>
 
               <p>
-                ✓ Geprüfte Meisterbetriebe in München
+                ✓ Eigene Gewerke und rund 70 Partnerbetriebe
                 <br />
-                ✓ Preisrahmen sofort online — transparent von Anfang an
+                ✓ Kostenrahmen online berechnen
                 <br />
-                ✓ Ein Ansprechpartner für alles — Einzelleistung oder Projekt
+                ✓ Ein Ansprechpartner — vom einzelnen Gewerk bis zum Gesamtprojekt
               </p>
 
               <div className="mt-10 flex flex-wrap gap-3" role="group" aria-label="Kontaktaktionen">
-                <a href={SITE_CONFIG.phoneHref} className="btn-pill-primary inline-flex py-2.5 px-5 text-fs-meta">
+                <a href="/rechner?modus=anfrage" className="btn-pill-primary inline-flex py-2.5 px-5 text-fs-meta">
+                  Projekt anfragen →
+                </a>
+                <a
+                  href={SITE_CONFIG.phoneHref}
+                  className="inline-flex items-center rounded-pill border border-border-default px-5 py-2.5 text-fs-meta font-semibold text-text-primary hover:bg-muted"
+                >
                   Jetzt anrufen →
                 </a>
                 <a

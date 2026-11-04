@@ -81,9 +81,9 @@ export function LeistungsPage({ slug, data }: LeistungsPageProps) {
           </div>
 
           <div className="page-hero-trust">
-            <span>Meisterbetriebe München</span>
-            <span>Anfahrt wird bei Auftrag angerechnet</span>
-            <span>Festpreisangebot</span>
+            <span>Eigene Gewerke &amp; Fachpartner</span>
+            <span>Ein Ansprechpartner</span>
+            <span>Dokumentierte Abnahme</span>
           </div>
         </div>
       </div>
@@ -250,7 +250,7 @@ export function LeistungsPage({ slug, data }: LeistungsPageProps) {
             <CTAButton bare tone="final-ghost" href={telHref} label="Direkt anrufen" />
           </div>
           <p className="final-cta-trust">
-            Unverbindlich · Festpreisangebot · Meisterbetriebe München
+            Unverbindlich · Angebot nach Besichtigung · Ein Ansprechpartner
           </p>
         </div>
       </div>

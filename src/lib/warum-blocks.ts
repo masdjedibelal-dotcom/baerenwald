@@ -13,20 +13,20 @@ export type WarumBlock = {
 
 export const WARUM_EINSATZ_BLOCKS: readonly WarumBlock[] = [
   {
-    titel: "Ein Ansprechpartner",
-    text: "Einer kennt Ihr Projekt — nicht drei Nummern, die Sie selbst abstimmen.",
+    titel: "Eigene Gewerke",
+    text: "Trockenbau, Bodenlegen, Abbruch, Garten- und Landschaftsbau und Elektrotechnik unter Meisterleitung führen wir selbst aus.",
     icon: LANDING_ICON_WARUM_CONTACT,
     variant: "dark",
   },
   {
-    titel: "Preistransparenz",
-    text: "Preisrahmen vor dem Anruf. Festpreis nach dem Termin vor Ort.",
+    titel: "Rund 70 Partnerbetriebe",
+    text: "Für alle weiteren Gewerke binden wir Fachbetriebe ein, ausgewählt nach Können und Eignung für Ihre Aufgabe.",
     icon: LANDING_ICON_WARUM_PRICE,
     variant: "mist",
   },
   {
-    titel: "Immer auf dem Stand",
-    text: "Statusupdates und digitales Abnahmeprotokoll — ohne nachfragen.",
+    titel: "Ein Ansprechpartner",
+    text: "Von der Besichtigung bis zur Abnahme bleibt Bärenwald Ihr Ansprechpartner, auch wenn Partnerbetriebe ausführen.",
     icon: LANDING_ICON_WARUM_STATUS,
     variant: "soft",
   },

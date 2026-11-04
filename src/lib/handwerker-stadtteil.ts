@@ -12,10 +12,9 @@ const LEISTUNG_SLUG_TO_HANDWERKER: Record<string, string> = {
   malerarbeiten: "maler",
   "bad-sanieren": "badsanierung",
   "boden-verlegen": "bodenleger",
-  "heizung-defekt": "heizung",
-  rohrbruch: "sanitaer",
-  stromausfall: "elektriker",
-  dachschaden: "dachdecker",
+  "heizung-sanitaer": "heizung",
+  elektroarbeiten: "elektriker",
+  dacharbeiten: "dachdecker",
 };
 
 export function handwerkerLeistungKeysFromRechnerSlug(
