@@ -639,6 +639,28 @@
 .teo-fuss__adresse a {
   color: var(--teo-weiss);
 }
+.teo-site .teo-fuss__claim {
+  margin-top: 14px;
+  font-size: 20px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: var(--teo-gold);
+}
+
+/* Claim neben dem Logo — nur ab Tablet, am Handy steht er im Footer */
+.teo-kopf__claim { display: none; }
+@media (min-width: 900px) {
+  .teo-kopf__claim {
+    display: inline-block;
+    margin-left: 14px;
+    padding-left: 14px;
+    border-left: 1px solid var(--teo-linie);
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--teo-text-2);
+    white-space: nowrap;
+  }
+}
 .teo-fuss__links {
   display: flex;
   flex-direction: column;

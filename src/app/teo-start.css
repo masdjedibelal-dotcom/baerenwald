@@ -996,6 +996,9 @@
 .ts-hero__zeile { display: block; }
 .ts-hero h1 { font-size: clamp(36px, 6.4vw, 84px); }
 .ts-hero__ganz { white-space: nowrap; }
+/* Zweite Zeile (Zielgruppe) kleiner, damit „Alle Gewerke. Ein Betrieb.“ führt */
+.ts-hero__zeile--klein { margin-top: 0.18em; font-size: 0.56em; letter-spacing: -0.025em; }
+.teo-site .ts-hero__satz { max-width: 54ch; }
 @media (max-width: 480px) {
   .ts-hero h1 { font-size: clamp(30px, 9vw, 40px); }
 }
@@ -1407,6 +1410,7 @@
 .ts-icons--blau p { max-width: 30ch; }
 
 /* Satz unter „Ein Handwerksbetrieb. Digital gebaut.“ */
+.teo-site .ts-warum__satz { margin: 16px auto 40px; max-width: 58ch; text-align: center; font-size: 18px; line-height: 1.6; color: var(--teo-text-2); text-wrap: balance; }
 .teo-site .ts-kosten__zeile { margin: 32px auto 0; max-width: 46ch; text-align: center; font-size: 18px; font-weight: 650; color: var(--teo-navy); text-wrap: balance; }
 
 /* USP-Leiste direkt unter dem Hero */

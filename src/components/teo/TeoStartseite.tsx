@@ -50,19 +50,19 @@ const ZIELGRUPPEN = [
 ] as const;
 
 const HEUTE = [
-  "Handwerker suchen und nachtelefonieren",
-  "Termine mit Mietern abstimmen",
-  "Den Stand per Telefon und Mail erfragen",
-  "Rechnungen ohne Nachweis prüfen",
-  "Prüffristen selbst im Kopf behalten",
+  "Beim Rohrbruch hat kein Handwerker Zeit",
+  "Zehn Betriebe, zehn Verträge, zehn Rechnungen",
+  "Streit, ob der Schaden schon vorher da war",
+  "Anfahrt umsonst, weil die Meldung unklar war",
+  "Gewährleistung verpasst, weil nichts dokumentiert ist",
 ] as const;
 
 const MIT_TEO = [
-  "Eine Meldung genügt, wir übernehmen",
-  "Wir erledigen es, Sie suchen keinen Handwerker",
-  "Den Stand sehen Sie jederzeit im Portal",
-  "Abnahme mit Fotos, eine Rechnung von uns",
-  "Wartungen planen wir für Sie",
+  "Ein Netz an Partnerbetrieben, damit schnell jemand kommt",
+  "Ein Vertragspartner und eine Rechnung für alle Gewerke",
+  "Jede Arbeit mit Fotos belegt, wir haften",
+  "Meldung mit Foto, damit das richtige Gewerk kommt",
+  "Abnahme dokumentiert, die Gewährleistung liegt bei uns",
 ] as const;
 
 /** Kern-USPs: kurz unter dem Hero, ausführlich in „Was Sie bei teo bekommen“. */
@@ -73,7 +73,7 @@ const VORTEILE = [
   { icon: ReceiptText, titel: "Eine Rechnung", text: "Wir sind Ihr Vertragspartner, nicht zehn Betriebe." },
   { icon: ShieldCheck, titel: "Haftung und Gewährleistung", text: "Wir haften und kümmern uns auch um spätere Mängel." },
   { icon: ClipboardCheck, titel: "Geprüft und abgenommen", text: "Jede Arbeit abgenommen und mit Fotos belegt." },
-  { icon: Network, titel: "Partnernetz in München", text: "Geprüfte Betriebe für alle Gewerke in Ihrer Nähe." },
+  { icon: Network, titel: "Partnernetz in München", text: "Geprüfte Betriebe für alle Gewerke, damit schnell jemand kommt." },
   { icon: SlidersHorizontal, titel: "Sie behalten die Kontrolle", text: "Sie legen fest, bis zu welchem Betrag wir direkt beauftragen." },
   { icon: CalendarClock, titel: "Prüffristen im Blick", text: "Wartungen beauftragen wir, bevor die Frist abläuft." },
 ] as const;
@@ -101,9 +101,9 @@ const DAVON_HABEN = [
 
 /** Was teo ist: Handwerksbetrieb und Generalunternehmer, digital für alle Beteiligten. */
 const WAS_TEO_IST = [
-  { icon: Hammer, titel: "Eigener Handwerksbetrieb", text: "Wir führen selbst aus und mit geprüften Meisterbetrieben aus München." },
-  { icon: ShieldCheck, titel: "Ihr Generalunternehmer", text: "Sie beauftragen teo. Wir sind Vertragspartner und haften für die Arbeit." },
-  { icon: Smartphone, titel: "Digital für alle", text: "Verwaltung, Mieter, Eigentümer und Handwerker in einem Vorgang. Weniger Telefonate, kein Leerlauf." },
+  { icon: Hammer, titel: "Eigener Handwerksbetrieb", text: "Was wir selbst können, führen wir selbst aus." },
+  { icon: ShieldCheck, titel: "Generalunternehmer mit Partnernetz", text: "Alles andere übernehmen geprüfte Partnerbetriebe aller Gewerke in unserem Auftrag. Wir sind Ihr Vertragspartner und haften." },
+  { icon: Smartphone, titel: "Digital für alle", text: "Verwaltung, Mieter, Eigentümer und Handwerker in einem Vorgang. Darum lohnt sich ein Generalunternehmer auch für die kleine Reparatur." },
 ] as const;
 
 /** Alle Beteiligten (Vorbild Lessen „Every party connected“): Foto je Rolle, darunter teo als Klammer. */
@@ -135,7 +135,7 @@ export const TEO_FAQ = [
   {
     frage: "Was macht teo genau?",
     antwort:
-      "Bei teo beauftragen Sie alles Technische an Ihren Häusern: Schäden, Wartungen, Hausmeister, Reinigung und Sanierungen. teo erledigt es, mit geprüften Meisterbetrieben, einer Rechnung und einem Portal für alle.",
+      "teo ist Handwerksbetrieb und Generalunternehmer für Hausverwaltungen in München. Sie beauftragen uns mit allem am Haus: Schäden, Wartungen, Hausmeister, Reinigung und Sanierungen. Wir führen selbst aus und mit Partnerbetrieben aus allen Gewerken, mit einer Rechnung und einem Portal für alle.",
   },
   {
     frage: "Was kostet teo?",
@@ -185,10 +185,10 @@ export function TeoStartseite() {
         <div className="teo-innen ts-hero__kopf">
           <h1>
             <span className="ts-hero__zeile">
-              Ein Partner für <span className="ts-hero__ganz">alles Technische</span>
-            </span> <span className="ts-hero__zeile">in Ihren Häusern.</span>
+              Alle Gewerke. <span className="ts-hero__ganz">Ein Betrieb.</span>
+            </span> <span className="ts-hero__zeile ts-hero__zeile--klein ts-blau">Für Hausverwaltungen in München.</span>
           </h1>
-          <p className="ts-hero__satz">Bei teo buchen Sie Reparaturen, Wartungen und Hausmeisterdienste für Wohnhäuser in München. Wir führen selbst aus und mit geprüften Meisterbetrieben, mit einer Rechnung.</p>
+          <p className="ts-hero__satz">teo ist Handwerksbetrieb und Generalunternehmer. Wir führen selbst aus und mit einem Netz an Partnerbetrieben aus allen Gewerken, von der tropfenden Leitung bis zur Sanierung. Ein Vertragspartner, eine Rechnung, zum Preis eines Fachbetriebs.</p>
           <div className="teo-aktionen ts-zentriert">
             <Link href={TEO_LINK_ANFRAGE} className="teo-btn">
               Anfrage stellen
@@ -350,6 +350,9 @@ export function TeoStartseite() {
           <h2 className="ts-zentriert-text ts-zweizeilig">
             <span>Ein Handwerksbetrieb.</span> <span className="ts-blau">Digital gebaut.</span>
           </h2>
+          <p className="ts-warum__satz">
+            Für die große Sanierung haben Verwaltungen einen Generalunternehmer. Für die hundert kleinen Fälle im Jahr nur das Telefon. teo ist beides: ein Vertragspartner für alles am Haus, zum Preis eines Fachbetriebs.
+          </p>
           <ul className="ts-icons ts-icons--drei ts-icons--blau">
             {WAS_TEO_IST.map((f) => (
               <li key={f.titel}>
@@ -476,7 +479,7 @@ export function TeoStartseite() {
         <div className="teo-innen ts-ende__innen">
           <div className="ts-ende__text">
             <h2 className="ts-zweizeilig">
-              <span>Schicken Sie uns</span> <span className="ts-ende__blau">Ihren nächsten Schaden.</span>
+              <span>Schaden, Wartung, Sanierung?</span> <span className="ts-ende__blau">Machen wir.</span>
             </h2>
             <div className="ts-ende__aktionen">
               <Link href={TEO_LINK_ANFRAGE} className="teo-btn teo-btn--hell">

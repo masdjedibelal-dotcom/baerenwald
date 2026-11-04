@@ -27,6 +27,7 @@ function TeoKopf() {
       <div className="teo-kopf__innen">
         <Link href="/" className="teo-kopf__marke" aria-label={`${MARKE.nameLang} — Startseite`}>
           <TeoLogo />
+          <span className="teo-kopf__claim">Machen wir.</span>
         </Link>
         <nav className="teo-kopf__nav" aria-label="Hauptnavigation">
           <Link href="/#loesung">So arbeiten wir</Link>
@@ -55,7 +56,8 @@ function TeoFuss() {
       <div className="teo-fuss__innen">
         <div className="teo-fuss__marke">
           <TeoLogo hell />
-          <p className="teo-fuss__satz">Technische Betreuung für Verwaltungen und Bestandshalter in München.</p>
+          <p className="teo-fuss__claim">Machen wir.</p>
+          <p className="teo-fuss__satz">Handwerksbetrieb und Generalunternehmer für Hausverwaltungen in München.</p>
           <p className="teo-fuss__adresse">
             {f.firmenname} · {f.strasse} {f.hausnummer} · {f.plz} {f.ort}
             <br />
