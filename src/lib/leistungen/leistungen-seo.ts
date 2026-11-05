@@ -7,8 +7,8 @@ export type LeistungSeoBlock = {
 
 const BAD_SANIERUNG: LeistungSeoBlock = {
   kurzeAntwort:
-    "Eine Badsanierung kostet in München 6.500–22.000 Euro komplett. Bärenwald koordiniert Sanitär, Fliesen und Elektro — ein Ansprechpartner, ein Festpreis.",
-  kostenH2: "Was kostet eine Badsanierung in München 2026?",
+    "Eine Badsanierung in München plant Bärenwald gewerkeübergreifend: Rückbau, Sanitär, Elektro, Abdichtung, Fliesen und Oberflächen — ein Ansprechpartner, ein individuelles Angebot nach der Besichtigung.",
+  kostenH2: "Was kostet eine Badsanierung?",
   faqH2: "Häufige Fragen zur Badsanierung in München",
 };
 
@@ -83,8 +83,8 @@ export const LEISTUNG_SEO: Record<string, LeistungSeoBlock> = {
   },
   fassadendaemmung: {
     kurzeAntwort:
-      "Fassadendämmung kostet in München 80–200 Euro pro m² je nach System (WDVS oder Vorhangfassade). KfW-Förderung möglich. Bärenwald koordiniert Planung und Umsetzung.",
-    kostenH2: "Was kostet Fassadendämmung in München 2026?",
+      "Fassadensanierung und Dämmung in München: Bärenwald koordiniert Ausbesserung, Dämmung (WDVS), Putz und Anstrich mit spezialisierten Fachbetrieben. Das Angebot erstellen wir nach der Prüfung vor Ort.",
+    kostenH2: "Was kostet eine Fassadensanierung?",
     faqH2: "Häufige Fragen zur Fassadendämmung in München",
   },
   rohrbruch: {
@@ -145,8 +145,6 @@ export const LEISTUNG_SEO: Record<string, LeistungSeoBlock> = {
 
 /** priceRange für Service JSON-LD je Basis-Slug. */
 export const LEISTUNG_PRICE_RANGE: Record<string, string> = {
-  "badezimmer-sanierung": "6.500–22.000 €",
-  "bad-sanieren": "6.500–22.000 €",
   malerarbeiten: "12–28 € pro m²",
   bodenbelag: "35–200 € pro m²",
   "boden-verlegen": "35–200 € pro m²",
@@ -159,7 +157,6 @@ export const LEISTUNG_PRICE_RANGE: Record<string, string> = {
   gartenpflege: "180–350 € pro Monat",
   winterdienst: "450–1.200 € pro Saison",
   dachbodenausbau: "1.200–2.500 € pro m²",
-  fassadendaemmung: "80–200 € pro m²",
   rohrbruch: "300–3.000 €",
   dachschaden: "500–5.000 €",
   dacharbeiten: "500–5.000 €",

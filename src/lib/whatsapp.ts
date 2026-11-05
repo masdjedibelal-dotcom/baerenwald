@@ -1,11 +1,11 @@
 import { istTeo, MARKE } from "@/lib/marke";
 
 /**
- * Ziffern für wa.me — WhatsApp-Business-Nummer (360dialog), damit Website-Chats im CRM-Postfach landen.
- * Überschreibbar per NEXT_PUBLIC_WHATSAPP_NUMMER (z. B. eigene Nummer für Servus TEO).
+ * Ziffern für wa.me — Bärenwald-Firmenhandy für Kunden. Die 360dialog-Nummer bleibt fürs CRM und die
+ * Handwerkerkoordination. Überschreibbar per NEXT_PUBLIC_WHATSAPP_NUMMER (z. B. eigene Nummer für Servus TEO).
  */
 const EIGENE_NUMMER = process.env.NEXT_PUBLIC_WHATSAPP_NUMMER?.trim() ?? "";
-const WHATSAPP_WA_ME_ID = (EIGENE_NUMMER || "491636828276").replace(/\D/g, "");
+const WHATSAPP_WA_ME_ID = (EIGENE_NUMMER || "491637316161").replace(/\D/g, "");
 
 /** Servus TEO: WhatsApp nur mit eigener Nummer (nie die Bärenwald-Nummer zeigen). */
 export const WHATSAPP_AKTIV = !istTeo || Boolean(EIGENE_NUMMER);

@@ -20,7 +20,7 @@ import { FunnelErrorBoundary } from "@/components/funnel/FunnelErrorBoundary";
 import { FunnelPortalAuthGate } from "@/components/funnel/FunnelPortalAuthGate";
 import { HWLeadForm } from "@/components/funnel/HWLeadForm";
 import { AnfrageWeg } from "@/components/funnel/AnfrageWeg";
-import { type AnfrageVorlage, anfrageVorlageAusRechner } from "@/lib/funnel/anfrage-weg";
+import { ANFRAGE_ANLIEGEN, type AnfrageVorlage, anfrageVorlageAusRechner } from "@/lib/funnel/anfrage-weg";
 import { BEREICH_LABELS } from "@/lib/lead-funnel-labels";
 import { ladeAnfrageFotosHoch, neueFotoSitzung } from "@/lib/funnel/fotos-hochladen";
 import type { PortalContactPrefill } from "@/lib/portal/portal-contact-prefill";
@@ -743,6 +743,10 @@ function FunnelRechnerInner({ resetPath }: { resetPath: string }) {
     const modus = searchParams.get("modus");
     // „Anfrage stellen“ (Startseite): direkt in den Anfrage-Weg, ohne Preisrechner.
     if (modus === "anfrage") {
+      const anliegen = searchParams.get("anliegen");
+      if (anliegen && ANFRAGE_ANLIEGEN.some((a) => a.id === anliegen)) {
+        setAnfrageVorlage({ anliegen: [anliegen], plz: "", ort: "", flaeche: "", beschreibung: "" });
+      }
       urlInit.current = true;
       funnelFromWahlRef.current = true;
       setEinstiegModus("funnel");

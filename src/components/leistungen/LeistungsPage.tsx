@@ -49,6 +49,10 @@ export function LeistungsPage({ slug, data }: LeistungsPageProps) {
   const stadtteilLinks = getStadtteilLinks(handwerkerKeys);
   const stadtteilLabel = stadtteilSectionLabel(handwerkerKeys, data.label);
   const seo = leistungSeoForSlug(baseSlug, data.label);
+  // Ohne Preisrahmen: direkt in die Projektanfrage mit vorausgewählter Leistung
+  const anfrageHref = data.ohnePreis
+    ? `/rechner?modus=anfrage&anliegen=${data.ohnePreis.anliegen}`
+    : null;
 
   return (
     <div id={`leistung-${slug}`} className="baerenwald-landing">
@@ -75,7 +79,12 @@ export function LeistungsPage({ slug, data }: LeistungsPageProps) {
           </div>
 
           <div className="page-hero-btns">
-            <CTAButton bare tone="hero-page" href="#konverter" label="Anfrage starten ↓" />
+            <CTAButton
+              bare
+              tone="hero-page"
+              href={anfrageHref ?? "#konverter"}
+              label={data.ohnePreis ? `${data.ohnePreis.anfrageLabel} →` : "Anfrage starten ↓"}
+            />
             <CTAButton bare tone="hero-secondary" href={kontaktHref} label="Kontakt aufnehmen" />
             <CTAButton bare tone="hero-secondary" href={telHref} label="Direkt anrufen" />
           </div>
@@ -88,7 +97,7 @@ export function LeistungsPage({ slug, data }: LeistungsPageProps) {
         </div>
       </div>
 
-      <LeistungsKonverterSection leistungSlug={slug} />
+      {data.ohnePreis ? null : <LeistungsKonverterSection leistungSlug={slug} />}
 
       <section
         className="article-section article-section--lg content-section content-section--white fade-up d1"
@@ -119,25 +128,37 @@ export function LeistungsPage({ slug, data }: LeistungsPageProps) {
         className="article-section content-section content-section--muted fade-up d2"
       >
         <div className="article-section-inner">
-          <span className="chapter-label">Preise München 2026</span>
-          <h2 className="section-h2">{seo.kostenH2}</h2>
+          {data.ohnePreis ? (
+            <>
+              <span className="chapter-label">Kosten</span>
+              <h2 className="section-h2">{data.ohnePreis.titel}</h2>
+              <div className="article-body">
+                <p>{data.ohnePreis.text}</p>
+              </div>
+            </>
+          ) : (
+            <>
+              <span className="chapter-label">Preise München 2026</span>
+              <h2 className="section-h2">{seo.kostenH2}</h2>
 
-          <div className="preis-inline">
-            <span className="preis-inline-value">
-              {formatPreisDe(data.preisVon)} – {formatPreisDe(data.preisBis)} €
-            </span>
-            <span className="preis-inline-unit">{data.preisEinheit}</span>
-          </div>
+              <div className="preis-inline">
+                <span className="preis-inline-value">
+                  {formatPreisDe(data.preisVon)} – {formatPreisDe(data.preisBis)} €
+                </span>
+                <span className="preis-inline-unit">{data.preisEinheit}</span>
+              </div>
 
-          <div className="hinweis">
-            <p>{data.preisHinweis}</p>
-          </div>
+              <div className="hinweis">
+                <p>{data.preisHinweis}</p>
+              </div>
+            </>
+          )}
 
           <CTAButton
             bare
             tone="hero-page"
-            href={kontaktHref}
-            label="Anfrage für mein Projekt stellen →"
+            href={anfrageHref ?? kontaktHref}
+            label={data.ohnePreis ? `${data.ohnePreis.anfrageLabel} →` : "Anfrage für mein Projekt stellen →"}
             className="mt-5 inline-block"
           />
         </div>

@@ -35,10 +35,14 @@ export async function generateMetadata({ params }: PageProps) {
     return { title: "Leistung — Bärenwald" };
   }
 
-  const title = `${data.label} München — Preise & Angebot`;
+  const title = data.ohnePreis
+    ? `${data.label} München — Ablauf & Angebot`
+    : `${data.label} München — Preise & Angebot`;
   const description =
     data.metaDescription ??
-    `${data.label} in München — Preisrahmen online berechnen, unverbindlich anfragen. Eigene Gewerke und Fachpartner, ein Ansprechpartner.`;
+    (data.ohnePreis
+      ? `${data.label} in München — Fotos und Wünsche senden, Angebot nach der Besichtigung. Eigene Gewerke und Fachpartner, ein Ansprechpartner.`
+      : `${data.label} in München — Preisrahmen online berechnen, unverbindlich anfragen. Eigene Gewerke und Fachpartner, ein Ansprechpartner.`);
   const canonical = `https://baerenwaldmuenchen.de/leistungen/${params.slug}`;
 
   return {

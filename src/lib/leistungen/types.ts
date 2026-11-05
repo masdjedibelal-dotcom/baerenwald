@@ -25,4 +25,9 @@ export interface LeistungsData {
   /** Query-Wert für `/rechner?situation=` (Funnel) */
   rechnerSituation: Situation;
   metaDescription?: string;
+  /**
+   * Seite ohne Preisrahmen (Kosten zu individuell): Text statt Preisblock, Anfrage mit
+   * vorausgewählter Leistung (`anliegen` = ID aus ANFRAGE_ANLIEGEN).
+   */
+  ohnePreis?: { titel: string; text: string; anfrageLabel: string; anliegen: string };
 }

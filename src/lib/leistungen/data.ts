@@ -103,6 +103,12 @@ export const LEISTUNGEN_DATA: Record<string, LeistungsData> = {
     ratgeberSlug: "bad-sanierung-kosten-muenchen",
     ratgeberLabel: "Was kostet eine Badsanierung in München?",
     rechnerSituation: "erneuern",
+    ohnePreis: {
+      titel: "Was kostet eine Badsanierung?",
+      text: "Jedes Bad ist anders. Die Kosten hängen vom vorhandenen Zustand, den gewünschten Arbeiten und Ihrer Ausstattung ab. Ob Fliesen, Sanitärobjekte oder Armaturen – Sie entscheiden, was zu Ihren Vorstellungen und Ihrem Budget passt. Senden Sie uns gerne Fotos Ihres aktuellen Badezimmers und eine kurze Beschreibung Ihrer Wünsche. Das hilft uns bei der ersten Einschätzung. Nach der Besichtigung erstellen wir Ihnen ein individuelles Angebot.",
+      anfrageLabel: "Badsanierung anfragen",
+      anliegen: "bad_kueche",
+    },
     faq: [
       {
         q: "Wie lange dauert eine Badsanierung?",
@@ -576,6 +582,12 @@ export const LEISTUNGEN_DATA: Record<string, LeistungsData> = {
     ratgeberSlug: "bad-sanierung-kosten-muenchen",
     ratgeberLabel: "Was kostet eine Badsanierung?",
     rechnerSituation: "erneuern",
+    ohnePreis: {
+      titel: "Was kostet eine Badsanierung?",
+      text: "Jedes Bad ist anders. Die Kosten hängen vom vorhandenen Zustand, den gewünschten Arbeiten und Ihrer Ausstattung ab. Ob Fliesen, Sanitärobjekte oder Armaturen – Sie entscheiden, was zu Ihren Vorstellungen und Ihrem Budget passt. Senden Sie uns gerne Fotos Ihres aktuellen Badezimmers und eine kurze Beschreibung Ihrer Wünsche. Das hilft uns bei der ersten Einschätzung. Nach der Besichtigung erstellen wir Ihnen ein individuelles Angebot.",
+      anfrageLabel: "Badsanierung anfragen",
+      anliegen: "bad_kueche",
+    },
     faq: [
       {
         q: "Kann ich währenddessen im Objekt wohnen?",
@@ -644,6 +656,12 @@ export const LEISTUNGEN_DATA: Record<string, LeistungsData> = {
     ratgeberSlug: "wohnung-renovieren-kosten-muenchen",
     ratgeberLabel: "Wohnung renovieren — Gesamtkosten",
     rechnerSituation: "erneuern",
+    ohnePreis: {
+      titel: "Was kostet eine Fassadensanierung?",
+      text: "Die Kosten einer Fassadensanierung hängen vom Zustand des Untergrunds und vom gewünschten Aufbau ab. Dazu zählen zum Beispiel Ausbesserungen, Spachtelarbeiten mit Gewebe, die Stärke der Dämmung sowie Putz und Anstrich. Senden Sie uns gerne Fotos der Fassade und vorhandener Schadstellen. Vor Ort prüfen wir, welche Arbeiten nötig sind, und erstellen Ihnen darauf aufbauend ein individuelles Angebot.",
+      anfrageLabel: "Fassadensanierung anfragen",
+      anliegen: "huelle",
+    },
     faq: [
       {
         q: "Gibt es Förderung?",
