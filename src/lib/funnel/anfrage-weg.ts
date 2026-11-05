@@ -23,7 +23,7 @@ export const ANFRAGE_KUNDENTYPEN: {
     kundeTyp: "hausverwaltung",
   },
   { id: "gewerbe", label: "Gewerbe", hint: "Büro, Laden, Praxis, Hotel oder Gewerbeobjekt", leadKundentyp: null, kundeTyp: "gewerbe" },
-  // Im CRM vorerst als Gewerbe-Kunde; die Kundenart steht in funnel_daten.kundentyp_anfrage
+  // Im CRM: mit Firma als Gewerbe, private Eigentümer als Privat (siehe submit-anfrage)
   {
     id: "investor",
     label: "Immobilieninvestor / Bestandshalter",
@@ -83,6 +83,55 @@ export type AnfrageDaten = {
   sitzung: string;
   fotos: string[];
 };
+
+/** Vorausgefüllte Felder, wenn der Kunde aus dem Preisrechner in die Projektanfrage wechselt. */
+export type AnfrageVorlage = Pick<AnfrageDaten, "anliegen" | "plz" | "ort" | "flaeche" | "beschreibung">;
+
+const RECHNER_BEREICH_ZU_ANLIEGEN: Record<string, string> = {
+  bad: "bad_kueche",
+  trockenbau: "sanieren",
+  grundriss_umbau: "sanieren",
+  boden: "innen",
+  waende: "innen",
+  maler: "innen",
+  streichen: "innen",
+  waende_boeden: "innen",
+  dach: "huelle",
+  fassade: "huelle",
+  fenster: "huelle",
+  fenster_tueren: "huelle",
+  heizung: "technik",
+  sanitaer: "technik",
+  elektrik: "technik",
+  elektro: "technik",
+  gartengestaltung: "garten",
+  garten: "garten",
+};
+
+/** Rechner-Angaben (Bereiche, Ort, Größe, Richtpreis) als Startwerte für die gemeinsame Anfrage. */
+export function anfrageVorlageAusRechner(r: {
+  bereiche: string[];
+  bereichLabels: string[];
+  plz: string;
+  ort: string;
+  groesseQm: number | null;
+  priceMin: number;
+  priceMax: number;
+}): AnfrageVorlage {
+  const anliegen = [...new Set(r.bereiche.map((b) => RECHNER_BEREICH_ZU_ANLIEGEN[b]).filter((a): a is string => Boolean(a)))];
+  const euro = (n: number) => `${Math.round(n).toLocaleString("de-DE")} €`;
+  const teile = [`Aus dem Preisrechner: ${r.bereichLabels.join(", ") || "Vorhaben"}`];
+  if (r.groesseQm) teile.push(`ca. ${r.groesseQm} m²`);
+  if (r.priceMin > 0 && r.priceMax > r.priceMin) teile.push(`Richtpreis ${euro(r.priceMin)} – ${euro(r.priceMax)}`);
+  else if (r.priceMin > 0) teile.push(`Richtpreis ab ca. ${euro(r.priceMin)}`);
+  return {
+    anliegen,
+    plz: r.plz,
+    ort: r.ort,
+    flaeche: r.groesseQm ? String(r.groesseQm) : "",
+    beschreibung: `${teile.join(" · ")}.\nZusätzlich geplant: `,
+  };
+}
 
 export function anfrageBereiche(anliegen: string[]): string[] {
   const out = new Set<string>();

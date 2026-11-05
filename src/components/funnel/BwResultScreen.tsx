@@ -246,6 +246,8 @@ export interface BwResultScreenProps {
   onKomplexRueckrufSuccess?: () => void;
   /** Funnel neu ab Situation / Trust — State wird im Parent zurückgesetzt. */
   onReset?: () => void;
+  /** „Projektanfrage starten“: Angaben in die gemeinsame Anfrage übernehmen (weitere Gewerke ergänzen). */
+  onProjektanfrage?: () => void;
   /** Optional: Fotos / Vergleichsangebote unter der Preiskarte. */
   photos?: File[];
   onPhotosChange?: (files: File[]) => void;
@@ -412,15 +414,32 @@ function PhoneIconKomplex() {
   );
 }
 
+/** Nach dem Preisrahmen: Angaben in eine gemeinsame Projektanfrage übernehmen (weitere Gewerke ergänzen). */
+function ProjektanfrageHinweis({ onClick }: { onClick: () => void }) {
+  return (
+    <div className="result-projektanfrage">
+      <p>
+        Weitere Arbeiten geplant? Starten Sie eine gemeinsame Projektanfrage —
+        Ihre Angaben übernehmen wir.
+      </p>
+      <button type="button" className="preis-save-trigger" onClick={onClick}>
+        Projektanfrage starten →
+      </button>
+    </div>
+  );
+}
+
 function ZuKomplexScreen({
   state,
   onKomplexRueckrufSuccess,
   onReset,
+  onProjektanfrage,
   className,
 }: {
   state: FunnelState;
   onKomplexRueckrufSuccess?: () => void;
   onReset?: () => void;
+  onProjektanfrage?: () => void;
   className?: string;
 }) {
   const [vorname, setVorname] = useState("");
@@ -801,6 +820,7 @@ function ZuKomplexScreen({
         </div>
       </div>
 
+      {onProjektanfrage ? <ProjektanfrageHinweis onClick={onProjektanfrage} /> : null}
       {onReset ? <NeueAnfrageResetLink onClick={onReset} /> : null}
     </div>
   );
@@ -812,6 +832,7 @@ export function BwResultScreen({
   resultModus,
   onKomplexRueckrufSuccess,
   onReset,
+  onProjektanfrage,
   photos,
   onPhotosChange,
   className,
@@ -868,6 +889,7 @@ export function BwResultScreen({
         state={state}
         onKomplexRueckrufSuccess={onKomplexRueckrufSuccess}
         onReset={onReset}
+        onProjektanfrage={onProjektanfrage}
         className={className}
       />
     );
@@ -1016,10 +1038,11 @@ export function BwResultScreen({
 
       {hasRange ? (
         <p className="result-trust-inline">
-          Meisterbetriebe München · Ein Ansprechpartner · Anfahrt bei Auftrag
-          angerechnet
+          Eigene Gewerke &amp; Fachpartner · Ein Ansprechpartner
         </p>
       ) : null}
+
+      {hasRange && onProjektanfrage ? <ProjektanfrageHinweis onClick={onProjektanfrage} /> : null}
 
       {hasRange && !saveEmailSent ? (
         <div className="preis-save-wrap preis-save-wrap--compact">

@@ -7461,6 +7461,23 @@ html.js .hero-picker-chips-wrap {
   margin: 0;
 }
 
+.result-projektanfrage {
+  margin-top: 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  text-align: center;
+}
+
+.result-projektanfrage p {
+  margin: 0;
+  max-width: 40ch;
+  font-size: var(--p2-fs-body);
+  line-height: 1.5;
+  color: var(--fl-text-3);
+}
+
 .budget-ok-feedback {
   margin: -8px 0 0;
   font-size: var(--p2-fs-meta);
@@ -9306,4 +9323,51 @@ html.js .hero-picker-chips-wrap {
   margin: 0;
   font-size: 13px;
   color: var(--bw-text-muted, #6b7280);
+}
+
+/* Partnerbewerbung (/partner-werden) */
+.partner-bewerbung {
+  margin-top: 28px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.partner-bewerbung__hp {
+  position: absolute;
+  left: -9999px;
+  width: 1px;
+  height: 1px;
+}
+.partner-bewerbung__senden {
+  align-self: flex-start;
+  border: 0;
+  cursor: pointer;
+  padding: 12px 24px;
+  background: var(--fl-accent);
+  color: var(--fl-panel);
+}
+.partner-bewerbung__senden:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+.partner-bewerbung__hinweis {
+  margin-top: 20px;
+  font-size: 14px;
+  color: var(--fl-text-3);
+}
+.partner-bewerbung__danke {
+  margin-top: 28px;
+  padding: 20px;
+  border-radius: 16px;
+  background: var(--fl-bg-card);
+  border: 1px solid var(--fl-border);
+}
+.partner-bewerbung__danke-titel {
+  margin: 0 0 6px;
+  font-weight: 700;
+}
+@media (max-width: 560px) {
+  .partner-bewerbung .anfrage-zeile {
+    flex-direction: column;
+  }
 }

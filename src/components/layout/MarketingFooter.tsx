@@ -84,7 +84,7 @@ export function MarketingFooter() {
                   <a href="/rechner?modus=anfrage">Projekt anfragen</a>
                 </li>
                 <li>
-                  <a href="/partner/registrieren">Partner werden</a>
+                  <a href="/partner-werden">Partner werden</a>
                 </li>
                 <li>
                   <a href="/ratgeber">Ratgeber-Übersicht</a>

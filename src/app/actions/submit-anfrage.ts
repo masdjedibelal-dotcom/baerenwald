@@ -52,6 +52,8 @@ export async function submitAnfrageAction(
 
   const fotos = erlaubteFotos(daten.fotos ?? [], daten.sitzung);
   const firma = typ.id === "privat" ? null : daten.firma.trim() || null;
+  // Investoren ohne Firma sind private Eigentümer
+  const kundeTyp = typ.id === "investor" && !firma ? "privat" : typ.kundeTyp;
 
   const res = await persistLead({
     name,
@@ -65,7 +67,7 @@ export async function submitAnfrageAction(
     strasse: daten.strasse.trim() || undefined,
     zeitraum: daten.zeitraum || null,
     kundentyp: typ.leadKundentyp,
-    kunde_typ: typ.kundeTyp,
+    kunde_typ: kundeTyp,
     firma,
     kanal: "website",
     funnel_quelle: "anfrage",

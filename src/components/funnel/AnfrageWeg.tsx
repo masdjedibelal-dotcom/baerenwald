@@ -13,6 +13,7 @@ import {
   ANFRAGE_OBJEKTARTEN,
   ANFRAGE_ZEITRAUM,
   type AnfrageDaten,
+  type AnfrageVorlage,
   anfrageBudgetOptionen,
 } from "@/lib/funnel/anfrage-weg";
 import { istTeo } from "@/lib/marke";
@@ -52,9 +53,10 @@ function Wahl({
 
 /**
  * Allgemeine Anfrage ohne Preisrahmen: Wer → Anliegen → Eckdaten → Kontakt.
- * Erreichbar über „Anfrage stellen“ (Startseite) und „Etwas anderes?“ im Rechner.
+ * Erreichbar über „Anfrage stellen“ (Startseite), „Etwas anderes?“ im Rechner und
+ * „Projektanfrage starten“ nach dem Preisrahmen (dann mit `vorlage` aus dem Rechner).
  */
-export function AnfrageWeg({ onAbbrechen }: { onAbbrechen: () => void }) {
+export function AnfrageWeg({ onAbbrechen, vorlage }: { onAbbrechen: () => void; vorlage?: AnfrageVorlage | null }) {
   const [schritt, setSchritt] = useState(0);
   const [d, setD] = useState<AnfrageDaten>(() => ({
     // Servus TEO richtet sich an Hausverwaltungen — vorausgewählt, aber änderbar
@@ -76,6 +78,7 @@ export function AnfrageWeg({ onAbbrechen }: { onAbbrechen: () => void }) {
     datenschutz: false,
     sitzung: neueFotoSitzung(),
     fotos: [],
+    ...vorlage,
   }));
   const [dateien, setDateien] = useState<File[]>([]);
   const [fehler, setFehler] = useState<string | null>(null);
@@ -319,7 +322,11 @@ export function AnfrageWeg({ onAbbrechen }: { onAbbrechen: () => void }) {
             {d.kundentyp !== "privat" ? (
               <label className="anfrage-feld">
                 <span className="anfrage-feld__label">
-                  {d.kundentyp === "hausverwaltung" ? "Hausverwaltung / Eigentümergemeinschaft" : "Firma"}
+                  {d.kundentyp === "hausverwaltung"
+                    ? "Hausverwaltung / Eigentümergemeinschaft"
+                    : d.kundentyp === "investor"
+                      ? "Firma (leer lassen, wenn privat)"
+                      : "Firma"}
                 </span>
                 <input
                   className="funnel-input"

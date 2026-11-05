@@ -20,6 +20,8 @@ import { FunnelErrorBoundary } from "@/components/funnel/FunnelErrorBoundary";
 import { FunnelPortalAuthGate } from "@/components/funnel/FunnelPortalAuthGate";
 import { HWLeadForm } from "@/components/funnel/HWLeadForm";
 import { AnfrageWeg } from "@/components/funnel/AnfrageWeg";
+import { type AnfrageVorlage, anfrageVorlageAusRechner } from "@/lib/funnel/anfrage-weg";
+import { BEREICH_LABELS } from "@/lib/lead-funnel-labels";
 import { ladeAnfrageFotosHoch, neueFotoSitzung } from "@/lib/funnel/fotos-hochladen";
 import type { PortalContactPrefill } from "@/lib/portal/portal-contact-prefill";
 import {
@@ -288,6 +290,7 @@ function FunnelRechnerInner({ resetPath }: { resetPath: string }) {
   const [screen, setScreen] = useState<Screen>("trust_intro");
   /** „Individuell“: Kontaktformular statt Rechner */
   const [individuellOffen, setIndividuellOffen] = useState(false);
+  const [anfrageVorlage, setAnfrageVorlage] = useState<AnfrageVorlage | null>(null);
   const [mindestauftragAktiv, setMindestauftrag] = useState(false);
   const [isAusserhalbLead, setIsAusserhalbLead] = useState(false);
   const [ausserhalbBeschreibung, setAusserhalbBeschreibung] = useState("");
@@ -2062,7 +2065,15 @@ function FunnelRechnerInner({ resetPath }: { resetPath: string }) {
         return <TrustScreen variant="qualitaet" />;
       case "situation":
         if (individuellOffen) {
-          return <AnfrageWeg onAbbrechen={() => setIndividuellOffen(false)} />;
+          return (
+            <AnfrageWeg
+              vorlage={anfrageVorlage}
+              onAbbrechen={() => {
+                setIndividuellOffen(false);
+                setAnfrageVorlage(null);
+              }}
+            />
+          );
         }
         return (
           <StepWrapper
@@ -2563,6 +2574,22 @@ function FunnelRechnerInner({ resetPath }: { resetPath: string }) {
                 setScreen("danke");
               }}
               onReset={handleReset}
+              onProjektanfrage={() => {
+                setAnfrageVorlage(
+                  anfrageVorlageAusRechner({
+                    bereiche: state.bereiche,
+                    bereichLabels: state.bereiche.map((b) => BEREICH_LABELS[b] ?? b),
+                    plz: state.plz,
+                    ort: state.ort,
+                    groesseQm: state.groesseEinheit === "qm" ? state.groesse : null,
+                    priceMin: state.priceMin,
+                    priceMax: state.priceMax,
+                  })
+                );
+                setIndividuellOffen(true);
+                setScreen("situation");
+                window.scrollTo({ top: 0, behavior: "instant" as ScrollBehavior });
+              }}
             />
             {/* Hidden lead form so footer „Absenden“ via requestSubmit funktioniert */}
             <form

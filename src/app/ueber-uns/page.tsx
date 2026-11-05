@@ -150,7 +150,7 @@ Sondern ein strukturierter Ablauf zwischen Kunde, Handwerk und Umsetzung.`}
                   Projekt anfragen →
                 </Link>
                 <Link
-                  href="/partner/registrieren"
+                  href="/partner-werden"
                   className="inline-flex items-center rounded-pill border border-border-default px-5 py-2.5 text-fs-meta font-semibold text-text-primary hover:bg-muted"
                 >
                   Partnerbetrieb werden

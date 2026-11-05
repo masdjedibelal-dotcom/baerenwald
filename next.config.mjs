@@ -81,7 +81,7 @@ const nextConfig = {
     // die übrigen Bärenwald-Marketing-Seiten gibt es nicht, sie führen ins Portal
     const teo = (process.env.NEXT_PUBLIC_MARKE || "").trim().toLowerCase() === "teo";
     const teoRedirects = teo
-      ? ["/leistungen", "/handwerker-muenchen", "/kontakt", "/ueber-uns", "/gpt", "/galerie"].flatMap((p) => [
+      ? ["/leistungen", "/handwerker-muenchen", "/kontakt", "/ueber-uns", "/partner-werden", "/gpt", "/galerie"].flatMap((p) => [
           { source: p, destination: "/portal", permanent: false },
           { source: `${p}/:path*`, destination: "/portal", permanent: false },
         ])

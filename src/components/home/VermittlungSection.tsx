@@ -23,7 +23,7 @@ export function VermittlungSection() {
             Ansprechpartner. Rückfragen und Berichte gehen auch per WhatsApp.
           </p>
           <div className="vermittlung-partner-cta-aktionen">
-            <Link href="/partner/registrieren" className="vermittlung-partner-cta-action">
+            <Link href="/partner-werden" className="vermittlung-partner-cta-action">
               Partnerbetrieb werden →
             </Link>
             <Link href="/partner/login" className="vermittlung-partner-cta-action">
