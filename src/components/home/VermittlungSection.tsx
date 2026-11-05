@@ -22,9 +22,14 @@ export function VermittlungSection() {
             Auftragsangebote, klare Leistungsinformationen und einen zentralen
             Ansprechpartner. Rückfragen und Berichte gehen auch per WhatsApp.
           </p>
-          <Link href="/partner/registrieren" className="vermittlung-partner-cta-action">
-            Partnerbetrieb werden →
-          </Link>
+          <div className="vermittlung-partner-cta-aktionen">
+            <Link href="/partner/registrieren" className="vermittlung-partner-cta-action">
+              Partnerbetrieb werden →
+            </Link>
+            <Link href="/partner/login" className="vermittlung-partner-cta-action">
+              Zum Handwerkerportal →
+            </Link>
+          </div>
         </div>
       </div>
     </section>

@@ -18,20 +18,20 @@ export type KonverterCopy = {
 const DEFAULT_COPY: KonverterCopy = {
   eyebrow: "Preisrahmen für Ihr Projekt",
   h2: "Was kostet Ihr Vorhaben?",
-  sub: "In unter einer Minute zum unverbindlichen Rahmen — Festpreisangebot nach Besichtigung.",
+  sub: "In unter einer Minute zum unverbindlichen Rahmen — das Angebot erstellen wir nach der Besichtigung.",
   ctaPrimary: "Kostenrahmen anfragen →",
   ctaSecondary: "Im Detailrechner anpassen",
-  trust: "Meisterbetriebe · Anfahrt bei Auftrag angerechnet · ca. 2 Min.",
+  trust: "Eigene Gewerke & Fachpartner · Ein Ansprechpartner · ca. 2 Min.",
 };
 
 export const KONVERTER_COPY: Record<string, KonverterCopy> = {
   "badezimmer-sanierung": {
     eyebrow: "Preisrahmen für Ihr Bad",
     h2: "Welches Bad passt zu Ihnen?",
-    sub: "Größe und Ausstattung wählen — Sie sehen sofort einen realistischen Rahmen. Unverbindlich, Festpreis nach Besichtigung.",
+    sub: "Größe und Ausstattung wählen — Sie sehen sofort einen realistischen Rahmen. Unverbindlich, Angebot nach Besichtigung.",
     ctaPrimary: "Preisrahmen anfragen →",
     ctaSecondary: "Im Detailrechner anpassen",
-    trust: "Meisterbetriebe · Koordination aller Gewerke · ca. 2 Min.",
+    trust: "Eigene Gewerke & Fachpartner · Koordination aller Gewerke · ca. 2 Min.",
   },
   gartenpflege: {
     eyebrow: "Gartenpflege-Abo",
@@ -42,20 +42,20 @@ export const KONVERTER_COPY: Record<string, KonverterCopy> = {
     trust: "Regelmäßig · Entsorgung inklusive · München & Umgebung",
   },
   "heizung-sanitaer": {
-    eyebrow: "Schnelle Hilfe",
-    h2: "Was ist passiert?",
-    sub: "Akuter Notfall? Rufen Sie uns an — online sehen Sie einen ersten Einsatz-Rahmen.",
-    ctaPrimary: "Rückruf anfordern →",
-    ctaSecondary: "Zum Detailrechner",
-    trust: "Mo–Sa 7–20 Uhr · Sanitär-Fachbetriebe",
+    eyebrow: "Modernisierung",
+    h2: "Heizung oder Bad modernisieren?",
+    sub: "Heizungstausch, Wärmepumpe oder neue Leitungen: Wir stimmen die Arbeiten mit den Fachbetrieben und unserem Elektrobereich ab. Das Angebot erstellen wir nach der Besichtigung.",
+    ctaPrimary: "Projekt anfragen →",
+    ctaSecondary: "Im Detailrechner anpassen",
+    trust: "Fachbetriebe · Elektro aus eigener Hand · Ein Ansprechpartner",
   },
   elektroarbeiten: {
-    eyebrow: "Elektro-Notfall",
-    h2: "Strom weg oder defekt?",
-    sub: "Zertifizierte Elektriker — bei akutem Fall zuerst anrufen.",
-    ctaPrimary: "Rückruf anfordern →",
+    eyebrow: "Elektrotechnik",
+    h2: "Elektrotechnik für Umbau und Sanierung",
+    sub: "Neue Installation, Erweiterung oder Verteilung: Unser Elektromeister plant die Arbeiten mit dem Bauablauf. Das Angebot erstellen wir nach der Besichtigung.",
+    ctaPrimary: "Projekt anfragen →",
     ctaSecondary: "Zum Detailrechner",
-    trust: "Normgerecht · Dokumentation auf Wunsch",
+    trust: "Eigener Elektromeister · Prüfung und Dokumentation",
   },
 };
 

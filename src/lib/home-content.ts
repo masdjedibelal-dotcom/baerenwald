@@ -46,7 +46,7 @@ export const HOME_FAQ_ITEMS: HomeFaqItem[] = [
     a: "Ja. Sie können einzelne Immobilien, mehrere Wohnungen oder mehrere Objekte gemeinsam anfragen.",
   },
   {
-    q: "Für welche Region seid ihr tätig?",
+    q: "In welcher Region sind Sie tätig?",
     a: "München und Umgebung, inklusive der Landkreise München, Dachau, Ebersberg, Erding, Freising, Fürstenfeldbruck und Starnberg.",
   },
 ];

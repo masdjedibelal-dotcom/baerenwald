@@ -254,12 +254,26 @@ export function PageLayout({ children }: PageLayoutProps) {
                   >
                     Kontakt
                   </Link>
+                  <Link
+                    href="/portal/login"
+                    role="menuitem"
+                    onClick={() => setOpenDropdown(null)}
+                  >
+                    Kundenportal
+                  </Link>
+                  <Link
+                    href="/partner/login"
+                    role="menuitem"
+                    onClick={() => setOpenDropdown(null)}
+                  >
+                    Handwerkerportal
+                  </Link>
                 </div>
               ) : null}
             </div>
 
-            <Link href="/kontakt" className="site-header-cta" onClick={closeAll}>
-              Kontakt aufnehmen
+            <Link href="/rechner?modus=anfrage" className="site-header-cta" onClick={closeAll}>
+              Projekt anfragen
             </Link>
           </nav>
 
@@ -304,6 +318,12 @@ export function PageLayout({ children }: PageLayoutProps) {
             <Link href="/ratgeber" onClick={closeAll}>
               Ratgeber-Übersicht
             </Link>
+            <Link href="/portal/login" onClick={closeAll}>
+              Kundenportal
+            </Link>
+            <Link href="/partner/login" onClick={closeAll}>
+              Handwerkerportal
+            </Link>
           </nav>
 
           <div className="site-mobile-section">
@@ -328,8 +348,8 @@ export function PageLayout({ children }: PageLayoutProps) {
             ))}
           </div>
 
-          <Link href="/kontakt" className="site-mobile-cta" onClick={closeAll}>
-            Kontakt aufnehmen →
+          <Link href="/rechner?modus=anfrage" className="site-mobile-cta" onClick={closeAll}>
+            Projekt anfragen →
           </Link>
         </div>
       ) : null}

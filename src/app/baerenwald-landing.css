@@ -4809,6 +4809,13 @@ html.js .hero-picker-chips-wrap {
   color: var(--fl-gray-500);
 }
 
+.vermittlung-partner-cta-aktionen {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 12px;
+}
+
 .vermittlung-partner-cta-action {
   display: inline-flex;
   align-items: center;

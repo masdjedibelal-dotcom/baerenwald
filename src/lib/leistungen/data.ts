@@ -214,26 +214,26 @@ export const LEISTUNGEN_DATA: Record<string, LeistungsData> = {
   "heizung-sanitaer": {
     slug: "heizung-sanitaer",
     label: "Heizung & Wasser",
-    headline: "Heizung & Wasser in München —\nWartung und Erneuerung",
+    headline: "Heizung & Wasser in München —\nModernisierung und Austausch",
     subline:
-      "Heizung tauschen, Rohre reparieren, Warmwasser — zuverlässig und schnell.",
+      "Heizungstausch, Wärmepumpe, neue Leitungen — mit spezialisierten Fachbetrieben, koordiniert von Bärenwald.",
     beschreibung:
-      "Heizung aus, kein warmes Wasser, Rohr undicht — das sind Situationen die sofort gelöst werden müssen. Wir reparieren, warten und tauschen Heizungen und Wasserleitungen in ganz München.",
+      "Eine neue Heizung oder neue Leitungen greifen in viele Gewerke ein. Wir binden die passenden Heizungs- und Sanitärbetriebe ein und stimmen Anschlüsse, Elektro und Oberflächen aufeinander ab.",
     wasWirMachen: [
-      "Heizung reparieren oder komplett tauschen",
-      "Alte Heizung gegen Wärmepumpe ersetzen",
+      "Alte Heizung gegen moderne Anlage tauschen",
+      "Wärmepumpe einbauen und anschließen",
       "Heizkörper versetzen oder austauschen",
-      "Undichte Rohre reparieren",
-      "Warmwasserboiler erneuern",
+      "Wasser- und Abwasserleitungen erneuern",
+      "Warmwasserbereitung erneuern",
       "Elektrische Einbindung durch unseren Elektrobereich",
     ],
     preisVon: 8000,
     preisBis: 22000,
     preisEinheit: "für Heizungstausch pauschal",
     preisHinweis:
-      "Wartung und kleine Reparaturen ab 180 €. Heizung komplett tauschen ab 8.000 €. Wärmepumpe wird mit bis zu 70% gefördert — wir helfen beim Antrag.",
+      "Heizung komplett tauschen ab 8.000 €. Wärmepumpe wird mit bis zu 70% gefördert — wir helfen beim Antrag.",
     vorteile: vorteil(
-      ["🔥", "Schnelle Hilfe bei Ausfällen"],
+      ["🔥", "Abgestimmt mit Elektro und Trockenbau"],
       ["♻", "Modernisierung & Förderung"],
       ["🛠", "Heizung & Wasser kombiniert"],
       ["📞", "Ein Ansprechpartner"]
@@ -400,7 +400,7 @@ export const LEISTUNGEN_DATA: Record<string, LeistungsData> = {
     ),
     ratgeberSlug: "dacharbeiten-kosten-muenchen",
     ratgeberLabel: "Dacharbeiten Kosten München",
-    rechnerSituation: "kaputt",
+    rechnerSituation: "erneuern",
     faq: [
       {
         q: "Wer führt die Dacharbeiten aus?",

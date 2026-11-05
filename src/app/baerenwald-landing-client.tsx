@@ -264,12 +264,14 @@ export default function BaerenwaldLandingClient({
           <a href="#leistungen">Leistungen</a>
           <a href="#faq">FAQ</a>
           <a href="#kontakt">Kontakt</a>
+          <Link href="/portal/login">Kundenportal</Link>
+          <Link href="/partner/login">Handwerkerportal</Link>
         </nav>
         <Link
-          href={RECHNER_HREF}
+          href={ANFRAGE_HREF}
           className="nav-cta"
           onClick={() =>
-            capturePostHogEvent("cta_rechner_clicked", { location: "nav" })
+            capturePostHogEvent("cta_anfrage_clicked", { location: "nav" })
           }
         >
           {CTA.nav}
@@ -322,13 +324,19 @@ export default function BaerenwaldLandingClient({
             <Link href="/ratgeber" onClick={closeMobile}>
               Ratgeber
             </Link>
+            <Link href="/portal/login" onClick={closeMobile}>
+              Kundenportal
+            </Link>
+            <Link href="/partner/login" onClick={closeMobile}>
+              Handwerkerportal
+            </Link>
           </nav>
           <Link
-            href={RECHNER_HREF}
+            href={ANFRAGE_HREF}
             className="site-mobile-cta"
             onClick={() => {
               closeMobile();
-              capturePostHogEvent("cta_rechner_clicked", {
+              capturePostHogEvent("cta_anfrage_clicked", {
                 location: "nav_mobile",
               });
             }}

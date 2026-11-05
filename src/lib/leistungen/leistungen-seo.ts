@@ -28,15 +28,15 @@ const BODEN: LeistungSeoBlock = {
 
 const HEIZUNG: LeistungSeoBlock = {
   kurzeAntwort:
-    "Heizungsreparatur oder -tausch in München: Notdienst meist innerhalb von 24 Stunden. Kosten je nach Aufwand 300–2.500 Euro für Reparatur, Neuanlage 8.000–35.000 Euro.",
+    "Heizungstausch in München: Eine neue Anlage kostet je nach System 8.000–35.000 Euro, eine Wärmepumpe wird gefördert. Bärenwald koordiniert Heizungs- und Sanitärbetriebe und die elektrische Einbindung.",
   kostenH2:
-    "Was kostet Heizungsreparatur oder Heizungstausch in München 2026?",
+    "Was kostet ein Heizungstausch in München 2026?",
   faqH2: "Häufige Fragen zu Heizung und Sanitär in München",
 };
 
 const ELEKTRO: LeistungSeoBlock = {
   kurzeAntwort:
-    "Elektroarbeiten kosten in München 85–140 Euro pro Anschlusspunkt. Notdienst bei Stromausfall meist am gleichen Tag. Bärenwald koordiniert zertifizierte Elektro-Meisterbetriebe.",
+    "Elektroarbeiten kosten in München 85–140 Euro pro Anschlusspunkt. Bärenwald hat einen eigenen Elektrobereich unter Leitung eines Elektromeisters und stimmt die Arbeiten mit dem Bauablauf ab.",
   kostenH2: "Was kosten Elektroarbeiten in München 2026?",
   faqH2: "Häufige Fragen zu Elektroarbeiten in München",
 };

@@ -3,7 +3,7 @@
  * damit im CRM die Gewerke stimmen.
  */
 
-export type AnfrageKundentyp = "privat" | "hausverwaltung" | "gewerbe";
+export type AnfrageKundentyp = "privat" | "hausverwaltung" | "gewerbe" | "investor";
 
 export const ANFRAGE_KUNDENTYPEN: {
   id: AnfrageKundentyp;
@@ -18,11 +18,19 @@ export const ANFRAGE_KUNDENTYPEN: {
   {
     id: "hausverwaltung",
     label: "Hausverwaltung / Eigentümergemeinschaft",
-    hint: "Wohnanlagen, Instandhaltung, Objektbetreuung",
+    hint: "Umbau- und Sanierungsmaßnahmen am betreuten Objekt",
     leadKundentyp: "hausverwaltung",
     kundeTyp: "hausverwaltung",
   },
   { id: "gewerbe", label: "Gewerbe", hint: "Büro, Laden, Praxis, Hotel oder Gewerbeobjekt", leadKundentyp: null, kundeTyp: "gewerbe" },
+  // Im CRM vorerst als Gewerbe-Kunde; die Kundenart steht in funnel_daten.kundentyp_anfrage
+  {
+    id: "investor",
+    label: "Immobilieninvestor / Bestandshalter",
+    hint: "Einzelne Immobilien oder mehrere Einheiten sanieren",
+    leadKundentyp: "eigentuemer",
+    kundeTyp: "gewerbe",
+  },
 ];
 
 export const ANFRAGE_ANLIEGEN: { id: string; label: string; bereiche: string[] }[] = [
@@ -32,7 +40,6 @@ export const ANFRAGE_ANLIEGEN: { id: string; label: string; bereiche: string[] }
   { id: "technik", label: "Heizung, Sanitär, Elektro", bereiche: ["heizung", "sanitaer", "elektrik"] },
   { id: "innen", label: "Boden, Wände, Malerarbeiten", bereiche: ["boden", "waende"] },
   { id: "garten", label: "Garten & Außenanlagen", bereiche: ["gartengestaltung"] },
-  { id: "betreuung", label: "Laufende Betreuung (Hausmeister, Reinigung, Winterdienst)", bereiche: ["hausmeister", "reinigung", "winter"] },
   { id: "bauprojekt", label: "Größeres Bauprojekt / Neubau", bereiche: ["sonstiges"] },
   { id: "sonstiges", label: "Etwas anderes", bereiche: ["sonstiges"] },
 ];
