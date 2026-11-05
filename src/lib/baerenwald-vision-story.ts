@@ -8,14 +8,17 @@ export const BAERENWALD_VISION_LEAD =
 
 export const BAERENWALD_VISION_PILLARS = [
   {
+    mock: "bautagebuch",
     title: "Bautagebuch und Fotos",
     text: "Tätigkeiten und Fortschritte mit Datum und ausführendem Betrieb. Fotos vom Ausgangszustand bis zum Ergebnis, auch von Arbeiten, die später verdeckt sind.",
   },
   {
+    mock: "abnahme",
     title: "Absprachen und Abnahme",
     text: "Entscheidungen, Freigaben und zusätzliche Leistungen werden beim Projekt festgehalten. Offene Punkte verfolgen wir bis zur dokumentierten Abnahme.",
   },
   {
+    mock: "portal",
     title: "Ihr Kundenportal",
     text: "Im Portal sehen Sie den dokumentierten Fortschritt, Fotos, Bautagebuch und Unterlagen. Wenn Ihre Entscheidung gebraucht wird, beziehen wir Sie gezielt ein.",
   },
