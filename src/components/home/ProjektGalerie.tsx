@@ -321,7 +321,7 @@ export function ProjektGalerie({
   };
 
   return (
-    <section className="projekte-section" aria-labelledby="projekte-heading">
+    <section className="projekte-section" id="projekte" aria-labelledby="projekte-heading">
       <div className="projekte-inner">
         <div className="projekte-header fade-up">
           <span className="section-eyebrow">Unsere Projekte</span>

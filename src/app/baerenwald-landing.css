@@ -2211,6 +2211,27 @@ html.js .hero-picker-chips-wrap {
   color: rgba(255, 255, 255, 0.78);
 }
 
+.warum-card p + p {
+  margin-top: 12px;
+}
+
+.warum-aktion {
+  margin-top: 32px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  text-align: center;
+}
+
+.warum-aktion p {
+  margin: 0;
+  max-width: 48ch;
+  font-size: var(--p2-fs-body);
+  line-height: 1.55;
+  color: rgba(255, 255, 255, 0.88);
+}
+
 .warum-card-icon {
   display: flex;
   align-items: center;
