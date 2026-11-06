@@ -1,7 +1,7 @@
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
 
-import { formatDatum, formatDatumZeit } from '@/lib/shared-domain/geld-datum'
+import { formatDatum } from '@/lib/shared-domain/geld-datum'
 import { MockBadge, MockCard, MockEmpty, MockIcon } from '@/teo/arbeitsplatz/kit'
 import { ladePlaene } from '@/teo/arbeitsplatz/daten/plaene'
 import { ladeTermine } from '@/teo/arbeitsplatz/daten/termine'
@@ -95,7 +95,7 @@ export default async function StartSeite() {
           <div className="listcard">
             {termine.map((t) => (
               <Link key={t.id} href={`/arbeitsplatz/vorgaenge/${t.leadId}`} className="list-row" style={{ gridTemplateColumns: '150px minmax(0, 1fr)' }}>
-                <div className="lc-title">{formatDatumZeit(t.von)}</div>
+                <div className="lc-title">{formatDatum(t.von)}</div>
                 <div className="lc-sub">{titelVon.get(t.leadId) ?? t.titel}</div>
               </Link>
             ))}

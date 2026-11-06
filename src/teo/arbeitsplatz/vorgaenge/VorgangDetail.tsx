@@ -3,7 +3,7 @@
 import { useRouter } from 'next/navigation'
 import { useMemo, useState, useTransition } from 'react'
 
-import { formatDatum, formatDatumZeit, formatEuro } from '@/lib/shared-domain/geld-datum'
+import { formatDatum, formatDatumZeit, formatDatumZeitraum, formatEuro } from '@/lib/shared-domain/geld-datum'
 import { MockBadge, MockBtn, MockCard, MockCheckbox, MockEmpty, MockIcon, MockProp, MockSelect, MockTabs, MockTextarea } from '@/teo/arbeitsplatz/kit'
 import {
   anTeamGeben,
@@ -103,7 +103,7 @@ export function VorgangDetail({
         })
       }
     }
-    for (const t of d.termine) punkte.push({ id: `t-${t.id}`, wann: t.von, titel: `Termin: ${formatDatumZeit(t.von)}`, text: t.titel })
+    for (const t of d.termine) punkte.push({ id: `t-${t.id}`, wann: t.von, titel: `Termin: ${formatDatumZeitraum(t.von, t.bis)}`, text: t.titel })
     for (const [i, b] of (item?.bautagebuch ?? []).entries()) {
       punkte.push({ id: `b-${b.id ?? i}`, wann: b.created_at ?? b.datum ?? zeile.erstellt, titel: b.titel || 'Update', text: b.notiz, fotos: b.fotos_urls })
     }
