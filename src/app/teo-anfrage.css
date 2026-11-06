@@ -431,3 +431,91 @@
   font-size: 13px;
   cursor: pointer;
 }
+
+/* ══ Bewegung in der Anfrage: Schritte gleiten in Leserichtung, Auswahl rastet ein, Danke-Haken zeichnet sich ══ */
+.ta-karte--vor { animation: ta-von-rechts 0.42s cubic-bezier(0.22, 1, 0.36, 1) both; }
+.ta-karte--zurueck { animation: ta-von-links 0.42s cubic-bezier(0.22, 1, 0.36, 1) both; }
+@keyframes ta-von-rechts { from { opacity: 0; transform: translateX(28px); } to { opacity: 1; transform: none; } }
+@keyframes ta-von-links { from { opacity: 0; transform: translateX(-28px); } to { opacity: 1; transform: none; } }
+
+/* Inhalt der Karte kommt kurz nach der Karte, Zeile für Zeile */
+.ta-karte > * { animation: ta-rein 0.4s cubic-bezier(0.22, 1, 0.36, 1) both; }
+.ta-karte > :nth-child(2) { animation-delay: 0.05s; }
+.ta-karte > :nth-child(3) { animation-delay: 0.1s; }
+.ta-karte > :nth-child(4) { animation-delay: 0.15s; }
+.ta-karte > :nth-child(n + 5) { animation-delay: 0.2s; }
+
+/* Fortschritt: weicher Zug */
+.ta-fortschritt__spur span { transition: width 0.6s cubic-bezier(0.22, 1, 0.36, 1); }
+
+/* „2 von 4“: Zahl rollt in Richtung des Wechsels */
+.ta-kopf__zahl { display: inline-block; }
+.ta-kopf__zahl--vor { animation: ta-zahl-hoch 0.35s cubic-bezier(0.22, 1, 0.36, 1) both; }
+.ta-kopf__zahl--zurueck { animation: ta-zahl-runter 0.35s cubic-bezier(0.22, 1, 0.36, 1) both; }
+@keyframes ta-zahl-hoch { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+@keyframes ta-zahl-runter { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: none; } }
+
+/* Kachel gewählt: Haken springt kurz ein */
+.ta-kachel.ist-gewaehlt .ta-kachel__haken { animation: ta-einrasten 0.32s cubic-bezier(0.3, 1.6, 0.5, 1) both; }
+.ta-kachel.ist-gewaehlt .ta-kachel__icon { animation: ta-tippen 0.3s ease both; }
+@keyframes ta-einrasten { from { transform: scale(0.4); } to { transform: none; } }
+@keyframes ta-tippen { 40% { transform: scale(0.92); } }
+.ta-pille.ist-gewaehlt { animation: ta-tippen 0.25s ease both; }
+
+/* Zusatzfelder (Notfall-Hinweis, Wohnung) blenden weich ein */
+.ta-hinweis { animation: ta-rein 0.3s ease both; }
+
+/* Fehler: kurzes Wackeln statt Sprung */
+.ta-fehler { animation: ta-wackeln 0.4s ease both; }
+@keyframes ta-wackeln {
+  20% { transform: translateX(-5px); }
+  40% { transform: translateX(4px); }
+  60% { transform: translateX(-3px); }
+  80% { transform: translateX(2px); }
+}
+
+/* Senden: kleiner Ring im Knopf */
+.ta-lade {
+  width: 16px;
+  height: 16px;
+  border: 2px solid currentColor;
+  border-right-color: transparent;
+  border-radius: 50%;
+  animation: ta-drehen 0.7s linear infinite;
+}
+@keyframes ta-drehen { to { transform: rotate(360deg); } }
+
+/* Danke: Kreis und Haken zeichnen sich, danach Text */
+.ta-danke__icon { animation: ta-einrasten 0.5s cubic-bezier(0.3, 1.6, 0.5, 1) both; }
+.ta-danke__icon svg { overflow: visible; }
+.ta-danke__kreis,
+.ta-danke__haken {
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-dasharray: 1;
+}
+.ta-danke__kreis { stroke-width: 2.5; stroke-dashoffset: 1; animation: ta-zeichnen 0.6s cubic-bezier(0.65, 0, 0.35, 1) 0.15s forwards; }
+.ta-danke__haken { stroke-width: 3.5; stroke-dashoffset: 1; animation: ta-zeichnen 0.35s cubic-bezier(0.65, 0, 0.35, 1) 0.65s forwards; }
+@keyframes ta-zeichnen { to { stroke-dashoffset: 0; } }
+.ta-danke > :not(.ta-danke__icon) { animation: ta-rein 0.45s cubic-bezier(0.22, 1, 0.36, 1) 0.8s both; }
+.ta-danke > :nth-child(3) { animation-delay: 0.9s; }
+.ta-danke > :nth-child(4) { animation-delay: 1s; }
+
+@media (prefers-reduced-motion: reduce) {
+  .ta-karte,
+  .ta-karte > *,
+  .ta-kopf__zahl,
+  .ta-kachel__haken,
+  .ta-kachel__icon,
+  .ta-pille,
+  .ta-hinweis,
+  .ta-fehler,
+  .ta-danke__icon,
+  .ta-danke > * { animation: none !important; }
+  .ta-fortschritt__spur span { transition: none; }
+  .ta-danke__kreis,
+  .ta-danke__haken { animation: none; stroke-dashoffset: 0; }
+  .ta-lade { animation-duration: 1.6s; }
+}

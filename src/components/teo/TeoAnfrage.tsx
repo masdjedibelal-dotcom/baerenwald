@@ -12,7 +12,6 @@ import {
   Building2,
   CalendarCheck,
   Check,
-  CircleCheck,
   ClipboardList,
   Droplets,
   Ellipsis,
@@ -192,6 +191,8 @@ function Gruppe({ label, children }: { label: string; children: React.ReactNode 
 export function TeoAnfrage() {
   const router = useRouter();
   const [schritt, setSchritt] = useState(0);
+  /** Richtung des letzten Schrittwechsels — die Karte gleitet von rechts (weiter) oder links (zurück) herein. */
+  const [richtung, setRichtung] = useState<"vor" | "zurueck">("vor");
   const [d, setD] = useState<TeoAnfrageDaten>(() => ({
     fall: "",
     absender: "hausverwaltung",
@@ -255,6 +256,7 @@ export function TeoAnfrage() {
   function vorwahlAendern() {
     setVorwahl(null);
     setFehler(null);
+    setRichtung("zurueck");
     setSchritt(0);
     window.history.replaceState(null, "", window.location.pathname);
   }
@@ -288,6 +290,7 @@ export function TeoAnfrage() {
     const f = pruefe(schritt);
     setFehler(f);
     if (f) return;
+    setRichtung("vor");
     setSchritt((s) => s + 1);
     window.scrollTo({ top: 0, behavior: "instant" as ScrollBehavior });
   }
@@ -295,6 +298,7 @@ export function TeoAnfrage() {
   function zurueck() {
     setFehler(null);
     if (schritt === 0) return router.push("/");
+    setRichtung("zurueck");
     setSchritt((s) => s - 1);
     window.scrollTo({ top: 0, behavior: "instant" as ScrollBehavior });
   }
@@ -335,7 +339,14 @@ export function TeoAnfrage() {
         <Link href="/" className="ta-kopf__marke" aria-label="Zur Startseite">
           <TeoLogo />
         </Link>
-        {status !== "done" ? <span className="ta-kopf__schritt">{schritt + 1} von 4</span> : null}
+        {status !== "done" ? (
+          <span className="ta-kopf__schritt">
+            <span key={schritt} className={`ta-kopf__zahl ta-kopf__zahl--${richtung}`}>
+              {schritt + 1}
+            </span>{" "}
+            von 4
+          </span>
+        ) : null}
         <Link href="/" className="ta-rund" aria-label="Anfrage schließen">
           <X size={18} />
         </Link>
@@ -367,7 +378,10 @@ export function TeoAnfrage() {
         {status === "done" ? (
           <div className="ta-karte ta-danke">
             <span className="ta-danke__icon">
-              <CircleCheck size={36} strokeWidth={1.6} />
+              <svg viewBox="0 0 52 52" width="40" height="40" aria-hidden="true">
+                <circle className="ta-danke__kreis" cx="26" cy="26" r="23" pathLength={1} />
+                <path className="ta-danke__haken" d="M15 27l7.5 7.5L37 19" pathLength={1} />
+              </svg>
             </span>
             <h1>Danke, Ihre Anfrage ist da.</h1>
             <p>{notfall ? "Wir rufen Sie so schnell wie möglich zurück." : "Wir melden uns am nächsten Werktag."}</p>
@@ -376,7 +390,7 @@ export function TeoAnfrage() {
             </Link>
           </div>
         ) : (
-          <div className="ta-karte" key={schritt}>
+          <div className={`ta-karte ta-karte--${richtung}`} key={schritt}>
             {vorwahl && schritt > 0 ? (
               <p className="ta-vorwahl">
                 <span>{vorwahl.label}</span>
@@ -557,7 +571,11 @@ export function TeoAnfrage() {
               </>
             ) : null}
 
-            {fehler ? <p className="ta-fehler">{fehler}</p> : null}
+            {fehler ? (
+              <p className="ta-fehler" role="alert" key={fehler}>
+                {fehler}
+              </p>
+            ) : null}
           </div>
         )}
       </main>
@@ -578,7 +596,14 @@ export function TeoAnfrage() {
                 </button>
               ) : (
                 <button type="button" className="teo-btn ta-weiter" disabled={status === "loading"} onClick={() => void absenden()}>
-                  {status === "loading" ? "Wird gesendet…" : "Anfrage senden"}
+                  {status === "loading" ? (
+                    <>
+                      <span className="ta-lade" aria-hidden="true" />
+                      Wird gesendet…
+                    </>
+                  ) : (
+                    "Anfrage senden"
+                  )}
                 </button>
               )}
             </div>
