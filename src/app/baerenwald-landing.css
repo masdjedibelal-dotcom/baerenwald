@@ -9463,3 +9463,55 @@ html.js .hero-picker-chips-wrap {
     flex-direction: column;
   }
 }
+
+/* Projekt-Galerie: Bauphase am Foto, Gewerke-Liste (Baustellenfotos je Objekt) */
+.projekt-bild-phase {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  z-index: 4;
+  padding: 3px 10px;
+  border-radius: var(--r-pill, 999px);
+  background: rgba(16, 24, 20, 0.62);
+  color: var(--fl-panel);
+  font-size: var(--p2-fs-caption);
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  pointer-events: none;
+}
+
+.projekt-meta-teil {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 6px;
+}
+
+.projekt-gewerke {
+  margin-top: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.projekt-gewerke-liste {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.projekt-gewerke-liste li {
+  font-size: var(--p2-fs-caption);
+  color: var(--fl-text-2);
+  background: rgba(46, 125, 82, 0.08);
+  border-radius: var(--r-pill, 999px);
+  padding: 4px 10px;
+}
+
+.projekt-meta--stack {
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+}

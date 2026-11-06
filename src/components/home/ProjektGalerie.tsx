@@ -70,18 +70,34 @@ export type BaerenwaldProjektTag =
   | "verwaltung"
   | "privat";
 
+/** Bauphase eines Fotos (Label oben links im Bild). */
+export type ProjektPhase = "standort" | "vorher" | "waehrend" | "nachher";
+
+const PHASE_LABEL: Record<ProjektPhase, string> = {
+  standort: "Standort",
+  vorher: "Vorher",
+  waehrend: "Während der Arbeiten",
+  nachher: "Nachher",
+};
+
 export type BaerenwaldProjekt = {
   id: number;
   bild: string;
   bilder?: string[];
+  /** Je Bild (gleiche Reihenfolge wie `bilder`): Bauphase, null = ohne Label */
+  bildPhasen?: (ProjektPhase | null)[];
+  /** Je Bild eigener Alt-Text; sonst `bildAlt` */
+  bildAlts?: string[];
   bildAlt: string;
   gewerk: string;
-  stadtteil: string;
-  jahr: string;
-  tag: BaerenwaldProjektTag;
-  problem: string;
-  loesung: string;
-  ergebnis: string;
+  stadtteil?: string;
+  jahr?: string;
+  tag?: BaerenwaldProjektTag;
+  /** Beteiligte Gewerke — Karten ohne Problem/Lösung/Ergebnis-Text */
+  gewerke?: string[];
+  problem?: string;
+  loesung?: string;
+  ergebnis?: string;
   /** Gradient unter dem Bild bis echte Assets da sind */
   placeholderGradient: string;
   placeholderEmoji: string;
@@ -97,15 +113,17 @@ const PROJEKT_TAG_LABEL: Record<BaerenwaldProjektTag, string> = {
 const SCROLL_STEP = 376;
 
 function projektTeaserText(projekt: BaerenwaldProjekt): string {
-  const loesungPlain = projekt.loesung.replace(/\s*\n\s*/g, " ").trim();
+  const loesungPlain = (projekt.loesung ?? "").replace(/\s*\n\s*/g, " ").trim();
   return [projekt.problem, loesungPlain, projekt.ergebnis]
-    .filter((s) => s.length > 0)
+    .filter((s): s is string => Boolean(s && s.length > 0))
     .join(" ");
 }
 
 function ProjektBild({
   bild,
   bilder,
+  bildPhasen,
+  bildAlts,
   bildAlt,
   placeholderGradient,
   placeholderEmoji,
@@ -113,6 +131,8 @@ function ProjektBild({
   BaerenwaldProjekt,
   | "bild"
   | "bilder"
+  | "bildPhasen"
+  | "bildAlts"
   | "bildAlt"
   | "placeholderGradient"
   | "placeholderEmoji"
@@ -127,6 +147,8 @@ function ProjektBild({
   const hasMultipleImages = imageList.length > 1;
 
   const showPlaceholder = !loaded || currentFailed;
+  const phase = bildPhasen?.[activeImageIndex] ?? null;
+  const eigenerAlt = bildAlts?.[activeImageIndex];
 
   useEffect(() => {
     setLoaded(false);
@@ -164,9 +186,11 @@ function ProjektBild({
         <Image
           src={currentSrc}
           alt={
-            hasMultipleImages
-              ? `${bildAlt} (${activeImageIndex + 1}/${imageList.length})`
-              : bildAlt
+            eigenerAlt
+              ? eigenerAlt
+              : hasMultipleImages
+                ? `${bildAlt} (${activeImageIndex + 1}/${imageList.length})`
+                : bildAlt
           }
           fill
           className={cn("projekt-bild", loaded && "projekt-bild--loaded")}
@@ -181,6 +205,7 @@ function ProjektBild({
       {loaded && !currentFailed ? (
         <div className="projekt-bild-gradient" aria-hidden />
       ) : null}
+      {phase ? <span className="projekt-bild-phase">{PHASE_LABEL[phase]}</span> : null}
       {hasMultipleImages ? (
         <>
           <button
@@ -362,32 +387,55 @@ export function ProjektGalerie({
                 <ProjektBild
                   bild={projekt.bild}
                   bilder={projekt.bilder}
+                  bildPhasen={projekt.bildPhasen}
+                  bildAlts={projekt.bildAlts}
                   bildAlt={projekt.bildAlt}
                   placeholderGradient={projekt.placeholderGradient}
                   placeholderEmoji={projekt.placeholderEmoji}
                 />
                 <div className="projekt-info">
-                  <div className="projekt-meta projekt-meta--tags">
-                    <span
-                      className={cn(
-                        "projekt-tag",
-                        `projekt-tag--${projekt.tag}`
-                      )}
-                    >
-                      {PROJEKT_TAG_LABEL[projekt.tag]}
-                    </span>
-                  </div>
+                  {projekt.tag ? (
+                    <div className="projekt-meta projekt-meta--tags">
+                      <span
+                        className={cn(
+                          "projekt-tag",
+                          `projekt-tag--${projekt.tag}`
+                        )}
+                      >
+                        {PROJEKT_TAG_LABEL[projekt.tag]}
+                      </span>
+                    </div>
+                  ) : null}
+                  {projekt.gewerke?.length && !projekt.problem ? (
+                    <div className="projekt-meta projekt-meta--stack">
+                      <span className="projekt-gewerk-name">{projekt.gewerk}</span>
+                      {projekt.stadtteil ? <span className="projekt-stadtteil">{projekt.stadtteil}</span> : null}
+                    </div>
+                  ) : (
                   <div className="projekt-meta projekt-meta--detail">
                     <span className="projekt-gewerk-name">{projekt.gewerk}</span>
-                    <span className="projekt-meta-dot" aria-hidden>
-                      ·
-                    </span>
-                    <span className="projekt-stadtteil">{projekt.stadtteil}</span>
-                    <span className="projekt-meta-dot" aria-hidden>
-                      ·
-                    </span>
-                    <span className="projekt-jahr">{projekt.jahr}</span>
+                    {[projekt.stadtteil, projekt.jahr].filter(Boolean).map((teil, j) => (
+                      <span key={j} className="projekt-meta-teil">
+                        <span className="projekt-meta-dot" aria-hidden>
+                          ·
+                        </span>
+                        <span className={j === 0 && projekt.stadtteil ? "projekt-stadtteil" : "projekt-jahr"}>{teil}</span>
+                      </span>
+                    ))}
                   </div>
+                  )}
+
+                  {projekt.gewerke?.length && !projekt.problem ? (
+                    <div className="projekt-gewerke">
+                      <span className="projekt-ple-kicker">Gewerke</span>
+                      <ul className="projekt-gewerke-liste">
+                        {projekt.gewerke.map((g) => (
+                          <li key={g}>{g}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  ) : (
+                    <>
 
                   <div
                     className={cn(
@@ -399,15 +447,15 @@ export function ProjektGalerie({
                       <div className="projekt-ple">
                         <div className="projekt-ple-row">
                           <span className="projekt-ple-kicker">Problem</span>
-                          <p className="projekt-ple-text">{projekt.problem}</p>
+                          <p className="projekt-ple-text">{projekt.problem ?? ""}</p>
                         </div>
                         <div className="projekt-ple-row projekt-ple-row--loesung">
                           <span className="projekt-ple-kicker">Lösung</span>
-                          {renderLoesungBlocks(projekt.loesung)}
+                          {renderLoesungBlocks(projekt.loesung ?? "")}
                         </div>
                         <div className="projekt-ple-row projekt-ple-row--ergebnis">
                           <span className="projekt-ple-kicker">Ergebnis</span>
-                          <p className="projekt-ple-text">{projekt.ergebnis}</p>
+                          <p className="projekt-ple-text">{projekt.ergebnis ?? ""}</p>
                         </div>
                       </div>
                     ) : (
@@ -429,6 +477,8 @@ export function ProjektGalerie({
                       ? "Weniger anzeigen ↑"
                       : "Mehr lesen ↓"}
                   </button>
+                    </>
+                  )}
                 </div>
               </div>
             ))}

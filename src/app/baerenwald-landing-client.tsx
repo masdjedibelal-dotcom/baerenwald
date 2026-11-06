@@ -17,6 +17,7 @@ import {
   ProjektGalerie,
   type BaerenwaldProjekt,
 } from "@/components/home/ProjektGalerie";
+import { PROJEKTE_FOTOS } from "@/data/baerenwald-projekte-fotos";
 import {
   TestimonialsMarquee,
   type MarqueeTestimonial,
@@ -166,6 +167,9 @@ const PROJEKTE: readonly BaerenwaldProjekt[] = [
     placeholderEmoji: "🪵",
   },
 ];
+
+/** Kuratierte Projekte mit Text zuerst, danach die Baustellenfotos je Objekt. */
+const ALLE_PROJEKTE: readonly BaerenwaldProjekt[] = [...PROJEKTE, ...PROJEKTE_FOTOS];
 
 export default function BaerenwaldLandingClient({
   leistungenSection,
@@ -468,7 +472,7 @@ export default function BaerenwaldLandingClient({
 
       <SectionDivider variant="welle" from="var(--fl-bg)" to="var(--fl-bg)" />
 
-      <ProjektGalerie projekte={PROJEKTE} />
+      <ProjektGalerie projekte={ALLE_PROJEKTE} />
 
       <SectionDivider variant="baum" from="var(--fl-bg)" to="var(--fl-accent)" />
 
