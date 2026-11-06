@@ -36,7 +36,7 @@ export function DatenschutzCheckbox({
       </label>
       {showError ? (
         <p className="field-error">
-          Bitte stimme der Datenschutzerklärung zu um fortzufahren.
+          Bitte stimmen Sie der Datenschutzerklärung zu, um fortzufahren.
         </p>
       ) : null}
     </div>

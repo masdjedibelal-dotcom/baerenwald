@@ -288,7 +288,7 @@ export function PartnerRegisterForm() {
           </label>
           {datenschutzError ? (
             <p className="portal-text-body text-p2-danger">
-              Bitte stimme der Datenschutzerklärung zu.
+              Bitte stimmen Sie der Datenschutzerklärung zu.
             </p>
           ) : null}
 
