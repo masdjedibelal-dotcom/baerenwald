@@ -4,12 +4,9 @@ import {
   Building,
   CalendarClock,
   Check,
-  ClipboardCheck,
   Droplets,
   FileText,
   Flame,
-  Hammer,
-  Handshake,
   Headset,
   KeyRound,
   type LucideIcon,
@@ -19,7 +16,6 @@ import {
   SlidersHorizontal,
   Smartphone,
   Snowflake,
-  Sparkles,
   Wrench,
   X,
   Zap,
@@ -29,7 +25,7 @@ import { TeoAblaufKarte } from "@/components/teo/TeoAblaufKarte";
 import { TeoEffekte } from "@/components/teo/TeoEffekte";
 import { fotoDa, TeoFoto } from "@/components/teo/TeoFoto";
 import { TEO_LINK_ANFRAGE, TeoLogo, TeoRahmen } from "@/components/teo/TeoRahmen";
-import { TeoSchritte } from "@/components/teo/TeoSchritte";
+import { TeoAppAblauf } from "@/components/teo/TeoAppAblauf";
 import { TEO_USPS } from "@/components/teo/teo-usps";
 import { TEO_SITUATIONEN } from "@/lib/funnel/teo-anfrage";
 import { RATGEBER_PFAD, ratgeberArtikel, type RatgeberArtikel } from "@/teo/ratgeber/artikel";
@@ -50,60 +46,31 @@ const ZIELGRUPPEN = [
 ] as const;
 
 const HEUTE = [
-  "Beim Rohrbruch hat kein Handwerker Zeit",
-  "Zehn Betriebe, zehn Verträge, zehn Rechnungen",
-  "Streit, ob der Schaden schon vorher da war",
-  "Anfahrt umsonst, weil die Meldung unklar war",
-  "Gewährleistung verpasst, weil nichts dokumentiert ist",
+  "Mietermeldungen prüfen und nachfragen",
+  "Einen Handwerker finden, der gerade Zeit hat",
+  "Hinterhertelefonieren, bis jemand kommt",
+  "Termine mit Mietern und Eigentümern abstimmen",
+  "Angebote einholen, vergleichen und freigeben",
+  "Nachkontrolle und Rechnungen prüfen",
 ] as const;
 
 const MIT_TEO = [
-  "Ein Netz an Partnerbetrieben, damit schnell jemand kommt",
-  "Ein Vertragspartner und eine Rechnung für alle Gewerke",
-  "Jede Arbeit mit Fotos belegt, wir haften",
-  "Meldung mit Foto, damit das richtige Gewerk kommt",
-  "Abnahme dokumentiert, die Gewährleistung liegt bei uns",
+  "Mieter melden per QR-Code, mit Foto und Wohnung",
+  "Unser Partnernetz hat auch kurzfristig jemanden frei",
+  "Sie haben einen Ansprechpartner statt zehn Nummern",
+  "Den Termin stimmen wir direkt mit dem Mieter ab",
+  "Bis zu Ihrer Grenze legen wir los, darüber geben Sie frei",
+  "Wir nehmen ab, belegen mit Fotos und rechnen einmal ab",
 ] as const;
 
-/** Kern-USPs: kurz unter dem Hero, ausführlich in „Was Sie bei teo bekommen“. */
-
+/** Was teo ist und was Sie davon haben (Generalunternehmer mit eigener Software). */
 const VORTEILE = [
-  { icon: Handshake, titel: "Von der Meldung bis zur Rechnung", text: "Sie melden, wir erledigen den Rest." },
-  { icon: Headset, titel: "Ein Ansprechpartner", text: "Für jedes Haus und jedes Gewerk derselbe." },
-  { icon: ReceiptText, titel: "Eine Rechnung", text: "Wir sind Ihr Vertragspartner, nicht zehn Betriebe." },
-  { icon: ShieldCheck, titel: "Haftung und Gewährleistung", text: "Wir haften und kümmern uns auch um spätere Mängel." },
-  { icon: ClipboardCheck, titel: "Geprüft und abgenommen", text: "Jede Arbeit abgenommen und mit Fotos belegt." },
-  { icon: Network, titel: "Partnernetz in München", text: "Geprüfte Betriebe für alle Gewerke, damit schnell jemand kommt." },
-  { icon: SlidersHorizontal, titel: "Sie behalten die Kontrolle", text: "Sie legen fest, bis zu welchem Betrag wir direkt beauftragen." },
-  { icon: CalendarClock, titel: "Prüffristen im Blick", text: "Wartungen beauftragen wir, bevor die Frist abläuft." },
-] as const;
-
-/** Fluss-Grafik (Vorbild Lessen): was rein kommt, wie wir es machen, was Sie davon haben. */
-const UEBERNEHMEN = [
-  { icon: Wrench, text: "Schäden und Reparaturen" },
-  { icon: CalendarClock, text: "Wartung und Prüffristen" },
-  { icon: Sparkles, text: "Hausmeister und Reinigung" },
-  { icon: Hammer, text: "Sanierungen und Maßnahmen" },
-] as const;
-
-const SO_MACHEN_WIR_ES = [
-  { icon: Network, titel: "Meisterbetriebe aus München", text: "Geprüft, für alle Gewerke." },
-  { icon: Smartphone, titel: "Das Portal", text: "Meldung, Stand, Fotos und Rechnung an einem Ort." },
-  { icon: Headset, titel: "Ihr teo-Team", text: "Steht für jeden Auftrag ein und haftet." },
-] as const;
-
-const DAVON_HABEN = [
-  "Ein Ansprechpartner für alles",
-  "Jeder Stand sichtbar",
-  "Eine Rechnung von uns",
-  "Kosten je Haus im Blick",
-] as const;
-
-/** Was teo ist: Handwerksbetrieb und Generalunternehmer, digital für alle Beteiligten. */
-const WAS_TEO_IST = [
-  { icon: Hammer, titel: "Eigener Handwerksbetrieb", text: "Was wir selbst können, führen wir selbst aus." },
-  { icon: ShieldCheck, titel: "Generalunternehmer mit Partnernetz", text: "Alles andere übernehmen geprüfte Partnerbetriebe aller Gewerke in unserem Auftrag. Wir sind Ihr Vertragspartner und haften." },
-  { icon: Smartphone, titel: "Digital für alle", text: "Verwaltung, Mieter, Eigentümer und Handwerker in einem Vorgang. Darum lohnt sich ein Generalunternehmer auch für die kleine Reparatur." },
+  { icon: Network, titel: "Immer jemand verfügbar", text: "Gute Handwerker sind ausgebucht. Wir haben ein großes Netz an Betrieben in München und finden auch kurzfristig jemanden." },
+  { icon: Headset, titel: "Ein Ansprechpartner für alles", text: "Ob tropfender Hahn oder Dachsanierung: Sie wenden sich an uns, nicht an zehn verschiedene Betriebe." },
+  { icon: ReceiptText, titel: "Kein Aufpreis für den Generalunternehmer", text: "Meldung, Auftrag, Termin und Abrechnung laufen bei uns digital. Die gesparte Zeit berechnen wir nicht. Sie zahlen den Preis eines Fachbetriebs." },
+  { icon: Smartphone, titel: "Alle sehen denselben Stand", text: "Verwaltung, Eigentümer und Mieter sehen im Portal Fortschritt, Fotos, Angebote und Rechnungen. Das erspart Rückfragen." },
+  { icon: SlidersHorizontal, titel: "Weniger freigeben, weniger abstimmen", text: "Sie legen je Haus fest, bis zu welchem Betrag wir direkt beauftragen. Termine klären wir selbst mit den Mietern." },
+  { icon: ShieldCheck, titel: "Wir haften", text: "Vertragspartner sind immer wir. Wir nehmen jede Arbeit ab und kümmern uns auch um spätere Mängel." },
 ] as const;
 
 /** Alle Beteiligten (Vorbild Lessen „Every party connected“): Foto je Rolle, darunter teo als Klammer. */
@@ -135,7 +102,7 @@ export const TEO_FAQ = [
   {
     frage: "Was macht teo genau?",
     antwort:
-      "teo ist Handwerksbetrieb und Generalunternehmer für Hausverwaltungen in München. Sie beauftragen uns mit allem am Haus: Schäden, Wartungen, Hausmeister, Reinigung und Sanierungen. Wir führen selbst aus und mit Partnerbetrieben aus allen Gewerken, mit einer Rechnung und einem Portal für alle.",
+      "teo ist ein Handwerksbetrieb und Generalunternehmer für Hausverwaltungen in München. Sie geben uns Reparaturen, Schäden, Wartungen und Sanierungen. Wir führen selbst aus oder mit Partnerbetrieben aus allen Gewerken. Sie haben einen Ansprechpartner, bekommen eine Rechnung und sehen jeden Schritt im Portal.",
   },
   {
     frage: "Was kostet teo?",
@@ -188,7 +155,7 @@ export function TeoStartseite() {
               Alle Gewerke. <span className="ts-hero__ganz">Ein Betrieb.</span>
             </span> <span className="ts-hero__zeile ts-hero__zeile--klein ts-blau">Für Hausverwaltungen in München.</span>
           </h1>
-          <p className="ts-hero__satz">teo ist Handwerksbetrieb und Generalunternehmer. Wir führen selbst aus und mit einem Netz an Partnerbetrieben aus allen Gewerken, von der tropfenden Leitung bis zur Sanierung. Ein Vertragspartner, eine Rechnung, zum Preis eines Fachbetriebs.</p>
+          <p className="ts-hero__satz">Wir nehmen Ihnen den handwerklichen Teil der Verwaltung ab. Bei Reparaturen, Schäden und Sanierungen sind wir Ihr einziger Ansprechpartner. Wir führen selbst aus oder setzen Betriebe aus unserem Partnernetz ein. Über unser Portal sehen Sie jederzeit, wo ein Auftrag steht.</p>
           <div className="teo-aktionen ts-zentriert">
             <Link href={TEO_LINK_ANFRAGE} className="teo-btn">
               Anfrage stellen
@@ -234,11 +201,11 @@ export function TeoStartseite() {
       <section className="ts-abschnitt" id="problem">
         <div className="teo-innen">
           <h2 className="ts-zentriert-text ts-zweizeilig">
-            <span>Jeder Schaden ist ein kleines Projekt.</span> <span className="ts-blau">Und kostet Sie Stunden.</span>
+            <span>Jeder Schaden kostet Sie Stunden.</span> <span className="ts-blau">Die nehmen wir Ihnen ab.</span>
           </h2>
           <div className="ts-vorher">
             <div className="ts-vorher__karte">
-              <h3>Heute koordinieren Sie selbst.</h3>
+              <h3>Das machen Sie heute selbst</h3>
               <ul>
                 {HEUTE.map((t) => (
                   <li key={t}>
@@ -251,7 +218,7 @@ export function TeoStartseite() {
               </ul>
             </div>
             <div className="ts-vorher__karte ts-vorher__karte--teo">
-              <h3>Mit teo melden Sie nur noch.</h3>
+              <h3>Das übernehmen wir</h3>
               <ul>
                 {MIT_TEO.map((t) => (
                   <li key={t}>
@@ -264,74 +231,19 @@ export function TeoStartseite() {
               </ul>
             </div>
           </div>
+          <p className="ts-kosten__zeile">Die gewonnene Zeit können Sie in mehr Objekte stecken, ohne mehr Personal.</p>
         </div>
       </section>
 
-      <section className="ts-abschnitt ts-abschnitt--warm" id="loesung">
+      <section className="ts-abschnitt ts-abschnitt--warm" id="was-teo-ist">
         <div className="teo-innen">
           <h2 className="ts-zentriert-text ts-zweizeilig">
-            <span>Alles Technische im Haus.</span> <span className="ts-blau">Aus einer Hand.</span>
+            <span>Ein Handwerksbetrieb</span> <span className="ts-blau">mit eigener Software.</span>
           </h2>
-          <div className="ts-fluss">
-            <div className="ts-fluss__spalte">
-              <h3 className="ts-fluss__marke">Was wir übernehmen</h3>
-              <ul className="ts-fluss__liste">
-                {UEBERNEHMEN.map((u) => (
-                  <li key={u.text}>
-                    <span className="ts-fluss__icon">
-                      <u.icon size={18} strokeWidth={1.8} />
-                    </span>
-                    {u.text}
-                  </li>
-                ))}
-              </ul>
-            </div>
-            <div className="ts-fluss__mitte">
-              <h3>So machen wir es</h3>
-              <ul>
-                {SO_MACHEN_WIR_ES.map((m) => (
-                  <li key={m.titel}>
-                    <span className="ts-fluss__icon ts-fluss__icon--hell">
-                      <m.icon size={20} strokeWidth={1.8} />
-                    </span>
-                    <span>
-                      <b>{m.titel}</b>
-                      <small>{m.text}</small>
-                    </span>
-                  </li>
-                ))}
-              </ul>
-            </div>
-            <div className="ts-fluss__spalte">
-              <h3 className="ts-fluss__marke ts-fluss__marke--blau">Was Sie davon haben</h3>
-              <ul className="ts-fluss__liste">
-                {DAVON_HABEN.map((t) => (
-                  <li key={t}>
-                    <span className="ts-fluss__icon ts-fluss__icon--blau">
-                      <Check size={16} strokeWidth={2.6} />
-                    </span>
-                    {t}
-                  </li>
-                ))}
-              </ul>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <section className="ts-abschnitt" id="ablauf">
-        <div className="teo-innen">
-          <h2 className="ts-zentriert-text ts-zweizeilig">
-            <span>Vom Wasserfleck</span> <span className="ts-blau">bis zur Rechnung.</span>
-          </h2>
-          <TeoSchritte />
-        </div>
-      </section>
-
-      <section className="ts-abschnitt ts-abschnitt--warm" id="funktionen">
-        <div className="teo-innen">
-          <h2 className="ts-zentriert-text">Was Sie bei teo bekommen.</h2>
-          <ul className="ts-icons ts-icons--vier ts-icons--blau">
+          <p className="ts-warum__satz">
+            teo ist Generalunternehmer für Hausverwaltungen. Einen Teil der Arbeiten führen wir mit eigenen Handwerkern aus, für alles andere setzen wir geprüfte Partnerbetriebe ein. Den ganzen Ablauf von der Meldung bis zur Rechnung haben wir selbst digitalisiert.
+          </p>
+          <ul className="ts-icons ts-icons--drei ts-icons--blau">
             {VORTEILE.map((f) => (
               <li key={f.titel}>
                 <span className="ts-icons__icon">
@@ -345,26 +257,12 @@ export function TeoStartseite() {
         </div>
       </section>
 
-      <section className="ts-abschnitt" id="warum">
+      <section className="ts-abschnitt" id="ablauf">
         <div className="teo-innen">
           <h2 className="ts-zentriert-text ts-zweizeilig">
-            <span>Ein Handwerksbetrieb.</span> <span className="ts-blau">Digital gebaut.</span>
+            <span>So läuft ein Auftrag.</span> <span className="ts-blau">Aus Sicht der Verwaltung.</span>
           </h2>
-          <p className="ts-warum__satz">
-            Für die große Sanierung haben Verwaltungen einen Generalunternehmer. Für die hundert kleinen Fälle im Jahr nur das Telefon. teo ist beides: ein Vertragspartner für alles am Haus, zum Preis eines Fachbetriebs.
-          </p>
-          <ul className="ts-icons ts-icons--drei ts-icons--blau">
-            {WAS_TEO_IST.map((f) => (
-              <li key={f.titel}>
-                <span className="ts-icons__icon">
-                  <f.icon size={24} strokeWidth={1.6} />
-                </span>
-                <h3>{f.titel}</h3>
-                <p>{f.text}</p>
-              </li>
-            ))}
-          </ul>
-          <p className="ts-kosten__zeile">Software allein repariert nichts. Handwerker allein koordinieren nicht. teo macht beides.</p>
+          <TeoAppAblauf />
         </div>
       </section>
 

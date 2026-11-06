@@ -1757,3 +1757,91 @@
 /* Ratgeber-Auszug auf der Startseite */
 .ts-ratgeber { margin-top: 40px; }
 .ts-ratgeber__alle { margin-top: 28px; text-align: center; }
+
+/* ══ Ablauf aus Sicht der Verwaltung: echte Screenshots, frei ohne Karte ══ */
+.ts-app {
+  list-style: none;
+  margin: 56px 0 0;
+  padding: 0;
+  display: grid;
+  gap: 72px;
+}
+.ts-app__schritt {
+  display: grid;
+  gap: 24px;
+  align-items: center;
+}
+@media (min-width: 900px) {
+  .ts-app { gap: 112px; margin-top: 72px; }
+  .ts-app__schritt { grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); gap: 64px; }
+  .ts-app__schritt:nth-child(even) { grid-template-columns: minmax(0, 7fr) minmax(0, 5fr); }
+  .ts-app__schritt:nth-child(even) .ts-app__text { order: 2; }
+}
+.ts-app__text { min-width: 0; }
+.ts-app__nr {
+  display: inline-grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: var(--teo-navy);
+  color: #fff;
+  font-weight: 750;
+  font-size: 16px;
+  margin-bottom: 16px;
+}
+.teo-site .ts-app__text h3 {
+  font-size: clamp(24px, 2.6vw, 32px);
+  line-height: 1.15;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  color: var(--teo-navy);
+  text-wrap: balance;
+}
+.ts-app__text p {
+  margin-top: 14px;
+  font-size: 17px;
+  line-height: 1.6;
+  color: var(--teo-text-2);
+  max-width: 46ch;
+}
+.ts-app__bild { position: relative; min-width: 0; }
+.ts-app__bild--handy { display: flex; align-items: flex-end; }
+.ts-app__bild--handy .ts-app__fenster { flex: 1; min-width: 0; margin-bottom: 32px; }
+.ts-app__fenster {
+  border-radius: 14px;
+  overflow: hidden;
+  background: #fff;
+  border: 1px solid var(--ts-linie);
+  box-shadow: var(--ts-schatten);
+}
+.ts-app__leiste {
+  display: flex;
+  gap: 6px;
+  padding: 10px 12px;
+  background: #f3f4f6;
+  border-bottom: 1px solid var(--ts-linie);
+}
+.ts-app__leiste span { width: 9px; height: 9px; border-radius: 50%; background: #d4d7dc; }
+.ts-app__fenster img,
+.ts-app__handy img { display: block; width: 100%; height: auto; }
+.ts-app__handy {
+  position: relative;
+  z-index: 1;
+  flex: none;
+  width: 24%;
+  max-width: 190px;
+  margin-left: -8%;
+  border-radius: 22px;
+  overflow: hidden;
+  border: 6px solid var(--teo-navy);
+  background: #fff;
+  box-shadow: var(--ts-schatten);
+}
+@media (max-width: 899px) {
+  .ts-app__bild--handy .ts-app__fenster { margin-bottom: 20px; }
+  .ts-app__handy { width: 30%; border-width: 4px; border-radius: 16px; }
+  .ts-app__fenster { border-radius: 10px; }
+  .ts-app__leiste { padding: 7px 9px; }
+  .ts-app__leiste span { width: 7px; height: 7px; }
+}
