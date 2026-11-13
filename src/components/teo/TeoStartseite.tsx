@@ -49,21 +49,17 @@ const ZIELGRUPPEN = [
 ] as const;
 
 const HEUTE = [
-  "Mietermeldungen prüfen und nachfragen",
-  "Einen Handwerker finden, der gerade Zeit hat",
-  "Hinterhertelefonieren, bis jemand kommt",
-  "Termine mit Mietern und Eigentümern abstimmen",
-  "Angebote einholen, vergleichen und freigeben",
-  "Nachkontrolle und Rechnungen prüfen",
+  "Handwerker suchen",
+  "Hinterhertelefonieren",
+  "Termine mit Mietern abstimmen",
+  "Rechnungen prüfen",
 ] as const;
 
 const MIT_TEO = [
-  "Mieter melden per QR-Code, mit Foto und Wohnung",
-  "Unser Partnernetz hat auch kurzfristig jemanden frei",
-  "Sie haben einen Ansprechpartner statt zehn Nummern",
-  "Den Termin stimmen wir direkt mit dem Mieter ab",
-  "Bis zu Ihrer Grenze legen wir los, darüber geben Sie frei",
-  "Wir nehmen ab, belegen mit Fotos und rechnen einmal ab",
+  "Ein Anruf oder eine E-Mail",
+  "Wir finden den Betrieb, auch kurzfristig",
+  "Termin direkt mit dem Mieter",
+  "Eine Rechnung, mit Fotos belegt",
 ] as const;
 
 /** Was teo ist und was Sie davon haben (Generalunternehmer mit eigener Software). */
@@ -167,10 +163,10 @@ export function TeoStartseite() {
         <div className="teo-innen ts-hero__kopf">
           <h1>
             <span className="ts-hero__zeile">
-              Alle Gewerke. <span className="ts-hero__ganz">Ein Betrieb.</span>
+              Handwerk <span className="ts-hero__ganz">aus einer Hand.</span>
             </span> <span className="ts-hero__zeile ts-hero__zeile--klein ts-blau">Für Hausverwaltungen in München.</span>
           </h1>
-          <p className="ts-hero__satz">Wir nehmen Ihnen den handwerklichen Teil der Verwaltung ab. Bei Reparaturen, Schäden und Sanierungen sind wir Ihr einziger Ansprechpartner. Wir führen selbst aus oder setzen Betriebe aus unserem Partnernetz ein. Über unser Portal sehen Sie jederzeit, wo ein Auftrag steht.</p>
+          <p className="ts-hero__satz">Gute Handwerker sind ausgebucht, Mieter warten, Eigentümer fragen nach. Und Sie telefonieren hinterher. Dafür gibt es teo: Sie geben uns den Auftrag, wir erledigen alles bis zur Rechnung. Ein Ansprechpartner für alle Gewerke, zum Preis eines Fachbetriebs.</p>
           <div className="teo-aktionen ts-zentriert">
             <Link href={TEO_LINK_ANFRAGE} className="teo-btn">
               Anfrage stellen

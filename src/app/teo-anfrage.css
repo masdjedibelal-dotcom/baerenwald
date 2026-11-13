@@ -519,3 +519,10 @@
   .ta-danke__haken { animation: none; stroke-dashoffset: 0; }
   .ta-lade { animation-duration: 1.6s; }
 }
+
+/* Kontaktformular (ein Schritt): Senden-Knopf rechts in der Karte, kein fester Balken unten */
+.ta-main--kontakt { padding-bottom: 64px; }
+.ta-kontakt__aktion { display: flex; justify-content: flex-end; }
+@media (max-width: 480px) {
+  .ta-kontakt__aktion .ta-weiter { flex: 1; justify-content: center; }
+}

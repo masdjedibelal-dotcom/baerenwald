@@ -1,10 +1,10 @@
 "use client";
 
 import { BwRechnerPageClient } from "@/components/funnel/BwRechnerPageClient";
-import { TeoAnfrage } from "@/components/teo/TeoAnfrage";
+import { TeoKontakt } from "@/components/teo/TeoKontakt";
 import { istTeo } from "@/lib/marke";
 
-/** Bärenwald: Preisrechner. Servus TEO: Anfrage für Verwaltungen und Bestandshalter, ohne Preisrahmen. */
+/** Bärenwald: Preisrechner. Servus TEO: Kontaktformular für Verwaltungen und Bestandshalter. */
 export default function RechnerPage() {
-  return istTeo ? <TeoAnfrage /> : <BwRechnerPageClient resetPath="/rechner" />;
+  return istTeo ? <TeoKontakt /> : <BwRechnerPageClient resetPath="/rechner" />;
 }

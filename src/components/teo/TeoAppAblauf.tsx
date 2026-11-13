@@ -25,9 +25,9 @@ const SCHRITTE: Schritt[] = [
     bild: { src: "/brand/teo/app/tagebuch.jpg", breite: 1200, hoehe: 735, alt: "Verlauf eines Wasserschadens mit Fotos des Handwerkers" },
   },
   {
-    titel: "Rückfragen klären Sie direkt im Vorgang.",
-    text: "Nachrichten, Termine, Angebot und Rechnung liegen an einer Stelle. Am Ende bekommen Sie eine Rechnung von uns, mit Abnahme und Fotos.",
-    bild: { src: "/brand/teo/app/nachrichten.jpg", breite: 1600, hoehe: 829, alt: "Nachrichten zwischen Verwaltung und teo zu einem Vorgang" },
+    titel: "Am Ende bekommen Sie eine Rechnung.",
+    text: "Mit Abnahme und Fotos, auch wenn mehrere Betriebe beteiligt waren. Angebot, Dokumente und Notizen liegen gesammelt beim Vorgang.",
+    bild: { src: "/brand/teo/app/nachrichten.jpg", breite: 1600, hoehe: 829, alt: "Vorgang mit Angebot, Dokumenten und Notizen" },
   },
 ];
 
