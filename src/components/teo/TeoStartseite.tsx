@@ -14,6 +14,8 @@ import {
   MailCheck,
   MousePointerClick,
   Network,
+  PaintRoller,
+  Repeat,
   ReceiptText,
   ShieldCheck,
   SlidersHorizontal,
@@ -70,6 +72,13 @@ const VORTEILE = [
   { icon: Smartphone, titel: "Alle sehen denselben Stand", text: "Verwaltung, Eigentümer und Mieter sehen im Portal Fortschritt, Fotos, Angebote und Rechnungen. Das erspart Rückfragen." },
   { icon: SlidersHorizontal, titel: "Weniger freigeben, weniger abstimmen", text: "Sie legen je Haus fest, bis zu welchem Betrag wir direkt beauftragen. Termine klären wir selbst mit den Mietern." },
   { icon: ShieldCheck, titel: "Wir haften", text: "Vertragspartner sind immer wir. Wir nehmen jede Arbeit ab und kümmern uns auch um spätere Mängel." },
+] as const;
+
+/** Leistungen in drei Arten, je Karte die Gewerke (keine Links). */
+const LEISTUNGEN = [
+  { icon: Wrench, titel: "Schäden & Reparaturen", satz: "Bis zu Ihrer Grenze legen wir sofort los.", gewerke: ["Sanitär", "Heizung", "Elektro", "Fenster & Türen"] },
+  { icon: PaintRoller, titel: "Sanieren", satz: "Ein Angebot für alle Gewerke.", gewerke: ["Dach", "Fassade", "Maler", "Bad & Leitungen"] },
+  { icon: Repeat, titel: "Wiederkehrende Leistungen", satz: "Einmal vereinbart, läuft es.", gewerke: ["Hausmeister", "Reinigung", "Winterdienst", "Garten"] },
 ] as const;
 
 /** Zusammenarbeit ohne Portal: Auftrag per E-Mail, alles zurück per E-Mail, Freigabe aus der Mail. */
@@ -243,6 +252,28 @@ export function TeoStartseite() {
             </div>
           </div>
           <p className="ts-kosten__zeile">Die gewonnene Zeit können Sie in mehr Objekte stecken, ohne mehr Personal.</p>
+        </div>
+      </section>
+
+      <section className="ts-abschnitt ts-abschnitt--eng" id="leistungen">
+        <div className="teo-innen">
+          <h2 className="ts-zentriert-text">Was wir übernehmen.</h2>
+          <ul className="ts-leistungen">
+            {LEISTUNGEN.map((l) => (
+              <li key={l.titel} className="ts-leistungen__karte">
+                <span className="ts-leistungen__icon" aria-hidden="true">
+                  <l.icon size={22} strokeWidth={1.7} />
+                </span>
+                <h3>{l.titel}</h3>
+                <p>{l.satz}</p>
+                <ul className="ts-leistungen__gewerke">
+                  {l.gewerke.map((g) => (
+                    <li key={g}>{g}</li>
+                  ))}
+                </ul>
+              </li>
+            ))}
+          </ul>
         </div>
       </section>
 

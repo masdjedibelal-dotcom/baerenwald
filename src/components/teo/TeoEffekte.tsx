@@ -6,6 +6,7 @@ import { useEffect } from "react";
 const ZIELE = [
   ".ts-abschnitt h2",
   ".ts-vorher__karte li",
+  ".ts-leistungen__karte",
   ".ts-app__schritt",
   ".ts-icons li",
   ".ts-beteiligte__karten li",

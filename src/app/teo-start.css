@@ -1848,3 +1848,57 @@
 
 /* Ohne neues Programm: Zusatzsatz unter den drei Punkten */
 .teo-site .ts-per-mail__zusatz { margin: 40px auto 0; font-size: 16px; }
+
+/* Was wir übernehmen: drei Karten nach Leistungsart, Gewerke als Pillen */
+.ts-leistungen {
+  list-style: none;
+  margin: 40px auto 0;
+  padding: 0;
+  max-width: 1000px;
+  display: grid;
+  gap: 16px;
+}
+@media (min-width: 900px) {
+  .ts-leistungen { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 24px; }
+}
+.ts-leistungen__karte {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 28px;
+  border-radius: 24px;
+  background: #fff;
+  border: 1px solid var(--ts-linie);
+  box-shadow: 0 24px 60px -40px rgba(11, 31, 58, 0.3);
+}
+.ts-leistungen__icon {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  margin-bottom: 8px;
+  border-radius: 14px;
+  background: var(--teo-blau-bg);
+  color: var(--teo-blau);
+}
+.teo-site .ts-leistungen__karte h3 { font-size: 20px; font-weight: 750; letter-spacing: -0.02em; color: var(--teo-navy); }
+.teo-site .ts-leistungen__karte p { font-size: 16px; color: var(--teo-text-2); }
+.ts-leistungen__gewerke {
+  list-style: none;
+  margin: 12px 0 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.ts-leistungen__gewerke li {
+  padding: 6px 12px;
+  border-radius: var(--r-pill, 999px);
+  background: var(--teo-blau-bg);
+  color: var(--teo-navy);
+  font-size: 14px;
+  font-weight: 600;
+}
+@media (max-width: 560px) {
+  .ts-leistungen__karte { padding: 24px 20px; }
+}

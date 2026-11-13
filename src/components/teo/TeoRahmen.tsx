@@ -30,6 +30,7 @@ function TeoKopf() {
           <span className="teo-kopf__claim">Machen wir.</span>
         </Link>
         <nav className="teo-kopf__nav" aria-label="Hauptnavigation">
+          <Link href="/#leistungen">Leistungen</Link>
           <Link href="/#was-teo-ist">Was wir sind</Link>
           <Link href="/#ablauf">So arbeiten wir</Link>
           <Link href="/#faq">Fragen</Link>
@@ -64,6 +65,7 @@ function TeoFuss() {
           </p>
         </div>
         <nav className="teo-fuss__links teo-fuss__links--seite" aria-label="Fußzeile">
+          <Link href="/#leistungen">Leistungen</Link>
           <Link href="/#was-teo-ist">Was wir sind</Link>
           <Link href="/#ablauf">So arbeiten wir</Link>
           <Link href="/#faq">Fragen</Link>
