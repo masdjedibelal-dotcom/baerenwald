@@ -1845,3 +1845,6 @@
   .ts-app__leiste { padding: 7px 9px; }
   .ts-app__leiste span { width: 7px; height: 7px; }
 }
+
+/* Ohne neues Programm: Zusatzsatz unter den drei Punkten */
+.teo-site .ts-per-mail__zusatz { margin: 40px auto 0; font-size: 16px; }

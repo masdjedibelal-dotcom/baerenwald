@@ -7,6 +7,7 @@ import { MELDE_ALLGEMEIN_SLUG } from "@/lib/org/melde-url";
 import { toMeldeObjektDisplay } from "@/lib/portal2/melde-objekte";
 import type { MeldeObjektDisplay } from "@/lib/portal2/basisdaten-types";
 import { normalizeAkutFallIds } from "@/teo/hv/sofortmassnahme-faelle";
+import { funktionAn } from "@/lib/marke";
 
 export type MeldeKontext = {
   org: {
@@ -194,6 +195,19 @@ export async function resolveMeldeKontext(
 
   if (!org?.id) {
     return { ok: false, code: "not_found", message: "Organisation unbekannt." };
+  }
+
+  // QR-Mieter-Meldung je Verwaltung schaltbar (CRM), neu standardmäßig aus.
+  // Fehlt die Spalte noch (Migration nicht ausgeführt) → wie bisher offen. Nur TEO (Bärenwald hat keinen Schalter).
+  if (funktionAn("hvWorkflow")) {
+    const { data: schalter, error: schalterErr } = await supabaseAdmin
+      .from("kunden")
+      .select("melde_qr_aktiv")
+      .eq("id", org.id)
+      .maybeSingle();
+    if (!schalterErr && (schalter as { melde_qr_aktiv?: boolean | null } | null)?.melde_qr_aktiv === false) {
+      return { ok: false, code: "disabled", message: "Die Online-Meldung ist für diese Verwaltung nicht aktiv." };
+    }
   }
 
   const {data: objekteRowsRaw, error: __dbErr367_1} = await supabaseAdmin

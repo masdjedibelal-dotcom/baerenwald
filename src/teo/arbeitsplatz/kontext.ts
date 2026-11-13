@@ -28,6 +28,16 @@ function exakt(email: string): string {
   return email.replace(/[\\%_]/g, (z) => `\\${z}`)
 }
 
+/**
+ * Arbeitsplatz je Verwaltung schaltbar (CRM: „Arbeitsplatz (Login)“), neu standardmäßig aus.
+ * Fehlt die Spalte noch (Migration hv_ohne_portal nicht ausgeführt), bleibt alles wie bisher offen.
+ */
+async function arbeitsplatzFreigeschaltet(kundeId: string): Promise<boolean> {
+  const { data, error } = await supabaseAdmin.from('kunden').select('arbeitsplatz_aktiv').eq('id', kundeId).maybeSingle()
+  if (error) return true
+  return (data as { arbeitsplatz_aktiv?: boolean | null } | null)?.arbeitsplatz_aktiv !== false
+}
+
 async function orgLaden(kundeId: string): Promise<ApOrg | null> {
   const { data, error } = await supabaseAdmin
     .from('kunden')
@@ -36,6 +46,7 @@ async function orgLaden(kundeId: string): Promise<ApOrg | null> {
     .maybeSingle()
   if (error) logDbError('teo/arbeitsplatz/kontext:kunden', error)
   if (!data || data.portal_modus !== 'organisation') return null
+  if (!(await arbeitsplatzFreigeschaltet(kundeId))) return null
   const typ = data.org_typ === 'weg' ? 'weg' : data.org_typ === 'hv' ? 'hv' : null
   return { id: String(data.id), name: String(data.org_anzeigename || data.name || 'Verwaltung'), orgTyp: typ }
 }
@@ -132,3 +143,24 @@ export const ladeApKontext = cache(async (): Promise<ApKontext | null> => {
     },
   }
 })
+
+/**
+ * Gehört dieser Login zu einer Verwaltung, deren Arbeitsplatz aus ist? → Name der Verwaltung (für den Hinweis), sonst null.
+ */
+export async function arbeitsplatzGesperrtFuer(userId: string, email: string): Promise<string | null> {
+  const mail = exakt(email.trim().toLowerCase())
+  const [mRes, kRes] = await Promise.all([
+    supabaseAdmin.from('kunden_mitglieder').select('kunde_id').eq('aktiv', true).or(`auth_user_id.eq.${userId},email.ilike.${mail}`).limit(5),
+    supabaseAdmin.from('kunden').select('id').eq('portal_modus', 'organisation').or(`auth_user_id.eq.${userId},email.ilike.${mail}`).limit(5),
+  ])
+  if (mRes.error) logDbError('teo/arbeitsplatz/kontext:gesperrt-mitglied', mRes.error)
+  if (kRes.error) logDbError('teo/arbeitsplatz/kontext:gesperrt-kunde', kRes.error)
+  const ids = [...new Set([...(mRes.data ?? []).map((r) => String(r.kunde_id)), ...(kRes.data ?? []).map((r) => String(r.id))])]
+  if (!ids.length) return null
+  const { data, error } = await supabaseAdmin.from('kunden').select('name, org_anzeigename, arbeitsplatz_aktiv').in('id', ids)
+  if (error) return null
+  const gesperrt = (data ?? []).find((r) => (r as { arbeitsplatz_aktiv?: boolean | null }).arbeitsplatz_aktiv === false) as
+    | { name?: string | null; org_anzeigename?: string | null }
+    | undefined
+  return gesperrt ? gesperrt.org_anzeigename?.trim() || gesperrt.name?.trim() || 'Ihre Verwaltung' : null
+}

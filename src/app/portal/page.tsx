@@ -20,7 +20,7 @@ import { clearAdminViewCookie } from "@/lib/auth/crm-impersonation-session";
 import { createClient } from "@/lib/supabase/server";
 import { isSupabaseConfigured,supabaseAdmin } from "@/lib/supabase";
 import { istTeo, MARKE } from "@/lib/marke";
-import { ladeApKontext } from "@/teo/arbeitsplatz/kontext";
+import { arbeitsplatzGesperrtFuer, ladeApKontext } from "@/teo/arbeitsplatz/kontext";
 import { nurMeldungenBeiVerwaltung } from "@/teo/mein/mein-daten";
 
 export const dynamic = "force-dynamic";
@@ -66,6 +66,27 @@ export default async function PortalDashboardPage({
     const ap = await ladeApKontext();
     if (ap?.person.rolle === "team") redirect("/team");
     if (ap?.person.rolle === "eigentuemer") redirect("/mein");
+    if (!ap) {
+      const gesperrt = await arbeitsplatzGesperrtFuer(user.id, user.email);
+      if (gesperrt) {
+        return (
+          <PortalAuthShell title="Kein Online-Zugang freigeschaltet">
+            <p className="portal-text-body text-text-secondary">
+              Für <strong>{gesperrt}</strong> ist der Arbeitsplatz nicht freigeschaltet. Sie brauchen ihn auch nicht:
+              Angebote, Termine, Fotos und Rechnungen bekommen Sie per E-Mail, Freigaben erteilen Sie mit einem Klick in der Mail.
+            </p>
+            <p className="portal-text-body text-text-secondary mt-2">
+              Aufträge schicken Sie einfach per E-Mail an uns. Fragen: {SITE_CONFIG.email}
+            </p>
+            <form action="/portal/auth/signout" method="post" className="mt-4">
+              <button type="submit" className="btn-pill-outline w-full !py-2.5">
+                Abmelden
+              </button>
+            </form>
+          </PortalAuthShell>
+        );
+      }
+    }
     if (!ap && (await nurMeldungenBeiVerwaltung(user.id, user.email))) redirect("/mein");
     if (ap?.person.rolle === "verwaltung") {
       const id = sp.id?.trim();

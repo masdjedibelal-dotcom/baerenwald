@@ -10,6 +10,9 @@ import {
   Headset,
   KeyRound,
   type LucideIcon,
+  Mail,
+  MailCheck,
+  MousePointerClick,
   Network,
   ReceiptText,
   ShieldCheck,
@@ -73,6 +76,13 @@ const VORTEILE = [
   { icon: ShieldCheck, titel: "Wir haften", text: "Vertragspartner sind immer wir. Wir nehmen jede Arbeit ab und kümmern uns auch um spätere Mängel." },
 ] as const;
 
+/** Zusammenarbeit ohne Portal: Auftrag per E-Mail, alles zurück per E-Mail, Freigabe aus der Mail. */
+const PER_MAIL = [
+  { icon: Mail, titel: "Auftrag per E-Mail", text: "Schicken Sie den Auftrag an Ihre feste Auftragsadresse, gern mit Fotos im Anhang. Auch direkt aus Ihrer Verwaltungssoftware." },
+  { icon: MailCheck, titel: "Alles zurück per E-Mail", text: "Termin, Angebot, Fotos, Abnahme und Rechnung bekommen Sie als E-Mail mit PDF." },
+  { icon: MousePointerClick, titel: "Freigabe mit einem Klick", text: "Liegt ein Angebot über Ihrer Grenze, geben Sie es direkt aus der E-Mail frei. Ohne Anmeldung." },
+] as const;
+
 /** Alle Beteiligten (Vorbild Lessen „Every party connected“): Foto je Rolle, darunter teo als Klammer. */
 const BETEILIGTE = [
   { foto: "rolle-verwaltung", quelle: "verwaltung", icon: Briefcase, titel: "Verwaltung", text: "Alle Häuser auf einer Seite. Freigeben nur, wenn es über Ihre Grenze geht.", alt: "Verwalterin am Laptop" },
@@ -112,6 +122,11 @@ export const TEO_FAQ = [
     frage: "Ist teo eine Software?",
     antwort:
       "Nein. teo ist ein Handwerksbetrieb und Ihr Generalunternehmer. Wir führen selbst aus und mit Partnerbetrieben. Das Portal ist dabei, damit alle Beteiligten denselben Stand sehen.",
+  },
+  {
+    frage: "Müssen wir dafür eine Software nutzen?",
+    antwort:
+      "Nein. Aufträge schicken Sie per E-Mail, Angebote, Termine, Fotos und Rechnungen bekommen Sie per E-Mail. Freigaben erteilen Sie mit einem Klick in der Mail. Den Arbeitsplatz können Sie dazunehmen, müssen es aber nicht.",
   },
   {
     frage: "Was wird aus unserem Hausmeister?",
@@ -263,6 +278,31 @@ export function TeoStartseite() {
             <span>So läuft ein Auftrag.</span> <span className="ts-blau">Aus Sicht der Verwaltung.</span>
           </h2>
           <TeoAppAblauf />
+        </div>
+      </section>
+
+      <section className="ts-abschnitt ts-abschnitt--eng" id="per-mail">
+        <div className="teo-innen">
+          <h2 className="ts-zentriert-text ts-zweizeilig">
+            <span>Ohne neues Programm.</span> <span className="ts-blau">Alles per E-Mail.</span>
+          </h2>
+          <p className="ts-warum__satz">
+            Sie müssen sich nirgends anmelden. Sie arbeiten weiter mit Ihrem Postfach oder Ihrer Verwaltungssoftware.
+          </p>
+          <ul className="ts-icons ts-icons--drei ts-icons--blau">
+            {PER_MAIL.map((f) => (
+              <li key={f.titel}>
+                <span className="ts-icons__icon">
+                  <f.icon size={24} strokeWidth={1.6} />
+                </span>
+                <h3>{f.titel}</h3>
+                <p>{f.text}</p>
+              </li>
+            ))}
+          </ul>
+          <p className="ts-warum__satz ts-per-mail__zusatz">
+            Wer seine Häuser lieber online im Blick hat, bekommt auf Wunsch den Arbeitsplatz dazu.
+          </p>
         </div>
       </section>
 

@@ -7,6 +7,7 @@ import '@/teo/arbeitsplatz/kit/utilities.css'
 import '@/teo/arbeitsplatz/arbeitsplatz.css'
 
 import { istTeo } from '@/lib/marke'
+import { createClient } from '@/lib/supabase/server'
 import { ladeApKontext } from '@/teo/arbeitsplatz/kontext'
 import { darf } from '@/teo/arbeitsplatz/rechte'
 import { ApShell, type ApCta, type ApNavPunkt } from '@/teo/arbeitsplatz/shell/ApShell'
@@ -21,7 +22,14 @@ export const metadata: Metadata = {
 export default async function ArbeitsplatzLayout({ children }: { children: React.ReactNode }) {
   if (!istTeo) notFound()
   const kontext = await ladeApKontext()
-  if (!kontext) redirect('/portal/login?next=/arbeitsplatz')
+  if (!kontext) {
+    // Eingeloggt, aber kein Zugang (z. B. Arbeitsplatz für die Verwaltung aus) → /portal zeigt den Hinweis; sonst Login
+    const supabase = await createClient()
+    const {
+      data: { user },
+    } = await supabase.auth.getUser()
+    redirect(user ? '/portal' : '/portal/login?next=/arbeitsplatz')
+  }
   const { person, org } = kontext
   // Team und Eigentümer haben eigene Oberflächen
   if (!darf(person, 'arbeitsplatz')) redirect('/portal')
