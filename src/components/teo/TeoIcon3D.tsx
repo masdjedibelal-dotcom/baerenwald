@@ -12,7 +12,11 @@ export type TeoIconName =
   | "regler"
   | "schild"
   | "schraubenschluessel"
-  | "werkzeugkasten";
+  | "werkzeugkasten"
+  | "versicherung"
+  | "jahresbericht"
+  | "anlagen"
+  | "budget";
 
 export function TeoIcon3D({ name, size = 56, className }: { name: TeoIconName; size?: number; className?: string }) {
   return (

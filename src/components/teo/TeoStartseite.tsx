@@ -58,12 +58,12 @@ const VORTEILE = [
   { icon: ReceiptText, bild: "rechnung", titel: "Kein Aufschlag", text: "Sie zahlen den Preis eines Fachbetriebs. Für die Koordination berechnen wir nichts extra." },
 ] as const;
 
-/** Alles zum Haus an einer Stelle (Funktionen des Arbeitsplatzes). Icons vorläufig, bis eigene 3D-Icons da sind. */
+/** Alles zum Haus an einer Stelle (Funktionen des Arbeitsplatzes). */
 const HAUS = [
-  { bild: "schild", titel: "Schadenunterlagen für die Versicherung", text: "Ablauf, Fotos und Rechnung eines Schadens als fertiges PDF, mit einem Klick." },
-  { bild: "rechnung", titel: "Jahresbericht für die Versammlung", text: "Alle Vorgänge, Kosten und Prüfungen eines Hauses im Jahr, zum Ausdrucken." },
-  { bild: "kalender", titel: "Anlagen und Prüffristen", text: "Heizung, Aufzug, Rauchmelder und mehr mit Baujahr. Fällige Prüfungen sehen Sie rechtzeitig." },
-  { bild: "regler", titel: "Budget je Haus", text: "Sie sehen jederzeit, was beauftragt und was noch frei ist. Die Kosten gibt es als Excel." },
+  { bild: "versicherung", titel: "Schadenunterlagen für die Versicherung", text: "Ablauf, Fotos und Rechnung eines Schadens als fertiges PDF, mit einem Klick." },
+  { bild: "jahresbericht", titel: "Jahresbericht für die Versammlung", text: "Alle Vorgänge, Kosten und Prüfungen eines Hauses im Jahr, zum Ausdrucken." },
+  { bild: "anlagen", titel: "Anlagen und Prüffristen", text: "Heizung, Aufzug, Rauchmelder und mehr mit Baujahr. Fällige Prüfungen sehen Sie rechtzeitig." },
+  { bild: "budget", titel: "Budget je Haus", text: "Sie sehen jederzeit, was beauftragt und was noch frei ist. Die Kosten gibt es als Excel." },
 ] as const;
 
 /** So starten wir: drei Schritte für eine neue Verwaltung. */
