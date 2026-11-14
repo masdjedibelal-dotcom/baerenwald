@@ -41,7 +41,7 @@ function TeoKopf() {
             Anmelden
           </Link>
           <Link href={TEO_LINK_ANFRAGE} className="teo-btn teo-btn--klein">
-            Anfrage stellen
+            Kontakt aufnehmen
           </Link>
         </div>
       </div>
@@ -70,7 +70,7 @@ function TeoFuss() {
           <Link href="/#ablauf">So arbeiten wir</Link>
           <Link href="/#faq">Fragen</Link>
           <Link href="/ratgeber">Ratgeber</Link>
-          <Link href={TEO_LINK_ANFRAGE}>Anfrage stellen</Link>
+          <Link href={TEO_LINK_ANFRAGE}>Kontakt aufnehmen</Link>
           <Link href="/portal/login">{MARKE.portalName} anmelden</Link>
         </nav>
         <nav className="teo-fuss__links teo-fuss__links--recht" aria-label="Rechtliches">

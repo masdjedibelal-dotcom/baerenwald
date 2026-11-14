@@ -7,7 +7,6 @@ import {
   Droplets,
   FileText,
   Flame,
-  Headset,
   KeyRound,
   type LucideIcon,
   Network,
@@ -15,8 +14,6 @@ import {
   Repeat,
   ReceiptText,
   ShieldCheck,
-  SlidersHorizontal,
-  Smartphone,
   Snowflake,
   Wrench,
   X,
@@ -37,17 +34,6 @@ import { MARKE } from "@/lib/marke";
 
 import "@/app/teo-start.css";
 
-const ZIELGRUPPEN = [
-  "Hausverwaltungen",
-  "WEG-Verwaltungen",
-  "Mietverwaltungen",
-  "Eigentümergemeinschaften",
-  "Wohnungsunternehmen",
-  "Genossenschaften",
-  "Family Offices",
-  "Eigentümer mehrerer Häuser",
-] as const;
-
 /** Vergleich ohne / mit teo: je Zeile ein Problem und unsere Antwort darauf. */
 const HEUTE = [
   "Sie telefonieren zwischen Mieter, Handwerker und Eigentümer hin und her",
@@ -65,12 +51,16 @@ const MIT_TEO = [
 
 /** Was teo ist und was Sie davon haben (Generalunternehmer mit eigener Software). */
 const VORTEILE = [
-  { icon: Network, bild: "netzwerk", titel: "Immer jemand verfügbar", text: "Unser Netz aus Betrieben in München hat auch kurzfristig jemanden frei." },
-  { icon: Headset, bild: "headset", titel: "Ein Ansprechpartner für alles", text: "Ob tropfender Hahn oder neues Dach: Sie rufen uns an, nicht zehn Betriebe." },
+  { icon: Network, bild: "netzwerk", titel: "Eigene Handwerker und Partnernetz", text: "Vieles machen wir selbst. Für alles andere haben wir geprüfte Betriebe in München, auch kurzfristig." },
+  { icon: ShieldCheck, bild: "schild", titel: "Gewährleistung durch uns", text: "Ihr Vertragspartner sind immer wir. Wir nehmen jede Arbeit ab und kümmern uns um spätere Mängel." },
   { icon: ReceiptText, bild: "rechnung", titel: "Kein Aufschlag", text: "Sie zahlen den Preis eines Fachbetriebs. Für die Koordination berechnen wir nichts extra." },
-  { icon: Smartphone, bild: "handy", titel: "Alle sehen denselben Stand", text: "Verwaltung, Eigentümer und Mieter sehen Fotos, Angebote und Rechnungen, im Portal oder per E-Mail." },
-  { icon: SlidersHorizontal, bild: "regler", titel: "Weniger freigeben", text: "Sie legen je Haus eine Grenze fest. Darunter beauftragen wir direkt. Termine klären wir mit den Mietern." },
-  { icon: ShieldCheck, bild: "schild", titel: "Wir übernehmen die Gewährleistung", text: "Ihr Vertragspartner sind immer wir. Wir nehmen jede Arbeit ab und kümmern uns um spätere Mängel." },
+] as const;
+
+/** So starten wir: drei Schritte für eine neue Verwaltung. */
+const START = [
+  { titel: "Kurzes Gespräch", text: "Wir lernen Ihre Häuser kennen und klären, was Sie abgeben möchten." },
+  { titel: "Häuser und Grenze anlegen", text: "Wir legen Ihre Objekte an und je Haus den Betrag, bis zu dem wir direkt beauftragen." },
+  { titel: "Erster Auftrag", text: "Per E-Mail oder im Portal. Ab dann läuft es." },
 ] as const;
 
 /** Leistungen in drei Arten, je Karte die Gewerke (keine Links). */
@@ -165,9 +155,10 @@ export function TeoStartseite() {
           <p className="ts-hero__satz">Ob Rohrbruch, Heizungsausfall, Badsanierung, Hausmeister oder Winterdienst: Sie geben uns den Fall, wir erledigen den Rest. Wir nehmen ihn auf, schicken den passenden Betrieb und nehmen die Arbeit ab. Alles läuft digital: Jeder Schritt steht im Tagebuch im Portal, mit Fotos, Angebot und Rechnung.</p>
           <div className="teo-aktionen ts-zentriert">
             <Link href={TEO_LINK_ANFRAGE} className="teo-btn">
-              Anfrage stellen
+              Kontakt aufnehmen
             </Link>
           </div>
+          <p className="ts-hero__zielgruppe">Für Haus-, WEG- und Mietverwaltungen, Eigentümergemeinschaften und Bestandshalter.</p>
         </div>
         <div className="ts-breit">
           <div className="ts-buehne ts-buehne--hero">
@@ -189,24 +180,6 @@ export function TeoStartseite() {
             </li>
           ))}
         </ul>
-      </section>
-
-      <section className="ts-abschnitt ts-abschnitt--eng" id="fuer-wen">
-        <div className="teo-innen">
-          <div className="ts-fuerwen">
-            <div className="ts-fuerwen__kopf">
-              <h2>Für alle, die Häuser verwalten.</h2>
-              <Link href={TEO_LINK_ANFRAGE} className="teo-btn">
-                Anfrage stellen
-              </Link>
-            </div>
-            <ul className="ts-fuerwen__liste">
-              {ZIELGRUPPEN.map((z) => (
-                <li key={z}>{z}</li>
-              ))}
-            </ul>
-          </div>
-        </div>
       </section>
 
       <section className="ts-abschnitt" id="problem">
@@ -266,26 +239,6 @@ export function TeoStartseite() {
         </div>
       </section>
 
-      <section className="ts-abschnitt ts-abschnitt--warm" id="was-teo-ist">
-        <div className="teo-innen">
-          <h2 className="ts-zentriert-text ts-zweizeilig">
-            <span>Ein Handwerksbetrieb</span> <span className="ts-blau">mit eigener Software.</span>
-          </h2>
-          <p className="ts-warum__satz">
-            Einen Teil der Arbeiten machen wir mit eigenen Handwerkern, für alles andere haben wir geprüfte Partnerbetriebe. Den Ablauf von der Meldung bis zur Rechnung haben wir selbst digitalisiert.
-          </p>
-          <ul className="ts-icons ts-icons--drei ts-icons--blau">
-            {VORTEILE.map((f) => (
-              <li key={f.titel}>
-                <TeoIcon3D name={f.bild} size={72} className="ts-icons__bild" />
-                <h3>{f.titel}</h3>
-                <p>{f.text}</p>
-              </li>
-            ))}
-          </ul>
-        </div>
-      </section>
-
       <TeoAppAblauf />
 
       <section className="ts-abschnitt" id="rollen">
@@ -324,12 +277,42 @@ export function TeoStartseite() {
         </div>
       </section>
 
-      <section className="ts-abschnitt ts-abschnitt--eng" id="einstieg">
+      <section className="ts-abschnitt ts-abschnitt--warm" id="was-teo-ist">
         <div className="teo-innen">
+          <h2 className="ts-zentriert-text ts-zweizeilig">
+            <span>Ein Handwerksbetrieb</span> <span className="ts-blau">mit eigener Software.</span>
+          </h2>
+          <p className="ts-warum__satz">
+            Den Ablauf von der Meldung bis zur Rechnung haben wir selbst digitalisiert. So koordinieren wir alle Gewerke, ohne dass es für Sie teurer wird.
+          </p>
+          <ul className="ts-icons ts-icons--drei ts-icons--blau">
+            {VORTEILE.map((f) => (
+              <li key={f.titel}>
+                <TeoIcon3D name={f.bild} size={72} className="ts-icons__bild" />
+                <h3>{f.titel}</h3>
+                <p>{f.text}</p>
+              </li>
+            ))}
+          </ul>
+        </div>
+      </section>
+
+      <section className="ts-abschnitt ts-abschnitt--eng" id="start">
+        <div className="teo-innen">
+          <h2 className="ts-zentriert-text ts-zweizeilig">
+            <span>So starten wir.</span> <span className="ts-blau">In drei Schritten.</span>
+          </h2>
+          <ol className="ts-start">
+            {START.map((st, i) => (
+              <li key={st.titel}>
+                <span className="ts-app__nr">{i + 1}</span>
+                <h3>{st.titel}</h3>
+                <p>{st.text}</p>
+              </li>
+            ))}
+          </ol>
           <div className="ts-einstieg">
-            <h2 className="ts-zentriert-text ts-zweizeilig">
-              <span>Was ist bei Ihnen</span> <span className="ts-blau">gerade los?</span>
-            </h2>
+            <h3 className="ts-einstieg__frage">Was ist bei Ihnen gerade los?</h3>
             <ul className="ts-einstieg__liste">
               {TEO_SITUATIONEN.map((s) => (
                 <li key={s.id}>
@@ -356,7 +339,23 @@ export function TeoStartseite() {
         </div>
       </section>
 
-      <section className="ts-abschnitt ts-abschnitt--warm" id="ratgeber">
+      <section className="ts-abschnitt ts-abschnitt--warm" id="faq">
+        <div className="teo-innen">
+          <div className="ts-faq">
+            <h2 className="ts-zentriert-text">Häufige Fragen.</h2>
+            <div className="teo-faq ts-faq__liste">
+              {TEO_FAQ.map((f, i) => (
+                <details key={f.frage} open={i === 0}>
+                  <summary>{f.frage}</summary>
+                  <p>{f.antwort}</p>
+                </details>
+              ))}
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section className="ts-abschnitt" id="ratgeber">
         <div className="teo-innen">
           <h2 className="ts-zentriert-text ts-zweizeilig">
             <span>Wissen für Verwaltungen.</span> <span className="ts-blau">Kurz und verlässlich.</span>
@@ -374,22 +373,6 @@ export function TeoStartseite() {
         </div>
       </section>
 
-      <section className="ts-abschnitt" id="faq">
-        <div className="teo-innen">
-          <div className="ts-faq">
-            <h2 className="ts-zentriert-text">Häufige Fragen.</h2>
-            <div className="teo-faq ts-faq__liste">
-              {TEO_FAQ.map((f, i) => (
-                <details key={f.frage} open={i === 0}>
-                  <summary>{f.frage}</summary>
-                  <p>{f.antwort}</p>
-                </details>
-              ))}
-            </div>
-          </div>
-        </div>
-      </section>
-
       <section className="ts-ende" id="kontakt">
         <div className="ts-formen ts-formen--dunkel" aria-hidden="true">
           <span className="ts-formen__blau" />
@@ -403,7 +386,7 @@ export function TeoStartseite() {
             </h2>
             <div className="ts-ende__aktionen">
               <Link href={TEO_LINK_ANFRAGE} className="teo-btn teo-btn--hell">
-                Anfrage stellen
+                Kontakt aufnehmen
               </Link>
               <a className="ts-ende__mail" href={`mailto:${MARKE.firma.email}`}>
                 {MARKE.firma.email}
@@ -416,7 +399,7 @@ export function TeoStartseite() {
 
       <div className="ts-mobil-cta">
         <Link href={TEO_LINK_ANFRAGE} className="teo-btn">
-          Anfrage stellen
+          Kontakt aufnehmen
         </Link>
       </div>
     </TeoRahmen>

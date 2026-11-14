@@ -2009,3 +2009,29 @@
   /* Illustration soll sichtbar bleiben: Statuskarte überlappt nur leicht */
   .ts-buehne--hero:has(.ts-hero-reihe) .ts-ablauf-karte { margin-top: -36px; }
 }
+
+/* Hero: Zielgruppen-Zeile unter dem Knopf */
+.teo-site .ts-hero__zielgruppe { margin: 16px auto 0; max-width: 52ch; text-align: center; font-size: 14px; color: var(--teo-text-2); text-wrap: balance; }
+
+/* So starten wir: drei Schritte, darunter die Einstiege „Was ist bei Ihnen gerade los?“ */
+.ts-start {
+  list-style: none;
+  margin: 48px auto 0;
+  padding: 0;
+  max-width: 1000px;
+  display: grid;
+  gap: 16px;
+}
+@media (min-width: 900px) {
+  .ts-start { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 24px; }
+}
+.ts-start li {
+  padding: 28px;
+  border-radius: 24px;
+  background: #fff;
+  border: 1px solid var(--ts-linie);
+}
+.teo-site .ts-start h3 { font-size: 20px; font-weight: 750; letter-spacing: -0.02em; color: var(--teo-navy); }
+.teo-site .ts-start p { margin-top: 8px; font-size: 16px; line-height: 1.55; color: var(--teo-text-2); }
+#start .ts-einstieg { margin-top: 56px; }
+.teo-site .ts-einstieg__frage { text-align: center; font-size: 20px; font-weight: 750; letter-spacing: -0.02em; color: var(--teo-navy); }
