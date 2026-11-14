@@ -40,7 +40,7 @@ export const TEO_SITUATIONEN: TeoSituation[] = [
   { id: "pruefungen", label: "Prüffristen laufen ab", fall: "betrieb", leistungen: ["wartung"] },
   { id: "hausmeister", label: "Unser Hausmeister fällt weg", fall: "betrieb", leistungen: ["hausmeister"] },
   { id: "winter", label: "Winterdienst fehlt", fall: "betrieb", leistungen: ["winter"] },
-  { id: "abgeben", label: "Wir wollen alle Häuser abgeben", fall: "kennenlernen" },
+  { id: "abgeben", label: "Alle Häuser über teo betreuen", fall: "kennenlernen" },
 ];
 
 /** Gleiche Schadenbereiche wie Mieter-Meldung und Arbeitsplatz; hier auf Rechner-Bereiche gemappt (Gewerke im CRM). */

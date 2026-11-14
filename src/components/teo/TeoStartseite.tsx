@@ -39,7 +39,7 @@ const HEUTE = [
   "Sie telefonieren zwischen Mieter, Handwerker und Eigentümer hin und her",
   "Keiner weiß, wo ein Auftrag gerade steht",
   "Gute Handwerker haben keine Zeit",
-  "Sie nehmen Arbeiten ab, ohne Fachmann zu sein",
+  "Abnahmen ohne technisches Fachwissen",
 ] as const;
 
 const MIT_TEO = [
@@ -51,7 +51,7 @@ const MIT_TEO = [
 
 /** Was teo ist und was Sie davon haben (Generalunternehmer mit eigener Software). */
 const VORTEILE = [
-  { icon: Network, bild: "netzwerk", titel: "Eigene Handwerker und Partnernetz", text: "Vieles machen wir selbst. Für alles andere haben wir geprüfte Betriebe in München, auch kurzfristig." },
+  { icon: Network, bild: "netzwerk", titel: "Eigene Handwerker und Partnernetz", text: "Vieles machen wir selbst. Für alles andere haben wir geprüfte Betriebe in München." },
   { icon: ShieldCheck, bild: "schild", titel: "Gewährleistung durch uns", text: "Ihr Vertragspartner sind immer wir. Wir nehmen jede Arbeit ab und kümmern uns um spätere Mängel." },
   { icon: ReceiptText, bild: "rechnung", titel: "Kein Aufschlag", text: "Sie zahlen den Preis eines Fachbetriebs. Für die Koordination berechnen wir nichts extra." },
 ] as const;
@@ -65,9 +65,9 @@ const START = [
 
 /** Leistungen in drei Arten, je Karte die Gewerke (keine Links). */
 const LEISTUNGEN = [
-  { icon: Wrench, bild: "schraubenschluessel", titel: "Schäden & Reparaturen", satz: "Bis zu Ihrer Grenze legen wir sofort los.", gewerke: ["Sanitär", "Heizung", "Elektro", "Fenster & Türen"] },
+  { icon: Wrench, bild: "schraubenschluessel", titel: "Schäden & Reparaturen", satz: "Kleine Schäden beheben wir sofort, ohne lange Abstimmung.", gewerke: ["Sanitär", "Heizung", "Elektro", "Fenster & Türen"] },
   { icon: PaintRoller, bild: "farbrolle", titel: "Sanieren", satz: "Ein Angebot für alle Gewerke.", gewerke: ["Dach", "Fassade", "Maler", "Bad & Leitungen"] },
-  { icon: Repeat, bild: "kalender", titel: "Wiederkehrende Leistungen", satz: "Einmal vereinbart, läuft es.", gewerke: ["Hausmeister", "Reinigung", "Winterdienst", "Garten"] },
+  { icon: Repeat, bild: "kalender", titel: "Wiederkehrende Leistungen", satz: "Einmal vereinbart, läuft es.", gewerke: ["Hausmeister", "Wartung & Prüfungen", "Winterdienst", "Reinigung & Garten"] },
 ] as const;
 
 /** Alle Beteiligten (Vorbild Lessen „Every party connected“): Foto je Rolle, darunter teo als Klammer. */
@@ -115,12 +115,8 @@ export const TEO_FAQ = [
     antwort: "Er bleibt. Er sieht seine Aufgaben auf dem Handy und schaut sich Meldungen auf Wunsch zuerst an. Was er nicht lösen kann, übernimmt ein Fachbetrieb.",
   },
   {
-    frage: "Wer haftet, wenn etwas schiefgeht?",
-    antwort: "Wir. Mit der Übergabe sind wir für die Ausführung verantwortlich. Taucht später ein Mangel auf, kümmern wir uns um die Gewährleistung.",
-  },
-  {
-    frage: "Wer ist unser Vertragspartner?",
-    antwort: "teo. Sie bekommen eine Rechnung von uns, auch wenn mehrere Betriebe beteiligt waren.",
+    frage: "Wer ist unser Vertragspartner, wer haftet?",
+    antwort: "Wir. Sie haben einen Vertrag und bekommen eine Rechnung, auch wenn mehrere Betriebe beteiligt waren. Taucht später ein Mangel auf, kümmern wir uns darum.",
   },
   {
     frage: "Wie schnell kommt jemand?",
@@ -244,7 +240,7 @@ export function TeoStartseite() {
       <section className="ts-abschnitt" id="rollen">
         <div className="teo-innen">
           <h2 className="ts-zentriert-text ts-zweizeilig">
-            <span>Alle sehen</span> <span className="ts-blau">denselben Stand.</span>
+            <span>Jeder sieht,</span> <span className="ts-blau">was er braucht.</span>
           </h2>
           <div className="ts-beteiligte">
             <ul className="ts-beteiligte__karten">
@@ -283,7 +279,7 @@ export function TeoStartseite() {
             <span>Ein Handwerksbetrieb</span> <span className="ts-blau">mit eigener Software.</span>
           </h2>
           <p className="ts-warum__satz">
-            Den Ablauf von der Meldung bis zur Rechnung haben wir selbst digitalisiert. So koordinieren wir alle Gewerke, ohne dass es für Sie teurer wird.
+            Den Ablauf von der Meldung bis zur Rechnung haben wir selbst digitalisiert. Deshalb geht bei uns weniger verloren als am Telefon.
           </p>
           <ul className="ts-icons ts-icons--drei ts-icons--blau">
             {VORTEILE.map((f) => (
