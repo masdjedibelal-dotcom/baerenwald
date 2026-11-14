@@ -41,7 +41,7 @@ const SCHRITTE: Record<Weg, Schritt[]> = {
     {
       titel: "Am Ende bekommen Sie eine Rechnung.",
       text: "Mit Abnahme und Fotos, auch wenn mehrere Betriebe beteiligt waren. Angebot, Dokumente und Notizen liegen gesammelt beim Vorgang.",
-      bild: { src: "/brand/teo/app/dokumente.jpg", breite: 1600, hoehe: 829, alt: "Dokumente eines Vorgangs: Angebot, Abnahme und Rechnung" },
+      bild: { src: "/brand/teo/app/dokumente.jpg", breite: 1600, hoehe: 815, alt: "Dokumente eines erledigten Vorgangs: Rechnung, Abnahmeprotokoll und Angebot" },
     },
   ],
   mail: [

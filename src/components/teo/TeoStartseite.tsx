@@ -50,33 +50,27 @@ const ZIELGRUPPEN = [
 
 /** Vergleich ohne / mit teo: je Zeile ein Problem und unsere Antwort darauf. */
 const HEUTE = [
-  "Sie sind die Telefonzentrale zwischen Mieter, Handwerker und Eigentümer",
-  "Keiner sieht, wo ein Auftrag gerade steht",
-  "Jeder Betrieb mit eigenen Angeboten, Rechnungen und Abläufen",
-  "Gute Handwerker sind ausgebucht",
-  "Preise, die Sie kaum prüfen können",
-  "Abnahme ohne technisches Fachwissen",
-  "Für jede Kleinigkeit eine Abstimmung",
+  "Sie telefonieren zwischen Mieter, Handwerker und Eigentümer hin und her",
+  "Keiner weiß, wo ein Auftrag gerade steht",
+  "Gute Handwerker haben keine Zeit",
+  "Sie nehmen Arbeiten ab, ohne Fachmann zu sein",
 ] as const;
 
 const MIT_TEO = [
-  "Ein Ansprechpartner, der alle Gewerke koordiniert",
-  "Alle sehen denselben Stand, digital und nachvollziehbar",
-  "Ein Ablauf, ein Angebot, eine Rechnung",
-  "Großes Partnernetz, auch kurzfristig verfügbar",
-  "Preis eines Fachbetriebs, ohne Aufschlag",
-  "Wir nehmen jede Arbeit ab und übernehmen die Gewährleistung",
-  "Bis zu Ihrer Grenze legen wir los, darüber ein Klick",
+  "Ein Ansprechpartner koordiniert alles",
+  "Alle sehen denselben Stand, mit Fotos",
+  "Unser Netz hat auch kurzfristig jemanden",
+  "Wir nehmen fachlich ab und kümmern uns um Mängel",
 ] as const;
 
 /** Was teo ist und was Sie davon haben (Generalunternehmer mit eigener Software). */
 const VORTEILE = [
-  { icon: Network, bild: "netzwerk", titel: "Immer jemand verfügbar", text: "Gute Handwerker sind ausgebucht. Wir haben ein großes Netz an Betrieben in München und finden auch kurzfristig jemanden." },
-  { icon: Headset, bild: "headset", titel: "Ein Ansprechpartner für alles", text: "Ob tropfender Hahn oder Dachsanierung: Sie wenden sich an uns, nicht an zehn verschiedene Betriebe." },
-  { icon: ReceiptText, bild: "rechnung", titel: "Kein Aufpreis für den Generalunternehmer", text: "Meldung, Auftrag, Termin und Abrechnung laufen bei uns digital. Die gesparte Zeit berechnen wir nicht. Sie zahlen den Preis eines Fachbetriebs." },
-  { icon: Smartphone, bild: "handy", titel: "Alle sehen denselben Stand", text: "Verwaltung, Eigentümer und Mieter sehen Fortschritt, Fotos, Angebote und Rechnungen, im Portal oder per E-Mail. Das erspart Rückfragen." },
-  { icon: SlidersHorizontal, bild: "regler", titel: "Weniger freigeben, weniger abstimmen", text: "Sie legen je Haus fest, bis zu welchem Betrag wir direkt beauftragen. Termine klären wir selbst mit den Mietern." },
-  { icon: ShieldCheck, bild: "schild", titel: "Wir übernehmen die Gewährleistung", text: "Vertragspartner sind immer wir. Wir nehmen jede Arbeit ab und kümmern uns auch um spätere Mängel." },
+  { icon: Network, bild: "netzwerk", titel: "Immer jemand verfügbar", text: "Unser Netz aus Betrieben in München hat auch kurzfristig jemanden frei." },
+  { icon: Headset, bild: "headset", titel: "Ein Ansprechpartner für alles", text: "Ob tropfender Hahn oder neues Dach: Sie rufen uns an, nicht zehn Betriebe." },
+  { icon: ReceiptText, bild: "rechnung", titel: "Kein Aufschlag", text: "Sie zahlen den Preis eines Fachbetriebs. Für die Koordination berechnen wir nichts extra." },
+  { icon: Smartphone, bild: "handy", titel: "Alle sehen denselben Stand", text: "Verwaltung, Eigentümer und Mieter sehen Fotos, Angebote und Rechnungen, im Portal oder per E-Mail." },
+  { icon: SlidersHorizontal, bild: "regler", titel: "Weniger freigeben", text: "Sie legen je Haus eine Grenze fest. Darunter beauftragen wir direkt. Termine klären wir mit den Mietern." },
+  { icon: ShieldCheck, bild: "schild", titel: "Wir übernehmen die Gewährleistung", text: "Ihr Vertragspartner sind immer wir. Wir nehmen jede Arbeit ab und kümmern uns um spätere Mängel." },
 ] as const;
 
 /** Leistungen in drei Arten, je Karte die Gewerke (keine Links). */
@@ -115,7 +109,7 @@ export const TEO_FAQ = [
   {
     frage: "Was macht teo genau?",
     antwort:
-      "teo ist ein Handwerksbetrieb und Generalunternehmer für Hausverwaltungen in München. Sie geben uns Reparaturen, Schäden, Wartungen und Sanierungen. Wir führen selbst aus oder mit Partnerbetrieben aus allen Gewerken. Sie haben einen Ansprechpartner, bekommen eine Rechnung und sehen jeden Schritt, im Portal oder per E-Mail.",
+      "Wir sind ein Handwerksbetrieb und Generalunternehmer für Verwaltungen in München. Sie geben uns Schäden, Reparaturen, Wartungen und Sanierungen. Wir erledigen sie selbst oder mit Partnerbetrieben. Sie haben einen Ansprechpartner und bekommen eine Rechnung.",
   },
   {
     frage: "Was kostet teo?",
@@ -124,16 +118,11 @@ export const TEO_FAQ = [
   {
     frage: "Ist teo eine Software?",
     antwort:
-      "Nein. teo ist ein Handwerksbetrieb und Ihr Generalunternehmer. Wir führen selbst aus und mit Partnerbetrieben. Das Portal ist dabei, damit alle Beteiligten denselben Stand sehen. Sie können es nutzen oder ganz per E-Mail mit uns arbeiten.",
-  },
-  {
-    frage: "Müssen wir dafür eine Software nutzen?",
-    antwort:
-      "Nein. Aufträge schicken Sie per E-Mail, Angebote, Termine, Fotos und Rechnungen bekommen Sie per E-Mail. Freigaben erteilen Sie mit einem Klick in der Mail. Den Arbeitsplatz können Sie dazunehmen, müssen es aber nicht.",
+      "Nein, ein Handwerksbetrieb. Unser Portal gibt es dazu. Sie können es nutzen oder ganz per E-Mail mit uns arbeiten: Aufträge schicken, Angebote freigeben, Rechnungen bekommen.",
   },
   {
     frage: "Was wird aus unserem Hausmeister?",
-    antwort: "Er bleibt. Im Portal sieht er seine Aufgaben, hakt Rundgänge ab und schaut sich Meldungen auf Wunsch zuerst selbst an. Was er nicht lösen kann, übernimmt ein Fachbetrieb.",
+    antwort: "Er bleibt. Er sieht seine Aufgaben auf dem Handy und schaut sich Meldungen auf Wunsch zuerst an. Was er nicht lösen kann, übernimmt ein Fachbetrieb.",
   },
   {
     frage: "Wer haftet, wenn etwas schiefgeht?",
@@ -145,7 +134,7 @@ export const TEO_FAQ = [
   },
   {
     frage: "Wie schnell kommt jemand?",
-    antwort: "Notfälle haben bei uns Vorrang. Wie schnell jemand vor Ort ist, hängt von Gewerk und Uhrzeit ab. Das sagen wir Ihnen sofort.",
+    antwort: "Notfälle haben Vorrang. Wie schnell jemand da ist, hängt von Gewerk und Uhrzeit ab. Das sagen wir Ihnen sofort.",
   },
   {
     frage: "Behalten wir die Kontrolle?",
@@ -153,7 +142,7 @@ export const TEO_FAQ = [
   },
   {
     frage: "Wo ist teo tätig?",
-    antwort: "In München und Umgebung. Schicken Sie uns einen aktuellen Fall, dann richten wir Ihre Häuser ein.",
+    antwort: "In München und Umgebung.",
   },
 ] as const;
 
@@ -171,9 +160,9 @@ export function TeoStartseite() {
           <h1>
             <span className="ts-hero__zeile">
               Handwerk <span className="ts-hero__ganz">aus einer Hand.</span>
-            </span> <span className="ts-hero__zeile ts-hero__zeile--klein ts-blau">Für Hausverwaltungen in München.</span>
+            </span> <span className="ts-hero__zeile ts-hero__zeile--klein ts-blau">Für Verwaltungen in München.</span>
           </h1>
-          <p className="ts-hero__satz">Gute Handwerker sind ausgebucht, Mieter warten, Eigentümer fragen nach. Und Sie telefonieren hinterher. Dafür gibt es teo: Sie geben uns den Auftrag, wir erledigen alles bis zur Rechnung. Ein Ansprechpartner für alle Gewerke, zum Preis eines Fachbetriebs.</p>
+          <p className="ts-hero__satz">Ob Rohrbruch, Heizungsausfall, defekte Klingel oder neue Fassade: Sie geben uns den Fall, wir erledigen den Rest. Wir nehmen den Schaden auf, schicken den passenden Betrieb, nehmen die Arbeit ab und halten alles mit Fotos fest. Sie sehen jeden Schritt digital.</p>
           <div className="teo-aktionen ts-zentriert">
             <Link href={TEO_LINK_ANFRAGE} className="teo-btn">
               Anfrage stellen
@@ -253,7 +242,7 @@ export function TeoStartseite() {
               </ul>
             </div>
           </div>
-          <p className="ts-kosten__zeile">Die gewonnene Zeit können Sie in mehr Objekte stecken, ohne mehr Personal.</p>
+          <p className="ts-kosten__zeile">So betreuen Sie mehr Häuser mit demselben Team.</p>
         </div>
       </section>
 
@@ -283,7 +272,7 @@ export function TeoStartseite() {
             <span>Ein Handwerksbetrieb</span> <span className="ts-blau">mit eigener Software.</span>
           </h2>
           <p className="ts-warum__satz">
-            teo ist Generalunternehmer für Hausverwaltungen. Einen Teil der Arbeiten führen wir mit eigenen Handwerkern aus, für alles andere setzen wir geprüfte Partnerbetriebe ein. Den ganzen Ablauf von der Meldung bis zur Rechnung haben wir selbst digitalisiert.
+            Einen Teil der Arbeiten machen wir mit eigenen Handwerkern, für alles andere haben wir geprüfte Partnerbetriebe. Den Ablauf von der Meldung bis zur Rechnung haben wir selbst digitalisiert.
           </p>
           <ul className="ts-icons ts-icons--drei ts-icons--blau">
             {VORTEILE.map((f) => (

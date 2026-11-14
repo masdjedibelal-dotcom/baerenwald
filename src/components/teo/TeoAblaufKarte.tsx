@@ -8,7 +8,7 @@ type Fall = { icon: LucideIcon; nr: string; titel: string; ort: string; schritte
 /** Beispiel-Vorgänge für die Hero-Karte: so läuft ein Fall bei teo durch (nur Optik). */
 const FAELLE: Fall[] = [
   { icon: Flame, nr: "1042", titel: "Heizung fällt aus", ort: "Leopoldstr. 10", schritte: ["Gemeldet mit Foto", "Heizungsbauer beauftragt", "Repariert", "Abgenommen"] },
-  { icon: Droplets, nr: "1043", titel: "Wasser im Keller", ort: "Hohenzollernstr. 31", schritte: ["Gemeldet mit Foto", "Notdienst beauftragt", "Leck abgedichtet", "Abgenommen"] },
+  { icon: Droplets, nr: "1043", titel: "Wasser im Keller", ort: "Hohenzollernstr. 31", schritte: ["Gemeldet mit Foto", "Installateur beauftragt", "Leck abgedichtet", "Abgenommen"] },
   { icon: Zap, nr: "1044", titel: "Klingel defekt", ort: "Belgradstr. 5", schritte: ["Gemeldet online", "Elektriker beauftragt", "Repariert", "Abgenommen"] },
 ];
 
