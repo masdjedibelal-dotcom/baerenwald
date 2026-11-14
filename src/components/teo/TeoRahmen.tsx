@@ -38,7 +38,7 @@ function TeoKopf() {
         </nav>
         <div className="teo-kopf__aktionen">
           <Link href="/portal/login" className="teo-kopf__login">
-            Anmelden
+            Zum Portal
           </Link>
           <Link href={TEO_LINK_ANFRAGE} className="teo-btn teo-btn--klein">
             Kontakt aufnehmen
