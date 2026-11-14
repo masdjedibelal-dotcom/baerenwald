@@ -10,9 +10,6 @@ import {
   Headset,
   KeyRound,
   type LucideIcon,
-  Mail,
-  MailCheck,
-  MousePointerClick,
   Network,
   PaintRoller,
   Repeat,
@@ -50,18 +47,25 @@ const ZIELGRUPPEN = [
   "Eigentümer mehrerer Häuser",
 ] as const;
 
+/** Vergleich ohne / mit teo: je Zeile ein Problem und unsere Antwort darauf. */
 const HEUTE = [
-  "Handwerker suchen",
-  "Hinterhertelefonieren",
-  "Termine mit Mietern abstimmen",
-  "Rechnungen prüfen",
+  "Sie sind die Telefonzentrale zwischen Mieter, Handwerker und Eigentümer",
+  "Keiner sieht, wo ein Auftrag gerade steht",
+  "Jeder Betrieb mit eigenen Angeboten, Rechnungen und Abläufen",
+  "Gute Handwerker sind ausgebucht",
+  "Preise, die Sie kaum prüfen können",
+  "Abnahme ohne technisches Fachwissen",
+  "Für jede Kleinigkeit eine Abstimmung",
 ] as const;
 
 const MIT_TEO = [
-  "Ein Anruf oder eine E-Mail",
-  "Wir finden den Betrieb, auch kurzfristig",
-  "Termin direkt mit dem Mieter",
-  "Eine Rechnung, mit Fotos belegt",
+  "Ein Ansprechpartner, der alle Gewerke koordiniert",
+  "Alle sehen denselben Stand, digital und nachvollziehbar",
+  "Ein Ablauf, ein Angebot, eine Rechnung",
+  "Großes Partnernetz, auch kurzfristig verfügbar",
+  "Preis eines Fachbetriebs, ohne Aufschlag",
+  "Wir nehmen jede Arbeit ab und übernehmen die Gewährleistung",
+  "Bis zu Ihrer Grenze legen wir los, darüber ein Klick",
 ] as const;
 
 /** Was teo ist und was Sie davon haben (Generalunternehmer mit eigener Software). */
@@ -69,7 +73,7 @@ const VORTEILE = [
   { icon: Network, titel: "Immer jemand verfügbar", text: "Gute Handwerker sind ausgebucht. Wir haben ein großes Netz an Betrieben in München und finden auch kurzfristig jemanden." },
   { icon: Headset, titel: "Ein Ansprechpartner für alles", text: "Ob tropfender Hahn oder Dachsanierung: Sie wenden sich an uns, nicht an zehn verschiedene Betriebe." },
   { icon: ReceiptText, titel: "Kein Aufpreis für den Generalunternehmer", text: "Meldung, Auftrag, Termin und Abrechnung laufen bei uns digital. Die gesparte Zeit berechnen wir nicht. Sie zahlen den Preis eines Fachbetriebs." },
-  { icon: Smartphone, titel: "Alle sehen denselben Stand", text: "Verwaltung, Eigentümer und Mieter sehen im Portal Fortschritt, Fotos, Angebote und Rechnungen. Das erspart Rückfragen." },
+  { icon: Smartphone, titel: "Alle sehen denselben Stand", text: "Verwaltung, Eigentümer und Mieter sehen Fortschritt, Fotos, Angebote und Rechnungen, im Portal oder per E-Mail. Das erspart Rückfragen." },
   { icon: SlidersHorizontal, titel: "Weniger freigeben, weniger abstimmen", text: "Sie legen je Haus fest, bis zu welchem Betrag wir direkt beauftragen. Termine klären wir selbst mit den Mietern." },
   { icon: ShieldCheck, titel: "Wir haften", text: "Vertragspartner sind immer wir. Wir nehmen jede Arbeit ab und kümmern uns auch um spätere Mängel." },
 ] as const;
@@ -79,13 +83,6 @@ const LEISTUNGEN = [
   { icon: Wrench, titel: "Schäden & Reparaturen", satz: "Bis zu Ihrer Grenze legen wir sofort los.", gewerke: ["Sanitär", "Heizung", "Elektro", "Fenster & Türen"] },
   { icon: PaintRoller, titel: "Sanieren", satz: "Ein Angebot für alle Gewerke.", gewerke: ["Dach", "Fassade", "Maler", "Bad & Leitungen"] },
   { icon: Repeat, titel: "Wiederkehrende Leistungen", satz: "Einmal vereinbart, läuft es.", gewerke: ["Hausmeister", "Reinigung", "Winterdienst", "Garten"] },
-] as const;
-
-/** Zusammenarbeit ohne Portal: Auftrag per E-Mail, alles zurück per E-Mail, Freigabe aus der Mail. */
-const PER_MAIL = [
-  { icon: Mail, titel: "Auftrag per E-Mail", text: "Schicken Sie den Auftrag an Ihre feste Auftragsadresse, gern mit Fotos im Anhang. Auch direkt aus Ihrer Verwaltungssoftware." },
-  { icon: MailCheck, titel: "Alles zurück per E-Mail", text: "Termin, Angebot, Fotos, Abnahme und Rechnung bekommen Sie als E-Mail mit PDF." },
-  { icon: MousePointerClick, titel: "Freigabe mit einem Klick", text: "Liegt ein Angebot über Ihrer Grenze, geben Sie es direkt aus der E-Mail frei. Ohne Anmeldung." },
 ] as const;
 
 /** Alle Beteiligten (Vorbild Lessen „Every party connected“): Foto je Rolle, darunter teo als Klammer. */
@@ -117,7 +114,7 @@ export const TEO_FAQ = [
   {
     frage: "Was macht teo genau?",
     antwort:
-      "teo ist ein Handwerksbetrieb und Generalunternehmer für Hausverwaltungen in München. Sie geben uns Reparaturen, Schäden, Wartungen und Sanierungen. Wir führen selbst aus oder mit Partnerbetrieben aus allen Gewerken. Sie haben einen Ansprechpartner, bekommen eine Rechnung und sehen jeden Schritt im Portal.",
+      "teo ist ein Handwerksbetrieb und Generalunternehmer für Hausverwaltungen in München. Sie geben uns Reparaturen, Schäden, Wartungen und Sanierungen. Wir führen selbst aus oder mit Partnerbetrieben aus allen Gewerken. Sie haben einen Ansprechpartner, bekommen eine Rechnung und sehen jeden Schritt, im Portal oder per E-Mail.",
   },
   {
     frage: "Was kostet teo?",
@@ -126,7 +123,7 @@ export const TEO_FAQ = [
   {
     frage: "Ist teo eine Software?",
     antwort:
-      "Nein. teo ist ein Handwerksbetrieb und Ihr Generalunternehmer. Wir führen selbst aus und mit Partnerbetrieben. Das Portal ist dabei, damit alle Beteiligten denselben Stand sehen.",
+      "Nein. teo ist ein Handwerksbetrieb und Ihr Generalunternehmer. Wir führen selbst aus und mit Partnerbetrieben. Das Portal ist dabei, damit alle Beteiligten denselben Stand sehen. Sie können es nutzen oder ganz per E-Mail mit uns arbeiten.",
   },
   {
     frage: "Müssen wir dafür eine Software nutzen?",
@@ -184,7 +181,11 @@ export function TeoStartseite() {
         </div>
         <div className="ts-breit">
           <div className="ts-buehne ts-buehne--hero">
-            <TeoFoto name="hero" alt="Handwerker mit Werkzeugkoffer im Treppenhaus eines Altbaus" />
+            <div className="ts-hero-reihe">
+              <TeoFoto name="cta" alt="Altbaustraße in München am Abend" className="ts-hero-reihe__gross" />
+              <TeoFoto name="verwaltung" alt="Verwalterin am Laptop im Büro" className="ts-hero-reihe__klein" />
+              <TeoFoto name="handwerker" alt="Hände an einer Heizungsanlage" className="ts-hero-reihe__klein" />
+            </div>
             <TeoAblaufKarte />
           </div>
         </div>
@@ -225,7 +226,7 @@ export function TeoStartseite() {
           </h2>
           <div className="ts-vorher">
             <div className="ts-vorher__karte">
-              <h3>Das machen Sie heute selbst</h3>
+              <h3>Ohne teo</h3>
               <ul>
                 {HEUTE.map((t) => (
                   <li key={t}>
@@ -238,7 +239,7 @@ export function TeoStartseite() {
               </ul>
             </div>
             <div className="ts-vorher__karte ts-vorher__karte--teo">
-              <h3>Das übernehmen wir</h3>
+              <h3>Mit teo</h3>
               <ul>
                 {MIT_TEO.map((t) => (
                   <li key={t}>
@@ -299,41 +300,9 @@ export function TeoStartseite() {
         </div>
       </section>
 
-      <section className="ts-abschnitt" id="ablauf">
-        <div className="teo-innen">
-          <h2 className="ts-zentriert-text ts-zweizeilig">
-            <span>So läuft ein Auftrag.</span> <span className="ts-blau">Aus Sicht der Verwaltung.</span>
-          </h2>
-          <TeoAppAblauf />
-        </div>
-      </section>
+      <TeoAppAblauf />
 
-      <section className="ts-abschnitt ts-abschnitt--eng" id="per-mail">
-        <div className="teo-innen">
-          <h2 className="ts-zentriert-text ts-zweizeilig">
-            <span>Ohne neues Programm.</span> <span className="ts-blau">Alles per E-Mail.</span>
-          </h2>
-          <p className="ts-warum__satz">
-            Sie müssen sich nirgends anmelden. Sie arbeiten weiter mit Ihrem Postfach oder Ihrer Verwaltungssoftware.
-          </p>
-          <ul className="ts-icons ts-icons--drei ts-icons--blau">
-            {PER_MAIL.map((f) => (
-              <li key={f.titel}>
-                <span className="ts-icons__icon">
-                  <f.icon size={24} strokeWidth={1.6} />
-                </span>
-                <h3>{f.titel}</h3>
-                <p>{f.text}</p>
-              </li>
-            ))}
-          </ul>
-          <p className="ts-warum__satz ts-per-mail__zusatz">
-            Wer seine Häuser lieber online im Blick hat, bekommt auf Wunsch den Arbeitsplatz dazu.
-          </p>
-        </div>
-      </section>
-
-      <section className="ts-abschnitt ts-abschnitt--warm" id="rollen">
+      <section className="ts-abschnitt" id="rollen">
         <div className="teo-innen">
           <h2 className="ts-zentriert-text ts-zweizeilig">
             <span>Alle sehen</span> <span className="ts-blau">denselben Stand.</span>

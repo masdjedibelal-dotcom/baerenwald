@@ -1846,9 +1846,6 @@
   .ts-app__leiste span { width: 7px; height: 7px; }
 }
 
-/* Ohne neues Programm: Zusatzsatz unter den drei Punkten */
-.teo-site .ts-per-mail__zusatz { margin: 40px auto 0; font-size: 16px; }
-
 /* Was wir übernehmen: drei Karten nach Leistungsart, Gewerke als Pillen */
 .ts-leistungen {
   list-style: none;
@@ -1901,4 +1898,97 @@
 }
 @media (max-width: 560px) {
   .ts-leistungen__karte { padding: 24px 20px; }
+}
+
+/* ══ Ablauf mit Umschalter: Im teo-Portal / Aus Ihrem System per E-Mail — eigene Hintergrundfarbe je Weg ══ */
+.ts-ablauf { transition: background-color 0.45s ease; }
+.ts-ablauf--portal { background: #eef3fa; }
+.ts-ablauf--mail { background: #fbf6ea; }
+.ts-ablauf__umschalter {
+  display: flex;
+  width: fit-content;
+  max-width: 100%;
+  margin: 32px auto 0;
+  padding: 4px;
+  gap: 4px;
+  border-radius: var(--r-pill, 999px);
+  background: #fff;
+  border: 1px solid var(--ts-linie);
+  box-shadow: 0 12px 30px -24px rgba(11, 31, 58, 0.4);
+}
+.ts-ablauf__umschalter button {
+  padding: 10px 18px;
+  border: 0;
+  border-radius: var(--r-pill, 999px);
+  background: transparent;
+  color: var(--teo-text-2);
+  font: inherit;
+  font-size: 15px;
+  font-weight: 650;
+  cursor: pointer;
+  transition: background-color 0.2s, color 0.2s;
+}
+.ts-ablauf__umschalter button.ist-aktiv { background: var(--teo-navy); color: #fff; }
+.ts-ablauf__umschalter button:focus-visible { outline: 3px solid rgba(30, 95, 168, 0.35); outline-offset: 2px; }
+@media (max-width: 480px) {
+  .ts-ablauf__umschalter { width: 100%; }
+  .ts-ablauf__umschalter button { flex: 1; padding: 10px 8px; font-size: 14px; }
+}
+.ts-ablauf .ts-app { animation: ts-ablauf-wechsel 0.4s ease both; }
+@keyframes ts-ablauf-wechsel { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+
+/* E-Mail-Ansicht (Weg ohne Portal) */
+.ts-mail { font-size: 15px; }
+.ts-mail__kopf { padding: 16px 20px 12px; border-bottom: 1px solid var(--ts-linie); }
+.ts-mail__kopf p { margin: 0; color: var(--teo-text-2); font-size: 14px; overflow-wrap: anywhere; }
+.ts-mail__kopf b { color: var(--teo-navy); font-weight: 650; margin-right: 6px; }
+.teo-site .ts-mail__betreff { margin-top: 6px; color: var(--teo-navy); font-size: 17px; font-weight: 750; letter-spacing: -0.01em; }
+.ts-mail__text { padding: 18px 20px 22px; display: grid; gap: 14px; }
+.ts-mail__text > p { margin: 0; color: var(--teo-text); line-height: 1.55; }
+.ts-mail__knoepfe { display: flex; flex-wrap: wrap; gap: 8px; }
+.ts-mail__knopf {
+  padding: 9px 18px;
+  border-radius: var(--r-pill, 999px);
+  border: 1.5px solid var(--teo-navy);
+  color: var(--teo-navy);
+  font-weight: 650;
+  font-size: 14px;
+}
+.ts-mail__knopf--haupt { background: var(--teo-navy); color: #fff; }
+.ts-mail__anhaenge { display: flex; flex-wrap: wrap; gap: 8px; }
+.ts-mail__anhaenge span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  border-radius: 10px;
+  background: #f3f4f6;
+  color: var(--teo-text-2);
+  font-size: 13px;
+  font-weight: 600;
+}
+@media (prefers-reduced-motion: reduce) {
+  .ts-ablauf, .ts-ablauf__umschalter button { transition: none; }
+  .ts-ablauf .ts-app { animation: none; }
+}
+
+/* Hero als Bildreihe (Haus, Verwaltung, Technik) statt Einzelfoto mit Handwerker */
+.ts-hero-reihe { display: grid; gap: 12px; }
+.ts-hero-reihe .ts-foto { aspect-ratio: auto; height: 100%; border-radius: 22px; }
+.ts-hero-reihe__klein { display: none; }
+.ts-hero-reihe__gross { aspect-ratio: 4 / 5; }
+@media (min-width: 768px) {
+  .ts-hero-reihe {
+    grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
+    grid-template-rows: repeat(2, minmax(0, 1fr));
+    aspect-ratio: 16 / 9;
+    gap: 16px;
+  }
+  .ts-hero-reihe__gross { grid-row: 1 / span 2; aspect-ratio: auto; }
+  .ts-hero-reihe__klein { display: block; }
+  .ts-hero-reihe .ts-foto { border-radius: 28px; }
+}
+@media (min-width: 768px) {
+  /* Statuskarte auf dem großen Bild unten links, damit die kleinen Bilder frei bleiben */
+  .ts-buehne--hero:has(.ts-hero-reihe) .ts-ablauf-karte { right: auto; left: 40px; width: min(380px, calc(66% - 80px)); }
 }
