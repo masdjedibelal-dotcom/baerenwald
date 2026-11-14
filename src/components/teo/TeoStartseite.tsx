@@ -40,6 +40,7 @@ const HEUTE = [
   "Keiner weiß, wo ein Auftrag gerade steht",
   "Gute Handwerker haben keine Zeit",
   "Abnahmen ohne technisches Fachwissen",
+  "Unterlagen für Versicherung und Versammlung zusammensuchen",
 ] as const;
 
 const MIT_TEO = [
@@ -47,13 +48,22 @@ const MIT_TEO = [
   "Alle sehen denselben Stand, mit Fotos",
   "Unser Netz hat auch kurzfristig jemanden",
   "Wir nehmen fachlich ab und kümmern uns um Mängel",
+  "Schadenunterlagen und Jahresbericht auf Knopfdruck",
 ] as const;
 
 /** Was teo ist und was Sie davon haben (Generalunternehmer mit eigener Software). */
 const VORTEILE = [
   { icon: Network, bild: "netzwerk", titel: "Eigene Handwerker und Partnernetz", text: "Vieles machen wir selbst. Für alles andere haben wir geprüfte Betriebe in München." },
-  { icon: ShieldCheck, bild: "schild", titel: "Gewährleistung durch uns", text: "Ihr Vertragspartner sind immer wir. Wir nehmen jede Arbeit ab und kümmern uns um spätere Mängel." },
+  { icon: ShieldCheck, bild: "schild", titel: "Gewährleistung durch uns", text: "Ihr Vertragspartner sind immer wir. Wir nehmen jede Arbeit ab. Kommt ein Schaden wieder, reicht ein Klick auf „Wieder aufgetreten“." },
   { icon: ReceiptText, bild: "rechnung", titel: "Kein Aufschlag", text: "Sie zahlen den Preis eines Fachbetriebs. Für die Koordination berechnen wir nichts extra." },
+] as const;
+
+/** Alles zum Haus an einer Stelle (Funktionen des Arbeitsplatzes). Icons vorläufig, bis eigene 3D-Icons da sind. */
+const HAUS = [
+  { bild: "schild", titel: "Schadenunterlagen für die Versicherung", text: "Ablauf, Fotos und Rechnung eines Schadens als fertiges PDF, mit einem Klick." },
+  { bild: "rechnung", titel: "Jahresbericht für die Versammlung", text: "Alle Vorgänge, Kosten und Prüfungen eines Hauses im Jahr, zum Ausdrucken." },
+  { bild: "kalender", titel: "Anlagen und Prüffristen", text: "Heizung, Aufzug, Rauchmelder und mehr mit Baujahr. Fällige Prüfungen sehen Sie rechtzeitig." },
+  { bild: "regler", titel: "Budget je Haus", text: "Sie sehen jederzeit, was beauftragt und was noch frei ist. Die Kosten gibt es als Excel." },
 ] as const;
 
 /** So starten wir: drei Schritte für eine neue Verwaltung. */
@@ -65,7 +75,7 @@ const START = [
 
 /** Leistungen in drei Arten, je Karte die Gewerke (keine Links). */
 const LEISTUNGEN = [
-  { icon: Wrench, bild: "schraubenschluessel", titel: "Schäden & Reparaturen", satz: "Kleine Schäden beheben wir sofort, ohne lange Abstimmung.", gewerke: ["Sanitär", "Heizung", "Elektro", "Fenster & Türen"] },
+  { icon: Wrench, bild: "schraubenschluessel", titel: "Schäden & Reparaturen", satz: "Akute Schäden beheben wir sofort, ohne auf eine Freigabe zu warten.", gewerke: ["Sanitär", "Heizung", "Elektro", "Fenster & Türen"] },
   { icon: PaintRoller, bild: "farbrolle", titel: "Sanieren", satz: "Ein Angebot für alle Gewerke.", gewerke: ["Dach", "Fassade", "Maler", "Bad & Leitungen"] },
   { icon: Repeat, bild: "kalender", titel: "Wiederkehrende Leistungen", satz: "Einmal vereinbart, läuft es.", gewerke: ["Hausmeister", "Wartung & Prüfungen", "Winterdienst", "Reinigung & Garten"] },
 ] as const;
@@ -73,7 +83,7 @@ const LEISTUNGEN = [
 /** Alle Beteiligten (Vorbild Lessen „Every party connected“): Foto je Rolle, darunter teo als Klammer. */
 const BETEILIGTE = [
   { foto: "hero-verwaltung", quelle: null, icon: Briefcase, titel: "Verwaltung", text: "Alle Häuser auf einer Seite. Freigeben nur, wenn es über Ihre Grenze geht.", alt: "Illustration: Hausverwalter am Laptop" },
-  { foto: "rolle-mieter-illu", quelle: null, icon: KeyRound, titel: "Mieter", text: "Melden per QR-Code im Treppenhaus, mit Foto. Ohne Konto.", alt: "Illustration: Mieterin scannt den QR-Aushang im Treppenhaus" },
+  { foto: "rolle-mieter-illu", quelle: null, icon: KeyRound, titel: "Mieter", text: "Melden per QR-Code im Treppenhaus, mit Foto. Ohne Konto. Dort sehen sie auch Mitteilungen der Verwaltung, etwa wenn das Wasser abgestellt wird.", alt: "Illustration: Mieterin scannt den QR-Aushang im Treppenhaus" },
   { foto: "rolle-hausmeister", quelle: null, icon: Wrench, titel: "Handwerker & Hausmeister", text: "Auftrag, Termin und Fotos auf dem Handy. Hausmeister haken ihre Rundgänge ab.", alt: "Illustration: Hausmeister mit Klemmbrett im Innenhof" },
   { foto: "hero-eigentuemer", quelle: null, icon: Building, titel: "Eigentümer", text: "Sehen, was im Haus passiert, mit den Kosten je Haus.", alt: "Illustration: Eigentümerin zuhause mit dem Handy" },
 ] as const;
@@ -117,6 +127,11 @@ export const TEO_FAQ = [
   {
     frage: "Wer ist unser Vertragspartner, wer haftet?",
     antwort: "Wir. Sie haben einen Vertrag und bekommen eine Rechnung, auch wenn mehrere Betriebe beteiligt waren. Taucht später ein Mangel auf, kümmern wir uns darum.",
+  },
+  {
+    frage: "Was passiert bei einem akuten Schaden?",
+    antwort:
+      "Läuft Wasser aus, fällt der Strom aus oder ist eine Wohnung kalt, legen wir sofort los, ohne auf eine Freigabe zu warten. Welche Fälle das sind, legen Sie je Haus fest. So halten Sie den Schaden gering, wie es auch die Versicherung verlangt.",
   },
   {
     frage: "Wie schnell kommt jemand?",
@@ -237,7 +252,24 @@ export function TeoStartseite() {
 
       <TeoAppAblauf />
 
-      <section className="ts-abschnitt" id="rollen">
+      <section className="ts-abschnitt" id="haus">
+        <div className="teo-innen">
+          <h2 className="ts-zentriert-text ts-zweizeilig">
+            <span>Alles zum Haus</span> <span className="ts-blau">an einer Stelle.</span>
+          </h2>
+          <ul className="ts-icons ts-icons--vier ts-icons--blau">
+            {HAUS.map((h) => (
+              <li key={h.titel}>
+                <TeoIcon3D name={h.bild} size={72} className="ts-icons__bild" />
+                <h3>{h.titel}</h3>
+                <p>{h.text}</p>
+              </li>
+            ))}
+          </ul>
+        </div>
+      </section>
+
+      <section className="ts-abschnitt ts-abschnitt--warm" id="rollen">
         <div className="teo-innen">
           <h2 className="ts-zentriert-text ts-zweizeilig">
             <span>Jeder sieht,</span> <span className="ts-blau">was er braucht.</span>
@@ -273,7 +305,7 @@ export function TeoStartseite() {
         </div>
       </section>
 
-      <section className="ts-abschnitt ts-abschnitt--warm" id="was-teo-ist">
+      <section className="ts-abschnitt" id="was-teo-ist">
         <div className="teo-innen">
           <h2 className="ts-zentriert-text ts-zweizeilig">
             <span>Ein Handwerksbetrieb</span> <span className="ts-blau">mit eigener Software.</span>
@@ -293,7 +325,7 @@ export function TeoStartseite() {
         </div>
       </section>
 
-      <section className="ts-abschnitt ts-abschnitt--eng" id="start">
+      <section className="ts-abschnitt ts-abschnitt--eng ts-abschnitt--warm" id="start">
         <div className="teo-innen">
           <h2 className="ts-zentriert-text ts-zweizeilig">
             <span>So starten wir.</span> <span className="ts-blau">In drei Schritten.</span>
@@ -335,7 +367,7 @@ export function TeoStartseite() {
         </div>
       </section>
 
-      <section className="ts-abschnitt ts-abschnitt--warm" id="faq">
+      <section className="ts-abschnitt" id="faq">
         <div className="teo-innen">
           <div className="ts-faq">
             <h2 className="ts-zentriert-text">Häufige Fragen.</h2>
@@ -351,7 +383,7 @@ export function TeoStartseite() {
         </div>
       </section>
 
-      <section className="ts-abschnitt" id="ratgeber">
+      <section className="ts-abschnitt ts-abschnitt--warm" id="ratgeber">
         <div className="teo-innen">
           <h2 className="ts-zentriert-text ts-zweizeilig">
             <span>Wissen für Verwaltungen.</span> <span className="ts-blau">Kurz und verlässlich.</span>

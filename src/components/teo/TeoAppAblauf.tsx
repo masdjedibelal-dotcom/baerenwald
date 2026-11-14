@@ -29,8 +29,8 @@ const SCHRITTE: Record<Weg, Schritt[]> = {
       handy: { src: "/brand/teo/app/mieter.jpg", breite: 487, hoehe: 1000, alt: "Schadenmeldung eines Mieters auf dem Handy" },
     },
     {
-      titel: "Sie entscheiden nur, was über Ihrer Grenze liegt.",
-      text: "Bis zu dem Betrag, den Sie je Haus festlegen, beauftragen wir direkt. Liegt ein Angebot darüber, sehen Sie alle Positionen und geben mit einem Klick frei.",
+      titel: "Akut oder unter Ihrer Grenze? Wir legen sofort los.",
+      text: "Sie legen je Haus fest, welche Fälle sofort laufen, etwa austretendes Wasser oder eine kalte Wohnung, und bis zu welchem Betrag wir direkt beauftragen. Nur was darüber liegt, geben Sie frei, mit einem Klick.",
       bild: { src: "/brand/teo/app/freigabe.jpg", breite: 1600, hoehe: 721, alt: "Angebot mit Positionen und dem Knopf „Freigeben“" },
     },
     {
@@ -58,7 +58,7 @@ const SCHRITTE: Record<Weg, Schritt[]> = {
     },
     {
       titel: "Sie geben mit einem Klick frei.",
-      text: "Bis zu Ihrer Grenze legen wir direkt los. Liegt ein Angebot darüber, kommt eine E-Mail mit „Freigeben“. Ohne Anmeldung.",
+      text: "Akute Fälle und alles unter Ihrer Grenze erledigen wir direkt. Liegt ein Angebot darüber, kommt eine E-Mail mit „Freigeben“. Ohne Anmeldung.",
       mail: {
         richtung: "von",
         wer: "Servus TEO",
