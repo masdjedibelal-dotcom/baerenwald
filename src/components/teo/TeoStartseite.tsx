@@ -28,6 +28,7 @@ import { TeoEffekte } from "@/components/teo/TeoEffekte";
 import { fotoDa, TeoFoto } from "@/components/teo/TeoFoto";
 import { TEO_LINK_ANFRAGE, TeoLogo, TeoRahmen } from "@/components/teo/TeoRahmen";
 import { TeoAppAblauf } from "@/components/teo/TeoAppAblauf";
+import { TeoIcon3D } from "@/components/teo/TeoIcon3D";
 import { TEO_USPS } from "@/components/teo/teo-usps";
 import { TEO_SITUATIONEN } from "@/lib/funnel/teo-anfrage";
 import { RATGEBER_PFAD, ratgeberArtikel, type RatgeberArtikel } from "@/teo/ratgeber/artikel";
@@ -70,27 +71,27 @@ const MIT_TEO = [
 
 /** Was teo ist und was Sie davon haben (Generalunternehmer mit eigener Software). */
 const VORTEILE = [
-  { icon: Network, titel: "Immer jemand verfügbar", text: "Gute Handwerker sind ausgebucht. Wir haben ein großes Netz an Betrieben in München und finden auch kurzfristig jemanden." },
-  { icon: Headset, titel: "Ein Ansprechpartner für alles", text: "Ob tropfender Hahn oder Dachsanierung: Sie wenden sich an uns, nicht an zehn verschiedene Betriebe." },
-  { icon: ReceiptText, titel: "Kein Aufpreis für den Generalunternehmer", text: "Meldung, Auftrag, Termin und Abrechnung laufen bei uns digital. Die gesparte Zeit berechnen wir nicht. Sie zahlen den Preis eines Fachbetriebs." },
-  { icon: Smartphone, titel: "Alle sehen denselben Stand", text: "Verwaltung, Eigentümer und Mieter sehen Fortschritt, Fotos, Angebote und Rechnungen, im Portal oder per E-Mail. Das erspart Rückfragen." },
-  { icon: SlidersHorizontal, titel: "Weniger freigeben, weniger abstimmen", text: "Sie legen je Haus fest, bis zu welchem Betrag wir direkt beauftragen. Termine klären wir selbst mit den Mietern." },
-  { icon: ShieldCheck, titel: "Wir haften", text: "Vertragspartner sind immer wir. Wir nehmen jede Arbeit ab und kümmern uns auch um spätere Mängel." },
+  { icon: Network, bild: "netzwerk", titel: "Immer jemand verfügbar", text: "Gute Handwerker sind ausgebucht. Wir haben ein großes Netz an Betrieben in München und finden auch kurzfristig jemanden." },
+  { icon: Headset, bild: "headset", titel: "Ein Ansprechpartner für alles", text: "Ob tropfender Hahn oder Dachsanierung: Sie wenden sich an uns, nicht an zehn verschiedene Betriebe." },
+  { icon: ReceiptText, bild: "rechnung", titel: "Kein Aufpreis für den Generalunternehmer", text: "Meldung, Auftrag, Termin und Abrechnung laufen bei uns digital. Die gesparte Zeit berechnen wir nicht. Sie zahlen den Preis eines Fachbetriebs." },
+  { icon: Smartphone, bild: "handy", titel: "Alle sehen denselben Stand", text: "Verwaltung, Eigentümer und Mieter sehen Fortschritt, Fotos, Angebote und Rechnungen, im Portal oder per E-Mail. Das erspart Rückfragen." },
+  { icon: SlidersHorizontal, bild: "regler", titel: "Weniger freigeben, weniger abstimmen", text: "Sie legen je Haus fest, bis zu welchem Betrag wir direkt beauftragen. Termine klären wir selbst mit den Mietern." },
+  { icon: ShieldCheck, bild: "schild", titel: "Wir übernehmen die Gewährleistung", text: "Vertragspartner sind immer wir. Wir nehmen jede Arbeit ab und kümmern uns auch um spätere Mängel." },
 ] as const;
 
 /** Leistungen in drei Arten, je Karte die Gewerke (keine Links). */
 const LEISTUNGEN = [
-  { icon: Wrench, titel: "Schäden & Reparaturen", satz: "Bis zu Ihrer Grenze legen wir sofort los.", gewerke: ["Sanitär", "Heizung", "Elektro", "Fenster & Türen"] },
-  { icon: PaintRoller, titel: "Sanieren", satz: "Ein Angebot für alle Gewerke.", gewerke: ["Dach", "Fassade", "Maler", "Bad & Leitungen"] },
-  { icon: Repeat, titel: "Wiederkehrende Leistungen", satz: "Einmal vereinbart, läuft es.", gewerke: ["Hausmeister", "Reinigung", "Winterdienst", "Garten"] },
+  { icon: Wrench, bild: "schraubenschluessel", titel: "Schäden & Reparaturen", satz: "Bis zu Ihrer Grenze legen wir sofort los.", gewerke: ["Sanitär", "Heizung", "Elektro", "Fenster & Türen"] },
+  { icon: PaintRoller, bild: "farbrolle", titel: "Sanieren", satz: "Ein Angebot für alle Gewerke.", gewerke: ["Dach", "Fassade", "Maler", "Bad & Leitungen"] },
+  { icon: Repeat, bild: "kalender", titel: "Wiederkehrende Leistungen", satz: "Einmal vereinbart, läuft es.", gewerke: ["Hausmeister", "Reinigung", "Winterdienst", "Garten"] },
 ] as const;
 
 /** Alle Beteiligten (Vorbild Lessen „Every party connected“): Foto je Rolle, darunter teo als Klammer. */
 const BETEILIGTE = [
-  { foto: "rolle-verwaltung", quelle: "verwaltung", icon: Briefcase, titel: "Verwaltung", text: "Alle Häuser auf einer Seite. Freigeben nur, wenn es über Ihre Grenze geht.", alt: "Verwalterin am Laptop" },
-  { foto: "rolle-mieter", quelle: null, icon: KeyRound, titel: "Mieter", text: "Melden per QR-Code im Treppenhaus, mit Foto. Ohne Konto.", alt: "Mieterin meldet einen Schaden mit dem Handy" },
-  { foto: "rolle-handwerker", quelle: "handwerker", icon: Wrench, titel: "Handwerker & Hausmeister", text: "Auftrag, Termin und Fotos auf dem Handy. Hausmeister haken ihre Rundgänge ab.", alt: "Handwerker an der Heizung" },
-  { foto: "rolle-eigentuemer", quelle: null, icon: Building, titel: "Eigentümer", text: "Sehen, was im Haus passiert, mit den Kosten je Haus.", alt: "Eigentümer vor seinem Haus" },
+  { foto: "hero-verwaltung", quelle: null, icon: Briefcase, titel: "Verwaltung", text: "Alle Häuser auf einer Seite. Freigeben nur, wenn es über Ihre Grenze geht.", alt: "Illustration: Hausverwalter am Laptop" },
+  { foto: "rolle-mieter-illu", quelle: null, icon: KeyRound, titel: "Mieter", text: "Melden per QR-Code im Treppenhaus, mit Foto. Ohne Konto.", alt: "Illustration: Mieterin scannt den QR-Aushang im Treppenhaus" },
+  { foto: "rolle-hausmeister", quelle: null, icon: Wrench, titel: "Handwerker & Hausmeister", text: "Auftrag, Termin und Fotos auf dem Handy. Hausmeister haken ihre Rundgänge ab.", alt: "Illustration: Hausmeister mit Klemmbrett im Innenhof" },
+  { foto: "hero-eigentuemer", quelle: null, icon: Building, titel: "Eigentümer", text: "Sehen, was im Haus passiert, mit den Kosten je Haus.", alt: "Illustration: Eigentümerin zuhause mit dem Handy" },
 ] as const;
 
 /** Icons der Pillen „Was ist bei Ihnen gerade los?“ (erscheinen beim Drüberfahren) */
@@ -182,9 +183,9 @@ export function TeoStartseite() {
         <div className="ts-breit">
           <div className="ts-buehne ts-buehne--hero">
             <div className="ts-hero-reihe">
-              <TeoFoto name="cta" alt="Altbaustraße in München am Abend" className="ts-hero-reihe__gross" />
-              <TeoFoto name="verwaltung" alt="Verwalterin am Laptop im Büro" className="ts-hero-reihe__klein" />
-              <TeoFoto name="handwerker" alt="Hände an einer Heizungsanlage" className="ts-hero-reihe__klein" />
+              <TeoFoto name="hero-handwerker" alt="Illustration: Handwerker repariert das Waschbecken, die Mieterin schaut zu" className="ts-hero-reihe__gross" />
+              <TeoFoto name="hero-verwaltung" alt="Illustration: Hausverwalter sieht am Laptop, dass der Auftrag erledigt ist" className="ts-hero-reihe__klein" />
+              <TeoFoto name="hero-eigentuemer" alt="Illustration: Eigentümerin bekommt die Erledigt-Nachricht aufs Handy" className="ts-hero-reihe__klein" />
             </div>
             <TeoAblaufKarte />
           </div>
@@ -192,8 +193,8 @@ export function TeoStartseite() {
         <ul className="teo-innen ts-usp-leiste">
           {TEO_USPS.map((u) => (
             <li key={u.text}>
-              <span className="ts-usp-leiste__icon">
-                <u.icon size={20} strokeWidth={1.8} />
+              <span className="ts-usp-leiste__icon ts-usp-leiste__icon--bild">
+                <TeoIcon3D name={u.bild} size={40} />
               </span>
               {u.text}
             </li>
@@ -262,9 +263,7 @@ export function TeoStartseite() {
           <ul className="ts-leistungen">
             {LEISTUNGEN.map((l) => (
               <li key={l.titel} className="ts-leistungen__karte">
-                <span className="ts-leistungen__icon" aria-hidden="true">
-                  <l.icon size={22} strokeWidth={1.7} />
-                </span>
+                <TeoIcon3D name={l.bild} size={72} className="ts-leistungen__bild" />
                 <h3>{l.titel}</h3>
                 <p>{l.satz}</p>
                 <ul className="ts-leistungen__gewerke">
@@ -289,9 +288,7 @@ export function TeoStartseite() {
           <ul className="ts-icons ts-icons--drei ts-icons--blau">
             {VORTEILE.map((f) => (
               <li key={f.titel}>
-                <span className="ts-icons__icon">
-                  <f.icon size={24} strokeWidth={1.6} />
-                </span>
+                <TeoIcon3D name={f.bild} size={72} className="ts-icons__bild" />
                 <h3>{f.titel}</h3>
                 <p>{f.text}</p>
               </li>
@@ -424,7 +421,7 @@ export function TeoStartseite() {
               </a>
             </div>
           </div>
-          <TeoFoto name="cta" alt="Münchner Altbaustraße am Abend" className="ts-ende__bild" />
+          <TeoFoto name="ende-haeuser" alt="Illustration: Münchner Altbau-Häuserzeile im Abendlicht" className="ts-ende__bild" />
         </div>
       </section>
 

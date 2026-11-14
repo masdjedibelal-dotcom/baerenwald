@@ -526,3 +526,5 @@
 @media (max-width: 480px) {
   .ta-kontakt__aktion .ta-weiter { flex: 1; justify-content: center; }
 }
+.ta-seite__icon--bild { background: none !important; width: 40px !important; height: 40px !important; }
+.ta-seite__icon--bild .ts-icon3d { width: 36px; height: 36px; }

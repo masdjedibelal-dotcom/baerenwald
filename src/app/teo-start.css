@@ -1992,3 +1992,20 @@
   /* Statuskarte auf dem großen Bild unten links, damit die kleinen Bilder frei bleiben */
   .ts-buehne--hero:has(.ts-hero-reihe) .ts-ablauf-karte { right: auto; left: 40px; width: min(380px, calc(66% - 80px)); }
 }
+
+/* ══ 3D-Icons und Illustrationen (Airbnb-Richtung): Icons frei ohne Kachel, Bilder auf cremeweißem Grund ══ */
+.ts-icon3d { display: block; height: auto; max-width: 100%; }
+.ts-usp-leiste__icon--bild { background: none !important; width: auto !important; height: auto !important; }
+.ts-usp-leiste__icon--bild .ts-icon3d { width: 40px; height: 40px; }
+.ts-icons__bild { width: 72px; height: 72px; margin: 0 auto 4px; }
+.ts-leistungen__bild { width: 72px; height: 72px; margin: -6px 0 4px -6px; }
+.ts-hero-reihe .ts-foto,
+.ts-beteiligte__foto,
+.ts-ende__bild { background: #f7f2ea; }
+@media (max-width: 767px) {
+  .ts-hero-reihe__gross { aspect-ratio: 5 / 4; }
+}
+@media (max-width: 767px) {
+  /* Illustration soll sichtbar bleiben: Statuskarte überlappt nur leicht */
+  .ts-buehne--hero:has(.ts-hero-reihe) .ts-ablauf-karte { margin-top: -36px; }
+}

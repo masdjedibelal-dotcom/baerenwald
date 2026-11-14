@@ -6,6 +6,7 @@ import { X } from "lucide-react";
 
 import { submitTeoAnfrageAction } from "@/app/actions/submit-teo-anfrage";
 import { DatenschutzCheckbox } from "@/components/funnel/DatenschutzCheckbox";
+import { TeoIcon3D } from "@/components/teo/TeoIcon3D";
 import { TeoLogo } from "@/components/teo/TeoRahmen";
 import { TEO_USPS } from "@/components/teo/teo-usps";
 import { track } from "@/lib/analytics";
@@ -123,8 +124,8 @@ export function TeoKontakt() {
           <ul>
             {TEO_USPS.map((u) => (
               <li key={u.text}>
-                <span className="ta-seite__icon">
-                  <u.icon size={18} strokeWidth={1.8} />
+                <span className="ta-seite__icon ta-seite__icon--bild">
+                  <TeoIcon3D name={u.bild} size={36} />
                 </span>
                 {u.text}
               </li>
