@@ -162,7 +162,7 @@ export function TeoStartseite() {
               Handwerk <span className="ts-hero__ganz">aus einer Hand.</span>
             </span> <span className="ts-hero__zeile ts-hero__zeile--klein ts-blau">Für Verwaltungen in München.</span>
           </h1>
-          <p className="ts-hero__satz">Ob Rohrbruch, Heizungsausfall, defekte Klingel oder neue Fassade: Sie geben uns den Fall, wir erledigen den Rest. Wir nehmen den Schaden auf, schicken den passenden Betrieb, nehmen die Arbeit ab und halten alles mit Fotos fest. Sie sehen jeden Schritt digital.</p>
+          <p className="ts-hero__satz">Ob Rohrbruch, Heizungsausfall, Badsanierung, Hausmeister oder Winterdienst: Sie geben uns den Fall, wir erledigen den Rest. Wir nehmen ihn auf, schicken den passenden Betrieb und nehmen die Arbeit ab. Alles läuft digital: Jeder Schritt steht im Tagebuch im Portal, mit Fotos, Angebot und Rechnung.</p>
           <div className="teo-aktionen ts-zentriert">
             <Link href={TEO_LINK_ANFRAGE} className="teo-btn">
               Anfrage stellen
