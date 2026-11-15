@@ -98,7 +98,7 @@ export function MeldenBestaetigungClient({
         </div>
         <h1 className="mieter-wl-center-title inline-flex items-center justify-center gap-1.5">
           <span>{t.title_de}</span>
-          {t.register_hint_de && !einfach ? (
+          {t.register_hint_de && !einfach && !funktionAn("nurEinladung") ? (
             <InfoTip tip={t.register_hint_de} label="Konto-Hinweis" />
           ) : null}
         </h1>
@@ -106,6 +106,11 @@ export function MeldenBestaetigungClient({
           {brand.name}
           {einfach ? ` hat Ihre Meldung erhalten — ${MARKE.name} kümmert sich darum.` : t.body_suffix_de}
         </p>
+        {!einfach && funktionAn("nurEinladung") ? (
+          <p className="text-fs-meta leading-relaxed text-[var(--p2-sub)] text-center mt-1 max-w-[340px]">
+            {MARKE.name} ist der Handwerks-Service von {brand.name}.
+          </p>
+        ) : null}
 
         {referenz?.trim() ? (
           <p className="text-fs-meta leading-relaxed text-[var(--p2-sub)] text-center mt-1 max-w-[340px]">
@@ -116,9 +121,11 @@ export function MeldenBestaetigungClient({
 
         {einfach ? null : (
         <div className="mieter-wl-bestaetigung-actions w-full max-w-[340px] mt-4">
+          {funktionAn("nurEinladung") ? null : (
           <MieterWlBtn href={registerHref} className="mieter-wl-btn--lg">
             {t.register_de}
           </MieterWlBtn>
+          )}
 
           {statusUrl ? (
             <>

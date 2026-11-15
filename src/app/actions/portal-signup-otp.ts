@@ -17,6 +17,7 @@ import { linkPortalHandwerkerToAuthUser } from "@/lib/partner/link-portal-handwe
 import { PARTNER_AUTH_COPY } from "@/lib/partner/partner-auth-copy";
 import { verifyPartnerRegistrationEmail } from "@/lib/partner/partner-registration-eligibility";
 import { linkPortalKundeToAuthUser } from "@/lib/portal/link-portal-kunde";
+import { NUR_EINLADUNG_FEHLER, pruefePortalEinladung } from "@/lib/portal/portal-einladung";
 import { ensurePortalRegistrationEmailAvailable } from "@/lib/portal/reclaim-orphan-portal-auth";
 import {
   normalizePortalRegisterKundeTyp,
@@ -67,9 +68,14 @@ export async function registerMeinBaerenwaldWithOtp(input: {
   hausnummer?: string;
   plz?: string;
   ort?: string;
+  /** Signierter Einladungslink aus dem CRM (Marken mit `nurEinladung`) */
+  einladung?: string;
 }): Promise<PortalSignupOtpResult> {
   const allowed = await assertPortalEmailAllowed(input.email);
   if (!allowed.ok) return allowed;
+
+  const einladung = await pruefePortalEinladung(input.email, input.einladung);
+  if (!einladung.ok) return { ok: false, error: NUR_EINLADUNG_FEHLER };
 
   if (!isSupabaseConfigured()) {
     return { ok: false, error: "Portal ist momentan nicht verfügbar." };

@@ -1,3 +1,4 @@
+import { funktionAn } from "@/lib/marke";
 import { logDbError } from '@/lib/errors/log-db-error'
 import {
   findKundeIdByEmail,
@@ -220,6 +221,20 @@ export async function linkPortalKundeToAuthUser(opts: {
 
   if (mitglied?.kunde_id) {
     return { ok: true, kundeId: String(mitglied.kunde_id) };
+  }
+
+  // Eingeladene Person der Verwaltung (nur auf Einladung, TEO): Einladung übernehmen statt eigenen Kundenstamm anzulegen
+  if (funktionAn("nurEinladung")) {
+    const { data: offen, error: offenErr } = await supabaseAdmin
+      .from("kunden_mitglieder")
+      .update({ auth_user_id: opts.userId })
+      .is("auth_user_id", null)
+      .eq("aktiv", true)
+      .ilike("email", email.replace(/[\\%_]/g, (z) => `\\${z}`))
+      .select("kunde_id");
+    if (offenErr) logDbError('lib/portal/link-portal-kunde:einladung', offenErr)
+    const kundeId = (offen?.[0] as { kunde_id?: string } | undefined)?.kunde_id;
+    if (kundeId) return { ok: true, kundeId: String(kundeId) };
   }
 
   const {data: linkedByAuth, error: __dbErr445_4} = await supabaseAdmin

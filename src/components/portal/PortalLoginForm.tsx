@@ -16,6 +16,7 @@ import { PortalSignupOtpStep } from "@/components/portal/PortalSignupOtpStep";
 import { StagingAuthHint } from "@/components/portal/auth/StagingAuthHint";
 import { assertPortalEmailAllowed } from "@/app/actions/assert-portal-email-allowed";
 import { AUTH_LOGIN, type AuthPortalRole } from "@/lib/portal2/auth";
+import { funktionAn } from "@/lib/marke";
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
 
 function parseHashSession(): { access_token?: string; refresh_token?: string } {
@@ -262,12 +263,21 @@ export function PortalLoginForm({
         {AUTH_LOGIN.submit}
       </AuthBtn>
 
-      <p className="mt-[22px] text-center text-fs-meta text-text-secondary">
-        {AUTH_LOGIN.neu}{" "}
-        <Link href={registerHref} className="inline-flex min-h-[44px] items-center font-semibold text-accent hover:underline">
-          {AUTH_LOGIN.zugang}
-        </Link>
-      </p>
+      {funktionAn("nurEinladung") ? (
+        <p className="mt-[22px] text-center text-fs-meta text-text-secondary">
+          Noch kein Zugang? Wir richten ihn für Sie ein.{" "}
+          <Link href="/#kontakt" className="inline-flex min-h-[44px] items-center font-semibold text-accent hover:underline">
+            Kontakt aufnehmen
+          </Link>
+        </p>
+      ) : (
+        <p className="mt-[22px] text-center text-fs-meta text-text-secondary">
+          {AUTH_LOGIN.neu}{" "}
+          <Link href={registerHref} className="inline-flex min-h-[44px] items-center font-semibold text-accent hover:underline">
+            {AUTH_LOGIN.zugang}
+          </Link>
+        </p>
+      )}
     </form>
   );
 }

@@ -210,6 +210,7 @@ export function PortalRegisterForm({
       telefon,
       password,
       kundentyp: askKundeTyp ? kundentyp ?? undefined : undefined,
+      einladung: searchParams.get("einladung")?.trim() || undefined,
     }));
     setLoading(false);
     if (!result.ok) {

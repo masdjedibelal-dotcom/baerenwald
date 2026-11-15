@@ -14,7 +14,7 @@ import { PartnerAuthFlowHint } from "@/components/partner/PartnerAuthFlowHint";
 import { PARTNER_AUTH_COPY } from "@/lib/partner/partner-auth-copy";
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
 import { PortalButton } from "@/components/portal/PortalButton";
-import { MARKE } from "@/lib/marke";
+import { funktionAn, MARKE } from "@/lib/marke";
 
 export function PartnerLoginForm() {
   const router = useRouter();
@@ -193,6 +193,20 @@ export function PartnerLoginForm() {
         </Link>
       </p>
 
+      {funktionAn("nurEinladung") ? (
+        <p className="border-t border-border-light pt-4 text-center portal-text-body text-text-secondary">
+          Noch kein Zugang?{" "}
+          <Link
+            href="/#kontakt"
+            className="font-semibold text-accent underline-offset-2 hover:underline"
+          >
+            Partner werden
+          </Link>
+          <span className="block mt-1 portal-text-meta text-text-tertiary">
+            Wir legen Ihren Betrieb an und schicken Ihnen den Link zur Anmeldung.
+          </span>
+        </p>
+      ) : (
       <p className="border-t border-border-light pt-4 text-center portal-text-body text-text-secondary">
         Noch kein Konto?{" "}
         <Link
@@ -205,6 +219,7 @@ export function PartnerLoginForm() {
           Nur möglich, nachdem {MARKE.name} Ihren Betrieb angelegt hat.
         </span>
       </p>
+      )}
     </form>
   );
 }

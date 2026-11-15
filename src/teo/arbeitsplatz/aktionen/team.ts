@@ -72,6 +72,9 @@ async function einladungsMail(k: ApKontext, email: string, name: string, rolle: 
     bodyHtml: [
       `<p>${mailBegruessungHtml('sie', name)}</p>`,
       `<p><strong>${esc(k.person.name)}</strong> von <strong>${esc(k.org.name)}</strong> hat Sie als <strong>${ROLLEN_LABEL[rolle]}</strong> eingeladen.</p>`,
+      rolle === 'eigentuemer'
+        ? `<p>${esc(MARKE.name)} ist der Handwerks-Service von ${esc(k.org.name)}: Wir kümmern uns um Schäden, Reparaturen und Arbeiten an Ihrem Haus. Hier sehen Sie, was gerade läuft.</p>`
+        : '',
       `<p>Legen Sie Ihr Passwort fest — danach sind Sie direkt drin. Haben Sie schon ein Konto mit dieser E-Mail, melden Sie sich einfach an.</p>`,
       mailPrimaryButtonHtml('Einladung annehmen', link),
       `<p>${mailTeamGrussHtml('sie')}</p>`,
