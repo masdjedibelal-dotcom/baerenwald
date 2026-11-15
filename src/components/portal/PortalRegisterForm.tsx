@@ -515,7 +515,7 @@ export function PortalRegisterForm({
               >
                 Datenschutzerklärung
               </a>{" "}
-              gelesen und stimme der Verarbeitung meiner Daten in {MARKE.portalName}
+              gelesen und stimme der Verarbeitung meiner Daten in {MARKE.portalName}{" "}
               zu.
             </span>
           </label>
