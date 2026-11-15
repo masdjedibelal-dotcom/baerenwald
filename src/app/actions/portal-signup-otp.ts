@@ -16,6 +16,7 @@ import { acceptPortalRahmenvertragAfterVerifiedEmail } from "@/lib/partner/accep
 import { linkPortalHandwerkerToAuthUser } from "@/lib/partner/link-portal-handwerker";
 import { PARTNER_AUTH_COPY } from "@/lib/partner/partner-auth-copy";
 import { verifyPartnerRegistrationEmail } from "@/lib/partner/partner-registration-eligibility";
+import { funktionAn } from "@/lib/marke";
 import { linkPortalKundeToAuthUser } from "@/lib/portal/link-portal-kunde";
 import { NUR_EINLADUNG_FEHLER, pruefePortalEinladung } from "@/lib/portal/portal-einladung";
 import { ensurePortalRegistrationEmailAvailable } from "@/lib/portal/reclaim-orphan-portal-auth";
@@ -107,13 +108,16 @@ export async function registerMeinBaerenwaldWithOtp(input: {
   if (password.length < 8) {
     return { ok: false, error: "Passwort mindestens 8 Zeichen." };
   }
-  if (!kundentyp) {
+  // Eingeladen (Marken mit `nurEinladung`): Stammdaten liegen schon im CRM bzw. bei der Verwaltung
+  const nurZugang = funktionAn("nurEinladung");
+  if (!nurZugang && !kundentyp) {
     return {
       ok: false,
       error: "Bitte wählen Sie, ob Privat, Gewerbe oder Hausverwaltung.",
     };
   }
   if (
+    !nurZugang &&
     (kundentyp === "gewerbe" || kundentyp === "hausverwaltung") &&
     !firma
   ) {
@@ -125,10 +129,10 @@ export async function registerMeinBaerenwaldWithOtp(input: {
           : "Bitte Firmenname angeben.",
     };
   }
-  if ((!vorname || !nachname)) {
+  if (!nurZugang && (!vorname || !nachname)) {
     return { ok: false, error: "Bitte Vor- und Nachname angeben." };
   }
-  if ((!strasse || !hausnummer || !plz || !ort)) {
+  if (!nurZugang && (!strasse || !hausnummer || !plz || !ort)) {
     return {
       ok: false,
       error: "Bitte Straße, Hausnummer, PLZ und Ort angeben.",
@@ -145,6 +149,7 @@ export async function registerMeinBaerenwaldWithOtp(input: {
     datenschutz_akzeptiert_at: now,
     agb_akzeptiert_at: now,
   };
+  if (nurZugang) meta.einladung = true;
   if (kundentyp) meta.kundentyp = kundentyp;
   if (vorname) meta.vorname = vorname;
   if (nachname) meta.nachname = nachname;
@@ -384,7 +389,8 @@ export async function confirmPortalSignupCode(opts: {
   const link = await linkPortalKundeToAuthUser({
     userId: result.userId,
     email,
-    name: metaStr("name") ?? email.split("@")[0] ?? email,
+    // Eingeladen: Name aus CRM/Verwaltung nicht mit der Login-E-Mail überschreiben
+    name: meta.einladung === true ? null : metaStr("name") ?? email.split("@")[0] ?? email,
     telefon: metaStr("telefon"),
     typ: kundentyp,
     vorname: metaStr("vorname"),

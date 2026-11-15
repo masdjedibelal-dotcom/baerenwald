@@ -68,13 +68,16 @@ export default async function PortalRegisterPage({ searchParams }: Props) {
       : "";
 
   const subtitle = einladung?.ok
-    ? `${serviceHinweis}Legen Sie Ihren Zugang an: Passwort vergeben und zustimmen.`
+    ? `${serviceHinweis}Legen Sie nur noch Ihr Passwort fest.`
     : locked
       ? "Angaben aus Ihrer Schadenmeldung — bitte Kundentyp wählen, Passwort vergeben und zustimmen."
       : "Privat, Gewerbe oder Hausverwaltung — danach legen wir Ihren Kundenstamm im Portal an.";
 
   return (
-    <PortalAuthShell title="Konto anlegen" subtitle={subtitle}>
+    <PortalAuthShell
+      title={einladung?.ok ? "Zugang anlegen" : "Konto anlegen"}
+      subtitle={subtitle}
+    >
       <Suspense
         fallback={
           <p className="text-center text-sm text-text-secondary">Laden…</p>
@@ -84,9 +87,10 @@ export default async function PortalRegisterPage({ searchParams }: Props) {
           prefill={prefill}
           lockedHint={
             einladung?.ok
-              ? "Ihre E-Mail ist aus der Einladung übernommen. Bitte Kundentyp wählen, Passwort vergeben und zustimmen."
+              ? "Ihre E-Mail ist aus der Einladung übernommen."
               : undefined
           }
+          nurZugang={einladung?.ok === true}
         />
       </Suspense>
     </PortalAuthShell>

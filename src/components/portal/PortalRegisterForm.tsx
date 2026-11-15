@@ -39,6 +39,8 @@ type Props = {
   /** Hinweis über den locked Prefill-Feldern */
   lockedHint?: string | null;
   submitLabel?: string;
+  /** Eingeladen: nur E-Mail, Passwort, Zustimmung — Stammdaten liegen schon vor */
+  nurZugang?: boolean;
 };
 
 function splitPrefillName(full: string): { vorname: string; nachname: string } {
@@ -56,6 +58,7 @@ export function PortalRegisterForm({
   prefill,
   lockedHint,
   submitLabel = "Konto anlegen",
+  nurZugang = false,
 }: Props) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -118,7 +121,7 @@ export function PortalRegisterForm({
   const [error, setError] = useState<string | null>(null);
   const [awaitingOtp, setAwaitingOtp] = useState(false);
 
-  const askKundeTyp = true;
+  const askKundeTyp = !nurZugang;
   const requireLegalConsent = true;
   const needsFirma =
     askKundeTyp &&
@@ -133,7 +136,7 @@ export function PortalRegisterForm({
   /** Locked: nur befüllte Felder zeigen — leere read-only Inputs wirken wie kaputt. */
   const showVorname = !locked || Boolean(vorname.trim());
   const showNachname = !locked || Boolean(nachname.trim());
-  const showTelefon = !locked || Boolean(telefon.trim());
+  const showTelefon = !nurZugang && (!locked || Boolean(telefon.trim()));
   const showNameRow = needsStammAdresse;
 
   const nextPath = searchParams.get("next") || "/portal";
@@ -269,7 +272,8 @@ export function PortalRegisterForm({
     ? "portal-input w-full rounded-field border border-border-default bg-white px-3 py-3 text-text-secondary"
     : "portal-input w-full rounded-field border border-border-default bg-surface-card px-3 py-3 focus:border-accent";
 
-  const canSubmitInvite = !locked || Boolean(email.trim() && displayName);
+  const canSubmitInvite =
+    !locked || Boolean(email.trim() && (displayName || nurZugang));
 
   return (
     <form onSubmit={onSubmit} className="space-y-4">
