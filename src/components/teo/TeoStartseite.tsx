@@ -30,6 +30,7 @@ import { TEO_USPS } from "@/components/teo/teo-usps";
 import { TEO_SITUATIONEN } from "@/lib/funnel/teo-anfrage";
 import { RATGEBER_PFAD, ratgeberArtikel, type RatgeberArtikel } from "@/teo/ratgeber/artikel";
 import { TeoRatgeberKarte } from "@/teo/ratgeber/TeoRatgeber";
+import { SITE_CONFIG } from "@/lib/config";
 import { MARKE } from "@/lib/marke";
 
 import "@/app/teo-start.css";
@@ -416,6 +417,9 @@ export function TeoStartseite() {
               <Link href={TEO_LINK_ANFRAGE} className="teo-btn teo-btn--hell">
                 Kontakt aufnehmen
               </Link>
+              <a className="ts-ende__mail" href={SITE_CONFIG.phoneHref}>
+                {MARKE.firma.telefon}
+              </a>
               <a className="ts-ende__mail" href={`mailto:${MARKE.firma.email}`}>
                 {MARKE.firma.email}
               </a>

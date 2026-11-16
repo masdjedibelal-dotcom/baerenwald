@@ -10,7 +10,6 @@ export const ANBIETER = {
   strasse: `${MARKE.firma.strasse} ${MARKE.firma.hausnummer}`,
   ortZeile: `${MARKE.firma.plz} ${MARKE.firma.ort}`,
   email: MARKE.firma.email,
-  /** TEO: eigene Nummer steht noch aus — bis dahin keine Bärenwald-Nummer zeigen */
-  telefon: istTeo ? null : { anzeige: SITE_CONFIG.phone, href: SITE_CONFIG.phoneHref },
+  telefon: { anzeige: SITE_CONFIG.phone, href: SITE_CONFIG.phoneHref },
   mobil: istTeo ? null : { anzeige: SITE_CONFIG.phoneMobil, href: SITE_CONFIG.phoneMobilHref },
 } as const;

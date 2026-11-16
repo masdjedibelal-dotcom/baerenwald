@@ -4,6 +4,7 @@ import type { ReactNode } from "react";
 import { TeoScrollKopf } from "@/components/teo/TeoScrollKopf";
 
 import { CookieSettingsLink } from "@/components/consent/CookieSettingsLink";
+import { SITE_CONFIG } from "@/lib/config";
 import { MARKE } from "@/lib/marke";
 
 import "@/app/teo-landing.css";
@@ -61,7 +62,7 @@ function TeoFuss() {
           <p className="teo-fuss__adresse">
             {f.firmenname} · {f.strasse} {f.hausnummer} · {f.plz} {f.ort}
             <br />
-            <a href={`mailto:${f.email}`}>{f.email}</a>
+            <a href={SITE_CONFIG.phoneHref}>{f.telefon}</a> · <a href={`mailto:${f.email}`}>{f.email}</a>
           </p>
         </div>
         <nav className="teo-fuss__links teo-fuss__links--seite" aria-label="Fußzeile">

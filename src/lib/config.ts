@@ -21,8 +21,8 @@ export const SITE_CONFIG = {
   ogImagePath: istTeo ? "/brand/teo/og-image.jpg" : "/og-image.png",
   ogImageVersion: istTeo ? "20261031" : "20260602",
   /** Öffentliche Erreichbarkeit (UI, Header, Funnel, CTAs) — Festnetz */
-  phone: "08980955726",
-  phoneHref: "tel:+498980955726",
+  phone: istTeo ? MARKE.firma.telefon : "08980955726",
+  phoneHref: istTeo ? "tel:+498980929405" : "tel:+498980955726",
   /** Nur intern / Impressum & Pflichtangaben — nicht im allgemeinen UI */
   phoneMobil: "+49 163 7316161",
   phoneMobilHref: "tel:+491637316161",
