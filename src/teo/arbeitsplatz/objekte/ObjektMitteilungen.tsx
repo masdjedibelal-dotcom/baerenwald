@@ -10,7 +10,7 @@ import type { ApMitteilung } from '@/teo/arbeitsplatz/daten/haus'
 import { heute } from '@/teo/arbeitsplatz/plaene/plan-logik'
 import { ApSheet } from '@/teo/arbeitsplatz/shell/ApSheet'
 
-/** Mitteilung ans Haus: erscheint auf dem Melde-Link (QR), in MeinTEO und als Aushang. */
+/** Mitteilung ans Haus: erscheint in MeinTEO unter „Neuigkeiten“ (Mieter und Eigentümer). */
 export function ObjektMitteilungen({ objektId, mitteilungen, darfBearbeiten }: { objektId: string; mitteilungen: ApMitteilung[]; darfBearbeiten: boolean }) {
   const [offen, setOffen] = useState<ApMitteilung | 'neu' | null>(null)
   const h = heute()
@@ -41,9 +41,6 @@ export function ObjektMitteilungen({ objektId, mitteilungen, darfBearbeiten }: {
                 </div>
                 {m.text ? <div className="ap-verlauf__text">{m.text}</div> : null}
                 <div className="ap-knopfzeile ap-knopfzeile--links">
-                  <a className="ap-link" href={`/aushang/${m.id}`} target="_blank" rel="noreferrer">
-                    Aushang drucken
-                  </a>
                   {darfBearbeiten ? (
                     <button type="button" className="ap-link" onClick={() => setOffen(m)}>
                       Bearbeiten

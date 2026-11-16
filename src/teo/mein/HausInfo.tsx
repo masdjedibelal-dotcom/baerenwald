@@ -2,21 +2,16 @@ import { MieterWlCard } from '@/components/melden/MieterWlFrame'
 import { formatDatum } from '@/lib/shared-domain/geld-datum'
 import type { ApDokument, ApMitteilung } from '@/teo/arbeitsplatz/daten/haus'
 import type { MeinPlan } from '@/teo/mein/mein-daten'
+import { Neuigkeiten } from '@/teo/mein/Neuigkeiten'
 
 import '@/teo/mein/mein.css'
 
-/** Für Bewohner: aktuelle Mitteilungen, sichtbare Pläne (z. B. Treppenhaus), Dokumente. */
+/** Für Bewohner: Neuigkeiten der Verwaltung, sichtbare Pläne (z. B. Treppenhaus), Dokumente. */
 export function HausInfo({ mitteilungen, plaene, dokumente }: { mitteilungen: ApMitteilung[]; plaene: MeinPlan[]; dokumente: ApDokument[] }) {
   if (!mitteilungen.length && !plaene.length && !dokumente.length) return null
   return (
     <div className="mein-haus">
-      {mitteilungen.map((m) => (
-        <MieterWlCard key={m.id} className="mein-mitteilung">
-          <div className="mein-mitteilung__datum">{formatDatum(m.erstellt)}</div>
-          <div className="mein-mitteilung__titel">{m.titel}</div>
-          {m.text ? <div className="mein-mitteilung__text">{m.text}</div> : null}
-        </MieterWlCard>
-      ))}
+      {mitteilungen.length ? <Neuigkeiten mitteilungen={mitteilungen} /> : null}
       {plaene.length || dokumente.length ? (
         <MieterWlCard>
           <ul className="mein-zeilen mein-zeilen--innen">
