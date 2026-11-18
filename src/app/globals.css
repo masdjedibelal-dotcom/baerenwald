@@ -3564,6 +3564,24 @@ h3 {
     border-bottom: none;
   }
 
+  /* Fließtext: Bezeichnung oben, Text linksbündig darunter */
+  .portal-detail-kv-row--block {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 4px;
+  }
+
+  .portal-detail-kv-row--block .portal-detail-kv-label {
+    max-width: none;
+  }
+
+  .portal-detail-kv-row--block .portal-detail-kv-value {
+    text-align: left;
+    font-weight: 500;
+    line-height: 1.55;
+    white-space: pre-line;
+  }
+
   .portal-detail-kv-label {
     max-width: 44%;
     font-size: var(--p2-type-label, calc(13px * var(--p2-type-scale, 1.1)));

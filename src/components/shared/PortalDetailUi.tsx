@@ -220,6 +220,12 @@ export function PortalDetailSection({
   );
 }
 
+/** Fließtext (Beschreibung, Nachricht, lange Werte) steht unter der Bezeichnung statt rechtsbündig daneben. */
+function istLangerWert(label: string, value: React.ReactNode): boolean {
+  if (/beschreibung|anliegen|nachricht|hinweis|notiz|bemerkung|details/i.test(label)) return true;
+  return typeof value === "string" && (value.length > 48 || value.includes("\n"));
+}
+
 export function PortalDetailKeyValues({
   rows,
 }: {
@@ -230,7 +236,10 @@ export function PortalDetailKeyValues({
   return (
     <dl className="portal-detail-kv">
       {visible.map((row) => (
-        <div key={row.label} className="portal-detail-kv-row">
+        <div
+          key={row.label}
+          className={cn("portal-detail-kv-row", istLangerWert(row.label, row.value) && "portal-detail-kv-row--block")}
+        >
           <dt className="portal-detail-kv-label">{row.label}</dt>
           <dd className="portal-detail-kv-value">{row.value}</dd>
         </div>
