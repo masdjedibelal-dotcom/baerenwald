@@ -220,10 +220,50 @@ export function PortalDetailSection({
   );
 }
 
-/** Fließtext (Beschreibung, Nachricht, lange Werte) steht unter der Bezeichnung statt rechtsbündig daneben. */
+/** Fließtext (Beschreibung, Nachricht, lange Werte) steht unter der Bezeichnung statt daneben. */
 function istLangerWert(label: string, value: React.ReactNode): boolean {
   if (/beschreibung|anliegen|nachricht|hinweis|notiz|bemerkung|details/i.test(label)) return true;
   return typeof value === "string" && (value.length > 48 || value.includes("\n"));
+}
+
+/** Wichtige Felder zeigen „noch nicht angegeben“ statt zu verschwinden. */
+const WICHTIG = /telefon|e-?mail|adresse|anschrift|ansprechpartner|termin/i;
+const LEER = (v: React.ReactNode) => v == null || v === "" || v === "—";
+
+function kvArt(label: string, value: React.ReactNode): "tel" | "mail" | "adresse" | "betrag" | "status" | null {
+  if (typeof value !== "string") return null;
+  const v = value.trim();
+  if (/status/i.test(label)) return "status";
+  if (/e-?mail/i.test(label) || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v)) return "mail";
+  if (/telefon|mobil|handy|\btel\b/i.test(label) && /\d{3,}/.test(v)) return "tel";
+  if (/adresse|anschrift|objekt|einsatzort|ausführungsort/i.test(label) && /\d/.test(v) && v.length > 6) return "adresse";
+  if (/€|eur\b/i.test(v) && /\d/.test(v)) return "betrag";
+  return null;
+}
+
+function KvWert({ label, value }: { label: string; value: React.ReactNode }) {
+  const art = kvArt(label, value);
+  if (art === "tel" || art === "mail" || art === "adresse") {
+    const v = String(value).trim();
+    const href =
+      art === "tel"
+        ? `tel:${v.replace(/[^\d+]/g, "")}`
+        : art === "mail"
+          ? `mailto:${v}`
+          : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(v)}`;
+    const icon = art === "tel" ? "phone" : art === "mail" ? "mail" : "map-pin";
+    return (
+      <a
+        className="portal-detail-kv-link"
+        href={href}
+        {...(art === "adresse" ? { target: "_blank", rel: "noreferrer" } : {})}
+      >
+        <PortalIcon n={icon} ctx="default" className="portal-detail-kv-link-icon" />
+        <span>{v}</span>
+      </a>
+    );
+  }
+  return <>{value}</>;
 }
 
 export function PortalDetailKeyValues({
@@ -231,19 +271,34 @@ export function PortalDetailKeyValues({
 }: {
   rows: Array<{ label: string; value: React.ReactNode }>;
 }) {
-  const visible = rows.filter((r) => r.value != null && r.value !== "" && r.value !== "—");
+  const visible = rows.filter((r) => !LEER(r.value) || WICHTIG.test(r.label));
   if (!visible.length) return null;
   return (
     <dl className="portal-detail-kv">
-      {visible.map((row) => (
-        <div
-          key={row.label}
-          className={cn("portal-detail-kv-row", istLangerWert(row.label, row.value) && "portal-detail-kv-row--block")}
-        >
-          <dt className="portal-detail-kv-label">{row.label}</dt>
-          <dd className="portal-detail-kv-value">{row.value}</dd>
-        </div>
-      ))}
+      {visible.map((row) => {
+        const leer = LEER(row.value);
+        const art = leer ? null : kvArt(row.label, row.value);
+        return (
+          <div
+            key={row.label}
+            className={cn(
+              "portal-detail-kv-row",
+              !leer && istLangerWert(row.label, row.value) && "portal-detail-kv-row--block"
+            )}
+          >
+            <dt className="portal-detail-kv-label">{row.label}</dt>
+            <dd
+              className={cn(
+                "portal-detail-kv-value",
+                (art === "betrag" || art === "status") && "portal-detail-kv-value--stark",
+                leer && "portal-detail-kv-value--leer"
+              )}
+            >
+              {leer ? "noch nicht angegeben" : <KvWert label={row.label} value={row.value} />}
+            </dd>
+          </div>
+        );
+      })}
     </dl>
   );
 }

@@ -3595,9 +3595,70 @@ h3 {
     min-width: 0;
     text-align: right;
     font-size: var(--p2-type-body, calc(14.5px * var(--p2-type-scale, 1.1)));
-    font-weight: 700;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
     color: var(--p2-ink, #142019);
     overflow-wrap: anywhere;
+  }
+
+  /* Beträge und Status fett, der Rest halbfett */
+  .portal-detail-kv-value--stark {
+    font-weight: 800;
+  }
+
+  .portal-detail-kv-value--leer {
+    font-weight: 500;
+    font-style: italic;
+    color: var(--p2-sub, #55615b);
+  }
+
+  /* Telefon, E-Mail, Adresse antippbar */
+  .portal-detail-kv-link {
+    display: inline-flex;
+    align-items: flex-start;
+    gap: 6px;
+    max-width: 100%;
+    color: var(--org-primary, var(--p2-primary, #1e5fa8));
+    text-decoration: none;
+  }
+
+  .portal-detail-kv-link span {
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
+
+  .portal-detail-kv-link-icon {
+    flex: none;
+    width: 15px;
+    height: 15px;
+    margin-top: 0.2em;
+  }
+
+  @media (hover: hover) {
+    .portal-detail-kv-link:hover span {
+      text-decoration: underline;
+    }
+  }
+
+  /* Desktop: Bezeichnung als feste Spalte, alle Werte linksbündig daneben — kein Wechsel links/rechts */
+  @media (min-width: 768px) {
+    .portal-detail-kv-row,
+    .portal-detail-kv-row--block {
+      display: grid;
+      grid-template-columns: minmax(140px, 200px) minmax(0, 1fr);
+      align-items: baseline;
+      gap: 16px;
+    }
+
+    .portal-detail-kv-label {
+      max-width: none;
+    }
+
+    .portal-detail-kv-value,
+    .portal-detail-kv-row--block .portal-detail-kv-value {
+      text-align: left;
+      max-width: 72ch;
+    }
   }
 
   .portal-inbox-empty,
