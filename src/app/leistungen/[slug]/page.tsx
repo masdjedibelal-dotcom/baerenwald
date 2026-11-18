@@ -12,6 +12,10 @@ import { OG_IMAGE } from "@/lib/config";
 import { LEISTUNGEN } from "@/lib/routes";
 import { leistungPriceRangeForSlug } from "@/lib/leistungen/leistungen-seo";
 import { hubDetailBreadcrumbSchema, serviceSchema } from "@/lib/schema";
+import { istTeo, MARKE_WEBSITE_URL } from "@/lib/marke";
+import { isStagingDeploy } from "@/lib/staging";
+import { leistungPfad, TEO_LEISTUNGEN, teoLeistung } from "@/teo/leistungen/leistungen";
+import { TeoLeistungSeite } from "@/teo/leistungen/TeoLeistung";
 
 type PageProps = { params: { slug: string } };
 
@@ -22,6 +26,7 @@ function resolveLeistungsData(base: string): LeistungsData | undefined {
 }
 
 export function generateStaticParams() {
+  if (istTeo) return TEO_LEISTUNGEN.map((l) => ({ slug: l.slug }));
   return LEISTUNGEN.flatMap((l) => [
     { slug: `${l.slug}-muenchen` },
     { slug: l.slug },
@@ -29,6 +34,20 @@ export function generateStaticParams() {
 }
 
 export async function generateMetadata({ params }: PageProps) {
+  // Servus TEO: eigene Leistungsseiten für Hausverwaltungen (src/teo/leistungen)
+  if (istTeo) {
+    const l = teoLeistung(params.slug);
+    if (!l) return { title: "Leistungen" };
+    const canonical = `${MARKE_WEBSITE_URL}${leistungPfad(l.slug)}`;
+    return {
+      title: l.metaTitel,
+      description: l.beschreibung,
+      alternates: { canonical },
+      // TEO-Layout ist standardmäßig noindex (Portal) — Leistungsseiten sollen gefunden werden
+      robots: isStagingDeploy() ? { index: false, follow: false } : { index: true, follow: true },
+      openGraph: { type: "website", title: l.titel, description: l.beschreibung, url: canonical },
+    };
+  }
   const base = leistungBaseSlugFromParam(params.slug);
   const data = base ? resolveLeistungsData(base) : undefined;
   if (!data) {
@@ -59,6 +78,11 @@ export async function generateMetadata({ params }: PageProps) {
 }
 
 export default function LeistungDetailPage({ params }: PageProps) {
+  if (istTeo) {
+    const l = teoLeistung(params.slug);
+    if (!l) notFound();
+    return <TeoLeistungSeite l={l} />;
+  }
   const base = leistungBaseSlugFromParam(params.slug);
   const data = base ? resolveLeistungsData(base) : undefined;
   if (!data) notFound();

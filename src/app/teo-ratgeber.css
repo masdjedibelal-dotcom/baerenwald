@@ -172,3 +172,7 @@
 @media (prefers-reduced-motion: reduce) {
   .tr-karte, .tr-karte__pfeil { transition: none; }
 }
+
+/* Leistungsseiten (servus-teo.de/leistungen/[slug]) nutzen den Artikel-Aufbau */
+.teo-site .tl-gewerke { margin-top: 16px; font-size: 16px; color: var(--teo-text-2); }
+.teo-site .tl-gewerke b { color: var(--teo-navy); }

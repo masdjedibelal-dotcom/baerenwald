@@ -18,7 +18,7 @@ const title =
 const description =
   "Bau, Umbau und Sanierung in München: eigene Gewerke, Elektrotechnik unter Meisterleitung und rund 70 Partnerbetriebe. Ein Ansprechpartner von der Besichtigung bis zur Abnahme.";
 
-const teoTitle = `${MARKE.nameLang} — Handwerksbetrieb für Hausverwaltungen in München`;
+const teoTitle = `Handwerker und Generalunternehmer für Hausverwaltungen in München | ${MARKE.nameLang}`;
 const teoDescription =
   "teo ist Handwerksbetrieb und Generalunternehmer für Hausverwaltungen in München: alle Gewerke von der Reparatur bis zur Sanierung, ein Vertragspartner, eine Rechnung, zum Preis eines Fachbetriebs.";
 

@@ -4,14 +4,21 @@ import { LEISTUNGEN, RATGEBER, leistungHref, ratgeberHref } from "@/lib/routes";
 import type { HandwerkerContentItem } from "@/lib/handwerker-types";
 import { MARKE } from "@/lib/marke";
 import { ratgeberPfad, TEO_RATGEBER } from "@/teo/ratgeber/artikel";
+import { leistungPfad, TEO_LEISTUNGEN } from "@/teo/leistungen/leistungen";
 
 const BASE = MARKE.portalUrl;
 
 export default function sitemap(): MetadataRoute.Sitemap {
-  // Servus TEO: Startseite und eigener Ratgeber (keine Bärenwald-Leistungsseiten)
+  // Servus TEO: Startseite, eigene Leistungsseiten und Ratgeber (keine Bärenwald-Leistungsseiten)
   if (!MARKE.marketingSeite) {
     return [
       { url: BASE, lastModified: new Date(), changeFrequency: "monthly", priority: 1.0 },
+      ...TEO_LEISTUNGEN.map((l) => ({
+        url: `${BASE}${leistungPfad(l.slug)}`,
+        lastModified: new Date(),
+        changeFrequency: "monthly" as const,
+        priority: 0.9,
+      })),
       { url: `${BASE}/ratgeber`, lastModified: new Date(), changeFrequency: "weekly", priority: 0.8 },
       ...TEO_RATGEBER.map((a) => ({
         url: `${BASE}${ratgeberPfad(a.slug)}`,

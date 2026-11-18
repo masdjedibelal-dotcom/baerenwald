@@ -81,9 +81,12 @@ const nextConfig = {
     // die übrigen Bärenwald-Marketing-Seiten gibt es nicht, sie führen ins Portal
     const teo = (process.env.NEXT_PUBLIC_MARKE || "").trim().toLowerCase() === "teo";
     const teoRedirects = teo
-      ? ["/leistungen", "/handwerker-muenchen", "/kontakt", "/ueber-uns", "/partner-werden", "/gpt", "/galerie"].flatMap((p) => [
+      ? ["/handwerker-muenchen", "/kontakt", "/ueber-uns", "/partner-werden", "/gpt", "/galerie"].flatMap((p) => [
           { source: p, destination: "/portal", permanent: false },
           { source: `${p}/:path*`, destination: "/portal", permanent: false },
+        ]).concat([
+          // TEO-Leistungsseiten liegen unter /leistungen/[slug]; die Übersicht ist der Abschnitt auf der Startseite
+          { source: "/leistungen", destination: "/#leistungen", permanent: false },
         ])
       : [];
     // Bärenwald: Service-, Notdienst- und Vermittlungsangebote eingestellt (Nov. 2026) — alte Adressen weiterleiten

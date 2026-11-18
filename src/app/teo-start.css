@@ -2035,3 +2035,8 @@
 .teo-site .ts-start p { margin-top: 8px; font-size: 16px; line-height: 1.55; color: var(--teo-text-2); }
 #start .ts-einstieg { margin-top: 56px; }
 .teo-site .ts-einstieg__frage { text-align: center; font-size: 20px; font-weight: 750; letter-spacing: -0.02em; color: var(--teo-navy); }
+
+/* Links zu den Leistungsseiten unter „Was wir übernehmen“ */
+.ts-leistungen-links { margin-top: 28px; display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; }
+.ts-leistungen-links a { padding: 8px 16px; border-radius: var(--r-pill, 999px); border: 1px solid var(--teo-linie); background: #fff; color: var(--teo-blau); font-size: 15px; font-weight: 650; text-decoration: none; }
+@media (hover: hover) { .ts-leistungen-links a:hover { border-color: var(--teo-blau); } }

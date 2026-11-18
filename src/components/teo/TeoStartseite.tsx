@@ -30,6 +30,7 @@ import { TEO_USPS } from "@/components/teo/teo-usps";
 import { TEO_SITUATIONEN } from "@/lib/funnel/teo-anfrage";
 import { RATGEBER_PFAD, ratgeberArtikel, type RatgeberArtikel } from "@/teo/ratgeber/artikel";
 import { TeoRatgeberKarte } from "@/teo/ratgeber/TeoRatgeber";
+import { leistungPfad, TEO_LEISTUNGEN } from "@/teo/leistungen/leistungen";
 import { SITE_CONFIG } from "@/lib/config";
 import { MARKE } from "@/lib/marke";
 
@@ -248,6 +249,13 @@ export function TeoStartseite() {
               </li>
             ))}
           </ul>
+          <nav className="ts-leistungen-links" aria-label="Leistungen im Detail">
+            {TEO_LEISTUNGEN.map((l) => (
+              <Link key={l.slug} href={leistungPfad(l.slug)}>
+                {l.name}
+              </Link>
+            ))}
+          </nav>
         </div>
       </section>
 
