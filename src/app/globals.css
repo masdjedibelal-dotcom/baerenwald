@@ -7212,3 +7212,13 @@ select {
 :root[data-marke="teo"] .portal-ui .portal-action-btn { border-radius: 999px; }
 :root[data-marke="teo"] .portal-ui .portal-action-btn--primary { background: #0b1f3a; }
 :root[data-marke="teo"] .portal-ui .portal-action-btn--primary:hover:not(:disabled) { background: #13325c; }
+
+/* Detail-Tabs: gleiche Mindesthöhe, damit die Seite beim Tab-Wechsel nicht springt (kurzer Tab = gleich lang wie die Ansicht) */
+.portal-detail-tabs-panel {
+  min-height: 62vh;
+}
+@media (min-width: 1024px) {
+  .portal-detail-tabs-panel {
+    min-height: 68vh;
+  }
+}

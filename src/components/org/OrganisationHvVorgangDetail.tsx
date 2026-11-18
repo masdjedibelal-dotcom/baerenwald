@@ -8,8 +8,6 @@ import { VorgangDetailBlocks } from "@/components/shared/vorgang-detail";
 import { buildKundeHvVorgangDetailVm } from "@/lib/vorgang/build-vorgang-detail-vm";
 import { BautagebuchCardFeed } from "@/components/shared/BautagebuchCardFeed";
 import { DokumenteTabelle } from "@/components/shared/DokumenteTabelle";
-import { PortalDocInlinePreview } from "@/components/shared/PortalDocInlinePreview";
-import { PortalDocOpenButton } from "@/components/shared/PortalDocOpenButton";
 import { PortalDetailCover } from "@/components/shared/PortalDetailCover";
 import { PortalDetailCard } from "@/components/shared/PortalDetailCard";
 import { PortalFlowTimeline } from "@/components/shared/PortalFlowTimeline";
@@ -63,11 +61,9 @@ import type { PortalAngebotPositionDisplay } from "@/lib/portal/portal-angebot-d
 import type { PortalAuftragPositionDisplay } from "@/lib/portal/kunde-auftrag-aenderung";
 import {
   excludeMeldeFunnelFotosFromDokumente,
-  isAbnahmePortalDokument,
   type PortalDokument,
 } from "@/lib/portal/portal-dokumente";
 import { cn } from "@/lib/utils";
-import { EMPTY } from '@/lib/portal-copy';
 import { MARKE } from "@/lib/marke";
 
 export type OrganisationHvVorgangDetailProps = {
@@ -459,175 +455,10 @@ export function OrganisationHvVorgangDetail({
   const statusLabel =
     statusLabelOverride?.trim() || PORTAL_STATUS[displayFlowStatus].label;
 
-  const abnahmeProtokolle = useMemo(
-    () => dokumente.filter((d) => isAbnahmePortalDokument(d) && Boolean(d.href?.trim())),
-    [dokumente]
-  );
-  const dokumenteOhneAbnahme = useMemo(
-    () =>
-      excludeMeldeFunnelFotosFromDokumente(
-        dokumente.filter((d) => !isAbnahmePortalDokument(d)),
-        meldeFotos
-      ),
+  // Abnahmeprotokoll liegt wie jede andere Datei unter Dokumente (kein eigener Abschluss-Block)
+  const dokumenteListe = useMemo(
+    () => excludeMeldeFunnelFotosFromDokumente(dokumente, meldeFotos),
     [dokumente, meldeFotos]
-  );
-
-  const abschlussCard = (
-    <div className="space-y-3.5">
-      <DetailCard title={HV_DETAIL_COPY.abnahmeTitle}>
-        {abnahmeProtokolle.length > 0 ? (
-          <div className="space-y-3">
-            {abnahmeProtokolle.map((doc) => (
-              <div key={doc.id} className="space-y-2">
-                <PortalDocOpenButton
-                  href={doc.href!}
-                  name={doc.name}
-                  kind="pdf"
-                  className="block w-full overflow-hidden bg-white text-left"
-                >
-                  <p
-                    className="portal-text-meta px-3 py-4 text-center font-semibold"
-                    style={{ color: PORTAL_VAR.primary }}
-                  >
-                    {doc.name} — PDF öffnen
-                  </p>
-                </PortalDocOpenButton>
-                <PortalDocInlinePreview url={doc.href!} title={doc.name} />
-              </div>
-            ))}
-            {abnahmeCheckliste &&
-            (abnahmeCheckliste.leistungen.length > 0 ||
-              abnahmeCheckliste.maengel.length > 0) ? (
-              <div className="space-y-3 pt-1">
-                {abnahmeCheckliste.leistungen.length > 0 ? (
-                  <div>
-                    <p
-                      className="portal-text-label mb-1.5"
-                      style={{ color: PORTAL_VAR.faint }}
-                    >
-                      {HV_DETAIL_COPY.abnahmeLeistungen}
-                    </p>
-                    <ul className="space-y-1.5">
-                      {abnahmeCheckliste.leistungen.map((l) => (
-                        <li
-                          key={l.name}
-                          className="portal-text-meta flex items-start gap-2"
-                          style={{ color: PORTAL_VAR.ink }}
-                        >
-                          <span
-                            className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-pill text-fs-caption font-bold text-white"
-                            style={{
-                              background:
-                                l.ok === false ? "var(--p2-sand-text)" : PORTAL_VAR.primary,
-                            }}
-                            aria-hidden
-                          >
-                            {l.ok === false ? "!" : "✓"}
-                          </span>
-                          <span className="font-semibold">{l.name}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                ) : null}
-                {abnahmeCheckliste.maengel.length > 0 ? (
-                  <div>
-                    <p
-                      className="portal-text-label mb-1.5"
-                      style={{ color: PORTAL_VAR.faint }}
-                    >
-                      {HV_DETAIL_COPY.abnahmeMaengel}
-                    </p>
-                    <ul className="space-y-1.5">
-                      {abnahmeCheckliste.maengel.map((m) => (
-                        <li
-                          key={m.titel}
-                          className="portal-text-meta flex items-start gap-2 rounded-card px-2.5 py-2"
-                          style={{ background: "var(--p2-status-sand-bg)", color: "var(--p2-sand-text)" }}
-                        >
-                          <span className="font-semibold">{m.titel}</span>
-                          {m.status ? (
-                            <span className="portal-text-label ml-auto shrink-0 normal-case tracking-normal opacity-80">
-                              {m.status}
-                            </span>
-                          ) : null}
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                ) : null}
-              </div>
-            ) : null}
-          </div>
-        ) : abnahmeCheckliste &&
-          (abnahmeCheckliste.leistungen.length > 0 ||
-            abnahmeCheckliste.maengel.length > 0) ? (
-          <div className="space-y-3">
-            {abnahmeCheckliste.leistungen.length > 0 ? (
-              <div>
-                <p
-                  className="portal-text-label mb-1.5"
-                  style={{ color: PORTAL_VAR.faint }}
-                >
-                  {HV_DETAIL_COPY.abnahmeLeistungen}
-                </p>
-                <ul className="space-y-1.5">
-                  {abnahmeCheckliste.leistungen.map((l) => (
-                    <li
-                      key={l.name}
-                      className="portal-text-meta flex items-start gap-2"
-                      style={{ color: PORTAL_VAR.ink }}
-                    >
-                      <span
-                        className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-pill text-fs-caption font-bold text-white"
-                        style={{
-                          background:
-                            l.ok === false ? "var(--p2-sand-text)" : PORTAL_VAR.primary,
-                        }}
-                        aria-hidden
-                      >
-                        {l.ok === false ? "!" : "✓"}
-                      </span>
-                      <span className="font-semibold">{l.name}</span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            ) : null}
-            {abnahmeCheckliste.maengel.length > 0 ? (
-              <div>
-                <p
-                  className="portal-text-label mb-1.5"
-                  style={{ color: PORTAL_VAR.faint }}
-                >
-                  {HV_DETAIL_COPY.abnahmeMaengel}
-                </p>
-                <ul className="space-y-1.5">
-                  {abnahmeCheckliste.maengel.map((m) => (
-                    <li
-                      key={m.titel}
-                      className="portal-text-meta flex items-start gap-2 rounded-card px-2.5 py-2"
-                      style={{ background: "var(--p2-status-sand-bg)", color: "var(--p2-sand-text)" }}
-                    >
-                      <span className="font-semibold">{m.titel}</span>
-                      {m.status ? (
-                        <span className="portal-text-label ml-auto shrink-0 normal-case tracking-normal opacity-80">
-                          {m.status}
-                        </span>
-                      ) : null}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            ) : null}
-          </div>
-        ) : (
-          <p className="portal-text-meta" style={{ color: PORTAL_VAR.faint }}>
-            {HV_DETAIL_COPY.abnahmeEmpty}
-          </p>
-        )}
-      </DetailCard>
-    </div>
   );
 
   const detailVm = useMemo(
@@ -1124,7 +955,7 @@ export function OrganisationHvVorgangDetail({
           onActiveChange={onSectionChange}
         />
 
-        <div className="flex min-w-0 flex-1 flex-col gap-3.5 lg:gap-5">
+        <div className="portal-detail-tabs-panel flex min-w-0 flex-1 flex-col gap-3.5 lg:gap-5">
           {activeSection === "uebersicht" ? (
             <section
               id="vorgang-panel-uebersicht"
@@ -1132,12 +963,6 @@ export function OrganisationHvVorgangDetail({
               className="space-y-3.5"
             >
               <VorgangDetailBlocks vm={uebersichtVm} />
-              {!mieterStatusMode &&
-              (actionKind === "abschluss" ||
-                actionKind === "rechnung" ||
-                actionKind === "bezahlt")
-                ? abschlussCard
-                : null}
             </section>
           ) : null}
 
@@ -1184,35 +1009,11 @@ export function OrganisationHvVorgangDetail({
 
           {activeSection === "dokumente" ? (
             <DetailCard id="vorgang-panel-dokumente" title={HV_DETAIL_COPY.dokumenteTitle}>
-              {abnahmeProtokolle.length > 0 ? (
-                <div className="mb-4 space-y-2">
-                  {abnahmeProtokolle.map((doc) => (
-                    <PortalDocOpenButton
-                      key={`dok-abnahme-${doc.id}`}
-                      href={doc.href!}
-                      name={doc.name}
-                      kind="pdf"
-                      className="block w-full overflow-hidden rounded-sheet border border-[var(--portal-primary)]/30 bg-[var(--portal-primary)]/5 text-left"
-                    >
-                      <p
-                        className="portal-text-meta px-3 py-4 text-center font-semibold"
-                        style={{ color: PORTAL_VAR.primary }}
-                      >
-                        {doc.name} — PDF öffnen
-                      </p>
-                    </PortalDocOpenButton>
-                  ))}
-                </div>
-              ) : null}
               <DokumenteTabelle
                 heading=""
                 className="!border-0 !pt-0"
-                emptyText={
-                  abnahmeProtokolle.length > 0
-                    ? EMPTY.dokumenteWeitere
-                    : HV_DETAIL_COPY.dokumenteEmpty
-                }
-                dokumente={dokumenteOhneAbnahme.map((d) => ({
+                emptyText={HV_DETAIL_COPY.dokumenteEmpty}
+                dokumente={dokumenteListe.map((d) => ({
                   id: d.id,
                   name: d.name,
                   datum: d.datum,

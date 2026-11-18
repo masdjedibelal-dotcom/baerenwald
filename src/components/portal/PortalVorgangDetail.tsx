@@ -13,7 +13,6 @@ import { PartnerPortalDetailSections } from "@/components/partner/PartnerPortalD
 import { BautagebuchCardFeed } from "@/components/shared/BautagebuchCardFeed";
 import { DokumenteTabelle } from "@/components/shared/DokumenteTabelle";
 import { PortalDetailCard } from "@/components/shared/PortalDetailCard";
-import { PortalDocOpenButton } from "@/components/shared/PortalDocOpenButton";
 import { PortalDetailTabs } from "@/components/shared/PortalDetailTabs";
 import {
   PortalAngebotAblehnenModal,
@@ -47,7 +46,7 @@ import {
 } from "@/lib/portal2/portal-detail-deep-link";
 import type { PortalFlowTimelineVariant,PortalMockStatusId } from "@/lib/portal2/status";
 import { portalMieterStatusLabel } from "@/lib/portal2/status";
-import { EMPTY,COPY_ERROR } from '@/lib/portal-copy';
+import { COPY_ERROR } from '@/lib/portal-copy';
 
 function extractProjektbeschreibung(item: KundePortalDetailItem): string {
   const fromMelde = item.meldeBeschreibung?.trim();
@@ -513,50 +512,17 @@ export function PortalVorgangDetail({
           {activeSection === "dokumente" ? (
             (() => {
               const docs = item.dokumente ?? [];
-              const abnahmeDocs = docs.filter(
-                (d) =>
-                  /abnahme/i.test(d.name ?? "") && Boolean(d.href?.trim())
-              );
-              const otherDocs =
-                abnahmeDocs.length > 0
-                  ? docs.filter((d) => !abnahmeDocs.includes(d))
-                  : docs;
               return (
-                <div className="space-y-4">
-                  {abnahmeDocs.length > 0 ? (
-                    <PortalDetailCard title="Abnahmeprotokoll" chrome="responsive">
-                      <div className="space-y-2">
-                        {abnahmeDocs.map((d) => (
-                          <PortalDocOpenButton
-                            key={d.id}
-                            href={d.href!}
-                            name={d.name}
-                            kind="pdf"
-                            className="block w-full overflow-hidden rounded-sheet border border-[var(--portal-primary)]/30 bg-[var(--portal-primary)]/5 text-left"
-                          >
-                            <p className="px-3 py-4 text-center portal-text-meta font-semibold text-[var(--portal-primary)]">
-                              {d.name} — PDF öffnen
-                            </p>
-                          </PortalDocOpenButton>
-                        ))}
-                      </div>
-                    </PortalDetailCard>
-                  ) : null}
-                  <DokumenteTabelle
-                    heading=""
-                    emptyText={
-                      abnahmeDocs.length > 0
-                        ? EMPTY.dokumenteWeitere
-                        : "Noch keine Dokumente."
-                    }
-                    dokumente={otherDocs.map((d) => ({
-                      id: d.id,
-                      name: d.name,
-                      datum: d.datum,
-                      href: d.href,
-                    }))}
-                  />
-                </div>
+                <DokumenteTabelle
+                  heading=""
+                  emptyText="Noch keine Dokumente."
+                  dokumente={docs.map((d) => ({
+                    id: d.id,
+                    name: d.name,
+                    datum: d.datum,
+                    href: d.href,
+                  }))}
+                />
               );
             })()
           ) : null}
