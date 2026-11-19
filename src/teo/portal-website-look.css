@@ -1,0 +1,67 @@
+/*
+ * TEO Partner-Portal im Look der Website (gleiche Sprache wie Arbeitsplatz/MeinTEO, siehe website-look.css).
+ * Wirkt nur unter .portal-wl — PartnerClient setzt die Klasse nur bei NEXT_PUBLIC_MARKE=teo.
+ */
+
+.portal-wl {
+  --wl-navy: #0b1f3a;
+  --wl-blau: #1e5fa8;
+  --wl-blau-bg: #eaf0f8;
+  --wl-gold: #e8a317;
+  --wl-linie: #dce4ee;
+  --wl-text-2: #4a5d75;
+  --wl-schatten: 0 20px 50px -40px rgba(11, 31, 58, 0.35);
+  background: #f7f9fc;
+}
+
+/* Menü links: weiß, nur Text */
+.portal-wl .portal-shell-sidebar { background: #ffffff; color: var(--wl-text-2); border-right: 1px solid var(--wl-linie); }
+.portal-wl .portal-shell-brand-title { color: var(--wl-navy); }
+.portal-wl .portal-shell-brand-role { color: var(--wl-text-2); }
+.portal-wl .portal-shell-brand-avatar { background: var(--wl-blau-bg); color: var(--wl-navy); }
+.portal-wl .portal-shell-nav-item { color: var(--wl-text-2); border-radius: 14px; }
+.portal-wl .portal-shell-nav-item:hover:not(.portal-shell-nav-item--active) { background: #f5f7fa; color: var(--wl-navy); }
+.portal-wl .portal-shell-nav-item--active,
+.portal-wl .portal-shell-nav-item--active:hover { background: var(--wl-blau-bg); color: var(--wl-navy); box-shadow: none; }
+.portal-wl .portal-shell-nav-item svg,
+.portal-wl .portal-shell-nav-item img,
+.portal-wl .portal-shell-nav-item .mock-icon { display: none; }
+.portal-wl .portal-shell-sidebar-signout,
+.portal-wl .portal-shell-sidebar-legal,
+.portal-wl .portal-shell-sidebar-legal a { color: var(--wl-text-2); }
+
+/* Kopf der Startseite: kein Foto, heller Grund mit Farbverlauf, große Überschrift */
+.portal-wl .portal-dash-hero {
+  background:
+    radial-gradient(36vmax 24vmax at 0% 0%, rgba(156, 192, 234, 0.32), transparent 70%),
+    radial-gradient(28vmax 20vmax at 100% 0%, rgba(246, 207, 115, 0.24), transparent 70%),
+    #f7f9fc;
+  color: var(--wl-navy);
+}
+.portal-wl .portal-dash-hero-bg { display: none; }
+.portal-wl .portal-dash-hero-greet { color: var(--wl-text-2); font-weight: 700; }
+.portal-wl .portal-dash-hero-name { color: var(--wl-navy); font-size: clamp(30px, 4.2vw, 44px); letter-spacing: -0.035em; line-height: 1.05; }
+.portal-wl .portal-dash-hero-brand-role { color: var(--wl-text-2); }
+.portal-wl .portal-dash-hero-mark { background: var(--wl-blau-bg); color: var(--wl-navy); }
+.portal-wl .portal-dash-kpi {
+  background: #ffffff;
+  border: 1px solid var(--wl-linie);
+  border-radius: 24px;
+  color: var(--wl-navy);
+  box-shadow: var(--wl-schatten);
+}
+.portal-wl .portal-dash-kpi--sand { border-color: var(--wl-gold); background: #ffffff; color: var(--wl-navy); }
+.portal-wl .portal-dash-kpi:not(.portal-dash-kpi--sand) .portal-dash-kpi-label,
+.portal-wl .portal-dash-kpi-label { color: var(--wl-text-2); }
+
+/* Karten und Einsatz-Liste */
+.portal-wl .portal-section-card,
+.portal-wl .portal-detail-card { border-radius: 24px; border-color: var(--wl-linie); box-shadow: var(--wl-schatten); }
+.portal-wl .partner-einsatz__kopf { background: none; border: 0; padding: 4px 0; cursor: pointer; font: inherit; color: var(--wl-navy); }
+.portal-wl .partner-einsatz__kopf:hover .font-semibold { color: var(--wl-blau); }
+.portal-wl .partner-ansicht__tab { border-radius: 999px; font-weight: 700; }
+.portal-wl .partner-ansicht__tab.is-on { background: var(--wl-navy); color: #ffffff; }
+.portal-wl .btn-pill-outline { border-color: var(--wl-navy); color: var(--wl-navy); }
+
+/* Handy: Leiste unten hell */
+.portal-wl .portal-shell-mobile-nav-pill { background: #ffffff; border: 1px solid var(--wl-linie); }

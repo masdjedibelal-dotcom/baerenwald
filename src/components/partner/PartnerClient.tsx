@@ -3,7 +3,7 @@
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 
-import { PartnerEinsaetzeSection } from "@/components/partner/PartnerEinsaetzeSection";
+import { PartnerEinsaetzeSection, type PartnerEinsatzZahlen } from "@/components/partner/PartnerEinsaetzeSection";
 import { PartnerHwDashboard } from "@/components/partner/PartnerHwDashboard";
 import { PartnerNotificationBell } from "@/components/partner/PartnerNotificationBell";
 import { PartnerProfilPanel } from "@/components/partner/PartnerProfilPanel";
@@ -13,16 +13,18 @@ import { PortalShell } from "@/components/shared/PortalShell";
 import type { PartnerHandwerkerProfil, PartnerProfilKontext } from "@/lib/partner/get-partner-data";
 import { buildPortalShellNav } from "@/lib/portal2/nav-items";
 import { portalHeaderHeroSrc } from "@/lib/portal2/portal-media";
-import { MARKE } from "@/lib/marke";
+import { istTeo, MARKE } from "@/lib/marke";
 
 /**
  * Partner-Portal (04.10.2026): nur noch Einsätze (Übersicht) und Einstellungen (Firmendaten,
  * Handwerkskarte, Rahmenvertrag). Der alte Weg über Anfragen/Angebote/Positionen ist entfernt.
  */
-type PartnerSection = "uebersicht" | "profil";
+type PartnerSection = "uebersicht" | "einsaetze" | "profil";
 
 function sectionAusUrl(raw: string | null): PartnerSection {
-  return raw === "profil" || raw === "unterlagen" ? "profil" : "uebersicht";
+  if (raw === "profil" || raw === "unterlagen") return "profil";
+  if (raw === "einsaetze" || raw === "vorgaenge") return "einsaetze";
+  return "uebersicht";
 }
 
 export function PartnerClient({
@@ -42,14 +44,17 @@ export function PartnerClient({
 
   function switchSection(id: PartnerSection) {
     setSection(id);
-    router.replace(id === "profil" ? "/partner?section=profil" : "/partner", { scroll: false });
+    router.replace(id === "uebersicht" ? "/partner" : `/partner?section=${id}`, { scroll: false });
   }
+
+  const [zahlen, setZahlen] = useState<PartnerEinsatzZahlen>({ neu: 0, inArbeit: 0, erledigt: 0 });
 
   const firma = handwerker.firma?.trim() || handwerker.name?.trim() || "Partner-Betrieb";
 
   return (
     <PortalShell
       variant="partner"
+      className={istTeo ? "portal-wl" : undefined}
       brandTitle={`${MARKE.portalName}`}
       brandSubtitle="Partner-Portal"
       // Kürzel des Betriebs (der Name steht daneben) statt „B“ für Bärenwald
@@ -57,9 +62,9 @@ export function PartnerClient({
       sidebarOwner={firma}
       contentFullBleed={section === "uebersicht"}
       topbarTransparent={section === "uebersicht"}
-      activeNavId={section}
+      activeNavId={section === "einsaetze" ? "vorgaenge" : section}
       contentKey={section}
-      onNavChange={(id) => switchSection(id === "profil" ? "profil" : "uebersicht")}
+      onNavChange={(id) => switchSection(id === "profil" ? "profil" : id === "vorgaenge" ? "einsaetze" : "uebersicht")}
       nav={buildPortalShellNav("handwerker", "partner")}
       footer={firma}
       notifications={<PartnerNotificationBell onOpenVorgang={() => switchSection("uebersicht")} />}
@@ -74,13 +79,20 @@ export function PartnerClient({
       <div className="flex min-h-full flex-1 flex-col gap-5">
         {section === "profil" ? <PartnerProfilPanel handwerker={handwerker} profil={profil} /> : null}
 
+        {section === "einsaetze" ? (
+          <div className="mx-auto w-full max-w-[1200px]">
+            <PartnerEinsaetzeSection />
+          </div>
+        ) : null}
+
         {section === "uebersicht" ? (
           <PartnerHwDashboard
             firmName={firma}
-            heroImageUrl={portalHeaderHeroSrc("handwerker")}
+            heroImageUrl={istTeo ? null : portalHeaderHeroSrc("handwerker")}
             nurEinsaetze
-            beforeTiles={<PartnerEinsaetzeSection />}
-            kpis={{ offen: 0, inAusfuehrung: 0, erledigt: 0 }}
+            beforeTiles={<PartnerEinsaetzeSection nurAktuell ueberschrift="Aktuelle Einsätze" onZahlen={setZahlen} />}
+            kpis={{ offen: zahlen.neu, inAusfuehrung: zahlen.inArbeit, erledigt: zahlen.erledigt }}
+            onKpiClick={() => switchSection("einsaetze")}
             recent={[]}
             onOpenAll={() => switchSection("uebersicht")}
             onOpenItem={() => switchSection("uebersicht")}

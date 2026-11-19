@@ -24,7 +24,7 @@ const KPI_DEFS: Array<{
   id: keyof PartnerHwDashboardKpis;
   label: string;
 }> = [
-  { id: "offen", label: "Offen" },
+  { id: "offen", label: "Neu" },
   { id: "inAusfuehrung", label: "In Arbeit" },
   { id: "erledigt", label: "Erledigt" },
 ];
@@ -67,7 +67,7 @@ export function PartnerHwDashboard({
       heroImageUrl={heroImageUrl}
       beforeTiles={beforeTiles}
       hideRecent={nurEinsaetze}
-      tiles={nurEinsaetze ? [] : KPI_DEFS.map((def) => ({
+      tiles={KPI_DEFS.map((def) => ({
         id: def.id,
         label: def.label,
         value: kpis[def.id],

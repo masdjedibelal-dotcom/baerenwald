@@ -56,6 +56,8 @@ export const PORTAL_NAV_ITEMS: Record<PortalNavRole, readonly PortalNavItemDef[]
      */
     handwerker: [
       { key: "home", label: PORTAL_NAV_FAMILY_LABELS.home, glyph: "◈" },
+      // 19.11.2026: eigener Menüpunkt für alle Einsätze (Start zeigt nur die aktuellen)
+      { key: "liste", label: "Einsätze", glyph: "▤" },
       { key: "settings", label: PORTAL_NAV_FAMILY_LABELS.settings, glyph: "⚙" },
     ],
   } as const;

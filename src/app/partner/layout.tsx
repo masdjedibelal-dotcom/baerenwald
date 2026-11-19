@@ -3,6 +3,7 @@ import { AdminViewBanner } from "@/components/shared/AdminViewBanner";
 import { PortalBusyProvider } from "@/components/shared/PortalBusyContext";
 import { istTeo } from "@/lib/marke";
 import { MARKE_ASSETS } from "@/lib/marke-assets";
+import "@/teo/portal-website-look.css";
 
 export const metadata: Metadata = {
   title: "Partner",

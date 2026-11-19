@@ -135,9 +135,25 @@ export function FotoAuswahl({
 /**
  * @param rechnungHinweis z. B. „Firmendaten fehlen“ — erst beim Abrechnen zeigen, nicht vorne auf der Startseite.
  */
-export function PartnerEinsaetzeSection({ rechnungHinweis }: { rechnungHinweis?: ReactNode } = {}) {
+export type PartnerEinsatzZahlen = { neu: number; inArbeit: number; erledigt: number };
+
+export function PartnerEinsaetzeSection({
+  rechnungHinweis,
+  onZahlen,
+  nurAktuell = false,
+  ueberschrift = "Ihre Einsätze",
+}: {
+  rechnungHinweis?: ReactNode;
+  /** Kennzahlen nach oben geben (Startseite zeigt sie im Kopf statt in der Liste) */
+  onZahlen?: (z: PartnerEinsatzZahlen) => void;
+  /** Startseite: nur aktuelle Einsätze, ohne Umschalter Aktuell/Erledigt */
+  nurAktuell?: boolean;
+  ueberschrift?: string;
+} = {}) {
   const [einsaetze, setEinsaetze] = useState<PartnerEinsatz[] | null>(null);
   const [ansicht, setAnsicht] = useState<"aktuell" | "erledigt">("aktuell");
+  /** Kompakte Karten: Details erst beim Klick */
+  const [offenId, setOffenId] = useState<string | null>(null);
   const [dialog, setDialog] = useState<Dialog>(null);
   const [busy, setBusy] = useState(false);
   const [grund, setGrund] = useState("");
@@ -272,7 +288,11 @@ export function PartnerEinsaetzeSection({ rechnungHinweis }: { rechnungHinweis?:
     inArbeit: alle.filter((e) => e.status === "angenommen" && !istErledigt(e)).length,
     erledigt: alle.filter(istErledigt).length,
   };
-  const sichtbar = alle.filter((e) => (ansicht === "erledigt" ? istErledigt(e) : !istErledigt(e)));
+  const sichtbar = alle.filter((e) => (ansicht === "erledigt" && !nurAktuell ? istErledigt(e) : !istErledigt(e)));
+  useEffect(() => {
+    if (einsaetze != null) onZahlen?.(kpi);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [einsaetze, kpi.neu, kpi.inArbeit, kpi.erledigt]);
 
   const titel =
     dialog?.art === "annehmen"
@@ -296,7 +316,8 @@ export function PartnerEinsaetzeSection({ rechnungHinweis }: { rechnungHinweis?:
 
   return (
     <>
-      <div className="partner-kpis" role="list" aria-label="Ihre Einsätze in Zahlen">
+      {onZahlen ? null : (
+        <div className="partner-kpis" role="list" aria-label="Ihre Einsätze in Zahlen">
         {[
           { label: "Neu", wert: kpi.neu },
           { label: "In Arbeit", wert: kpi.inArbeit },
@@ -308,7 +329,9 @@ export function PartnerEinsaetzeSection({ rechnungHinweis }: { rechnungHinweis?:
           </div>
         ))}
       </div>
-      <PortalDetailCard title="Ihre Einsätze">
+      )}
+      <PortalDetailCard title={ueberschrift}>
+        {nurAktuell ? null : (
         <div className="partner-ansicht" role="tablist" aria-label="Ansicht">
           {(["aktuell", "erledigt"] as const).map((a) => (
             <button
@@ -323,6 +346,7 @@ export function PartnerEinsaetzeSection({ rechnungHinweis }: { rechnungHinweis?:
             </button>
           ))}
         </div>
+        )}
         {einsaetze == null ? (
           <p className="m-0 text-[var(--p2-sub)]">Wird geladen …</p>
         ) : sichtbar.length === 0 ? (
@@ -338,12 +362,27 @@ export function PartnerEinsaetzeSection({ rechnungHinweis }: { rechnungHinweis?:
           {sichtbar.map((e) => {
             const st = e.vorgang_erledigt ? STATUS.fertig : STATUS[e.status];
             const wann = [datum(e.termin_von), datum(e.termin_bis)].filter(Boolean).join(" bis ");
+            const offen = offenId === e.id;
+            const kurz = [wann, e.ort].filter(Boolean).join(" · ");
             return (
-              <div key={e.id} className="flex flex-col gap-2 border-b border-[var(--p2-line)] pb-4 last:border-b-0">
-                <div className="flex items-start justify-between gap-3">
-                  <div className="min-w-0 font-semibold">{e.titel}</div>
-                  <PortalStatusPill label={st.label} tone={st.tone} />
-                </div>
+              <div key={e.id} className={`partner-einsatz flex flex-col gap-2 border-b border-[var(--p2-line)] pb-4 last:border-b-0${offen ? " is-offen" : ""}`}>
+                <button
+                  type="button"
+                  className="partner-einsatz__kopf flex w-full items-start justify-between gap-3 text-left"
+                  aria-expanded={offen}
+                  onClick={() => setOffenId(offen ? null : e.id)}
+                >
+                  <span className="flex min-w-0 flex-col gap-0.5">
+                    <span className="min-w-0 font-semibold">{e.titel}</span>
+                    {kurz ? <span className="text-fs-meta text-[var(--p2-sub)]">{kurz}</span> : null}
+                  </span>
+                  <span className="flex shrink-0 items-center gap-2">
+                    <PortalStatusPill label={st.label} tone={st.tone} />
+                    <span className="partner-einsatz__pfeil text-[var(--p2-sub)]" aria-hidden>{offen ? "▴" : "▾"}</span>
+                  </span>
+                </button>
+                {offen ? (
+                <>
                 {e.mitarbeiter_name ? (
                   <div className="text-fs-meta text-[var(--p2-sub)]">Vor Ort: {e.mitarbeiter_name}</div>
                 ) : null}
@@ -367,6 +406,9 @@ export function PartnerEinsaetzeSection({ rechnungHinweis }: { rechnungHinweis?:
                     Vergütung: {euro(e.ek_betrag)} {e.ek_art}
                   </div>
                 ) : null}
+                </>
+                ) : null}
+                {offen || e.status === "gesendet" ? (
                 <div className="flex flex-wrap gap-2">
                   {e.status === "gesendet" ? (
                     <>
@@ -414,6 +456,7 @@ export function PartnerEinsaetzeSection({ rechnungHinweis }: { rechnungHinweis?:
                     </span>
                   ) : null}
                 </div>
+                ) : null}
               </div>
             );
           })}
