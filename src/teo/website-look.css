@@ -138,3 +138,20 @@
 .ap-wl .tm-nav__punkt { color: var(--teo-text-2); font-weight: 700; font-size: 12px; }
 .ap-wl .tm-nav__punkt.is-aktiv { color: var(--teo-blau); }
 .ap-wl .tm-nav__punkt .mock-icon { display: none; }
+
+/* ── MeinTEO (Mieter / Eigentümer): Farben der Verwaltung bleiben, Formen wie die Website ── */
+.mein-wl { font-family: var(--font-sans), 'Manrope', system-ui, sans-serif; }
+.mein-wl .wl-kopf { margin: 4px 0 8px; }
+.mein-wl .wl-kopf h1,
+.mein-wl .wl-kopf p { font-size: clamp(28px, 7vw, 40px); }
+.mein-wl .wl-kopf p { color: var(--org-primary, var(--teo-blau)); }
+.mein-wl .mieter-wl-card { border: 1px solid var(--teo-linie); border-radius: 24px; box-shadow: var(--teo-karte-schatten); }
+.mein-wl .mein-objekt { padding: 22px 24px; }
+.mein-wl .mein-abschnitt h2,
+.mein-wl .mein-news__kopf { font-size: 20px; font-weight: 800; letter-spacing: -0.02em; color: var(--teo-navy); }
+.mein-wl .mein-pill { font-size: 13px; font-weight: 700; padding: 4px 10px; }
+.mein-wl .mieter-wl-objekt-item { border-radius: 18px; }
+.mein-wl .mieter-wl-objekt-item-title,
+.mein-wl .mein-zeilen__titel,
+.mein-wl .mein-news__zeile-titel { font-weight: 700; color: var(--teo-navy); }
+.mein-wl .mieter-wl-btn { border-radius: 999px; font-weight: 700; }

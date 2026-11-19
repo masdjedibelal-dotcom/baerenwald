@@ -14,6 +14,7 @@ import { HausInfo } from '@/teo/mein/HausInfo'
 import { ladeEigentuemerObjekte, ladeHausPlaene, ladeMeineMeldungen } from '@/teo/mein/mein-daten'
 
 import '@/teo/mein/mein.css'
+import '@/teo/website-look.css'
 
 export const dynamic = 'force-dynamic'
 export const metadata: Metadata = { title: 'Mein Zuhause', robots: { index: false, follow: false } }
@@ -47,10 +48,15 @@ export default async function MeinSeite() {
   const { orgKennung, datenschutzUrl, impressumUrl, ...brand } = await loadOrgBrand(hausOrgId)
   const legal = resolveMeldeLegalUrls({ meldeSlug: orgKennung, datenschutz_url: datenschutzUrl, impressum_url: impressumUrl })
   const hausPlaene = hausIds.flatMap((id) => plaene.get(id) ?? [])
+  const offeneMeldungen = meldungen.filter((m) => m.stufe !== 'erledigt').length
 
   return (
-    <MieterWlFrame brand={brand} datenschutzHref={legal.datenschutz} impressumHref={legal.impressum}>
+    <MieterWlFrame brand={brand} className="mein-wl" datenschutzHref={legal.datenschutz} impressumHref={legal.impressum}>
       <div className="space-y-5">
+        <div className="wl-kopf">
+          <h1>Guten Tag.</h1>
+          <p>{offeneMeldungen === 1 ? 'Eine Meldung ist in Arbeit.' : offeneMeldungen ? `${offeneMeldungen} Meldungen sind in Arbeit.` : 'Alles erledigt.'}</p>
+        </div>
         {objekte.map((o) => (
           <MieterWlCard key={o.id}>
             <div className="mein-objekt">
