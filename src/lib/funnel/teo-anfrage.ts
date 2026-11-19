@@ -6,12 +6,19 @@
 import { MELDE_BEREICHE } from "@/lib/org/melde-bereiche";
 
 export type TeoFall = "schaden" | "massnahme" | "betrieb" | "kennenlernen";
-export type TeoAbsender = "hausverwaltung" | "weg" | "bestandshalter";
+export type TeoAbsender = "hausverwaltung" | "weg" | "bestandshalter" | "bewohner";
+export type TeoBewohnerRolle = "mieter" | "eigentuemer";
 
 export const TEO_ABSENDER: { id: TeoAbsender; label: string; hint: string; feld: string }[] = [
   { id: "hausverwaltung", label: "Hausverwaltung", hint: "WEG- oder Mietverwaltung", feld: "Hausverwaltung" },
   { id: "weg", label: "Eigentümergemeinschaft", hint: "selbst verwaltet", feld: "Name der WEG" },
   { id: "bestandshalter", label: "Eigentümer oder Bestandshalter", hint: "Wohnungsunternehmen, Genossenschaft, eigene Häuser", feld: "Unternehmen" },
+  { id: "bewohner", label: "Mieter oder Wohnungseigentümer", hint: "Sie wohnen im Haus", feld: "Hausverwaltung (optional)" },
+];
+
+export const TEO_BEWOHNER_ROLLEN: { id: TeoBewohnerRolle; label: string }[] = [
+  { id: "mieter", label: "Mieter" },
+  { id: "eigentuemer", label: "Eigentümer" },
 ];
 
 type Option = { id: string; label: string; hint?: string; bereiche: string[] };
@@ -131,6 +138,10 @@ export type TeoAnfrageDaten = {
   datenschutz: boolean;
   sitzung: string;
   fotos: string[];
+  /** Mieter oder Wohnungseigentümer (absender „bewohner“) */
+  bewohnerRolle?: TeoBewohnerRolle | "";
+  /** Name der Hausverwaltung, optional (Lead für uns) */
+  verwaltung?: string;
 };
 
 const label = (liste: Option[], ids: string[]) => ids.map((i) => liste.find((x) => x.id === i)?.label).filter(Boolean) as string[];
@@ -147,6 +158,15 @@ export function teoBereiche(d: Pick<TeoAnfrageDaten, "fall" | "schadenArten" | "
 /** Lesbare Zusammenfassung für die Anfrage-Notiz im CRM. */
 export function teoAnfrageNachricht(d: TeoAnfrageDaten): string {
   const fall = TEO_FAELLE.find((f) => f.id === d.fall)?.label ?? "";
+  if (d.absender === "bewohner") {
+    const rolle = TEO_BEWOHNER_ROLLEN.find((r) => r.id === d.bewohnerRolle)?.label ?? "Bewohner";
+    return [
+      d.beschreibung.trim(),
+      "",
+      `Von: ${rolle} (Website)`,
+      `Hausverwaltung: ${d.verwaltung?.trim() || "nicht angegeben"}`,
+    ].join("\n").trim();
+  }
   const z: string[] = [d.beschreibung.trim(), "", `Fall: ${fall}`, `Von: ${TEO_ABSENDER.find((a) => a.id === d.absender)?.label ?? "Hausverwaltung"}${d.firma.trim() ? ` · ${d.firma.trim()}` : ""}`];
   if (d.fall === "schaden") {
     z.push(

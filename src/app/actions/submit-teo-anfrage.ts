@@ -4,6 +4,7 @@ import { headers } from "next/headers";
 
 import {
   TEO_ABSENDER,
+  TEO_BEWOHNER_ROLLEN,
   TEO_DRINGLICHKEIT,
   TEO_FAELLE,
   type TeoAnfrageDaten,
@@ -55,6 +56,13 @@ export async function submitTeoAnfrageAction(
   if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
     return { ok: false, error: "Bitte geben Sie eine gültige E-Mail-Adresse an." };
   }
+  // Mieter oder Wohnungseigentümer: Rolle, Adresse und Beschreibung Pflicht, Hausverwaltung optional
+  const bewohner = d.absender === "bewohner";
+  if (bewohner) {
+    if (!TEO_BEWOHNER_ROLLEN.some((r) => r.id === d.bewohnerRolle)) return { ok: false, error: "Bitte wählen Sie Mieter oder Eigentümer." };
+    if (d.strasse.trim().length < 3) return { ok: false, error: "Bitte geben Sie Straße und Hausnummer an." };
+    if (d.beschreibung.trim().length < 5) return { ok: false, error: "Bitte beschreiben Sie kurz, worum es geht." };
+  }
   const notfall = d.fall === "schaden" && d.dringlichkeit === "notfall";
   if (notfall && !telefon) return { ok: false, error: "Bitte geben Sie für einen Notfall eine Telefonnummer an." };
   const brauchtObjekt = d.fall !== "kennenlernen";
@@ -62,7 +70,8 @@ export async function submitTeoAnfrageAction(
   if (!d.datenschutz) return { ok: false, error: "Bitte stimmen Sie der Datenschutzerklärung zu." };
 
   const fotos = erlaubteFotos(d.fotos ?? [], d.sitzung);
-  const firma = d.firma.trim() || null;
+  const firma = bewohner ? null : d.firma.trim() || null;
+  const verwaltung = bewohner ? (d.verwaltung ?? "").trim().slice(0, 200) || null : null;
   const zeitraum = d.fall === "schaden" ? TEO_DRINGLICHKEIT.find((x) => x.id === d.dringlichkeit)?.zeitraum ?? null : d.start || null;
 
   const res = await persistLead({
@@ -76,8 +85,8 @@ export async function submitTeoAnfrageAction(
     ort: d.ort.trim() || undefined,
     strasse: d.strasse.trim() || undefined,
     zeitraum,
-    kundentyp: "hausverwaltung",
-    kunde_typ: d.absender === "bestandshalter" ? "gewerbe" : "hausverwaltung",
+    kundentyp: bewohner ? (d.bewohnerRolle as string) : "hausverwaltung",
+    kunde_typ: bewohner ? "privat" : d.absender === "bestandshalter" ? "gewerbe" : "hausverwaltung",
     firma,
     kanal: "website",
     funnel_quelle: "teo_anfrage",
@@ -100,6 +109,7 @@ export async function submitTeoAnfrageAction(
       kennenlernen:
         d.fall === "kennenlernen" ? { objekte: d.objekteAnzahl.trim() || null, einheiten: d.einheitenGesamt.trim() || null } : null,
       firma,
+      bewohner: bewohner ? { rolle: d.bewohnerRolle, verwaltung } : null,
       ort: d.ort.trim() || null,
       fotos,
     },

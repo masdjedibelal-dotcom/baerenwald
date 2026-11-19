@@ -11,7 +11,7 @@ import { TeoLogo } from "@/components/teo/TeoRahmen";
 import { TEO_USPS } from "@/components/teo/teo-usps";
 import { track } from "@/lib/analytics";
 import { neueFotoSitzung } from "@/lib/funnel/fotos-hochladen";
-import { TEO_ABSENDER, TEO_SITUATIONEN, type TeoAnfrageDaten } from "@/lib/funnel/teo-anfrage";
+import { TEO_ABSENDER, TEO_BEWOHNER_ROLLEN, TEO_SITUATIONEN, type TeoAnfrageDaten, type TeoBewohnerRolle } from "@/lib/funnel/teo-anfrage";
 import { cn } from "@/lib/utils";
 
 import "@/app/baerenwald-landing.css";
@@ -31,6 +31,11 @@ export function TeoKontakt() {
   const [haeuser, setHaeuser] = useState("");
   const [einheiten, setEinheiten] = useState("");
   const [nachricht, setNachricht] = useState("");
+  // Mieter oder Wohnungseigentümer
+  const [rolle, setRolle] = useState<TeoBewohnerRolle | "">("");
+  const [strasse, setStrasse] = useState("");
+  const [plz, setPlz] = useState("");
+  const [ort, setOrt] = useState("");
   const [thema, setThema] = useState<string | null>(null);
   const [datenschutz, setDatenschutz] = useState(false);
   const [dsFehler, setDsFehler] = useState(false);
@@ -50,18 +55,25 @@ export function TeoKontakt() {
   }, []);
 
   const feld = TEO_ABSENDER.find((a) => a.id === absender)?.feld ?? "Name der Verwaltung";
+  const bewohner = absender === "bewohner";
 
   async function senden() {
     setFehler(null);
     if (name.trim().length < 2) return setFehler("Bitte geben Sie Ihren Namen an.");
     if (!email.trim() && !telefon.trim()) return setFehler("Bitte geben Sie eine E-Mail-Adresse oder Telefonnummer an.");
     if (email.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) return setFehler("Bitte geben Sie eine gültige E-Mail-Adresse an.");
+    if (bewohner) {
+      if (!rolle) return setFehler("Bitte wählen Sie Mieter oder Eigentümer.");
+      if (strasse.trim().length < 3) return setFehler("Bitte geben Sie Straße und Hausnummer an.");
+      if (!/^\d{5}$/.test(plz.trim())) return setFehler("Bitte geben Sie die PLZ an.");
+      if (nachricht.trim().length < 5) return setFehler("Bitte beschreiben Sie kurz, worum es geht.");
+    }
     if (!datenschutz) return setDsFehler(true);
     setStatus("loading");
     const beschreibung = [thema ? `Thema: ${thema}` : "", nachricht.trim()].filter(Boolean).join("\n\n");
     try {
       const res = await submitTeoAnfrageAction({
-        fall: "kennenlernen",
+        fall: bewohner ? "schaden" : "kennenlernen",
         absender,
         schadenArten: [],
         schadenOrt: "",
@@ -75,14 +87,16 @@ export function TeoKontakt() {
         leistungen: [],
         treppenhaeuser: "",
         start: "",
-        objekteAnzahl: haeuser,
-        einheitenGesamt: einheiten,
-        strasse: "",
-        plz: "",
-        ort: "",
+        objekteAnzahl: bewohner ? "" : haeuser,
+        einheitenGesamt: bewohner ? "" : einheiten,
+        strasse: bewohner ? strasse : "",
+        plz: bewohner ? plz : "",
+        ort: bewohner ? ort : "",
         beschreibung,
         name,
-        firma,
+        firma: bewohner ? "" : firma,
+        bewohnerRolle: bewohner ? rolle : "",
+        verwaltung: bewohner ? firma : "",
         email,
         telefon,
         datenschutz,
@@ -94,7 +108,7 @@ export function TeoKontakt() {
         setFehler(res.error);
         return;
       }
-      track.teoAnfrageAbgeschickt("kontakt");
+      track.teoAnfrageAbgeschickt(bewohner ? `bewohner_${rolle}` : "kontakt");
       setStatus("done");
       window.scrollTo({ top: 0, behavior: "instant" as ScrollBehavior });
     } catch (e) {
@@ -142,7 +156,7 @@ export function TeoKontakt() {
               </svg>
             </span>
             <h1>Danke, Ihre Nachricht ist da.</h1>
-            <p>Wir melden uns am nächsten Werktag.</p>
+            <p>{bewohner ? "Wir kümmern uns und melden uns bei Ihnen." : "Wir melden uns am nächsten Werktag."}</p>
             <Link href="/" className="teo-btn">
               Zur Startseite
             </Link>
@@ -183,6 +197,26 @@ export function TeoKontakt() {
               </div>
             </div>
 
+            {bewohner ? (
+              <div className="ta-feld">
+                <span className="ta-feld__label">Sie sind dort *</span>
+                <div className="ta-pillen" role="radiogroup">
+                  {TEO_BEWOHNER_ROLLEN.map((r) => (
+                    <button
+                      key={r.id}
+                      type="button"
+                      role="radio"
+                      aria-checked={rolle === r.id}
+                      className={cn("ta-pille", rolle === r.id && "ist-gewaehlt")}
+                      onClick={() => setRolle(r.id)}
+                    >
+                      {r.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            ) : null}
+
             <div className="ta-zeile">
               <label className="ta-feld">
                 <span className="ta-feld__label">Ihr Name *</span>
@@ -211,6 +245,31 @@ export function TeoKontakt() {
                 <input type="tel" className="ta-input" autoComplete="tel" inputMode="tel" value={telefon} onChange={(e) => setTelefon(e.target.value)} />
               </label>
             </div>
+            {bewohner ? (
+              <>
+                <label className="ta-feld">
+                  <span className="ta-feld__label">Straße und Hausnummer *</span>
+                  <input className="ta-input" autoComplete="street-address" value={strasse} onChange={(e) => setStrasse(e.target.value)} />
+                </label>
+                <div className="ta-zeile ta-zeile--plz">
+                  <label className="ta-feld">
+                    <span className="ta-feld__label">PLZ *</span>
+                    <input
+                      className="ta-input"
+                      inputMode="numeric"
+                      autoComplete="postal-code"
+                      maxLength={5}
+                      value={plz}
+                      onChange={(e) => setPlz(e.target.value.replace(/\D/g, "").slice(0, 5))}
+                    />
+                  </label>
+                  <label className="ta-feld">
+                    <span className="ta-feld__label">Ort</span>
+                    <input className="ta-input" autoComplete="address-level2" value={ort} onChange={(e) => setOrt(e.target.value)} />
+                  </label>
+                </div>
+              </>
+            ) : (
             <div className="ta-zeile">
               <label className="ta-feld">
                 <span className="ta-feld__label">Häuser (ca.)</span>
@@ -221,13 +280,14 @@ export function TeoKontakt() {
                 <input className="ta-input" inputMode="numeric" value={einheiten} onChange={(e) => setEinheiten(e.target.value.replace(/\D/g, ""))} />
               </label>
             </div>
+            )}
             <label className="ta-feld">
-              <span className="ta-feld__label">Nachricht (optional)</span>
+              <span className="ta-feld__label">{bewohner ? "Was ist passiert? *" : "Nachricht (optional)"}</span>
               <textarea
                 className="ta-input ta-textarea"
                 rows={4}
                 maxLength={2000}
-                placeholder="z. B. Was kostet Sie heute am meisten Zeit?"
+                placeholder={bewohner ? "z. B. Seit gestern tropft es im Bad von der Decke." : "z. B. Was kostet Sie heute am meisten Zeit?"}
                 value={nachricht}
                 onChange={(e) => setNachricht(e.target.value)}
               />
