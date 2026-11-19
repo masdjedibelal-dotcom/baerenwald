@@ -48,13 +48,13 @@ export function ApShell({
 
 
   return (
-    <div className="app">
+    <div className="app ap-wl">
       <nav className="sidebar" aria-label="Hauptnavigation">
         <div className="sidebar-top">
           <Link href="/arbeitsplatz" className="sidebar-brand" title={orgName}>
             <div className="sidebar-logo">
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src="/brand/teo/logo-mark-white.png" alt="" height={18} width={18} />
+              <img src="/brand/teo/logo-wordmark.png" alt="teo" height={30} width={72} />
             </div>
             <span className="sidebar-brandname">{orgName}</span>
           </Link>

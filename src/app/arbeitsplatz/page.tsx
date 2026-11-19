@@ -12,6 +12,11 @@ import { AP_STATUS } from '@/teo/arbeitsplatz/vorgang-status'
 
 export const metadata = { title: 'Start' }
 
+function begruessung(): string {
+  const stunde = Number(new Intl.DateTimeFormat('de-DE', { hour: 'numeric', hour12: false, timeZone: 'Europe/Berlin' }).format(new Date()))
+  return stunde < 11 ? 'Guten Morgen.' : stunde < 18 ? 'Guten Tag.' : 'Guten Abend.'
+}
+
 function Kachel({ href, icon, wert, label, hervor }: { href: string; icon: string; wert: number; label: string; hervor?: boolean }) {
   return (
     <Link href={href} className={hervor && wert > 0 ? 'ueber-kpi ap-kachel ap-kachel--hervor' : 'ueber-kpi ap-kachel'}>
@@ -57,8 +62,22 @@ export default async function StartSeite() {
   const inArbeit = vorgaenge.filter((v) => v.status === 'bei_teo' || v.status === 'beauftragt' || v.status === 'termin')
   const oben = zuEntscheiden.length ? zuEntscheiden : neu
 
+  const unterzeile = zuEntscheiden.length
+    ? zuEntscheiden.length === 1
+      ? 'Eine Freigabe wartet auf Sie.'
+      : `${zuEntscheiden.length} Freigaben warten auf Sie.`
+    : neu.length
+      ? neu.length === 1
+        ? 'Ein neuer Vorgang ist da.'
+        : `${neu.length} neue Vorgänge sind da.`
+      : 'Alles im Griff.'
+
   return (
     <div className="ap-start">
+      <div className="wl-kopf">
+        <h1>{begruessung()}</h1>
+        <p>{unterzeile}</p>
+      </div>
       <div className="ueber-grid ap-kacheln">
         <Kachel href="/arbeitsplatz/vorgaenge?status=zu_entscheiden" icon="alert-triangle" wert={zuEntscheiden.length} label="Zu entscheiden" hervor />
         <Kachel href="/arbeitsplatz/vorgaenge?status=neu" icon="inbox" wert={neu.length} label="Neu eingegangen" hervor />

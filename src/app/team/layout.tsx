@@ -5,6 +5,7 @@ import '@/teo/arbeitsplatz/kit/tokens.css'
 import '@/teo/arbeitsplatz/kit/crm.css'
 import '@/teo/arbeitsplatz/kit/utilities.css'
 import '@/teo/arbeitsplatz/arbeitsplatz.css'
+import '@/teo/website-look.css'
 
 import { istTeo } from '@/lib/marke'
 import { ladeApKontext } from '@/teo/arbeitsplatz/kontext'

@@ -18,7 +18,7 @@ export function TeamShell({ orgName, personName, children }: { orgName: string; 
   const pfad = usePathname() ?? '/team'
   const aktiv = (href: string) => (href === '/team' ? pfad === href : pfad.startsWith(href))
   return (
-    <div className="tm-app">
+    <div className="tm-app ap-wl">
       <header className="tm-kopf">
         <div className="tm-kopf__marke">
           {/* eslint-disable-next-line @next/next/no-img-element */}

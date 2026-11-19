@@ -1,0 +1,140 @@
+/*
+ * TEO: Portal im Look der Website (freigegebener Entwurf 19.11.2026).
+ * Struktur bleibt (Menü links, mobil unten); Schrift Manrope, Navy/Blau/Gold, große runde Karten,
+ * Pillen-Knöpfe, große Überschrift mit zweiter Zeile in Blau. Keine Icons im Menü und in Listen.
+ * Wirkt nur unter .ap-wl (Arbeitsplatz + Team) bzw. .mein-wl (MeinTEO).
+ */
+
+.ap-wl,
+.mein-wl {
+  --teo-navy: #0b1f3a;
+  --teo-blau: #1e5fa8;
+  --teo-blau-bg: #eaf0f8;
+  --teo-gold: #e8a317;
+  --teo-linie: #dce4ee;
+  --teo-linie-fein: #eef2f7;
+  --teo-text-2: #4a5d75;
+  --teo-grund: #f7f9fc;
+  --teo-karte-schatten: 0 20px 50px -40px rgba(11, 31, 58, 0.35);
+  --r: 24px;
+  --r-card: 24px;
+  --r-lg: 24px;
+  --r-sheet: 24px;
+  --r-field: 14px;
+  --r-button: 999px;
+  --shadow: var(--teo-karte-schatten);
+  --bg-mobile: var(--teo-grund);
+  font-family: var(--font-sans), 'Manrope', system-ui, sans-serif;
+  color: var(--teo-navy);
+}
+
+/* ── Menü links: weiß, nur Text ─────────────────────────── */
+.ap-wl.app { grid-template-columns: 248px 1fr; }
+.ap-wl .sidebar {
+  background: #ffffff;
+  border-right: 1px solid var(--teo-linie);
+  padding: 22px 16px;
+  gap: 4px;
+}
+.ap-wl .sidebar-top { padding: 4px 10px 22px; margin: 0; }
+.ap-wl .sidebar-brand { flex-direction: column; align-items: flex-start; gap: 8px; }
+.ap-wl .sidebar-logo { width: auto; height: 30px; background: none; padding: 0; border-radius: 0; }
+.ap-wl .sidebar-logo img { width: auto; height: 30px; }
+.ap-wl .sidebar-brandname { color: var(--teo-text-2); font-size: 13px; font-weight: 700; white-space: normal; }
+.ap-wl .sidebar-nav { gap: 4px; }
+.ap-wl .sidebar-icon {
+  height: auto;
+  padding: 11px 14px;
+  border-radius: 14px;
+  color: var(--teo-text-2);
+  font-weight: 600;
+}
+.ap-wl .sidebar-icon .mock-icon,
+.ap-wl .sidebar-icon .icon-ctx-sidebar,
+.ap-wl .sidebar-icon svg { display: none; }
+.ap-wl .sidebar-icon::after { display: none; }
+.ap-wl .sidebar-label { font-size: 15px; font-weight: inherit; }
+.ap-wl .sidebar-icon:hover { background: #f5f7fa; color: var(--teo-navy); }
+.ap-wl .sidebar-icon.active { background: var(--teo-blau-bg); color: var(--teo-navy); font-weight: 800; box-shadow: none; }
+.ap-wl .nav-zaehler { margin-left: auto; background: var(--teo-blau); color: #fff; border-radius: 999px; font-size: 12px; font-weight: 800; padding: 2px 8px; }
+
+/* ── Kopfzeile + Seite ──────────────────────────────────── */
+.ap-wl .topbar { height: 72px; padding: 0 40px; border-bottom: 1px solid var(--teo-linie); background: #ffffff; }
+.ap-wl .topbar-title-text { font-size: 15px; font-weight: 700; color: var(--teo-text-2); }
+.ap-wl .topbar-cta.btn { padding: 11px 20px; height: auto; font-size: 15px; font-weight: 700; }
+.ap-wl .topbar-cta .mock-icon { display: none; }
+.ap-wl .ap-avatar { width: 40px; height: 40px; font-size: 14px; font-weight: 800; background: var(--teo-blau); }
+.ap-wl .topbar-avatar.btn { padding: 0; border: 0; background: none; width: auto; height: auto; min-width: 0; box-shadow: none; }
+.ap-wl .page {
+  background:
+    radial-gradient(36vmax 24vmax at 0% 0%, rgba(156, 192, 234, 0.3), transparent 70%),
+    radial-gradient(28vmax 20vmax at 100% 0%, rgba(246, 207, 115, 0.22), transparent 70%),
+    var(--teo-grund);
+  background-repeat: no-repeat;
+}
+.ap-wl .page-inner { padding: 40px 40px 64px; max-width: 1160px; }
+
+/* Große Überschrift mit zweiter Zeile in Blau */
+.wl-kopf { display: flex; flex-direction: column; gap: 4px; margin: 0 0 28px; }
+.wl-kopf h1,
+.wl-kopf p { margin: 0; font-size: clamp(30px, 4.2vw, 44px); line-height: 1.05; font-weight: 800; letter-spacing: -0.035em; color: var(--teo-navy); text-wrap: balance; }
+.wl-kopf p { color: var(--teo-blau); }
+
+/* ── Karten, Kacheln, Listen ────────────────────────────── */
+.ap-wl .card,
+.ap-wl .listcard,
+.ap-wl .ueber-kpi,
+.ap-wl .tm-karte { border: 1px solid var(--teo-linie); border-radius: 24px; box-shadow: var(--teo-karte-schatten); }
+.ap-wl .card-h { border-bottom: 0; padding: 22px 24px 8px; min-height: 0; }
+.ap-wl .card-title { font-size: 20px; font-weight: 800; letter-spacing: -0.02em; color: var(--teo-navy); }
+.ap-wl .card-h .mock-icon { display: none; }
+.ap-wl .card-b { padding: 8px 24px 24px; }
+
+.ap-wl .ueber-kpi { padding: 20px 22px; gap: 4px; }
+.ap-wl .ueber-ico { display: none; }
+.ap-wl .ueber-val { font-size: 32px; font-weight: 800; letter-spacing: -0.02em; color: var(--teo-navy); }
+.ap-wl .ueber-label { font-size: 14px; font-weight: 600; color: var(--teo-text-2); }
+.ap-wl .ap-kachel:hover { border-color: #c7d5e6; }
+.ap-wl .ap-kachel--hervor { border-color: var(--teo-gold); }
+.ap-wl .ap-kachel--hervor .ueber-val { color: var(--teo-navy); }
+
+.ap-wl .card .listcard { border: 0; box-shadow: none; border-radius: 0; }
+.ap-wl .list-row { padding: 16px 20px; border-bottom: 1px solid var(--teo-linie-fein); font-size: 15px; }
+.ap-wl .list-row:last-child { border-bottom: 0; }
+.ap-wl .list-row:hover { background: #f5f7fa; }
+.ap-wl .lc-title { font-weight: 700; color: var(--teo-navy); }
+.ap-wl .lc-sub,
+.ap-wl .lc-desk { color: var(--teo-text-2); }
+
+/* ── Knöpfe, Filter, Status ─────────────────────────────── */
+.ap-wl .btn { border-radius: 999px; font-weight: 700; }
+.ap-wl .btn.primary { background: var(--teo-navy); border-color: var(--teo-navy); color: #ffffff; }
+.ap-wl .btn.primary:hover { background: #16304f; border-color: #16304f; }
+.ap-wl .btn.secondary { border: 1.5px solid var(--teo-navy); color: var(--teo-navy); background: #ffffff; }
+.ap-wl .chip { border-radius: 999px; padding: 8px 16px; font-size: 14px; font-weight: 700; border: 1px solid var(--teo-linie); background: #ffffff; color: var(--teo-text-2); }
+.ap-wl .chip.active { background: var(--teo-navy); border-color: var(--teo-navy); color: #ffffff; }
+.ap-wl .badge { border-radius: 999px; padding: 4px 10px; font-size: 13px; font-weight: 700; }
+.ap-wl .badge::before { display: none; }
+.ap-wl .input,
+.ap-wl select.input,
+.ap-wl textarea.input { border-radius: 14px; border-color: var(--teo-linie); background: #ffffff; }
+.ap-wl .ap-filterzeile > .input:first-child { border-radius: 999px; }
+
+/* ── Handy: Menü unten wie bisher, Abstände kleiner ──────── */
+@media (max-width: 899px) {
+  .ap-wl.app { grid-template-columns: 1fr; }
+  .ap-wl .topbar { height: 60px; padding: 0 16px; }
+  .ap-wl .page-inner { padding: 24px 16px 96px; }
+  .ap-wl .bottomnav .mock-icon { display: none; }
+  .ap-wl .bottomnav-item.active { color: var(--teo-blau); }
+}
+
+/* ── Team-App ───────────────────────────────────────────── */
+.ap-wl.tm-app { background: var(--teo-grund); }
+.ap-wl .tm-kopf { border-bottom: 1px solid var(--teo-linie); }
+.ap-wl .tm-titel { font-size: 28px; font-weight: 800; letter-spacing: -0.03em; }
+.ap-wl .tm-karte { padding: 18px 20px; }
+.ap-wl .tm-nav { background: #ffffff; border-top: 1px solid var(--teo-linie); }
+.ap-wl .tm-nav__punkt { color: var(--teo-text-2); font-weight: 700; font-size: 12px; }
+.ap-wl .tm-nav__punkt.is-aktiv { color: var(--teo-blau); }
+.ap-wl .tm-nav__punkt .mock-icon { display: none; }
