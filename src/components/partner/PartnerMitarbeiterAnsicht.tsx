@@ -1,5 +1,6 @@
 "use client";
 
+import { KontaktVorOrt } from "@/components/partner/KontaktVorOrt";
 import { useCallback, useEffect, useState } from "react";
 
 import {
@@ -96,9 +97,12 @@ export function PartnerMitarbeiterAnsicht({ name, firma }: { name: string; firma
           <PortalStatusPill label={e.status === "fertig" ? "Erledigt" : "Läuft"} tone={e.status === "fertig" ? "fertig" : "aktiv"} />
         </div>
         <div className="text-fs-meta text-[var(--p2-sub)]">
-          {[termin ? `Wann: ${termin}` : "", e.ort ? `Wo: ${e.ort}` : "", e.kontakt_vor_ort ? `Kontakt: ${e.kontakt_vor_ort}` : ""]
-            .filter(Boolean)
-            .join(" · ")}
+          {[termin ? `Wann: ${termin}` : "", e.ort ? `Wo: ${e.ort}` : ""].filter(Boolean).join(" · ")}
+          {e.kontakt_vor_ort ? (
+            <>
+              {termin || e.ort ? " · " : ""}Kontakt: <KontaktVorOrt text={e.kontakt_vor_ort} />
+            </>
+          ) : null}
         </div>
         {e.anweisung ? <p className="m-0 whitespace-pre-wrap">{e.anweisung}</p> : null}
         <FotoGalerie urls={e.anweisung_fotos} />

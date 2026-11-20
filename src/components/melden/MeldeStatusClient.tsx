@@ -23,13 +23,6 @@ import type { MieterStatusStufe } from "@/lib/vorgang/vorgang-phase";
 import { istTeo } from "@/lib/marke";
 import "./melden.css";
 
-type Slot = {
-  id: string;
-  slot_beginn: string;
-  slot_ende?: string | null;
-  status: string;
-};
-
 type Anhang = { id: string; name: string; datum?: string; href: string };
 
 type MeldeDetailExtras = {
@@ -63,16 +56,6 @@ type Props = {
 
 const STATUS_POLL_MS = 20_000;
 
-function fmtSlot(iso: string) {
-  return new Intl.DateTimeFormat("de-DE", {
-    weekday: "short",
-    day: "2-digit",
-    month: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-  }).format(new Date(iso));
-}
-
 /**
  * D9 `wlStatus` — STG-Timeline (de+en) im HV-Branding.
  * Phase wird live gepollt (ohne Portal-Login).
@@ -99,8 +82,6 @@ export function MeldeStatusClient({
   const [erledigt, setErledigt] = useState(initialErledigt);
   const [anhaenge, setAnhaenge] = useState(initialAnhaenge);
   const [statusLabel, setStatusLabel] = useState(initialStatusLabel);
-  const [slots, setSlots] = useState<Slot[]>([]);
-  const [bestaetigt, setBestaetigt] = useState<Slot | null>(null);
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
   const [wiederOffen, setWiederOffen] = useState(false);
@@ -185,18 +166,6 @@ export function MeldeStatusClient({
 
   const metaLine = [objektTitel, einheit].filter(Boolean).join(" · ");
 
-  const loadSlots = useCallback(async () => {
-    const res = await fetch(
-      `/api/melden/terminslots?token=${encodeURIComponent(token)}`
-    );
-    const json = (await res.json()) as {
-      slots?: Slot[];
-      bestaetigt?: Slot | null;
-    };
-    setSlots(json.slots ?? []);
-    setBestaetigt(json.bestaetigt ?? null);
-  }, [token]);
-
   const refreshStatus = useCallback(async () => {
     try {
       const res = await fetch(
@@ -220,20 +189,14 @@ export function MeldeStatusClient({
   }, [token]);
 
   useEffect(() => {
-    void loadSlots();
-  }, [loadSlots]);
-
-  useEffect(() => {
     void refreshStatus();
     const id = window.setInterval(() => {
       void refreshStatus();
-      void loadSlots();
     }, STATUS_POLL_MS);
 
     const onVis = () => {
       if (document.visibilityState === "visible") {
         void refreshStatus();
-        void loadSlots();
       }
     };
     document.addEventListener("visibilitychange", onVis);
@@ -244,46 +207,8 @@ export function MeldeStatusClient({
       document.removeEventListener("visibilitychange", onVis);
       window.removeEventListener("focus", onVis);
     };
-  }, [refreshStatus, loadSlots]);
+  }, [refreshStatus]);
 
-  async function confirmSlot(slotId: string) {
-    setBusy(true);
-    setMsg(null);
-    try {
-      const res = await fetch("/api/melden/terminslots", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ token, slotId, action: "bestaetigen" }),
-      });
-      const json = (await res.json()) as { error?: string };
-      if (!res.ok) {
-        setMsg(json.error ?? "Fehler");
-        return;
-      }
-      setMsg("Termin bestätigt.");
-      await loadSlots();
-      await refreshStatus();
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  async function declineSlot(slotId: string) {
-    setBusy(true);
-    setMsg(null);
-    try {
-      const res = await fetch("/api/melden/terminslots", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ token, slotId, action: "absagen" }),
-      });
-      if (res.ok) await loadSlots();
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  const vorgeschlagene = slots.filter((s) => s.status === "vorgeschlagen");
   const firstName = melderName.trim().split(/\s+/)[0] || melderName;
   const t = MIETER_WL_STATUS;
 
@@ -314,63 +239,6 @@ export function MeldeStatusClient({
               <PortalPhotoGallery urls={fotos} />
             </div>
           </details>
-        ) : null}
-
-        {bestaetigt ? (
-          <MieterWlCard>
-            <div className="p-4">
-              <p className="text-fs-title font-bold text-[var(--p2-ink)]">
-                {"Ihr Termin"}
-              </p>
-              <p className="mt-1 text-sm font-semibold text-[color:var(--org-primary)]">
-                {fmtSlot(bestaetigt.slot_beginn)}
-              </p>
-            </div>
-          </MieterWlCard>
-        ) : vorgeschlagene.length > 0 ? (
-          <MieterWlCard>
-            <div className="p-4 space-y-3">
-              <p className="text-fs-title font-bold text-[var(--p2-ink)]">
-                {"Terminvorschlag"}
-              </p>
-              <p className="text-fs-meta text-[var(--p2-sub)] leading-relaxed">
-                Der beauftragte Betrieb schlägt folgende Zeiten vor. Bitte wählen
-                Sie einen Termin.
-              </p>
-              <ul className="space-y-2">
-                {vorgeschlagene.map((s) => (
-                  <li
-                    key={s.id}
-                    className="flex flex-wrap items-center justify-between gap-2 rounded-[10px] border border-[var(--p2-line)] p-3"
-                  >
-                    <span className="text-fs-body font-semibold">
-                      {fmtSlot(s.slot_beginn)}
-                    </span>
-                    <div className="flex gap-2">
-                      <PortalButton
-                        variant="primary"
-                        type="button"
-                        className="mieter-wl-btn mieter-wl-btn--primary !w-auto !py-2 !px-3 !text-fs-meta"
-                        disabled={busy}
-                        onClick={() => void confirmSlot(s.id)}
-                      >
-                        {"Bestätigen"}
-                      </PortalButton>
-                      <PortalButton
-                        variant="ghost"
-                        type="button"
-                        className="text-xs text-[var(--p2-muted-icon)] underline"
-                        disabled={busy}
-                        onClick={() => void declineSlot(s.id)}
-                      >
-                        {"Passt nicht"}
-                      </PortalButton>
-                    </div>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          </MieterWlCard>
         ) : null}
 
         {erledigt && anhaenge.length > 0 ? (

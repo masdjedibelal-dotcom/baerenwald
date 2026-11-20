@@ -11,6 +11,7 @@ import {
   einsatzFertigMelden,
   einsatzMitteilungSenden,
   einsatzRechnungSenden,
+  einsatzTerminEintragen,
   listPartnerEinsaetze,
   type EinsatzMeldungTyp,
   type EinsatzUploadOrdner,
@@ -27,7 +28,8 @@ import { PortalStatusPill } from "@/components/shared/PortalStatusPill";
 import { safeAction } from "@/lib/actions/safe-action";
 import type { PortalStatusTone } from "@/lib/shared/portal-status-pill";
 import { portalToastError, portalToastSuccess } from "@/lib/shared/portal-toast";
-import { MARKE } from "@/lib/marke";
+import { istTeo, MARKE } from "@/lib/marke";
+import { KontaktVorOrt } from "@/components/partner/KontaktVorOrt";
 
 const STATUS: Record<PartnerEinsatz["status"], { label: string; tone: PortalStatusTone }> = {
   gesendet: { label: "Neu", tone: "neu" },
@@ -63,6 +65,7 @@ type Dialog =
   | { art: "dokument"; einsatz: PartnerEinsatz }
   | { art: "update"; einsatz: PartnerEinsatz }
   | { art: "regie"; einsatz: PartnerEinsatz }
+  | { art: "termin"; einsatz: PartnerEinsatz }
   | null;
 
 /**
@@ -160,6 +163,9 @@ export function PartnerEinsaetzeSection({
   const [text, setText] = useState("");
   const [dateien, setDateien] = useState<File[]>([]);
   const [stunden, setStunden] = useState("");
+  // Servus TEO: Ausführungstermin (Datum von–bis)
+  const [terminVon, setTerminVon] = useState("");
+  const [terminBis, setTerminBis] = useState("");
   const [dokArt, setDokArt] = useState<"angebot" | "rechnung" | "protokoll" | "sonstiges">("sonstiges");
   const [rechnungPdf, setRechnungPdf] = useState<File | null>(null);
   /** Eigene Mitarbeiter (für „Wer macht den Einsatz?“ beim Annehmen) */
@@ -191,6 +197,10 @@ export function PartnerEinsaetzeSection({
     setDateien([]);
     setStunden("");
     setRechnungPdf(null);
+    setTerminVon(d?.art === "termin" ? (d.einsatz.termin_von ?? "").slice(0, 10) : "");
+    setTerminBis(
+      d?.art === "termin" && d.einsatz.termin_bis && d.einsatz.termin_bis !== d.einsatz.termin_von ? d.einsatz.termin_bis.slice(0, 10) : ""
+    );
     setDialog(d);
   }
 
@@ -242,6 +252,19 @@ export function PartnerEinsaetzeSection({
     }
     if (dialog.art === "ablehnen") {
       await ausfuehren(einsatzAblehnen(id, grund), "Einsatz abgelehnt");
+      return;
+    }
+    if (dialog.art === "termin") {
+      setBusy(true);
+      const res = await safeAction(einsatzTerminEintragen({ einsatzId: id, von: terminVon, bis: terminBis || null }));
+      setBusy(false);
+      if (!res.ok) {
+        portalToastError(res.error);
+        return;
+      }
+      portalToastSuccess("Termin gespeichert", res.mailGesendet ? "Der Kunde bekommt eine Bestätigung per Mail." : undefined);
+      setDialog(null);
+      await laden();
       return;
     }
     // Erst die Dateien hochladen (direkt in den Speicher), dann den Schritt speichern
@@ -307,12 +330,15 @@ export function PartnerEinsaetzeSection({
             ? "Regie melden"
             : dialog?.art === "dokument"
               ? "Dokument hochladen"
-              : "Rechnung hochladen";
+              : dialog?.art === "termin"
+                ? "Ausführungstermin"
+                : "Rechnung hochladen";
   const confirmLabel =
-    dialog?.art === "annehmen" ? "Annehmen" : dialog?.art === "ablehnen" ? "Ablehnen" : dialog?.art === "fertig" ? "Erledigt" : dialog?.art === "rechnung" || dialog?.art === "dokument" ? "Hochladen" : "Senden";
+    dialog?.art === "annehmen" ? "Annehmen" : dialog?.art === "ablehnen" ? "Ablehnen" : dialog?.art === "fertig" ? "Erledigt" : dialog?.art === "rechnung" || dialog?.art === "dokument" ? "Hochladen" : dialog?.art === "termin" ? "Termin speichern" : "Senden";
   const updateUnvollstaendig =
     (dialog?.art === "update" && !text.trim() && dateien.length === 0) ||
-    (dialog?.art === "regie" && (!text.trim() || !stunden.trim()));
+    (dialog?.art === "regie" && (!text.trim() || !stunden.trim())) ||
+    (dialog?.art === "termin" && !terminVon);
 
   return (
     <>
@@ -361,7 +387,7 @@ export function PartnerEinsaetzeSection({
         <div className="flex flex-col gap-4">
           {sichtbar.map((e) => {
             const st = e.vorgang_erledigt ? STATUS.fertig : STATUS[e.status];
-            const wann = [datum(e.termin_von), datum(e.termin_bis)].filter(Boolean).join(" bis ");
+            const wann = [datum(e.termin_von), e.termin_bis && e.termin_bis !== e.termin_von ? datum(e.termin_bis) : ""].filter(Boolean).join(" bis ");
             const offen = offenId === e.id;
             const kurz = [wann, e.ort].filter(Boolean).join(" · ");
             return (
@@ -388,10 +414,15 @@ export function PartnerEinsaetzeSection({
                 ) : null}
                 {e.anweisung ? <p className="m-0 whitespace-pre-wrap">{e.anweisung}</p> : null}
                 <FotoGalerie urls={e.anweisung_fotos} />
+                {/* Wann/Wo stehen schon in der Kopfzeile — hier nur der Kontakt vor Ort (antippbar) */}
                 <div className="text-fs-meta text-[var(--p2-sub)]">
-                  {[wann ? `Wann: ${wann}` : "", e.ort ? `Wo: ${e.ort}` : "", e.kontakt_vor_ort ? `Kontakt: ${e.kontakt_vor_ort}` : ""]
-                    .filter(Boolean)
-                    .join(" · ")}
+                  {e.kontakt_vor_ort ? (
+                    <>
+                      Kontakt vor Ort: <KontaktVorOrt text={e.kontakt_vor_ort} />
+                    </>
+                  ) : !e.ort ? (
+                    `Ort und Ansprechpartner vor Ort erfahren Sie von ${MARKE.name}.`
+                  ) : null}
                 </div>
                 {e.status === "angenommen" && e.letztes_update_at ? (
                   <div className="text-fs-meta text-[var(--p2-sub)]">Letztes Update: {datum(e.letztes_update_at)}</div>
@@ -422,6 +453,11 @@ export function PartnerEinsaetzeSection({
                   ) : null}
                   {e.status === "angenommen" && !e.vorgang_erledigt ? (
                     <>
+                      {istTeo ? (
+                        <PortalButton variant="secondary" disabled={busy} onClick={() => oeffne({ art: "termin", einsatz: e })}>
+                          {e.termin_von ? "Termin ändern" : "Termin eintragen"}
+                        </PortalButton>
+                      ) : null}
                       <PortalButton variant="secondary" disabled={busy} onClick={() => oeffne({ art: "update", einsatz: e })}>
                         Update
                       </PortalButton>
@@ -486,6 +522,17 @@ export function PartnerEinsaetzeSection({
                 ))}
               </PortalSelect>
             </PortalField>
+          ) : null}
+          {dialog.art === "termin" ? (
+            <>
+              <PortalField label="Ausführung am">
+                <PortalInput type="date" value={terminVon} onChange={(ev) => setTerminVon(ev.target.value)} />
+              </PortalField>
+              <PortalField label="bis (bei mehreren Tagen)">
+                <PortalInput type="date" value={terminBis} onChange={(ev) => setTerminBis(ev.target.value)} />
+              </PortalField>
+              <p className="text-sm text-p2-sub">Der Kunde bekommt den Termin als Bestätigung per Mail.</p>
+            </>
           ) : null}
           {dialog.art === "ablehnen" ? (
             <PortalField label="Grund" hint="Zum Beispiel: kein Termin frei.">

@@ -588,3 +588,36 @@ export async function listMitarbeiterEinsaetze(): Promise<
       })),
   };
 }
+
+/**
+ * Servus TEO: Handwerker trägt den Ausführungstermin ein (Datum, optional bis).
+ * Danach schickt das CRM die Bestätigung an den Kunden — der Handwerker vereinbart nichts selbst per Chat.
+ */
+export async function einsatzTerminEintragen(input: {
+  einsatzId: string;
+  von: string;
+  bis?: string | null;
+}): Promise<{ ok: true; mailGesendet: boolean } | { ok: false; error: string }> {
+  const auth = await einsatzZugriff();
+  if (!auth.ok) return auth;
+  const einsatzId = input.einsatzId.trim();
+  const e = await einsatzFuerZugriff(auth, einsatzId);
+  if (!e) return { ok: false, error: "Einsatz nicht gefunden." };
+  if (e.status !== "angenommen") return { ok: false, error: "Den Termin können Sie eintragen, sobald Sie den Einsatz angenommen haben." };
+  const von = input.von.trim().slice(0, 10);
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(von)) return { ok: false, error: "Bitte ein Datum wählen." };
+  const bisRoh = (input.bis ?? "").trim().slice(0, 10);
+  const bis = /^\d{4}-\d{2}-\d{2}$/.test(bisRoh) && bisRoh >= von ? bisRoh : null;
+  const { data: alt } = await supabaseAdmin.from("einsaetze").select("termin_von").eq("id", einsatzId).maybeSingle();
+  const geaendert = Boolean((alt as { termin_von?: string | null } | null)?.termin_von);
+
+  const { error } = await supabaseAdmin.from("einsaetze").update({ termin_von: von, termin_bis: bis }).eq("id", einsatzId);
+  if (error) {
+    logDbError("app/actions/partner-einsatz:termin", error);
+    return { ok: false, error: "Termin konnte nicht gespeichert werden." };
+  }
+  const { notifyCrmEinsatzTermin } = await import("@/lib/partner/notify-crm-einsatz-termin");
+  const r = await notifyCrmEinsatzTermin({ einsatzId, geaendert });
+  revalidatePath("/partner");
+  return { ok: true, mailGesendet: r.mailGesendet };
+}
