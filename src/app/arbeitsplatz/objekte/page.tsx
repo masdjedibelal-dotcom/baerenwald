@@ -11,5 +11,13 @@ export default async function ObjekteSeite() {
   const k = await ladeApKontext()
   if (!k) redirect('/portal/login')
   const [objekte, verwaltung] = await Promise.all([ladeObjekte(k), ladeVerwaltung(k)])
-  return <ObjekteListe objekte={objekte} darfBearbeiten={darf(k.person, 'objekte.bearbeiten')} verwaltung={verwaltung} />
+  return (
+    <>
+      <div className="wl-kopf">
+        <h1>Objekte.</h1>
+        <p>{objekte.length === 1 ? '1 Haus' : `${objekte.length} Häuser`}.</p>
+      </div>
+      <ObjekteListe objekte={objekte} darfBearbeiten={darf(k.person, 'objekte.bearbeiten')} verwaltung={verwaltung} />
+    </>
+  )
 }

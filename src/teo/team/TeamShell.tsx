@@ -30,7 +30,7 @@ export function TeamShell({ orgName, personName, children }: { orgName: string; 
         </div>
         <form action="/portal/auth/signout" method="post">
           <button type="submit" className="tm-kopf__ab" aria-label="Abmelden">
-            <MockIcon ctx="btn" n="log-in" size={18} />
+            <MockIcon ctx="btn" n="logout" size={18} />
           </button>
         </form>
       </header>
