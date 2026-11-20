@@ -29,8 +29,9 @@ export function TeamShell({ orgName, personName, children }: { orgName: string; 
           <div className="tm-kopf__name">{personName}</div>
         </div>
         <form action="/portal/auth/signout" method="post">
-          <button type="submit" className="tm-kopf__ab" aria-label="Abmelden">
-            <MockIcon ctx="btn" n="logout" size={18} />
+          {/* Kein Abmelden-Icon im Bausatz (Kreis blieb leer) — klarer Text */}
+          <button type="submit" className="tm-kopf__ab tm-kopf__ab--text">
+            Abmelden
           </button>
         </form>
       </header>

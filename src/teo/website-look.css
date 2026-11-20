@@ -357,3 +357,5 @@
   .ap-wl .ap-speichern-schwebend { position: fixed; left: 14px; right: 14px; bottom: calc(80px + env(safe-area-inset-bottom, 0px)); }
 }
 .ap-wl .ap-speichern-schwebend > .btn { margin-left: auto; }
+/* Team-App: Abmelden als kleine Text-Pille oben rechts */
+.ap-wl .tm-kopf__ab--text { width: auto; height: 36px; padding: 0 14px; font: inherit; font-size: 13px; font-weight: 700; color: var(--teo-navy); }
