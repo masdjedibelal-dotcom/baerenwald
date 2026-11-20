@@ -5786,6 +5786,7 @@ export type Database = {
           versicherungsakte_erstellt_am: string | null
           versicherungsakte_pdf_url: string | null
           vor_ort_notizen: string | null
+          zustaendig_id: string | null
           vorgang_phase: string | null
           wiederkehr_turnus: string | null
           wiedervorlage_datum: string | null
@@ -5863,6 +5864,7 @@ export type Database = {
           versicherungsakte_erstellt_am?: string | null
           versicherungsakte_pdf_url?: string | null
           vor_ort_notizen?: string | null
+          zustaendig_id?: string | null
           vorgang_phase?: string | null
           wiederkehr_turnus?: string | null
           wiedervorlage_datum?: string | null
@@ -5940,6 +5942,7 @@ export type Database = {
           versicherungsakte_erstellt_am?: string | null
           versicherungsakte_pdf_url?: string | null
           vor_ort_notizen?: string | null
+          zustaendig_id?: string | null
           vorgang_phase?: string | null
           wiederkehr_turnus?: string | null
           wiedervorlage_datum?: string | null

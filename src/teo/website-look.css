@@ -155,3 +155,32 @@
 .mein-wl .mein-zeilen__titel,
 .mein-wl .mein-news__zeile-titel { font-weight: 700; color: var(--teo-navy); }
 .mein-wl .mieter-wl-btn { border-radius: 999px; font-weight: 700; }
+
+/* Filterleiste mobil: kein Streifen dahinter — die Chips schweben als weiße Pillen über der Liste */
+@media (max-width: 767px) {
+  .ap-wl .listbar {
+    background: transparent;
+    box-shadow: none;
+    border-bottom: none;
+  }
+  .ap-wl .listbar-chips {
+    gap: 8px;
+    padding: 4px 2px 10px;
+  }
+  .ap-wl .listbar-chips .chip {
+    height: 40px;
+    min-height: 40px;
+    padding: 0 16px;
+    border: 1px solid var(--teo-linie);
+    border-radius: 999px;
+    background: #ffffff;
+    color: var(--teo-text-2);
+    font-weight: 700;
+    box-shadow: 0 10px 24px -14px rgba(11, 31, 58, 0.45);
+  }
+  .ap-wl .listbar-chips .chip.active {
+    background: var(--teo-navy);
+    border-color: var(--teo-navy);
+    color: #ffffff;
+  }
+}
