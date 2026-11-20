@@ -104,7 +104,7 @@ import {
 } from "@/lib/portal2/status";
 import { cn } from "@/lib/utils";
 import { PortalButton } from "@/components/portal/PortalButton";
-import { MARKE } from "@/lib/marke";
+import { istTeo, MARKE } from "@/lib/marke";
 
 const PortalBaerenwaldGpt = dynamic(
   () =>
@@ -1228,7 +1228,8 @@ export function PortalClient({
               compact
               title={PORTAL_EMPTY_TITLE}
               description={portalEmptySubtitle(
-                hvPortalMode ? "hv" : isPrivatLike ? "mieter" : "kunde"
+                // TEO: Privat-/Gewerbekunden haben keine Verwaltung — Text für Kunden mit „+ Anfrage“
+                hvPortalMode ? "hv" : isPrivatLike && !istTeo ? "mieter" : "kunde"
               )}
             />
           ) : (
@@ -1427,9 +1428,10 @@ export function PortalClient({
     <>
       <PortalShell
         variant="kunde"
+        className={istTeo ? "portal-wl" : undefined}
         brandTitle={brandTitle}
         brandSubtitle={brandSubtitle}
-        brandKuerzel="B"
+        brandKuerzel={istTeo ? (kunde.name?.trim().split(/\s+/).map((t) => t[0]).join("").slice(0, 2).toUpperCase() || "T") : "B"}
         sidebarOwner={kunde.name?.trim() || `${MARKE.portalName}`}
         hideMobileChrome={section === "gpt"}
         contentFullBleed={
@@ -1524,7 +1526,7 @@ export function PortalClient({
               onActionRefresh={() => refreshFlash()}
               kpis={privatKpis}
               recent={recentItems}
-              heroImageUrl={portalHeaderHeroSrc("privat")}
+              heroImageUrl={istTeo ? null : portalHeaderHeroSrc("privat")}
               onOpenAll={() => {
                 setPrivatChip("alle");
                 setVorgangFilter("alle");
@@ -1554,7 +1556,7 @@ export function PortalClient({
               onActionRefresh={() => refreshFlash()}
               kpis={privatKpis}
               recent={recentItems}
-              heroImageUrl={portalHeaderHeroSrc("mieter")}
+              heroImageUrl={istTeo ? null : portalHeaderHeroSrc("mieter")}
               onOpenAll={() => {
                 setPrivatChip("alle");
                 setVorgangFilter("alle");
@@ -1576,7 +1578,8 @@ export function PortalClient({
 
           {section === "vorgaenge" ? vorgaengeScreen : null}
 
-          {section !== "gpt" ? (
+          {/* TEO: Rechtliches nur in den Einstellungen (wie Handwerker-App) */}
+          {section !== "gpt" && (!istTeo || section === "profil") ? (
             <PortalLegalFooter variant="kunde" />
           ) : null}
       </PortalShell>

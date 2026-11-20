@@ -4,6 +4,8 @@ import { AdminViewBanner } from "@/components/shared/AdminViewBanner";
 import { PortalBusyProvider } from "@/components/shared/PortalBusyContext";
 import { resolvePortalPwaApplicationName } from "@/lib/portal/resolve-portal-pwa-name";
 import { MARKE_ASSETS } from "@/lib/marke-assets";
+// TEO-Look (wirkt nur unter .portal-wl, Bärenwald bleibt unverändert)
+import "@/teo/portal-website-look.css";
 
 export async function generateMetadata(): Promise<Metadata> {
   const applicationName = await resolvePortalPwaApplicationName();

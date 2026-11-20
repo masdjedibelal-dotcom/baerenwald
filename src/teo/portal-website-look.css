@@ -204,3 +204,43 @@
 .teo-blatt__verlauf li + li { border-top: 1px solid #dce4ee; }
 .teo-blatt-fuss { display: flex; gap: 10px; width: 100%; }
 .teo-blatt-fuss > * { flex: 1 1 0; }
+
+/* Kundenportal (TEO): Listen-Chips wie im CRM (40 px, weiß, gewählt in Navy) */
+.portal-wl .portal-liste-chip {
+  min-height: 40px !important;
+  height: 40px;
+  padding: 0 16px !important;
+  border-radius: 999px;
+  border: 1px solid var(--wl-linie) !important;
+  background: #ffffff !important;
+  box-shadow: 0 10px 24px -14px rgba(11, 31, 58, 0.45);
+  font-size: 14px !important;
+  font-weight: 700 !important;
+  color: var(--wl-text-2) !important;
+}
+.portal-wl .portal-liste-chip--active { background: var(--wl-navy) !important; border-color: var(--wl-navy) !important; color: #ffffff !important; }
+/* Kundenportal (TEO): Listen-Karte wie in CRM/Arbeitsplatz — Titel, Unterzeile, Status als Plakette; kein Farbstrich links */
+.portal-wl .portal-list-card { border: 1px solid var(--wl-linie) !important; border-radius: 20px !important; box-shadow: var(--wl-schatten) !important; }
+.portal-wl .portal-list-card-edge { display: none !important; }
+.portal-wl .portal-list-card-main > div { display: flex; flex-direction: column; align-items: flex-start; }
+.portal-wl .portal-list-card-title { font-weight: 700; color: var(--wl-navy) !important; margin-top: 0 !important; }
+.portal-wl .portal-status-word {
+  order: 3;
+  margin-top: 8px;
+  display: inline-flex;
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: #eaf0f8;
+  color: #1e5fa8 !important;
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: none;
+  letter-spacing: 0;
+}
+/* Kundenportal-Detail (TEO): Zurück lesbar, Titel mit Rand, gewählter Reiter in Navy */
+.portal-wl .portal-detail-cover-back { color: var(--wl-navy) !important; font-weight: 700; }
+.portal-wl .portal-detail-hero-inner { padding-left: 16px; padding-right: 16px; }
+.portal-wl .portal-detail-hero-inner .portal-dash-hero-name { color: var(--wl-navy); }
+.portal-wl .portal-detail-tab { border-radius: 999px; font-weight: 700; }
+.portal-wl .portal-detail-tab--active { background: var(--wl-navy) !important; border-color: var(--wl-navy) !important; color: #ffffff !important; }
+.portal-wl .portal-detail-tabs-row { padding-left: 16px; padding-right: 16px; }
