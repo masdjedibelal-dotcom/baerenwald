@@ -66,11 +66,8 @@
 .ap-wl .ap-avatar { width: 40px; height: 40px; font-size: 14px; font-weight: 800; background: var(--teo-blau); }
 .ap-wl .topbar-avatar.btn { padding: 0; border: 0; background: none; width: auto; height: auto; min-width: 0; box-shadow: none; }
 .ap-wl .page {
-  background:
-    radial-gradient(36vmax 24vmax at 0% 0%, rgba(156, 192, 234, 0.3), transparent 70%),
-    radial-gradient(28vmax 20vmax at 100% 0%, rgba(246, 207, 115, 0.22), transparent 70%),
-    var(--teo-grund);
-  background-repeat: no-repeat;
+  /* ruhiger, einfarbiger Grund — kein Farbverlauf hinter dem Kopf */
+  background: var(--teo-grund);
 }
 .ap-wl .page-inner { padding: 40px 40px 64px; max-width: 1160px; }
 
@@ -222,7 +219,7 @@
 }
 
 /* ════ Team-App (Hausmeister): wie der Arbeitsplatz — Verlauf, große Überschrift, Glas-Leiste in Navy ════ */
-.tm-app.ap-wl { background: var(--teo-verlauf, radial-gradient(36vmax 24vmax at 0% 0%, rgba(156, 192, 234, 0.3), transparent 70%)), var(--teo-grund); background-repeat: no-repeat; min-height: 100dvh; }
+.tm-app.ap-wl { background: var(--teo-grund); min-height: 100dvh; }
 .ap-wl .tm-kopf { background: rgba(247, 249, 252, 0.8); -webkit-backdrop-filter: blur(16px) saturate(1.5); backdrop-filter: blur(16px) saturate(1.5); border-bottom-color: var(--teo-linie); }
 .ap-wl .tm-kopf__marke { background: var(--teo-navy); border-radius: 10px; }
 .ap-wl .tm-kopf__org { font-weight: 800; color: var(--teo-navy); }

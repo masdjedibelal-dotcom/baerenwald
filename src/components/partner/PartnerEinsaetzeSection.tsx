@@ -158,6 +158,8 @@ export function PartnerEinsaetzeSection({
   const [ansicht, setAnsicht] = useState<"aktuell" | "neu" | "erledigt">("aktuell");
   /** Kompakte Karten: Details erst beim Klick */
   const [offenId, setOffenId] = useState<string | null>(null);
+  /** TEO: Antippen öffnet ein Blatt mit Details und Aktionen (wie der Einsatz im CRM) */
+  const [detailId, setDetailId] = useState<string | null>(null);
   const [dialog, setDialog] = useState<Dialog>(null);
   const [busy, setBusy] = useState(false);
   const [grund, setGrund] = useState("");
@@ -312,6 +314,7 @@ export function PartnerEinsaetzeSection({
     inArbeit: alle.filter((e) => e.status === "angenommen" && !istErledigt(e)).length,
     erledigt: alle.filter(istErledigt).length,
   };
+  const detail = detailId ? alle.find((e) => e.id === detailId) ?? null : null;
   const sichtbar = alle.filter((e) =>
     nurAktuell
       ? !istErledigt(e)
@@ -430,8 +433,8 @@ export function PartnerEinsaetzeSection({
                 <button
                   type="button"
                   className="partner-einsatz__kopf flex w-full items-start justify-between gap-3 text-left"
-                  aria-expanded={offen}
-                  onClick={() => setOffenId(offen ? null : e.id)}
+                  aria-expanded={istTeo ? undefined : offen}
+                  onClick={() => (istTeo ? setDetailId(e.id) : setOffenId(offen ? null : e.id))}
                 >
                   <span className="flex min-w-0 flex-col gap-0.5">
                     <span className="min-w-0 font-semibold">{e.titel}</span>
@@ -439,10 +442,10 @@ export function PartnerEinsaetzeSection({
                   </span>
                   <span className="flex shrink-0 items-center gap-2">
                     <PortalStatusPill label={st.label} tone={st.tone} />
-                    <span className="partner-einsatz__pfeil text-[var(--p2-sub)]" aria-hidden>{istTeo ? <PortalIcon ctx="muted" n={offen ? "chevron-up" : "chevron-down"} size={16} /> : offen ? "▴" : "▾"}</span>
+                    <span className="partner-einsatz__pfeil text-[var(--p2-sub)]" aria-hidden>{istTeo ? <PortalIcon ctx="muted" n="chevron-right" size={16} /> : offen ? "▴" : "▾"}</span>
                   </span>
                 </button>
-                {offen ? (
+                {offen && !istTeo ? (
                 <>
                 {e.mitarbeiter_name ? (
                   <div className="text-fs-meta text-[var(--p2-sub)]">Vor Ort: {e.mitarbeiter_name}</div>
@@ -474,18 +477,7 @@ export function PartnerEinsaetzeSection({
                 ) : null}
                 </>
                 ) : null}
-                {istTeo && offen && (e.status === "angenommen" || e.status === "fertig") ? (
-                  <TeoEinsatzAktionen
-                    e={e}
-                    busy={busy}
-                    wann={wann}
-                    oeffne={oeffne}
-                    dokument={() => {
-                      setDokArt("sonstiges");
-                      oeffne({ art: "dokument", einsatz: e });
-                    }}
-                  />
-                ) : offen || e.status === "gesendet" ? (
+                {istTeo ? null : offen || e.status === "gesendet" ? (
                 <div className="flex flex-wrap gap-2">
                   {e.status === "gesendet" ? (
                     <>
@@ -544,6 +536,23 @@ export function PartnerEinsaetzeSection({
           })}
         </div>
       </PortalDetailCard>
+
+      {istTeo && detail ? (
+        <TeoEinsatzBlatt
+          e={detail}
+          busy={busy}
+          schliessen={() => setDetailId(null)}
+          aktion={(d) => {
+            setDetailId(null);
+            if (d === "annehmen") return annehmen(detail);
+            if (d === "dokument") {
+              setDokArt("sonstiges");
+              return oeffne({ art: "dokument", einsatz: detail });
+            }
+            oeffne({ art: d, einsatz: detail });
+          }}
+        />
+      ) : null}
 
       {dialog ? (
         <PortalModalShell
@@ -668,46 +677,111 @@ export function PartnerEinsaetzeSection({
   );
 }
 
-/** TEO: Aktionen eines laufenden Einsatzes als antippbare Zeilen, darunter ein Hauptknopf (wie in modernen Apps). */
-function TeoEinsatzAktionen({
+/** TEO: Einsatz als Blatt — oben Infos als Zeilen, darunter Anweisung und Meldungen, unten ein Hauptknopf. */
+function TeoEinsatzBlatt({
   e,
   busy,
-  wann,
-  oeffne,
-  dokument,
+  schliessen,
+  aktion,
 }: {
   e: PartnerEinsatz;
   busy: boolean;
-  wann: string;
-  oeffne: (d: { art: "termin" | "update" | "regie" | "fertig" | "rechnung"; einsatz: PartnerEinsatz }) => void;
-  dokument: () => void;
+  schliessen: () => void;
+  aktion: (d: "annehmen" | "ablehnen" | "termin" | "update" | "regie" | "fertig" | "rechnung" | "dokument") => void;
 }) {
+  const st = e.vorgang_erledigt ? STATUS.fertig : STATUS[e.status];
+  const wann = [datum(e.termin_von), e.termin_bis && e.termin_bis !== e.termin_von ? datum(e.termin_bis) : ""].filter(Boolean).join(" bis ");
   const laeuft = e.status === "angenommen" && !e.vorgang_erledigt;
-  return (
-    <div className="teo-einsatz-aktionen flex flex-col gap-3">
-      <div className="teo-zeilen">
-        {laeuft ? (
-          <>
-            <TeoZeile icon="calendar-event" label="Ausführung" wert={wann || "Noch offen"} disabled={busy} onClick={() => oeffne({ art: "termin", einsatz: e })} />
-            <TeoZeile icon="pencil" label="Update schreiben" disabled={busy} onClick={() => oeffne({ art: "update", einsatz: e })} />
-            <TeoZeile icon="list-todo" label="Stunden melden" disabled={busy} onClick={() => oeffne({ art: "regie", einsatz: e })} />
-          </>
-        ) : null}
-        <TeoZeile icon="file-text" label="Dokument hochladen" disabled={busy} onClick={dokument} />
+  const footer =
+    e.status === "gesendet" ? (
+      <div className="teo-blatt-fuss">
+        <PortalButton variant="secondary" disabled={busy} onClick={() => aktion("ablehnen")}>
+          Ablehnen
+        </PortalButton>
+        <PortalButton variant="primary" disabled={busy} onClick={() => aktion("annehmen")}>
+          Annehmen
+        </PortalButton>
       </div>
-      {laeuft ? (
-        <PortalButton variant="primary" className="w-full" disabled={busy} onClick={() => oeffne({ art: "fertig", einsatz: e })}>
+    ) : laeuft ? (
+      <div className="teo-blatt-fuss">
+        <PortalButton variant="primary" className="w-full" disabled={busy} onClick={() => aktion("fertig")}>
           Als erledigt melden
         </PortalButton>
-      ) : e.status === "fertig" && !e.rechnung_eingereicht_at ? (
-        <PortalButton variant="primary" className="w-full" disabled={busy} onClick={() => oeffne({ art: "rechnung", einsatz: e })}>
+      </div>
+    ) : e.status === "fertig" && !e.rechnung_eingereicht_at ? (
+      <div className="teo-blatt-fuss">
+        <PortalButton variant="primary" className="w-full" disabled={busy} onClick={() => aktion("rechnung")}>
           Rechnung hochladen
         </PortalButton>
-      ) : e.rechnung_eingereicht_at ? (
-        <span className="text-fs-meta text-[var(--p2-sub)]">
-          {e.rechnung_bezahlt_at ? `Rechnung bezahlt am ${datum(e.rechnung_bezahlt_at)}` : "Rechnung hochgeladen"}
-        </span>
-      ) : null}
+      </div>
+    ) : undefined;
+  return (
+    <PortalModalShell open title={e.titel} subtitle={st.label} onClose={schliessen} footer={footer}>
+      <div className="teo-blatt">
+        <div className="teo-zeilen">
+          {laeuft ? (
+            <TeoZeile icon="calendar-event" label="Ausführung" wert={wann || "Noch offen"} disabled={busy} onClick={() => aktion("termin")} />
+          ) : (
+            <TeoInfo label="Ausführung" wert={wann || "Noch offen"} />
+          )}
+          {e.ort ? <TeoInfo label="Ort" wert={e.ort} /> : null}
+          {e.mitarbeiter_name ? <TeoInfo label="Vor Ort" wert={e.mitarbeiter_name} /> : null}
+          {e.ek_betrag != null ? <TeoInfo label="Vergütung" wert={`${euro(e.ek_betrag)} ${e.ek_art}`} /> : null}
+        </div>
+        {e.kontakt_vor_ort ? (
+          <p className="teo-blatt__hinweis">
+            Kontakt vor Ort: <KontaktVorOrt text={e.kontakt_vor_ort} />
+          </p>
+        ) : !e.ort ? (
+          <p className="teo-blatt__hinweis">Ort und Ansprechpartner vor Ort erfahren Sie von {MARKE.name}.</p>
+        ) : null}
+        {e.anweisung || e.anweisung_fotos.length ? (
+          <div className="teo-blatt__abschnitt">
+            <h3>Anweisung</h3>
+            {e.anweisung ? <p className="m-0 whitespace-pre-wrap">{e.anweisung}</p> : null}
+            <FotoGalerie urls={e.anweisung_fotos} />
+          </div>
+        ) : null}
+        {e.status === "angenommen" || e.status === "fertig" ? (
+          <div className="teo-blatt__abschnitt">
+            <h3>Melden</h3>
+            <div className="teo-zeilen">
+              {laeuft ? (
+                <>
+                  <TeoZeile icon="pencil" label="Update schreiben" disabled={busy} onClick={() => aktion("update")} />
+                  <TeoZeile icon="list-todo" label="Stunden melden" disabled={busy} onClick={() => aktion("regie")} />
+                </>
+              ) : null}
+              <TeoZeile icon="file-text" label="Dokument hochladen" disabled={busy} onClick={() => aktion("dokument")} />
+            </div>
+          </div>
+        ) : null}
+        {e.regie.length || e.letztes_update_at || e.rechnung_eingereicht_at ? (
+          <div className="teo-blatt__abschnitt">
+            <h3>Verlauf</h3>
+            <ul className="teo-blatt__verlauf">
+              {e.letztes_update_at ? <li>Letztes Update · {datum(e.letztes_update_at)}</li> : null}
+              {e.regie.map((r) => (
+                <li key={r.id}>
+                  Stunden{r.stunden ? ` ${String(r.stunden).replace(".", ",")} Std` : ""} · {REGIE_STAND[r.stand]}
+                </li>
+              ))}
+              {e.rechnung_eingereicht_at ? (
+                <li>{e.rechnung_bezahlt_at ? `Rechnung bezahlt am ${datum(e.rechnung_bezahlt_at)}` : "Rechnung hochgeladen"}</li>
+              ) : null}
+            </ul>
+          </div>
+        ) : null}
+      </div>
+    </PortalModalShell>
+  );
+}
+
+function TeoInfo({ label, wert }: { label: string; wert: string }) {
+  return (
+    <div className="teo-zeile teo-zeile--info">
+      <span className="teo-zeile__label">{label}</span>
+      <span className="teo-zeile__wert">{wert}</span>
     </div>
   );
 }

@@ -32,10 +32,7 @@
 
 /* Kopf der Startseite: kein Foto, heller Grund mit Farbverlauf, große Überschrift */
 .portal-wl .portal-dash-hero {
-  background:
-    radial-gradient(36vmax 24vmax at 0% 0%, rgba(156, 192, 234, 0.32), transparent 70%),
-    radial-gradient(28vmax 20vmax at 100% 0%, rgba(246, 207, 115, 0.24), transparent 70%),
-    #f7f9fc;
+  background: #f7f9fc; /* einfarbig — kein Farbverlauf hinter dem Kopf */
   color: var(--wl-navy);
 }
 .portal-wl .portal-dash-hero-bg { display: none; }
@@ -186,3 +183,24 @@
 .portal-wl .partner-kpi__wert { font-size: 32px !important; font-weight: 800; line-height: 1; letter-spacing: -0.02em; color: var(--wl-navy); }
 .portal-wl .portal-dash-kpi-label,
 .portal-wl .partner-kpi__label { font-size: 14px !important; font-weight: 600 !important; color: var(--wl-text-2); }
+
+/* Einsatz-Blatt (TEO): Aufbau wie das Einsatz-Blatt im CRM */
+.portal-wl .teo-blatt, .teo-blatt { display: flex; flex-direction: column; gap: 16px; }
+.teo-blatt .teo-zeilen { display: flex; flex-direction: column; background: #ffffff; border: 1px solid #dce4ee; border-radius: 16px; overflow: hidden; }
+.teo-blatt .teo-zeile { display: flex; align-items: center; gap: 12px; width: 100%; min-height: 52px; padding: 10px 14px; background: #ffffff; border: 0; text-align: left; font: inherit; color: #0b1f3a; cursor: pointer; }
+.teo-blatt .teo-zeile + .teo-zeile { border-top: 1px solid #dce4ee; }
+.teo-blatt .teo-zeile--info { cursor: default; min-height: 48px; }
+.teo-blatt .teo-zeile__icon { display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px; flex: 0 0 32px; border-radius: 999px; background: #eaf0f8; color: #1e5fa8; }
+.teo-blatt .teo-zeile__icon > *, .teo-blatt .teo-zeile__icon svg { color: #1e5fa8 !important; }
+.teo-blatt .teo-zeile__label { flex: 1 1 auto; min-width: 0; font-weight: 700; font-size: 15px; }
+.teo-blatt .teo-zeile--info .teo-zeile__label { font-weight: 600; color: #4a5d75; }
+.teo-blatt .teo-zeile__wert { flex: 0 1 auto; min-width: 0; text-align: right; font-size: 15px; color: #0b1f3a; font-weight: 600; font-variant-numeric: tabular-nums; }
+.teo-blatt .teo-zeile__pfeil { display: inline-flex; color: #5b6b80; }
+.teo-blatt__abschnitt { display: flex; flex-direction: column; gap: 8px; }
+.teo-blatt__abschnitt h3 { margin: 0; font-size: 15px; font-weight: 800; color: #0b1f3a; }
+.teo-blatt__hinweis { margin: -6px 0 0; font-size: 13.5px; color: #4a5d75; }
+.teo-blatt__verlauf { list-style: none; margin: 0; padding: 0 14px; background: #ffffff; border: 1px solid #dce4ee; border-radius: 16px; }
+.teo-blatt__verlauf li { padding: 12px 0; font-size: 14px; color: #0b1f3a; }
+.teo-blatt__verlauf li + li { border-top: 1px solid #dce4ee; }
+.teo-blatt-fuss { display: flex; gap: 10px; width: 100%; }
+.teo-blatt-fuss > * { flex: 1 1 0; }

@@ -664,11 +664,7 @@
 
 /* ════ Servus TEO: Meldeseite und Statusseite im Website-Look (runde Karten, Verlauf, Kartenwahl ohne Radio) ════ */
 :root[data-marke="teo"] .mieter-wl-page {
-  background:
-    radial-gradient(36vmax 24vmax at 0% 0%, rgba(156, 192, 234, 0.3), transparent 70%),
-    radial-gradient(28vmax 20vmax at 100% 0%, rgba(246, 207, 115, 0.2), transparent 70%),
-    #f7f9fc;
-  background-repeat: no-repeat;
+  background: #f7f9fc; /* einfarbig — kein Farbverlauf hinter dem Kopf */
   color: #0b1f3a;
 }
 :root[data-marke="teo"] .mieter-wl-header { background: transparent; border-bottom: 0; }
