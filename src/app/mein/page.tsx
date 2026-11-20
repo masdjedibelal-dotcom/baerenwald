@@ -11,12 +11,22 @@ import { createClient } from '@/lib/supabase/server'
 import { ladeApKontext } from '@/teo/arbeitsplatz/kontext'
 import { ladeMitteilungen, ladeObjektDokumente } from '@/teo/arbeitsplatz/daten/haus'
 import { HausInfo } from '@/teo/mein/HausInfo'
+import { MeinVorgaengeListe } from '@/teo/mein/MeinVorgaengeListe'
 import { ladeEigentuemerObjekte, ladeHausPlaene, ladeMeineMeldungen } from '@/teo/mein/mein-daten'
 
 import '@/teo/mein/mein.css'
 import '@/teo/website-look.css'
 
 export const dynamic = 'force-dynamic'
+
+/** Begrüßung nach Tageszeit (Berlin) — wie im Arbeitsplatz. */
+function begruessung(): string {
+  const teil = new Intl.DateTimeFormat('de-DE', { hour: 'numeric', hour12: false, timeZone: 'Europe/Berlin' })
+    .formatToParts(new Date())
+    .find((t) => t.type === 'hour')
+  const stunde = Number(teil?.value ?? 12)
+  return stunde < 11 ? 'Guten Morgen.' : stunde < 18 ? 'Guten Tag.' : 'Guten Abend.'
+}
 export const metadata: Metadata = { title: 'Mein Zuhause', robots: { index: false, follow: false } }
 
 /** MeinTEO: Mieter (Meldungen) und Eigentümer (Mein Objekt) — im Branding der Verwaltung. */
@@ -54,7 +64,7 @@ export default async function MeinSeite() {
     <MieterWlFrame brand={brand} className="mein-wl" datenschutzHref={legal.datenschutz} impressumHref={legal.impressum}>
       <div className="space-y-5">
         <div className="wl-kopf">
-          <h1>Guten Tag.</h1>
+          <h1>{begruessung()}</h1>
           <p>{offeneMeldungen === 1 ? 'Eine Meldung ist in Arbeit.' : offeneMeldungen ? `${offeneMeldungen} Meldungen sind in Arbeit.` : 'Alles erledigt.'}</p>
         </div>
         {objekte.map((o) => (
@@ -87,24 +97,27 @@ export default async function MeinSeite() {
                   ) : null}
                 </div>
               ) : null}
-              {o.vorgaenge.length ? (
-                <ul className="mein-zeilen">
-                  {o.vorgaenge.map((v) => (
-                    <li key={v.id}>
-                      <span className="mein-zeilen__text">
-                        <span className="mein-zeilen__titel block">{v.titel}</span>
-                        <span className="mein-zeilen__meta block">{formatDatum(v.datum)}</span>
-                      </span>
-                      <span className={v.erledigt ? 'mein-pill mein-pill--fertig' : 'mein-pill'}>{v.status}</span>
-                    </li>
-                  ))}
-                </ul>
-              ) : (
-                <p className="mein-leer">Keine Vorgänge</p>
-              )}
             </div>
           </MieterWlCard>
         ))}
+
+        {objekte.length ? (
+          <section className="mein-abschnitt">
+            <h2>Vorgänge</h2>
+            <MeinVorgaengeListe
+              leerText="Keine Vorgänge"
+              eintraege={objekte.flatMap((o) =>
+                o.vorgaenge.map((v) => ({
+                  id: v.id,
+                  titel: v.titel,
+                  meta: [objekte.length > 1 ? o.name : null, formatDatum(v.datum)].filter(Boolean).join(' · '),
+                  status: v.status,
+                  erledigt: v.erledigt,
+                }))
+              )}
+            />
+          </section>
+        ) : null}
 
         {meldungen.length || !objekte.length ? (
           <section className="mein-abschnitt">
@@ -116,32 +129,17 @@ export default async function MeinSeite() {
                 </MieterWlBtn>
               ) : null}
             </div>
-            {meldungen.length ? (
-              <div className="mieter-wl-objekt-list">
-                {meldungen.map((m) => {
-                  const inhalt = (
-                    <>
-                      <span className="min-w-0 flex-1">
-                        <span className="mieter-wl-objekt-item-title block">{m.titel}</span>
-                        <span className="mieter-wl-objekt-item-meta block">{[m.objektName, formatDatum(m.datum)].filter(Boolean).join(' · ')}</span>
-                      </span>
-                      <span className={m.stufe === 'erledigt' ? 'mein-pill mein-pill--fertig' : 'mein-pill'}>{m.stufeLabel}</span>
-                    </>
-                  )
-                  return m.statusLink ? (
-                    <Link key={m.id} href={m.statusLink} className="mieter-wl-objekt-item">
-                      {inhalt}
-                    </Link>
-                  ) : (
-                    <div key={m.id} className="mieter-wl-objekt-item">
-                      {inhalt}
-                    </div>
-                  )
-                })}
-              </div>
-            ) : (
-              <p className="mein-leer">Noch keine Meldungen</p>
-            )}
+            <MeinVorgaengeListe
+              leerText="Noch keine Meldungen"
+              eintraege={meldungen.map((m) => ({
+                id: m.id,
+                titel: m.titel,
+                meta: [m.objektName, formatDatum(m.datum)].filter(Boolean).join(' · '),
+                status: m.stufeLabel,
+                erledigt: m.stufe === 'erledigt',
+                href: m.statusLink,
+              }))}
+            />
           </section>
         ) : null}
 

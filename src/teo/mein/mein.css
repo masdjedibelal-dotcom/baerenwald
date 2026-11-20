@@ -32,3 +32,28 @@
 .mein-news__titel { font-family: var(--font-display, system-ui); font-weight: 700; font-size: 17px; color: var(--p2-ink); }
 .mein-news__datum { font-size: 12.5px; color: var(--p2-sub); margin-top: 2px; }
 .mein-news__text { font-size: 14px; color: var(--p2-ink); line-height: 1.5; white-space: pre-wrap; margin-top: 10px; }
+
+/* Listen wie in CRM/Arbeitsplatz/Handwerker-App: Filter-Chips oben, jede Zeile eine eigene Karte */
+.mein-liste { display: flex; flex-direction: column; gap: 10px; }
+.mein-chips { display: flex; gap: 8px; overflow-x: auto; padding: 2px 0 6px; scrollbar-width: none; }
+.mein-chips::-webkit-scrollbar { display: none; }
+.mein-chip {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 40px;
+  padding: 0 16px;
+  border-radius: 999px;
+  border: 1px solid #dce4ee;
+  background: #ffffff;
+  box-shadow: 0 10px 24px -14px rgba(11, 31, 58, 0.45);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 700;
+  color: #4a5d75;
+  cursor: pointer;
+}
+.mein-chip__n { color: #6c7c90; font-variant-numeric: tabular-nums; }
+.mein-chip.is-on { background: #0b1f3a; border-color: #0b1f3a; color: #ffffff; }
+.mein-chip.is-on .mein-chip__n { color: rgba(255, 255, 255, 0.75); }

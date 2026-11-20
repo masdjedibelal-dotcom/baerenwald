@@ -148,14 +148,14 @@
   border-radius: 999px;
   border: 1px solid var(--wl-linie);
   background: #ffffff;
-  box-shadow: 0 6px 16px -10px rgba(11, 31, 58, 0.35);
+  box-shadow: 0 10px 24px -14px rgba(11, 31, 58, 0.45);
   font: inherit;
   font-size: 14px;
   font-weight: 700;
-  color: var(--wl-navy);
+  color: var(--wl-text-2);
   cursor: pointer;
 }
-.portal-wl .teo-chip__n { font-weight: 600; color: #5b6b80; font-variant-numeric: tabular-nums; }
+.portal-wl .teo-chip__n { font-weight: 700; color: #6c7c90; font-variant-numeric: tabular-nums; }
 .portal-wl .teo-chip.is-on { background: var(--wl-navy); border-color: var(--wl-navy); color: #ffffff; }
 .portal-wl .teo-chip.is-on .teo-chip__n { color: rgba(255, 255, 255, 0.75); }
 .portal-wl .teo-einsatz-liste .partner-einsatz {
