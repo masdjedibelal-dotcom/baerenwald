@@ -259,5 +259,36 @@
     -webkit-backdrop-filter: blur(18px) saturate(1.6);
     backdrop-filter: blur(18px) saturate(1.6);
   }
-  .ap-wl .bottomnav-item.active { background: rgba(255, 255, 255, 0.16); border-radius: 999px; margin: 6px 4px; }
+  /* Aktiver Punkt: nur eine Glas-Pille, Icon weiß und auf gleicher Höhe, kein Punkt darunter */
+  .ap-wl .bottomnav-item { color: rgba(255, 255, 255, 0.6); }
+  .ap-wl .bottomnav-item.active { color: #ffffff; background: transparent; margin: 0 4px; }
+  .ap-wl .bottomnav-item.active::after { display: none; }
+  .ap-wl .bottomnav-item.active::before {
+    display: block;
+    content: '';
+    position: absolute;
+    top: 4px;
+    bottom: 4px;
+    left: 0;
+    right: 0;
+    width: auto;
+    height: auto;
+    transform: none;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.18);
+  }
+  /* Kopfzeile: helles Glas wie im CRM, Seitenname in Navy */
+  .ap-wl .topbar {
+    background: rgba(247, 249, 252, 0.72);
+    -webkit-backdrop-filter: blur(16px) saturate(1.5);
+    backdrop-filter: blur(16px) saturate(1.5);
+    border-bottom-color: rgba(220, 228, 238, 0.7);
+  }
+  .ap-wl .topbar-title-text { color: var(--teo-navy); font-weight: 800; font-size: 17px; }
+  /* Rechts wie im CRM: runder Plus-Knopf und Konto-Plakette in Navy */
+  .ap-wl .topbar-actions { gap: 10px; }
+  .ap-wl .topbar-cta.btn { display: inline-flex !important; width: 40px; height: 40px; padding: 0; border-radius: 999px; justify-content: center; }
+  .ap-wl .topbar-cta .mock-icon { display: inline-flex !important; width: 18px !important; height: 18px !important; }
+  .ap-wl .topbar-cta .topbar-cta-label { display: none !important; }
+  .ap-wl .ap-avatar { background: var(--teo-navy); }
 }
