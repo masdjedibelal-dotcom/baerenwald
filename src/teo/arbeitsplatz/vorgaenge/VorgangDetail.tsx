@@ -317,7 +317,7 @@ export function VorgangDetail({
                       <MockProp label="Objekt">{zeile.objektName ?? '—'}</MockProp>
                       {zeile.einheit ? <MockProp label="Einheit">{zeile.einheit}</MockProp> : null}
                       {item?.melderName ? <MockProp label="Gemeldet von">{item.melderName}</MockProp> : null}
-                      {item?.melderEinheit ? <MockProp label="Einheit">{item.melderEinheit}</MockProp> : null}
+                      {item?.melderEinheit && item.melderEinheit.trim() !== (zeile.einheit ?? '').trim() ? <MockProp label="Einheit">{item.melderEinheit}</MockProp> : null}
                       {item?.melderTelefon ? <MockProp label="Telefon">{item.melderTelefon}</MockProp> : null}
                       {item?.melderEmail ? <MockProp label="E-Mail">{item.melderEmail}</MockProp> : null}
                       {angaben.map((r, i) => (

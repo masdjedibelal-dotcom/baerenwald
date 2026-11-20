@@ -169,6 +169,16 @@
   --fl-accent-light: var(--org-primary-soft, #eaf3de);
 }
 
+/* Servus TEO: ohne eigene Farbe der Verwaltung teo-Blau statt Bärenwald-Grün (Rahmen liegt nicht unter .portal-ui) */
+:root[data-marke="teo"] .mieter-wl-page {
+  --p2-primary: #1e5fa8;
+  --p2-primary-dk: #0b1f3a;
+  --p2-primary-soft: #eaf0f8;
+  --fl-accent: var(--org-primary, #1e5fa8);
+  --fl-accent-dark: var(--org-primary-dk, #0b1f3a);
+  --fl-accent-light: var(--org-primary-soft, #eaf0f8);
+}
+
 .mieter-wl-shell {
   max-width: none;
   margin: 0 auto;

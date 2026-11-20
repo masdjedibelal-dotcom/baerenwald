@@ -1,5 +1,6 @@
 "use client";
 
+import { istTeo } from "@/lib/marke";
 import Image from "next/image";
 import type { ReactNode } from "react";
 
@@ -114,7 +115,8 @@ export function MieterWlFooter({
   return (
     <footer className="mieter-wl-footer">
       <p>{formatMieterWlFooterContact(brand, "de")}</p>
-      <p className="mieter-wl-footer-noreply">{mieterWlFooterNoreply("de")}</p>
+      {/* Servus TEO: Mail-Satz („kann nicht beantwortet werden“) gehört nicht auf eine Webseite */}
+      {istTeo ? null : <p className="mieter-wl-footer-noreply">{mieterWlFooterNoreply("de")}</p>}
       <p className="mieter-wl-footer-legal mt-2">
         <a href={ds} className="underline">
           Datenschutz

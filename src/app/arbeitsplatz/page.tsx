@@ -13,7 +13,11 @@ import { AP_STATUS } from '@/teo/arbeitsplatz/vorgang-status'
 export const metadata = { title: 'Start' }
 
 function begruessung(): string {
-  const stunde = Number(new Intl.DateTimeFormat('de-DE', { hour: 'numeric', hour12: false, timeZone: 'Europe/Berlin' }).format(new Date()))
+  // „11 Uhr“ ist keine Zahl — nur den Stunden-Teil lesen (sonst immer „Guten Abend“)
+  const teil = new Intl.DateTimeFormat('de-DE', { hour: 'numeric', hour12: false, timeZone: 'Europe/Berlin' })
+    .formatToParts(new Date())
+    .find((t) => t.type === 'hour')
+  const stunde = Number(teil?.value ?? 12)
   return stunde < 11 ? 'Guten Morgen.' : stunde < 18 ? 'Guten Tag.' : 'Guten Abend.'
 }
 

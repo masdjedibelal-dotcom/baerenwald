@@ -68,7 +68,9 @@ function Inhalt() {
         einer funktionsfähigen, missbrauchssicheren Beratung).
       </p>
 
-      <strong id="meinbaerenwald">3. {MARKE.portalName} (Kundenportal)</strong>
+      {/* „kundenportal“ neutral für beide Marken; alter Anker bleibt für bestehende Links */}
+      <span id="meinbaerenwald" aria-hidden />
+      <strong id="kundenportal">3. {MARKE.portalName} (Kundenportal)</strong>
       <p>
         Unter{" "}
         <a href="/portal/login">{MARKE.portalName}</a> können Sie sich mit E-Mail und Passwort

@@ -508,7 +508,7 @@ export function PortalRegisterForm({
             <span className="portal-text-body text-text-primary">
               Ich habe die{" "}
               <a
-                href="/datenschutz#meinbaerenwald"
+                href="/datenschutz#kundenportal"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="font-medium text-accent underline-offset-2 hover:underline"
@@ -558,7 +558,7 @@ export function PortalRegisterForm({
         <p className="portal-text-body text-text-secondary">
           Mit der Aktivierung gilt die{" "}
           <a
-            href="/datenschutz#meinbaerenwald"
+            href="/datenschutz#kundenportal"
             target="_blank"
             rel="noopener noreferrer"
             className="font-medium text-accent underline-offset-2 hover:underline"

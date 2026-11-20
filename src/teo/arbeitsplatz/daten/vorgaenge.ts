@@ -38,7 +38,12 @@ type LeadRoh = Record<string, unknown> & { id: string; created_at: string; kunde
 const ROH_TITEL = /^(reparatur|notfall|kaputt|erneuern|betreuung|sonstiges)(\s*·.*)?$/i
 function titelFuer(roh: string, lead: LeadRoh): string {
   const text = String(lead.kontakt_nachricht ?? '').replace(/\s+/g, ' ').trim()
-  if (!text || (roh && !ROH_TITEL.test(roh.trim()))) return roh || text || 'Vorgang'
+  if (roh && !ROH_TITEL.test(roh.trim())) return roh
+  if (!text) {
+    // Ohne Beschreibung: den technischen Schlüssel lesbar machen („reparatur“ → „Reparatur“)
+    const r = roh.trim()
+    return r ? r.charAt(0).toUpperCase() + r.slice(1) : 'Vorgang'
+  }
   const satz = text.split(/(?<=[.!?])\s/)[0] ?? text
   return satz.length > 80 ? `${satz.slice(0, 77)}…` : satz
 }

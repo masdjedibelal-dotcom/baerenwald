@@ -190,6 +190,8 @@ export function useFormZwischenstand<T>({
       setPromptTitle(restoreDraftConfirmTitle(existing.savedAt));
       setPromptOpen(true);
     } else {
+      // Leerer Anfangsstand ist kein „Zwischengespeichert“ — erst nach echter Eingabe speichern/anzeigen
+      skipNextWrite.current = true;
       setAutosaveReady(true);
     }
   }, [enabled, storageKey]);
@@ -209,6 +211,7 @@ export function useFormZwischenstand<T>({
     setPromptOpen(false);
     pendingRef.current = null;
     clearZwischenstand(storageKey);
+    skipNextWrite.current = true;
     setAutosaveReady(true);
   }, [storageKey]);
 

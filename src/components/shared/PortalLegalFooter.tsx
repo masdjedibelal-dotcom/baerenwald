@@ -19,7 +19,7 @@ export function PortalLegalFooter({
       ? "/datenschutz#partner-portal"
       : variant === "org"
         ? "/datenschutz#hausverwaltung"
-        : "/datenschutz#meinbaerenwald";
+        : "/datenschutz#kundenportal";
 
   return (
     <footer
