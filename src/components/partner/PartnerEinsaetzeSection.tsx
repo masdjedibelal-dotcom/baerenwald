@@ -18,6 +18,7 @@ import {
   type PartnerEinsatz,
 } from "@/app/actions/partner-einsatz";
 import { PortalButton } from "@/components/portal/PortalButton";
+import { PortalIcon } from "@/components/portal/PortalIcon";
 import { FileUploadField } from "@/components/shared/FileUploadField";
 import { ladeEinsatzDateienHoch } from "@/lib/partner/einsatz-upload";
 import { PortalDetailCard } from "@/components/shared/PortalDetailCard";
@@ -439,7 +440,18 @@ export function PartnerEinsaetzeSection({
                 ) : null}
                 </>
                 ) : null}
-                {offen || e.status === "gesendet" ? (
+                {istTeo && offen && (e.status === "angenommen" || e.status === "fertig") ? (
+                  <TeoEinsatzAktionen
+                    e={e}
+                    busy={busy}
+                    wann={wann}
+                    oeffne={oeffne}
+                    dokument={() => {
+                      setDokArt("sonstiges");
+                      oeffne({ art: "dokument", einsatz: e });
+                    }}
+                  />
+                ) : offen || e.status === "gesendet" ? (
                 <div className="flex flex-wrap gap-2">
                   {e.status === "gesendet" ? (
                     <>
@@ -619,5 +631,60 @@ export function PartnerEinsaetzeSection({
         </PortalModalShell>
       ) : null}
     </>
+  );
+}
+
+/** TEO: Aktionen eines laufenden Einsatzes als antippbare Zeilen, darunter ein Hauptknopf (wie in modernen Apps). */
+function TeoEinsatzAktionen({
+  e,
+  busy,
+  wann,
+  oeffne,
+  dokument,
+}: {
+  e: PartnerEinsatz;
+  busy: boolean;
+  wann: string;
+  oeffne: (d: { art: "termin" | "update" | "regie" | "fertig" | "rechnung"; einsatz: PartnerEinsatz }) => void;
+  dokument: () => void;
+}) {
+  const laeuft = e.status === "angenommen" && !e.vorgang_erledigt;
+  return (
+    <div className="teo-einsatz-aktionen flex flex-col gap-3">
+      <div className="teo-zeilen">
+        {laeuft ? (
+          <>
+            <TeoZeile icon="calendar-event" label="Ausführung" wert={wann || "Noch offen"} disabled={busy} onClick={() => oeffne({ art: "termin", einsatz: e })} />
+            <TeoZeile icon="pencil" label="Update schreiben" disabled={busy} onClick={() => oeffne({ art: "update", einsatz: e })} />
+            <TeoZeile icon="list-todo" label="Stunden melden" disabled={busy} onClick={() => oeffne({ art: "regie", einsatz: e })} />
+          </>
+        ) : null}
+        <TeoZeile icon="file-text" label="Dokument hochladen" disabled={busy} onClick={dokument} />
+      </div>
+      {laeuft ? (
+        <PortalButton variant="primary" className="w-full" disabled={busy} onClick={() => oeffne({ art: "fertig", einsatz: e })}>
+          Als erledigt melden
+        </PortalButton>
+      ) : e.status === "fertig" && !e.rechnung_eingereicht_at ? (
+        <PortalButton variant="primary" className="w-full" disabled={busy} onClick={() => oeffne({ art: "rechnung", einsatz: e })}>
+          Rechnung hochladen
+        </PortalButton>
+      ) : e.rechnung_eingereicht_at ? (
+        <span className="text-fs-meta text-[var(--p2-sub)]">
+          {e.rechnung_bezahlt_at ? `Rechnung bezahlt am ${datum(e.rechnung_bezahlt_at)}` : "Rechnung hochgeladen"}
+        </span>
+      ) : null}
+    </div>
+  );
+}
+
+function TeoZeile({ icon, label, wert, disabled, onClick }: { icon: string; label: string; wert?: string; disabled?: boolean; onClick: () => void }) {
+  return (
+    <button type="button" className="teo-zeile" disabled={disabled} onClick={onClick}>
+      <span className="teo-zeile__icon"><PortalIcon ctx="row" n={icon} size={18} /></span>
+      <span className="teo-zeile__label">{label}</span>
+      {wert ? <span className="teo-zeile__wert">{wert}</span> : null}
+      <span className="teo-zeile__pfeil"><PortalIcon ctx="muted" n="chevron-right" size={16} /></span>
+    </button>
   );
 }

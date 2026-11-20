@@ -2,10 +2,11 @@
 
 import { portalToastError, portalToastSuccess } from '@/lib/shared/portal-toast'
 import { useRouter } from 'next/navigation'
-import { useMemo, useState, useTransition } from 'react'
+import { useMemo, useRef, useState, useTransition } from 'react'
 
 import { formatDatum, formatDatumZeit, formatDatumZeitraum, formatEuro } from '@/lib/shared-domain/geld-datum'
-import { MockBadge, MockBtn, MockCard, MockCheckbox, MockEmpty, MockIcon, MockProp, MockSelect, MockTabs, MockTextarea } from '@/teo/arbeitsplatz/kit'
+import { MockBadge, MockBtn, MockCard, MockCheckbox, MockEmpty, MockIcon, MockPopover, MockProp, MockSelect, MockTabs, MockTextarea, type MockPopoverItem } from '@/teo/arbeitsplatz/kit'
+import { MockPopoverMenu } from '@/teo/arbeitsplatz/kit/MockPopover'
 import {
   anTeamGeben,
   anTeoGeben,
@@ -46,6 +47,8 @@ export function VorgangDetail({
   const [laeuft, starten] = useTransition()
   const [fehler, setFehler] = useState<string | null>(null)
   const [ablehnen, setAblehnen] = useState(false)
+  const [mehrOffen, setMehrOffen] = useState(false)
+  const mehrRef = useRef<HTMLSpanElement>(null)
   const [grund, setGrund] = useState('')
   const [freigabeKarte, setFreigabeKarte] = useState(false)
   const [beschluss, setBeschluss] = useState(false)
@@ -156,40 +159,46 @@ export function VorgangDetail({
             <span>{formatDatum(zeile.erstellt)}</span>
           </div>
         </div>
-        <div className="detail-head-actions min-w-0">
-          <MockBtn kind="secondary" sm type="button" onClick={() => window.open(`/unterlagen/${zeile.id}`, '_blank', 'noopener')}>
-            Schadenunterlagen
-          </MockBtn>
-          {kannWieder ? (
-            <MockBtn kind="secondary" sm type="button" disabled={laeuft} onClick={() => setWiederKarte((v) => !v)}>
-              Wieder aufgetreten
+        <div className="detail-head-actions vg-aktionen min-w-0">
+          {/* Hauptaktion zuerst, „An Team geben“ zweitrangig; Seltenes und Ablehnen im „…“-Menü */}
+          {istNeu || zuEntscheiden ? (
+            <MockBtn
+              kind="primary"
+              sm
+              type="button"
+              disabled={laeuft}
+              onClick={() =>
+                !istNeu && weg
+                  ? setFreigabeKarte((v) => !v)
+                  : ausfuehren(() => (istNeu ? anTeoGeben(zeile.id) : angebotEntscheiden(zeile.id, 'freigegeben', { betragEur: zeile.betrag })), undefined, istNeu ? 'An TEO gegeben' : 'Freigeben')
+              }
+            >
+              {istNeu ? 'An TEO geben' : 'Freigeben'}
             </MockBtn>
           ) : null}
-          {istNeu || zuEntscheiden ? (
-            <>
-              <MockBtn kind="secondary" sm type="button" disabled={laeuft} onClick={() => setAblehnen((v) => !v)}>
-                Ablehnen
-              </MockBtn>
-              {kannAnTeam ? (
-                <MockBtn kind="secondary" sm type="button" disabled={laeuft} onClick={() => setTeamKarte((v) => !v)}>
-                  {zeile.status === 'beim_team' ? 'Anderer Person geben' : 'An Team geben'}
-                </MockBtn>
-              ) : null}
-              <MockBtn
-                kind="primary"
-                sm
-                type="button"
-                disabled={laeuft}
-                onClick={() =>
-                  !istNeu && weg
-                    ? setFreigabeKarte((v) => !v)
-                    : ausfuehren(() => (istNeu ? anTeoGeben(zeile.id) : angebotEntscheiden(zeile.id, 'freigegeben', { betragEur: zeile.betrag })), undefined, istNeu ? 'An TEO gegeben' : 'Freigegeben')
-                }
-              >
-                {istNeu ? 'An TEO geben' : 'Freigeben'}
-              </MockBtn>
-            </>
+          {(istNeu || zuEntscheiden) && kannAnTeam ? (
+            <MockBtn kind="secondary" sm type="button" disabled={laeuft} onClick={() => setTeamKarte((v) => !v)}>
+              {zeile.status === 'beim_team' ? 'Anderer Person geben' : 'An Team geben'}
+            </MockBtn>
           ) : null}
+          <span ref={mehrRef} className="vg-aktionen__mehr">
+            <MockBtn kind="secondary" sm type="button" aria-label="Weitere Aktionen" onClick={() => setMehrOffen((v) => !v)}>
+              <MockIcon ctx="default" n="dots" size={18} />
+            </MockBtn>
+          </span>
+          <MockPopover open={mehrOffen} onClose={() => setMehrOffen(false)} anchorRef={mehrRef} align="right" width={240}>
+            <MockPopoverMenu
+              iconFn={(n) => <MockIcon ctx="default" n={n} size={16} />}
+              onItemClick={() => setMehrOffen(false)}
+              items={[
+                { icon: 'file-text', label: 'Schadenunterlagen', onClick: () => window.open(`/unterlagen/${zeile.id}`, '_blank', 'noopener') },
+                ...(kannWieder ? [{ icon: 'refresh', label: 'Wieder aufgetreten', disabled: laeuft, onClick: () => setWiederKarte((v) => !v) }] : []),
+                ...(istNeu || zuEntscheiden
+                  ? (['sep', { icon: 'circle-x', label: istNeu ? 'Meldung ablehnen' : 'Angebot ablehnen', danger: true, disabled: laeuft, onClick: () => setAblehnen(true) }] as MockPopoverItem[])
+                  : []),
+              ]}
+            />
+          </MockPopover>
         </div>
       </header>
 

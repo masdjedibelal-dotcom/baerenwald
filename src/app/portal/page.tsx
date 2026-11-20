@@ -25,6 +25,17 @@ import { nurMeldungenBeiVerwaltung } from "@/teo/mein/mein-daten";
 
 export const dynamic = "force-dynamic";
 
+async function istHandwerkerKonto(userId: string, email: string): Promise<boolean> {
+  const norm = email.trim().toLowerCase();
+  const [hwAuth, hwMail, ma] = await Promise.all([
+    supabaseAdmin.from("handwerker").select("id").eq("auth_user_id", userId).limit(1),
+    supabaseAdmin.from("handwerker").select("id").ilike("email", norm).limit(1),
+    supabaseAdmin.from("handwerker_mitarbeiter").select("id").ilike("email", norm).eq("aktiv", true).limit(1),
+  ]);
+  for (const r of [hwAuth, hwMail, ma]) if (r.error) logDbError("app/portal:handwerker-konto", r.error);
+  return Boolean(hwAuth.data?.length || hwMail.data?.length || ma.data?.length);
+}
+
 export const metadata = {
   title: `${MARKE.portalName}`,
   robots: { index: false, follow: false },
@@ -66,6 +77,8 @@ export default async function PortalDashboardPage({
     const ap = await ladeApKontext();
     if (ap?.person.rolle === "team") redirect("/team");
     if (ap?.person.rolle === "eigentuemer") redirect("/mein");
+    // Handwerker und ihre Mitarbeiter gehören in die Handwerker-App, nicht ins Kundenportal
+    if (!ap && (await istHandwerkerKonto(user.id, user.email))) redirect("/partner");
     if (!ap && (await nurMeldungenBeiVerwaltung(user.id, user.email))) redirect("/mein");
     if (ap?.person.rolle === "verwaltung") {
       const id = sp.id?.trim();
