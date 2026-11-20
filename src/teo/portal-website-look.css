@@ -132,7 +132,7 @@
 /* Hintergrund bis unten grau (Rahmen war weiß, unter kurzem Inhalt sichtbar) */
 .portal-wl .portal-shell-frame { background: transparent !important; }
 /* Kennzahlen auf der Einsätze-Seite so rund wie auf der Startseite */
-.portal-wl .partner-kpi { border-radius: 20px; }
+/* (siehe Vereinheitlichung unten) */
 
 /* ════ Einsätze (TEO): Filter als Chips, jeder Einsatz eine eigene Karte ════ */
 .portal-wl .teo-einsatz-liste.portal-section-card { background: transparent; border: 0; box-shadow: none; padding: 0 !important; }
@@ -171,3 +171,18 @@
 .portal-wl .partner-einsatz .role-pill-neu, .portal-wl .partner-einsatz .role-pill-warten { background: #fdf3dc; color: #8a5a00; }
 .portal-wl .partner-einsatz .role-pill-fertig, .portal-wl .partner-einsatz .role-pill-erledigt { background: #e6f4ec; color: #1f6b43; }
 .portal-wl .partner-einsatz .role-pill-storniert { background: #fdecec; color: #b42318; }
+
+/* ════ Kennzahl-Karten wie im CRM und im HV-Arbeitsplatz: 24 px Ecken, Zahl 32 px, Beschriftung 14 px ════ */
+.portal-wl .portal-dash-kpi,
+.portal-wl .partner-kpi {
+  border-radius: 24px !important;
+  padding: 16px 18px !important;
+  gap: 4px;
+  background: #ffffff;
+  border: 1px solid var(--wl-linie);
+  box-shadow: var(--wl-schatten);
+}
+.portal-wl .portal-dash-kpi-value,
+.portal-wl .partner-kpi__wert { font-size: 32px !important; font-weight: 800; line-height: 1; letter-spacing: -0.02em; color: var(--wl-navy); }
+.portal-wl .portal-dash-kpi-label,
+.portal-wl .partner-kpi__label { font-size: 14px !important; font-weight: 600 !important; color: var(--wl-text-2); }
