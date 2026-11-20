@@ -1,5 +1,6 @@
 'use client'
 
+import { portalToastError, portalToastSuccess } from '@/lib/shared/portal-toast'
 import { useRouter } from 'next/navigation'
 import { useMemo, useState, useTransition } from 'react'
 
@@ -57,15 +58,18 @@ export function VorgangDetail({
   const { zeile, item } = d
   const st = AP_STATUS[zeile.status]
 
-  function ausfuehren(fn: () => Promise<ApAktionsErgebnis>, danach?: () => void) {
+  function ausfuehren(fn: () => Promise<ApAktionsErgebnis>, danach?: () => void, erfolg?: string) {
     setFehler(null)
     starten(async () => {
       const r = await fn()
       if (!r.ok) {
         setFehler(r.fehler)
+        portalToastError(r.fehler)
         return
       }
       danach?.()
+      // Rückmeldung wie im CRM und Partner-Portal
+      if (erfolg) portalToastSuccess(erfolg)
       router.refresh()
     })
   }
@@ -179,7 +183,7 @@ export function VorgangDetail({
                 onClick={() =>
                   !istNeu && weg
                     ? setFreigabeKarte((v) => !v)
-                    : ausfuehren(() => (istNeu ? anTeoGeben(zeile.id) : angebotEntscheiden(zeile.id, 'freigegeben', { betragEur: zeile.betrag })))
+                    : ausfuehren(() => (istNeu ? anTeoGeben(zeile.id) : angebotEntscheiden(zeile.id, 'freigegeben', { betragEur: zeile.betrag })), undefined, istNeu ? 'An TEO gegeben' : 'Freigegeben')
                 }
               >
                 {istNeu ? 'An TEO geben' : 'Freigeben'}
@@ -224,7 +228,7 @@ export function VorgangDetail({
                     beschlussUrl = j.url
                   }
                   return angebotEntscheiden(zeile.id, 'freigegeben', { betragEur: zeile.betrag, beschlussLiegtVor: beschluss, beschlussUrl })
-                }, () => setFreigabeKarte(false))
+                }, () => setFreigabeKarte(false), 'Freigegeben')
               }
             >
               Freigeben
@@ -253,7 +257,7 @@ export function VorgangDetail({
             <MockBtn kind="ghost" sm type="button" onClick={() => setTeamKarte(false)}>
               Abbrechen
             </MockBtn>
-            <MockBtn kind="primary" sm type="button" disabled={laeuft || !teamId} onClick={() => ausfuehren(() => anTeamGeben(zeile.id, teamId), () => setTeamKarte(false))}>
+            <MockBtn kind="primary" sm type="button" disabled={laeuft || !teamId} onClick={() => ausfuehren(() => anTeamGeben(zeile.id, teamId), () => setTeamKarte(false), 'An das Team gegeben')}>
               Geben
             </MockBtn>
           </div>
@@ -275,7 +279,8 @@ export function VorgangDetail({
               onClick={() =>
                 ausfuehren(
                   () => (istNeu ? meldungAbweisen(zeile.id) : angebotEntscheiden(zeile.id, 'abgelehnt', { notiz: grund })),
-                  () => setAblehnen(false)
+                  () => setAblehnen(false),
+                  istNeu ? 'Meldung abgewiesen' : 'Abgelehnt'
                 )
               }
             >
@@ -414,7 +419,7 @@ export function VorgangDetail({
                           sm
                           type="button"
                           disabled={laeuft || !nachricht.trim()}
-                          onClick={() => ausfuehren(() => nachrichtAnTeo(zeile.id, nachricht), () => setNachricht(''))}
+                          onClick={() => ausfuehren(() => nachrichtAnTeo(zeile.id, nachricht), () => setNachricht(''), 'Nachricht gesendet')}
                         >
                           Senden
                         </MockBtn>

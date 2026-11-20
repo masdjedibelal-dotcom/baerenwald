@@ -7158,6 +7158,16 @@ select {
   --p2-accent-light: #dce4ee;
   --p2-accent-hover: #184f8c;
 }
+/* Servus TEO: Seitengrund (u. a. Ladeanzeige MeinTEO) hell-blaugrau statt Bärenwald-Graugrün; Etiketten ohne Großbuchstaben */
+:root[data-marke="teo"] body.bg-background { background-color: #f7f9fc; }
+/* Toasts (liegen außerhalb von .portal-ui): teo-Farben und Pillen-Form wie im CRM */
+:root[data-marke="teo"] { --p2-primary: #1e5fa8; --p2-primary-dk: #0b1f3a; --p2-primary-soft: #eaf0f8; }
+:root[data-marke="teo"] [data-sonner-toast] { border-radius: 999px !important; }
+:root[data-marke="teo"] [data-sonner-toast][data-type="success"] { background: #0b1f3a !important; border-color: #0b1f3a !important; }
+:root[data-marke="teo"] .portal-text-label { text-transform: none; letter-spacing: 0; font-weight: 700; }
+:root[data-marke="teo"] .portal-modal-shell-panel,
+:root[data-marke="teo"] .portal-modal-shell-header,
+:root[data-marke="teo"] .portal-modal-shell-footer { background: #ffffff; }
 /* Servus TEO: Kachel-Icons wie in der Website-Anfrage (Feld mit Linien-Icon, gewählt = Navy) */
 :root[data-marke="teo"] .funnel-tile-icon-wrap {
   justify-content: center;

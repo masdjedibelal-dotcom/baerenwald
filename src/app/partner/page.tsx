@@ -18,7 +18,7 @@ import { isSupabaseConfigured } from "@/lib/supabase";
 import { MARKE } from "@/lib/marke";
 
 export const metadata = {
-  title: `Partner — ${MARKE.name}`,
+  title: "Partner",
   robots: { index: false, follow: false },
 };
 
