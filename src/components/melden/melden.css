@@ -661,3 +661,57 @@
   font-weight: 600;
   font-size: 14px;
 }
+
+/* ════ Servus TEO: Meldeseite und Statusseite im Website-Look (runde Karten, Verlauf, Kartenwahl ohne Radio) ════ */
+:root[data-marke="teo"] .mieter-wl-page {
+  background:
+    radial-gradient(36vmax 24vmax at 0% 0%, rgba(156, 192, 234, 0.3), transparent 70%),
+    radial-gradient(28vmax 20vmax at 100% 0%, rgba(246, 207, 115, 0.2), transparent 70%),
+    #f7f9fc;
+  background-repeat: no-repeat;
+  color: #0b1f3a;
+}
+:root[data-marke="teo"] .mieter-wl-header { background: transparent; border-bottom: 0; }
+:root[data-marke="teo"] .mieter-wl-logo-mark { border-radius: 14px; }
+:root[data-marke="teo"] .mieter-wl-org-name { font-weight: 800; color: #0b1f3a; }
+:root[data-marke="teo"] .mieter-wl-card {
+  background: #ffffff;
+  border: 1px solid #dce4ee;
+  border-radius: 20px;
+  box-shadow: 0 20px 50px -40px rgba(11, 31, 58, 0.35);
+}
+:root[data-marke="teo"] .mieter-wl-page .funnel-step-question { font-size: 26px; font-weight: 800; letter-spacing: -0.03em; color: #0b1f3a; }
+:root[data-marke="teo"] .mieter-wl-page .funnel-tile {
+  background: #ffffff;
+  border: 1px solid #dce4ee;
+  border-radius: 20px;
+  box-shadow: 0 20px 50px -40px rgba(11, 31, 58, 0.35);
+}
+:root[data-marke="teo"] .mieter-wl-page .funnel-tile.selected { border-color: #1e5fa8; box-shadow: 0 0 0 3px #eaf0f8; }
+/* Radio-Kreis oben rechts entfällt — die Auswahl zeigt der blaue Rand */
+:root[data-marke="teo"] .mieter-wl-page .funnel-tile > div.absolute { display: none; }
+:root[data-marke="teo"] .mieter-wl-page .funnel-tile-icon-wrap { border-radius: 999px; background: #eaf0f8; color: #1e5fa8; }
+:root[data-marke="teo"] .mieter-wl-page .funnel-tile-label { font-weight: 800; color: #0b1f3a; }
+:root[data-marke="teo"] .mieter-wl-page .funnel-footer-next { border-radius: 999px; background: #0b1f3a; color: #ffffff; }
+:root[data-marke="teo"] .mieter-wl-page .funnel-footer-next:disabled { background: #c7d5e6; color: #ffffff; }
+:root[data-marke="teo"] .mieter-wl-footer { background: transparent; }
+/* Gebäude-Auswahl */
+:root[data-marke="teo"] .mieter-wl-objekt-title { font-size: 28px; font-weight: 800; letter-spacing: -0.03em; color: #0b1f3a; }
+:root[data-marke="teo"] .mieter-wl-objekt-item {
+  background: #ffffff;
+  border: 1px solid #dce4ee;
+  border-radius: 20px;
+  box-shadow: 0 20px 50px -40px rgba(11, 31, 58, 0.35);
+}
+:root[data-marke="teo"] .mieter-wl-objekt-icon { border-radius: 999px; background: #eaf0f8; color: #1e5fa8; }
+/* Weiße Flächen des alten Rahmens durchsichtig, damit der Verlauf trägt; Knöpfe als Pillen */
+:root[data-marke="teo"] .mieter-wl-shell,
+:root[data-marke="teo"] .mieter-wl-body,
+:root[data-marke="teo"] .mieter-wl-page--funnel .mieter-wl-body { background: transparent; }
+:root[data-marke="teo"] .mieter-wl-btn { border-radius: 999px; font-weight: 700; }
+:root[data-marke="teo"] .mieter-wl-btn--primary { background: var(--org-primary, #0b1f3a); }
+@media (min-width: 720px) {
+  :root[data-marke="teo"] .mieter-wl-page:not(.mieter-wl-page--funnel) .mieter-wl-shell { background: transparent; border: 0; box-shadow: none; }
+}
+:root[data-marke="teo"] .mieter-wl-page .portal-funnel-host,
+:root[data-marke="teo"] .mieter-wl-page .portal-funnel-host__body { background: transparent; }
