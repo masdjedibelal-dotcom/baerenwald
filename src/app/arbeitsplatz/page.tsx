@@ -117,9 +117,9 @@ export default async function StartSeite() {
         <MockCard title="Termine diese Woche" icon="calendar-event">
           <div className="listcard">
             {termine.map((t) => (
-              <Link key={t.id} href={`/arbeitsplatz/vorgaenge/${t.leadId}`} className="list-row" style={{ gridTemplateColumns: '150px minmax(0, 1fr)' }}>
-                <div className="lc-title">{formatDatum(t.von)}</div>
-                <div className="lc-sub">{titelVon.get(t.leadId) ?? t.titel}</div>
+              <Link key={t.id} href={`/arbeitsplatz/vorgaenge/${t.leadId}`} className="list-row" style={{ gridTemplateColumns: 'minmax(0, 1fr) 150px' }}>
+                <div className="lc-title">{titelVon.get(t.leadId) ?? t.titel}</div>
+                <div className="lc-sub">{formatDatum(t.von)}</div>
               </Link>
             ))}
           </div>

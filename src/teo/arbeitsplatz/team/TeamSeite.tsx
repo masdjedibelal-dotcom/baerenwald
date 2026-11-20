@@ -45,14 +45,15 @@ export function TeamSeite({ personen, objekte }: { personen: ApTeamPerson[]; obj
           >
             <div className="ap-zelle-titel">
               <div className="lc-title">{p.name}</div>
-              {p.eingeladen ? (
-                <div className="lc-pills">
-                  <MockBadge kind="warten">Eingeladen</MockBadge>
-                </div>
-              ) : null}
+              <div className="lc-pills">
+                <span className="ap-rolle-mobil">
+                  <MockBadge kind="plain">{ROLLEN_LABEL[p.rolle]}</MockBadge>
+                </span>
+                {p.eingeladen ? <MockBadge kind="warten">Eingeladen</MockBadge> : null}
+              </div>
             </div>
             <div className="lc-sub">{p.email}</div>
-            <div className="lc-pills">
+            <div className="lc-pills ap-rolle-spalte">
               <MockBadge kind="plain">{ROLLEN_LABEL[p.rolle]}</MockBadge>
             </div>
             <div className="lc-desk ap-gedimmt">

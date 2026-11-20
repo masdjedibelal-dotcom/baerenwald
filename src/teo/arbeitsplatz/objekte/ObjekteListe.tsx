@@ -63,7 +63,8 @@ export function ObjekteListe({
             <Link key={o.id} href={`/arbeitsplatz/objekte/${o.id}`} className="list-row" style={{ gridTemplateColumns: SPALTEN }}>
               <div className="ap-zelle-titel">
                 <div className="lc-title">{o.name}</div>
-                {o.adresse ? <div className="lc-sub">{o.adresse}</div> : null}
+                {/* Name ist meist schon die Straße — dann nur PLZ und Ort darunter */}
+                {o.adresse ? <div className="lc-sub">{o.adresse.startsWith(o.name) ? o.adresse.slice(o.name.length).replace(/^[\s,]+/, '') || o.adresse : o.adresse}</div> : null}
               </div>
               <div className="lc-desk">{o.zustaendig ?? '—'}</div>
               <div className="lc-desk ap-rechts">{o.offen || '—'}</div>

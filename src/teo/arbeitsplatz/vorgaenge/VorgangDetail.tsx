@@ -130,7 +130,7 @@ export function VorgangDetail({
   const positionen = item?.angebotPositionen ?? item?.auftragPositionen ?? []
   const dokumente = item?.dokumente ?? []
   const tabs = [
-    { id: 'verlauf', label: 'Verlauf', icon: 'timeline' },
+    { id: 'verlauf', label: 'Übersicht', icon: 'timeline' },
     ...(rechte.kosten && (positionen.length || item?.gesamtBrutto) ? [{ id: 'angebot', label: 'Angebot', icon: 'file-invoice' }] : []),
     { id: 'dokumente', label: 'Dokumente', icon: 'files', count: dokumente.length || undefined },
     { id: 'nachrichten', label: 'Nachrichten', icon: 'messages', count: d.nachrichten.length || undefined },
@@ -141,6 +141,7 @@ export function VorgangDetail({
   const angaben = (item?.sections ?? [])
     .flatMap((s) => s.rows ?? [])
     .filter((r, i, alle) => !KONTAKT_FELD.test(r.label) && alle.findIndex((x) => x.label === r.label) === i)
+    .map((r) => (r.label === 'Projektbeschreibung' ? { ...r, label: 'Beschreibung' } : r))
 
   return (
     <div className="detail-entity-page">

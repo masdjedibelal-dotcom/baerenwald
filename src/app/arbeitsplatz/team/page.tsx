@@ -13,5 +13,13 @@ export default async function TeamRoute() {
   if (!k) redirect('/portal/login')
   if (!darf(k.person, 'team.verwalten')) redirect('/arbeitsplatz')
   const [personen, objekte] = await Promise.all([ladeTeam(k), ladeObjekte(k)])
-  return <TeamSeite personen={personen} objekte={objekte.map((o) => ({ id: o.id, name: o.name }))} />
+  return (
+    <>
+      <div className="wl-kopf">
+        <h1>Team.</h1>
+        <p>{personen.length === 1 ? '1 Person' : `${personen.length} Personen`}.</p>
+      </div>
+      <TeamSeite personen={personen} objekte={objekte.map((o) => ({ id: o.id, name: o.name }))} />
+    </>
+  )
 }

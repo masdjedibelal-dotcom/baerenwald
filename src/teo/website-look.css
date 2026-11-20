@@ -292,3 +292,49 @@
   .ap-wl .topbar-cta .topbar-cta-label { display: none !important; }
   .ap-wl .ap-avatar { background: var(--teo-navy); }
 }
+
+/* ════ UX-Prüfung 20.11. – Paket A (Arbeitsplatz) ════ */
+/* Auswahlfelder: Pfeil ▾, damit sie nicht wie Textfelder aussehen */
+.ap-wl select.input {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%235b6b80' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat !important;
+  background-position: right 14px center !important;
+  background-size: 16px 16px !important;
+  padding-right: 40px;
+}
+/* Umschalter: gewählte Option deutlich (Navy) */
+.ap-wl .seg > .on { background: var(--teo-navy); color: #ffffff; box-shadow: none; }
+/* Konto-Plakette auch im Konto-Menü in Navy */
+.ap-avatar { background: var(--teo-navy, #0b1f3a); }
+/* Detailseiten: Titel oben ist ein Zurück-Link zur Liste */
+.ap-wl .topbar-zurueck { display: inline-flex; align-items: center; gap: 4px; min-width: 0; color: var(--teo-navy); font-weight: 800; font-size: 17px; text-decoration: none; }
+/* Team: Rolle steht am Handy neben dem Namen, Spalte nur am Rechner */
+.ap-wl .ap-rolle-mobil { display: none; }
+@media (max-width: 767px) {
+  .ap-wl .ap-rolle-mobil { display: inline-flex; }
+  .ap-wl .ap-rolle-spalte { display: none !important; }
+  /* Listen-Seiten mit großer Überschrift: Seitenname oben nicht doppelt */
+  .ap-wl .main:has(.wl-kopf) .topbar-title-text { visibility: hidden; }
+  /* Listen in Karten (Start): bündig, Trennlinie, Pfeil rechts – wirkt antippbar */
+  .ap-wl .card-b .listcard .list-row:not(.head) {
+    position: relative;
+    padding: 14px 28px 14px 0 !important;
+    border-top: 1px solid var(--teo-linie-fein, #eef2f7);
+    background: transparent;
+    box-shadow: none;
+    border-radius: 0;
+    margin: 0;
+  }
+  .ap-wl .card-b .listcard .list-row:not(.head):first-child { border-top: 0; }
+  .ap-wl .card-b .listcard .list-row:not(.head)::after {
+    content: '';
+    position: absolute;
+    right: 6px;
+    top: 50%;
+    width: 8px;
+    height: 8px;
+    border-top: 2px solid #9aa7b8;
+    border-right: 2px solid #9aa7b8;
+    transform: translateY(-50%) rotate(45deg);
+  }
+}

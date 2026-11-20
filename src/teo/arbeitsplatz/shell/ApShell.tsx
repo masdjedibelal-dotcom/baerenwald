@@ -44,7 +44,10 @@ export function ApShell({
   const [menu, setMenu] = useState(false)
   const avatarRef = useRef<HTMLButtonElement>(null)
   const cta = ctas.find((c) => pfad === c.bereich)
-  const titel = nav.find((n) => aktiv(n.href, pfad))?.label ?? (pfad.startsWith('/arbeitsplatz/einstellungen') ? 'Einstellungen' : '')
+  const navAktiv = nav.find((n) => aktiv(n.href, pfad))
+  const titel = navAktiv?.label ?? (pfad.startsWith('/arbeitsplatz/einstellungen') ? 'Einstellungen' : '')
+  // Detailseite (z. B. /arbeitsplatz/vorgaenge/…): Titel wird zum Zurück-Link auf die Liste
+  const zurueckHref = navAktiv && navAktiv.href !== '/arbeitsplatz' && pfad !== navAktiv.href ? navAktiv.href : null
 
 
   return (
@@ -91,7 +94,14 @@ export function ApShell({
         <div className="topbar-stack">
           <header className="topbar">
             <div className={cn('topbar-title', !titel && 'topbar-title--empty')}>
-              {titel ? <span className="topbar-title-text truncate">{titel}</span> : null}
+              {titel && zurueckHref ? (
+                <Link href={zurueckHref} className="topbar-zurueck">
+                  <MockIcon ctx="default" n="chevron-left" size={18} />
+                  <span className="truncate">{titel}</span>
+                </Link>
+              ) : titel ? (
+                <span className="topbar-title-text truncate">{titel}</span>
+              ) : null}
             </div>
             <div className="ap-topbar-luecke" />
             <div className="topbar-actions">
