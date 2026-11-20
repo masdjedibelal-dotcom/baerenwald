@@ -118,3 +118,14 @@
 .portal-wl .teo-zeile__wert { flex: 0 0 auto; font-size: 15px; color: #5b6b80; font-variant-numeric: tabular-nums; }
 .portal-wl .teo-zeile__pfeil { display: inline-flex; color: #5b6b80; }
 .portal-wl .teo-zeile__icon > *, .portal-wl .teo-zeile__icon svg { color: #1e5fa8 !important; }
+
+/* ════ UX-Prüfung 20.11. – Paket C (Handwerker-App) ════ */
+/* Hervorgehobene Kachel nur, wenn es wirklich etwas gibt (nicht bei „0 Neu“) */
+.portal-wl .portal-dash-kpi--sand.portal-dash-kpi--leer { border-color: var(--wl-linie); }
+/* Firmendaten/Einstellungen: Abschnittstitel normal geschrieben (keine Großbuchstaben), gewählter Reiter in Navy */
+.portal-wl .portal-liste-eyebrow { text-transform: none; letter-spacing: 0; font-size: 15px; font-weight: 800; color: var(--wl-navy); }
+.portal-wl .portal-auswahl--active { background: var(--wl-navy) !important; border-color: var(--wl-navy) !important; color: #ffffff !important; }
+/* Kleine Zeile über dem Seitentitel („Partner“) doppelt zum Menü → aus */
+.portal-wl .portal-liste-eyebrow:has(+ .portal-liste-title) { display: none; }
+/* Datumsfelder in derselben Schrift wie der Rest (vorher Systemschrift) */
+.portal-wl input[type="date"], .portal-ui input[type="date"] { font-family: inherit; font-variant-numeric: tabular-nums; }

@@ -1,5 +1,7 @@
 "use client";
 
+import { PortalIcon } from "@/components/portal/PortalIcon";
+import { istTeo } from "@/lib/marke";
 import Link from "next/link";
 
 import { MieterWlFrame } from "@/components/melden/MieterWlFrame";
@@ -44,7 +46,7 @@ export function MeldeObjektAuswahl({
           {objekte.map((o) => (
             <Link key={o.id} href={o.href} className="mieter-wl-objekt-item">
               <span className="mieter-wl-objekt-icon" aria-hidden>
-                ▦
+                {istTeo ? <PortalIcon ctx="default" n="building" size={20} /> : "▦"}
               </span>
               <span className="min-w-0 flex-1">
                 <span className="mieter-wl-objekt-item-title block">{o.name}</span>

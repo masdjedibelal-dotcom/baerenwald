@@ -338,3 +338,22 @@
     transform: translateY(-50%) rotate(45deg);
   }
 }
+/* Einstellungen: „Speichern“ schwebt nach einer Änderung unten (Glas-Kapsel über dem Menü) */
+.ap-wl .ap-speichern-schwebend {
+  position: sticky;
+  bottom: calc(16px + env(safe-area-inset-bottom, 0px));
+  z-index: 20;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 8px 8px 18px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.82);
+  -webkit-backdrop-filter: blur(18px) saturate(1.6);
+  backdrop-filter: blur(18px) saturate(1.6);
+  border: 1px solid var(--teo-linie);
+  box-shadow: 0 18px 40px -18px rgba(11, 31, 58, 0.45);
+}
+@media (max-width: 767px) {
+  .ap-wl .ap-speichern-schwebend { position: fixed; left: 14px; right: 14px; bottom: calc(80px + env(safe-area-inset-bottom, 0px)); }
+}
+.ap-wl .ap-speichern-schwebend > .btn { margin-left: auto; }

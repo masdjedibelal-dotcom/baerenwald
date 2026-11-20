@@ -118,7 +118,8 @@ export function PortalScreenDashboard({
               const sand = idx === 0;
               const className = cn(
                 "portal-dash-kpi",
-                sand && "portal-dash-kpi--sand"
+                sand && "portal-dash-kpi--sand",
+                String(tile.value) === "0" && "portal-dash-kpi--leer"
               );
               const inner = (
                 <>

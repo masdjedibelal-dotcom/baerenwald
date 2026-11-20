@@ -29,6 +29,10 @@ export function EinstellungenSeite({ start, logoUrl }: { start: EinstellungenFel
 
   return (
     <div className="ap-schmal ap-start">
+      <div className="wl-kopf">
+        <h1>Einstellungen.</h1>
+        <p>Für {f.anzeigename || 'Ihre Verwaltung'}.</p>
+      </div>
       <MockCard title="Organisation" icon="building">
         <MockFormSection>
           <MockField label="Name" full>
@@ -82,7 +86,8 @@ export function EinstellungenSeite({ start, logoUrl }: { start: EinstellungenFel
         </MockFormSection>
       </MockCard>
 
-      <div className="ap-knopfzeile ap-knopfzeile--fuss">
+      {/* Sobald etwas geändert ist, schwebt „Speichern“ unten über dem Menü – man muss nicht ans Seitenende */}
+      <div className={geaendert || laeuft || meldung ? 'ap-knopfzeile ap-knopfzeile--fuss ap-speichern-schwebend' : 'ap-knopfzeile ap-knopfzeile--fuss'}>
         {meldung ? <span className={meldung.ok ? 'ap-ok' : 'ap-rot'}>{meldung.text}</span> : null}
         <MockBtn kind="primary" type="button" onClick={speichern} disabled={laeuft || !geaendert}>
           {laeuft ? 'Speichert …' : 'Speichern'}

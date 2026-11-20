@@ -99,7 +99,10 @@ export function PartnerClient({
           />
         ) : null}
 
-        <PortalLegalFooter variant="partner" className="mx-auto max-w-[1200px] px-1 lg:px-0" />
+        {/* TEO: Rechtliches nur in den Einstellungen, nicht unter jeder Seite (wie in Apps üblich) */}
+        {!istTeo || section === "profil" ? (
+          <PortalLegalFooter variant="partner" className="mx-auto max-w-[1200px] px-1 lg:px-0" />
+        ) : null}
       </div>
     </PortalShell>
   );
