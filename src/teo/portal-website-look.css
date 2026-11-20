@@ -133,3 +133,41 @@
 .portal-wl .portal-shell-frame { background: transparent !important; }
 /* Kennzahlen auf der Einsätze-Seite so rund wie auf der Startseite */
 .portal-wl .partner-kpi { border-radius: 20px; }
+
+/* ════ Einsätze (TEO): Filter als Chips, jeder Einsatz eine eigene Karte ════ */
+.portal-wl .teo-einsatz-liste.portal-section-card { background: transparent; border: 0; box-shadow: none; padding: 0 !important; }
+.portal-wl .teo-chips { display: flex; gap: 8px; overflow-x: auto; padding: 2px 0 6px; scrollbar-width: none; }
+.portal-wl .teo-chips::-webkit-scrollbar { display: none; }
+.portal-wl .teo-chip {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 40px;
+  padding: 0 16px;
+  border-radius: 999px;
+  border: 1px solid var(--wl-linie);
+  background: #ffffff;
+  box-shadow: 0 6px 16px -10px rgba(11, 31, 58, 0.35);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--wl-navy);
+  cursor: pointer;
+}
+.portal-wl .teo-chip__n { font-weight: 600; color: #5b6b80; font-variant-numeric: tabular-nums; }
+.portal-wl .teo-chip.is-on { background: var(--wl-navy); border-color: var(--wl-navy); color: #ffffff; }
+.portal-wl .teo-chip.is-on .teo-chip__n { color: rgba(255, 255, 255, 0.75); }
+.portal-wl .teo-einsatz-liste .partner-einsatz {
+  background: #ffffff;
+  border: 1px solid var(--wl-linie) !important;
+  border-radius: 20px;
+  padding: 14px 16px !important;
+  box-shadow: 0 20px 50px -40px rgba(11, 31, 58, 0.35);
+}
+.portal-wl .teo-einsatz-liste .partner-einsatz.is-offen { gap: 12px; }
+/* Status als farbige Plakette statt reinem Text */
+.portal-wl .partner-einsatz .role-pill { background: #eaf0f8; color: #1e5fa8; border-radius: 999px; font-weight: 700; font-size: 12px; }
+.portal-wl .partner-einsatz .role-pill-neu, .portal-wl .partner-einsatz .role-pill-warten { background: #fdf3dc; color: #8a5a00; }
+.portal-wl .partner-einsatz .role-pill-fertig, .portal-wl .partner-einsatz .role-pill-erledigt { background: #e6f4ec; color: #1f6b43; }
+.portal-wl .partner-einsatz .role-pill-storniert { background: #fdecec; color: #b42318; }

@@ -155,7 +155,7 @@ export function PartnerEinsaetzeSection({
   ueberschrift?: string;
 } = {}) {
   const [einsaetze, setEinsaetze] = useState<PartnerEinsatz[] | null>(null);
-  const [ansicht, setAnsicht] = useState<"aktuell" | "erledigt">("aktuell");
+  const [ansicht, setAnsicht] = useState<"aktuell" | "neu" | "erledigt">("aktuell");
   /** Kompakte Karten: Details erst beim Klick */
   const [offenId, setOffenId] = useState<string | null>(null);
   const [dialog, setDialog] = useState<Dialog>(null);
@@ -312,7 +312,15 @@ export function PartnerEinsaetzeSection({
     inArbeit: alle.filter((e) => e.status === "angenommen" && !istErledigt(e)).length,
     erledigt: alle.filter(istErledigt).length,
   };
-  const sichtbar = alle.filter((e) => (ansicht === "erledigt" && !nurAktuell ? istErledigt(e) : !istErledigt(e)));
+  const sichtbar = alle.filter((e) =>
+    nurAktuell
+      ? !istErledigt(e)
+      : ansicht === "erledigt"
+        ? istErledigt(e)
+        : ansicht === "neu"
+          ? e.status === "gesendet"
+          : !istErledigt(e)
+  );
   useEffect(() => {
     if (einsaetze != null) onZahlen?.(kpi);
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -343,7 +351,8 @@ export function PartnerEinsaetzeSection({
 
   return (
     <>
-      {onZahlen ? null : (
+      {/* TEO: Einsätze-Seite filtert über Chips — keine zweite Kachelreihe darüber */}
+      {onZahlen || istTeo ? null : (
         <div className="partner-kpis" role="list" aria-label="Ihre Einsätze in Zahlen">
         {[
           { label: "Neu", wert: kpi.neu },
@@ -357,8 +366,30 @@ export function PartnerEinsaetzeSection({
         ))}
       </div>
       )}
-      <PortalDetailCard title={ueberschrift}>
+      <PortalDetailCard title={ueberschrift} className={istTeo ? "teo-einsatz-liste" : undefined}>
         {nurAktuell ? null : (
+        istTeo ? (
+          <div className="teo-chips" role="tablist" aria-label="Filter">
+            {(
+              [
+                { id: "aktuell", label: "Aktuell", n: kpi.neu + kpi.inArbeit },
+                { id: "neu", label: "Neu", n: kpi.neu },
+                { id: "erledigt", label: "Erledigt", n: kpi.erledigt },
+              ] as const
+            ).map((c) => (
+              <button
+                key={c.id}
+                type="button"
+                role="tab"
+                aria-selected={ansicht === c.id}
+                className={`teo-chip${ansicht === c.id ? " is-on" : ""}`}
+                onClick={() => setAnsicht(c.id)}
+              >
+                {c.label} <span className="teo-chip__n">{c.n}</span>
+              </button>
+            ))}
+          </div>
+        ) : (
         <div className="partner-ansicht" role="tablist" aria-label="Ansicht">
           {(["aktuell", "erledigt"] as const).map((a) => (
             <button
@@ -373,12 +404,15 @@ export function PartnerEinsaetzeSection({
             </button>
           ))}
         </div>
+        )
         )}
         {einsaetze == null ? (
           <p className="m-0 text-[var(--p2-sub)]">Wird geladen …</p>
         ) : sichtbar.length === 0 ? (
           <p className="m-0 text-[var(--p2-sub)]">
-            {ansicht === "aktuell"
+            {ansicht === "neu"
+              ? "Keine neuen Einsätze."
+              : ansicht === "aktuell"
               ? kpi.erledigt > 0
                 ? `Keine aktuellen Einsätze. Neue Einsätze von ${MARKE.name} erscheinen hier.`
                 : `Noch keine Einsätze. Sobald ${MARKE.name} Ihnen einen Einsatz schickt, erscheint er hier.`
@@ -405,7 +439,7 @@ export function PartnerEinsaetzeSection({
                   </span>
                   <span className="flex shrink-0 items-center gap-2">
                     <PortalStatusPill label={st.label} tone={st.tone} />
-                    <span className="partner-einsatz__pfeil text-[var(--p2-sub)]" aria-hidden>{offen ? "▴" : "▾"}</span>
+                    <span className="partner-einsatz__pfeil text-[var(--p2-sub)]" aria-hidden>{istTeo ? <PortalIcon ctx="muted" n={offen ? "chevron-up" : "chevron-down"} size={16} /> : offen ? "▴" : "▾"}</span>
                   </span>
                 </button>
                 {offen ? (
