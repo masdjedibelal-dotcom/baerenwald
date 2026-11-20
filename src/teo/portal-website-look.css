@@ -117,3 +117,4 @@
 .portal-wl .teo-zeile__label { flex: 1 1 auto; min-width: 0; font-weight: 700; font-size: 15px; }
 .portal-wl .teo-zeile__wert { flex: 0 0 auto; font-size: 15px; color: #5b6b80; font-variant-numeric: tabular-nums; }
 .portal-wl .teo-zeile__pfeil { display: inline-flex; color: #5b6b80; }
+.portal-wl .teo-zeile__icon > *, .portal-wl .teo-zeile__icon svg { color: #1e5fa8 !important; }
