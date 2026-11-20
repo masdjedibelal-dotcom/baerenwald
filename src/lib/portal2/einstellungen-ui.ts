@@ -3,6 +3,7 @@
  */
 
 import type { EinstellungenVariant } from "@/lib/portal2/einstellungen";
+import { istTeo } from "@/lib/marke";
 
 /** Mock: `maxW = hw ? 640 : 560` */
 export function einstellungenContentMaxWidth(
@@ -19,12 +20,20 @@ export const HW_FIRMEN_INTRO = "" as const;
 
 export const HW_FIRMEN_FOOTER = "" as const;
 
-export const HW_FIRMEN_SECTIONS = {
-  logo: "FIRMENLOGO",
-  anschrift: "ANSCHRIFT & KONTAKT",
-  steuer: "STEUER & REGISTER",
-  bank: "BANKVERBINDUNG (für Rechnungen)",
-} as const;
+/** TEO schreibt Abschnittstitel normal (wie die Website), Bärenwald bleibt bei Großbuchstaben. */
+export const HW_FIRMEN_SECTIONS = istTeo
+  ? {
+      logo: "Firmenlogo",
+      anschrift: "Anschrift und Kontakt",
+      steuer: "Steuer und Register",
+      bank: "Bankverbindung (für Rechnungen)",
+    }
+  : {
+      logo: "FIRMENLOGO",
+      anschrift: "ANSCHRIFT & KONTAKT",
+      steuer: "STEUER & REGISTER",
+      bank: "BANKVERBINDUNG (für Rechnungen)",
+    };
 
 /** Mieter Konto — Zugang-Karte. */
 export const MIETER_KONTO_ZUGANG_TITLE = "Zugang" as const;

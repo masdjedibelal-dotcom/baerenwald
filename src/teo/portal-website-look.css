@@ -129,3 +129,7 @@
 .portal-wl .portal-liste-eyebrow:has(+ .portal-liste-title) { display: none; }
 /* Datumsfelder in derselben Schrift wie der Rest (vorher Systemschrift) */
 .portal-wl input[type="date"], .portal-ui input[type="date"] { font-family: inherit; font-variant-numeric: tabular-nums; }
+/* Hintergrund bis unten grau (Rahmen war weiß, unter kurzem Inhalt sichtbar) */
+.portal-wl .portal-shell-frame { background: transparent !important; }
+/* Kennzahlen auf der Einsätze-Seite so rund wie auf der Startseite */
+.portal-wl .partner-kpi { border-radius: 20px; }
