@@ -285,7 +285,7 @@ export function PartnerEinsaetzeSection({
       if (!hoch) return setBusy(false);
       await ausfuehren(
         einsatzMitteilungSenden({ einsatzId: id, typ, text, stunden, dateien: hoch }),
-        typ === "regie" ? "Regie gemeldet" : "Update gesendet"
+        typ === "regie" ? (istTeo ? "Stunden gemeldet" : "Regie gemeldet") : "Update gesendet"
       );
       return;
     }
@@ -327,7 +327,7 @@ export function PartnerEinsaetzeSection({
         : dialog?.art === "update"
           ? "Update senden"
           : dialog?.art === "regie"
-            ? "Regie melden"
+            ? (istTeo ? "Stunden melden" : "Regie melden")
             : dialog?.art === "dokument"
               ? "Dokument hochladen"
               : dialog?.art === "termin"
@@ -429,7 +429,7 @@ export function PartnerEinsaetzeSection({
                 ) : null}
                 {e.regie.map((r) => (
                   <div key={r.id} className="text-fs-meta text-[var(--p2-sub)]">
-                    Regie{r.stunden ? ` ${String(r.stunden).replace(".", ",")} Std` : ""}: {REGIE_STAND[r.stand]}
+                    {istTeo ? "Stunden" : "Regie"}{r.stunden ? ` ${String(r.stunden).replace(".", ",")} Std` : ""}: {REGIE_STAND[r.stand]}
                   </div>
                 ))}
                 {e.ek_betrag != null ? (
@@ -462,7 +462,7 @@ export function PartnerEinsaetzeSection({
                         Update
                       </PortalButton>
                       <PortalButton variant="secondary" disabled={busy} onClick={() => oeffne({ art: "regie", einsatz: e })}>
-                        Regie melden
+                        {istTeo ? "Stunden melden" : "Regie melden"}
                       </PortalButton>
                       <PortalButton variant="primary" disabled={busy} onClick={() => oeffne({ art: "fertig", einsatz: e })}>
                         Erledigt
@@ -571,7 +571,7 @@ export function PartnerEinsaetzeSection({
               <PortalField label="Stunden">
                 <PortalInput inputMode="decimal" value={stunden} onChange={(ev) => setStunden(ev.target.value)} />
               </PortalField>
-              <PortalField label="Was wurde gemacht?" hint={`${MARKE.name} nimmt die Regie an oder lehnt sie ab. Sie sehen das hier.`}>
+              <PortalField label="Was wurde gemacht?" hint={`${MARKE.name} nimmt ${istTeo ? "die Stunden" : "die Regie"} an oder lehnt sie ab. Sie sehen das hier.`}>
                 <PortalTextarea rows={4} value={text} onChange={(ev) => setText(ev.target.value)} />
               </PortalField>
               <FotoAuswahl label="Fotos oder Dokumente (freiwillig)" dateien={dateien} onChange={setDateien} />

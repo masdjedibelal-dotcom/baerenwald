@@ -1,5 +1,6 @@
 "use server";
 
+import { istTeo } from "@/lib/marke";
 import { linkPortalMitarbeiter } from "@/lib/partner/mitarbeiter-portal";
 import { crmMitarbeiterInformieren } from "@/lib/partner/partner-crm-api";
 import { revalidatePath } from "next/cache";
@@ -416,7 +417,7 @@ export async function einsatzMitteilungSenden(input: {
   if (!auth.ok) return auth;
   const einsatzId = input.einsatzId.trim();
   const typ: EinsatzMeldungTyp = input.typ === "regie" ? "regie" : "update";
-  if (auth.mitarbeiterId && typ === "regie") return { ok: false, error: "Regie meldet der Inhaber Ihres Betriebs." };
+  if (auth.mitarbeiterId && typ === "regie") return { ok: false, error: istTeo ? "Stunden meldet der Inhaber Ihres Betriebs." : "Regie meldet der Inhaber Ihres Betriebs." };
   const text = input.text.trim();
   const stundenRaw = Number(String(input.stunden ?? "").replace(",", "."));
   const stunden = Number.isFinite(stundenRaw) && stundenRaw > 0 ? Math.round(stundenRaw * 100) / 100 : null;
@@ -431,7 +432,7 @@ export async function einsatzMitteilungSenden(input: {
       error: typ === "update" ? "Bitte einen Text oder ein Foto hinzufügen." : "Bitte kurz beschreiben, was gemacht wurde.",
     };
   }
-  if (typ === "regie" && !stunden) return { ok: false, error: "Bitte die Stunden für die Regie angeben." };
+  if (typ === "regie" && !stunden) return { ok: false, error: istTeo ? "Bitte die Stunden angeben." : "Bitte die Stunden für die Regie angeben." };
 
   const { error } = await supabaseAdmin.from("einsatz_mitteilungen").insert({
     einsatz_id: einsatzId,
