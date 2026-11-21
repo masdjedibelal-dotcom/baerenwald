@@ -7292,3 +7292,14 @@ select {
 .teo-skelett__zeile--lang { width: 75%; height: 14px; }
 @keyframes teo-puls { 0%, 100% { opacity: 1; } 50% { opacity: 0.55; } }
 @media (prefers-reduced-motion: reduce) { .teo-skelett * { animation: none !important; } }
+/* R1 Kopf-Knöpfe gleich: Glocke und „+“ als runde helle Knöpfe mit feinem Rand */
+:root[data-marke="teo"] .portal-bell-trigger {
+  width: 40px !important;
+  height: 40px !important;
+  min-width: 40px;
+  border-radius: 999px !important;
+  border: 1px solid #dce4ee !important;
+  background: #ffffff !important;
+  color: #0b1f3a;
+  box-shadow: none !important;
+}

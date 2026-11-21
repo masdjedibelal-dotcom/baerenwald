@@ -363,7 +363,7 @@
 
 /* ════ UX-Regeln 21.11. (Arbeitsplatz) ════ */
 /* R4 „+“ oben rechts: heller Umriss-Knopf (nicht wie die Konto-Plakette), öffnet „Neu …“-Popover */
-.ap-wl .ap-neu-btn.btn {
+.ap-wl .ap-neu-btn {
   display: inline-flex !important;
   align-items: center;
   justify-content: center;
