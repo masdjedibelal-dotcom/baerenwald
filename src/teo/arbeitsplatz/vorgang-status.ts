@@ -42,3 +42,14 @@ export function apStatus(
   if (v.phase === 'anfrage' && u === 'termin') return 'termin'
   return 'bei_teo'
 }
+
+/** Drei Gruppen für die Filter-Chips — der genaue Stand steht als Pille auf der Karte. */
+export type ApGruppe = 'offen' | 'in_bearbeitung' | 'erledigt'
+export const AP_GRUPPEN: Array<{ id: ApGruppe; label: string; status: ApStatus[] }> = [
+  { id: 'offen', label: 'Offen', status: ['neu', 'beim_team', 'zu_entscheiden'] },
+  { id: 'in_bearbeitung', label: 'In Bearbeitung', status: ['bei_teo', 'termin', 'beauftragt'] },
+  { id: 'erledigt', label: 'Erledigt', status: ['erledigt', 'abgelehnt'] },
+]
+export function apGruppeVon(s: ApStatus): ApGruppe {
+  return AP_GRUPPEN.find((g) => g.status.includes(s))?.id ?? 'offen'
+}

@@ -976,8 +976,10 @@ export function PortalFunnelHostView(m: PortalFunnelHostModel) {
             files={state.photos}
             onChange={(files) => setState((s) => ({ ...s, photos: files }))}
             buttonTitle={
+              // Schaden (Melde-Ablauf, auch Privatkunde bei TEO): nur Fotos vom Schaden — keine Angebote/Skizzen
               channel === "melde_anon" ||
-              hvMitMieter
+              hvMitMieter ||
+              useMeldeKaputtFlow
                 ? "Fotos hochladen"
                 : isHvIntern
                   ? "Fotos hochladen"
@@ -985,7 +987,8 @@ export function PortalFunnelHostView(m: PortalFunnelHostModel) {
             }
             buttonHint={
               channel === "melde_anon" ||
-              hvMitMieter
+              hvMitMieter ||
+              useMeldeKaputtFlow
                 ? "Fotos vom Schaden — optional"
                 : isHvIntern
                   ? "Fotos vom Schaden oder Objekt — optional"

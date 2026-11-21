@@ -7315,7 +7315,6 @@ select {
 :root[data-marke="teo"] .portal-funnel-host .funnel-tile.selected { border-color: #1e5fa8; box-shadow: 0 0 0 3px #eaf0f8; }
 :root[data-marke="teo"] .portal-funnel-host .funnel-tile > div.absolute { display: none; }
 :root[data-marke="teo"] .portal-funnel-host .funnel-tile-icon-wrap { border-radius: 999px; background: #eaf0f8; color: #1e5fa8; }
-:root[data-marke="teo"] .portal-funnel-host .funnel-tile-icon-wrap img { filter: none; }
 :root[data-marke="teo"] .portal-funnel-host .funnel-tile-label { font-weight: 800; color: #0b1f3a; }
 :root[data-marke="teo"] .portal-funnel-host .funnel-footer-next { border-radius: 999px; background: #0b1f3a; color: #ffffff; }
 :root[data-marke="teo"] .portal-funnel-host .funnel-footer-next:disabled { background: #c7d5e6; color: #ffffff; }
@@ -7327,3 +7326,40 @@ select {
 :root[data-marke="teo"] .portal-bell-trigger:focus { outline: none; box-shadow: none !important; }
 :root[data-marke="teo"] .teo-kopf-neu:focus-visible,
 :root[data-marke="teo"] .portal-bell-trigger:focus-visible { outline: 2px solid #1e5fa8; outline-offset: 2px; }
+/* ⓘ-Hinweis am Handy: als Karte unten in voller Breite (rutscht nie aus dem Bild) */
+@media (max-width: 767px) {
+  :root[data-marke="teo"] .ap-info__text,
+  :root[data-marke="teo"] [role="tooltip"] {
+    position: fixed !important;
+    left: 16px !important;
+    right: 16px !important;
+    top: auto !important;
+    bottom: calc(96px + env(safe-area-inset-bottom, 0px)) !important;
+    width: auto !important;
+    max-width: none !important;
+    transform: none !important;
+    z-index: 300;
+    padding: 14px 16px;
+    border-radius: 16px;
+    background: #0b1f3a !important;
+    color: #ffffff !important;
+    font-size: 14px;
+    line-height: 1.45;
+    box-shadow: 0 24px 48px -20px rgba(11, 31, 58, 0.6);
+  }
+}
+/* KI-Hilfe: heller Knopf mit blauer Schrift (nicht blau auf Navy) */
+:root[data-marke="teo"] [data-ki-assist-field] .portal-action-btn--primary {
+  background: #ffffff !important;
+  color: #1e5fa8 !important;
+  border: 1px solid #dce4ee !important;
+  height: 32px;
+  padding: 0 12px;
+}
+:root[data-marke="teo"] [data-ki-assist-field] .portal-action-btn--primary svg { color: #1e5fa8; }
+/* Zurück im Melde-Ablauf: weiße Pille mit Rand statt Beige */
+:root[data-marke="teo"] .funnel-back-btn { background: #ffffff !important; border: 1px solid #dce4ee !important; color: #0b1f3a !important; border-radius: 999px; }
+/* Grüne Bärenwald-Bilder (public/icons/*.svg) in TEO-Blau einfärben — überall in Melde-Abläufen */
+:root[data-marke="teo"] img[src*="/icons/"] {
+  filter: brightness(0) saturate(100%) invert(29%) sepia(83%) saturate(1500%) hue-rotate(196deg) brightness(91%) contrast(90%);
+}

@@ -7,7 +7,7 @@ import { useCallback, useMemo, useState } from 'react'
 import { formatDatum, formatEuro } from '@/lib/shared-domain/geld-datum'
 import { MockBadge, MockChip, MockEmpty, MockInput, MockSelect } from '@/teo/arbeitsplatz/kit'
 import type { ApVorgangZeile } from '@/teo/arbeitsplatz/daten/vorgaenge'
-import { AP_STATUS, AP_STATUS_FILTER, type ApStatus } from '@/teo/arbeitsplatz/vorgang-status'
+import { AP_GRUPPEN, AP_STATUS, apGruppeVon, type ApGruppe, type ApStatus } from '@/teo/arbeitsplatz/vorgang-status'
 
 const SPALTEN = 'minmax(0, 2.4fr) minmax(0, 1.4fr) 110px 110px'
 const SPALTEN_OHNE_BETRAG = 'minmax(0, 2.4fr) minmax(0, 1.4fr) 110px'
@@ -27,7 +27,9 @@ export function VorgaengeListe({
   const router = useRouter()
   const pfad = usePathname()
   const params = useSearchParams()
+  // Genauer Stand nur noch über Links (z. B. Startseite „Zu entscheiden“); Chips filtern nach Gruppe
   const status = (params.get('status') as ApStatus | null) ?? null
+  const gruppe: ApGruppe = status ? apGruppeVon(status) : ((params.get('gruppe') as ApGruppe | null) ?? 'offen')
   const objekt = params.get('objekt') ?? ''
   const meine = params.get('meine') === '1' && meineObjektIds.length > 0
   const passt = useCallback(
@@ -44,8 +46,8 @@ export function VorgaengeListe({
   }
 
   const zaehler = useMemo(() => {
-    const z: Partial<Record<ApStatus, number>> = {}
-    for (const v of vorgaenge) if (passt(v)) z[v.status] = (z[v.status] ?? 0) + 1
+    const z: Partial<Record<ApGruppe, number>> = {}
+    for (const v of vorgaenge) if (passt(v)) z[apGruppeVon(v.status)] = (z[apGruppeVon(v.status)] ?? 0) + 1
     return z
   }, [vorgaenge, passt])
 
@@ -53,11 +55,11 @@ export function VorgaengeListe({
     const s = suche.trim().toLowerCase()
     return vorgaenge.filter(
       (v) =>
-        (!status || v.status === status) &&
+        (status ? v.status === status : apGruppeVon(v.status) === gruppe) &&
         passt(v) &&
         (!s || [v.titel, v.objektName, v.melder].some((t) => t?.toLowerCase().includes(s)))
     )
-  }, [vorgaenge, status, passt, suche])
+  }, [vorgaenge, status, gruppe, passt, suche])
 
   const spalten = zeigeBetrag ? SPALTEN : SPALTEN_OHNE_BETRAG
 
@@ -66,12 +68,20 @@ export function VorgaengeListe({
       <div className="listbar">
         <div className="listbar-main">
           <div className="listbar-chips" role="group" aria-label="Status">
-            <MockChip active={!status} count={Object.values(zaehler).reduce((a, b) => a + (b ?? 0), 0)} onClick={() => setzen('status', null)}>
-              Alle
-            </MockChip>
-            {AP_STATUS_FILTER.map((s) => (
-              <MockChip key={s} active={status === s} count={zaehler[s] ?? 0} onClick={() => setzen('status', status === s ? null : s)}>
-                {AP_STATUS[s].label}
+            {AP_GRUPPEN.map((g) => (
+              <MockChip
+                key={g.id}
+                active={gruppe === g.id}
+                count={zaehler[g.id] ?? 0}
+                onClick={() => {
+                  const p = new URLSearchParams(params.toString())
+                  p.delete('status')
+                  if (g.id === 'offen') p.delete('gruppe')
+                  else p.set('gruppe', g.id)
+                  router.replace(`${pfad}${p.toString() ? `?${p}` : ''}`, { scroll: false })
+                }}
+              >
+                {g.label}
               </MockChip>
             ))}
           </div>

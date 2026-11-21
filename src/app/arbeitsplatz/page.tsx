@@ -91,7 +91,7 @@ export default async function StartSeite() {
       <div className="ueber-grid ap-kacheln">
         <Kachel href="/arbeitsplatz/vorgaenge?status=zu_entscheiden" icon="alert-triangle" wert={zuEntscheiden.length} label="Zu entscheiden" hervor />
         <Kachel href="/arbeitsplatz/vorgaenge?status=neu" icon="inbox" wert={neu.length} label="Neu eingegangen" hervor />
-        <Kachel href="/arbeitsplatz/vorgaenge?status=bei_teo" icon="tool" wert={inArbeit.length} label="In Arbeit bei TEO" />
+        <Kachel href="/arbeitsplatz/vorgaenge?gruppe=in_bearbeitung" icon="tool" wert={inArbeit.length} label="In Arbeit bei TEO" />
         <Kachel href="/arbeitsplatz/vorgaenge" icon="calendar-event" wert={termine.length} label="Termine diese Woche" />
       </div>
 

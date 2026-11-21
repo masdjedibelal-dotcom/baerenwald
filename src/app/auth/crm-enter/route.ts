@@ -177,8 +177,10 @@ export async function GET(request: Request) {
   }
 
   const target = next.startsWith("/") ? next : `/${next}`;
-  const safeTarget =
-    target.startsWith("/portal") || target.startsWith("/partner") ? target : "/portal";
+  // TEO: direkt in die richtige Oberfläche (Arbeitsplatz/MeinTEO/Team) — ohne Umweg über /portal
+  const safeTarget = ["/portal", "/partner", "/arbeitsplatz", "/mein", "/team"].some((p) => target.startsWith(p))
+    ? target
+    : "/portal";
 
   const response = NextResponse.redirect(`${origin}${safeTarget}`);
 
