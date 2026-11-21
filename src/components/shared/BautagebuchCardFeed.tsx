@@ -12,6 +12,8 @@ import { cn } from "@/lib/utils";
 import { FormatText } from "@/components/shared/FormatText";
 import { FotoLightbox } from "@/components/shared/FotoGalerie";
 import { stripHtmlToPlainText } from "@/lib/portal/portal-display";
+import { PortalModalShell } from "@/components/shared/PortalModalShell";
+import { istTeo } from "@/lib/marke";
 
 export type BautagebuchCardEintrag = {
   id: string;
@@ -88,7 +90,9 @@ export function BautagebuchCardFeed({
           {headerAction}
         </div>
       )}
-      {sorted.length === 0 ? (
+      {sorted.length > 0 && istTeo ? (
+        <TeoUpdateListe eintraege={sorted} onFoto={openLightbox} />
+      ) : sorted.length === 0 ? (
         <p className="portal-text-body rounded-sheet border border-dashed border-border-light bg-muted/20 px-3 py-5 text-center text-text-secondary">
           {emptyText}
         </p>
@@ -197,5 +201,99 @@ export function BautagebuchCardFeed({
         />
       ) : null}
     </section>
+  );
+}
+
+/** Erster Satz (bis . ! ?) — als Vorschau in der Karte. */
+function ersterSatz(text: string): string {
+  const t = stripHtmlToPlainText(text).replace(/\s+/g, " ").trim();
+  const m = t.match(/^(.{1,160}?[.!?])(\s|$)/);
+  return m ? m[1]! : t.length > 120 ? `${t.slice(0, 117)}…` : t;
+}
+
+/**
+ * TEO: je Update eine kompakte Karte — Titel, Datum, ein Satz, höchstens 3 kleine Fotos (+N).
+ * Antippen öffnet alles (Rechner: Fenster, Handy: Blatt von unten).
+ */
+function TeoUpdateListe({
+  eintraege,
+  onFoto,
+}: {
+  eintraege: BautagebuchCardEintrag[];
+  onFoto: (urls: string[], index: number) => void;
+}) {
+  const [offen, setOffen] = useState<BautagebuchCardEintrag | null>(null);
+  const bilder = (e: BautagebuchCardEintrag) => (e.fotos ?? []).filter((u) => u && !isBautagebuchPdfUrl(u));
+  const pdfs = (e: BautagebuchCardEintrag) => (e.fotos ?? []).filter((u) => u && isBautagebuchPdfUrl(u));
+  return (
+    <>
+      <ul className="teo-updates">
+        {eintraege.map((e) => {
+          const desc = e.beschreibung?.trim() || "";
+          const satz = desc ? ersterSatz(desc) : "";
+          const mehrText = desc && stripHtmlToPlainText(desc).trim().length > satz.length + 2;
+          const fotos = bilder(e);
+          return (
+            <li key={e.id}>
+              <PortalButton variant="ghost" action={false} type="button" className="teo-update" onClick={() => setOffen(e)}>
+                <span className="teo-update__kopf">
+                  <span className="teo-update__titel">{e.titel}</span>
+                  <span className="teo-update__datum tabular-nums">{fmtDatum(e.datum)}</span>
+                </span>
+                {satz ? (
+                  <span className="teo-update__text">
+                    {satz}
+                    {mehrText ? <span className="teo-update__mehr"> Mehr</span> : null}
+                  </span>
+                ) : null}
+                {fotos.length ? (
+                  <span className="teo-update__fotos">
+                    {fotos.slice(0, 3).map((url, i) => (
+                      <span key={url} className="teo-update__foto">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img src={url} alt={bautagebuchAnhangLabel(url, i)} />
+                        {i === 2 && fotos.length > 3 ? <span className="teo-update__plus">+{fotos.length - 3}</span> : null}
+                      </span>
+                    ))}
+                  </span>
+                ) : null}
+              </PortalButton>
+            </li>
+          );
+        })}
+      </ul>
+      {offen ? (
+        <PortalModalShell open title={offen.titel} subtitle={fmtDatum(offen.datum)} onClose={() => setOffen(null)}>
+          <div className="teo-update-blatt">
+            {offen.beschreibung?.trim() ? (
+              <FormatText text={offen.beschreibung} className="portal-text-body text-text-secondary" />
+            ) : null}
+            {bilder(offen).length ? (
+              <div className="teo-update-blatt__fotos">
+                {bilder(offen).map((url, i) => (
+                  <PortalButton
+                    variant="ghost"
+                    action={false}
+                    key={url}
+                    type="button"
+                    className="teo-update-blatt__foto"
+                    onClick={() => onFoto(bilder(offen), i)}
+                    aria-label={`${bautagebuchAnhangLabel(url, i)} vergrößern`}
+                  >
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={url} alt={bautagebuchAnhangLabel(url, i)} />
+                  </PortalButton>
+                ))}
+              </div>
+            ) : null}
+            {pdfs(offen).map((url, i) => (
+              <a key={url} href={url} target="_blank" rel="noopener noreferrer" className="teo-update-blatt__pdf">
+                {bautagebuchAnhangLabel(url, i)}
+              </a>
+            ))}
+          </div>
+        </PortalModalShell>
+      ) : null}
+    </>
   );
 }

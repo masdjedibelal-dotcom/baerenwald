@@ -455,3 +455,51 @@
 }
 /* ⓘ im Kartenkopf sichtbar lassen (Kartentitel sind sonst ohne Icons) */
 .ap-wl .card-h .ap-info .mock-icon { display: inline-flex !important; }
+
+/* Neue Anfrage (HV/Team): geführt wie die Mieter-Meldung — eine Frage je Schritt, Kacheln zum Antippen */
+.ap-melden { display: flex; flex-direction: column; gap: 14px; }
+.ap-melden__kopf { display: flex; align-items: center; justify-content: space-between; }
+.ap-melden__zurueck { display: inline-flex !important; align-items: center; justify-content: center; width: 40px; height: 40px; padding: 0; border-radius: 999px; border: 1px solid var(--teo-linie); background: #ffffff; color: var(--teo-navy); }
+.ap-melden__schritt { font-size: 13px; font-weight: 700; color: var(--teo-text-2, #5b6b80); }
+.ap-melden__frage { margin: 4px 0 0; font-size: 28px; font-weight: 800; letter-spacing: -0.03em; color: var(--teo-navy); }
+.ap-melden__unter { margin: -8px 0 0; font-size: 15px; font-weight: 600; color: var(--teo-blau); }
+.ap-melden__kacheln { display: flex; flex-direction: column; gap: 10px; }
+.ap-melden__kachel {
+  display: flex !important;
+  align-items: center;
+  gap: 14px;
+  width: 100%;
+  min-height: 64px;
+  height: auto !important;
+  padding: 12px 16px !important;
+  border: 1px solid var(--teo-linie) !important;
+  border-radius: 20px !important;
+  background: #ffffff !important;
+  box-shadow: 0 20px 50px -40px rgba(11, 31, 58, 0.35);
+  text-align: left;
+  white-space: normal;
+  color: var(--teo-navy);
+}
+.ap-melden__kachel.is-an { border-color: var(--teo-blau) !important; box-shadow: 0 0 0 3px var(--teo-blau-bg); }
+.ap-melden__icon { display: inline-flex; align-items: center; justify-content: center; flex: 0 0 40px; width: 40px; height: 40px; border-radius: 999px; background: var(--teo-blau-bg, #eef4fb); color: var(--teo-blau); }
+.ap-melden__text { display: flex; flex-direction: column; gap: 2px; min-width: 0; flex: 1 1 auto; }
+.ap-melden__label { flex: 1 1 auto; font-size: 16px; font-weight: 800; color: var(--teo-navy); }
+.ap-melden__hint { font-size: 13px; color: var(--teo-text-2, #5b6b80); }
+.ap-melden__felder { display: flex; flex-direction: column; gap: 14px; }
+.ap-melden__zwei { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.ap-melden__schalter { display: flex !important; align-items: center; justify-content: space-between; width: 100%; min-height: 52px; padding: 0 16px !important; border: 1px solid var(--teo-linie) !important; border-radius: 16px !important; background: #ffffff !important; }
+.ap-melden__schalter-knopf { position: relative; width: 46px; height: 28px; border-radius: 999px; background: #d5dde8; transition: background 0.2s ease; }
+.ap-melden__schalter-knopf::after { content: ''; position: absolute; top: 3px; left: 3px; width: 22px; height: 22px; border-radius: 999px; background: #ffffff; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2); transition: transform 0.2s ease; }
+.ap-melden__schalter.is-an .ap-melden__schalter-knopf { background: var(--teo-blau); }
+.ap-melden__schalter.is-an .ap-melden__schalter-knopf::after { transform: translateX(18px); }
+.ap-melden__fuss { position: sticky; bottom: calc(80px + env(safe-area-inset-bottom, 0px)); margin-top: 6px; }
+.ap-melden__fuss .btn { width: 100%; height: 52px; border-radius: 999px; font-size: 16px; font-weight: 700; }
+.ap-mein-neu .ap-melden__fuss { bottom: calc(16px + env(safe-area-inset-bottom, 0px)); }
+.ap-mein-neu .page-inner { padding-top: max(20px, env(safe-area-inset-top, 0px)); }
+/* Startseite: Hinweis-Box „Schaden per E-Mail melden“ — Adresse, rechts Kopieren und E-Mail schreiben */
+.ap-schadenmail { display: flex; align-items: center; gap: 12px; padding: 14px 14px 14px 16px; border: 1px solid #cfe0f3; border-radius: 20px; background: var(--teo-blau-bg, #eef4fb); }
+.ap-schadenmail__icon { display: inline-flex; align-items: center; justify-content: center; flex: 0 0 40px; width: 40px; height: 40px; border-radius: 999px; background: #ffffff; color: var(--teo-blau); }
+.ap-schadenmail__text { display: flex; flex-direction: column; min-width: 0; flex: 1 1 auto; }
+.ap-schadenmail__titel { font-size: 15px; font-weight: 800; color: var(--teo-navy); }
+.ap-schadenmail__adresse { font-size: 13px; color: var(--teo-text-2, #5b6b80); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ap-schadenmail__knopf { display: inline-flex; align-items: center; justify-content: center; flex: 0 0 40px; width: 40px; height: 40px; border-radius: 999px; border: 1px solid var(--teo-linie); background: #ffffff; color: var(--teo-navy); cursor: pointer; }

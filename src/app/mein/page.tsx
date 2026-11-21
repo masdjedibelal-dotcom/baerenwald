@@ -85,11 +85,10 @@ export default async function MeinSeite() {
                   </h1>
                   <div className="mieter-wl-objekt-item-meta">{o.adresse}</div>
                 </div>
-                {o.meldeLink ? (
-                  <MieterWlBtn href={o.meldeLink} className="mein-melden">
-                    Schaden melden
-                  </MieterWlBtn>
-                ) : null}
+                {/* Eigentümer melden direkt (gleicher geführter Ablauf wie die Verwaltung) */}
+                <MieterWlBtn href={`/mein/neu?objekt=${o.id}`} className="mein-melden">
+                  Neue Anfrage
+                </MieterWlBtn>
               </div>
               {o.kosten ? (
                 <div className="mein-kosten">

@@ -7,6 +7,8 @@ import { ladePlaene } from '@/teo/arbeitsplatz/daten/plaene'
 import { ladeTermine } from '@/teo/arbeitsplatz/daten/termine'
 import { ladeVorgaenge, type ApVorgangZeile } from '@/teo/arbeitsplatz/daten/vorgaenge'
 import { ladeApKontext } from '@/teo/arbeitsplatz/kontext'
+import { ladeSchadenAdresse } from '@/teo/arbeitsplatz/daten/schaden-adresse'
+import { SchadenMailHinweis } from '@/teo/arbeitsplatz/shell/SchadenMailHinweis'
 import { PLAN_STAND, planStand } from '@/teo/arbeitsplatz/plaene/plan-logik'
 import { AP_STATUS } from '@/teo/arbeitsplatz/vorgang-status'
 
@@ -56,7 +58,11 @@ function Liste({ vorgaenge }: { vorgaenge: ApVorgangZeile[] }) {
 export default async function StartSeite() {
   const k = await ladeApKontext()
   if (!k) redirect('/portal/login')
-  const [vorgaenge, plaene] = await Promise.all([ladeVorgaenge(k), ladePlaene(k)])
+  const [vorgaenge, plaene, schadenAdresse] = await Promise.all([
+    ladeVorgaenge(k),
+    ladePlaene(k),
+    k.person.rolle === 'verwaltung' ? ladeSchadenAdresse(k.org.id) : Promise.resolve(null),
+  ])
   const faelligePlaene = plaene.map((p) => ({ ...p, stand: planStand(p.naechste) })).filter((p) => p.stand !== 'geplant')
   const offen = vorgaenge.filter((v) => v.status !== 'erledigt' && v.status !== 'abgelehnt')
   const termine = await ladeTermine(offen.map((v) => v.id))
@@ -125,6 +131,8 @@ export default async function StartSeite() {
           </div>
         </MockCard>
       ) : null}
+
+      {schadenAdresse ? <SchadenMailHinweis adresse={schadenAdresse} /> : null}
     </div>
   )
 }

@@ -11,6 +11,8 @@
  * - Kein Termin-Block im Melde-/Create-Funnel
  */
 
+import { istTeo } from "@/lib/marke";
+
 export type FunnelChannel =
   | "web"
   | "melde_anon"
@@ -122,7 +124,8 @@ export const FUNNEL_VARIANT: Record<FunnelChannel, FunnelVariantConfig> = {
     showTrustAndGpt: false,
     showPrice: true,
     contactBeforePrice: false,
-    forceKaputt: false,
+    // TEO: Privatkunden melden nur Schäden (Reparatur/Notfall) — wie die Mieter-Meldung, ohne Umbau/Betreuung
+    forceKaputt: istTeo,
     prefix: {
       objekt: "hidden",
       objektNeu: false,

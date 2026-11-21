@@ -7303,3 +7303,19 @@ select {
   color: #0b1f3a;
   box-shadow: none !important;
 }
+
+/* TEO: gleiche Kartenwahl in allen Meldeabläufen (auch Privatkunde im Portal) — weiß, rund, blaue Linien-Icons */
+:root[data-marke="teo"] .portal-funnel-host .funnel-step-question { font-weight: 800; letter-spacing: -0.02em; color: #0b1f3a; }
+:root[data-marke="teo"] .portal-funnel-host .funnel-tile {
+  background: #ffffff !important;
+  border: 1px solid #dce4ee;
+  border-radius: 20px;
+  box-shadow: 0 20px 50px -40px rgba(11, 31, 58, 0.35);
+}
+:root[data-marke="teo"] .portal-funnel-host .funnel-tile.selected { border-color: #1e5fa8; box-shadow: 0 0 0 3px #eaf0f8; }
+:root[data-marke="teo"] .portal-funnel-host .funnel-tile > div.absolute { display: none; }
+:root[data-marke="teo"] .portal-funnel-host .funnel-tile-icon-wrap { border-radius: 999px; background: #eaf0f8; color: #1e5fa8; }
+:root[data-marke="teo"] .portal-funnel-host .funnel-tile-icon-wrap img { filter: none; }
+:root[data-marke="teo"] .portal-funnel-host .funnel-tile-label { font-weight: 800; color: #0b1f3a; }
+:root[data-marke="teo"] .portal-funnel-host .funnel-footer-next { border-radius: 999px; background: #0b1f3a; color: #ffffff; }
+:root[data-marke="teo"] .portal-funnel-host .funnel-footer-next:disabled { background: #c7d5e6; color: #ffffff; }

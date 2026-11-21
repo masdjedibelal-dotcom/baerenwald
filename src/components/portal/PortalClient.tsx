@@ -1205,7 +1205,15 @@ export function PortalClient({
             // wie im Arbeitsplatz: Titel und blaue Zeile mit der Anzahl
             <div className="wl-kopf">
               <h1>Vorgänge.</h1>
-              <p>{vorgaengeItems.length === 1 ? "1 Vorgang." : `${vorgaengeItems.length} Vorgänge.`}</p>
+              {/* wie im HV-Portal: offene und erledigte zählen statt „2 Vorgänge“ */}
+              <p>
+                {(() => {
+                  const erledigt = vorgaengeItems.filter((item) =>
+                    privatListeChipMatches("erledigt", flowByItemId.get(item.id) ?? "gemeldet")
+                  ).length;
+                  return `${vorgaengeItems.length - erledigt} offen, ${erledigt} erledigt.`;
+                })()}
+              </p>
             </div>
           ) : (
           <div className="px-0.5 pb-1">

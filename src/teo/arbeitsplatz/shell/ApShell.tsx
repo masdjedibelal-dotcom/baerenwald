@@ -182,7 +182,7 @@ export function ApShell({
                 <div className="pop-sep" />
                 <form action="/portal/auth/signout" method="post">
                   <MockBtn kind="danger" className="pop-item" type="submit">
-                    <MockIcon n="arrow-left" ctx="default" size={16} />
+                    <MockIcon n="log-out" ctx="default" size={16} />
                     <span>Abmelden</span>
                   </MockBtn>
                 </form>
