@@ -1,8 +1,18 @@
+import { istTeo } from "@/lib/marke";
 import { PARTNER_AUTH_COPY } from "@/lib/partner/partner-auth-copy";
 
 type Variant = "login" | "register" | "blocked";
 
 export function PartnerAuthFlowHint({ variant }: { variant: Variant }) {
+  // TEO: kein zweiter Erklärtext — Seite/Karte sagt es bereits (ein Satz reicht)
+  if (istTeo && variant === "login") return null;
+  if (variant === "blocked" && istTeo) {
+    return (
+      <p className="portal-text-body text-left text-text-secondary">
+        Ihr Betrieb ist noch nicht angelegt oder die E-Mail stimmt nicht mit unseren Unterlagen überein.
+      </p>
+    );
+  }
   if (variant === "blocked") {
     return (
       <div className="space-y-3 text-left">

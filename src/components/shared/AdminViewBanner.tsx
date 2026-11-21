@@ -1,5 +1,6 @@
 "use client";
 
+import { istTeo } from "@/lib/marke";
 import { usePathname } from "next/navigation";
 import { PortalButton } from "@/components/portal/PortalButton";
 
@@ -50,14 +51,18 @@ export function AdminViewBanner() {
 
   return (
     <div
-      className="sticky top-0 z-[100] border-b border-warning-border bg-warning-bg px-4 py-2 text-sm text-warning-text"
+      className="teo-admin-balken sticky top-0 z-[100] border-b border-warning-border bg-warning-bg px-4 py-2 text-sm text-warning-text"
       role="status"
     >
       <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-2">
-        <span>
-          {AUTH_ADMIN_VIEW_PREFIX} {info.roleLabel} ·{" "}
-          <span className="text-warning-text/80">({info.adminEmail})</span>
-        </span>
+        {istTeo ? (
+          <span>Ansicht als {info.roleLabel.replace(/^HV \/ /, "")}</span>
+        ) : (
+          <span>
+            {AUTH_ADMIN_VIEW_PREFIX} {info.roleLabel} ·{" "}
+            <span className="text-warning-text/80">({info.adminEmail})</span>
+          </span>
+        )}
         <form
           action={signoutPath}
           method="post"

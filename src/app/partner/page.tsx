@@ -15,7 +15,7 @@ import { clearAdminViewCookie } from "@/lib/auth/crm-impersonation-session";
 import { SITE_CONFIG } from "@/lib/config";
 import { createClient } from "@/lib/supabase/server";
 import { isSupabaseConfigured } from "@/lib/supabase";
-import { MARKE } from "@/lib/marke";
+import { istTeo, MARKE } from "@/lib/marke";
 
 export const metadata = {
   title: "Partner",
@@ -120,10 +120,16 @@ export default async function PartnerDashboardPage({
             Eingeloggt als <strong>{user.email}</strong>. Für das Partner-Portal bitte mit der
             Betriebs-E-Mail laut CRM anmelden.
           </p>
-          <p className="portal-text-body text-text-secondary">{link.error}</p>
-          <PartnerAuthFlowHint variant="blocked" />
+          {/* TEO: ein Satz reicht — darunter direkt der Weg ins richtige Portal */}
+          {istTeo ? null : <p className="portal-text-body text-text-secondary">{link.error}</p>}
+          {istTeo ? null : <PartnerAuthFlowHint variant="blocked" />}
           <div className="flex flex-col gap-2">
-            <Link href="/partner/registrieren" className="btn-pill-primary text-center !py-2.5">
+            {istTeo ? (
+              <Link href="/portal" className="btn-pill-primary text-center !py-2.5">
+                Zu meinem Portal
+              </Link>
+            ) : null}
+            <Link href="/partner/registrieren" className={istTeo ? "btn-pill-outline text-center !py-2.5" : "btn-pill-primary text-center !py-2.5"}>
               Zur Registrierung
             </Link>
             <a

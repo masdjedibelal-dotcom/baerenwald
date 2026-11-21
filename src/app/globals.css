@@ -7473,3 +7473,6 @@ select {
 @media (prefers-reduced-motion: reduce) {
   :root[data-marke="teo"] .popover, :root[data-marke="teo"] .teo-konto__menue { animation: none; }
 }
+/* Admin-Ansicht aus dem CRM: schmaler Navy-Balken statt Beige */
+:root[data-marke="teo"] .teo-admin-balken { background: #0b1f3a !important; color: #ffffff !important; border: 0 !important; padding: 6px 16px calc(6px) !important; padding-top: max(6px, env(safe-area-inset-top, 0px)) !important; font-size: 13px; font-weight: 600; }
+:root[data-marke="teo"] .teo-admin-balken button { background: rgba(255, 255, 255, 0.14) !important; color: #ffffff !important; border: 0 !important; border-radius: 999px !important; }

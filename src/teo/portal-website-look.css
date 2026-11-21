@@ -433,3 +433,5 @@
   .portal-wl .portal-topbar-brand-text,
   .portal-wl .portal-topbar-divider { display: none !important; }
 }
+/* Abschnittstitel in Blättern wie im CRM: klein, grau, kräftig */
+:root[data-marke="teo"] .teo-blatt__abschnitt h3 { margin: 0 0 8px 4px; font-size: 13px; font-weight: 700; color: #6a7c92; letter-spacing: 0; text-transform: none; }

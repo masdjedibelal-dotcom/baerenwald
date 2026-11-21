@@ -747,7 +747,8 @@ function TeoEinsatzBlatt({
           ) : (
             <TeoInfo label="Ausführung" wert={wann || "Noch offen"} />
           )}
-          {e.ort ? <TeoInfo label="Ort" wert={e.ort} /> : null}
+          {/* Ort immer als Zeile — kein Erklärsatz darunter */}
+          <TeoInfo label="Ort" wert={e.ort || `Kommt von ${MARKE.name}`} />
           {e.mitarbeiter_name ? <TeoInfo label="Vor Ort" wert={e.mitarbeiter_name} /> : null}
           {e.ek_betrag != null ? <TeoInfo label="Vergütung" wert={`${euro(e.ek_betrag)} ${e.ek_art}`} /> : null}
         </div>
@@ -755,12 +756,10 @@ function TeoEinsatzBlatt({
           <p className="teo-blatt__hinweis">
             Kontakt vor Ort: <KontaktVorOrt text={e.kontakt_vor_ort} />
           </p>
-        ) : !e.ort ? (
-          <p className="teo-blatt__hinweis">Ort und Ansprechpartner vor Ort erfahren Sie von {MARKE.name}.</p>
         ) : null}
         {e.anweisung || e.anweisung_fotos.length ? (
           <div className="teo-blatt__abschnitt">
-            <h3>Anweisung</h3>
+            <h3>Beschreibung</h3>
             {e.anweisung ? <p className="m-0 whitespace-pre-wrap">{e.anweisung}</p> : null}
             <FotoGalerie urls={e.anweisung_fotos} />
           </div>
