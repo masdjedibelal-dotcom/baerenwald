@@ -7363,3 +7363,113 @@ select {
 :root[data-marke="teo"] img[src*="/icons/"] {
   filter: brightness(0) saturate(100%) invert(29%) sepia(83%) saturate(1500%) hue-rotate(196deg) brightness(91%) contrast(90%);
 }
+
+/* ════════════ Feinschliff-System 21.11. (Portale, Arbeitsplatz, Team, MeinTEO) — gleiche Werte wie im CRM ════════════ */
+:root[data-marke="teo"] {
+  --teo-tiefe-1: 0 1px 2px rgba(11, 31, 58, 0.04), 0 8px 24px -18px rgba(11, 31, 58, 0.18);
+  --teo-tiefe-2: 0 2px 6px rgba(11, 31, 58, 0.06), 0 16px 40px -12px rgba(11, 31, 58, 0.22);
+  --teo-tiefe-3: 0 -8px 40px -8px rgba(11, 31, 58, 0.22);
+  --teo-rand-fein: rgba(11, 31, 58, 0.08);
+  --teo-icon-grau: #6a7c92;
+}
+/* Menüleiste unten: helles Glas (Entscheidung 21.11.) — Arbeitsplatz, Handwerker/Kunde, Team */
+@media (max-width: 1023px) {
+  :root[data-marke="teo"] .ap-wl .bottomnav,
+  :root[data-marke="teo"] .portal-wl .portal-shell-mobile-nav-pill,
+  :root[data-marke="teo"] .ap-wl .tm-nav {
+    background: rgba(255, 255, 255, 0.78) !important;
+    -webkit-backdrop-filter: blur(20px) saturate(1.8) !important;
+    backdrop-filter: blur(20px) saturate(1.8) !important;
+    border: 1px solid var(--teo-rand-fein) !important;
+    box-shadow: 0 12px 32px -12px rgba(11, 31, 58, 0.28), inset 0 1px 0 rgba(255, 255, 255, 0.7) !important;
+  }
+  :root[data-marke="teo"] .ap-wl .bottomnav-item,
+  :root[data-marke="teo"] .portal-wl .portal-shell-mobile-item,
+  :root[data-marke="teo"] .ap-wl .tm-nav__punkt { color: var(--teo-icon-grau) !important; }
+  :root[data-marke="teo"] .ap-wl .bottomnav-item.active,
+  :root[data-marke="teo"] .portal-wl .portal-shell-mobile-item--active,
+  :root[data-marke="teo"] .ap-wl .tm-nav__punkt.is-aktiv { color: #0b1f3a !important; }
+  :root[data-marke="teo"] .ap-wl .bottomnav-item.active::before { background: rgba(11, 31, 58, 0.07) !important; }
+  :root[data-marke="teo"] .portal-wl .portal-shell-mobile-item--active,
+  :root[data-marke="teo"] .ap-wl .tm-nav__punkt.is-aktiv { background: rgba(11, 31, 58, 0.07) !important; }
+  :root[data-marke="teo"] .portal-wl .portal-shell-mobile-item svg,
+  :root[data-marke="teo"] .ap-wl .tm-nav__punkt .mock-icon { color: inherit !important; }
+}
+/* Popover / Menüs (Konto, „+“, „…“, Glocke am Rechner): weiß, feiner Rand, weicher Schatten, sanftes Öffnen */
+:root[data-marke="teo"] .popover,
+:root[data-marke="teo"] .teo-konto__menue {
+  background: #ffffff !important;
+  border: 1px solid var(--teo-rand-fein) !important;
+  border-radius: 14px !important;
+  box-shadow: var(--teo-tiefe-2) !important;
+  padding: 6px !important;
+  animation: teo-pop-auf 0.14s ease-out;
+  transform-origin: top right;
+}
+@keyframes teo-pop-auf { from { opacity: 0; transform: scale(0.96) translateY(-4px); } to { opacity: 1; transform: none; } }
+:root[data-marke="teo"] .popover .pop-item,
+:root[data-marke="teo"] .teo-konto__punkt {
+  min-height: 44px;
+  gap: 12px;
+  padding: 0 12px !important;
+  border-radius: 10px !important;
+  font-size: 15px;
+  font-weight: 600;
+  color: #0b1f3a;
+}
+:root[data-marke="teo"] .popover .pop-item .mock-icon,
+:root[data-marke="teo"] .teo-konto__punkt svg { color: var(--teo-icon-grau); }
+:root[data-marke="teo"] .teo-konto__punkt--rot svg,
+:root[data-marke="teo"] .popover .btn.danger.pop-item,
+:root[data-marke="teo"] .popover .btn.danger.pop-item .mock-icon { color: #b42318 !important; }
+:root[data-marke="teo"] .popover .pop-item:hover,
+:root[data-marke="teo"] .teo-konto__punkt:hover { background: #f1f5fa !important; }
+:root[data-marke="teo"] .popover .pop-sep { height: 1px; margin: 6px 8px; background: #eef2f7; border: 0; }
+:root[data-marke="teo"] .teo-konto__kopf { border-bottom-color: #eef2f7; }
+/* Blätter (Portal-Fenster und Arbeitsplatz-Blätter): ✕ als runder grauer Knopf, Titel ruhig, Griff */
+:root[data-marke="teo"] .portal-modal-shell-close,
+:root[data-marke="teo"] .editor-sheet__icon-btn {
+  width: 36px !important;
+  height: 36px !important;
+  min-width: 36px !important;
+  min-height: 36px !important;
+  padding: 0 !important;
+  border: 0 !important;
+  border-radius: 999px !important;
+  background: #eef2f7 !important;
+  color: #44546a !important;
+  box-shadow: none !important;
+}
+:root[data-marke="teo"] .portal-modal-shell-close svg,
+:root[data-marke="teo"] .editor-sheet__icon-btn .mock-icon { width: 18px !important; height: 18px !important; }
+:root[data-marke="teo"] .portal-modal-shell-heading,
+:root[data-marke="teo"] .editor-sheet__title { font-size: 18px; font-weight: 800; letter-spacing: -0.01em; color: #0b1f3a; }
+:root[data-marke="teo"] .portal-modal-shell-panel,
+:root[data-marke="teo"] .editor-sheet { box-shadow: var(--teo-tiefe-3); }
+:root[data-marke="teo"] .editor-sheet-overlay { background: rgba(11, 31, 58, 0.4) !important; }
+/* Icons: eine Linienstärke */
+:root[data-marke="teo"] .mock-icon svg [stroke-width],
+:root[data-marke="teo"] .mock-icon svg path,
+:root[data-marke="teo"] svg.lucide { stroke-width: 1.75; }
+/* Antippen: leichtes Eindrücken */
+:root[data-marke="teo"] .portal-list-card,
+:root[data-marke="teo"] .portal-dash-recent-item,
+:root[data-marke="teo"] .portal-dash-kpi,
+:root[data-marke="teo"] .ap-wl .list-row,
+:root[data-marke="teo"] .ap-wl .btn,
+:root[data-marke="teo"] .ap-melden__kachel,
+:root[data-marke="teo"] .teo-update,
+:root[data-marke="teo"] .funnel-tile,
+:root[data-marke="teo"] .mieter-wl-objekt-item { transition: transform 0.12s ease, background-color 0.12s ease; }
+:root[data-marke="teo"] .portal-list-card:active,
+:root[data-marke="teo"] .portal-dash-recent-item:active,
+:root[data-marke="teo"] .portal-dash-kpi:active,
+:root[data-marke="teo"] .ap-wl .list-row:not(.head):active,
+:root[data-marke="teo"] .ap-wl .btn:active:not(:disabled),
+:root[data-marke="teo"] .ap-melden__kachel:active,
+:root[data-marke="teo"] .teo-update:active,
+:root[data-marke="teo"] .funnel-tile:active,
+:root[data-marke="teo"] .mieter-wl-objekt-item:active { transform: scale(0.98); }
+@media (prefers-reduced-motion: reduce) {
+  :root[data-marke="teo"] .popover, :root[data-marke="teo"] .teo-konto__menue { animation: none; }
+}

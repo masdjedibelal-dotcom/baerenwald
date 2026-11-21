@@ -409,3 +409,27 @@
 .teo-update-blatt__foto { aspect-ratio: 1; width: 100%; height: auto !important; padding: 0 !important; border-radius: 12px !important; overflow: hidden; border: 0 !important; }
 .teo-update-blatt__foto img { width: 100%; height: 100%; object-fit: cover; }
 .teo-update-blatt__pdf { display: inline-flex; align-items: center; min-height: 44px; padding: 0 14px; border: 1px solid #dce4ee; border-radius: 12px; font-weight: 700; color: #1e5fa8; }
+
+/* ════ Rechner: Handwerker- und Kundenportal mit derselben Hülle wie CRM und HV-Portal ════
+   Navy-Seitenleiste mit Icons, kein Rollen-Text in Großbuchstaben, Abmelden/Rechtstexte nicht in der Leiste
+   (Konto-Menü oben rechts, Rechtstexte in den Einstellungen) */
+@media (min-width: 1024px) {
+  .portal-wl aside { background: #0b1f3a !important; border-right: 0 !important; color: #ffffff; }
+  .portal-wl .portal-shell-brand-title { color: #ffffff !important; font-weight: 800; }
+  .portal-wl .portal-shell-brand-role { display: none !important; }
+  .portal-wl .portal-shell-brand-avatar { background: rgba(255, 255, 255, 0.12) !important; color: #ffffff !important; }
+  .portal-wl .portal-shell-nav-item { color: rgba(255, 255, 255, 0.72) !important; background: transparent !important; border-radius: 10px !important; }
+  .portal-wl .portal-shell-nav-item svg { display: inline-block !important; color: inherit !important; }
+  .portal-wl .portal-shell-nav-item-main { display: flex; align-items: center; gap: 10px; }
+  .portal-wl .portal-shell-nav-item:hover { background: rgba(255, 255, 255, 0.08) !important; color: #ffffff !important; }
+  .portal-wl .portal-shell-nav-item--active,
+  .portal-wl .portal-shell-nav-item--active:hover { background: #ffffff !important; color: #0b1f3a !important; }
+  .portal-wl .portal-shell-sidebar-signout,
+  .portal-wl .portal-shell-sidebar-foot .portal-legal-footer { display: none !important; }
+  .portal-wl aside button[class*="portal-shell-cre"] { background: rgba(255, 255, 255, 0.12) !important; color: #ffffff !important; border: 0 !important; }
+  .portal-wl aside button[class*="portal-shell-cre"]:hover { background: rgba(255, 255, 255, 0.2) !important; }
+  /* Kopf: Konto-Plakette rechts neben der Glocke (wie CRM), Titeltext im Kopf entfällt */
+  .portal-wl .portal-topbar-brand { display: flex !important; order: 5; margin-left: 12px; }
+  .portal-wl .portal-topbar-brand-text,
+  .portal-wl .portal-topbar-divider { display: none !important; }
+}
