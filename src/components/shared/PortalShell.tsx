@@ -284,7 +284,7 @@ export function PortalShell({
         aria-label={createLabel}
         title={createLabel}
       >
-        <PortalIcon n="plus" ctx="sidebar" size={20} />
+        <PortalIcon n="plus" ctx="default" size={20} />
       </PortalButton>
     ) : null;
   const kopfSuche = istTeo ? null : headerSearch;

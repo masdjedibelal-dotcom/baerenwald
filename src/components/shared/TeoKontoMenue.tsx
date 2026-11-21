@@ -80,7 +80,7 @@ export function TeoKontoMenue({
           ) : null}
           <form action={abmeldenAction} method="post">
             <button type="submit" role="menuitem" className="teo-konto__punkt teo-konto__punkt--rot">
-              <PortalIcon n="arrow-left" ctx="default" size={17} />
+              <PortalIcon n="chevron-left" ctx="default" size={17} />
               Abmelden
             </button>
           </form>

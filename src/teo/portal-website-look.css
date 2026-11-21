@@ -361,3 +361,5 @@
 }
 :root[data-marke="teo"] .portal-dok-karte h3 { font-weight: 700; color: #0b1f3a; }
 :root[data-marke="teo"] .portal-dok-karte .line-clamp-3 { -webkit-line-clamp: 1; }
+:root[data-marke="teo"] .teo-kopf-neu svg,
+:root[data-marke="teo"] .teo-kopf-neu .mock-icon { color: #0b1f3a !important; stroke: currentColor; }
