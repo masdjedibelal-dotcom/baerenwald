@@ -243,7 +243,6 @@
 .portal-wl .portal-detail-hero-inner .portal-dash-hero-name { color: var(--wl-navy); }
 .portal-wl .portal-detail-tab { border-radius: 999px; font-weight: 700; }
 .portal-wl .portal-detail-tab--active { background: var(--wl-navy) !important; border-color: var(--wl-navy) !important; color: #ffffff !important; }
-.portal-wl .portal-detail-tabs-row { padding-left: 16px; padding-right: 16px; }
 /* Startseite „Zuletzt“: Karten wie in der Liste (kein Farbstrich, Status als Plakette) */
 .portal-wl .portal-dash-recent-item { border: 1px solid var(--wl-linie) !important; border-radius: 20px !important; box-shadow: var(--wl-schatten) !important; background: #ffffff !important; }
 .portal-wl .portal-dash-recent-edge { display: none !important; }
@@ -274,3 +273,19 @@
   .portal-wl .portal-header { justify-content: flex-end; }
   .portal-wl .portal-topbar-mark { width: 40px; height: 40px; font-size: 14px; }
 }
+
+/* ════ Vorgang-Detail (Kundenportal) wie im HV-Arbeitsplatz ════ */
+@media (max-width: 1023px) {
+  /* 16 px Abstand zum Rand wie im Arbeitsplatz (Hülle zieht den Inhalt um 16 px nach außen) */
+  .portal-wl .portal-detail-body-pad { padding-left: 32px !important; padding-right: 32px !important; }
+  .portal-wl .portal-detail-kopfkarte { margin-left: 32px !important; margin-right: 32px !important; border: 1px solid var(--wl-linie); border-radius: 20px !important; box-shadow: var(--wl-schatten); }
+}
+/* Angaben: Bezeichnung grau über dem Wert (statt links/rechts) */
+.portal-wl .portal-detail-tabs-panel .portal-section-card .portal-text-body.justify-between { flex-direction: column; align-items: flex-start; justify-content: flex-start; gap: 2px; padding: 10px 0; }
+.portal-wl .portal-detail-tabs-panel .portal-section-card .portal-text-body.justify-between > * { max-width: 100% !important; text-align: left !important; }
+.portal-wl .portal-detail-tabs-panel .portal-section-card .portal-text-body.justify-between > :first-child { font-size: 14px; color: #5b6b80; }
+.portal-wl .portal-detail-tabs-panel .portal-section-card .portal-text-body.justify-between > :last-child { font-size: 16px; color: var(--wl-navy); font-weight: 600; }
+/* Leere Karten (z. B. „Ausführung“ ohne Angaben) ausblenden */
+.portal-wl .portal-section-card:has(.space-y-0:empty):not(:has(.portal-text-body)) { display: none; }
+.portal-wl .portal-section-card { border: 1px solid var(--wl-linie); border-radius: 24px !important; box-shadow: var(--wl-schatten) !important; }
+.portal-wl .teo-einsatz-liste.portal-section-card { border: 0; box-shadow: none !important; }

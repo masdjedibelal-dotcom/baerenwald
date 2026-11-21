@@ -10,6 +10,7 @@ import { formatDatum, formatEuro } from '@/lib/shared-domain/geld-datum'
 import { createClient } from '@/lib/supabase/server'
 import { ladeApKontext } from '@/teo/arbeitsplatz/kontext'
 import { ladeMitteilungen, ladeObjektDokumente } from '@/teo/arbeitsplatz/daten/haus'
+import { TeoKontoMenue, teoKuerzel } from '@/components/shared/TeoKontoMenue'
 import { HausInfo } from '@/teo/mein/HausInfo'
 import { MeinVorgaengeListe } from '@/teo/mein/MeinVorgaengeListe'
 import { ladeEigentuemerObjekte, ladeHausPlaene, ladeMeineMeldungen } from '@/teo/mein/mein-daten'
@@ -59,9 +60,16 @@ export default async function MeinSeite() {
   const legal = resolveMeldeLegalUrls({ meldeSlug: orgKennung, datenschutz_url: datenschutzUrl, impressum_url: impressumUrl })
   const hausPlaene = hausIds.flatMap((id) => plaene.get(id) ?? [])
   const offeneMeldungen = meldungen.filter((m) => m.stufe !== 'erledigt').length
+  const personName = String(eigentuemer?.person.name ?? user.user_metadata?.name ?? user.email).trim()
 
   return (
-    <MieterWlFrame brand={brand} className="mein-wl" datenschutzHref={legal.datenschutz} impressumHref={legal.impressum}>
+    <MieterWlFrame
+      brand={brand}
+      className="mein-wl"
+      datenschutzHref={legal.datenschutz}
+      impressumHref={legal.impressum}
+      kopfRechts={<TeoKontoMenue kuerzel={teoKuerzel(personName, 'M')} name={personName} unterzeile={user.email} abmeldenAction="/portal/auth/signout" />}
+    >
       <div className="space-y-5">
         <div className="wl-kopf">
           <h1>{begruessung()}</h1>
@@ -150,9 +158,6 @@ export default async function MeinSeite() {
           </section>
         ) : null}
 
-        <form action="/portal/auth/signout" method="post" className="mein-fuss">
-          <button type="submit">Abmelden</button>
-        </form>
       </div>
     </MieterWlFrame>
   )

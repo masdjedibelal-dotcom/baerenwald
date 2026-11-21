@@ -118,6 +118,8 @@ export type PortalShellProps = {
   brandPrimaryDk?: string | null;
   brandSoft?: string | null;
   className?: string;
+  /** Servus TEO: Kontomenü oben (Plakette mit Popover) */
+  kontoMenue?: ReactNode;
 };
 
 function NavGlyph({
@@ -190,6 +192,7 @@ export function PortalShell({
   brandPrimaryDk,
   brandSoft,
   className,
+  kontoMenue,
 }: PortalShellProps) {
   const { busy: ctxBusy, flash } = usePortalBusy();
   const prevNavRef = useRef(activeNavId);
@@ -435,6 +438,7 @@ export function PortalShell({
                   brandLogoUrl={brandLogoUrl}
                   brandMarkSrc={brandMarkSrc}
                   brandKuerzel={brandKuerzel}
+                  kontoMenue={kontoMenue}
                   notifications={topbarRight}
                 />
 

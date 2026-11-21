@@ -21,6 +21,8 @@ export type PortalTopbarProps = {
   notifications?: ReactNode;
   /** @deprecated Prefer `notifications` */
   headerActions?: ReactNode;
+  /** Servus TEO: Kontomenü (Plakette mit Popover) statt des reinen Marken-Quadrats */
+  kontoMenue?: ReactNode;
   className?: string;
 };
 
@@ -36,6 +38,7 @@ export function PortalTopbar({
   brandKuerzel,
   notifications,
   headerActions,
+  kontoMenue,
   className,
 }: PortalTopbarProps) {
   const right = notifications ?? headerActions;
@@ -48,7 +51,9 @@ export function PortalTopbar({
       data-portal-topbar=""
     >
       <div className="portal-topbar-brand">
-        {brandLogoUrl ? (
+        {kontoMenue ? (
+          kontoMenue
+        ) : brandLogoUrl ? (
           <Image
             src={brandLogoUrl}
             alt=""

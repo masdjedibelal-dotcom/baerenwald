@@ -1,6 +1,8 @@
 'use client'
 
 import Link from 'next/link'
+
+import { TeoKontoMenue, teoKuerzel } from '@/components/shared/TeoKontoMenue'
 import { usePathname } from 'next/navigation'
 import type { ReactNode } from 'react'
 
@@ -28,12 +30,8 @@ export function TeamShell({ orgName, personName, children }: { orgName: string; 
           <div className="tm-kopf__org">{orgName}</div>
           <div className="tm-kopf__name">{personName}</div>
         </div>
-        <form action="/portal/auth/signout" method="post">
-          {/* Kein Abmelden-Icon im Bausatz (Kreis blieb leer) — klarer Text */}
-          <button type="submit" className="tm-kopf__ab tm-kopf__ab--text">
-            Abmelden
-          </button>
-        </form>
+        {/* Kontomenü wie im Arbeitsplatz: Plakette oben rechts, Popover mit Abmelden */}
+        <TeoKontoMenue kuerzel={teoKuerzel(personName, "T")} name={personName} unterzeile={orgName} abmeldenAction="/portal/auth/signout" />
       </header>
       <main className="tm-inhalt">{children}</main>
       <nav className="tm-nav" aria-label="Navigation">

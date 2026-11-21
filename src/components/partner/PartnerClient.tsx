@@ -9,6 +9,7 @@ import { PartnerNotificationBell } from "@/components/partner/PartnerNotificatio
 import { PartnerProfilPanel } from "@/components/partner/PartnerProfilPanel";
 import { PortalButton } from "@/components/portal/PortalButton";
 import { PortalLegalFooter } from "@/components/shared/PortalLegalFooter";
+import { TeoKontoMenue, teoKuerzel } from "@/components/shared/TeoKontoMenue";
 import { PortalShell } from "@/components/shared/PortalShell";
 import type { PartnerHandwerkerProfil, PartnerProfilKontext } from "@/lib/partner/get-partner-data";
 import { buildPortalShellNav } from "@/lib/portal2/nav-items";
@@ -65,6 +66,17 @@ export function PartnerClient({
       activeNavId={section === "einsaetze" ? "vorgaenge" : section}
       contentKey={section}
       onNavChange={(id) => switchSection(id === "profil" ? "profil" : id === "vorgaenge" ? "einsaetze" : "uebersicht")}
+      kontoMenue={
+        istTeo ? (
+          <TeoKontoMenue
+            kuerzel={teoKuerzel(firma, "P")}
+            name={firma}
+            unterzeile="Handwerker"
+            onEinstellungen={() => switchSection("profil")}
+            abmeldenAction="/partner/auth/signout"
+          />
+        ) : undefined
+      }
       nav={buildPortalShellNav("handwerker", "partner")}
       footer={firma}
       notifications={<PartnerNotificationBell onOpenVorgang={() => switchSection("uebersicht")} />}

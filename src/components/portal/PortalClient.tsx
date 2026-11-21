@@ -28,6 +28,7 @@ import {
 import { PortalContentBusy } from "@/components/shared/PortalContentBusy";
 import { usePortalRefresh } from "@/components/shared/usePortalRefresh";
 import { PortalLegalFooter } from "@/components/shared/PortalLegalFooter";
+import { TeoKontoMenue, teoKuerzel } from "@/components/shared/TeoKontoMenue";
 import { PortalShell } from "@/components/shared/PortalShell";
 import { PortalHeaderSearch } from "@/components/shared/PortalHeaderSearch";
 import {
@@ -1470,6 +1471,17 @@ export function PortalClient({
         onNavChange={(id) => {
           switchSection(id as SectionId);
         }}
+        kontoMenue={
+          istTeo ? (
+            <TeoKontoMenue
+              kuerzel={teoKuerzel(kunde.name, "K")}
+              name={kunde.name?.trim() || MARKE.portalName}
+              unterzeile={kunde.email ?? null}
+              onEinstellungen={() => switchSection("profil" as SectionId)}
+              abmeldenAction="/portal/auth/signout"
+            />
+          ) : undefined
+        }
         nav={buildPortalShellNav(navRole, "kunde", {
           liste: needsActionCount,
         })}

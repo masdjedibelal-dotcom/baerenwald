@@ -31,6 +31,8 @@ export type MieterWlFrameProps = {
    * Standard für MeldeFormular.
    */
   variant?: "default" | "funnel";
+  /** Rechts im Kopf, z. B. TEO-Kontomenü in MeinTEO */
+  kopfRechts?: ReactNode;
 };
 
 /**
@@ -46,6 +48,7 @@ export function MieterWlFrame({
   datenschutzHref,
   impressumHref,
   variant = "default",
+  kopfRechts,
 }: MieterWlFrameProps) {
   return (
     <PortalBrandRoot
@@ -59,7 +62,7 @@ export function MieterWlFrame({
       soft={brand.soft}
     >
       <div className={cn("mieter-wl-shell", compact && "mieter-wl-shell--compact")}>
-        <MieterWlHeader brand={brand} />
+        <MieterWlHeader brand={brand} rechts={kopfRechts} />
         <div className="mieter-wl-body">{children}</div>
         {!hideFooter ? (
           <MieterWlFooter
@@ -73,7 +76,7 @@ export function MieterWlFrame({
   );
 }
 
-export function MieterWlHeader({ brand }: { brand: MieterWlBrand }) {
+export function MieterWlHeader({ brand, rechts }: { brand: MieterWlBrand; rechts?: ReactNode }) {
   const letter = mieterWlLogoLetter(brand);
   const sub = resolveOrgSubLabel(brand.sub);
 
@@ -97,6 +100,7 @@ export function MieterWlHeader({ brand }: { brand: MieterWlBrand }) {
         <p className="mieter-wl-org-name">{brand.name}</p>
         <p className="mieter-wl-org-sub">{sub}</p>
       </div>
+      {rechts ? <div className="mieter-wl-header-rechts">{rechts}</div> : null}
     </header>
   );
 }

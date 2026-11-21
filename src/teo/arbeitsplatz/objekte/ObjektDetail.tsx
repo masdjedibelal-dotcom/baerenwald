@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { useEffect, useState, useTransition } from 'react'
+import { useEffect, useRef, useState, useTransition } from 'react'
 
 import { formatDatum, formatEuro } from '@/lib/shared-domain/geld-datum'
 import {
@@ -14,6 +14,7 @@ import {
   MockFormSection,
   MockIcon,
   MockInput,
+  MockPopover,
   MockProp,
   MockSelect,
   MockTabs,
@@ -34,6 +35,7 @@ import { ObjektMitteilungen } from '@/teo/arbeitsplatz/objekte/ObjektMitteilunge
 import { intervallText, PLAN_STAND, planStand } from '@/teo/arbeitsplatz/plaene/plan-logik'
 import { ROLLEN_LABEL, type ApRolle } from '@/teo/arbeitsplatz/rechte'
 import { ApSheet } from '@/teo/arbeitsplatz/shell/ApSheet'
+import { MockPopoverMenu } from '@/teo/arbeitsplatz/kit/MockPopover'
 import { AP_STATUS } from '@/teo/arbeitsplatz/vorgang-status'
 
 type Rechte = { bearbeiten: boolean; kosten: boolean; vorgangAnlegen: boolean; plaene: boolean; dokumente: boolean }
@@ -59,6 +61,8 @@ export function ObjektDetail({
   const { objekt } = d
   const [tab, setTab] = useState('uebersicht')
   const [bearbeiten, setBearbeiten] = useState(false)
+  const [mehrOffen, setMehrOffen] = useState(false)
+  const mehrRef = useRef<HTMLSpanElement>(null)
   const [kontakt, setKontakt] = useState<ApKontakt | 'neu' | null>(null)
   const [anlage, setAnlage] = useState<ApAnlage | 'neu' | null>(null)
   const [herkunft, setHerkunft] = useState('')
@@ -90,17 +94,29 @@ export function ObjektDetail({
             <span>{objekt.adresse || '—'}</span>
           </div>
         </div>
-        <div className="detail-head-actions min-w-0">
-          {rechte.bearbeiten ? (
-            <MockBtn kind="secondary" sm type="button" onClick={() => setBearbeiten(true)}>
-              Bearbeiten
-            </MockBtn>
-          ) : null}
+        <div className="detail-head-actions vg-aktionen min-w-0">
+          {/* Hauptaktion zuerst, Bearbeiten im „…“-Menü (wie beim Vorgang) */}
           {rechte.vorgangAnlegen ? (
             <MockBtn kind="primary" sm type="button" onClick={() => router.push(`/arbeitsplatz/vorgaenge/neu?objekt=${objekt.id}`)}>
               <MockIcon ctx="btn" n="plus" size={14} />
               <span>Vorgang</span>
             </MockBtn>
+          ) : null}
+          {rechte.bearbeiten ? (
+            <>
+              <span ref={mehrRef} className="vg-aktionen__mehr">
+                <MockBtn kind="secondary" sm type="button" aria-label="Weitere Aktionen" onClick={() => setMehrOffen((v) => !v)}>
+                  <MockIcon ctx="default" n="dots" size={18} />
+                </MockBtn>
+              </span>
+              <MockPopover open={mehrOffen} onClose={() => setMehrOffen(false)} anchorRef={mehrRef} align="right" width={220}>
+                <MockPopoverMenu
+                  iconFn={(n) => <MockIcon ctx="default" n={n} size={16} />}
+                  onItemClick={() => setMehrOffen(false)}
+                  items={[{ icon: 'pencil', label: 'Objekt bearbeiten', onClick: () => setBearbeiten(true) }]}
+                />
+              </MockPopover>
+            </>
           ) : null}
         </div>
       </header>

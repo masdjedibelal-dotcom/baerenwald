@@ -711,3 +711,5 @@
 }
 :root[data-marke="teo"] .mieter-wl-page .portal-funnel-host,
 :root[data-marke="teo"] .mieter-wl-page .portal-funnel-host__body { background: transparent; }
+/* MeinTEO: Kontomenü rechts im Kopf */
+.mieter-wl-header-rechts { margin-left: auto; display: flex; align-items: center; }
