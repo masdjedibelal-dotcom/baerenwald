@@ -356,3 +356,6 @@
 .ap-wl .ap-speichern-schwebend > .btn { margin-left: auto; }
 /* Team-App: Abmelden als kleine Text-Pille oben rechts */
 .ap-wl .tm-kopf__ab--text { width: auto; height: 36px; padding: 0 14px; font: inherit; font-size: 13px; font-weight: 700; color: var(--teo-navy); }
+/* Team-App-Karten wie im Arbeitsplatz: Titel, Status darunter, Unterzeile */
+.ap-wl .tm-karte__text { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; }
+.ap-wl .tm-karte__status { display: inline-flex; }

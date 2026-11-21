@@ -32,11 +32,16 @@ export function TeamPlaene({ plaene, leer }: { plaene: ApPlan[]; leer: string })
                 <button type="button" className={stand === 'ueberfaellig' ? 'tm-karte is-rot' : 'tm-karte'} onClick={() => setOffen(p)}>
                   <span className="tm-karte__text">
                     <span className="tm-karte__titel">{p.titel}</span>
+                    {/* wie im Arbeitsplatz: Status unter dem Titel */}
+                    {stand !== 'geplant' ? (
+                      <span className="tm-karte__status">
+                        <MockBadge kind={PLAN_STAND[stand].badge}>{PLAN_STAND[stand].label}</MockBadge>
+                      </span>
+                    ) : null}
                     <span className="tm-karte__sub">
                       {p.objektName} · {formatDatum(p.naechste)}
                     </span>
                   </span>
-                  {stand !== 'geplant' ? <MockBadge kind={PLAN_STAND[stand].badge}>{PLAN_STAND[stand].label}</MockBadge> : null}
                   <MockIcon ctx="default" n="chevron-right" size={18} />
                 </button>
               </li>

@@ -31,9 +31,12 @@ export function TeamVorgaenge({ vorgaenge }: { vorgaenge: TeamVorgang[] }) {
               <button type="button" className="tm-karte" onClick={() => setOffen(v)}>
                 <span className="tm-karte__text">
                   <span className="tm-karte__titel">{v.titel}</span>
+                  {/* wie im Arbeitsplatz: Status unter dem Titel */}
+                  <span className="tm-karte__status">
+                    <MockBadge kind="warten">Ansehen</MockBadge>
+                  </span>
                   <span className="tm-karte__sub">{[v.objektName, v.einheit, v.seit ? `seit ${formatDatum(v.seit)}` : null].filter(Boolean).join(' · ')}</span>
                 </span>
-                <MockBadge kind="warten">Ansehen</MockBadge>
                 <MockIcon ctx="default" n="chevron-right" size={18} />
               </button>
             </li>

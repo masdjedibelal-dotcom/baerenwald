@@ -289,3 +289,5 @@
 .portal-wl .portal-section-card:has(.space-y-0:empty):not(:has(.portal-text-body)) { display: none; }
 .portal-wl .portal-section-card { border: 1px solid var(--wl-linie); border-radius: 24px !important; box-shadow: var(--wl-schatten) !important; }
 .portal-wl .teo-einsatz-liste.portal-section-card { border: 0; box-shadow: none !important; }
+/* Einsatz-Karte wie im Arbeitsplatz: Status unter dem Titel */
+.portal-wl .partner-einsatz__status { display: inline-flex; margin: 2px 0; }

@@ -443,12 +443,18 @@ export function PartnerEinsaetzeSection({
                   aria-expanded={istTeo ? undefined : offen}
                   onClick={() => (istTeo ? setDetailId(e.id) : setOffenId(offen ? null : e.id))}
                 >
+                  {/* TEO wie im Arbeitsplatz: Titel, darunter Status, darunter Datum/Ort; rechts nur der Pfeil */}
                   <span className="flex min-w-0 flex-col gap-0.5">
                     <span className="min-w-0 font-semibold">{e.titel}</span>
+                    {istTeo ? (
+                      <span className="partner-einsatz__status">
+                        <PortalStatusPill label={st.label} tone={st.tone} />
+                      </span>
+                    ) : null}
                     {kurz ? <span className="text-fs-meta text-[var(--p2-sub)]">{kurz}</span> : null}
                   </span>
                   <span className="flex shrink-0 items-center gap-2">
-                    <PortalStatusPill label={st.label} tone={st.tone} />
+                    {istTeo ? null : <PortalStatusPill label={st.label} tone={st.tone} />}
                     <span className="partner-einsatz__pfeil text-[var(--p2-sub)]" aria-hidden>{istTeo ? <PortalIcon ctx="muted" n="chevron-right" size={16} /> : offen ? "▴" : "▾"}</span>
                   </span>
                 </button>
