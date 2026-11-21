@@ -503,3 +503,5 @@
 .ap-schadenmail__titel { font-size: 15px; font-weight: 800; color: var(--teo-navy); }
 .ap-schadenmail__adresse { font-size: 13px; color: var(--teo-text-2, #5b6b80); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .ap-schadenmail__knopf { display: inline-flex; align-items: center; justify-content: center; flex: 0 0 40px; width: 40px; height: 40px; border-radius: 999px; border: 1px solid var(--teo-linie); background: #ffffff; color: var(--teo-navy); cursor: pointer; }
+.ap-melden__schalter .ap-melden__label { text-align: left; }
+.ap-melden__fuss .btn { justify-content: center; text-align: center; }

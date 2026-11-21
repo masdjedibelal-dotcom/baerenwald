@@ -7319,3 +7319,11 @@ select {
 :root[data-marke="teo"] .portal-funnel-host .funnel-tile-label { font-weight: 800; color: #0b1f3a; }
 :root[data-marke="teo"] .portal-funnel-host .funnel-footer-next { border-radius: 999px; background: #0b1f3a; color: #ffffff; }
 :root[data-marke="teo"] .portal-funnel-host .funnel-footer-next:disabled { background: #c7d5e6; color: #ffffff; }
+/* Melde-Ablauf im Portal: TEO-Grundton statt beigem Grau, Überlagerung in Navy */
+:root[data-marke="teo"] .portal-funnel-host,
+:root[data-marke="teo"] .portal-funnel-host__body { background: #f7f9fc !important; }
+:root[data-marke="teo"] .portal-modal-shell--funnel { background: rgba(11, 31, 58, 0.45) !important; }
+:root[data-marke="teo"] .teo-kopf-neu:focus,
+:root[data-marke="teo"] .portal-bell-trigger:focus { outline: none; box-shadow: none !important; }
+:root[data-marke="teo"] .teo-kopf-neu:focus-visible,
+:root[data-marke="teo"] .portal-bell-trigger:focus-visible { outline: 2px solid #1e5fa8; outline-offset: 2px; }

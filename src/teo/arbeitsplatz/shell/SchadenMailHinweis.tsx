@@ -22,7 +22,7 @@ export function SchadenMailHinweis({ adresse }: { adresse: string }) {
         <MockIcon ctx="default" n="mail" size={20} />
       </span>
       <div className="ap-schadenmail__text">
-        <span className="ap-schadenmail__titel">Schaden per E-Mail melden</span>
+        <span className="ap-schadenmail__titel">Per E-Mail melden</span>
         <span className="ap-schadenmail__adresse">{kopiert ? 'Adresse kopiert' : adresse}</span>
       </div>
       <button type="button" className="ap-schadenmail__knopf" onClick={kopieren} aria-label="Adresse kopieren" title="Adresse kopieren">
