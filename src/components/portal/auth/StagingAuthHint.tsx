@@ -8,6 +8,7 @@ import {
   STAGING_PORTAL_PASSWORD,
   isStagingClient,
 } from "@/lib/staging";
+import { istTeo } from "@/lib/marke";
 
 export function StagingAuthHint({
   variant,
@@ -18,7 +19,8 @@ export function StagingAuthHint({
   useEffect(() => {
     setShow(isStagingClient());
   }, []);
-  if (!show) return null;
+  // TEO: eigene Testzugänge — der Bärenwald-Hinweis passt dort nicht
+  if (!show || istTeo) return null;
   const email =
     variant === "partner" ? STAGING_PARTNER_EMAIL : STAGING_KUNDE_EMAIL;
   return (

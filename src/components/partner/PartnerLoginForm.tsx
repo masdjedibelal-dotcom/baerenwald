@@ -2,7 +2,7 @@
 import { safeAction } from "@/lib/actions/safe-action";
 
 import Link from "next/link";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import { useState } from "react";
 
 import { PortalInput } from "@/components/shared/PortalFormControls";
@@ -17,7 +17,6 @@ import { PortalButton } from "@/components/portal/PortalButton";
 import { funktionAn, MARKE } from "@/lib/marke";
 
 export function PartnerLoginForm() {
-  const router = useRouter();
   const searchParams = useSearchParams();
   const hint = searchParams.get("hint");
   const authError = searchParams.get("error");
@@ -60,8 +59,8 @@ export function PartnerLoginForm() {
         setLoading(false);
         return;
       }
-      router.push(next);
-      router.refresh();
+      // Ein vollständiger Seitenwechsel statt push + refresh gleichzeitig (sonst kurz Fehlerseite)
+      window.location.assign(next);
     } catch {
       setError("Anmeldung fehlgeschlagen. Bitte erneut versuchen.");
       setLoading(false);
@@ -98,8 +97,8 @@ export function PartnerLoginForm() {
                   "Konto bestätigt — bitte erneut mit Passwort anmelden."
                 );
               }
-              router.replace(next);
-              router.refresh();
+              // Ein vollständiger Seitenwechsel statt push + refresh gleichzeitig (sonst kurz Fehlerseite)
+              window.location.assign(next);
               return;
             }
             setAwaitingOtp(false);

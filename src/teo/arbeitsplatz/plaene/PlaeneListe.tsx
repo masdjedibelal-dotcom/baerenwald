@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { useRouter, useSearchParams } from 'next/navigation'
+import { useSearchParams } from 'next/navigation'
 import { useMemo } from 'react'
 
 import { formatDatum } from '@/lib/shared-domain/geld-datum'
@@ -26,7 +26,6 @@ export function PlaeneListe({
   anlagen: AnlageAuswahl
   darfVerwalten: boolean
 }) {
-  const router = useRouter()
   const params = useSearchParams()
   const filter = (params.get('filter') as Filter | null) ?? 'alle'
   const objekt = params.get('objekt') ?? ''
@@ -36,7 +35,8 @@ export function PlaeneListe({
     const p = new URLSearchParams(params.toString())
     if (wert) p.set(key, wert)
     else p.delete(key)
-    router.replace(`/arbeitsplatz/plaene${p.toString() ? `?${p}` : ''}`, { scroll: false })
+    // Nur Anzeige-Zustand → ohne Server-Runde
+    window.history.replaceState(null, '', `/arbeitsplatz/plaene${p.toString() ? `?${p}` : ''}`)
   }
 
   const mitStand = useMemo(() => plaene.map((p) => ({ ...p, stand: planStand(p.naechste) })), [plaene])

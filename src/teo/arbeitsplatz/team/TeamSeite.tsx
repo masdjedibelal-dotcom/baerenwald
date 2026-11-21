@@ -17,9 +17,9 @@ export function TeamSeite({ personen, objekte }: { personen: ApTeamPerson[]; obj
   const [person, setPerson] = useState<ApTeamPerson | null>(null)
   const offen: ApTeamPerson | 'neu' | null = params.get('neu') === '1' ? 'neu' : person
   const setOffen = (x: ApTeamPerson | 'neu' | null) => {
-    if (x === 'neu') router.replace('/arbeitsplatz/team?neu=1', { scroll: false })
+    if (x === 'neu') window.history.replaceState(null, '', '/arbeitsplatz/team?neu=1')
     else {
-      if (params.get('neu')) router.replace('/arbeitsplatz/team', { scroll: false })
+      if (params.get('neu')) window.history.replaceState(null, '', '/arbeitsplatz/team')
       setPerson(x)
     }
   }

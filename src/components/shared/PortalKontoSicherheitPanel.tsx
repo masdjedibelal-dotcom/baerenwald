@@ -1,5 +1,6 @@
 "use client";
 
+import { istTeo } from "@/lib/marke";
 import { useRouter } from "next/navigation";
 import { useRef, useState } from "react";
 import { z } from "zod";
@@ -210,7 +211,8 @@ export function PortalKontoSicherheitPanel({
           >
             Passwort ändern
           </PortalButton>
-          {showSignOut ? (
+          {/* TEO: Abmelden steht im Konto-Menü oben rechts — hier nicht doppelt */}
+          {showSignOut && !istTeo ? (
             <form action={logoutAction} method="post">
               <PortalButton variant="ghost" type="submit" className="portal-konto-action">
                 Logout

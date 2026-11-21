@@ -418,6 +418,16 @@ export function PartnerEinsaetzeSection({
         )}
         {einsaetze == null ? (
           <p className="m-0 text-[var(--p2-sub)]">Wird geladen …</p>
+        ) : sichtbar.length === 0 && istTeo ? (
+          // Leer-Zustand wie in HV und CRM: Icon + ein kurzer Satz
+          <div className="teo-leer">
+            <span className="teo-leer__icon" aria-hidden>
+              <PortalIcon n="clipboard-list" ctx="default" size={28} />
+            </span>
+            <p className="teo-leer__titel">
+              {ansicht === "neu" ? "Keine neuen Einsätze." : ansicht === "aktuell" ? "Noch keine Einsätze." : "Noch nichts erledigt."}
+            </p>
+          </div>
         ) : sichtbar.length === 0 ? (
           <p className="m-0 text-[var(--p2-sub)]">
             {ansicht === "neu"

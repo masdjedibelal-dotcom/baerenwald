@@ -1393,14 +1393,14 @@ export function PortalClient({
     const showEmbeddedBusy = Boolean(
       (pageBusy || showDetailBusy || ctxBusy) && !detailFailed && !listLoadFailed
     );
-    const embeddedBusyTitle =
-      showDetailBusy || pageBusy
-        ? "Vorgang wird geladen…"
+    const embeddedBusyTitle = showDetailBusy
+      ? "Vorgang wird geladen…"
+      : pageBusy
+        ? "Wird geladen…"
         : "Wird verarbeitet…";
-    const embeddedBusyBody =
-      showDetailBusy || pageBusy
-        ? "Einen Moment — wir öffnen die Details."
-        : "Einen Moment bitte.";
+    const embeddedBusyBody = showDetailBusy
+      ? "Einen Moment — wir öffnen die Details."
+      : "Einen Moment bitte.";
     return (
       <div className="relative min-h-[40vh] min-w-0">
         <div
@@ -1455,16 +1455,18 @@ export function PortalClient({
           !listLoadFailed
         }
         contentBusyTitle={
-          detailLoading || pageBusy
+          detailLoading
             ? "Vorgang wird geladen…"
-            : ctxBusy
-              ? "Wird verarbeitet…"
-              : undefined
+            : pageBusy
+              ? "Wird geladen…"
+              : ctxBusy
+                ? "Wird verarbeitet…"
+                : undefined
         }
         contentBusyBody={
-          detailLoading || pageBusy
+          detailLoading
             ? "Einen Moment — wir öffnen die Details."
-            : ctxBusy
+            : pageBusy || ctxBusy
               ? "Einen Moment bitte."
               : undefined
         }

@@ -24,8 +24,11 @@ type Notification = {
 /** HV-Glocke — Daten aus `hv_notifications`, UI = Mock bell/notifPanel. */
 export function HvNotificationBell({
   onOpenVorgang,
+  allHref = "/portal?section=vorgaenge",
 }: {
   onOpenVorgang?: (vorgangId: string, href: string) => void;
+  /** Ziel für „Alle ansehen“ (Arbeitsplatz: eigene Vorgangsliste) */
+  allHref?: string;
 } = {}) {
   const router = useRouter();
   const [items, setItems] = useState<Notification[]>([]);
@@ -104,7 +107,7 @@ export function HvNotificationBell({
       items={portalItems}
       unreadCount={unread}
       loading={loading}
-      allHref="/portal?section=vorgaenge"
+      allHref={allHref}
       onMarkAllRead={markAllRead}
       onItemActivate={onItemActivate}
       onRefresh={load}

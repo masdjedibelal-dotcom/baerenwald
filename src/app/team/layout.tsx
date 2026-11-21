@@ -18,7 +18,7 @@ export const metadata: Metadata = {
   robots: { index: false, follow: false },
 }
 
-export const viewport: Viewport = { themeColor: '#0f172a' }
+export const viewport: Viewport = { themeColor: '#f7f9fc' }
 
 export default async function TeamLayout({ children }: { children: React.ReactNode }) {
   if (!istTeo) notFound()

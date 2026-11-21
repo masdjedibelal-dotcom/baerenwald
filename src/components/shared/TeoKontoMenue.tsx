@@ -2,6 +2,8 @@
 
 import { useEffect, useRef, useState } from "react";
 
+import { PortalIcon } from "@/components/portal/PortalIcon";
+
 /**
  * Servus TEO: Kontomenü wie im Arbeitsplatz — runde Plakette oben rechts, Antippen öffnet ein Popover
  * mit Name, (optional) Einstellungen und Abmelden. Einheitlich für Handwerker, Kunden, Team und MeinTEO.
@@ -72,11 +74,13 @@ export function TeoKontoMenue({
                 onEinstellungen();
               }}
             >
+              <PortalIcon n="settings" ctx="default" size={17} />
               Einstellungen
             </button>
           ) : null}
           <form action={abmeldenAction} method="post">
             <button type="submit" role="menuitem" className="teo-konto__punkt teo-konto__punkt--rot">
+              <PortalIcon n="arrow-left" ctx="default" size={17} />
               Abmelden
             </button>
           </form>

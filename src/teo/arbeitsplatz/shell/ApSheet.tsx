@@ -50,7 +50,7 @@ export function ApSheet({
         if (e.target === e.currentTarget) onClose()
       }}
     >
-      <div className="editor-sheet editor-sheet--slide absolute right-0 top-0 bottom-0 h-full ml-auto" role="dialog" aria-modal="true" aria-label={titel}>
+      <div className="editor-sheet editor-sheet--slide ap-sheet absolute right-0 top-0 bottom-0 h-full ml-auto" role="dialog" aria-modal="true" aria-label={titel}>
         <header className="editor-sheet__header">
           <MockBtn className="editor-sheet__icon-btn" type="button" onClick={onClose} aria-label="Schließen">
             <MockIcon n="x" ctx="default" size={20} />
@@ -58,7 +58,14 @@ export function ApSheet({
           <div className="editor-sheet__title-block">
             <h2 className="editor-sheet__title">{titel}</h2>
           </div>
-          <div className="editor-sheet__header-end" />
+          <div className="editor-sheet__header-end">
+            {/* Handy: Vollbild mit „Speichern“ oben rechts (unten keine zweite Leiste) */}
+            {onSpeichern ? (
+              <MockBtn kind="primary" sm type="button" className="ap-sheet__speichern-oben" onClick={onSpeichern} disabled={laeuft}>
+                {laeuft ? 'Speichert …' : speichernLabel}
+              </MockBtn>
+            ) : null}
+          </div>
         </header>
         <div className="editor-sheet__body">{children}</div>
         {onSpeichern || gefahr ? (

@@ -1,5 +1,7 @@
 "use client";
 
+import { InfoTip } from "@/components/ui/InfoTip";
+import { istTeo } from "@/lib/marke";
 import { useCallback, useEffect, useState } from "react";
 
 import {
@@ -60,11 +62,22 @@ export function PartnerMitarbeiterVerwaltung() {
       title="Mitarbeiter"
       onAdd={() => setEdit({ id: null, name: "", rolle: "", email: "", telefon: "" })}
       addLabel="Mitarbeiter hinzufügen"
+      trailing={
+        istTeo ? (
+        <InfoTip
+          label="Hinweis zu Mitarbeitern"
+          popoverAlign="end"
+          tip="Mitarbeiter mit E-Mail können sich unter „Registrieren“ selbst einen Zugang anlegen. Sie sehen nur die Einsätze, für die Sie sie beim Annehmen einteilen — ohne Preise und Rechnungen."
+        />
+        ) : undefined
+      }
     >
-      <p className="portal-text-meta text-text-tertiary">
-        Mitarbeiter mit E-Mail können sich unter „Registrieren“ selbst einen Zugang anlegen. Sie sehen nur die
-        Einsätze, für die Sie sie beim Annehmen einteilen — ohne Preise und Rechnungen.
-      </p>
+      {!istTeo ? (
+        <p className="portal-text-meta text-text-tertiary">
+          Mitarbeiter mit E-Mail können sich unter „Registrieren“ selbst einen Zugang anlegen. Sie sehen nur die
+          Einsätze, für die Sie sie beim Annehmen einteilen — ohne Preise und Rechnungen.
+        </p>
+      ) : null}
       {liste == null ? (
         <p className="portal-text-body text-text-secondary">Wird geladen …</p>
       ) : liste.length === 0 ? (

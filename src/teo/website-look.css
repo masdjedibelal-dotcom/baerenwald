@@ -360,3 +360,96 @@
 .ap-wl .tm-karte__text { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; }
 .ap-wl .tm-karte__status { display: inline-flex; }
 .ap-wl .tm-hinweis-klein { margin: 4px 0 0; font-size: 13px; text-align: center; }
+
+/* ════ UX-Regeln 21.11. (Arbeitsplatz) ════ */
+/* R4 „+“ oben rechts: heller Umriss-Knopf (nicht wie die Konto-Plakette), öffnet „Neu …“-Popover */
+.ap-wl .ap-neu-btn.btn {
+  display: inline-flex !important;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  min-width: 40px;
+  padding: 0;
+  border-radius: 999px;
+  border: 1px solid var(--teo-linie);
+  background: #ffffff;
+  color: var(--teo-navy);
+  box-shadow: none;
+}
+.ap-wl .ap-neu-btn.is-open { background: var(--teo-blau-bg); }
+.pop-titel { padding: 8px 12px 4px; font-size: 12px; font-weight: 700; color: var(--teo-text-2, #5b6b80); }
+.ap-wl .ap-glocke { display: inline-flex; align-items: center; }
+/* Team steht am Rechner in der Seitenleiste; im Konto-Menü nur am Handy */
+@media (min-width: 900px) { .ap-pop-team { display: none !important; } }
+
+/* R2 Menüleiste mit Beschriftung */
+@media (max-width: 767px) {
+  .ap-wl .bottomnav { height: 58px; }
+  .ap-wl .bottomnav .mock-icon { display: inline-flex !important; }
+  .ap-wl .bottomnav-item { gap: 3px; padding-top: 2px; }
+  .ap-wl .bottomnav-item__lbl {
+    display: block !important;
+    font-size: 11px;
+    font-weight: 600;
+    line-height: 1;
+    color: inherit;
+    white-space: nowrap;
+  }
+  .ap-wl .page-inner { padding-bottom: 120px; }
+}
+
+/* R5 Formulare am Handy im Vollbild: ✕ links, „Speichern“ oben rechts */
+.ap-sheet__speichern-oben { display: none !important; }
+@media (max-width: 767px) {
+  .ap-sheet.editor-sheet {
+    width: 100vw !important;
+    max-width: none !important;
+    left: 0 !important;
+    border-radius: 0 !important;
+  }
+  .ap-sheet .editor-sheet__header { padding-top: max(10px, env(safe-area-inset-top, 0px)); }
+  .ap-sheet .ap-sheet__speichern-oben { display: inline-flex !important; border-radius: 999px; }
+  .ap-sheet .sheet-footer-actions > .btn:not(.danger) { display: none; }
+  .ap-sheet .editor-sheet__footer:not(:has(.danger)) { display: none; }
+}
+
+/* R11 Konto-Popover wie im CRM */
+.topbar-user-pop__head { display: flex; align-items: center; gap: 12px; padding: 10px 12px; }
+.topbar-user-pop__name { font-weight: 800; color: var(--teo-navy); font-size: 15px; }
+.topbar-user-pop__email { font-size: 13px; color: var(--teo-text-2, #5b6b80); }
+/* R10 ⓘ-Hinweis */
+.ap-info { position: relative; display: inline-flex; }
+.ap-info__knopf { display: inline-flex; align-items: center; justify-content: center; width: 28px; height: 28px; padding: 0; border: 0; border-radius: 999px; background: transparent; color: var(--teo-text-2, #5b6b80); cursor: pointer; }
+.ap-info__knopf:hover { background: var(--teo-blau-bg, #eef4fb); }
+.ap-info__text { position: absolute; top: calc(100% + 6px); right: 0; z-index: 60; width: min(280px, calc(100vw - 48px)); padding: 10px 12px; border-radius: 14px; background: #0b1f3a; color: #ffffff; font-size: 13px; font-weight: 500; line-height: 1.45; box-shadow: 0 18px 40px -18px rgba(11, 31, 58, 0.6); }
+/* P6 Schaden-Adresse */
+.ap-mailadresse { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border: 1px solid var(--teo-linie); border-radius: 14px; background: var(--teo-grund, #f7f9fc); }
+.ap-mailadresse__text { flex: 1 1 auto; min-width: 0; overflow-wrap: anywhere; font-weight: 700; color: var(--teo-navy); font-size: 15px; }
+/* R9 Leer-Zustand wie im CRM: blaues Icon, kurzer Satz in Navy */
+.ap-wl .empty > div:first-child { opacity: 1 !important; }
+.ap-wl .empty > div:first-child .mock-icon { color: var(--teo-blau); }
+.ap-wl .empty > div:nth-child(2) { font-size: 17px; font-weight: 800 !important; color: var(--teo-navy) !important; }
+/* P11 Listen wie Startseite: gleiche Kartenabstände und Innenränder, Pfeil rechts; Suche + Objekt nebeneinander */
+@media (max-width: 767px) {
+  .ap-wl .listcard > .list-row:not(.head) {
+    position: relative;
+    padding: 14px 36px 14px 16px !important;
+    margin-bottom: 10px;
+    border-radius: 20px;
+  }
+  .ap-wl .listcard > .list-row:not(.head)::after {
+    content: '';
+    position: absolute;
+    right: 16px;
+    top: 50%;
+    width: 8px;
+    height: 8px;
+    border-top: 2px solid #9aa7b8;
+    border-right: 2px solid #9aa7b8;
+    transform: translateY(-50%) rotate(45deg);
+  }
+  .ap-wl .card .listcard > .list-row:not(.head) { margin: 0; border-radius: 0; }
+  .ap-wl .ap-filterzeile > .input,
+  .ap-wl .ap-filterzeile > select { flex: 1 1 140px; width: auto; }
+}

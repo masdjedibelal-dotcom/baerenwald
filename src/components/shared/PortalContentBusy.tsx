@@ -2,6 +2,7 @@
 
 
 import { PortalIcon } from "@/components/portal/PortalIcon";
+import { istTeo } from "@/lib/marke";
 import { cn } from "@/lib/utils";
 
 type Props = {
@@ -35,6 +36,23 @@ export function PortalContentBusy({
       >
         <span className="portal-inline-loading-spinner" aria-hidden />
         <span className="sr-only">{label ?? title ?? "Wird geladen"}</span>
+      </div>
+    );
+  }
+
+  // TEO: Platzhalter in Form der Seite (Überschrift + Karten) wie im CRM — kein Kreisel mit Text
+  if (istTeo) {
+    return (
+      <div className={cn("teo-skelett", className)} role="status" aria-live="polite" aria-busy="true">
+        <span className="sr-only">{title}</span>
+        <div className="teo-skelett__kopf" aria-hidden />
+        <div className="teo-skelett__unter" aria-hidden />
+        {[0, 1, 2, 3].map((i) => (
+          <div key={i} className="teo-skelett__karte" aria-hidden>
+            <div className="teo-skelett__zeile teo-skelett__zeile--lang" />
+            <div className="teo-skelett__zeile" />
+          </div>
+        ))}
       </div>
     );
   }

@@ -6,8 +6,18 @@ import { useState, useTransition } from 'react'
 import { MockBtn, MockCard, MockCheckbox, MockField, MockFormSection, MockInput, MockSegment } from '@/teo/arbeitsplatz/kit'
 import { einstellungenSpeichern, type EinstellungenFelder } from '@/teo/arbeitsplatz/aktionen/einstellungen'
 import { SOFORTMASSNAHME_FAELLE_KATALOG } from '@/teo/hv/sofortmassnahme-faelle'
+import { ApInfo } from '@/teo/arbeitsplatz/shell/ApInfo'
 
-export function EinstellungenSeite({ start, logoUrl }: { start: EinstellungenFelder; logoUrl: string | null }) {
+export function EinstellungenSeite({
+  start,
+  logoUrl,
+  schadenAdresse,
+}: {
+  start: EinstellungenFelder
+  logoUrl: string | null
+  /** Eigene TEO-Adresse der Verwaltung für Schäden/Aufträge per E-Mail (null = Mail-Eingang nicht eingerichtet) */
+  schadenAdresse: string | null
+}) {
   const router = useRouter()
   const [f, setF] = useState(start)
   const [meldung, setMeldung] = useState<{ ok: boolean; text: string } | null>(null)
@@ -33,6 +43,7 @@ export function EinstellungenSeite({ start, logoUrl }: { start: EinstellungenFel
         <h1>Einstellungen.</h1>
         <p>Für {f.anzeigename || 'Ihre Verwaltung'}.</p>
       </div>
+      {schadenAdresse ? <SchadenAdresseKarte adresse={schadenAdresse} /> : null}
       <MockCard title="Organisation" icon="building">
         <MockFormSection>
           <MockField label="Name" full>
@@ -121,8 +132,11 @@ function LogoKarte({ logoUrl }: { logoUrl: string | null }) {
   }
 
   return (
-    <MockCard title="Logo" icon="photo">
-      <p className="ap-hinweis">Erscheint oben auf Aushängen, Schadenunterlagen und dem Jahresbericht. PNG, JPG oder WebP, höchstens 2 MB.</p>
+    <MockCard
+      title="Logo"
+      icon="photo"
+      actions={<ApInfo text="Erscheint oben auf Aushängen, Schadenunterlagen und dem Jahresbericht. PNG, JPG oder WebP, höchstens 2 MB." />}
+    >
       <div className="ap-logo-zeile">
         <div className="ap-logo-vorschau">
           {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -141,6 +155,34 @@ function LogoKarte({ logoUrl }: { logoUrl: string | null }) {
         </div>
       </div>
       {fehler ? <p className="ap-rot">{fehler}</p> : null}
+    </MockCard>
+  )
+}
+
+/** Schäden direkt per E-Mail melden — die eigene TEO-Adresse der Verwaltung zum Kopieren. */
+function SchadenAdresseKarte({ adresse }: { adresse: string }) {
+  const [kopiert, setKopiert] = useState(false)
+  function kopieren() {
+    navigator.clipboard.writeText(adresse).then(
+      () => {
+        setKopiert(true)
+        window.setTimeout(() => setKopiert(false), 1800)
+      },
+      () => setKopiert(false)
+    )
+  }
+  return (
+    <MockCard
+      title="Schäden direkt melden"
+      icon="mail"
+      actions={<ApInfo text="Schicken Sie Schäden und Aufträge einfach per E-Mail an diese Adresse – mit Fotos im Anhang. Daraus wird bei TEO sofort ein Vorgang." />}
+    >
+      <div className="ap-mailadresse">
+        <span className="ap-mailadresse__text">{adresse}</span>
+        <MockBtn kind="secondary" sm type="button" onClick={kopieren}>
+          {kopiert ? 'Kopiert' : 'Kopieren'}
+        </MockBtn>
+      </div>
     </MockCard>
   )
 }

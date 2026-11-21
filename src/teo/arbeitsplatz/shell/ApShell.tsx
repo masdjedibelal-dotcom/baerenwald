@@ -4,13 +4,14 @@ import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { useRef, useState, type ReactNode } from 'react'
 
+import { HvNotificationBell } from '@/components/org/HvNotificationBell'
 import { cn } from '@/lib/utils'
 import { MockBtn, MockIcon, MockPopover } from '@/teo/arbeitsplatz/kit'
 
 export type ApNavPunkt = { href: string; label: string; icon: string; zaehler?: number }
 
-/** Hauptaktion oben rechts je Bereich (wie CRM topbar-cta) */
-export type ApCta = { bereich: string; label: string; href: string; icon: string }
+/** Eintrag im „+“-Popover oben rechts */
+export type ApCta = { label: string; href: string; icon: string }
 
 function aktiv(href: string, pfad: string): boolean {
   return href === '/arbeitsplatz' ? pfad === href : pfad === href || pfad.startsWith(`${href}/`)
@@ -42,8 +43,21 @@ export function ApShell({
   const pfad = usePathname() ?? '/arbeitsplatz'
   const router = useRouter()
   const [menu, setMenu] = useState(false)
+  const [neuMenu, setNeuMenu] = useState(false)
   const avatarRef = useRef<HTMLButtonElement>(null)
-  const cta = ctas.find((c) => pfad === c.bereich)
+  const neuRef = useRef<HTMLButtonElement>(null)
+  // Team steht am Handy nicht unten, sondern im Konto-Menü
+  const teamPunkt = nav.find((n) => n.href === '/arbeitsplatz/team')
+  const unten = nav.filter((n) => n.href !== '/arbeitsplatz/team')
+
+  function oeffnen(href: string) {
+    setNeuMenu(false)
+    setMenu(false)
+    const [ziel] = href.split('?')
+    // Gleiche Seite: Blatt sofort öffnen (ohne Server-Runde)
+    if (ziel === pfad && href.includes('?')) window.history.replaceState(null, '', href)
+    else router.push(href)
+  }
   const navAktiv = nav.find((n) => aktiv(n.href, pfad))
   const titel = navAktiv?.label ?? (pfad.startsWith('/arbeitsplatz/einstellungen') ? 'Einstellungen' : '')
   // Detailseite (z. B. /arbeitsplatz/vorgaenge/…): Titel wird zum Zurück-Link auf die Liste
@@ -105,11 +119,33 @@ export function ApShell({
             </div>
             <div className="ap-topbar-luecke" />
             <div className="topbar-actions">
-              {cta ? (
-                <MockBtn kind="primary" sm className="topbar-cta" type="button" onClick={() => router.push(cta.href)}>
-                  <MockIcon ctx="btn" n={cta.icon} size={14} />
-                  <span className="topbar-cta-label">{cta.label}</span>
-                </MockBtn>
+              {/* Glocke wie in den anderen Portalen; Antippen öffnet den Vorgang im Arbeitsplatz */}
+              <span className="ap-glocke">
+                <HvNotificationBell allHref="/arbeitsplatz/vorgaenge" onOpenVorgang={(id) => router.push(`/arbeitsplatz/vorgaenge/${id}`)} />
+              </span>
+              {ctas.length ? (
+                <>
+                  <MockBtn
+                    ref={neuRef}
+                    className={cn('topbar-icon-btn ap-neu-btn', neuMenu && 'is-open')}
+                    type="button"
+                    aria-label="Neu anlegen"
+                    aria-haspopup="menu"
+                    aria-expanded={neuMenu}
+                    onClick={() => setNeuMenu((v) => !v)}
+                  >
+                    <MockIcon ctx="default" n="plus" size={20} />
+                  </MockBtn>
+                  <MockPopover open={neuMenu} onClose={() => setNeuMenu(false)} anchorRef={neuRef} align="right" width={240}>
+                    <div className="pop-titel">Neu</div>
+                    {ctas.map((c) => (
+                      <MockBtn key={c.href} className="pop-item" type="button" onClick={() => oeffnen(c.href)}>
+                        <MockIcon ctx="btn" n={c.icon} size={16} />
+                        <span>{c.label}</span>
+                      </MockBtn>
+                    ))}
+                  </MockPopover>
+                </>
               ) : null}
               <MockBtn
                 className={cn('topbar-avatar', menu && 'is-open')}
@@ -131,6 +167,12 @@ export function ApShell({
                   </div>
                 </div>
                 <div className="pop-sep" />
+                {teamPunkt ? (
+                  <MockBtn className="pop-item ap-pop-team" type="button" onClick={() => { setMenu(false); router.push(teamPunkt.href) }}>
+                    <MockIcon ctx="btn" n="users" size={16} />
+                    <span>Team</span>
+                  </MockBtn>
+                ) : null}
                 {zeigeEinstellungen ? (
                   <MockBtn className="pop-item" type="button" onClick={() => { setMenu(false); router.push('/arbeitsplatz/einstellungen') }}>
                     <MockIcon ctx="btn" n="settings" size={16} />
@@ -154,7 +196,7 @@ export function ApShell({
       </div>
 
       <nav className="bottomnav" aria-label="Navigation">
-        {nav.map((n) => (
+        {unten.map((n) => (
           <Link
             key={n.href}
             href={n.href}

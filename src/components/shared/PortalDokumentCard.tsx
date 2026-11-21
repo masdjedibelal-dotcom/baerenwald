@@ -2,6 +2,8 @@
 
 import type { ReactNode } from "react";
 
+import { PortalIcon } from "@/components/portal/PortalIcon";
+import { istTeo } from "@/lib/marke";
 import { cn } from "@/lib/utils";
 
 type Props = {
@@ -31,10 +33,16 @@ export function PortalDokumentCard({
   return (
     <article
       className={cn(
-        "flex items-start gap-3 rounded-sheet border border-border-default bg-white px-3.5 py-3.5 shadow-[0_1px_0_rgba(0,0,0,0.03)]",
+        "portal-dok-karte flex items-start gap-3 rounded-sheet border border-border-default bg-white px-3.5 py-3.5 shadow-[0_1px_0_rgba(0,0,0,0.03)]",
         className
       )}
     >
+      {/* TEO: Zeile mit Datei-Icon links (wie Dateilisten in Apps) */}
+      {istTeo ? (
+        <span className="portal-dok-karte__icon" aria-hidden>
+          <PortalIcon n="file-text" ctx="default" size={18} />
+        </span>
+      ) : null}
       <div className="min-w-0 flex-1">
         <h3 className="text-fs-body font-semibold leading-snug text-text-primary">
           {title}

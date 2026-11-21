@@ -291,3 +291,73 @@
 .portal-wl .teo-einsatz-liste.portal-section-card { border: 0; box-shadow: none !important; }
 /* Einsatz-Karte wie im Arbeitsplatz: Status unter dem Titel */
 .portal-wl .partner-einsatz__status { display: inline-flex; margin: 2px 0; }
+
+/* ════ UX-Regeln 21.11. (Handwerker- und Kundenportal) ════ */
+/* R4 „+“ oben rechts als heller Umriss-Knopf (nur Handy; am Rechner steht er in der Seitenleiste) */
+:root[data-marke="teo"] .teo-kopf-neu {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  min-width: 40px;
+  padding: 0;
+  border-radius: 999px;
+  border: 1px solid #dce4ee;
+  background: #ffffff;
+  color: #0b1f3a;
+}
+@media (min-width: 1024px) { :root[data-marke="teo"] .teo-kopf-neu { display: none; } }
+/* R2 Menüleiste mit Beschriftung */
+@media (max-width: 1023px) {
+  .portal-wl .portal-shell-mobile-item { flex-direction: column; gap: 3px; }
+  .portal-wl .portal-shell-mobile-item-lbl {
+    display: block;
+    font-size: 11px;
+    font-weight: 600;
+    line-height: 1;
+    color: inherit;
+    white-space: nowrap;
+  }
+}
+/* Einstellungen: Konto-Aktionen als Zeilen (wie iOS) statt Pillen */
+:root[data-marke="teo"] .portal-konto-action {
+  justify-content: flex-start;
+  width: 100%;
+  min-height: 48px;
+  padding: 0 4px;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  color: #0b1f3a;
+  font-weight: 600;
+}
+:root[data-marke="teo"] .portal-konto-action + .portal-konto-action,
+:root[data-marke="teo"] form + .portal-konto-action,
+:root[data-marke="teo"] .portal-konto-action + form { border-top: 1px solid #eef2f7 !important; }
+/* P12 Unterlagen als Dateiliste: eine Karte, Zeilen mit Datei-Icon, Linie dazwischen */
+:root[data-marke="teo"] .portal-dok-karte {
+  align-items: center;
+  border: 0 !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  background: transparent !important;
+  padding: 12px 0 !important;
+  margin: 0 !important;
+}
+:root[data-marke="teo"] .portal-dok-karte + .portal-dok-karte,
+:root[data-marke="teo"] * > .portal-dok-karte ~ .portal-dok-karte { border-top: 1px solid #eef2f7 !important; }
+:root[data-marke="teo"] .portal-dok-karte__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 40px;
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  background: #eef4fb;
+  color: #1e5fa8;
+}
+:root[data-marke="teo"] .portal-dok-karte h3 { font-weight: 700; color: #0b1f3a; }
+:root[data-marke="teo"] .portal-dok-karte .line-clamp-3 { -webkit-line-clamp: 1; }

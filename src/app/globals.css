@@ -7239,7 +7239,7 @@ select {
 .teo-konto__text { display: flex; flex-direction: column; min-width: 0; }
 .teo-konto__name { font-weight: 800; color: #0b1f3a; font-size: 15px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .teo-konto__unter { font-size: 13px; color: #5b6b80; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.teo-konto__punkt { display: flex; width: 100%; padding: 12px 10px; border: 0; border-radius: 12px; background: transparent; text-align: left; font: inherit; font-size: 15px; font-weight: 600; color: #0b1f3a; cursor: pointer; }
+.teo-konto__punkt { display: flex; align-items: center; gap: 10px; width: 100%; padding: 12px 10px; border: 0; border-radius: 12px; background: transparent; text-align: left; font: inherit; font-size: 15px; font-weight: 600; color: #0b1f3a; cursor: pointer; }
 .teo-konto__punkt:hover { background: #f1f5fa; }
 .teo-konto__punkt--rot { color: #b42318; }
 
@@ -7252,3 +7252,43 @@ select {
     min-height: 68vh;
   }
 }
+
+/* ════ TEO UX-Regeln 21.11. ════ */
+/* P15: ein Grundton für die ganze Seite (kein hellerer Streifen unter dem Inhalt) */
+:root[data-marke="teo"] body:has(.portal-shell),
+:root[data-marke="teo"] body:has(.ap-wl) { background-color: #f7f9fc; }
+:root[data-marke="teo"] .portal-wl.portal-shell { min-height: 100dvh; background: #f7f9fc; }
+/* R2: unter schwebenden Leisten ein weicher Verlauf mit leichter Unschärfe — Inhalt taucht darunter weg */
+@media (max-width: 1023px) {
+  :root[data-marke="teo"] body:has(.portal-shell-mobile-nav)::after,
+  :root[data-marke="teo"] body:has(.ap-wl .bottomnav)::after,
+  :root[data-marke="teo"] body:has(.tm-nav)::after {
+    content: "";
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: calc(96px + env(safe-area-inset-bottom, 0px));
+    z-index: 40;
+    pointer-events: none;
+    background: linear-gradient(to bottom, rgba(247, 249, 252, 0), rgba(247, 249, 252, 0.92) 55%);
+    -webkit-backdrop-filter: blur(6px);
+    backdrop-filter: blur(6px);
+    -webkit-mask-image: linear-gradient(to bottom, transparent, #000 45%);
+    mask-image: linear-gradient(to bottom, transparent, #000 45%);
+  }
+}
+/* R9 Leer-Zustand wie im CRM/Arbeitsplatz: Icon + ein kurzer Satz */
+.teo-leer { display: flex; flex-direction: column; align-items: center; gap: 10px; padding: 36px 16px; text-align: center; }
+.teo-leer__icon { display: inline-flex; align-items: center; justify-content: center; width: 56px; height: 56px; border-radius: 999px; background: #eef4fb; color: #1e5fa8; }
+.teo-leer__titel { margin: 0; font-size: 17px; font-weight: 800; color: #0b1f3a; }
+:root[data-marke="teo"] .mein-leer { padding: 36px 16px; text-align: center; font-size: 17px; font-weight: 800; color: #0b1f3a; }
+/* R8 Laden: Platzhalter in Form der Seite (wie CRM) */
+.teo-skelett { display: flex; flex-direction: column; gap: 12px; width: 100%; max-width: 720px; padding: 20px 16px; }
+.teo-skelett__kopf { width: 55%; height: 30px; border-radius: 10px; background: #e6ecf3; animation: teo-puls 1.4s ease-in-out infinite; }
+.teo-skelett__unter { width: 35%; height: 22px; margin-bottom: 8px; border-radius: 8px; background: #e6ecf3; animation: teo-puls 1.4s ease-in-out infinite; }
+.teo-skelett__karte { display: flex; flex-direction: column; gap: 8px; padding: 16px; border: 1px solid #dce4ee; border-radius: 20px; background: #ffffff; }
+.teo-skelett__zeile { width: 45%; height: 12px; border-radius: 6px; background: #e6ecf3; animation: teo-puls 1.4s ease-in-out infinite; }
+.teo-skelett__zeile--lang { width: 75%; height: 14px; }
+@keyframes teo-puls { 0%, 100% { opacity: 1; } 50% { opacity: 0.55; } }
+@media (prefers-reduced-motion: reduce) { .teo-skelett * { animation: none !important; } }

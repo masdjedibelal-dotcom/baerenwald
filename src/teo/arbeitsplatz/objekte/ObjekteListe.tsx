@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { useRouter, useSearchParams } from 'next/navigation'
+import { useSearchParams } from 'next/navigation'
 import { useMemo, useState } from 'react'
 
 import { formatEuro } from '@/lib/shared-domain/geld-datum'
@@ -21,10 +21,10 @@ export function ObjekteListe({
   verwaltung: ApPersonKurz[]
 }) {
   const [suche, setSuche] = useState('')
-  const router = useRouter()
   const params = useSearchParams()
   const neu = params.get('neu') === '1'
-  const setNeu = (an: boolean) => router.replace(an ? '/arbeitsplatz/objekte?neu=1' : '/arbeitsplatz/objekte', { scroll: false })
+  // Sofort öffnen/schließen ohne Server-Runde (Next übernimmt history.replaceState in useSearchParams)
+  const setNeu = (an: boolean) => window.history.replaceState(null, '', an ? '/arbeitsplatz/objekte?neu=1' : '/arbeitsplatz/objekte')
   const sichtbar = useMemo(() => {
     const s = suche.trim().toLowerCase()
     return s ? objekte.filter((o) => `${o.name} ${o.adresse}`.toLowerCase().includes(s)) : objekte

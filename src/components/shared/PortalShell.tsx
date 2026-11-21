@@ -16,6 +16,7 @@ import { PortalTopbar } from "@/components/shared/PortalTopbar";
 import { applyBrandStyle } from "@/lib/portal2/apply-brand";
 import type { MockIconName } from "@/lib/portal2/mock-icons";
 import type { PortalNavKey } from "@/lib/portal2/nav-items";
+import { istTeo } from "@/lib/marke";
 import { cn } from "@/lib/utils";
 
 export type PortalShellNavItem = {
@@ -272,11 +273,34 @@ export function PortalShell({
     variant === "partner" ? "partner" : variant === "kunde" ? "kunde" : "org";
   const createLabel = createAction?.label.replace(/^\+\s*/, "").trim() || "";
 
+  // TEO: Kopf überall gleich — Glocke · „+“ · Konto; Suche steht in der Liste, nicht im Kopf
+  const teoNeu =
+    istTeo && createAction && createLabel ? (
+      <PortalButton
+        variant="ghost"
+        type="button"
+        className="teo-kopf-neu"
+        onClick={createAction.onClick}
+        aria-label={createLabel}
+        title={createLabel}
+      >
+        <PortalIcon n="plus" ctx="sidebar" size={20} />
+      </PortalButton>
+    ) : null;
+  const kopfSuche = istTeo ? null : headerSearch;
+  const kopfGlocke = teoNeu ? (
+    <>
+      {notifSlot}
+      {teoNeu}
+    </>
+  ) : (
+    notifSlot
+  );
   const topbarRight =
-    headerSearch || notifSlot || headerUser ? (
+    kopfSuche || kopfGlocke || headerUser ? (
       <PortalHeader
-        search={headerSearch}
-        notifications={notifSlot}
+        search={kopfSuche}
+        notifications={kopfGlocke}
         user={headerUser}
       />
     ) : null;
@@ -310,6 +334,7 @@ export function PortalShell({
             />
           ) : null}
         </span>
+        {istTeo ? <span className="portal-shell-mobile-item-lbl">{item.label}</span> : null}
       </PortalButton>
     );
   }
@@ -502,7 +527,7 @@ export function PortalShell({
               aria-label="Mobile Navigation"
             >
               <div className="portal-shell-mobile-nav-pill">
-                {createAction && bottomNav.length >= 4 ? (
+                {createAction && !istTeo && bottomNav.length >= 4 ? (
                   <>
                     {bottomNav.slice(0, 2).map(renderMobileNavItem)}
                     {renderMobileCreate()}
@@ -511,7 +536,7 @@ export function PortalShell({
                 ) : (
                   <>
                     {bottomNav.map(renderMobileNavItem)}
-                    {createAction ? renderMobileCreate() : null}
+                    {createAction && !istTeo ? renderMobileCreate() : null}
                   </>
                 )}
               </div>

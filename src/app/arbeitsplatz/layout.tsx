@@ -43,14 +43,12 @@ export default async function ArbeitsplatzLayout({ children }: { children: React
     ...(darf(person, 'team.verwalten') ? [{ href: '/arbeitsplatz/team', label: 'Team', icon: 'users' }] : []),
   ]
 
-  const neuerVorgang = { label: 'Neuer Vorgang', href: '/arbeitsplatz/vorgaenge/neu', icon: 'plus' }
+  // „+“ oben rechts: Popover mit allem, was man anlegen kann (überall gleich)
   const ctas: ApCta[] = [
-    ...(darf(person, 'vorgang.anlegen')
-      ? [{ bereich: '/arbeitsplatz', ...neuerVorgang }, { bereich: '/arbeitsplatz/vorgaenge', ...neuerVorgang }]
-      : []),
-    ...(darf(person, 'objekte.bearbeiten') ? [{ bereich: '/arbeitsplatz/objekte', label: 'Objekt', href: '/arbeitsplatz/objekte?neu=1', icon: 'plus' }] : []),
-    ...(darf(person, 'plaene.verwalten') ? [{ bereich: '/arbeitsplatz/plaene', label: 'Plan', href: '/arbeitsplatz/plaene?neu=1', icon: 'plus' }] : []),
-    ...(darf(person, 'team.verwalten') ? [{ bereich: '/arbeitsplatz/team', label: 'Einladen', href: '/arbeitsplatz/team?neu=1', icon: 'user-plus' }] : []),
+    ...(darf(person, 'vorgang.anlegen') ? [{ label: 'Neue Anfrage', href: '/arbeitsplatz/vorgaenge/neu', icon: 'message' }] : []),
+    ...(darf(person, 'objekte.bearbeiten') ? [{ label: 'Objekt', href: '/arbeitsplatz/objekte?neu=1', icon: 'building' }] : []),
+    ...(darf(person, 'plaene.verwalten') ? [{ label: 'Plan', href: '/arbeitsplatz/plaene?neu=1', icon: 'checklist' }] : []),
+    ...(darf(person, 'team.verwalten') ? [{ label: 'Person einladen', href: '/arbeitsplatz/team?neu=1', icon: 'user-plus' }] : []),
   ]
 
   return (

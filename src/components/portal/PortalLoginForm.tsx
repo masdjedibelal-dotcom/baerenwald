@@ -2,7 +2,7 @@
 import { safeAction } from "@/lib/actions/safe-action";
 
 import Link from "next/link";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 
 import {
@@ -44,7 +44,6 @@ export function PortalLoginForm({
   registerHref = "/portal/registrieren",
   forgotHref = "/portal/passwort-vergessen",
 }: Props) {
-  const router = useRouter();
   const searchParams = useSearchParams();
   const hint = searchParams.get("hint");
   const authError = searchParams.get("error");
@@ -85,10 +84,10 @@ export function PortalLoginForm({
           "",
           window.location.pathname + window.location.search
         );
-        router.replace(next);
-        router.refresh();
+        // Ein vollständiger Seitenwechsel statt push + refresh gleichzeitig (sonst kurz Fehlerseite)
+        window.location.assign(next);
       });
-  }, [next, router]);
+  }, [next]);
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -123,8 +122,8 @@ export function PortalLoginForm({
         return;
       }
       // Loading bleibt an bis Redirect — sonst wirkt die Seite „hängend“
-      router.push(next);
-      router.refresh();
+      // Ein vollständiger Seitenwechsel statt push + refresh gleichzeitig (sonst kurz Fehlerseite)
+      window.location.assign(next);
     } catch {
       setError("Anmeldung fehlgeschlagen. Bitte erneut versuchen.");
       setLoading(false);
@@ -169,8 +168,8 @@ export function PortalLoginForm({
                   "Konto bestätigt — bitte erneut mit Passwort anmelden."
                 );
               }
-              router.replace(next);
-              router.refresh();
+              // Ein vollständiger Seitenwechsel statt push + refresh gleichzeitig (sonst kurz Fehlerseite)
+              window.location.assign(next);
               return;
             }
             setAwaitingOtp(false);
