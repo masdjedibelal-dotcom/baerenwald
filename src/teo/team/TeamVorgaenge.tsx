@@ -133,6 +133,8 @@ function Befund({ v, onFertig }: { v: TeamVorgang; onFertig: (hinweis: string) =
       <MockBtn kind="secondary" type="button" className="tm-senden" disabled={laeuft || notiz.trim().length < 5} onClick={() => senden('fachbetrieb')}>
         Braucht Fachbetrieb
       </MockBtn>
+      {/* Sagen, warum „Braucht Fachbetrieb“ noch gesperrt ist */}
+      {notiz.trim().length < 5 ? <p className="ap-gedimmt tm-hinweis-klein">Für „Braucht Fachbetrieb“ bitte oben kurz beschreiben, was kaputt ist.</p> : null}
     </div>
   )
 }

@@ -2,10 +2,11 @@
 
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 
 import { formatDatum, formatDatumZeit } from '@/lib/shared-domain/geld-datum'
-import { MockBadge, MockBtn, MockCard, MockEmpty, MockProp } from '@/teo/arbeitsplatz/kit'
+import { MockBadge, MockBtn, MockCard, MockEmpty, MockIcon, MockPopover, MockProp } from '@/teo/arbeitsplatz/kit'
+import { MockPopoverMenu } from '@/teo/arbeitsplatz/kit/MockPopover'
 import type { ApErledigung, ApPlan } from '@/teo/arbeitsplatz/daten/plaene'
 import { PlanAbhaken } from '@/teo/arbeitsplatz/plaene/PlanAbhaken'
 import { PlanFormular, type AnlageAuswahl } from '@/teo/arbeitsplatz/plaene/PlanFormular'
@@ -30,6 +31,8 @@ export function PlanDetail({
   const router = useRouter()
   const [bearbeiten, setBearbeiten] = useState(false)
   const [abhaken, setAbhaken] = useState(false)
+  const [mehrOffen, setMehrOffen] = useState(false)
+  const mehrRef = useRef<HTMLSpanElement>(null)
   const stand = planStand(plan.naechste)
 
   return (
@@ -46,16 +49,28 @@ export function PlanDetail({
             <span>{intervallText(plan.einheit, plan.anzahl)}</span>
           </div>
         </div>
-        <div className="detail-head-actions min-w-0">
-          {rechte.verwalten ? (
-            <MockBtn kind="secondary" sm type="button" onClick={() => setBearbeiten(true)}>
-              Bearbeiten
-            </MockBtn>
-          ) : null}
+        <div className="detail-head-actions vg-aktionen min-w-0">
+          {/* Hauptaktion zuerst, Bearbeiten im „…“-Menü (wie Vorgang und Objekt) */}
           {rechte.abhaken && plan.zustaendig === 'team' ? (
             <MockBtn kind="primary" sm type="button" onClick={() => setAbhaken(true)}>
               Abhaken
             </MockBtn>
+          ) : null}
+          {rechte.verwalten ? (
+            <>
+              <span ref={mehrRef} className="vg-aktionen__mehr">
+                <MockBtn kind="secondary" sm type="button" aria-label="Weitere Aktionen" onClick={() => setMehrOffen((v) => !v)}>
+                  <MockIcon ctx="default" n="dots" size={18} />
+                </MockBtn>
+              </span>
+              <MockPopover open={mehrOffen} onClose={() => setMehrOffen(false)} anchorRef={mehrRef} align="right" width={220}>
+                <MockPopoverMenu
+                  iconFn={(n) => <MockIcon ctx="default" n={n} size={16} />}
+                  onItemClick={() => setMehrOffen(false)}
+                  items={[{ icon: 'pencil', label: 'Plan bearbeiten', onClick: () => setBearbeiten(true) }]}
+                />
+              </MockPopover>
+            </>
           ) : null}
         </div>
       </header>

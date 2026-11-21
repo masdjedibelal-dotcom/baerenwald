@@ -3,6 +3,8 @@
 import Link from 'next/link'
 import { useState } from 'react'
 
+import { PortalModalShell } from '@/components/shared/PortalModalShell'
+
 export type MeinListenEintrag = {
   id: string
   titel: string
@@ -10,6 +12,8 @@ export type MeinListenEintrag = {
   status: string
   erledigt: boolean
   href?: string | null
+  /** Ohne eigenen Link: Antippen öffnet ein Blatt mit diesen Angaben (wie überall sonst) */
+  details?: Array<{ label: string; wert: string }>
 }
 
 type Filter = 'offen' | 'erledigt' | 'alle'
@@ -21,6 +25,7 @@ export function MeinVorgaengeListe({ eintraege, leerText }: { eintraege: MeinLis
   const offen = eintraege.filter((e) => !e.erledigt).length
   const erledigt = eintraege.length - offen
   const [filter, setFilter] = useState<Filter>(offen ? 'offen' : 'alle')
+  const [blatt, setBlatt] = useState<MeinListenEintrag | null>(null)
   const sichtbar = eintraege.filter((e) => (filter === 'alle' ? true : filter === 'offen' ? !e.erledigt : e.erledigt))
 
   if (!eintraege.length) return <p className="mein-leer">{leerText}</p>
@@ -63,6 +68,10 @@ export function MeinVorgaengeListe({ eintraege, leerText }: { eintraege: MeinLis
               <Link key={e.id} href={e.href} className="mieter-wl-objekt-item">
                 {inhalt}
               </Link>
+            ) : e.details?.length ? (
+              <button key={e.id} type="button" className="mieter-wl-objekt-item mein-eintrag-knopf" onClick={() => setBlatt(e)}>
+                {inhalt}
+              </button>
             ) : (
               <div key={e.id} className="mieter-wl-objekt-item">
                 {inhalt}
@@ -73,6 +82,18 @@ export function MeinVorgaengeListe({ eintraege, leerText }: { eintraege: MeinLis
       ) : (
         <p className="mein-leer">{filter === 'offen' ? 'Nichts offen.' : 'Noch nichts erledigt.'}</p>
       )}
+      {blatt ? (
+        <PortalModalShell open title={blatt.titel} subtitle={blatt.status} onClose={() => setBlatt(null)}>
+          <dl className="mein-details">
+            {(blatt.details ?? []).map((d) => (
+              <div key={d.label} className="mein-details__zeile">
+                <dt>{d.label}</dt>
+                <dd>{d.wert}</dd>
+              </div>
+            ))}
+          </dl>
+        </PortalModalShell>
+      ) : null}
     </div>
   )
 }

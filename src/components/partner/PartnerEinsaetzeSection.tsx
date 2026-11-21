@@ -761,7 +761,7 @@ function TeoEinsatzBlatt({
             <div className="teo-zeilen">
               {laeuft ? (
                 <>
-                  <TeoZeile icon="pencil" label="Update schreiben" disabled={busy} onClick={() => aktion("update")} />
+                  <TeoZeile icon="pencil" label="Update" disabled={busy} onClick={() => aktion("update")} />
                   <TeoZeile icon="list-todo" label="Stunden melden" disabled={busy} onClick={() => aktion("regie")} />
                 </>
               ) : null}

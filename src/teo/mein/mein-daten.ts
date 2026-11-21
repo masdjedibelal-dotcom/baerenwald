@@ -25,7 +25,19 @@ export type MeinObjekt = {
   name: string
   adresse: string
   meldeLink: string | null
-  vorgaenge: Array<{ id: string; titel: string; datum: string; status: string; erledigt: boolean }>
+  vorgaenge: Array<{
+    id: string
+    titel: string
+    datum: string
+    status: string
+    erledigt: boolean
+    /** Für die Detailansicht (Blatt) */
+    einheit: string | null
+    melder: string | null
+    betrag: number | null
+    abgerechnet: number | null
+    aktualisiert: string
+  }>
   /** nur WEG */
   kosten: { jahr: number; beauftragt: number; budget: number | null } | null
 }
@@ -151,7 +163,18 @@ export async function ladeEigentuemerObjekte(k: ApKontext): Promise<MeinObjekt[]
       vorgaenge: d.vorgaenge
         .filter((v) => v.status !== 'abgelehnt')
         .slice(0, 20)
-        .map((v) => ({ id: v.id, titel: v.titel, datum: v.erstellt, status: EIGENTUEMER_STATUS[v.status], erledigt: v.status === 'erledigt' })),
+        .map((v) => ({
+          id: v.id,
+          titel: v.titel,
+          datum: v.erstellt,
+          status: EIGENTUEMER_STATUS[v.status],
+          erledigt: v.status === 'erledigt',
+          einheit: v.einheit,
+          melder: v.melder,
+          betrag: v.betrag,
+          abgerechnet: v.abgerechnet,
+          aktualisiert: v.aktualisiert,
+        })),
       kosten: { jahr: d.jahr, beauftragt: d.beauftragt, budget: d.objekt.budget },
     }))
 }

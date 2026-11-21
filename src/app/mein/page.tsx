@@ -121,6 +121,16 @@ export default async function MeinSeite() {
                   meta: [objekte.length > 1 ? o.name : null, formatDatum(v.datum)].filter(Boolean).join(' · '),
                   status: v.status,
                   erledigt: v.erledigt,
+                  details: [
+                    { label: 'Status', wert: v.status },
+                    { label: 'Gemeldet am', wert: formatDatum(v.datum) },
+                    ...(objekte.length > 1 ? [{ label: 'Haus', wert: o.name }] : []),
+                    ...(v.einheit ? [{ label: 'Einheit', wert: v.einheit }] : []),
+                    ...(v.melder ? [{ label: 'Gemeldet von', wert: v.melder }] : []),
+                    ...(v.betrag != null ? [{ label: 'Angebot', wert: formatEuro(v.betrag) }] : []),
+                    ...(v.abgerechnet != null ? [{ label: 'Abgerechnet', wert: formatEuro(v.abgerechnet) }] : []),
+                    { label: 'Zuletzt aktualisiert', wert: formatDatum(v.aktualisiert) },
+                  ],
                 }))
               )}
             />

@@ -57,3 +57,10 @@
 .mein-chip__n { color: #6c7c90; font-variant-numeric: tabular-nums; }
 .mein-chip.is-on { background: #0b1f3a; border-color: #0b1f3a; color: #ffffff; }
 .mein-chip.is-on .mein-chip__n { color: rgba(255, 255, 255, 0.75); }
+/* Vorgang-Blatt (Eigentümer): Angaben untereinander wie im Arbeitsplatz */
+.mein-eintrag-knopf { width: 100%; text-align: left; font: inherit; cursor: pointer; }
+.mein-details { margin: 0; display: flex; flex-direction: column; }
+.mein-details__zeile { padding: 10px 0; border-top: 1px solid #eef2f7; }
+.mein-details__zeile:first-child { border-top: 0; }
+.mein-details dt { font-size: 14px; color: #5b6b80; }
+.mein-details dd { margin: 2px 0 0; font-size: 16px; font-weight: 600; color: #0b1f3a; }

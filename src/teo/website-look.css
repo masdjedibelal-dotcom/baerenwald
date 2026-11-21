@@ -359,3 +359,4 @@
 /* Team-App-Karten wie im Arbeitsplatz: Titel, Status darunter, Unterzeile */
 .ap-wl .tm-karte__text { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; }
 .ap-wl .tm-karte__status { display: inline-flex; }
+.ap-wl .tm-hinweis-klein { margin: 4px 0 0; font-size: 13px; text-align: center; }
