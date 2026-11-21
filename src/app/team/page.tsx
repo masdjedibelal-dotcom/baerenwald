@@ -15,7 +15,11 @@ export default async function TeamHeute() {
   const faellig = plaene.filter((p) => planStand(p.naechste) !== 'geplant')
   return (
     <>
-      <h1 className="tm-titel">Heute</h1>
+      {/* Überschrift wie im Arbeitsplatz: Titel und blaue Zeile */}
+      <div className="wl-kopf">
+        <h1>Heute.</h1>
+        <p>{vorgaenge.length + faellig.length === 0 ? 'Nichts zu tun.' : vorgaenge.length + faellig.length === 1 ? '1 Aufgabe.' : `${vorgaenge.length + faellig.length} Aufgaben.`}</p>
+      </div>
       <TeamVorgaenge vorgaenge={vorgaenge} />
       <TeamPlaene plaene={faellig} leer="Heute ist nichts fällig" />
     </>

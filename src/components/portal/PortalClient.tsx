@@ -1200,11 +1200,19 @@ export function PortalClient({
     <div className="flex min-w-0 flex-col">
       {isPrivatLike && !hvPortalMode ? (
         <>
+          {istTeo ? (
+            // wie im Arbeitsplatz: Titel und blaue Zeile mit der Anzahl
+            <div className="wl-kopf">
+              <h1>Vorgänge.</h1>
+              <p>{vorgaengeItems.length === 1 ? "1 Vorgang." : `${vorgaengeItems.length} Vorgänge.`}</p>
+            </div>
+          ) : (
           <div className="px-0.5 pb-1">
             <PortalListeTitle>
               {portalKundeListeTitle(kundeTyp)}
             </PortalListeTitle>
           </div>
+          )}
           <PortalListeFilterBar
             value={privatChip}
             onChange={setPrivatChip}

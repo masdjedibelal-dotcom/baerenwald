@@ -9,10 +9,14 @@ export const metadata = { title: 'Pläne' }
 export default async function TeamPlaeneSeite() {
   const k = await ladeApKontext()
   if (!k) redirect('/portal/login?next=/team')
+  const plaene = await ladeMeinePlaene(k)
   return (
     <>
-      <h1 className="tm-titel">Pläne</h1>
-      <TeamPlaene plaene={await ladeMeinePlaene(k)} leer="Noch keine Pläne" />
+      <div className="wl-kopf">
+        <h1>Pläne.</h1>
+        <p>{plaene.length === 1 ? '1 Plan.' : `${plaene.length} Pläne.`}</p>
+      </div>
+      <TeamPlaene plaene={plaene} leer="Noch keine Pläne" />
     </>
   )
 }

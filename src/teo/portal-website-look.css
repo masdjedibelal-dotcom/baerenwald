@@ -253,3 +253,24 @@
 .portal-wl .teo-einsatz-liste .portal-text-section { font-size: 30px; font-weight: 800; letter-spacing: -0.03em; color: var(--wl-navy); }
 .portal-wl .portal-dash-hero ~ * .teo-einsatz-liste .portal-text-section,
 .portal-wl .portal-dash .teo-einsatz-liste .portal-text-section { font-size: 20px; letter-spacing: -0.02em; }
+
+/* ════ Portale wie der HV-Arbeitsplatz (Vorlage) ════ */
+/* Begrüßung: groß „Guten Abend.“ in Navy, darunter der Name als blaue Zeile */
+.portal-wl .portal-dash-hero-greet,
+.portal-wl .portal-dash-hero-name { margin: 0; font-size: clamp(30px, 8vw, 44px) !important; line-height: 1.05; font-weight: 800 !important; letter-spacing: -0.035em; text-wrap: balance; }
+.portal-wl .portal-dash-hero-greet { color: var(--wl-navy) !important; }
+.portal-wl .portal-dash-hero-name { color: var(--wl-blau, #1e5fa8) !important; }
+/* Listen-Überschrift: Titel und blaue Zeile (wie „Vorgänge. 7 offen, 2 erledigt.“) */
+.portal-wl .wl-kopf { display: flex; flex-direction: column; gap: 4px; margin: 4px 0 18px; }
+.portal-wl .wl-kopf h1,
+.portal-wl .wl-kopf p { margin: 0; font-size: clamp(30px, 8vw, 44px); line-height: 1.05; font-weight: 800; letter-spacing: -0.035em; color: var(--wl-navy); text-wrap: balance; }
+.portal-wl .wl-kopf p { color: var(--wl-blau, #1e5fa8); }
+/* Abschnittstitel („Aktuelle Einsätze“, „Zuletzt“) wie Kartentitel im Arbeitsplatz */
+.portal-wl .portal-text-section { font-size: 20px; font-weight: 800; letter-spacing: -0.02em; color: var(--wl-navy); }
+/* Kopfzeile am Handy wie im Arbeitsplatz: Konto-Plakette rechts außen, Glocke daneben */
+@media (max-width: 1023px) {
+  .portal-wl .portal-topbar-brand { order: 3; margin-left: 10px; }
+  .portal-wl .portal-topbar-right { order: 1; flex: 1 1 auto; justify-content: flex-end; }
+  .portal-wl .portal-header { justify-content: flex-end; }
+  .portal-wl .portal-topbar-mark { width: 40px; height: 40px; font-size: 14px; }
+}

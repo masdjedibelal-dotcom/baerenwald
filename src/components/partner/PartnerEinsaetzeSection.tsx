@@ -369,7 +369,14 @@ export function PartnerEinsaetzeSection({
         ))}
       </div>
       )}
-      <PortalDetailCard title={ueberschrift} className={istTeo ? "teo-einsatz-liste" : undefined}>
+      {istTeo && !nurAktuell ? (
+        // Einsätze-Seite wie im Arbeitsplatz: Titel und blaue Zeile
+        <div className="wl-kopf">
+          <h1>Einsätze.</h1>
+          <p>{einsaetze == null ? "\u00a0" : `${kpi.neu + kpi.inArbeit} aktuell, ${kpi.erledigt} erledigt.`}</p>
+        </div>
+      ) : null}
+      <PortalDetailCard title={istTeo && !nurAktuell ? undefined : ueberschrift} className={istTeo ? "teo-einsatz-liste" : undefined}>
         {nurAktuell ? null : (
         istTeo ? (
           <div className="teo-chips" role="tablist" aria-label="Filter">

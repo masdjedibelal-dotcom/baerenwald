@@ -5,7 +5,8 @@ import type { ReactNode } from "react";
 import { PortalButton } from "@/components/portal/PortalButton";
 
 import { PortalDashboardActionCarousel } from "@/components/shared/PortalDashboardActionCarousel";
-import { portalDayGreetingPhrase } from "@/lib/portal2/greeting";
+import { portalDayGreetingPhrase, teoTagesGruss } from "@/lib/portal2/greeting";
+import { istTeo } from "@/lib/marke";
 import type { PortalDashboardActionSlide } from "@/lib/portal2/dashboard-actions/types";
 import { cn } from "@/lib/utils";
 
@@ -89,7 +90,7 @@ export function PortalScreenDashboard({
   beforeTiles,
   after,
 }: Props) {
-  const greet = portalDayGreetingPhrase();
+  const greet = istTeo ? teoTagesGruss() : portalDayGreetingPhrase();
   const displayName = (avatarName?.trim() || hello).trim();
   const strip = afterFocus ?? afterTiles;
 
