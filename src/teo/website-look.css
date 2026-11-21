@@ -220,7 +220,7 @@
 
 /* ════ Team-App (Hausmeister): wie der Arbeitsplatz — Verlauf, große Überschrift, Glas-Leiste in Navy ════ */
 .tm-app.ap-wl { background: var(--teo-grund); min-height: 100dvh; }
-.ap-wl .tm-kopf { background: rgba(247, 249, 252, 0.8); -webkit-backdrop-filter: blur(16px) saturate(1.5); backdrop-filter: blur(16px) saturate(1.5); border-bottom-color: var(--teo-linie); }
+.ap-wl .tm-kopf { background: var(--teo-grund); -webkit-backdrop-filter: none; backdrop-filter: none; border-bottom-color: var(--teo-linie); }
 .ap-wl .tm-kopf__marke { background: var(--teo-navy); border-radius: 10px; }
 .ap-wl .tm-kopf__org { font-weight: 800; color: var(--teo-navy); }
 .ap-wl .tm-kopf__ab { border: 1px solid var(--teo-linie); border-radius: 999px; background: #ffffff; color: var(--teo-navy); }
@@ -274,12 +274,12 @@
     border-radius: 999px;
     background: rgba(255, 255, 255, 0.18);
   }
-  /* Kopfzeile: helles Glas wie im CRM, Seitenname in Navy */
+  /* Kopfzeile deckend wie im CRM (kein verschwommener Durchblick), Seitenname in Navy */
   .ap-wl .topbar {
-    background: rgba(247, 249, 252, 0.72);
-    -webkit-backdrop-filter: blur(16px) saturate(1.5);
-    backdrop-filter: blur(16px) saturate(1.5);
-    border-bottom-color: rgba(220, 228, 238, 0.7);
+    background: var(--teo-grund);
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+    border-bottom-color: var(--teo-linie);
   }
   .ap-wl .topbar-title-text { color: var(--teo-navy); font-weight: 800; font-size: 17px; }
   /* Rechts wie im CRM: runder Plus-Knopf und Konto-Plakette in Navy */
