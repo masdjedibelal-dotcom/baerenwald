@@ -7228,6 +7228,8 @@ select {
 :root[data-marke="teo"] .portal-ui .portal-action-btn--primary:hover:not(:disabled) { background: #13325c; }
 /* Rückfrage-Blatt (z. B. „Eingaben wiederherstellen?“): halbdurchsichtig abdunkeln statt Seite zu verdecken */
 :root[data-marke="teo"] .portal-ui.portal-sheet-confirm { background: rgba(11, 31, 58, 0.45); }
+/* Dokument-Hintergrund wie die Seite (sonst grünlich-heller Streifen unter kurzem Inhalt) */
+:root[data-marke="teo"] { background-color: #f7f9fc; }
 
 /* Detail-Tabs: gleiche Mindesthöhe, damit die Seite beim Tab-Wechsel nicht springt (kurzer Tab = gleich lang wie die Ansicht) */
 .portal-detail-tabs-panel {

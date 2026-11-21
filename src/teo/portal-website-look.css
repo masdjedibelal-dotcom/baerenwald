@@ -244,3 +244,8 @@
 .portal-wl .portal-detail-tab { border-radius: 999px; font-weight: 700; }
 .portal-wl .portal-detail-tab--active { background: var(--wl-navy) !important; border-color: var(--wl-navy) !important; color: #ffffff !important; }
 .portal-wl .portal-detail-tabs-row { padding-left: 16px; padding-right: 16px; }
+/* Startseite „Zuletzt“: Karten wie in der Liste (kein Farbstrich, Status als Plakette) */
+.portal-wl .portal-dash-recent-item { border: 1px solid var(--wl-linie) !important; border-radius: 20px !important; box-shadow: var(--wl-schatten) !important; background: #ffffff !important; }
+.portal-wl .portal-dash-recent-edge { display: none !important; }
+.portal-wl .portal-dash-recent-titel { font-weight: 700; color: var(--wl-navy); }
+.portal-wl .portal-dash-recent-status { display: inline-flex; padding: 3px 10px; border-radius: 999px; background: #eaf0f8; color: #1e5fa8 !important; font-size: 12px; font-weight: 700; }
