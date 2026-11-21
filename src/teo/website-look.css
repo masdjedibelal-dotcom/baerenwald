@@ -453,3 +453,5 @@
   .ap-wl .ap-filterzeile > .input,
   .ap-wl .ap-filterzeile > select { flex: 1 1 140px; width: auto; }
 }
+/* ⓘ im Kartenkopf sichtbar lassen (Kartentitel sind sonst ohne Icons) */
+.ap-wl .card-h .ap-info .mock-icon { display: inline-flex !important; }
