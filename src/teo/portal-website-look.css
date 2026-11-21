@@ -249,3 +249,7 @@
 .portal-wl .portal-dash-recent-edge { display: none !important; }
 .portal-wl .portal-dash-recent-titel { font-weight: 700; color: var(--wl-navy); }
 .portal-wl .portal-dash-recent-status { display: inline-flex; padding: 3px 10px; border-radius: 999px; background: #eaf0f8; color: #1e5fa8 !important; font-size: 12px; font-weight: 700; }
+/* Listen-Überschrift so groß wie „Meine Vorgänge“ im Kundenportal (nicht auf der Startseite, dort ist es ein Abschnitt) */
+.portal-wl .teo-einsatz-liste .portal-text-section { font-size: 30px; font-weight: 800; letter-spacing: -0.03em; color: var(--wl-navy); }
+.portal-wl .portal-dash-hero ~ * .teo-einsatz-liste .portal-text-section,
+.portal-wl .portal-dash .teo-einsatz-liste .portal-text-section { font-size: 20px; letter-spacing: -0.02em; }
