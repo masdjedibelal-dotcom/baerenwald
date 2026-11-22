@@ -93,8 +93,10 @@ export function buildOrgHvMieterEventHtml(input: {
   eventTitel: string;
   eventBody: string;
   portalPath?: string;
+  /** Verwaltung ohne Login: kein Knopf ins Portal. */
+  ohnePortal?: boolean;
 }): string {
-  const link = orgPortalDeepLink(input.portalPath);
+  const link = input.ohnePortal ? undefined : orgPortalDeepLink(input.portalPath);
   const melder = input.melderName?.trim()
     ? ` (${esc(input.melderName.trim())})`
     : "";

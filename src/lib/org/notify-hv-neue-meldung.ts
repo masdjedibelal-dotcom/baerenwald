@@ -77,7 +77,11 @@ export async function notifyHvNeueMeldung(input: {
     .join(" · ");
 
   // Ohne HV-Ablauf (Bärenwald) ist das nur eine Info — die Meldung liegt schon als Anfrage beim Team
-  const naechster = funktionAn("hvWorkflow") ? "bitte prüfen." : `${MARKE.name} kümmert sich darum.`;
+  const { resolveOrgAuthUserIds } = await import("@/lib/push/resolve-recipients");
+  const hatLogin = (await resolveOrgAuthUserIds(kundeId)).length > 0;
+  // Mit HV-Ablauf entscheidet die Verwaltung im Portal; ohne Login (nie registriert) geht es direkt an uns.
+  const naechster =
+    funktionAn("hvWorkflow") && hatLogin ? "bitte prüfen." : `${MARKE.name} kümmert sich darum.`;
   const body = wer
     ? `${wer} hat eine neue Meldung eingereicht — ${naechster}`
     : `Eine neue Meldung wurde eingereicht — ${naechster}`;
@@ -150,6 +154,7 @@ export async function notifyHvNeueMeldung(input: {
         eventTitel: titel,
         eventBody: body,
         portalPath: link,
+        ohnePortal: !hatLogin,
       }),
     });
   } catch (e) {

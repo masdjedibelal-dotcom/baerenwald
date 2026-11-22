@@ -373,6 +373,13 @@ export async function persistMeldungLead(input: PersistMeldungLeadInput) {
     patch.freigabe_bypass_grund = "akut";
     patch.org_freigabe_status = "nicht_noetig";
   }
+  // Verwaltung ohne Login (nie registriert) kann im Portal nicht entscheiden → Meldung geht direkt ans Team.
+  let hvOhneLogin = false;
+  if (hvAblauf && input.erfassung_von === "melder" && input.auftraggeber_kunde_id) {
+    const { resolveOrgAuthUserIds } = await import("@/lib/push/resolve-recipients");
+    hvOhneLogin = (await resolveOrgAuthUserIds(String(input.auftraggeber_kunde_id))).length === 0;
+    if (hvOhneLogin && !bypassAktiv) patch.hv_meldung_status = "angebot_eingefordert";
+  }
 
   const { error: __dbErr361_9 } = await supabaseAdmin.from("leads").update(patch).eq("id", result.id);
   if (__dbErr361_9) logDbError('lib/org/persist-meldung-lead:leads', __dbErr361_9)
@@ -412,7 +419,7 @@ export async function persistMeldungLead(input: PersistMeldungLeadInput) {
         })
         .catch((e) => console.error("[persistMeldungLead] portal notify:", e)),
     ];
-    if (bypassAktiv || !hvAblauf) {
+    if (bypassAktiv || !hvAblauf || hvOhneLogin) {
       aufgaben.push(
         import("@/lib/org/notify-crm-org")
           .then(async ({ notifyCrmOrgPortal }) => {

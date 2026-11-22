@@ -3,6 +3,7 @@ import { buildOrgHvMieterEventHtml } from "@/lib/email/meldung-mail-templates";
 import { sendBrandedMail } from "@/lib/email/send-branded-mail";
 import { hvMailBcc } from "@/lib/email/resend-bcc";
 import { createHvNotification } from "@/lib/org/create-hv-notification";
+import { resolveOrgAuthUserIds } from "@/lib/push/resolve-recipients";
 import {
   portalDeepLinkTabFromNotifTyp,
   withPortalDetailDeepLink,
@@ -90,6 +91,7 @@ export async function notifyHvMieterEvent(input: {
         eventTitel: input.titel,
         eventBody: input.body,
         portalPath,
+        ohnePortal: (await resolveOrgAuthUserIds(kundeId)).length === 0,
       }),
     });
   } catch (e) {
