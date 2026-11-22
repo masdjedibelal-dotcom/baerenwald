@@ -390,56 +390,45 @@ export async function persistMeldungLead(input: PersistMeldungLeadInput) {
 
   // Melder-Link / Einladung → HV-Glocke (CRM erst nach HV „Vorgang freigeben“,
   // außer Akut-Direktauftrag: dann sofort BW informieren)
+  // Netlify beendet die Funktion nach der Antwort — Benachrichtigungen daher abwarten (parallel),
+  // sonst gehen Glocke/Mail an die Verwaltung und die CRM-Info verloren.
   if (input.erfassung_von === "melder") {
-    void import("@/lib/org/notify-hv-neue-meldung").then(
-      async ({ notifyHvNeueMeldung }) => {
-        try {
-          await notifyHvNeueMeldung({ leadId: result.id });
-        } catch (e) {
-          console.error("[persistMeldungLead] hv notify:", e);
-        }
-      }
-    );
+    const leadId = result.id;
+    const aufgaben: Promise<unknown>[] = [
+      import("@/lib/org/notify-hv-neue-meldung")
+        .then(({ notifyHvNeueMeldung }) => notifyHvNeueMeldung({ leadId }))
+        .catch((e) => console.error("[persistMeldungLead] hv notify:", e)),
+      import("@/lib/portal/notify-portal-lead-user")
+        .then(async ({ notifyPortalLeadUser }) => {
+          const { MELDE_NOTIF_COPY } = await import("@/lib/org/melde-vorgang-titel");
+          await notifyPortalLeadUser({
+            leadId,
+            typ: "status",
+            titel: MELDE_NOTIF_COPY.meldungEingegangen,
+            text: MELDE_NOTIF_COPY.meldungEingegangenBody,
+            deepLinkTab: "uebersicht",
+            roleOverride: "mieter",
+          });
+        })
+        .catch((e) => console.error("[persistMeldungLead] portal notify:", e)),
+    ];
     if (bypassAktiv || !hvAblauf) {
-      void import("@/lib/org/notify-crm-org").then(
-        async ({ notifyCrmOrgPortal }) => {
-          try {
-            const r = await notifyCrmOrgPortal({
-              leadId: result.id,
-              typ: "meldung",
-            });
+      aufgaben.push(
+        import("@/lib/org/notify-crm-org")
+          .then(async ({ notifyCrmOrgPortal }) => {
+            const r = await notifyCrmOrgPortal({ leadId, typ: "meldung" });
             if (!r.ok) {
               console.warn("[persistMeldungLead] CRM-Notify (Akut):", r.error, {
-                leadId: result.id,
+                leadId,
                 skipped: r.skipped === true,
               });
             }
-          } catch (e) {
-            console.error("[persistMeldungLead] CRM-Notify (Akut):", e);
-          }
-        }
+          })
+          .catch((e) => console.error("[persistMeldungLead] CRM-Notify (Akut):", e))
       );
     }
-    // Verknüpfter Portal-User (kunde_id mit auth) → eigene Glocke
-    void import("@/lib/portal/notify-portal-lead-user").then(
-      async ({ notifyPortalLeadUser }) => {
-        const { MELDE_NOTIF_COPY } = await import(
-          "@/lib/org/melde-vorgang-titel"
-        );
-        await notifyPortalLeadUser({
-          leadId: result.id,
-          typ: "status",
-          titel: MELDE_NOTIF_COPY.meldungEingegangen,
-          text: MELDE_NOTIF_COPY.meldungEingegangenBody,
-          deepLinkTab: "uebersicht",
-          roleOverride: "mieter",
-        }).catch((e) =>
-          console.error("[persistMeldungLead] portal notify:", e)
-        );
-      }
-    );
+    await Promise.allSettled(aufgaben);
   }
-
 
   return { ...result, meldeTrackingToken: token };
 }

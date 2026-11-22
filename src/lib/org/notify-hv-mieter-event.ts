@@ -1,6 +1,7 @@
 import { logDbError } from '@/lib/errors/log-db-error'
 import { buildOrgHvMieterEventHtml } from "@/lib/email/meldung-mail-templates";
 import { sendBrandedMail } from "@/lib/email/send-branded-mail";
+import { hvMailBcc } from "@/lib/email/resend-bcc";
 import { createHvNotification } from "@/lib/org/create-hv-notification";
 import {
   portalDeepLinkTabFromNotifTyp,
@@ -78,6 +79,7 @@ export async function notifyHvMieterEvent(input: {
         process.env.RESEND_FROM_SYSTEM ??
         `System <system@${MARKE.websiteHost}>`,
       to: orgEmail,
+      bcc: hvMailBcc(orgEmail),
       subject: buildSubject({
         objekt: objektTitel,
         ereignis: input.titel,
