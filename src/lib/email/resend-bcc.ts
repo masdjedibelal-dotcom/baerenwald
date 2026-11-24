@@ -15,3 +15,11 @@ export function hvMailBcc(empfaenger: string): string[] {
     (x, i, arr) => x && x.toLowerCase() !== an && arr.findIndex((y) => y.toLowerCase() === x.toLowerCase()) === i
   );
 }
+
+/** BCC für automatische Kunden-Mails (z. B. Anfrage eingegangen) — Firmenpostfach + TEO-Inhaber wie im CRM. */
+export function kundenMailBcc(empfaenger: string): string[] {
+  const an = empfaenger.trim().toLowerCase();
+  return [AUTOMATED_CUSTOMER_EMAIL_BCC, ...MARKE_MAIL_BCC_IMMER].filter(
+    (x, i, arr) => x && x.toLowerCase() !== an && arr.findIndex((y) => y.toLowerCase() === x.toLowerCase()) === i
+  );
+}

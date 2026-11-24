@@ -8,7 +8,7 @@ import {
   buildKundeBestaetigung,
 } from "@/lib/email/lead-mail-templates";
 import { sendBrandedMail } from "@/lib/email/send-branded-mail";
-import { AUTOMATED_CUSTOMER_EMAIL_BCC } from "@/lib/email/resend-bcc";
+import { kundenMailBcc } from "@/lib/email/resend-bcc";
 import {
   erneuernProjektTyp,
   isErneuernProjektBereich,
@@ -702,7 +702,7 @@ async function persistLeadInner(
         await sendBrandedMail(resend, {
           from: resendFromCustomer,
           to: emailRaw.toLowerCase(),
-          bcc: AUTOMATED_CUSTOMER_EMAIL_BCC,
+          bcc: kundenMailBcc(emailRaw),
           subject: buildKundenBestaetigungSubject({
             situation,
             bereiche,

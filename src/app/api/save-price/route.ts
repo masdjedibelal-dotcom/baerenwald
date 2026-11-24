@@ -8,7 +8,7 @@ import {
   SAVE_PRICE_CUSTOMER_EMAIL_SUBJECT,
 } from "@/lib/email/lead-mail-templates";
 import { sendBrandedMail } from "@/lib/email/send-branded-mail";
-import { AUTOMATED_CUSTOMER_EMAIL_BCC } from "@/lib/email/resend-bcc";
+import { kundenMailBcc } from "@/lib/email/resend-bcc";
 import { getPostHogClient } from "@/lib/posthog-server";
 import { getClientIp } from "@/lib/request-ip";
 import { checkRateLimit } from "@/lib/rate-limit";
@@ -109,7 +109,7 @@ export async function POST(request: Request) {
     const { error: err1 } = await sendBrandedMail(resend, {
       from,
       to: email,
-      bcc: AUTOMATED_CUSTOMER_EMAIL_BCC,
+      bcc: kundenMailBcc(email),
       subject: SAVE_PRICE_CUSTOMER_EMAIL_SUBJECT,
       html: customerHtml,
     });
