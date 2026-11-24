@@ -5,7 +5,7 @@ import { MAIL_COLORS } from "@/lib/tokens/mail-colors";
  */
 import { SITE_CONFIG } from "@/lib/config";
 import { MAIL_LOGO_URL_GREEN } from "@/lib/email/mail-logo-inline";
-import { MARKE } from "@/lib/marke";
+import { istTeo, MARKE } from "@/lib/marke";
 
 function esc(s: string): string {
   return s
@@ -51,7 +51,12 @@ export function mailBegruessungHtml(
   return n ? `Guten Tag ${esc(n)},` : "Guten Tag,";
 }
 
+const TEO_SCHRIFT = "Manrope,'Helvetica Neue',Arial,Helvetica,sans-serif";
+
 export function mailPrimaryButtonHtml(label: string, href: string): string {
+  if (istTeo) {
+    return `<p style="margin:20px 0 8px;"><a href="${escAttr(href)}" style="display:inline-block;background:#0B1F3A;color:#FFFFFF;text-decoration:none;padding:12px 26px;border-radius:999px;font-weight:600;font-size:15px;font-family:${TEO_SCHRIFT};">${esc(label)}</a></p>`;
+  }
   return `<p style="margin:20px 0 8px;"><a href="${escAttr(href)}" style="display:inline-block;background:${MAIL_COLORS.primary};color:${MAIL_COLORS.white};text-decoration:none;padding:14px 28px;border-radius:8px;font-weight:600;font-size:15px;">${esc(label)}</a></p>`;
 }
 
@@ -83,6 +88,10 @@ export function buildStandardMailHtml(opts: BuildStandardMailOpts): string {
       <a href="${siteUrl}" style="color:${MAIL_COLORS.gray400};text-decoration:none;">${esc(FOOTER_DOMAIN)}</a>
       · ${phoneTxt}
     </p>`;
+
+  if (istTeo) {
+    return teoMailHuelle({ pre, bodyHtml: opts.bodyHtml, footerMain, disclaimer });
+  }
 
   return `<!DOCTYPE html>
 <html lang="de" xmlns="http://www.w3.org/1999/xhtml">
@@ -126,6 +135,42 @@ ${pre}
   </td>
 </tr>
 
+</table>
+</td></tr>
+</table>
+</body>
+</html>`;
+}
+
+
+/** Servus TEO: wie CRM — heller Grund, weiße Karte mit runden Ecken, Wortmarke, ruhiger Fuß. */
+function teoMailHuelle(o: { pre: string; bodyHtml: string; footerMain: string; disclaimer: string }): string {
+  const grund = "#F7F9FC";
+  const wortmarke = `${MARKE.portalUrl}/brand/teo/logo-wordmark.png`;
+  return `<!DOCTYPE html>
+<html lang="de" xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<meta name="color-scheme" content="light"/>
+<meta name="supported-color-schemes" content="light"/>
+</head>
+<body style="margin:0;padding:0;background:${grund};font-family:${TEO_SCHRIFT};-webkit-text-size-adjust:100%;color-scheme:light;">
+${o.pre}
+<table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="background:${grund};">
+<tr><td align="center" style="padding:32px 12px;">
+<table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="max-width:580px;width:100%;">
+<tr><td style="padding:0 8px 20px;">
+  <img src="${escAttr(wortmarke)}" width="80" alt="${esc(MARKE.name)}" style="display:block;width:80px;height:auto;border:0;"/>
+</td></tr>
+<tr><td style="background:#FFFFFF;border:1px solid #E6EBF2;border-radius:16px;padding:32px 28px;font-size:15px;color:#3B4A5E;line-height:1.65;font-family:${TEO_SCHRIFT};">
+  ${o.bodyHtml}
+</td></tr>
+<tr><td style="padding:20px 8px 0;font-family:${TEO_SCHRIFT};">
+  ${o.footerMain}
+  ${o.disclaimer}
+  <p style="margin:12px 0 0;line-height:0;"><span style="display:inline-block;width:6px;height:6px;border-radius:3px;background:#E8A317;"></span></p>
+</td></tr>
 </table>
 </td></tr>
 </table>
