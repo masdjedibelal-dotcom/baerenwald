@@ -78,9 +78,8 @@ export function buildStandardMailHtml(opts: BuildStandardMailOpts): string {
     : "";
   const siteUrl = escAttr(SITE_CONFIG.url);
   const phoneTxt = esc(phoneDisplay());
-  const disclaimer = opts.disclaimer?.trim()
-    ? `<p style="margin:8px 0 0;font-size:11px;color:${MAIL_COLORS.c12};line-height:1.5;">${esc(opts.disclaimer.trim())}</p>`
-    : "";
+  // „Sie erhalten diese Mail, weil …“ wird nicht mehr angezeigt (wie im CRM)
+  const disclaimer = "";
   const footerMain = opts.footerNote?.trim()
     ? `<p style="margin:0;font-size:12px;color:${MAIL_COLORS.gray400};line-height:1.6;">${esc(opts.footerNote.trim())}</p>`
     : `<p style="margin:0;font-size:12px;color:${MAIL_COLORS.gray400};line-height:1.6;">
@@ -144,9 +143,11 @@ ${pre}
 
 
 /** Servus TEO: wie CRM — heller Grund, weiße Karte mit runden Ecken, Wortmarke, ruhiger Fuß. */
+/** Wortmarke als Text — erscheint auch, wenn das Mail-Programm Bilder blockiert. */
+const TEO_WORTMARKE_SCHRIFT = "Manrope,'Helvetica Neue',Arial,Helvetica,sans-serif"
+
 function teoMailHuelle(o: { pre: string; bodyHtml: string; footerMain: string; disclaimer: string }): string {
   const grund = "#F7F9FC";
-  const wortmarke = `${MARKE.portalUrl}/brand/teo/logo-wordmark.png`;
   return `<!DOCTYPE html>
 <html lang="de" xmlns="http://www.w3.org/1999/xhtml">
 <head>
@@ -161,7 +162,7 @@ ${o.pre}
 <tr><td align="center" style="padding:32px 12px;">
 <table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="max-width:580px;width:100%;">
 <tr><td style="padding:0 8px 20px;">
-  <img src="${escAttr(wortmarke)}" width="80" alt="${esc(MARKE.name)}" style="display:block;width:80px;height:auto;border:0;"/>
+  <span style="font-size:28px;font-weight:800;color:#0B1F3A;letter-spacing:-0.03em;line-height:1;font-family:${TEO_WORTMARKE_SCHRIFT};">teo<span style="color:#E8A317;">.</span></span>
 </td></tr>
 <tr><td style="background:#FFFFFF;border:1px solid #E6EBF2;border-radius:16px;padding:32px 28px;font-size:15px;color:#3B4A5E;line-height:1.65;font-family:${TEO_SCHRIFT};">
   ${o.bodyHtml}

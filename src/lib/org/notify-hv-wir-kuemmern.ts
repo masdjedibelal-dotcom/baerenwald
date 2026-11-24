@@ -60,8 +60,8 @@ export async function notifyHvWirKuemmernUns(input: {
   try {
     await sendBrandedMail(resend, {
       from:
-        process.env.RESEND_FROM_SYSTEM ??
-        `System <system@${MARKE.websiteHost}>`,
+        process.env.RESEND_FROM_CUSTOMER ??
+        `${MARKE.nameLang} <anfragen@${MARKE.websiteHost}>`,
       to: orgEmail,
       subject: buildSubject({
         objekt: objektTitel,

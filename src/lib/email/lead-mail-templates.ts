@@ -101,18 +101,23 @@ export function buildKundeBestaetigung(
   const vorname = nameRaw.includes(" ")
     ? nameRaw.split(/\s+/)[0]
     : nameRaw;
-  const halloName = esc(vorname || nameRaw);
+  void vorname;
+  // Sie-Form: voller Name; Firmen ohne Namen
+  const istFirma = /\b(gmbh|mbh|ug|ag|gbr|kg|ohg|hausverwaltung|verwaltung|immobilien)\b/i.test(nameRaw);
+  const begruessung = nameRaw && !istFirma ? `Guten Tag ${esc(nameRaw)},` : "Guten Tag,";
   const plzLine = data.plz?.trim();
   const plzSuffix = plzLine ? ` · ${esc(plzLine)}` : "";
 
-  const kastenHtml = vorhaben
+  // Rohwerte wie „sonstiges individuell“ nicht zeigen — nur lesbare Bezeichnungen
+  const vorhabenLesbar = vorhaben && !/^[a-z0-9_\s·,-]+$/.test(vorhaben.trim()) ? vorhaben : "";
+  const kastenHtml = vorhabenLesbar
     ? `
     <div style="margin:0 0 28px;border:1px solid ${MAIL_COLORS.gray200};border-radius:8px;padding:20px 24px;">
       <p style="margin:0 0 6px;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:${MAIL_COLORS.gray400};">
         Ihre Anfrage${plzSuffix}
       </p>
       <p style="margin:0 0 4px;font-size:18px;font-weight:800;color:${MAIL_COLORS.c2};">
-        ${esc(vorhaben)}
+        ${esc(vorhabenLesbar)}
       </p>
       ${
         data.preis?.trim()
@@ -125,22 +130,16 @@ export function buildKundeBestaetigung(
   return buildStandardMailHtml({
     preheader: "Danke für Ihre Anfrage.",
     bodyHtml: `
-      <h1 style="margin:0 0 12px;font-size:24px;font-weight:800;color:${MAIL_COLORS.c2};line-height:1.3;">
-        Danke für Ihre Anfrage.
-      </h1>
-      <p style="margin:0 0 28px;font-size:15px;color:${MAIL_COLORS.muted};line-height:1.7;">
-        Guten Tag ${halloName},<br/><br/>
-        Ihre Anfrage ist bei uns eingegangen. Wir schauen sie uns an und melden uns
+      <p style="margin:0 0 12px;font-size:15px;color:${MAIL_COLORS.gray700};line-height:1.7;">${begruessung}</p>
+      <p style="margin:0 0 24px;font-size:15px;color:${MAIL_COLORS.gray700};line-height:1.7;">
+        danke für Ihre Anfrage — sie ist bei uns eingegangen. Wir melden uns
         ${SITE_CONFIG.responseSlaWithin} für einen Vor-Ort-Termin.
       </p>
       ${kastenHtml}
       <p style="margin:0;font-size:15px;color:${MAIL_COLORS.gray700};line-height:1.7;">
-        Bis bald.<br/><br/>
         ${mailTeamGrussHtml("sie")}
       </p>
     `,
-    disclaimer:
-      "Sie erhalten diese Mail, weil Sie eine Anfrage über unsere Webseite gestellt haben.",
   });
 }
 
